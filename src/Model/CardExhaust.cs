@@ -33,18 +33,19 @@ namespace MonsterTrain2Poju.Model
     public static class CardExhaustModel
     {
         private const string Trait = "CardTraitExhaustState";
-        private static IReadOnlyList<CardTraitValue> Combined(CardInstanceState card)
+        private static CardTraitCompositionState RefreshTraits(CardInstanceState card)
         {
             CardMaskDescriptor? descriptor = card.MaskDescriptor;
-            if (descriptor == null) return Array.Empty<CardTraitValue>();
+            if (descriptor == null) return new CardTraitCompositionState([], [], [], [], []);
             return CardTraitCompositionModel.Refresh(new CardTraitCompositionState(descriptor.BaseTraits,
                 descriptor.TemporaryTraits, card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Select(upgrade =>
                     (IReadOnlyList<CardTraitValue>)(upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())).ToArray(),
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Where(upgrade => upgrade.Lifecycle != null)
                     .SelectMany(upgrade => upgrade.Lifecycle!.RemovedRuntimeTypes).ToArray(),
-                descriptor.PermanentReplacements)).CombinedTraits!;
+                descriptor.PermanentReplacements));
         }
-        public static bool HasConsume(CardInstanceState card) => Combined(card).Any(trait => trait.RuntimeType == Trait);
+        private static IReadOnlyList<CardTraitValue> BaseTraits(CardInstanceState card) => RefreshTraits(card).BaseTraits;
+        public static bool HasConsume(CardInstanceState card) => RefreshTraits(card).CombinedTraits?.Any(trait => trait.RuntimeType == Trait) == true;
         internal static string? PermanentUpgradeError(CardInstanceState card, CardUpgradeModifier upgrade)
         {
             CardTraitValue[] additions = upgrade.Lifecycle?.AddedTraits.Where(trait => trait.RuntimeType == Trait).ToArray() ?? Array.Empty<CardTraitValue>();
@@ -70,7 +71,7 @@ namespace MonsterTrain2Poju.Model
                 creation.MaskDescriptor?.BaseTraits.Any(trait => trait.RuntimeType == Trait) != true
                 ? "Generated permanent Consume upgrades require their installed base trait descriptor." : null;
         private static int ActiveBaseIndex(CardInstanceState card) => HasConsume(card)
-            ? card.MaskDescriptor!.BaseTraits.Select((trait, index) => new { trait, index })
+            ? BaseTraits(card).Select((trait, index) => new { trait, index })
                 .Where(item => item.trait.RuntimeType == Trait).Select(item => item.index).DefaultIfEmpty(-1).Last() : -1;
         public static bool ShouldExhaustOnPlayedDiscard(CardInstanceState card) => HasConsume(card) &&
             unchecked(card.PlayCount + 1) >= unchecked(1 + (card.ExhaustState ??
@@ -79,7 +80,7 @@ namespace MonsterTrain2Poju.Model
         {
             if (card.ExhaustState == null) return null;
             if (card.MaskDescriptor == null) return "Consume state requires a branch-owned trait descriptor.";
-            int[] indices = card.MaskDescriptor.BaseTraits.Select((trait, index) => new { trait, index })
+            int[] indices = BaseTraits(card).Select((trait, index) => new { trait, index })
                 .Where(item => item.trait.RuntimeType == Trait).Select(item => item.index).ToArray();
             if (!card.ExhaustState.BaseTraits.Select(item => item.TraitIndex).SequenceEqual(indices) ||
                 card.ExhaustState.BaseTraits.Any(item => item.ExhaustedCardId <= 0) ||
@@ -92,7 +93,7 @@ namespace MonsterTrain2Poju.Model
         public static CardInstanceState Initialize(CardInstanceState card, int playCountModifier)
         {
             if (card.MaskDescriptor == null) throw new InvalidOperationException("New Consume state requires a trait descriptor.");
-            var bases = card.MaskDescriptor.BaseTraits.Select((trait, index) => new { trait, index })
+            var bases = BaseTraits(card).Select((trait, index) => new { trait, index })
                 .Where(item => item.trait.RuntimeType == Trait).Select(item => new CardExhaustTraitState(item.index)).ToArray();
             return card.WithExhaustState(new CardExhaustState(playCountModifier, bases,
                 HasConsume(card) && ActiveBaseIndex(card) < 0 ? new CardExhaustTraitState(-1) : null));
@@ -107,10 +108,10 @@ namespace MonsterTrain2Poju.Model
         internal static CardInstanceState RefreshUpgradeTrait(CardInstanceState card)
         {
             CardExhaustState? state = card.ExhaustState;
-            if (state == null) return card;
+            if (state == null) return HasConsume(card) ? Initialize(card, 0) : card;
             CardMaskDescriptor descriptor = card.MaskDescriptor ??
                 throw new InvalidOperationException("Consume state requires a branch-owned trait descriptor.");
-            int[] indices = descriptor.BaseTraits.Select((trait, index) => new { trait, index })
+            int[] indices = BaseTraits(card).Select((trait, index) => new { trait, index })
                 .Where(item => item.trait.RuntimeType == Trait).Select(item => item.index).ToArray();
             var previous = state.BaseTraits.ToDictionary(item => item.TraitIndex);
             CardExhaustTraitState[] bases = indices.Select(index => previous.TryGetValue(index, out CardExhaustTraitState? item)

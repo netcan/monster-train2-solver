@@ -121,7 +121,8 @@ namespace MonsterTrain2Poju.Probe
             if (modifiers.GraftedEquipmentCardState != null || Field("graftedEquipmentCardStateId") != -1) interactions.Add("Grafted equipment");
             if (modifiers.BoxedCardStates.Count > 0 || ((ICollection)AccessTools.Field(typeof(CardStateModifiers), "boxedCardStateIds")
                 .GetValue(modifiers)).Count > 0) interactions.Add("Boxed cards");
-            if (modifiers.GetTemporaryTraits().Count > 0 || modifiers.GetTraitReplacements().Count > 0) interactions.Add("Temporary/replaced card traits");
+            if (modifiers.GetTemporaryTraits().Count > 0 || modifiers.GetTraitReplacements().Count > 0 && !CardBranchMaskProbe.Enabled)
+                interactions.Add("Temporary/replaced card traits");
             return new CardModifiers(new CardStatModifier(Field("additionalDamage"), Field("additionalMaxHP"), Field("additionalCost"),
                 Field("additionalHeal"), Field("additionalSize"), Field("additionalXCost"), Field("additionalEquipmentLimit"),
                 Field("additionalUpgradeSlotCount")), modifiers.GetCardUpgrades().Select(upgrade => Upgrade(upgrade, false, true)).ToArray(),

@@ -250,6 +250,7 @@ param(
     [switch] $OriginalMoonPhaseEnergyRelic,
     [switch] $OriginalMoonPhaseHealRelic,
     [switch] $OriginalCardAttackRelic,
+    [switch] $OriginalPurgeToExhaustRelic,
     [switch] $OriginalUpgradeCountRelics,
     [switch] $OriginalHealingPowerRelic,
     [switch] $OriginalStartCombatEnergyRelic,
@@ -554,6 +555,7 @@ if ($Mix) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($OriginalTinkermasterMix -or $OriginalProgressPacemakerMix) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($OriginalCardTypeCostRelic -and $CardTypeCostUpgradeOrder) { throw 'Select the original cost witness or its ordering variant, not both.' }
 if ($OriginalCardTypeCostRelic -or $CardTypeCostUpgradeOrder) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
+if ($OriginalPurgeToExhaustRelic) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($OriginalConserveEmber) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($SpawnOrStatus) { $Policy = 'units-and-junk' }
 if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true }
@@ -746,6 +748,7 @@ if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = '
 if ($OriginalEarlyDiscardEnergy) { $environment['MT2_PROBE_MODIFIERS'] = 'hand-removal'; $environment['MT2_PROBE_ORIGINAL_EARLY_DISCARD_ENERGY'] = '1' }
 if ($OriginalProgressPacemakerMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-progress-pacemaker-mix' }
 if ($OriginalCardTypeCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-type-cost-relic' }
+if ($OriginalPurgeToExhaustRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-purge-to-exhaust-relic' }
 if ($OriginalConserveEmber) { $environment['MT2_PROBE_MODIFIERS'] = 'original-conserve-ember-relic' }
 if ($CardTypeCostUpgradeOrder) { $environment['MT2_PROBE_MODIFIERS'] = if ($CardTypeCostUpgradeOrder -eq 'DiscountFirst') { 'card-type-cost-discount-first' } else { 'card-type-cost-upgrade-first' } }
 if ($Mix) { $environment['MT2_PROBE_MIX_CHOICES'] = if ($MixChoices) { $MixChoices } else { '00' } }
@@ -1755,6 +1758,25 @@ if ($CampaignDraftCalibration) {
             throw 'Campaign draft original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $draftDocument.Dispose() }
+}
+if ($OriginalPurgeToExhaustRelic) {
+    $purgeOwnerId = '10648aee-8577-49b6-8659-318a7f922d5a'
+    $purgeBattleSpellId = 'fc119000-0000-4000-8000-0000000002a1'
+    $purgeRows = @($trace.RelicCardModifiers | Where-Object {
+        $ownerId = $purgeOwnerId
+        @($_.Relics | Where-Object { $_.DataId -eq $ownerId }).Count -gt 0
+    })
+    $playedPurgeSpell = @($trace.Actions | Where-Object {
+        $record = $_
+        if (-not $record.ScenarioAction) { return $false }
+        @($record.Before.Spawn.Train.Context.Cards.Hand | Where-Object { $_.DataId -eq $purgeBattleSpellId }).Count -gt 0
+    })
+    if ($trace.Schema -ne 184 -or $trace.ModifierScenario -ne 'original-purge-to-exhaust-relic' -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-PURGE-TO-EXHAUST-ACQUIRED unchanged PurgeToExhaust SelfPurge=>Exhaust for spells/equipment' -Quiet) -or
+        $purgeRows.Count -lt 18 -or $playedPurgeSpell.Count -ne 1) {
+        throw 'PurgeToExhaust native owner, repeated manager controls or played battle spell evidence is missing.'
+    }
+    Write-Output "NATIVE-PURGE-TO-EXHAUST SETUP PASS: $($purgeRows.Count) manager rows; converted battle spell played."
 }
 if ($OriginalCardAttackRelic) {
     $attackRecords = @($trace.RelicCardModifiers | Where-Object { $_.Before.DataId -in @('fc119000-0000-4000-8000-000000000201', 'fc119000-0000-4000-8000-000000000202') })

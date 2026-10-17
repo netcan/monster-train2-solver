@@ -390,6 +390,8 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "relic-card-replacement-upgrades";
         bool deployableRelicScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "original-deployable-relic";
+        bool purgeToExhaustScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "original-purge-to-exhaust-relic";
         bool magebladeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() is "mageblade" or "original-mageblade-magnitude";
         bool sawExpectedRejection = statusUpgradeScenario || unhealedHealthUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario || castTriggerUpgradeScenario ||
@@ -407,6 +409,7 @@ internal static class RelicCardModifierChecks
                 ? "Native manager lacks reset and failed-eligibility rejection."
                 : "Native manager lacks reset/repeat/unique rejection and failed eligibility.");
         string expectedOwner = magebladeScenario ? "PojuMagebladeMagicPowerRelic" : extraToughTombsScenario ? "ExtraToughTombs" :
+            purgeToExhaustScenario ? "PurgeToExhaust" :
             root.TryGetProperty("ModifierScenario", out var ownerScenario) && ownerScenario.GetString() == "original-deployable-relic"
                 ? "NonBannerUnitsHaveDeployable" : allUnitsMultistrikeScenario ? "AllUnitsMultistrike" : "ReduceStarterCost";
         Require(rows.Any(row => row.Relics.Any(relic => relic.AssetKey == expectedOwner &&
@@ -416,8 +419,10 @@ internal static class RelicCardModifierChecks
                 : extraToughTombsScenario
                     ? relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyCardHealth, RelicModel.AddTempUpgrade }) &&
                         relic.CardHealthModifiers?.Count == 1 && relic.CardModifiers?.Count == 1
-                    : allUnitsMultistrikeScenario
+                : allUnitsMultistrikeScenario
                     ? relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade", "RelicEffectAddStatusEffectOnSpawn" })
+                    : purgeToExhaustScenario
+                    ? relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyTrait }) && relic.CardModifiers?.Count == 1
                     : relic.EffectTypes.SequenceEqual(new[] { "RelicEffectAddTempUpgrade" })))),
             "Expected original relic owner/effect order is missing.");
         if (magebladeScenario)

@@ -276,6 +276,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
+                        OriginalPurgeToExhaustScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalUpgradeCountRelicsScenario.Enabled && !OriginalUpgradeCountRelicsScenario.Acquired)
                         OriginalUpgradeCountRelicsScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHealingPowerScenario.Enabled && !OriginalHealingPowerScenario.Acquired)
@@ -574,6 +576,12 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalCardTypeCostScenario.Enabled)
             {
                 OriginalCardTypeCostScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalPurgeToExhaustScenario.Enabled)
+            {
+                OriginalPurgeToExhaustScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -1310,6 +1318,7 @@ namespace MonsterTrain2Poju.Probe
             }
             if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalRelicBatchScenario.Enabled && !OriginalHealingPowerScenario.Enabled &&
                 !OriginalCardAttackRelicScenario.Enabled && !OriginalCardTypeCostScenario.Enabled && !OriginalUpgradeCountRelicsScenario.Enabled &&
+                !OriginalPurgeToExhaustScenario.Enabled &&
                 !RelicCardModifierScenario.Prepared)
             {
                 RelicCardModifierScenario.Prepare(managers, log);
@@ -1504,6 +1513,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalCheaperSpellCostScenario.Enabled) pendingPlay = OriginalCheaperSpellCostScenario.Choose(decision);
                 if (OriginalCardAttackRelicScenario.Enabled) pendingPlay = OriginalCardAttackRelicScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardTypeCostScenario.Enabled) pendingPlay = OriginalCardTypeCostScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalPurgeToExhaustScenario.Enabled) pendingPlay = OriginalPurgeToExhaustScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalUpgradeCountRelicsScenario.Enabled) pendingPlay = OriginalUpgradeCountRelicsScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalHealingPowerScenario.Enabled) pendingPlay = OriginalHealingPowerScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalConserveEmberScenario.Enabled) pendingPlay = OriginalConserveEmberScenario.Choose(decision);
@@ -1665,6 +1675,7 @@ namespace MonsterTrain2Poju.Probe
                     CardEffectRecursionScenario.IsScenarioPrelude(action)) ||
                 (MixScenario.Enabled && MixScenario.IsScenarioPrelude(action)) ||
                 (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
+                (OriginalPurgeToExhaustScenario.Enabled && OriginalPurgeToExhaustScenario.IsScenarioPrelude(action)) ||
                 (OriginalUpgradeCountRelicsScenario.Enabled && OriginalUpgradeCountRelicsScenario.IsScenarioPrelude(action)) ||
                 (OriginalHealingPowerScenario.Enabled && OriginalHealingPowerScenario.IsScenarioPrelude(action)) ||
                 (ChooseDiscardScenario.Enabled && ChooseDiscardScenario.IsScenarioPrelude(action));

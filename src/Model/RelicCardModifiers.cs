@@ -28,18 +28,30 @@ namespace MonsterTrain2Poju.Model
     public sealed class RelicCardModifier
     {
         public int EffectIndex { get; }
-        public RelicCardUpgradeRule Rule { get; }
+        public RelicCardUpgradeRule? Rule { get; }
         public CardUpgradeModifier? Upgrade { get; }
         public bool ApplyToCardlessSpawns { get; }
         public int ConditionCount { get; }
         public IReadOnlyList<RelicConditionState> Conditions { get; }
-        public RelicCardModifier(int effectIndex, RelicCardUpgradeRule rule, CardUpgradeModifier? upgrade,
-            bool applyToCardlessSpawns, IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0)
+        public RelicTraitReplacement? TraitReplacement { get; }
+        public RelicCardModifier(int effectIndex, RelicCardUpgradeRule? rule, CardUpgradeModifier? upgrade,
+            bool applyToCardlessSpawns, IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0,
+            RelicTraitReplacement? traitReplacement = null)
         { EffectIndex = effectIndex; Rule = rule; Upgrade = upgrade; ApplyToCardlessSpawns = applyToCardlessSpawns;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
-            ConditionCount = conditions?.Count ?? conditionCount; }
+            ConditionCount = conditions?.Count ?? conditionCount; TraitReplacement = traitReplacement; }
         internal RelicCardModifier WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
-            new RelicCardModifier(EffectIndex, Rule, Upgrade, ApplyToCardlessSpawns, conditions);
+            new RelicCardModifier(EffectIndex, Rule, Upgrade, ApplyToCardlessSpawns, conditions, traitReplacement: TraitReplacement);
+    }
+    public sealed class RelicTraitReplacement
+    {
+        public string SourceTrait { get; }
+        public string TargetTrait { get; }
+        public CardUpgradeMaskRule? CardFilter { get; }
+        public CardUpgradeMaskRule? CardFilterSecondary { get; }
+        public RelicTraitReplacement(string sourceTrait, string targetTrait, CardUpgradeMaskRule? cardFilter,
+            CardUpgradeMaskRule? cardFilterSecondary)
+        { SourceTrait = sourceTrait; TargetTrait = targetTrait; CardFilter = cardFilter; CardFilterSecondary = cardFilterSecondary; }
     }
     public sealed class RelicCardModifierDispatch
     {
@@ -69,13 +81,29 @@ namespace MonsterTrain2Poju.Model
     {
         internal static string? Validate(CombatRelicState relic)
         {
-            var indices = relic.EffectTypes.Select((type, index) => (type, index)).Where(item => item.type == RelicModel.AddTempUpgrade)
+            var indices = relic.EffectTypes.Select((type, index) => (type, index)).Where(item =>
+                    item.type == RelicModel.AddTempUpgrade || item.type == RelicModel.ModifyTrait)
                 .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.CardModifiers?.Count > 0 ? "Unexpected relic card modifier definitions." : null;
             if (relic.CardModifiers == null || !indices.SequenceEqual(relic.CardModifiers.Select(rule => rule.EffectIndex)))
                 return "Missing ordered native relic card modifier definitions.";
             foreach (var effect in relic.CardModifiers)
             {
+                string type = relic.EffectTypes[effect.EffectIndex];
+                if (type == RelicModel.ModifyTrait)
+                {
+                    RelicTraitReplacement? replacement = effect.TraitReplacement;
+                    if (relic.DataId != RelicModel.PurgeToExhaustId || relic.AssetKey != RelicModel.PurgeToExhaustKey ||
+                        relic.EffectTypes.Count != 1 || effect.EffectIndex != 0 || replacement == null || effect.Rule != null ||
+                        effect.Upgrade != null || effect.ApplyToCardlessSpawns || effect.ConditionCount != 0 || effect.Conditions.Count != 0 ||
+                        replacement.SourceTrait != "CardTraitSelfPurge" || replacement.TargetTrait != "CardTraitExhaustState" ||
+                        !OnlyCardType(replacement.CardFilter, "OnlySpells", "Spell") ||
+                        !OnlyCardType(replacement.CardFilterSecondary, "OnlyEquipment", "Equipment"))
+                        return "Unmodeled RelicEffectModifyTrait payload or owner.";
+                    continue;
+                }
+                if (effect.Rule == null || effect.TraitReplacement != null)
+                    return "Relic card upgrade payload is missing or mixed with an unmodeled modifier.";
                 if (effect.ConditionCount != effect.Conditions.Count) return "Relic card modifier condition definitions are incomplete.";
                 if (effect.Conditions.Any(condition => condition.Comparator < 0 || condition.Comparator > 7))
                     return "Malformed native relic card modifier conditions.";
@@ -117,6 +145,20 @@ namespace MonsterTrain2Poju.Model
             }
             return null;
         }
+
+        private static bool OnlyCardType(CardUpgradeMaskRule? filter, string assetKey, string cardType) =>
+            filter != null && filter.AssetKey == assetKey && filter.CardType == cardType && filter.AdditionalCardTypes.Count == 0 &&
+            filter.Rarities.Required.Count == 0 && filter.Rarities.Excluded.Count == 0 &&
+            filter.Subtypes.Required.Count == 0 && filter.Subtypes.Excluded.Count == 0 &&
+            filter.Statuses.Required.Count == 0 && filter.Statuses.Excluded.Count == 0 &&
+            filter.Traits.Required.Count == 0 && filter.Traits.Excluded.Count == 0 &&
+            filter.Effects.Required.Count == 0 && filter.Effects.Excluded.Count == 0 &&
+            filter.LinkedClans.Required.Count == 0 && filter.LinkedClans.Excluded.Count == 0 &&
+            filter.Upgrades.Required.Count == 0 && filter.Upgrades.Excluded.Count == 0 &&
+            filter.AllowedPools.All(pool => pool.Count == 0) && filter.DisallowedPools.All(pool => pool.Count == 0) &&
+            filter.RequiredSizes.Count == 0 && filter.ExcludedSizes.Count == 0 && filter.MinCost == 0 && filter.MaxCost == 99 &&
+            filter.TargetMode == 0 && !filter.ExcludeNonAttackingMonsters && !filter.RequireXCost && !filter.ExcludeXCost &&
+            !filter.ExcludeIfHasUnitAbility && !filter.ExcludeIfHasGraftedEquipment && !filter.ExcludeIfHasAnyUpgrades && !filter.ExcludeIfHasNoUpgrades;
 
         private static bool TriggerPayloadsMatch(CardLifecycleUpgrade template, CardLifecycleUpgrade? captured)
         {
@@ -213,6 +255,16 @@ namespace MonsterTrain2Poju.Model
                             false, Array.Empty<RelicCardFilterResult>()));
                         continue;
                     }
+                    if (type == RelicModel.ModifyTrait)
+                    {
+                        if (!cardEffects.TryGetValue(effectIndex, out RelicCardModifier? traitEffect) || traitEffect.TraitReplacement == null)
+                            return Fail("Missing ordered relic trait-replacement definition.");
+                        card = RelicTraitReplacementModel.Apply(card, traitEffect.TraitReplacement, out bool returned,
+                            out error, out var filters)!;
+                        if (card == null) return Fail(error!);
+                        dispatches.Add(new RelicCardModifierDispatch(relicIndex, effectIndex, returned, false, filters));
+                        continue;
+                    }
                     if (type == RelicModel.ModifyCardHealth)
                     {
                         if (!healthEffects.TryGetValue(effectIndex, out RelicCardHealthModifier? healthEffect))
@@ -261,7 +313,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     int addedInstanceId = next;
                     int temporaryCountBefore = state.Temporary.Count;
-                    var applied = RelicCardUpgradeModel.Apply(state, cardEffect.Rule, next);
+                    var applied = RelicCardUpgradeModel.Apply(state, cardEffect.Rule!, next);
                     state = applied.State; next = applied.NextUpgradeInstanceId;
                     if (applied.UpgradeAdded)
                     {
@@ -306,7 +358,7 @@ namespace MonsterTrain2Poju.Model
                 }
             foreach (CardLifecycleUpgrade added in state.Temporary.Where(upgrade => !originalTemporaryIds.Contains(upgrade.InstanceId)))
                 installedCastEffects.AddRange(added.Triggers.Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Effects));
-            card = card.WithMaskDescriptor(source.MaskDescriptor.WithAuthoredCastEffects(installedCastEffects));
+            card = card.WithMaskDescriptor((card.MaskDescriptor ?? source.MaskDescriptor).WithAuthoredCastEffects(installedCastEffects));
             return new RelicCardModifierResult(card, dispatches, context: context);
 
             static bool RefreshTemporaryPayloads(CardModifiers modifiers, CardUpgradeLifecycleState lifecycle,
@@ -334,7 +386,7 @@ namespace MonsterTrain2Poju.Model
             if (!effect.ApplyToCardlessSpawns || upgrade == null) return Match(source);
             CombatUnit? actor = source.Units.FirstOrDefault(unit => unit.Id == unitId);
             if (actor == null) return FailRoom("Missing cardless relic birth unit.");
-            if (!(actor.Team == CombatTeam.Player ? effect.Rule.SourceMonsters : effect.Rule.SourceHeroes) ||
+            if (!(actor.Team == CombatTeam.Player ? effect.Rule!.SourceMonsters : effect.Rule!.SourceHeroes) ||
                 actor.Status("cardless") == null) return Match(source);
             if (actor.Modifiers == null) return FailRoom("Cardless relic upgrades require retained unit modifiers.");
             if (actor.Modifiers.IsClone) return Match(source);
@@ -344,7 +396,7 @@ namespace MonsterTrain2Poju.Model
                 return FailRoom("Missing cardless relic source card.");
 
             CardUpgradeMaskCard? cardMask = null;
-            if (effect.Rule.Filters.Count > 0 && fromCard != null)
+            if (effect.Rule!.Filters.Count > 0 && fromCard != null)
             {
                 if (fromCard.MaskDescriptor == null) return FailRoom("Cardless relic filters require source-card mask metadata.");
                 cardMask = CardBranchMaskModel.Resolve(fromCard);
@@ -372,6 +424,64 @@ namespace MonsterTrain2Poju.Model
         private static RelicCardModifierResult Fail(string error) => new RelicCardModifierResult(null, unsupportedReason: error);
         private static RoomCombatResult FailRoom(string error) =>
             new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
+    }
+
+    internal static class RelicTraitReplacementModel
+    {
+        internal static CardInstanceState? Apply(CardInstanceState source, RelicTraitReplacement effect,
+            out bool returned, out string? error, out IReadOnlyList<RelicCardFilterResult> filters)
+        {
+            returned = false;
+            error = null;
+            var observations = new List<RelicCardFilterResult>();
+            filters = observations;
+            if (source.MaskDescriptor == null)
+            { error = "Relic trait replacements require branch-owned card mask metadata."; return null; }
+            error = CardModifierModel.UnsupportedReason(source);
+            if (error != null) return null;
+
+            CardInstanceState card = source;
+            if (Matches(effect.CardFilter, card, out bool primaryAccepted))
+            {
+                observations.Add(new RelicCardFilterResult(effect.CardFilter!.AssetKey, primaryAccepted));
+                if (primaryAccepted) card = Convert(card, effect, out returned);
+            }
+            if (!returned && Matches(effect.CardFilterSecondary, card, out bool secondaryAccepted))
+            {
+                observations.Add(new RelicCardFilterResult(effect.CardFilterSecondary!.AssetKey, secondaryAccepted));
+                if (secondaryAccepted) card = Convert(card, effect, out returned);
+            }
+            return card;
+
+            static bool Matches(CardUpgradeMaskRule? filter, CardInstanceState current, out bool accepted)
+            {
+                if (filter == null) { accepted = false; return false; }
+                accepted = CardUpgradeMaskModel.FilterCard(filter, CardBranchMaskModel.Resolve(current));
+                return true;
+            }
+
+            static CardInstanceState Convert(CardInstanceState current, RelicTraitReplacement replacement, out bool hasSource)
+            {
+                hasSource = CardBranchMaskModel.Resolve(current).Traits.Contains(replacement.SourceTrait, StringComparer.Ordinal);
+                CardMaskDescriptor descriptor = current.MaskDescriptor!;
+                if (!descriptor.PermanentReplacements.Any(rule => rule.OldName == replacement.SourceTrait &&
+                    rule.NewName == replacement.TargetTrait))
+                {
+                    var converted = new CardTraitReplacement(replacement.SourceTrait, replacement.TargetTrait, replacement.TargetTrait);
+                    CardTraitValue[] baseTraits = descriptor.BaseTraits.ToArray();
+                    if (hasSource)
+                    {
+                        int sourceIndex = Array.FindIndex(baseTraits, trait => trait.RuntimeType == replacement.SourceTrait);
+                        if (sourceIndex >= 0) baseTraits[sourceIndex] = baseTraits[sourceIndex].Retyped(converted, temporary: false);
+                    }
+                    descriptor = new CardMaskDescriptor(descriptor.Definition, descriptor.BaseCost, baseTraits,
+                        descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft,
+                        descriptor.TemporaryTraits, descriptor.PermanentReplacements.Concat(new[] { converted }).ToArray());
+                    current = current.WithMaskDescriptor(descriptor);
+                }
+                return hasSource ? CardExhaustModel.RefreshUpgradeTrait(current) : current;
+            }
+        }
     }
 
     internal static class RelicCardHealthModel

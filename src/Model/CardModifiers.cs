@@ -457,9 +457,16 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect[] effects = rule.Effects.Select(ResolveEffect).ToArray();
             CardActionEffect[] onCastEffects = rule.OnCastEffects.Concat(triggerEffects).Select(ResolveEffect).ToArray();
             string destination = rule.Destination;
-            if (destination == "Discard" && instance.MaskDescriptor != null &&
-                CardBranchMaskModel.Resolve(instance).Traits.Any(trait => trait is "CardTraitSelfPurge" or "CardTraitEphemeral"))
+            IReadOnlyList<string> effectiveTraits = instance.MaskDescriptor == null
+                ? Array.Empty<string>() : CardBranchMaskModel.Resolve(instance).Traits;
+            if (destination == "Discard" && effectiveTraits.Any(trait => trait is "CardTraitSelfPurge" or "CardTraitEphemeral"))
                 destination = "Purged";
+            else if (destination == "Purged" &&
+                instance.MaskDescriptor?.PermanentReplacements.Any(replacement =>
+                    replacement.OldName == "CardTraitSelfPurge" && replacement.NewName == "CardTraitExhaustState") == true &&
+                effectiveTraits.Contains("CardTraitExhaustState", StringComparer.Ordinal) &&
+                !effectiveTraits.Any(trait => trait is "CardTraitSelfPurge" or "CardTraitEphemeral"))
+                destination = "Discard";
             return new CardPlayRule(rule.DataId, rule.AssetKey, UpgradedStat(instance.RawCostOverride ?? rule.Cost, "Cost", true, modifiers), rule.Effect,
                 destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions,
                 rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType, rule.Equipment, rule.Ability, rule.Summon, rule.CardType,

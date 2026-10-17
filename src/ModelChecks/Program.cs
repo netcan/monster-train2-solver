@@ -1,6 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--original-purge-to-exhaust-pure")
+{
+    OriginalPurgeToExhaustChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-purge-to-exhaust-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalPurgeToExhaustChecks.Native(fixture.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--selection-state-pure")
 {
     SelectionStateChecks.Run();

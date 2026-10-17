@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **160 distinct original collectable relics / 224 catalog entries
-(71.43%)** have accepted native evidence: 144 have full-battle effect evidence,
+As of 2026-10-17, **161 distinct original collectable relics / 224 catalog entries
+(71.88%)** have accepted native evidence: 145 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -37,6 +37,10 @@ pass with zero error counters.
 `DamageOnFloorTransition` now has exact +3 native enemy damage after both
 PostAscension and PostDescension; rooted, immobile and player movement controls
 remain unchanged. Its full replay and independent battle search pass.
+`PurgeToExhaust` now has exact native SelfPurge-to-Exhaust replacement evidence
+for the original ordered Spell and Equipment filters, including a played Spell
+that reaches Exhausted with native private trait state. Its full replay and
+independent 128-state search pass.
 
 The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
@@ -302,12 +306,13 @@ owner count.
 | `PartFactory` | `623ce968-aae5-4b07-b0c8-071f315031b7` | [PartFactory][partFactory] | The unchanged start-of-battle owner adds the native SetupRun-selected Pufferflesh to hand. Both weighted entries for that DataId match complete card context; the card later moves to Draw and is never played. Pool selection is a captured external result, not modeled SetupRun RNG. Grafted-equipment unit state and deploying/playing this card remain unsupported. |
 | `DamageOnFloorTransition` | `269a6f43-9982-4683-ac39-1a862e481898` | [DamageOnFloorTransition][damageOnFloorTransition] | The unchanged owner applies exactly 3 damage after an enemy's native PostAscension and PostDescension callbacks; rooted, immobile and player movement are controls. All 22 native Bump states and 42 full-battle actions match, and independent search passes 74/74 states with no unsupported attempts. |
 | `AddStatsToSoloUnits` | `724a1c19-192f-48c1-8099-8ae3ecb9c1e5` | [AddStatsToSoloUnits][soloUnitUpgrade] | Each start-of-turn callback gives the sole player Monster +5 Damage/+5 Health. Two repeated applications remain after a second Monster enters that floor; a two-Monster floor and two empty floors are controls. The owner is unconditional, non-removable, and captured on four upgradable floors only. |
+| `PurgeToExhaust` | `10648aee-8577-49b6-8659-318a7f922d5a` | [PurgeToExhaust][purgeToExhaust] | The unchanged ordered Spell/Equipment filters replace SelfPurge with Exhaust. Six native source/filter controls and 24 repeated manager calls match; a converted Spell is actually played into Exhausted with native private trait state. Full battle and independent 128-state search pass. |
 
 ## Campaign interface evidence
 
 These fifteen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 144 battle owners. It does not claim whole-battle integration
+separate from the 145 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -391,6 +396,7 @@ archives contain these observed battle sizes:
 | [original Progress Mix][progressMix] | 103 | 21 | 7 | 60 | Six native Mix drafts, two conditional follow-up rounds across separate turns |
 | [original card-type cost][cardTypeCost] | 103 | 24 | 6 | 50 | Ten modifier calls, two original zero-Ember self-purge plays, generated Junk |
 | [original Ember conservation][conserveEmber] | 103 | 21 | 7 | 62 | Seven conservation queries, two banked turns, later positive payments and terminal Ember retention |
+| [PurgeToExhaust][purgeToExhaust] | 184 | 21 | 7 | 61 | 24 exact manager calls, six source/filter controls and one played converted Spell |
 | [Big Damage from Many Morsels][bigDamage] | 169 | 6 | 7 | 113 | Six native train-birth replays, exact 19/20/21 Snack thresholds and Tower/Pyre/enemy controls |
 | [original early-discard energy][earlyDiscardEnergy] | 170 | 11 | 6 | 45 | Five Ember-gaining card discards, 18 no-gain consume controls |
 | [cheaper spell cost][cheaperSpellCost] | 171 | 2 | 7 | 52 | Two ordered spell plays; played-card and end-turn discard cleanup witnesses |
@@ -405,6 +411,7 @@ The checks that enforce these observations are
 [RelicSpawnStatusChecks.Native](../../src/ModelChecks/RelicSpawnStatusChecks.cs),
 [RelicCardModifierChecks.Native](../../src/ModelChecks/RelicCardModifierChecks.cs),
 [OriginalCardTypeCostChecks.Native](../../src/ModelChecks/OriginalCardTypeCostChecks.cs),
+[OriginalPurgeToExhaustChecks.Native](../../src/ModelChecks/OriginalPurgeToExhaustChecks.cs),
 [ConserveEmberChecks.Native](../../src/ModelChecks/ConserveEmberChecks.cs),
 [OriginalRelicBatchChecks.Native](../../src/ModelChecks/OriginalRelicBatchChecks.cs),
 [OriginalUnitRelicBatchChecks.Native](../../src/ModelChecks/OriginalUnitRelicBatchChecks.cs),
@@ -792,6 +799,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [copyConsumedCard]: full-battle-original-copy-consumed-card.mt2f
 [damageOnFloorTransition]: full-battle-original-damage-on-floor-transition.mt2f
 [soloUnitUpgrade]: full-battle-original-add-stats-to-solo-units.mt2f
+[purgeToExhaust]: full-battle-original-purge-to-exhaust.mt2f
 
 ## AddStatsToSoloUnits
 
@@ -808,7 +816,28 @@ unsupported transitions or pending records; independent search matches 128
 states with serial/parallel best equality.
 
 The direct binary archive is 24,606 bytes with 3,502 nodes and SHA-256
-`7b4ac92dcb8a37b56538f1fe1bf64a3e970d6627400351f1ff1a686455ee5911`. The
-inventory is 381 archives: 343 full battles and 38 component calibrations.
-Original relic evidence is 160/224 (71.43%): 144 battle, 15 campaign and one
+`7b4ac92dcb8a37b56538f1fe1bf64a3e970d6627400351f1ff1a686455ee5911`.
+
+## PurgeToExhaust
+
+The schema-184 `PurgeToExhaust` fixture captures the unchanged original owner
+and its ordered `OnlySpells` then `OnlyEquipment` `RelicEffectModifyTrait`
+filters. Six native source/filter controls include SelfPurge and no-trait
+Spell/Equipment cases plus a SelfPurge Blight control. Twenty-four repeated
+manager calls match the captured descriptors and filter dispatches. The
+converted Spell is played in the winning 61-stage battle and reaches the
+Exhausted pile with its native private Exhaust trait state; all error counters
+are zero. Focused replay and independent 128/128-state search pass with
+serial/parallel best equality. Pure controls cover source-absent persistent
+metadata, repeat/reset idempotence, owner validation and immutable branches.
+
+The direct binary archive is 36,125 bytes with 5,754 nodes and SHA-256
+`f4efc2e1383f0783cab729a2b371c5438ebf0ec01aabd85ad296ca2a4e22f8c8`.
+The inventory is 382 archives: 344 full battles and 38 component calibrations.
+Original relic evidence is 161/224 (71.88%): 145 battle, 15 campaign and one
 native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-purge-to-exhaust.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-purge-to-exhaust-pure
+```

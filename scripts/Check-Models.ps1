@@ -100,6 +100,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-mix-unstable.mt2f', 'full-battle-mix-unstable-explosion.mt2f',
     'full-battle-original-tinkermaster-mix.mt2f', 'full-battle-original-progress-pacemaker-mix.mt2f',
     'full-battle-original-card-type-cost-relic.mt2f',
+    'full-battle-original-purge-to-exhaust.mt2f',
     'full-battle-original-conserve-ember.mt2f',
     'full-battle-card-type-cost-discount-first.mt2f', 'full-battle-card-type-cost-upgrade-first.mt2f',
     'full-battle-damage-by-units-killed.mt2f',
@@ -983,6 +984,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-card-type-cost-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original card-type cost relic checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-purge-to-exhaust.mt2f' })) {
+    foreach ($mode in @('--original-purge-to-exhaust-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original PurgeToExhaust checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-conserve-ember.mt2f' })) {

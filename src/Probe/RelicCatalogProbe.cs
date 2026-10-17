@@ -34,6 +34,8 @@ namespace MonsterTrain2Poju.Probe
                     Bool3 = effect.GetParamBool3(), Bool4 = effect.GetParamBool4(), Str = effect.GetParamString(),
                     CardType = effect.GetParamCardType().ToString(),
                     CardFilter = effect.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Definition(effect.GetParamCardFilter()),
+                    CardFilterSecondary = effect.GetParamCardFilterSecondary() == null ? null : CardUpgradeMaskProbe.Definition(effect.GetParamCardFilterSecondary()),
+                    SourceTrait = effect.GetSourceTrait(), TargetTrait = effect.GetTargetTrait(),
                     Trigger = effect.GetParamTrigger().ToString(), ExcludedCardTriggers = effect.GetCardTriggers().Select(trigger => trigger.ToString()).ToArray(),
                     RequiredTraits = effect.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray(),
                     RequiredSubtype = effect.GetParamCharacterSubtype()?.Key,
