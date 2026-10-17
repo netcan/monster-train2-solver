@@ -73,6 +73,15 @@ namespace MonsterTrain2Poju.Probe
             if (cache != null) cache[data] = result;
             return result;
         }
+        internal static CardCreationRule Creation(CardData data, IEnumerable<CardUpgradeData> addCardUpgrades)
+        {
+            CardUpgradeModifier[] upgrades = addCardUpgrades.Select(upgrade =>
+            {
+                var state = new CardUpgradeState(); state.Setup(upgrade);
+                return CardModifierProbe.Upgrade(state);
+            }).ToArray();
+            return Creation(data).WithAddCardUpgrades(upgrades);
+        }
         internal static CardCreationRule PartFactoryCreation(CardData data) => CreateDefinition(data, true);
 
         private static CardCreationRule CreateDefinition(CardData data, bool includeGraftedSpawnBoundary = false)

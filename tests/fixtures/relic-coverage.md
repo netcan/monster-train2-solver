@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **169 distinct original collectable relics / 224 catalog entries
-(75.45%)** have accepted native evidence: 153 have full-battle effect evidence,
+As of 2026-10-17, **170 distinct original collectable relics / 224 catalog entries
+(75.89%)** have accepted native evidence: 154 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -25,6 +25,15 @@ native run had no full-hand death; a synthetic full-hand control confirms both
 Battle RNG selections and the single manager notification without allocating a
 card. Generated-card play effects and multi-action terminal cleanup are outside
 this narrow support boundary.
+`FinalEndingArtifact` now has four natural post-draw champion additions and two
+gated callbacks over its unchanged ordered 36-entry pool. Exact N-1 Battle RNG
+shuffling, selected grant upgrades and full-hand/champion-in-hand gates match;
+the 55-stage replay and one-action policy pass with zero differential counters,
+and independent 128-state search has serial/parallel best equality. This deck's
+champion is not in that pool, so native deck-excluded count is zero; a synthetic
+filtered-pool control verifies exclusions. Eight candidates with external grant
+upgrade interactions are explicitly unsupported, and generated-card play is
+outside the policy boundary.
 `RelicEffectModifyForgeUpgrade` appears on two catalog owners; BrokenRail now
 has one accepted native battle witness, while HephsBlueprints remains pending.
 The native source and callback effect for `RageOnBurnoutStackLoss` now have one
@@ -332,6 +341,7 @@ owner count.
 | `ChanceToVineGrasp` | `00063533-9277-485c-b100-13637a228f9a` | [original after-draw generation][afterDrawGeneration] | Four actual generated cards receive unchanged AddEphemeral as a temporary upgrade. Original name does not imply a probabilistic activation gate; its actual conditions are empty. |
 | `AddSnackToHand` | `81958958-6481-4847-afe1-cb651a041f6c` | [original after-draw generation][afterDrawGeneration] | Four actual post-draw hand additions, exact native selection/state and original filtered pool. Deployment and preview gates have pure controls. |
 | `AddSnackOnKill` | `b6548209-3ccf-4deb-9896-f07d5df3dab9` | [AddSnackOnKill][addSnackOnKill] | Three exact native enemy-Hero OnDeath callbacks add six cards from the original weighted pool; 312 callbacks are gated. Synthetic full-hand control verifies two RNG selections and one manager notification without card allocation. Generated-card play effects and native full-hand deaths are not claimed. |
+| `FinalEndingArtifact` | `6bb39014-9b03-4620-b088-f618a7e680b7` | [FinalEndingArtifact][finalEndingArtifact] | Four natural post-draw champions from the unchanged 36-entry pool match exact Fisher-Yates Battle RNG selection and grant upgrades; two native gate callbacks consume no RNG. Full-hand/champion-hand and filtered-pool controls pass. The deck's champion is absent from this pool; eight externally interactive grant upgrades are explicitly unsupported, and generated-card play is outside the policy boundary. |
 | `AddStingToHand` | `5e5d863b-514c-4026-a9b0-ffe56af2a3eb` | [original after-draw generation][afterDrawGeneration] | Three actual hand additions plus one native full-hand rejection. Selection still consumes Battle RNG before the failed insertion; rejection allocates no card identity. All 16 combined consumers and full policy replay match. |
 | `SpellWeaknessBelowPyre` | `5a96d89f-d7c0-49fa-88d1-8ec75a8f3140` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 2 Spell Weakness. Three distinct native Heroes have the exact status; spell damage and post-card removal match through the full battle. |
 | `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
@@ -838,6 +848,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [healthChoice]: full-battle-original-health-choice-relic.mt2f
 [afterDrawGeneration]: full-battle-original-after-draw-generation-relics.mt2f
 [addSnackOnKill]: full-battle-original-add-snack-on-kill.mt2f
+[finalEndingArtifact]: full-battle-original-final-ending-artifact.mt2f
 [openingDraw]: full-battle-original-opening-draw-relics.mt2f
 [turnDraw]: full-battle-original-turn-draw-relics.mt2f
 [purgeGold]: campaign-purge-gold-calibration.mt2f
@@ -1084,4 +1095,33 @@ calibrations. Accepted original-owner coverage is 169/224 (75.45%): 153 battle,
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-add-snack-on-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-add-snack-on-kill-only tests/fixtures/full-battle-original-add-snack-on-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-add-snack-on-kill.mt2f
+```
+
+## FinalEndingArtifact
+
+The schema-193 archive captures the unchanged owner and its ordered 36-entry
+champion pool, including each candidate's grant upgrades and the native deck
+eligibility mask. Four natural callbacks add one non-permanent champion to hand;
+two hand/champion gates leave context and Battle RNG unchanged. The selected
+candidate, reverse Fisher-Yates N-1 shuffle, upgrade identity and complete
+generated-card context match native state. Full-hand and champion-in-hand
+controls allocate no card or consume no RNG. A synthetic candidate mask tests
+that excluded entries cannot be selected; this run's own deck champion is not
+in the random pool, so no native entry was excluded.
+
+The 55-stage battle and one model-selected action have zero capture failures,
+mismatches, unsupported transitions or pending records. Independent search
+matches the decision and visits 128/128 states with serial/parallel best
+equality. Eight pool entries carry external grant-upgrade interactions and are
+explicitly refused by the model; generated-card play is not exercised by the
+one-action policy. The 33,994-byte archive has 4,642 unique nodes and SHA-256
+`910a8b3888f646383d58d1714db9fd0a1d019a63eaf0c18803a3a5a0d0c2390f`; no JSON
+companion is tracked. Inventory is 391 archives: 353 full battles and 38
+component calibrations. Original relic evidence is 170/224 (75.89%): 154 battle,
+15 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-final-ending-artifact.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-final-ending-artifact-only tests/fixtures/full-battle-original-final-ending-artifact.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-final-ending-artifact.mt2f
 ```

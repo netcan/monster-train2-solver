@@ -19,12 +19,13 @@ namespace MonsterTrain2Poju.Model
         public int? EquippedUnitId { get; }
         public CardMaskDescriptor? MaskDescriptor { get; }
         public bool? CanBeCopied { get; }
+        public IReadOnlyList<CardUpgradeModifier> AddCardUpgrades { get; }
         public CardCreationRule(string dataId, CardModifiers startingModifiers, IReadOnlyList<CardEffectCounter>? effectCounters,
             IReadOnlyList<string> externalInteractions, IReadOnlyList<ScalingDamageTrait>? damageScalingTraits = null,
             IReadOnlyList<ScalingStatusTrait>? statusScalingTraits = null, IReadOnlyList<ScalingUnitUpgradeTrait>? unitUpgradeScalingTraits = null,
             IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null, int? equippedUnitId = null, CardMaskDescriptor? maskDescriptor = null,
             IReadOnlyList<ScalingForgeCountTrait>? forgeCountScalingTraits = null, bool? canBeCopied = null,
-            IReadOnlyList<ScalingTrainHealTrait>? trainHealScalingTraits = null)
+            IReadOnlyList<ScalingTrainHealTrait>? trainHealScalingTraits = null, IReadOnlyList<CardUpgradeModifier>? addCardUpgrades = null)
         { DataId = dataId; StartingModifiers = startingModifiers; EffectCounters = effectCounters == null ? null : Array.AsReadOnly(effectCounters.ToArray());
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             DamageScalingTraits = damageScalingTraits == null ? null : Array.AsReadOnly(damageScalingTraits.ToArray());
@@ -33,7 +34,12 @@ namespace MonsterTrain2Poju.Model
             CapacityScalingTraits = capacityScalingTraits == null ? null : Array.AsReadOnly(capacityScalingTraits.ToArray());
             ForgeCountScalingTraits = forgeCountScalingTraits == null ? null : Array.AsReadOnly(forgeCountScalingTraits.ToArray());
             TrainHealScalingTraits = trainHealScalingTraits == null ? null : Array.AsReadOnly(trainHealScalingTraits.ToArray());
-            EquippedUnitId = equippedUnitId; MaskDescriptor = maskDescriptor; CanBeCopied = canBeCopied; }
+            EquippedUnitId = equippedUnitId; MaskDescriptor = maskDescriptor; CanBeCopied = canBeCopied;
+            AddCardUpgrades = Array.AsReadOnly((addCardUpgrades ?? Array.Empty<CardUpgradeModifier>()).ToArray()); }
+        internal CardCreationRule WithAddCardUpgrades(IReadOnlyList<CardUpgradeModifier> upgrades) => new(DataId,
+            StartingModifiers, EffectCounters, ExternalInteractions, DamageScalingTraits, StatusScalingTraits,
+            UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, MaskDescriptor, ForgeCountScalingTraits,
+            CanBeCopied, TrainHealScalingTraits, upgrades);
     }
 
     public sealed class DiscardGenerationUpgrade
@@ -62,23 +68,30 @@ namespace MonsterTrain2Poju.Model
         public bool? Permanent { get; }
         public int? SelectedPoolIndex { get; }
         public IReadOnlyList<bool>? PoolEligibility { get; }
+        public IReadOnlyList<string>? ChampionCardDataIds { get; }
         public CardGenerationRule(string destination, int count, IReadOnlyList<CardCreationRule> pool,
             bool skipDuplicateInHand = false, bool requireHandSpace = false, bool copyModifiers = false,
             bool ignoreTemporaryModifiers = false, CardUpgradeModifier? upgrade = null,
             IReadOnlyList<DiscardGenerationUpgrade>? discardCopyUpgrades = null, IReadOnlyList<string>? externalInteractions = null,
             bool deterministicPoolSelection = false, bool requireCopyableSource = false, bool upgradeIsPermanent = false,
-            bool? permanent = null, int? selectedPoolIndex = null, IReadOnlyList<bool>? poolEligibility = null)
+            bool? permanent = null, int? selectedPoolIndex = null, IReadOnlyList<bool>? poolEligibility = null,
+            IReadOnlyList<string>? championCardDataIds = null)
         { Destination = destination; Count = count; Pool = Array.AsReadOnly(pool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
             RequireHandSpace = requireHandSpace; CopyModifiers = copyModifiers; IgnoreTemporaryModifiers = ignoreTemporaryModifiers; Upgrade = upgrade;
             DiscardCopyUpgrades = Array.AsReadOnly((discardCopyUpgrades ?? Array.Empty<DiscardGenerationUpgrade>()).ToArray());
             ExternalInteractions = Array.AsReadOnly((externalInteractions ?? Array.Empty<string>()).ToArray());
             DeterministicPoolSelection = deterministicPoolSelection; RequireCopyableSource = requireCopyableSource;
             UpgradeIsPermanent = upgradeIsPermanent; Permanent = permanent; SelectedPoolIndex = selectedPoolIndex;
-            PoolEligibility = poolEligibility == null ? null : Array.AsReadOnly(poolEligibility.ToArray()); }
+            PoolEligibility = poolEligibility == null ? null : Array.AsReadOnly(poolEligibility.ToArray());
+            ChampionCardDataIds = championCardDataIds == null ? null : Array.AsReadOnly(championCardDataIds.Distinct(StringComparer.Ordinal).ToArray()); }
         public bool ShouldSerializePoolEligibility() => PoolEligibility != null;
         internal CardGenerationRule WithSelectedPoolIndex(int index) => new(Destination, Count, Pool, SkipDuplicateInHand,
             RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades, ExternalInteractions,
-            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index, PoolEligibility);
+            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index, PoolEligibility, ChampionCardDataIds);
+        internal CardGenerationRule WithPoolEligibility(IReadOnlyList<bool> eligibility) => new(Destination, Count, Pool,
+            SkipDuplicateInHand, RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades,
+            ExternalInteractions, DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent,
+            SelectedPoolIndex, eligibility, ChampionCardDataIds);
     }
 
     public sealed class CardGenerationResult
@@ -233,6 +246,16 @@ namespace MonsterTrain2Poju.Model
                     permanent = relicModifiers.Card!.Permanent;
                     temporary = relicModifiers.Card.Temporary;
                     context = relicModifiers.Context ?? context;
+                }
+                foreach (CardUpgradeModifier upgrade in creation.AddCardUpgrades)
+                {
+                    if (upgrade.ExternalInteractions.Count > 0)
+                        return Unsupported("Champion grant upgrades with external interactions are not modeled: " +
+                            string.Join("; ", upgrade.ExternalInteractions));
+                    error = CardExhaustModel.PermanentUpgradeError(candidate, upgrade);
+                    if (error != null) return Unsupported(error);
+                    permanent = UnitModifierModel.Add(permanent, upgrade.WithSharedReference(null));
+                    RefreshUpgrades();
                 }
                 if (rule.Upgrade != null)
                 {

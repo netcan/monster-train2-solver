@@ -117,6 +117,10 @@ namespace MonsterTrain2Poju.Model
         internal RelicResourceEffect WithDrawValue(float value) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
                 RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus);
+        internal RelicResourceEffect WithCardGeneration(CardGenerationRule generation) =>
+            new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
+                RequiredMutatorId, Conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder,
+                ParamMinInt, ParamFloat, generation, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus);
     }
 
     public sealed class RelicResourceEvent
@@ -180,6 +184,7 @@ namespace MonsterTrain2Poju.Model
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
             type == RelicCardGenerationModel.PrecachedPlayerClan ||
+            type == RelicCardGenerationModel.ChampionCardAfterDraw ||
             type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
@@ -232,6 +237,11 @@ namespace MonsterTrain2Poju.Model
                 else if (rule.Type == RelicCardGenerationModel.PrecachedPlayerClan)
                 {
                     string? generationError = RelicCardGenerationModel.ValidatePrecachedPlayerClan(relic, rule);
+                    if (generationError != null) return generationError;
+                }
+                else if (rule.Type == RelicCardGenerationModel.ChampionCardAfterDraw)
+                {
+                    string? generationError = RelicCardGenerationModel.ValidateChampionCardAfterDraw(relic, rule);
                     if (generationError != null) return generationError;
                 }
                 else if (RelicUnitTriggerCardGenerationModel.IsEffect(rule.Type))

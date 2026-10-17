@@ -1,5 +1,15 @@
 # Native regression fixtures
 
+FinalEndingArtifact extension (2026-10-17): 391 archives (353 battles and 38
+calibrations), 170/224 original relic owners (75.89%): 154 full-battle owners,
+fifteen campaign-interface owners and one native no-op. Four natural post-draw
+champion additions from the unchanged 36-entry pool and two gated callbacks
+match exact Battle RNG, selected upgrade identity and complete generated-card
+state. Full-hand/champion-hand and filtered-pool controls pass; eight pool
+entries with external grant-upgrade interactions are explicitly unsupported.
+The 55-stage replay, one-action policy and independent 128-state search pass
+with serial/parallel best equality. Generated-card play is not claimed.
+
 AddSnackOnKill extension (2026-10-17): 390 archives (352 battles and 38
 calibrations), 169/224 original relic owners (75.45%): 153 full-battle owners,
 fifteen campaign-interface owners and one native no-op. Three qualifying
@@ -5151,4 +5161,34 @@ component calibrations. Original relic evidence is 169/224 (75.45%): 153 battle,
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-add-snack-on-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-add-snack-on-kill-only tests/fixtures/full-battle-original-add-snack-on-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-add-snack-on-kill.mt2f
+```
+
+### Original FinalEndingArtifact relic (schema 193)
+
+`full-battle-original-final-ending-artifact.mt2f` records the unchanged owner,
+ordered 36-entry champion pool, candidate upgrade metadata, native deck mask,
+and six live post-draw checks. Four actual grants use an exact reverse
+Fisher-Yates shuffle with N-1 Battle RNG draws and add the selected non-permanent
+champion to hand; two gates preserve Battle RNG and context. The model and native
+complete generated-card contexts match. Synthetic tests block generation for a
+full hand and champion already in hand without allocating a card or consuming
+RNG, and verify excluded candidates are not selected. The default run's deck
+champion is not in the pool, so its native excluded-entry count is zero.
+
+The winning replay has 55 stages, 13 card cycles, 14 train phases, 11 spawns,
+one model-selected action and seven EndTurns, with zero capture failures,
+mismatches, unsupported transitions or pending records. Independent search
+matches the decision and visits 128/128 states with serial/parallel best
+equality. Eight candidates carry grant-upgrade external interactions and are
+explicitly unsupported; the one-action policy does not play generated
+champions. The 33,994-byte archive has 4,642 unique nodes and SHA-256
+`910a8b3888f646383d58d1714db9fd0a1d019a63eaf0c18803a3a5a0d0c2390f`; no JSON
+companion is tracked. Inventory is 391 archives: 353 battles and 38 component
+calibrations. Original relic evidence is 170/224 (75.89%): 154 battle, 15
+campaign and one native no-op.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-final-ending-artifact.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-final-ending-artifact-only tests/fixtures/full-battle-original-final-ending-artifact.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-final-ending-artifact.mt2f
 ```

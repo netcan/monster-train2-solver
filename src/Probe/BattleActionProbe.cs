@@ -77,6 +77,10 @@ namespace MonsterTrain2Poju.Probe
             definitions = definitions.Concat(save.GetAllRelics().SelectMany(relic => relic.GetEffects())
                 .OfType<RelicEffectAddPrecachedBattleCardToHand>().SelectMany(effect =>
                     effect.GetAllPossibleCardsGivenByRelic(save)).Select(card => card.GetID())).Distinct().ToArray();
+            definitions = definitions.Concat(save.GetAllRelics().SelectMany(relic => relic.GetEffects())
+                .OfType<RelicEffectAddChampionCardToHand>().SelectMany(effect =>
+                    effect.SourceRelicEffectData.GetParamRandomChampionPool()?.GetAllChampions() ?? new List<RandomChampionPool.GrantedChampionInfo>())
+                .Select(champion => champion.championCard.GetID())).Distinct().ToArray();
             var unplayedOrder = new Dictionary<string, int>(StringComparer.Ordinal);
             IReadOnlyList<CardData> simultaneousUnplayed = save.GetAllGameData().GetBalanceData()
                 .GetCardsThatResolveSimultaneouslyOnUnplayed();

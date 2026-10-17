@@ -642,6 +642,11 @@ namespace MonsterTrain2Poju.Probe
                 OriginalAddSnackOnKillScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalFinalEndingArtifactScenario.Enabled)
+            {
+                OriginalFinalEndingArtifactScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalGarfieldBoxRandomCardScenario.Enabled)
             {
                 OriginalGarfieldBoxRandomCardScenario.Prepare(managers, log);
@@ -1442,6 +1447,15 @@ namespace MonsterTrain2Poju.Probe
                             : BattleActionModel.ChooseUnitSpellAndJunkPlay(decision,
                                 card => !OriginalAddSnackOnKillProbe.IsGeneratedCard(card.InstanceId));
                 }
+                else if (OriginalFinalEndingArtifactScenario.Enabled)
+                {
+                    pendingPlay = OriginalFinalEndingArtifactScenario.PolicyActionPlayed ? null :
+                        Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-and-junk"
+                            ? BattleActionModel.ChooseUnitAndJunkPlay(decision,
+                                card => !OriginalFinalEndingArtifactScenario.IsGeneratedCard(card.InstanceId))
+                            : BattleActionModel.ChooseUnitSpellAndJunkPlay(decision,
+                                card => !OriginalFinalEndingArtifactScenario.IsGeneratedCard(card.InstanceId));
+                }
                 else
                 {
                     pendingPlay = modifierScenario == OriginalStingRelicBatchScenario.Name
@@ -1738,6 +1752,7 @@ namespace MonsterTrain2Poju.Probe
                 log.LogInfo("DEPTH-POLICY-ABILITY card=" + action.CardInstanceId + " unit=" + action.ActivatorUnitId +
                     " room=" + action.RoomIndex + " targetPoint=" + action.TargetSpawnPointIndex);
                 if (OriginalAddSnackOnKillScenario.Enabled) OriginalAddSnackOnKillScenario.MarkPolicyActionPlayed();
+                if (OriginalFinalEndingArtifactScenario.Enabled) OriginalFinalEndingArtifactScenario.MarkPolicyActionPlayed();
                 pendingPlay = null; Enter(Stage.PlayingCard, 30f); return;
             }
             int index = cards.GetHand().FindIndex(card => FullBattleTrace.Active!.CardId(card) == action.CardInstanceId);
@@ -1759,6 +1774,7 @@ namespace MonsterTrain2Poju.Probe
             FullBattleTrace.Active!.BeginCardPlay(action, scenarioAction: scenarioPrelude);
             if (!cards.PlayCard(index, drop, ref error)) throw new InvalidOperationException("Policy card play failed: " + error);
             if (OriginalAddSnackOnKillScenario.Enabled) OriginalAddSnackOnKillScenario.MarkPolicyActionPlayed();
+            if (OriginalFinalEndingArtifactScenario.Enabled) OriginalFinalEndingArtifactScenario.MarkPolicyActionPlayed();
             log.LogInfo("DEPTH-POLICY-PLAY card=" + action.CardInstanceId + " room=" + action.RoomIndex + " position=" + action.PlayerPosition + " target=" + action.TargetUnitId);
             pendingPlay = null;
             string summonScenario = modifierScenario;

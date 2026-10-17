@@ -185,6 +185,21 @@ namespace MonsterTrain2Poju.Probe
                     poolEligibility: eligibility);
                 amount = data.GetParamInt();
             }
+            else if (effect is RelicEffectAddChampionCardToHand)
+            {
+                SaveManager save = managers.GetSaveManager();
+                RandomChampionPool pool = data.GetParamRandomChampionPool() ?? throw new InvalidOperationException("Champion card pool is missing.");
+                List<RandomChampionPool.GrantedChampionInfo> champions = pool.GetAllChampions();
+                HashSet<string> deckChampions = save.GetDeckState().Where(card => card.IsChampionCard())
+                    .Select(card => card.GetCardDataID()).ToHashSet(StringComparer.Ordinal);
+                bool[] eligible = champions.Select(champion => !deckChampions.Contains(champion.championCard.GetID())).ToArray();
+                string[] championIds = save.GetAllGameData().GetAllCardData()
+                    .Where(card => card.GetSpawnCharacterData()?.IsChampion() == true).Select(card => card.GetID()).ToArray();
+                generation = new CardGenerationRule("HandPile", 1,
+                    champions.Select(champion => CardGenerationProbe.Creation(champion.championCard, champion.upgrades)).ToArray(),
+                    permanent: false, poolEligibility: eligible, championCardDataIds: championIds);
+                amount = data.GetParamInt();
+            }
             else if (effect is RelicEffectDrawToMaxStartOfCombat)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddEffectPerPileStartOfTurn)

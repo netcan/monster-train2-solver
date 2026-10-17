@@ -267,6 +267,7 @@ param(
     [switch] $OriginalHealthChoiceRelic,
     [switch] $OriginalAfterDrawGenerationRelics,
     [switch] $OriginalAddSnackOnKill,
+    [switch] $OriginalFinalEndingArtifact,
     [switch] $OriginalGarfieldBoxRandomCard,
     [switch] $OriginalPartFactory,
     [switch] $OriginalBigDamageFromManyMorsels,
@@ -437,6 +438,13 @@ if ($OriginalAddSnackOnKill) {
     if (-not $PSBoundParameters.ContainsKey('Policy')) { $Policy = 'units-spells-and-junk' }
     if ($Policy -notin @('units-and-junk', 'units-spells-and-junk')) {
         throw 'Original AddSnackOnKill requires a model-driven card policy so recorded actions remain searchable.'
+    }
+}
+if ($OriginalFinalEndingArtifact) {
+    $BranchCardMasks = $true
+    if (-not $PSBoundParameters.ContainsKey('Policy')) { $Policy = 'units-spells-and-junk' }
+    if ($Policy -notin @('units-and-junk', 'units-spells-and-junk')) {
+        throw 'Original FinalEndingArtifact requires a model-driven card policy so recorded actions remain searchable.'
     }
 }
 if ($OriginalGarfieldBoxRandomCard) {
@@ -883,6 +891,7 @@ if ($OriginalEquipmentGrowthRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'ori
 if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-health-choice-relic' }
 if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
 if ($OriginalAddSnackOnKill) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-snack-on-kill' }
+if ($OriginalFinalEndingArtifact) { $environment['MT2_PROBE_MODIFIERS'] = 'original-final-ending-artifact' }
 if ($OriginalGarfieldBoxRandomCard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-garfield-box-random-card-per-turn' }
 if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
 if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = 'original-big-damage-many-morsels' }
@@ -1825,6 +1834,11 @@ if ($OriginalAddSnackOnKill -and ($trace.Schema -ne 192 -or $trace.ModifierScena
     -not $trace.OriginalAddSnackOnKillPrepared -or @($trace.RelicUnitTriggerCardGeneration).Count -lt 1 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-ADD-SNACK-ON-KILL-PREPARED unchanged relic' -Quiet))) {
     throw 'Original AddSnackOnKill lacks an unchanged owner or native unit-death callback.'
+}
+if ($OriginalFinalEndingArtifact -and ($trace.Schema -ne 193 -or $trace.ModifierScenario -ne 'original-final-ending-artifact' -or
+    -not $trace.OriginalFinalEndingArtifactPrepared -or @($trace.RelicChampionCardAfterDraw).Count -lt 1 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FINAL-ENDING-ARTIFACT-PREPARED unchanged owner' -Quiet))) {
+    throw 'Original FinalEndingArtifact lacks its unchanged owner or natural post-draw callback.'
 }
 if ($OriginalGarfieldBoxRandomCard -and ($trace.ModifierScenario -ne 'original-garfield-box-random-card-per-turn' -or
     $trace.Schema -ne 189 -or -not $trace.OriginalGarfieldBoxRandomCardPrepared -or

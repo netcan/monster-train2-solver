@@ -8,7 +8,10 @@ namespace MonsterTrain2Poju.Model
     {
         public const string AfterDraw = "RelicEffectAddBattleCardToHand";
         public const string PrecachedPlayerClan = "RelicEffectAddPrecachedBattleCardToHand";
+        public const string ChampionCardAfterDraw = "RelicEffectAddChampionCardToHand";
         public const string StartOfBattle = "RelicEffectAddCardsStartOfBattle";
+        private const string ChampionCardOwnerId = "6bb39014-9b03-4620-b088-f618a7e680b7";
+        private const string ChampionCardOwnerKey = "FinalEndingArtifact";
         private const string PrecachedPlayerClanId = "d537c198-899f-4385-9552-f35f58826be4";
         private const string PrecachedPlayerClanKey = "GarfieldBoxRandomCardPerTurn";
         private const string PartFactory = "623ce968-aae5-4b07-b0c8-071f315031b7";
@@ -61,16 +64,34 @@ namespace MonsterTrain2Poju.Model
                 return "GarfieldBoxRandomCardPerTurn requires two captured player-clan choices.";
             return null;
         }
+        internal static string? ValidateChampionCardAfterDraw(CombatRelicState owner, RelicResourceEffect effect)
+        {
+            CardGenerationRule? rule = effect.CardGeneration;
+            if (owner.DataId != ChampionCardOwnerId || owner.AssetKey != ChampionCardOwnerKey || owner.IsCovenant != false ||
+                effect.EffectIndex != 0 || effect.Type != ChampionCardAfterDraw || effect.Conditions.Count != 0 ||
+                effect.RequiredMutatorId != null || effect.CanApplyInPreviewMode || rule == null || rule.Destination != "HandPile" ||
+                rule.Count != 1 || rule.Permanent != false || rule.Pool.Count == 0 ||
+                rule.PoolEligibility?.Count != rule.Pool.Count || rule.ChampionCardDataIds == null || rule.ChampionCardDataIds.Count == 0 ||
+                rule.Pool.Any(creation => !rule.ChampionCardDataIds.Contains(creation.DataId, StringComparer.Ordinal)) ||
+                rule.Upgrade != null || rule.UpgradeIsPermanent || rule.SkipDuplicateInHand || rule.RequireHandSpace ||
+                rule.CopyModifiers || rule.IgnoreTemporaryModifiers || rule.DiscardCopyUpgrades.Count != 0 ||
+                rule.DeterministicPoolSelection || rule.SelectedPoolIndex.HasValue || rule.RequireCopyableSource ||
+                rule.ExternalInteractions.Count != 0)
+                return "Missing or unsupported original FinalEndingArtifact champion pool or lifecycle definition.";
+            return null;
+        }
         public static CardGenerationResult Apply(CombatContext source, bool placement = false, bool preview = false)
         {
             var context = source; var added = new System.Collections.Generic.List<CardToken>();
             foreach (var owner in source.Relics ?? Array.Empty<CombatRelicState>())
             foreach (var effect in owner.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
             {
-                if (effect.Type != AfterDraw && effect.Type != PrecachedPlayerClan) continue;
+                if (effect.Type != AfterDraw && effect.Type != PrecachedPlayerClan && effect.Type != ChampionCardAfterDraw) continue;
                 var result = effect.Type == AfterDraw
                     ? ApplyOne(context, owner.DataId, effect.EffectIndex, placement, preview)
-                    : ApplyPrecachedPlayerClanOne(context, owner.DataId, effect.EffectIndex, placement, preview);
+                    : effect.Type == PrecachedPlayerClan
+                        ? ApplyPrecachedPlayerClanOne(context, owner.DataId, effect.EffectIndex, placement, preview)
+                        : ApplyChampionCardAfterDrawOne(context, owner.DataId, effect.EffectIndex, placement, preview);
                 if (!result.Supported) return result;
                 context = result.Context!; added.AddRange(result.AddedCards);
             }
@@ -129,6 +150,39 @@ namespace MonsterTrain2Poju.Model
                 return new CardGenerationResult(source.WithBattleRng(rng), Array.Empty<CardToken>());
 
             return CardGenerationModel.Apply(source.WithBattleRng(rng), generation.WithSelectedPoolIndex(selectedPoolIndex));
+        }
+        public static CardGenerationResult ApplyChampionCardAfterDrawOne(CombatContext source, string ownerId, int effectIndex,
+            bool placement = false, bool preview = false)
+        {
+            CombatRelicState[]? owners = source.Relics?.Where(owner => owner.DataId == ownerId).ToArray();
+            if (owners?.Length != 1) return Fail("Champion-card generation requires one captured original owner.");
+            CombatRelicState owner = owners[0];
+            RelicResourceEffect[]? effects = owner.ResourceEffects?.Where(effect =>
+                effect.EffectIndex == effectIndex && effect.Type == ChampionCardAfterDraw).ToArray();
+            if (effects?.Length != 1) return Fail("Missing original champion-card relic effect index.");
+            RelicResourceEffect effect = effects[0];
+            string? error = ValidateChampionCardAfterDraw(owner, effect);
+            if (error != null) return Fail(error);
+            if (placement || preview) return new CardGenerationResult(source, Array.Empty<CardToken>());
+
+            CardGenerationRule generation = effect.CardGeneration!;
+            if (source.Cards.Hand.Count >= source.MaxHandSize || source.Cards.Hand.Any(card =>
+                generation.ChampionCardDataIds!.Contains(card.DataId, StringComparer.Ordinal)))
+                return new CardGenerationResult(source, Array.Empty<CardToken>());
+
+            bool[] eligible = generation.PoolEligibility!.ToArray();
+            int[] order = Enumerable.Range(0, eligible.Length).Where(index => eligible[index]).ToArray();
+            if (order.Length == 0) return new CardGenerationResult(source, Array.Empty<CardToken>());
+            UnityRng rng = source.BattleRng;
+            for (int index = order.Length - 1; index > 0; index--)
+            {
+                RngDraw draw = rng.Range(0, index + 1);
+                rng = draw.State;
+                int selected = order[draw.Value];
+                order[draw.Value] = order[index];
+                order[index] = selected;
+            }
+            return CardGenerationModel.Apply(source.WithBattleRng(rng), generation.WithSelectedPoolIndex(order[0]));
         }
         public static CardGenerationResult ApplyStartOfBattle(CombatContext source, string ownerId, int effectIndex, int selectedPoolIndex)
         {
