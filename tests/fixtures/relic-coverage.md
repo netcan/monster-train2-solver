@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **185 distinct original collectable relics / 224 catalog entries
-(82.59%)** have accepted native evidence: 168 have full-battle effect evidence,
+As of 2026-10-18, **186 distinct original collectable relics / 224 catalog entries
+(83.04%)** have accepted native evidence: 169 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -388,6 +388,7 @@ owner count.
 | `UpgradeEquipmentOnDeath` | `b3e7888f-8f5e-4082-89b0-078d80ce4a9b` | [original equipment growth][equipmentGrowth] | Original equipped-only player OnKill adds +2 attack permanently to equipment and to its host. Seven positive stage witnesses disappear under owner/installed-trigger removal. |
 | `AdvancedGrowth` | `449f6464-8164-48ad-bf66-6107b10f7f5c` | [original equipment growth][equipmentGrowth] | Original both-team OnDeath grants equipment +4 attack. An actual equipped sacrifice and returned/replayed gear prove the persistent change; seven enemy births receive this trigger while rejecting the other two owners. Its unused effect status parameter is not applied. Campaign run-stat counters are outside this battle claim. |
 | `FriendlyUnitsGainDeathwishValor` | `19f0d8e3-a3f8-4cac-b73d-46dc189a70ac` | [original equipment growth][equipmentGrowth] | Original front-position Deathwish installs/removes unique ValorOnTurnStart. Two actual entries, four losses and nine subsequent PreCombat Valor-2 applications match; removing owner/installed triggers eliminates all nine status witnesses. Birth registration preserves exclusive trigger-instance queue identity. |
+| `FriendlyUnitsGainDeathwishPermanentHealth` | `cec4a632-fc04-48ba-b982-ffcd16a0710e` | [original equipment growth][equipmentGrowth] | Original Deathwish installs a temporary end-of-combat trigger and Deathwish loss removes it. Three surviving carriers execute `OnEncounterComplete` and receive exactly +6 permanent health; two entries, four losses, seven friendly/seven enemy births, trigger controls, and independent 128-state replay/search match. |
 | `HairOfTheHybrid` | `ac208c49-610a-43e7-80cc-e9680cf84fcd` | [original health choice][healthChoice] | Friendly-only OnEquipmentAdded applies armor 10 below ceil(50% max HP), otherwise Rage 5. Four exact native callbacks include natural 7/13, 6/13 and healed 13/13 boundaries, positive owner/trigger ablations and unchanged Battle RNG. Seven friendly/seven enemy births, full policy replay and inverted/preview/retained controls pass. |
 | `AddImpToHand` | `91211832-747e-4995-b4cb-7ca23c000f10` | [original after-draw generation][afterDrawGeneration] | Four natural post-draw additions from the unchanged filtered original Imp pool. TestEffect selection, exact Battle RNG, fresh identities, hand insertion and complete context match. |
 | `ChanceToVineGrasp` | `00063533-9277-485c-b100-13637a228f9a` | [original after-draw generation][afterDrawGeneration] | Four actual generated cards receive unchanged AddEphemeral as a temporary upgrade. Original name does not imply a probabilistic activation gate; its actual conditions are empty. |
@@ -1502,4 +1503,20 @@ The witnessed payment is nonlethal and outside preview/deployment. Unknown Pyre 
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-pyre-health-card-cost.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-pyre-health-card-cost-only tests/fixtures/full-battle-original-pyre-health-card-cost.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-pyre-health-card-cost.mt2f
+```
+
+## FriendlyUnitsGainDeathwishPermanentHealth
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `FriendlyUnitsGainDeathwishPermanentHealth` | `cec4a632-fc04-48ba-b982-ffcd16a0710e` | `full-battle-original-equipment-growth-relics.mt2f` | The unchanged friendly-only Deathwish relic installs its temporary `PermanentHealthAtEndOfCombatTrigger`; `OnDeathwishLost` removes it. Three carrier triggers complete natively and apply exactly +6 permanent health at encounter end. The 41-stage winning battle records two Deathwish entries, four losses and 24 actions with all capture, mismatch, unsupported and pending counters at zero. |
+
+The focused checker confirms 14 exact births (seven friendly and seven enemy), six exclusive trigger queues, owner/filter controls, both Deathwish lifecycle callbacks and all three end-combat upgrades. Independent replay/search matches all 24 decisions, visits 128/128 states with serial/parallel best equality, and replays four steps. The 53,889-byte archive has 7,724 unique nodes and SHA-256 `fd382953aa9648ee91951cd6fe4f27463a2238ffd2d79f82f30daa16efda5e31`; no JSON companion is tracked. Inventory is 405 archives: 367 full battles and 38 component calibrations. Original relic evidence is 186/224 (83.04%): 169 battle, 16 campaign and one native no-op owner.
+
+This evidence covers only the recorded Deathwish entry/loss and encounter-complete paths; other carrier owners, callback shapes and cross-run persistence are not implied.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-equipment-growth-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-equipment-growth-only tests/fixtures/full-battle-original-equipment-growth-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-equipment-growth-relics.mt2f
 ```

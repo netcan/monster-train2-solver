@@ -93,7 +93,7 @@
 "BossCapacityDH"	"f7b0c251-7f96-4115-897a-d5b4a40a36ef"	"accepted-native-battle"	"RelicEffectChangeFloorCapacity,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack"	""
 "PyreHealthForEmberCardCost"	"7f4c8a90-2518-4a41-8c8c-0f5ca0b0a475"	"accepted-native-battle"	"RelicEffectPayCardCostWithPyreHealth"	""
 "BossCapacity"	"9291142a-dc6f-4834-89f1-ceda778e06ec"	"accepted-native-battle"	"RelicEffectChangeFloorCapacity,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack"	""
-"FriendlyUnitsGainDeathwishPermanentHealth"	"cec4a632-fc04-48ba-b982-ffcd16a0710e"	"pending"	"RelicEffectAddTrigger"	""
+"FriendlyUnitsGainDeathwishPermanentHealth"	"cec4a632-fc04-48ba-b982-ffcd16a0710e"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "LessDeployEmberMoreOtherEmber"	"7bc61ac1-f295-4bf5-a978-1c538c8f2e51"	"accepted-native-battle"	"RelicEffectModifyEnergyDuringDeployment,RelicEffectModifyEnergy"	""
 "BalatroEventChicot"	"92d66578-b148-49f8-9880-edb67f8b18de"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
 "DamageOnGoingDownFloor"	"19147050-9859-4cf1-b826-f258f6c48c42"	"accepted-native-battle"	"RelicEffectAddTrigger"	""

@@ -17,16 +17,17 @@ Schema 8 retains the required card traits introduced in schema 6.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 183 original owners accepted (166 native battle owners,
+Current checkpoint: 186 original owners accepted (169 native battle owners,
 sixteen actual campaign-interface owners and one explicit native no-op owner);
-41 remain pending. The latest accepted owner is `UpgradeMaxHpFrontUnit`: its
-schema-207 full battle records four start-of-turn callbacks that add +15
-max/current HP to each populated floor's front player Monster, preserve the
-source-card temporary upgrade, and leave back units unchanged. The 54-stage
-capture has four actions and five EndTurns with zero capture failures, mismatches,
-unsupported transitions or pending records. Dedicated native/model ablation and
-independent 128-state serial/parallel search pass. Retained dying front targets
-remain explicitly unsupported.
+38 remain pending. The latest accepted owner is
+`FriendlyUnitsGainDeathwishPermanentHealth`: its unchanged friendly Deathwish
+trigger is installed and removed on the native entry/loss lifecycle, then applies
+exactly +6 permanent health to three carriers at encounter end. The 41-stage
+winning capture records 24 actions and five EndTurns with zero capture failures,
+mismatches, unsupported transitions or pending records. Dedicated checks verify
+14 exact births and independent 128-state serial/parallel replay/search pass. The
+evidence is limited to these captured Deathwish carriers and the encounter-end
+callback; it does not claim other trigger owners or cross-run persistence.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle

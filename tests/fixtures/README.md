@@ -1,14 +1,15 @@
 # Native regression fixtures
 
-PyreHealthForEmberCardCost extension (2026-10-18): 405 archives (367 battles and
-38 calibrations), 185/224 original relic owners (82.59%): 168 full-battle owners,
-sixteen campaign-interface owners and one native no-op. The unchanged owner
-allows a regular-turn unaffordable card to pay its final cost in Pyre health;
-affordable and X-cost controls do not use the relic. Its 49-stage winning replay
-has 31 actions, six EndTurns and zero differential counters. Native checks confirm
-the exact OnHit amount and action replay; independent 128-state search has
-serial/parallel best equality. The 35,916-byte archive has 5,903 unique nodes and
-SHA-256 `bbb9a4461433a1f7b4d5cd4fe4a96c7cabc7b322792853b305e6ef7cfbe756c8`.
+FriendlyUnitsGainDeathwishPermanentHealth extension (2026-10-18): 405 archives
+(367 battles and 38 calibrations), 186/224 original relic owners (83.04%): 169
+full-battle owners, sixteen campaign-interface owners and one native no-op. The
+unchanged friendly Deathwish owner installs and removes a temporary trigger;
+three encounter-complete callbacks each apply exactly +6 permanent health. Its
+41-stage winning replay has 24 actions and zero differential counters. Native
+checks confirm 14 exact births and the three end-combat upgrades; independent
+128-state search has serial/parallel best equality. The 53,889-byte archive has
+7,724 unique nodes and SHA-256
+`fd382953aa9648ee91951cd6fe4f27463a2238ffd2d79f82f30daa16efda5e31`.
 
 ChampsHealBeginningOfTurn extension (2026-10-18): 404 archives (366 battles and
 38 calibrations), 184/224 original relic owners (82.14%): 167 full-battle owners,
@@ -5377,4 +5378,31 @@ battle owners, sixteen campaign owners and one native no-op.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-chance-for-spell-weakness.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-chance-for-spell-weakness-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
+```
+
+### Original FriendlyUnitsGainDeathwishPermanentHealth relic
+
+`full-battle-original-equipment-growth-relics.mt2f` captures the unchanged
+`RelicEffectAddTrigger` owner. Friendly `OnDeathwish` installs a
+`TemporaryUntilUnitDeath` trigger upgrade containing `OnEncounterComplete`;
+`OnDeathwishLost` removes that carrier with `TemporaryUntilEndOfBattle`. The
+nested callback applies a permanent, scaled +6 health upgrade. A native wrapper
+captures train state before and after the natural encounter-complete coroutine,
+so all three applications are settled before export.
+
+The 41-stage winning battle records 24 actions, five EndTurns and zero capture
+failures, mismatches, unsupported transitions or pending records. Focused checks
+match 14 exact births (seven friendly/seven enemy), Deathwish enter/loss paths,
+exclusive trigger queues and all three permanent health upgrades. Independent
+search matches all recorded decisions, visits 128/128 states with serial/parallel
+best equality and replays four steps. The 53,889-byte archive has 7,724 unique
+nodes and SHA-256
+`fd382953aa9648ee91951cd6fe4f27463a2238ffd2d79f82f30daa16efda5e31`; no JSON
+companion is tracked. Other carrier owners, callback payload shapes and cross-run
+persistence are outside this evidence boundary.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-equipment-growth-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-equipment-growth-only tests/fixtures/full-battle-original-equipment-growth-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-equipment-growth-relics.mt2f
 ```
