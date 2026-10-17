@@ -189,6 +189,15 @@ namespace MonsterTrain2Poju.Probe
                         var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
                         return new RelicCardPlayRoomCapacityModifier(item.Index, data.GetParamInt(), data.GetParamCardType().ToString());
                     }).ToArray();
+                var cardPlayCorruption = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectModifyCorruptionOnCardPlayed)
+                    .Select(item => {
+                        var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        return new RelicCardPlayCorruptionModifier(item.Index, data.GetParamInt(),
+                            data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray(),
+                            RelicCardModifierProbe.Conditions(item.Effect),
+                            canApplyInPreviewMode: item.Effect.CanApplyInPreviewMode);
+                    }).ToArray();
                 var roomAttachmentReplications = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectFirstRoomCardIsPlayedOnAllFloors)
                     .Select(item => {
@@ -248,7 +257,8 @@ namespace MonsterTrain2Poju.Probe
                     copyCardOnCardPlayModifiers: copyCardOnCardPlay.Length > 0 ? copyCardOnCardPlay : null,
                     floorTransitionDamageRules: floorTransitionDamage.Length > 0 ? floorTransitionDamage : null,
                     soloUnitUpgrades: soloUnitUpgrades.Length > 0 ? soloUnitUpgrades : null,
-                    monsterSpellTargetingModifiers: monsterSpellTargeting.Length > 0 ? monsterSpellTargeting : null);
+                    monsterSpellTargetingModifiers: monsterSpellTargeting.Length > 0 ? monsterSpellTargeting : null,
+                    cardPlayCorruptionModifiers: cardPlayCorruption.Length > 0 ? cardPlayCorruption : null);
             }).ToArray();
         }
 

@@ -158,16 +158,15 @@ internal static class CardExhaustChecks
         CombatContext waiting = summoned.State!.Spawn.Train.Context!;
         Require(waiting.OtherPiles!.Single(pile => pile.Name == "Standby").Cards.Single().InstanceId == 1 &&
             waiting.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Single().InstanceId == 1 &&
+            waiting.OtherPiles!.Single(pile => pile.Name == "Standby").UnitConditions!.All(condition => condition.CardId != 1) &&
+            waiting.OtherPiles!.Single(pile => pile.Name == "Standby").ExhaustConditions!.Single() is { CardId: 1, ExhaustedCardId: null, KeepInStandBy: true } &&
             waiting.Statistics!.Value(1, "TimesExhausted") == 1 &&
             CardPileModel.ValidateMembership(waiting.Cards, waiting.OtherPiles!, waiting.NextCardId) == null,
-            "Consume must preserve the existing summon condition and retain its exhausted alias.");
-        waiting = waiting.WithOtherPiles(waiting.OtherPiles!.Select(pile => pile.Name == "Standby" ? new CardPileState(pile.Name,
-            pile.Cards, pile.EntrySlots, pile.FreeSlots, pile.EquipmentConditions,
-            pile.UnitConditions!.Select(condition => new UnitStandbyCondition(condition.CardId, condition.HostUnitId, true)).ToArray(), pile.ExhaustConditions) : pile).ToArray());
+            "Consume on an already-standby summon must clear its unit binding and use the native KeepInStandBy exhaustion condition.");
         CombatContext dead = UnitStandbyModel.ReturnReady(waiting);
-        Require(dead.OtherPiles!.Single(pile => pile.Name == "Standby").Cards.Count == 0 &&
-            dead.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Count == 1 && dead.Statistics!.Value(1, "TimesExhausted") == 2,
-            "Dead consumed unit duplicated its exhausted alias or skipped the second statistic increment.");
+        Require(dead.OtherPiles!.Single(pile => pile.Name == "Standby").Cards.Single().InstanceId == 1 &&
+            dead.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Count == 1 && dead.Statistics!.Value(1, "TimesExhausted") == 1,
+            "A consumed summon was returned again after its unit binding had been cleared.");
         Require(JsonSerializer.Serialize(root) == parent, "Consume changed its parent branch.");
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(BattleActionModel.PlayCard(root, new(1, 0)).State) ==
             JsonSerializer.Serialize(played.State), "Parallel Consume branches differ."));

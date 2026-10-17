@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+2ChargesOnCardConsumed extension (2026-10-17): 393 archives (355 battles and 38
+calibrations), 173/224 original relic owners (77.23%): 156 full-battle owners,
+sixteen campaign-interface owners and one native no-op. The unchanged owner
+adds exactly one corruption only when a card with the original Exhaust trait is
+played; a non-Exhaust control and other floors remain unchanged. Its winning
+61-stage battle has five card actions, and independent search visits 128 states
+with serial/parallel best equality. `CorruptionAdded` callback floors and
+above-maximum corruption are outside this witness. The 28,759-byte archive has
+4,274 unique nodes and SHA-256
+`f3b0f017b30ae1c22f8f367210fe7989b1410630218673332503b25c3f62ecdf`.
+
 UpgradedDrafts extension (2026-10-17): 392 archives (354 battles and 38
 calibrations), 172/224 original relic owners (76.79%): 155 full-battle owners,
 sixteen campaign-interface owners and one native no-op. The unchanged owner is
@@ -5245,4 +5256,31 @@ campaign and one native no-op.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-balatro-event-yorick.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-balatro-event-yorick-only tests/fixtures/full-battle-original-balatro-event-yorick.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-balatro-event-yorick.mt2f
+```
+
+### Original 2ChargesOnCardConsumed relic (schema 195)
+
+`full-battle-original-two-charges-on-card-consumed.mt2f` captures the original
+`RelicEffectModifyCorruptionOnCardPlayed` owner with `ParamInt=1`, no condition,
+and required `CardTraitExhaustState`. The native scenario leaves the owner
+unchanged, verifies a non-Exhaust control, then plays an eligible Exhaust carrier:
+only its target floor gains exactly one corruption, while other floors remain
+unchanged and the carrier enters Exhausted.
+
+The 61-stage winning replay has 13 card cycles, 14 train phases, 11 spawns, five
+card actions and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. Independent search matches all five
+decisions, visits 128/128 states with serial/parallel best equality and replays
+four steps. A generic regression also covers consumed-card lifecycle cleanup
+for cards already in Standby. CorruptionAdded callbacks and values already above
+maximum are not covered. The 28,759-byte archive has 4,274 unique nodes and
+SHA-256 `f3b0f017b30ae1c22f8f367210fe7989b1410630218673332503b25c3f62ecdf`;
+no JSON companion is tracked. The current inventory is 393 archives: 355
+battles and 38 component calibrations. Original relic coverage is 173/224
+(77.23%): 156 battle owners, sixteen campaign owners and one native no-op.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-two-charges-on-card-consumed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-two-charges-only tests/fixtures/full-battle-original-two-charges-on-card-consumed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-two-charges-on-card-consumed.mt2f
 ```

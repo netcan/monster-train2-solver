@@ -260,6 +260,8 @@ namespace MonsterTrain2Poju.Probe
                         MagebladeScenario.ConfigureBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardPlayMagicPowerScenario.Enabled && !OriginalCardPlayMagicPowerScenario.Acquired)
                         OriginalCardPlayMagicPowerScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalTwoChargesOnCardConsumedScenario.Enabled && !OriginalTwoChargesOnCardConsumedScenario.Acquired)
+                        OriginalTwoChargesOnCardConsumedScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalExtractForEmberAndEchosScenario.Enabled && !OriginalExtractForEmberAndEchosScenario.Acquired)
                         OriginalExtractForEmberAndEchosScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCheaperSpellCostScenario.Enabled && !OriginalCheaperSpellCostScenario.Acquired)
@@ -515,6 +517,7 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle) FullBattleTrace.Active?.CompleteCardPlay();
                     RoomCapacityAttachmentScenario.CompleteCardPlay(managers);
                     OriginalCarriageJackScenario.CompleteCardPlay(managers);
+                    OriginalTwoChargesOnCardConsumedScenario.CompleteCardPlay(managers);
                     OriginalFirstRoomAttachmentScenario.CompleteCardPlay(managers);
                     log.LogInfo("DEPTH-PLAYED pass=" + pass + " turn=" + (combat!.GetTurnCount() - initialTurn));
                     if (IsUnitAndJunkPolicy()) Enter(Stage.Battle, 60f);
@@ -538,6 +541,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("CarriageJack fixture must start on deployment turn.");
                 OriginalCarriageJackScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalTwoChargesOnCardConsumedScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("2ChargesOnCardConsumed fixture must start on deployment turn.");
+                OriginalTwoChargesOnCardConsumedScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -1569,6 +1579,8 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalFloorCapacityRelicScenario.Enabled) pendingPlay = OriginalFloorCapacityRelicScenario.Choose(decision);
                 if (MagebladeScenario.Enabled) pendingPlay = MagebladeScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCardPlayMagicPowerScenario.Enabled) pendingPlay = OriginalCardPlayMagicPowerScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalTwoChargesOnCardConsumedScenario.Enabled)
+                    pendingPlay = OriginalTwoChargesOnCardConsumedScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalExtractForEmberAndEchosScenario.Enabled)
                     pendingPlay = OriginalExtractForEmberAndEchosScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCheaperSpellCostScenario.Enabled) pendingPlay = OriginalCheaperSpellCostScenario.Choose(decision);
@@ -1709,6 +1721,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared) ||
                 (modifierScenario == "dragon-hoard" && DragonHoardScenario.IsScenarioAction(action)) ||
                 (OriginalCarriageJackScenario.Enabled && OriginalCarriageJackScenario.IsScenarioAction(action)) ||
+                (OriginalTwoChargesOnCardConsumedScenario.Enabled && OriginalTwoChargesOnCardConsumedScenario.IsScenarioAction(action)) ||
                 (OriginalFirstRoomAttachmentScenario.Enabled && OriginalFirstRoomAttachmentScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "train-heal" && TrainHealScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "overheal" && OverhealScenario.IsScenarioAction(action)) ||

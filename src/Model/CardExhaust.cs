@@ -142,8 +142,11 @@ namespace MonsterTrain2Poju.Model
             CardPileState? exhausted = context.OtherPiles?.SingleOrDefault(pile => pile.Name == "Exhausted");
             if (standby == null || exhausted == null) throw new InvalidOperationException("Consume requires standby and exhausted piles.");
             bool alreadyStandby = standby.Cards.Any(item => item.InstanceId == card.InstanceId);
-            if (!alreadyStandby) standby = CardPileModel.BindExhaust(CardPileModel.Add(standby, card),
-                new CardExhaustStandbyCondition(card.InstanceId, card.InstanceId));
+            standby = alreadyStandby
+                ? CardPileModel.UnbindUnit(CardPileModel.BindExhaust(standby,
+                    new CardExhaustStandbyCondition(card.InstanceId, null, keepInStandBy: true)), card.InstanceId)
+                : CardPileModel.BindExhaust(CardPileModel.Add(standby, card),
+                    new CardExhaustStandbyCondition(card.InstanceId, card.InstanceId));
             CardCycleState cards = context.Cards;
             return context.WithCards(new CardCycleState(cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 cards.Draw.Where(item => item.InstanceId != card.InstanceId).ToArray(),

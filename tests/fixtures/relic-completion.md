@@ -17,16 +17,15 @@ Schema 8 retains the required card traits introduced in schema 6.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 167 original owners accepted (151 native battle owners,
-fifteen actual campaign-interface owners and one explicit native no-op owner);
-57 remain pending. The latest accepted native battle owner is
-`MoonPhaseAddArmorToSilent`: six Full/New callbacks match complete-state replay,
-with three New-phase cross-room witnesses applying 10 Armor to eligible Silent
-units. Its 45-stage winning battle and independent 128-state search pass with
-zero unsupported attempts. Support is limited to this unchanged owner and
-targets without status-application callbacks; other moon-phase status relics
-remain pending. Campaign acceptance does not imply those effect classes are
-integrated into battle branch state.
+Current checkpoint: 173 original owners accepted (156 native battle owners,
+sixteen actual campaign-interface owners and one explicit native no-op owner);
+51 remain pending. The latest accepted native battle owner is
+`2ChargesOnCardConsumed`: an unchanged +1 corruption effect triggers only for an
+Exhaust carrier, changes only its selected floor, and passes a non-Exhaust
+control. Its 61-stage winning replay and independent 128-state search pass with
+zero unsupported attempts. `CorruptionAdded` callback floors and values already
+above maximum are outside this witness. Campaign acceptance does not imply those
+effect classes are integrated into battle branch state.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle

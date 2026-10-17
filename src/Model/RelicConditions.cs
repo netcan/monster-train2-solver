@@ -38,6 +38,8 @@ namespace MonsterTrain2Poju.Model
                 IReadOnlyList<RelicConditionState>? conditions = null;
                 if (relic.EffectTypes[index] == RelicModel.ModifyCardMagicPowerOnCardPlayed)
                     conditions = relic.CardPlayMagicPowerModifiers?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
+                if (relic.EffectTypes[index] == RelicModel.ModifyCorruptionOnCardPlayed)
+                    conditions = relic.CardPlayCorruptionModifiers?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
                 if (relic.EffectTypes[index] == RelicModel.CardDrawOnCardPlay)
                     conditions = relic.CardDrawOnCardPlayModifiers?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
                 if (relic.EffectTypes[index] == RelicModel.CopyCardOnCardPlay)

@@ -90,6 +90,9 @@ namespace MonsterTrain2Poju.Model
         internal static CardPileState BindUnit(CardPileState source, UnitStandbyCondition condition) =>
             new CardPileState(source.Name, source.Cards, source.EntrySlots, source.FreeSlots, source.EquipmentConditions,
                 (source.UnitConditions ?? Array.Empty<UnitStandbyCondition>()).Where(item => item.CardId != condition.CardId).Concat(new[] { condition }).ToArray(), source.ExhaustConditions);
+        internal static CardPileState UnbindUnit(CardPileState source, int cardId) =>
+            new CardPileState(source.Name, source.Cards, source.EntrySlots, source.FreeSlots, source.EquipmentConditions,
+                source.UnitConditions?.Where(item => item.CardId != cardId).ToArray(), source.ExhaustConditions);
         internal static CardPileState BindExhaust(CardPileState source, CardExhaustStandbyCondition condition) =>
             new CardPileState(source.Name, source.Cards, source.EntrySlots, source.FreeSlots, source.EquipmentConditions, source.UnitConditions,
                 (source.ExhaustConditions ?? Array.Empty<CardExhaustStandbyCondition>()).Where(item => item.CardId != condition.CardId).Concat(new[] { condition }).ToArray());

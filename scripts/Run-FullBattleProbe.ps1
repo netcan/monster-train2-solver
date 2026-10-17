@@ -241,6 +241,7 @@ param(
     [switch] $Mageblade,
     [switch] $OriginalMagebladeMagnitudeRelic,
     [switch] $OriginalCardPlayMagicPower,
+    [switch] $OriginalTwoChargesOnCardConsumed,
     [switch] $OriginalCardDrawOnCardPlay,
     [switch] $OriginalCarriageJack,
     [switch] $OriginalFirstRoomAttachment,
@@ -404,6 +405,7 @@ if ($PyreResourceRefresh) { $BranchCardMasks = $true; $Policy = 'units-spells-an
 if ($OriginalFloorCapacityRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true; $BattleRelicUpgrades = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalTwoChargesOnCardConsumed) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -862,6 +864,7 @@ if ($OriginalFloorCapacityRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($Mageblade) { $environment['MT2_PROBE_MODIFIERS'] = 'mageblade' }
 if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mageblade-magnitude' }
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
+if ($OriginalTwoChargesOnCardConsumed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-two-charges-on-card-consumed' }
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
 if ($OriginalUncontrolledGroup) { $environment['MT2_PROBE_MODIFIERS'] = 'original-uncontrolled-group' }
@@ -1377,6 +1380,18 @@ if ($OriginalCardPlayMagicPower -and ($trace.Schema -ne 128 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CARD-PLAY-MAGIC-POWER-ACQUIRED unchanged relic=' -Quiet) -or
     @($trace.Actions).Count -eq 0)) {
     throw 'Original card-play magic-power relic was not exercised in the expected full-battle capture.'
+}
+if ($OriginalTwoChargesOnCardConsumed -and (
+    $trace.Schema -ne 195 -or
+    -not $trace.OriginalTwoChargesOnCardConsumedPrepared -or
+    $trace.ModifierScenario -ne 'original-two-charges-on-card-consumed' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-TWO-CHARGES-ACQUIRED unchanged relic=2ChargesOnCardConsumed' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-TWO-CHARGES-PREPARED carrier=' -Quiet) -or
+    $trace.OriginalTwoChargesOnCardConsumedCoverage.Error -or
+    -not $trace.OriginalTwoChargesOnCardConsumedCoverage.ControlCompleted -or
+    -not $trace.OriginalTwoChargesOnCardConsumedCoverage.CarrierCompleted -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 2)) {
+    throw 'Original 2ChargesOnCardConsumed failed its non-Exhaust control or corruption positive in the expected full-battle capture.'
 }
 if ($OriginalCardDrawOnCardPlay -and ($trace.Schema -ne 160 -or
     $trace.ModifierScenario -ne 'original-card-draw-on-card-play' -or

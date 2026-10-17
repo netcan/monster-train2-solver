@@ -627,6 +627,17 @@ if (args.Length == 2 && args[0] == "--original-card-play-magic-power-only")
     RelicCardPlayMagicPowerChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-two-charges-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    RelicCardPlayCorruptionChecks.Native(document.RootElement);
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-two-charges-model-only")
+{
+    RelicCardPlayCorruptionChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-card-draw-on-card-play-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
@@ -1601,6 +1612,11 @@ foreach (string path in args.Where(path => path.Contains("original-card-play-mag
 {
     using var document = ModelJson.ReadFixture(path);
     RelicCardPlayMagicPowerChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("original-two-charges-on-card-consumed", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    RelicCardPlayCorruptionChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("original-balatro-event-yorick", StringComparison.OrdinalIgnoreCase)))
 {

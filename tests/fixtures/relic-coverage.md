@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **172 distinct original collectable relics / 224 catalog entries
-(76.79%)** have accepted native evidence: 155 have full-battle effect evidence,
+As of 2026-10-17, **173 distinct original collectable relics / 224 catalog entries
+(77.23%)** have accepted native evidence: 156 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -22,6 +22,10 @@ covering the ordered 50-position enhancer pool, 85 exact native filter outcomes,
 three supported selected pool positions, complete card-state application and
 Rewards RNG. External-interaction or replacement upgrades, other target cards,
 preview execution and the later draft UI choice/grant sequence are not claimed.
+`2ChargesOnCardConsumed` now has an unchanged-owner positive Exhaust-carrier
+play and a non-Exhaust control: corruption rises by exactly one only on the
+selected floor. CorruptionAdded callback floors and already-over-maximum values
+are not covered by this witness.
 `AddSnackOnKill` now has three native enemy-Hero OnDeath witnesses that add six
 cards from its exact 19-entry weighted filtered pool, plus 312 gated callbacks.
 The 55-stage replay and one model-selected action have zero differential
@@ -373,12 +377,14 @@ owner count.
 | `AddStatsToSoloUnits` | `724a1c19-192f-48c1-8099-8ae3ecb9c1e5` | [AddStatsToSoloUnits][soloUnitUpgrade] | Each start-of-turn callback gives the sole player Monster +5 Damage/+5 Health. Two repeated applications remain after a second Monster enters that floor; a two-Monster floor and two empty floors are controls. The owner is unconditional, non-removable, and captured on four upgradable floors only. |
 | `PurgeToExhaust` | `10648aee-8577-49b6-8659-318a7f922d5a` | [PurgeToExhaust][purgeToExhaust] | The unchanged ordered Spell/Equipment filters replace SelfPurge with Exhaust. Six native source/filter controls and 24 repeated manager calls match; a converted Spell is actually played into Exhausted with native private trait state. Full battle and independent 128-state search pass. |
 | `PyregelOnAscend_DH` | `394fb724-046f-448f-9531-f9d6caadae77` | [enemy ascend Pyregel][pyregelOnAscend] | The unchanged owner adds 2 Pyregel after enemy PostAscension; descend, player, rooted and immobile controls do not gain it. All 22 Bump replays, 40 full-battle stages and 42 actions match; independent search passes 74/74 states with serial/parallel best equality. |
+| `BalatroEventYorick` | `2bd14ebc-1589-4652-a002-54013f0eace4` | [schema-194 Balatro battle](full-battle-original-balatro-event-yorick.mt2f) | Its unchanged exhaust look-ahead matches 28 native Test calls and six natural Consume callbacks, including full train state and adjusted reward gold; non-Consume, threshold, preview and multiplier controls pass. Independent replay/search match. |
+| `2ChargesOnCardConsumed` | `217d553b-cddf-4a8c-a4c9-cfdb3c99389c` | [2Charges battle](full-battle-original-two-charges-on-card-consumed.mt2f) | Unchanged +1 corruption owner: an Exhaust carrier changes only its selected floor; a non-Exhaust play and all other floors remain unchanged. Five card actions replay; callback-bearing floors and above-maximum behavior are outside this capture. |
 
 ## Campaign interface evidence
 
-These fifteen unchanged original owners are validated by their actual native
+These sixteen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 146 battle owners. It does not claim whole-battle integration
+separate from the 156 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -406,6 +412,7 @@ not claim natural incoming-damage integration into battle branches.
 | `ModifyDragonsHoardCap_DH` | `c3f91e0e-629f-4d3f-b422-ce1653147293` | [campaign calibration][campaign] | Original +2 acquisition/removal through SaveManager, including amount truncation and upper cap; three independent starting-cap cases. |
 | `AlliedClassRelic` | `656861c9-a96d-4c99-988c-390b75e5d8d4` | [draft calibration][campaignDrafts] | Replaces the main class flag with the allied class; 48 positive changes, all seven class masks and explicit-class bypass controls. Native neutral fallback remains available. |
 | `FutureDraftsAreRares` | `8f46fde9-0c75-49ba-9f58-3063864f81bf` | [draft calibration][campaignDrafts] | Sets both minimum rarity and exact Rare filter; 56 positive changes, three authored rarity floors and ignore-rarity bypass controls. All 840 combined selection results and Rewards RNG match. |
+| `UpgradedDrafts` | `9e0e5d4e-6d16-43f1-8cd4-cc4c2b431afd` | [draft calibration][campaignDrafts] | Unchanged spell draft owner over an ordered 50-entry EnhancerPool; 85 exact native filter outcomes and three selected positions match full card application and Rewards RNG. Replacement/external interactions, other targets, preview and later UI grant are outside this boundary. |
 | `PyreHeartFather` | `fe768ab5-3f58-4f96-9afc-48f0f30c7b21` | [draft calibration][campaignDrafts] | Actual acquisition adds 25 maximum and current health at low/near-full/full HP. Removal drops dynamic maximum, preserves raw HP and clamps the visible getter. |
 | `VoidPortal` | `5cad6ad0-769b-46d3-9464-514b8e74190a` | [post-battle calibration][postBattleRewards] | Appends the original PurgeReward object through ApplyPostBattleRelicRewards; existing offers and duplicates remain intact. Int=8 and Int2=2 are unused by this consumer. |
 | `MothersRemnant2Relic` | `202a7153-bfe9-4da9-be3e-ddcf8c195354` | [post-battle calibration][postBattleRewards] | Appends the original CardDuplicatorReward enhancer offer. Combined and reversed owner order, repeated calls and removed-owner controls match all 108 native calls with unchanged RNG. |
@@ -475,6 +482,7 @@ archives contain these observed battle sizes:
 | [Funguy deck scaling][funguyDeckScaling] | 174 | 0 | 7 | 67 | Six callbacks at 40 visible cards apply twice per live room; three cardless Funguys spawn with six total Horde stacks |
 | [BrokenRail forge upgrade][brokenRail] | 176 | 16 | 5 | 39 | Original +2 HP forge payload scales to +6 at three points; native full-battle and bounded search match |
 | [Ephemeral-loss Rage][rageBurnout] | 177 | 18 | 5 | 41 | Original +3 Rage payload on one controlled friendly Ephemeral removal; all recorded actions and turns replay |
+| [2ChargesOnCardConsumed](full-battle-original-two-charges-on-card-consumed.mt2f) | 195 | 5 | 7 | 61 | Exact +1 corruption on selected floor, with non-Exhaust and cross-floor controls |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -1129,4 +1137,33 @@ component calibrations. Original relic evidence is 170/224 (75.89%): 154 battle,
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-final-ending-artifact.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-final-ending-artifact-only tests/fixtures/full-battle-original-final-ending-artifact.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-final-ending-artifact.mt2f
+```
+
+## 2ChargesOnCardConsumed
+
+The schema-195 archive captures unchanged owner `217d553b-cddf-4a8c-a4c9-cfdb3c99389c`
+(`RelicEffectModifyCorruptionOnCardPlayed`, `ParamInt=1`, no condition, required
+`CardTraitExhaustState`). A non-Exhaust control leaves corruption unchanged. An
+eligible Exhaust carrier adds exactly one corruption to its selected floor and
+leaves every other floor unchanged; the carrier enters Exhausted. The replay
+also confirms the original owner is unchanged.
+
+The winning replay has 61 stages, 13 card cycles, 14 train phases, 11 spawns,
+five card actions and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. Independent search matches all five
+recorded decisions and visits 128/128 states with serial/parallel best equality;
+four steps replay. The generic Consume lifecycle regression now clears stale
+unit-condition bindings when an already-Standby consumed card enters the
+Exhausted alias while preserving Standby and Exhausted pile identity.
+`CorruptionAdded` callbacks and corruption already above its maximum are outside
+this witness. The 28,759-byte archive has 4,274 unique nodes and SHA-256
+`f3b0f017b30ae1c22f8f367210fe7989b1410630218673332503b25c3f62ecdf`; no JSON
+companion is tracked. Inventory is 393 archives: 355 full battles and 38
+component calibrations. Original relic evidence is 173/224 (77.23%): 156 battle,
+16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-two-charges-on-card-consumed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-two-charges-only tests/fixtures/full-battle-original-two-charges-on-card-consumed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-two-charges-on-card-consumed.mt2f
 ```
