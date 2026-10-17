@@ -466,6 +466,11 @@ namespace MonsterTrain2Poju.Model
                 context = resourceEnergy.Context!;
             }
             else context = EnergyModel.StartTurn(context, source.EnergyPerTurn);
+            train = WithContext(train, context, false);
+            RelicSoloUnitUpgradeResult soloUnitUpgrades = RelicSoloUnitUpgradeModel.Apply(train);
+            if (!soloUnitUpgrades.Supported) return Unsupported(soloUnitUpgrades.UnsupportedReason!);
+            train = soloUnitUpgrades.State!;
+            context = train.Context!;
             context = UnitStandbyModel.ReturnReady(context);
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
             train = WithContext(train, context, false);

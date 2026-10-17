@@ -1,9 +1,9 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-15): 341 binary archives, including 309
-full battles and 32 component calibrations. Unchanged original relic evidence
-covers 101/224 catalog entries (45.09%): 95 battle owners and six campaign
-interface owners; see
+Current accepted inventory (2026-10-17): 381 binary archives, including 343
+full battles and 38 component calibrations. Unchanged original relic evidence
+covers 160/224 catalog entries (71.43%): 144 battle owners, 15 campaign
+interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
@@ -9848,4 +9848,36 @@ and 31 component calibrations. Original relic evidence is 75/224 (33.48%).
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-tuned-gear.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
+```
+
+### AddStatsToSoloUnits relic (schema 183)
+
+`full-battle-original-add-stats-to-solo-units.mt2f` captures the original
+`AddStatsToSoloUnits` owner and its non-unique +5 Damage/+5 Health upgrade.
+Native start-of-turn callbacks apply it once on each turn when a floor has
+exactly one player Monster. The fixture witnesses two repeated applications,
+a later second Monster on that floor, a two-Monster control floor and two empty
+floors. Because the native upgrade is not removable, its two applications stay
+on the original unit after the floor becomes multi-unit; the native tracker
+clears and does not buff either new multi-unit floor target.
+
+The focused checker replays owner-present/owner-removed turn branches, checks
+the tracker reset and every `CombatRelicState` clone path. Native capture and
+model/search checks pass with 46 matched stages, four actions, five EndTurns,
+zero capture failures, mismatches, unsupported transitions or pending records.
+The 24,606-byte binary archive has 3,502 unique nodes and SHA-256
+`7b4ac92dcb8a37b56538f1fe1bf64a3e970d6627400351f1ff1a686455ee5911`; no JSON
+companion is tracked. The curated inventory is now 381 archives: 343 battles
+and 38 component calibrations. Original relic evidence is 160/224 (71.43%):
+144 battle, 15 campaign and one native no-op owner.
+
+This acceptance is limited to the exact original owner, its unconditional
+Monster-team callback and four upgradable floors; other source teams, filtered
+variants or external upgrade effects remain unsupported.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalSoloUnitUpgradeRelic -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-add-stats-to-solo-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-solo-unit-upgrade-only tests/fixtures/full-battle-original-add-stats-to-solo-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-add-stats-to-solo-units.mt2f
 ```

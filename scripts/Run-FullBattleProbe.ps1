@@ -279,6 +279,7 @@ param(
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
     [switch] $OriginalUnitPhaseUpgradeRelics,
+    [switch] $OriginalSoloUnitUpgradeRelic,
     [switch] $OriginalNullRelic,
     [switch] $OriginalNullRelicBaseline,
     [switch] $OriginalRelicCountAttack,
@@ -427,6 +428,7 @@ if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-sp
 if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoreSpikes) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -850,6 +852,7 @@ if ($OriginalUnitResourceRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalOpeningDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-draw-relics' }
 if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-draw-relics' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
+if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
 if ($OriginalRelicCountAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-count-attack' }
@@ -1701,6 +1704,16 @@ if ($OriginalUnitPhaseUpgradeRelics -and ($trace.ModifierScenario -ne 'original-
     @($trace.RelicPhaseUpgrades).Count -lt 5 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-UNIT-PHASE-UPGRADES-PREPARED two unchanged' -Quiet))) {
     throw 'Original phase-upgrade owners lack actual native effects.'
+}
+if ($OriginalSoloUnitUpgradeRelic -and ($trace.Schema -ne 183 -or
+    $trace.ModifierScenario -ne 'original-add-stats-to-solo-units' -or
+    $trace.OriginalSoloUnitUpgrade.OwnerId -ne '724a1c19-192f-48c1-8099-8ae3ecb9c1e5' -or
+    @($trace.RelicSoloUnitUpgrades).Count -lt 2 -or
+    @($trace.RelicSoloUnitUpgradeTests | Where-Object { $_.Phase -eq 'TestEffectStartOfBattle' -and $_.Returned -eq $false }).Count -eq 0 -or
+    @($trace.RelicSoloUnitUpgradeTests | Where-Object { $_.Phase -eq 'TestEffectTurnPhaseTiming' -and $_.Returned -eq $true }).Count -lt 2 -or
+    @($trace.RelicSoloUnitUpgrades | Where-Object { -not $_.Completed -or $null -eq $_.Actual }).Count -gt 0 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-SOLO-UNIT-UPGRADE-PREPARED native single=' -Quiet))) {
+    throw 'AddStatsToSoloUnits lacks native solo, multi-unit and empty-floor callback evidence.'
 }
 if ($OriginalTurnDrawRelics -and ($trace.ModifierScenario -ne 'original-turn-draw-relics' -or
     @($trace.RelicTurnDraw).Count -lt 8 -or

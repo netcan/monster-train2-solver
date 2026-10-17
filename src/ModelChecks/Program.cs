@@ -814,6 +814,12 @@ if (args.Length == 2 && args[0] == "--original-unit-phase-upgrades-only")
     OriginalUnitPhaseUpgradeChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-solo-unit-upgrade-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalSoloUnitUpgradeChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-combat-trigger-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

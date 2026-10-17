@@ -51,7 +51,7 @@
 "DamageOnFloorTransition"	"269a6f43-9982-4683-ac39-1a862e481898"	"accepted-native-battle"	"RelicEffectDamageEnemyOnAscend,RelicEffectDamageEnemyOnDescend"	"full-battle-original-damage-on-floor-transition.mt2f"
 "DragonsGainStrikeAddPyregel"	"1fdf2fde-a5e7-4eae-86eb-d432145c4621"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "ExtraUnitUpgrades"	"3203c2d3-58f3-4f38-888e-886d8faae758"	"accepted-native-campaign"	"RelicEffectAddUnitUpgradeSlot"	""
-"AddStatsToSoloUnits"	"724a1c19-192f-48c1-8099-8ae3ecb9c1e5"	"pending"	"RelicEffectAddTempSoloUnitUpgradeStartOfTurn"	""
+"AddStatsToSoloUnits"	"724a1c19-192f-48c1-8099-8ae3ecb9c1e5"	"accepted-native-battle"	"RelicEffectAddTempSoloUnitUpgradeStartOfTurn"	""
 "EnhanceAttackOnConsume"	"52c41ba0-f720-4b7e-9dd0-bd318be6acae"	"accepted-native-battle"	"RelicEffectAddRemoveTempUpgradeOnUnitTrigger"	""
 "PurgeToExhaust"	"10648aee-8577-49b6-8659-318a7f922d5a"	"pending"	"RelicEffectModifyTrait"	""
 "UncontrolledGroup"	"4c737e1e-7e5c-40ee-87a3-944859784283"	"pending"	"RelicEffectRebalanceUnstable,RelicEffectNull"	""

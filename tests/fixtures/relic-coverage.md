@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **159 distinct original collectable relics / 224 catalog entries
-(70.98%)** have accepted native evidence: 143 have full-battle effect evidence,
+As of 2026-10-17, **160 distinct original collectable relics / 224 catalog entries
+(71.43%)** have accepted native evidence: 144 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -301,12 +301,13 @@ owner count.
 | `TrainRoomInstallFloor1AtStartOfCombat` | `2c97e1b3-d4bb-4133-9572-e582805c106f` | [start-room attachment][startRoomAttachment] | Its unchanged cardless Primary FuelCar attachment targets both teams on floor one. Six Heroes and two Monsters carry exactly one OnDeath trigger attributed to the native attachment GUID; source-room removal on Ascend matches live snapshots. |
 | `PartFactory` | `623ce968-aae5-4b07-b0c8-071f315031b7` | [PartFactory][partFactory] | The unchanged start-of-battle owner adds the native SetupRun-selected Pufferflesh to hand. Both weighted entries for that DataId match complete card context; the card later moves to Draw and is never played. Pool selection is a captured external result, not modeled SetupRun RNG. Grafted-equipment unit state and deploying/playing this card remain unsupported. |
 | `DamageOnFloorTransition` | `269a6f43-9982-4683-ac39-1a862e481898` | [DamageOnFloorTransition][damageOnFloorTransition] | The unchanged owner applies exactly 3 damage after an enemy's native PostAscension and PostDescension callbacks; rooted, immobile and player movement are controls. All 22 native Bump states and 42 full-battle actions match, and independent search passes 74/74 states with no unsupported attempts. |
+| `AddStatsToSoloUnits` | `724a1c19-192f-48c1-8099-8ae3ecb9c1e5` | [AddStatsToSoloUnits][soloUnitUpgrade] | Each start-of-turn callback gives the sole player Monster +5 Damage/+5 Health. Two repeated applications remain after a second Monster enters that floor; a two-Monster floor and two empty floors are controls. The owner is unconditional, non-removable, and captured on four upgradable floors only. |
 
 ## Campaign interface evidence
 
 These fifteen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 131 battle owners. It does not claim whole-battle integration
+separate from the 144 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -790,3 +791,24 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [copyFirstConsume]: full-battle-original-copy-first-consume-played.mt2f
 [copyConsumedCard]: full-battle-original-copy-consumed-card.mt2f
 [damageOnFloorTransition]: full-battle-original-damage-on-floor-transition.mt2f
+[soloUnitUpgrade]: full-battle-original-add-stats-to-solo-units.mt2f
+
+## AddStatsToSoloUnits
+
+The schema-183 `AddStatsToSoloUnits` fixture captures the unchanged original
+owner, its `RelicEffectAddTempSoloUnitUpgradeStartOfTurn` callback and the
+non-unique +5 Damage/+5 Health payload. Native calls reject the start-of-battle
+phase, accept each player-turn phase, and repeat the buff on a sole player
+Monster. A second floor-0 Monster clears tracking without removing the two
+already-applied upgrades; floor 1 stays multi-unit and floors 2/3 stay empty.
+Focused replay verifies owner-present and removed-owner branches, exact tracker
+reset and all relic-state clone paths. The full battle wins with 46 matched
+stages, four actions, five EndTurns and zero capture failures, mismatches,
+unsupported transitions or pending records; independent search matches 128
+states with serial/parallel best equality.
+
+The direct binary archive is 24,606 bytes with 3,502 nodes and SHA-256
+`7b4ac92dcb8a37b56538f1fe1bf64a3e970d6627400351f1ff1a686455ee5911`. The
+inventory is 381 archives: 343 full battles and 38 component calibrations.
+Original relic evidence is 160/224 (71.43%): 144 battle, 15 campaign and one
+native no-op owner.

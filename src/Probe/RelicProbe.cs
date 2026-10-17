@@ -83,6 +83,9 @@ namespace MonsterTrain2Poju.Probe
                 var unitUpgradeTriggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddRemoveTempUpgradeOnUnitTrigger)
                     .Select(item => UnitUpgradeTrigger(item.Effect, item.Index)).ToArray();
+                var soloUnitUpgrades = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect.GetType().Name == RelicSoloUnitUpgradeModel.Effect)
+                    .Select(item => SoloUnitUpgrade(item.Effect, item.Index)).ToArray();
                 var stackAdditions = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnStatusApplied).Select(item => StatusStacks(item.Effect, item.Index)).ToArray();
                 var statusRemovedAdditions = effects.Select((effect, index) => new { Effect = effect, Index = index })
@@ -228,7 +231,8 @@ namespace MonsterTrain2Poju.Probe
                     cheaperSpellUpgradeModifiers: cheaperSpellUpgrades.Length > 0 ? cheaperSpellUpgrades : null,
                     unstableRebalances: unstableRebalances.Length > 0 ? unstableRebalances : null,
                     copyCardOnCardPlayModifiers: copyCardOnCardPlay.Length > 0 ? copyCardOnCardPlay : null,
-                    floorTransitionDamageRules: floorTransitionDamage.Length > 0 ? floorTransitionDamage : null);
+                    floorTransitionDamageRules: floorTransitionDamage.Length > 0 ? floorTransitionDamage : null,
+                    soloUnitUpgrades: soloUnitUpgrades.Length > 0 ? soloUnitUpgrades : null);
             }).ToArray();
         }
 
@@ -253,6 +257,23 @@ namespace MonsterTrain2Poju.Probe
             return new RelicUnitUpgradeTrigger(index, ((CharacterTriggerData.Trigger)Field("trigger")).ToString(),
                 sourceTeam.HasFlag(Team.Type.Monsters), sourceTeam.HasFlag(Team.Type.Heroes), subtype?.Key,
                 subtype == null || subtype.IsNone, (bool)Field("shouldRemove"), Convert.ToInt32(Field("upgradeLifetime")), upgrade);
+        }
+
+        private static RelicSoloUnitUpgrade SoloUnitUpgrade(IRelicEffect effect, int index)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            CardUpgradeState state = (CardUpgradeState)Field("cardUpgradeState");
+            CardUpgradeModifier? upgrade = Field("upgradeData") == null
+                ? null : CardModifierProbe.Upgrade(state, false, filtersAlreadyApplied: true);
+            SubtypeData subtype = (SubtypeData)Field("subtypeData");
+            var tracked = ((IEnumerable<CharacterState?>)Field("trackedSoloCharacterPerFloor"))
+                .Select(character => character == null ? 0 : (FullBattleTrace.Active ??
+                    throw new InvalidOperationException("Solo-unit tracker capture requires an active full-battle trace.")).UnitId(character)).ToArray();
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            if (tracked.Length != 4) throw new InvalidOperationException("Native solo-unit relic tracker no longer matches four floors.");
+            return new RelicSoloUnitUpgrade(index, ((Team.Type)Field("sourceTeamType")).HasFlag(Team.Type.Monsters),
+                subtype == null || subtype.IsNone ? null : subtype.Key, subtype == null || subtype.IsNone,
+                (bool)Field("upgradeIsRemovable"), data.GetEffectConditions().Count, upgrade, tracked);
         }
 
         private static RelicRoomEntryStatus RoomEntryStatus(IRelicEffect effect, int index)
