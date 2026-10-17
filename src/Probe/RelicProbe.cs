@@ -85,6 +85,11 @@ namespace MonsterTrain2Poju.Probe
                     .Select(item => UnitUpgradeTrigger(item.Effect, item.Index)).ToArray();
                 var stackAdditions = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnStatusApplied).Select(item => StatusStacks(item.Effect, item.Index)).ToArray();
+                var statusRemovedAdditions = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectAddStatusEffectOnOtherStatusRemoved)
+                    .Select(item => StatusRemovedStacks(item.Effect, item.Index)).ToArray();
+                RelicStatusStacks[] statusStackRules = stackAdditions.Concat(statusRemovedAdditions)
+                    .OrderBy(rule => rule.EffectIndex).ToArray();
                 var magnitudes = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectModifyStatusMagnitude).Select(item => StatusMagnitude(item.Effect, item.Index)).ToArray();
                 var decays = effects.Select((effect, index) => new { Effect = effect, Index = index })
@@ -196,7 +201,7 @@ namespace MonsterTrain2Poju.Probe
                 return new CombatRelicState(relic.GetRelicDataID(), relic.GetAssetName(), effects.Select(effect => effect.GetType().Name).ToArray(),
                     statuses.Length == 0 ? null : statuses, relic is CovenantState,
                     relic.DisallowedInPlacementPhase, cardModifiers?.Length > 0 ? cardModifiers : null,
-                    triggers.Length > 0 ? triggers : null, stackAdditions.Length > 0 ? stackAdditions : null,
+                    triggers.Length > 0 ? triggers : null, statusStackRules.Length > 0 ? statusStackRules : null,
                     magnitudes.Length > 0 ? magnitudes : null, decays.Length > 0 ? decays : null,
                     resources.Length > 0 ? resources : null, magicPower.Length > 0 ? magicPower : null,
                     cardPlayMagicPower.Length > 0 ? cardPlayMagicPower : null,
@@ -284,6 +289,15 @@ namespace MonsterTrain2Poju.Probe
             object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
             return new RelicStatusStacks(index, Field("team").ToString(), (string)Field("statusId"),
                 (int)Field("additionalStacks"), Convert.ToInt32(Field("optionalAddConditions")), RelicCardModifierProbe.Conditions(effect));
+        }
+
+        private static RelicStatusStacks StatusRemovedStacks(IRelicEffect effect, int index)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            string statusId = (string)Field("statusId");
+            int additionalStacks = (int)Field("additionalStacks");
+            return new RelicStatusStacks(index, Field("team").ToString()!, statusId, additionalStacks, 0,
+                RelicCardModifierProbe.Conditions(effect), (string)Field("otherStatusId"), BattleActionProbe.Status(statusId, additionalStacks));
         }
 
         private static RelicCharacterTriggers AddedTriggers(IRelicEffect effect, int index)

@@ -41,7 +41,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState state = source;
             var events = new List<CombatEvent>();
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
-            RoomCombatResult removed = StatusRemovalModel.Remove(state, sourceId, action.Statuses[0].Id, stacks, sourceCardId);
+            RoomCombatResult removed = StatusRemovalModel.Remove(state, sourceId, action.Statuses[0].Id, stacks, sourceCardId, FromEffectType);
             if (!removed.Supported) return removed;
             state = removed.State!; events.AddRange(removed.Events); callbacks.AddRange(removed.PendingCallbacks);
 

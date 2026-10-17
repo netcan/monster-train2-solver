@@ -26,13 +26,20 @@ namespace MonsterTrain2Poju.Model
             item.HarvestAfterDeath && !item.DeferUntilRemoval);
         // This is the raw CharacterState API. Setting HP to zero does not dispatch a
         // death signal, exhaust the spawner or increment another physical death.
-        internal static RoomCombatResult Remove(RoomCombatState source, int targetId, string id, int amount, int sourceCardId = 0)
+        internal static RoomCombatResult Remove(RoomCombatState source, int targetId, string id, int amount, int sourceCardId = 0,
+            string? fromEffectType = null)
         {
             id = id.ToLowerInvariant();
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null) return Unsupported("Missing status removal target.");
+            RoomCombatResult relicAdded = RelicStatusStackModel.OnStatusRemoved(source, targetId, id, amount, fromEffectType);
+            if (!relicAdded.Supported) return relicAdded;
+            source = relicAdded.State!;
+            target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
+            if (target == null) return Unsupported("Status removal relic lost its target.");
             CombatStatus? status = target.RegisteredStatus(id);
-            if (status == null) return Match(source);
+            if (status == null) return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>(),
+                pendingCallbacks: relicAdded.PendingCallbacks);
             int count = amount == -1 ? 0 : Math.Max(0, Math.Min(status.Stackable == false ? 1 : 9999, unchecked(status.Stacks - amount)));
             CombatUnit changed = CardSpellModel.Copy(target, target.Health, target.Statuses.Where(item => item.Id != id)
                 .Concat(count > 0 ? new[] { status.WithStacks(count) } : Array.Empty<CombatStatus>()).ToArray());
@@ -52,7 +59,7 @@ namespace MonsterTrain2Poju.Model
             if (!source.Preview && sourceCardId > 0 && count < status.Stacks && context?.Statistics != null)
                 context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksRemoved", status.Stacks - count,
                     requireTrackedCard: context.CardInstances?.Count == 0));
-            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            var callbacks = relicAdded.PendingCallbacks.ToList();
             if (id == "horde" && count < status.Stacks)
             {
                 var staged = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,
@@ -83,7 +90,8 @@ namespace MonsterTrain2Poju.Model
             string id = effect.Statuses[0].Id;
             int count = target.RegisteredStatus(id)?.Stacks ?? 0;
             if (count == 0) return Match(source);
-            RoomCombatResult raw = Remove(source, targetId, id, Math.Min(effect.Statuses[0].Stacks, count), sourceCardId);
+            RoomCombatResult raw = Remove(source, targetId, id, Math.Min(effect.Statuses[0].Stacks, count), sourceCardId,
+                "CardEffectRemoveStatusEffect");
             if (!raw.Supported || id != "horde") return raw;
             CombatUnit changed = raw.State!.Units.FirstOrDefault(unit => unit.Id == targetId) ??
                 raw.PendingCallbacks.LastOrDefault(item => item.Unit.Id == targetId)?.Unit ?? target;
@@ -118,7 +126,8 @@ namespace MonsterTrain2Poju.Model
                 int stacks = current?.RegisteredStatus(status.Id)?.Stacks ?? 0;
                 if (stacks <= 0) continue;
                 int amount = effect.RemoveHalfStatusEffects == true ? (stacks / 2) + (stacks % 2) : stacks;
-                RoomCombatResult removed = Remove(state, targetId, status.Id, amount, sourceCardId);
+                RoomCombatResult removed = Remove(state, targetId, status.Id, amount, sourceCardId,
+                    "CardEffectRemoveAllStatusEffects");
                 if (!removed.Supported) return removed;
                 state = removed.State!;
                 callbacks.AddRange(removed.PendingCallbacks);

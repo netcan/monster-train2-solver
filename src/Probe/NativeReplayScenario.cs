@@ -300,6 +300,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardDrawOnHealScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalBrokenRailScenario.Enabled && !OriginalBrokenRailScenario.Acquired)
                         OriginalBrokenRailScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalRageOnBurnoutStackLossScenario.Enabled && !OriginalRageOnBurnoutStackLossScenario.Acquired)
+                        OriginalRageOnBurnoutStackLossScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalNullRelicScenario.Enabled && !OriginalNullRelicScenario.Acquired)
                         OriginalNullRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRelicCountAttackScenario.Enabled && !OriginalRelicCountAttackScenario.Acquired)
@@ -657,6 +659,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalBrokenRailScenario.Enabled)
             {
                 OriginalBrokenRailScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalRageOnBurnoutStackLossScenario.Enabled)
+            {
+                OriginalRageOnBurnoutStackLossScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalTurnDrawScenario.Enabled)
@@ -1396,6 +1403,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalCardDrawOnHealScenario.Choose(decision);
                 if (fullBattle && OriginalBrokenRailScenario.Enabled)
                     pendingPlay = OriginalBrokenRailScenario.Choose(decision) ?? pendingPlay;
+                if (fullBattle && OriginalRageOnBurnoutStackLossScenario.Enabled)
+                    pendingPlay = OriginalRageOnBurnoutStackLossScenario.Choose(decision) ?? pendingPlay;
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled)
                     pendingPlay = OriginalCardDrawOnCardPlayScenario.ChooseSnack(decision) ?? pendingPlay;
                 if (fullBattle && OriginalCarriageJackScenario.Enabled)
@@ -1617,6 +1626,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == OriginalMoonPhaseHealRelicScenario.Name && OriginalMoonPhaseHealRelicScenario.IsScenarioAction(action)) ||
                 (OriginalCardDrawOnHealScenario.IsScenarioAction(action)) ||
                 (OriginalBrokenRailScenario.IsScenarioAction(action)) ||
+                (OriginalRageOnBurnoutStackLossScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "soul-siphon" && SoulSiphonScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "status-upgrade" && StatusUpgradeScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "card-effect-kill-subtype" && CardEffectKillScenario.IsScenarioPrelude(action)) ||

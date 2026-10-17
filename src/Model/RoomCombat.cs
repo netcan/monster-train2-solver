@@ -3623,6 +3623,16 @@ namespace MonsterTrain2Poju.Model
 
             private void RemoveStatus(WorkingUnit unit, string id, int count)
             {
+                var callbacks = new List<QueuedCharacterTrigger>();
+                RoomCombatResult relicAdded = RelicStatusStackModel.OnStatusRemoved(CurrentRoom(), unit.Source.Id, id, count, null);
+                if (!relicAdded.Supported) { unsupportedReason = relicAdded.UnsupportedReason; return; }
+                context = relicAdded.State!.Context;
+                foreach (CombatUnit changed in relicAdded.State.Units)
+                {
+                    WorkingUnit? actor = units.FirstOrDefault(candidate => candidate.Source.Id == changed.Id);
+                    actor?.Apply(changed);
+                }
+                callbacks.AddRange(relicAdded.PendingCallbacks);
                 CombatUnit before = unit.Freeze();
                 unit.Remove(id, count);
                 CombatUnit after = unit.Freeze();
@@ -3637,7 +3647,6 @@ namespace MonsterTrain2Poju.Model
                         context = ConduitModel.Change(context, unit.RoomIndex, unit.Freeze(), source.Preview,
                             refreshSelection: false, order: units.Where(actor => actor.InRoom).Select(actor => actor.Source.Id).ToArray());
                 }
-                var callbacks = new List<QueuedCharacterTrigger>();
                 StatusCallbackModel.Removed(unit.RoomIndex, before, unit.Freeze(), id, callbacks);
                 foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
             }

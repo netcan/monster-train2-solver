@@ -1,5 +1,12 @@
 # Native regression fixtures
 
+RageOnBurnoutStackLoss extension (2026-10-17): 375 archives (337 battles and 38
+calibrations), 154/224 original relic owners (68.75%): 138 full-battle owners,
+fifteen campaign-interface owners and one native no-op. The original +3 Rage
+callback runs after one controlled friendly Ephemeral removal. All 18 recorded
+card actions and five EndTurns replay; policy search is not claimed for the
+scripted action fixture.
+
 BrokenRail forge extension (2026-10-17): 374 archives (336 battles and 38
 calibrations), 153/224 original relic owners (68.30%): 137 full-battle effect
 owners, fifteen campaign-interface owners and one native no-op. Its unchanged
@@ -4764,4 +4771,29 @@ inventory now has 374 archives: 336 battles and 38 component calibrations.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-broken-rail.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-broken-rail-only tests/fixtures/full-battle-original-broken-rail.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-broken-rail.mt2f
+```
+
+### Original RageOnBurnoutStackLoss relic (schema 177)
+
+`full-battle-original-rage-on-burnout-stack-loss.mt2f` captures the unchanged
+Monsters-team owner and a native controlled action that removes one Ephemeral
+stack from a friendly Steward. Its Rage rises from 0 to 3 and Ephemeral falls
+from 1 to 0 in the same action. The winning battle has 41 matched stages, 18
+matched card actions, five EndTurns and zero capture failures, mismatches,
+unsupported transitions or pending records. The focused pure checker exercises
+raw requested-count scaling (including missing, zero and all-stacks calls),
+team/status gates, transfer/multiply exclusions, preview and parallel immutable
+branches. The targeted action lies outside the generic policy; every recorded
+card action and turn transition is explicitly replayed, but this fixture does
+not claim natural burnout lifecycle or bounded-search coverage.
+
+The binary is 29,396 bytes with 4,638 unique nodes and SHA-256
+`aa833751fc924aa14491755c8d77e51d06c2a5de5d81796a24c00b6aff711f9d`; it has no
+JSON companion. This is the 154th accepted original owner (138 full-battle
+owners, fifteen campaign-interface owners and one no-op); the inventory now has
+375 archives: 337 battles and 38 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-rage-on-burnout-stack-loss.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-rage-on-burnout-stack-loss-only tests/fixtures/full-battle-original-rage-on-burnout-stack-loss.mt2f
 ```

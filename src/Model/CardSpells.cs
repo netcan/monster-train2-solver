@@ -1067,7 +1067,8 @@ namespace MonsterTrain2Poju.Model
                         int stacks = unit?.Status(statusId)?.Stacks ?? 0;
                         total = unchecked(total + stacks);
                         if (stacks <= 0) continue;
-                        RoomCombatResult removed = StatusRemovalModel.Remove(liveRoom, id, statusId, stacks, sourceCardId);
+                        RoomCombatResult removed = StatusRemovalModel.Remove(liveRoom, id, statusId, stacks, sourceCardId,
+                            "CardEffectTransferAllStatusEffects");
                         if (!removed.Supported) return UnsupportedTrain(removed.UnsupportedReason!);
                         state = ReplaceRoom(state, removed.State!);
                         events.AddRange(removed.Events); callbacks.AddRange(removed.PendingCallbacks);
@@ -1107,7 +1108,8 @@ namespace MonsterTrain2Poju.Model
                                 transferRoom.Units.Concat(new[] { sourceUnit }).ToArray(),
                             transferRoom.ExternalInteractions, transferRoom.Context, transferRoom.Preview,
                             transferRoom.ActiveCompanionBossIds);
-                        RoomCombatResult removed = StatusRemovalModel.Remove(removalRoom, sourceUnit.Id, status.Id, -1, sourceCardId);
+                        RoomCombatResult removed = StatusRemovalModel.Remove(removalRoom, sourceUnit.Id, status.Id, -1, sourceCardId,
+                            "CardEffectTransferAllStatusEffectsFromUnit");
                         if (!removed.Supported) return UnsupportedTrain(removed.UnsupportedReason!);
                         sourceUnit = removed.State!.Units.FirstOrDefault(unit => unit.Id == sourceUnit.Id) ?? sourceUnit;
                         retained[sourceUnit.Id] = sourceUnit;

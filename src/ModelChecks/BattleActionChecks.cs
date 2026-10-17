@@ -674,9 +674,9 @@ internal static class BattleActionChecks
             if (firstDecision.Spawn.Turn < root.Spawn.Turn) root = firstDecision;
         }
         if (fixture.TryGetProperty("ModifierScenario", out var targetedDrawPolicy) &&
-            targetedDrawPolicy.GetString() == "original-card-draw-on-heal")
+            targetedDrawPolicy.GetString() is "original-card-draw-on-heal" or "original-rage-on-burnout-stack-loss")
         {
-            Console.WriteLine("NATIVE-POLICY-CHAIN-SKIPPED: targeted native test-card draws are outside the captured action policy; every recorded play and turn transition was still replayed.");
+            Console.WriteLine("NATIVE-POLICY-CHAIN-SKIPPED: controlled native scenario actions are outside the generic captured policy; every recorded play and turn transition was still replayed.");
             return;
         }
         string parent = JsonSerializer.Serialize(root);
