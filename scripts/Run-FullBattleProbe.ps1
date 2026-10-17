@@ -266,6 +266,7 @@ param(
     [switch] $OriginalCheaperSpellCost,
     [switch] $OriginalNefariousOverflow,
     [switch] $OriginalCopyFirstSpellPlayed,
+    [switch] $OriginalCopyFirstConsumePlayed,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
     [switch] $OriginalBrokenRailRelic,
@@ -386,7 +387,7 @@ if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true;
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalCopyFirstSpellPlayed) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
 if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -809,6 +810,7 @@ if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
 if ($OriginalCopyFirstSpellPlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-spell-played' }
+if ($OriginalCopyFirstConsumePlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-consume-played' }
 if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-funguy-deck-scaling' }
 if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-heal' }
 if ($OriginalBrokenRailRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-rail' }
@@ -1602,6 +1604,13 @@ if ($OriginalCopyFirstSpellPlayed -and ($trace.Schema -ne 173 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-COPY-FIRST-SPELL-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 2)) {
     throw 'CopyFirstSpellPlayed lacks its first direct spell and same-turn spell witness.'
+}
+if ($OriginalCopyFirstConsumePlayed -and ($trace.Schema -ne 180 -or
+    $trace.ModifierScenario -ne 'original-copy-first-consume-played' -or
+    -not $trace.OriginalCopyFirstConsumePlayedPrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-COPY-FIRST-CONSUME-PREPARED' -Quiet) -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -lt 2)) {
+    throw 'CopyFirstConsumePlayed lacks its consumed direct Spell and same-battle copy control.'
 }
 if ($OriginalFunguyDeckScaling) {
     $pileStartRecords = @($trace.RelicPileStartTurn)

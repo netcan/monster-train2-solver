@@ -15,6 +15,15 @@ internal static class StatisticCacheChecks
         var born = CardGenerationModel.Apply(root, generation);
         Require(born.Supported && born.Context!.Statistics!.TrackedCards.SequenceEqual([1, 2]) &&
             born.Context.Statistics.StoredCards!.SequenceEqual([1]), "Generation eagerly created a native statistic cache entry.");
+        var permanentStats = new BattleStatistics([], [], [], [], [], [], [], 0, 0, 0, 0, 0,
+            trackedCards: [1], deckCards: [1]);
+        var permanentRoot = new CombatContext(root.Cards, rng, 0, 2, 10, statistics: permanentStats,
+            cardInstances: [instance], cardRegistry: [instance], otherPiles: []);
+        var permanentBorn = CardGenerationModel.Apply(permanentRoot, new CardGenerationRule("HandPile", 1,
+            [new("permanent", CardModifiers.Empty(), null, [])], permanent: true));
+        Require(permanentBorn.Supported && permanentBorn.Context!.Statistics!.DeckCards!.SequenceEqual([1, 2]) &&
+            permanentRoot.Statistics!.DeckCards!.SequenceEqual([1]),
+            "A permanent hand copy was not added to the immutable native deck-stat membership.");
         var scalingGeneration = new CardGenerationRule("DiscardPile", 1, [new("scaled", CardModifiers.Empty(), null, [],
             statusScalingTraits: [new(new("TimesDrawn", "ThisBattle"), 1, true, 0, ["armor"])])]);
         var scalingBorn = CardGenerationModel.Apply(root, scalingGeneration);

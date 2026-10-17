@@ -57,7 +57,7 @@
 "UncontrolledGroup"	"4c737e1e-7e5c-40ee-87a3-944859784283"	"pending"	"RelicEffectRebalanceUnstable,RelicEffectNull"	""
 "AwokenRegen"	"1fd244de-7d7b-4345-974b-4e5bf287a3df"	"accepted-native-battle"	"RelicEffectModifyStatusMagnitude"	""
 "ImpDamageBuff"	"94595f3a-4624-4408-977d-b166a98f23d2"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""
-"CopyFirstConsumePlayed"	"b7207406-3c55-4771-b9c9-ed99dd9e1f9b"	"pending"	"RelicEffectCopyCardOnCardPlay"	""
+"CopyFirstConsumePlayed"	"b7207406-3c55-4771-b9c9-ed99dd9e1f9b"	"accepted-native-battle"	"RelicEffectCopyCardOnCardPlay"	""
 "SilverIncreasedCapacity"	"aab4971f-05c6-430a-8a6a-dfb654a41b0c"	"accepted-native-battle"	"RelicEffectChangeFloorCapacity"	""
 "PyregelOnEnterTopFloor"	"e4be072c-e389-4ae7-acc6-0c8aa4cf0078"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnEnterRoomIndex"	""
 "DamageShieldOnEquip"	"0c50313f-1f07-40c4-8a3e-54748b57981f"	"accepted-native-battle"	"RelicEffectAddTrigger"	""

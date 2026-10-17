@@ -1,5 +1,13 @@
 # Native regression fixtures
 
+CopyFirstConsumePlayed extension (2026-10-17): 378 archives (340 battles and
+38 calibrations), 157/224 original relic owners (70.09%): 141 full-battle
+owners, fifteen campaign-interface owners and one native no-op. The unchanged
+owner copies its first direct-play Consume Spell as a permanent card; the
+generated card enters deck statistics and cannot retrigger the ThisBattle
+condition. Its 61-stage winning replay and 128-state search pass with zero
+error counters.
+
 ExtractForEmberAndEchos extension (2026-10-17): 377 archives (339 battles and
 38 calibrations), 156/224 original relic owners (69.64%): 140 full-battle
 owners, fifteen campaign-interface owners and one native no-op. The unchanged
@@ -4859,4 +4867,29 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-extract-for-ember-and-echos.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-extract-for-ember-and-echos-only tests/fixtures/full-battle-original-extract-for-ember-and-echos.mt2f
+```
+
+### Original CopyFirstConsumePlayed relic (schema 180)
+
+`full-battle-original-copy-first-consume-played.mt2f` captures the unchanged
+`CopyFirstConsumePlayed` owner with its required Consume trait, permanent copy
+payload and ThisBattle trigger condition. The first direct-play Spell creates a
+permanent hand copy and updates deck statistics; directly playing that copy in
+the same battle does not create another copy. The 61-stage winning replay has
+22 matched decisions, zero capture failures, mismatches, unsupported
+transitions or pending records. The dedicated checker also confirms the exact
+owner and native condition updates. Pure controls validate the required-trait
+gate and immutable state, and independent search matches 128/128 states, three
+replayed steps and serial/parallel best results. This evidence is specific to
+the original owner and captured path; sibling copy payloads are not generalized.
+
+The binary is 35,934 bytes with 5,815 unique nodes and SHA-256
+`3ce2e6307325437b62764b6596a20526892552b8ed528f78de8fc0d59051683e`; it has no
+JSON companion. This is the 157th accepted original owner (141 full-battle
+owners, fifteen campaign-interface owners and one no-op); the inventory now has
+378 archives: 340 battles and 38 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-copy-first-consume-played.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-copy-first-consume-only tests/fixtures/full-battle-original-copy-first-consume-played.mt2f
 ```

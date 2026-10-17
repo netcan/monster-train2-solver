@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **156 distinct original collectable relics / 224 catalog entries
-(69.64%)** have accepted native evidence: 140 have full-battle effect evidence,
+As of 2026-10-17, **157 distinct original collectable relics / 224 catalog entries
+(70.09%)** have accepted native evidence: 141 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -26,6 +26,10 @@ Tower target sequences and +2 Pyregel results match across floors.
 `ExtractForEmberAndEchos` now has ordered native +1 Ember and +1 selected-room
 corruption witnesses for a zero-debit Corrupt Restricted carrier; the original
 owner definition is unchanged and its full battle plus 128-state search pass.
+`CopyFirstConsumePlayed` now has a native direct-play Consume Spell witness: its
+permanent copy enters hand and deck statistics, and its same-battle replay is
+blocked by the original once-per-battle condition. The unchanged owner, full
+replay and 128-state search pass.
 
 The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
@@ -153,6 +157,7 @@ owner count.
 | `ReduceSpellCostOfCheaper` | `9cc85dbb-d0ae-409b-8f26-41d2202eb1e0` | [cheaper spell cost][cheaperSpellCost] | Unchanged FreeSpellBlessing applies only to filtered spells with strictly lower cost; equal-cost, zero-cost and X-cost controls are unchanged. Played-card and end-turn discard clean up tracked upgrades. Full battle and independent 128/128-state replay/search match. |
 | `NefariousOverflow` | `b0575799-1511-489d-a05d-b5b2e6bf84c2` | [NefariousOverflow][nefariousOverflow] | The unchanged both-team payload adds 1 explosion damage per Unstable stack: the five-stack carrier's death kills the Mage and reduces the Guard's Armor 17→7. Proc-damage and growth hooks remain unsupported when nonzero. Full battle and independent 128/128-state replay/search match. |
 | `CopyFirstSpellPlayed` | `0f4a9e72-cd34-4667-95f6-6a0ca69832f8` | [CopyFirstSpellPlayed][copyFirstSpell] | The unchanged once-per-turn owner copies the first direct Spell with temporary Ephemeral; its generated copy plays again the same turn without retriggering. Exact original owner only; sibling copy payloads are not generalized. |
+| `CopyFirstConsumePlayed` | `b7207406-3c55-4771-b9c9-ed99dd9e1f9b` | [CopyFirstConsumePlayed][copyFirstConsume] | The unchanged original owner copies the first direct-play Spell carrying the required Consume trait as a permanent hand card, and the copy enters deck statistics. Playing that copy in the same battle does not retrigger the ThisBattle condition. Native replay and independent 128/128-state search pass; sibling copy payloads are not generalized. |
 | `StartOfTurnAddFunguysPerDeckSize` | `e5d7c9d0-c0a3-4b0c-97cf-6def6ad287e9` | [Funguy deck scaling][funguyDeckScaling] | Six original callbacks at 40 visible cards apply two cardless Horde effects on each live room: three Funguys spawn and Horde rises by six total. Relentless room destruction is respected; support is limited to this original payload and captured positive path. |
 | `CardDrawOnHeal` | `9a38370b-150c-45bd-9e3e-93a688a04850` | [CardDrawOnHeal][cardDrawOnHeal] | Four allied OnHeal callbacks draw exactly one card after native ThisTurn reset; a second same-turn heal is suppressed after the two native notifications, and an enemy-heal control does not trigger the Monsters-only owner. Placement/preview gates are pure controls; targeted test-card setup is excluded from full-policy replay. |
 | `BrokenRail` | `1699b5c7-8c34-471c-8e5a-c9830e2bc482` | [BrokenRail forge upgrade][brokenRail] | The unchanged +2 HP forge upgrade scales to +6 at three forge points on one eligible ordinary monster summon. Native direct-play and full-battle state match; bounded 128-state search matches with serial/parallel best equality. Tracking/toggle/eligibility controls are pure; room-specific replacements and non-monster plays remain unsupported. |
@@ -773,3 +778,4 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [rageBurnout]: full-battle-original-rage-on-burnout-stack-loss.mt2f
 [pyreRevenge]: full-battle-original-pyre-revenge.mt2f
 [extractForEmberAndEchos]: full-battle-original-extract-for-ember-and-echos.mt2f
+[copyFirstConsume]: full-battle-original-copy-first-consume-played.mt2f
