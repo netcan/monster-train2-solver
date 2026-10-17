@@ -63,7 +63,9 @@ namespace MonsterTrain2Poju.Probe
                         AllowMultiple = (bool)Field(condition, "allowMultipleTriggersPerDuration"), Subtype = Field(condition, "paramSubtype")
                     }).ToArray(),
                     PlayerClanCardPool = effect.GetEffectClassName() == "RelicEffectAddPrecachedBattleCardToHand"
-                        ? CaptureCardPool(effect.GetParamCardPool()) : null
+                        ? CaptureCardPool(effect.GetParamCardPool()) : null,
+                    UnitTriggerCardPool = effect.GetEffectClassName() == "RelicEffectAddBattleCardToHandOnUnitTrigger"
+                        ? CaptureCardPool(effect.GetParamCardPool(), filtered: true) : null
                 }).ToArray()
             }).ToArray();
             JObject after = RngStates();
@@ -78,10 +80,10 @@ namespace MonsterTrain2Poju.Probe
             using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "relic-catalog.mt2f")))
                 document.Write(stream);
         }
-        private static object? CaptureCardPool(CardPool? pool)
+        private static object? CaptureCardPool(CardPool? pool, bool filtered = false)
         {
             if (pool == null) return null;
-            var cards = pool.GetAllChoices(new System.Collections.Generic.List<CardData>());
+            var cards = filtered ? pool.GetFilteredChoices() : pool.GetAllChoices(new System.Collections.Generic.List<CardData>());
             return new
             {
                 Name = pool.name,
