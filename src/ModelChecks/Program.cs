@@ -1235,7 +1235,9 @@ if (args.Length == 2 && args[0] == "--bump-only")
     if (fixture.RootElement.GetProperty("ModifierScenario").GetString() != "bump" ||
         fixture.RootElement.GetProperty("BumpOperations").GetArrayLength() == 0)
         throw new InvalidDataException("The requested fixture has no native Bump observations.");
+    BattleActionChecks.Native(fixture.RootElement);
     BumpChecks.Native(fixture.RootElement);
+    RelicFloorTransitionDamageChecks.Native(fixture.RootElement);
     return;
 }
 
@@ -1414,6 +1416,7 @@ OriginalNefariousOverflowChecks.Run();
 OriginalCopyFirstSpellChecks.Run();
 OriginalCopyFirstConsumeChecks.Run();
 OriginalCopyConsumedCardChecks.Run();
+RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();
 OriginalBrokenRailChecks.Run();
 RelicFloorCapacityChecks.Run();

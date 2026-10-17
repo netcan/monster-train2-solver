@@ -585,13 +585,51 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }, queued =>
             {
-                bool lastPhysicalDeath = queued.CompletePhysicalRemovalAfterQueue && !queue.Any(item => item.Kind == "OnDeath" &&
-                    item.Unit.Team == queued.Unit.Team && item.Unit.Id > queued.Unit.Id);
-                RoomCombatResult returned = lastPhysicalDeath
-                    ? RoomCombatModel.SettleQueuedSpawnerAndCenter(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
-                        refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement))
-                    : RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
-                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
+                RoomCombatResult returned;
+                if (queued.RelicDamageRemoval && queued.CompletePhysicalRemovalAfterQueue && context?.SpawnPoints != null)
+                {
+                    bool multipleDeaths = queue.Count(item => item.RelicDamageRemoval && item.CompletePhysicalRemovalAfterQueue &&
+                        item.Kind == "OnDeath" && item.RoomIndex == queued.RoomIndex && item.Unit.Team == queued.Unit.Team) > 1;
+                    UnitSpawnPointState? point = context.SpawnPoints.Units.FirstOrDefault(item => item.UnitId == queued.Unit.Id);
+                    SpawnPointGroupState? group = point?.Current == null ? null :
+                        context.SpawnPoints.SelectedGroup(queued.RoomIndex, queued.Unit.Team);
+                    bool vacancyBefore = !multipleDeaths && point?.Current != null && point.Current.Index > 0 &&
+                        group?.Occupants.Take(point.Current.Index).Any(id => id == 0) == true;
+                    if (vacancyBefore)
+                    {
+                        RoomCombatState currentRoom = WithContext(rooms[queued.RoomIndex], context);
+                        CombatUnit[] retainedDeaths = queue.Where(item => item.Kind == "OnDeath" &&
+                                item.RoomIndex == queued.RoomIndex && item.Unit.Team == queued.Unit.Team)
+                            .Select(item => item.Unit).GroupBy(item => item.Id).Select(group => group.Last())
+                            .Where(item => !currentRoom.Units.Any(unit => unit.Id == item.Id)).ToArray();
+                        if (retainedDeaths.Length > 0)
+                            currentRoom = new RoomCombatState(currentRoom.RoomIndex, currentRoom.Deployment,
+                                currentRoom.Units.Concat(retainedDeaths).ToArray(), currentRoom.ExternalInteractions,
+                                currentRoom.Context, currentRoom.Preview, currentRoom.ActiveCompanionBossIds);
+                        BattleSpawnPointResult compacted = BattleSpawnPointModel.Apply(context.SpawnPoints, currentRoom,
+                            "Compact", queued.Unit.Team);
+                        if (!compacted.Supported) { error = compacted.Error; return false; }
+                        context = context.WithSpawnPoints(compacted.State!);
+                    }
+                    bool lastPhysicalDeath = multipleDeaths && !queue.Any(item => item.RelicDamageRemoval &&
+                        item.CompletePhysicalRemovalAfterQueue && item.Kind == "OnDeath" && item.RoomIndex == queued.RoomIndex &&
+                        item.Unit.Team == queued.Unit.Team && item.Unit.Id > queued.Unit.Id);
+                    returned = lastPhysicalDeath
+                        ? RoomCombatModel.SettleQueuedSpawnerAndCenter(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
+                            refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement))
+                        : RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
+                            refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
+                }
+                else
+                {
+                    bool lastPhysicalDeath = queued.CompletePhysicalRemovalAfterQueue && !queue.Any(item => item.Kind == "OnDeath" &&
+                        item.Unit.Team == queued.Unit.Team && item.Unit.Id > queued.Unit.Id);
+                    returned = lastPhysicalDeath
+                        ? RoomCombatModel.SettleQueuedSpawnerAndCenter(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
+                            refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement))
+                        : RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
+                        refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
+                }
                 if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = returned.State!; context = returned.State!.Context; results.Add(returned);
                 SetCompanionBosses(rooms, returned.State!.ActiveCompanionBossIds); return true;

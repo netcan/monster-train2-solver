@@ -1,5 +1,13 @@
 # Native regression fixtures
 
+DamageOnFloorTransition extension (2026-10-17): 380 archives (342 battles and
+38 calibrations), 159/224 original relic owners (70.98%): 143 full-battle owners,
+fifteen campaign-interface owners and one native no-op. The unchanged owner
+applies exactly 3 damage after enemy PostAscension and PostDescension callbacks;
+rooted, immobile and player movement controls do not trigger it. The winning
+37-stage battle replays 42 actions and five turns with all error counters zero;
+the 22 native Bump witnesses pass, as does independent search over 74/74 states.
+
 CopyConsumedCard extension (2026-10-17): 379 archives (341 battles and 38
 calibrations), 158/224 original relic owners (70.54%): 142 full-battle owners,
 fifteen campaign-interface owners and one native no-op. The unchanged owner
@@ -4924,4 +4932,28 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-copy-consumed-card.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-copy-consumed-card-only tests/fixtures/full-battle-original-copy-consumed-card.mt2f
+```
+
+### Original DamageOnFloorTransition relic (schema 182)
+
+`full-battle-original-damage-on-floor-transition.mt2f` captures the unchanged
+owner with its ordered +3 `PostAscension` and +3 `PostDescension` effects. Native
+checks confirm exact damage after both enemy transitions; rooted, immobile and
+player movement remain unchanged. The winning battle replays 37 stages, 42
+actions and five turns with zero capture failures, mismatches, unsupported
+transitions or pending records. All 22 native Bump boundaries replay exactly.
+Independent battle search matches all 42 recorded decisions, visits 74/74
+states, replays three steps and has equal serial/parallel best results with no
+unsupported attempts.
+
+The binary is 49,877 bytes with 9,706 unique nodes and SHA-256
+`130de1ccdce8169fe736d44b70ed365130c992b1e73db244fc50cc046db601b8`; it has no
+JSON companion. This is the 159th accepted original owner (143 full-battle
+owners, fifteen campaign-interface owners and one no-op); the inventory now has
+380 archives: 342 battles and 38 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-damage-on-floor-transition.mt2f
+dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-original-damage-on-floor-transition.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-damage-on-floor-transition.mt2f
 ```

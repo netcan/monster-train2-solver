@@ -11,6 +11,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class BumpScenario
     {
+        internal const string RelicDataId = "269a6f43-9982-4683-ac39-1a862e481898";
         internal sealed class Callback
         {
             public int ActorId { get; set; }
@@ -38,6 +39,8 @@ namespace MonsterTrain2Poju.Probe
             public List<Callback> Dispatched { get; set; } = new List<Callback>();
         }
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "bump";
+        private static bool RelicScenario => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_FLOOR_TRANSITION_DAMAGE") == "1";
+        internal static bool RelicAcquired { get; private set; }
         internal static bool CaptureOuterBossForAction => Enabled && probeBossSpawned && label != null;
         internal static readonly List<Record> Records = new List<Record>();
         internal static bool Started, Completed;
@@ -51,8 +54,26 @@ namespace MonsterTrain2Poju.Probe
         private static bool originalAllScenarioBossesDead;
         private static bool probeBossSpawned;
 
+        internal static void AcquireRelicBeforeBattle(AllGameManagers managers, ManualLogSource log)
+        {
+            SaveManager save = managers.GetSaveManager();
+            CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == RelicDataId);
+            RelicEffectData[] effects = relic.GetEffects().ToArray();
+            if (RelicAcquired || save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle ||
+                relic.name != "DamageOnFloorTransition" || relic.DisallowInDeploymentPhase || effects.Length != 2 ||
+                effects[0].GetEffectClassName() != "RelicEffectDamageEnemyOnAscend" || effects[0].GetParamInt() != 3 ||
+                effects[1].GetEffectClassName() != "RelicEffectDamageEnemyOnDescend" || effects[1].GetParamInt() != 3 ||
+                save.GetCollectedRelics().Any(item => item.GetRelicDataID() == RelicDataId))
+                throw new InvalidOperationException("Original DamageOnFloorTransition definition changed or is not isolated.");
+            save.AddRelic(relic);
+            RelicAcquired = true;
+            log.LogInfo("ORIGINAL-FLOOR-TRANSITION-DAMAGE-ACQUIRED ascend=3 descend=3 from the unchanged native owner.");
+        }
+
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
+            if (RelicScenario && !RelicAcquired)
+                throw new InvalidOperationException("DamageOnFloorTransition must be acquired before battle.");
             SaveManager save = managers.GetSaveManager();
             CardManager cards = managers.GetCardManager()!;
             source = cards.GetAllCards(new List<CardState>()).First(card => card.GetEffects().Any(effect =>
@@ -60,7 +81,7 @@ namespace MonsterTrain2Poju.Probe
             CardData steward = save.GetAllGameData().FindCardData("d14a50f3-728d-43e1-87f0-ef1b013f6678")!;
             CharacterData unit = steward.GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster").GetParamCharacterData();
             Set(unit, "health", 80); Set(unit, "attackDamage", 12);
-            Set(unit, "triggers", unit.GetTriggers().Concat(Triggers()).ToList());
+            Set(unit, "triggers", unit.GetTriggers().Concat(Triggers(zeroReward: RelicScenario)).ToList());
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
             Configure(managers, 1, TargetMode.DropTargetCharacter, Team.Type.Heroes | Team.Type.Monsters, false);
             log.LogInfo("BUMP-PREPARED real paid cards and hosts, including an original Outer Train Boss; ordinary wave groups intact.");
@@ -111,7 +132,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     CharacterData data = UnityEngine.Object.Instantiate(prototype); data.name = "PojuBumpObserver" + i;
                     Set(data, "id", "c2f6ed7f-18ce-4070-b65f-7dd9f520000" + i); Set(data, "attackDamage", 1); Set(data, "health", 20);
-                    Set(data, "startingStatusEffects", Array.Empty<StatusEffectStackData>()); Set(data, "triggers", Triggers());
+                    Set(data, "startingStatusEffects", Array.Empty<StatusEffectStackData>()); Set(data, "triggers", Triggers(zeroReward: RelicScenario));
                     Set(data, "loopsBetweenTrainFloors", i == 2);
                     yield return managers.GetHeroManager()!.SpawnHeroInRoom(data, i, null!);
                     var now = new List<CharacterState>(); rooms.GetRoom(i).AddCharactersToList(now, Team.Type.Heroes);

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **158 distinct original collectable relics / 224 catalog entries
-(70.54%)** have accepted native evidence: 142 have full-battle effect evidence,
+As of 2026-10-17, **159 distinct original collectable relics / 224 catalog entries
+(70.98%)** have accepted native evidence: 143 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -34,6 +34,9 @@ replay and 128-state search pass.
 unchanged owner creates two non-permanent copies, and replaying one is blocked
 by the original once-per-battle condition. Its full replay and 128-state search
 pass with zero error counters.
+`DamageOnFloorTransition` now has exact +3 native enemy damage after both
+PostAscension and PostDescension; rooted, immobile and player movement controls
+remain unchanged. Its full replay and independent battle search pass.
 
 The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
@@ -297,6 +300,7 @@ owner count.
 | `FirstRoomCardOnAllFloors` | `e55235f7-1d84-43f0-b8f5-037b64b8f582` | [first-room attachment replication][firstRoomAttachment] | The unchanged once-per-battle condition copies the first native `IncreaseRoomCapacity` attachment to every non-Pyre floor. An ordinary-card control is inert; a second attachment increments only its source-room counter and does not replicate. Full native state replay includes live and later unit upgrade propagation. |
 | `TrainRoomInstallFloor1AtStartOfCombat` | `2c97e1b3-d4bb-4133-9572-e582805c106f` | [start-room attachment][startRoomAttachment] | Its unchanged cardless Primary FuelCar attachment targets both teams on floor one. Six Heroes and two Monsters carry exactly one OnDeath trigger attributed to the native attachment GUID; source-room removal on Ascend matches live snapshots. |
 | `PartFactory` | `623ce968-aae5-4b07-b0c8-071f315031b7` | [PartFactory][partFactory] | The unchanged start-of-battle owner adds the native SetupRun-selected Pufferflesh to hand. Both weighted entries for that DataId match complete card context; the card later moves to Draw and is never played. Pool selection is a captured external result, not modeled SetupRun RNG. Grafted-equipment unit state and deploying/playing this card remain unsupported. |
+| `DamageOnFloorTransition` | `269a6f43-9982-4683-ac39-1a862e481898` | [DamageOnFloorTransition][damageOnFloorTransition] | The unchanged owner applies exactly 3 damage after an enemy's native PostAscension and PostDescension callbacks; rooted, immobile and player movement are controls. All 22 native Bump states and 42 full-battle actions match, and independent search passes 74/74 states with no unsupported attempts. |
 
 ## Campaign interface evidence
 
@@ -785,3 +789,4 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [extractForEmberAndEchos]: full-battle-original-extract-for-ember-and-echos.mt2f
 [copyFirstConsume]: full-battle-original-copy-first-consume-played.mt2f
 [copyConsumedCard]: full-battle-original-copy-consumed-card.mt2f
+[damageOnFloorTransition]: full-battle-original-damage-on-floor-transition.mt2f

@@ -168,6 +168,7 @@ param(
     [switch] $HordeStatuses,
     [switch] $HordeMerge,
     [switch] $Bump,
+    [switch] $OriginalDamageOnFloorTransition,
     [switch] $UnitClone,
     [switch] $UnitCopy,
     [switch] $HeroCopy,
@@ -420,6 +421,7 @@ if ($OriginalBigDamageFromManyMorsels) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
     $Policy = 'units-spells-and-junk'
 }
+if ($OriginalDamageOnFloorTransition) { $Bump = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEarlyDiscardEnergy) { $BranchCardMasks = $true; $HandRemoval = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -678,6 +680,7 @@ if ($TriggeredSummonsRevival) {
 }
 if ($HordeMerge) { $environment['MT2_PROBE_MODIFIERS'] = 'horde-merge' }
 if ($Bump) { $environment['MT2_PROBE_MODIFIERS'] = 'bump' }
+if ($OriginalDamageOnFloorTransition) { $environment['MT2_PROBE_ORIGINAL_FLOOR_TRANSITION_DAMAGE'] = '1' }
 if ($UnitClone) { $environment['MT2_PROBE_MODIFIERS'] = 'unit-clone' }
 if ($UnitCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'unit-copy' }
 if ($HeroCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'hero-copy' }
@@ -1620,6 +1623,13 @@ if ($OriginalCopyConsumedCard -and ($trace.Schema -ne 181 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-COPY-CONSUMED-CARD-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 2)) {
     throw 'CopyConsumedCard lacks its direct Consume Spell and same-battle copy control.'
+}
+if ($OriginalDamageOnFloorTransition -and ($trace.Schema -ne 182 -or
+    $trace.ModifierScenario -ne 'bump' -or
+    -not $trace.OriginalDamageOnFloorTransitionPrepared -or
+    @($trace.BumpOperations).Count -ne 22 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FLOOR-TRANSITION-DAMAGE-ACQUIRED' -Quiet))) {
+    throw 'DamageOnFloorTransition lacks its exact owner capture or complete paid Bump witness set.'
 }
 if ($OriginalFunguyDeckScaling) {
     $pileStartRecords = @($trace.RelicPileStartTurn)

@@ -332,6 +332,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalMoonPhaseEnergyRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalUnitUpgradeTriggerRelicScenario.Enabled && !OriginalUnitUpgradeTriggerRelicScenario.Acquired)
                         OriginalUnitUpgradeTriggerRelicScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_FLOOR_TRANSITION_DAMAGE") == "1" && !BumpScenario.RelicAcquired)
+                        BumpScenario.AcquireRelicBeforeBattle(managers!, log);
                     if (fullBattle && OriginalResourceRelicBatchScenario.Enabled && !OriginalResourceRelicBatchScenario.Prepared)
                         OriginalResourceRelicBatchScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)

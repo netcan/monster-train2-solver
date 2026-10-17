@@ -53,9 +53,18 @@ internal static class BumpChecks
         {
             string label = record.GetProperty("Label").GetString()!;
             var after = record.GetProperty("After").Deserialize<TrainCombatState>()!;
+            TrainCombatState before = record.GetProperty("Before").Deserialize<TrainCombatState>()!;
+            string transition = record.GetProperty("Amount").GetInt32() > 0 ? "PostAscension" : "PostDescension";
             foreach (int id in record.GetProperty("Targets").Deserialize<int[]>()!)
-                Require(after.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == id).Current!.RoomIndex == destinations[label],
+            {
+                SpawnPointReference? current = after.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == id).Current;
+                bool transitionDamageRemoved = current == null &&
+                    !after.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == id) &&
+                    before.Context?.Relics?.Any(relic => relic.FloorTransitionDamageRules?.Any(rule =>
+                        rule.Trigger == transition && rule.DamageAmount != 0) == true) == true;
+                Require(current?.RoomIndex == destinations[label] || transitionDamageRemoved,
                     label + " did not reach the intended native boundary");
+            }
         }
         var ranged = records.Single(record => record.GetProperty("Label").GetString() == "player-partial-up-ignores-range");
         Compare(ranged.GetProperty("Before").Deserialize<TrainCombatState>()!.Context!.BattleRng,
@@ -194,9 +203,10 @@ internal static class BumpChecks
                     before.Team == group.Team && before.PreviewCopyId == group.PreviewCopyId).Occupants)),
             "Outer Boss movement occupied or shifted ordinary enemy points.");
         var callbacks = result.Dispatched.Where(callback => !callback.Kind.StartsWith("#PhysicalHarvest:", StringComparison.Ordinal)).ToArray();
-        Require(callbacks.Length >= 2 && callbacks[0].Unit.Id == id && callbacks[0].Kind == "PostAscension" &&
-            callbacks[1].Unit.Id == id && callbacks[1].Kind == "OnShift",
-            "Outer Boss ForceMoveBoss callbacks did not begin with PostAscension then Shift.");
+        int postAscension = Array.FindIndex(callbacks, callback => callback.Unit.Id == id && callback.Kind == "PostAscension");
+        int shift = Array.FindIndex(callbacks, callback => callback.Unit.Id == id && callback.Kind == "OnShift");
+        Require(postAscension >= 0 && shift > postAscension,
+            "Outer Boss ForceMoveBoss callbacks did not run PostAscension before Shift.");
     }
 
     private static void VerifyPairedOuterBossMovement(FixtureValue record)

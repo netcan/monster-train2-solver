@@ -186,6 +186,13 @@ namespace MonsterTrain2Poju.Probe
                             ((Team.Type)Field("targetTeam")).ToString(), Field("targetMode").ToString(),
                             ((RelicEffectBase)item.Effect).CanApplyInPreviewMode, RelicCardModifierProbe.Conditions(item.Effect));
                     }).ToArray();
+                var floorTransitionDamage = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect is RelicEffectDamageEnemyOnAscend || item.Effect is RelicEffectDamageEnemyOnDescend)
+                    .Select(item => {
+                        var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        string trigger = item.Effect is RelicEffectDamageEnemyOnAscend ? "PostAscension" : "PostDescension";
+                        return new RelicFloorTransitionDamageRule(item.Index, trigger, data.GetParamInt());
+                    }).ToArray();
                 var moonPhaseHeals = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectHealOnMoonPhase)
                     .Select(item => {
@@ -220,7 +227,8 @@ namespace MonsterTrain2Poju.Probe
                     summonDamage.Length > 0 ? summonDamage : null,
                     cheaperSpellUpgradeModifiers: cheaperSpellUpgrades.Length > 0 ? cheaperSpellUpgrades : null,
                     unstableRebalances: unstableRebalances.Length > 0 ? unstableRebalances : null,
-                    copyCardOnCardPlayModifiers: copyCardOnCardPlay.Length > 0 ? copyCardOnCardPlay : null);
+                    copyCardOnCardPlayModifiers: copyCardOnCardPlay.Length > 0 ? copyCardOnCardPlay : null,
+                    floorTransitionDamageRules: floorTransitionDamage.Length > 0 ? floorTransitionDamage : null);
             }).ToArray();
         }
 

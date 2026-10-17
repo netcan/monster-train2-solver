@@ -132,6 +132,18 @@ internal static class CardSpellChecks
         Require(moved.Supported && moved.State!.Units.Select(unit => unit.Id).SequenceEqual(new[] { 1, 3, 2 }) &&
             moved.State.Units[1].Attack == 10 && moved.State.Units[1].BaseAttack == 8 &&
             !moved.State.Units[1].Statuses.Any(status => status.Id == "armor"), "Rearrange/valor or immediate armor timing differed.");
+        CardInstanceState shiftedSpawnerCard = CardInstanceState.Empty(90, "shifted-spawner")
+            .WithPlayedRoomUnits([4, 20]);
+        var shiftedContext = new CombatContext(new CardCycleState([], [], [], rng, 0, []), rng, 0, 91, 10,
+            cardInstances: [shiftedSpawnerCard], cardRegistry: [shiftedSpawnerCard]);
+        var shiftHost = new CombatUnit(4, "shift-host", CombatTeam.Player, 8, 20, 20, true, false, false, [],
+            [new CombatTrigger("OnShift", false, false, true, 1, [], skipDuringDeployment: false)], spawnerCardId: 90);
+        var movedForCache = new RoomCombatState(0, false,
+            [Make(21, CombatTeam.Enemy, 5), Make(22, CombatTeam.Enemy, 5), shiftHost, Make(20, CombatTeam.Player, 20)], [], shiftedContext);
+        RoomCombatResult shiftedCache = CardSpellModel.Apply(movedForCache,
+            [new CardActionEffect("FloorRearrange", "DropTargetCharacter", 0, true, true, [])], 20);
+        Require(shiftedCache.Supported && shiftedCache.State!.Context!.FindCard(90)!.PlayedRoomUnitIds!.SequenceEqual([4, 20, 21, 22]),
+            "A shifted unit's OnShift callback did not refresh its spawner card's room cache.");
         RoomCombatResult resolved = RoomCombatModel.Resolve(moved.State!);
         Require(resolved.Supported && resolved.State!.Units.First(unit => unit.Team == CombatTeam.Player)
             .Statuses.Single(status => status.Id == "armor").Stacks == 2, "Valor did not replenish front armor after room combat.");

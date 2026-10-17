@@ -1354,10 +1354,11 @@ namespace MonsterTrain2Poju.Model
                     {
                         BattleSpawnPoints? physical = state.Context!.SpawnPoints;
                         RoomCombatState rearrangeRoom = targetRoom!;
-                        CombatUnit[] orderedTeam = (physical == null ? rearrangeRoom.Units :
-                            BattleSpawnPointModel.Order(physical, rearrangeRoom.RoomIndex, rearrangeRoom.Units)).ToArray();
+                        BattleSpawnPoints? beforePhysical = rearrangeRoom.Context?.SpawnPoints;
+                        CombatUnit[] orderedTeam = (beforePhysical == null ? rearrangeRoom.Units :
+                            BattleSpawnPointModel.Order(beforePhysical, rearrangeRoom.RoomIndex, rearrangeRoom.Units)).ToArray();
                         CombatUnit[] beforeTeam = orderedTeam.Where(unit => unit.Team == target.Team && unit.Health > 0 &&
-                            unit.DeathState?.IsDestroyed != true && physical?.Units.SingleOrDefault(point => point.UnitId == unit.Id)?.OuterBoss != true).ToArray();
+                            unit.DeathState?.IsDestroyed != true && beforePhysical?.Units.SingleOrDefault(point => point.UnitId == unit.Id)?.OuterBoss != true).ToArray();
                         int oldIndex = Array.FindIndex(beforeTeam, unit => unit.Id == target.Id);
                         int goal;
                         if (effect.Type == "AbilityTeleport")
@@ -1368,7 +1369,7 @@ namespace MonsterTrain2Poju.Model
                         else goal = effect.Value == 0 ? 0 : beforeTeam.Length - 1;
                         int movementGoal = goal >= 0 && goal < beforeTeam.Length ? goal : oldIndex;
                         int direction = oldIndex < movementGoal ? 1 : -1;
-                        if (oldIndex >= 0 && physical != null)
+                        if (effect.Type == "AbilityTeleport" && oldIndex >= 0 && physical != null)
                         {
                             for (int position = oldIndex; position != movementGoal; position += direction)
                             {

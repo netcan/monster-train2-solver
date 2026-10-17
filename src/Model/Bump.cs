@@ -166,8 +166,10 @@ namespace MonsterTrain2Poju.Model
             // the departure and destination of another target in the same card effect.
             foreach (var move in moved)
             {
+                CombatUnit actor = Get(move.Id) ?? retained.GetValueOrDefault(move.Id)!;
+                if (actor.Status("relentless") != null && state.Context?.QueryFrame is StatisticQueryFrame queryFrame)
+                    state = CardSpellModel.WithContext(state, state.Context.WithQueryFrame(queryFrame.With(selectedRoomIndex: move.NewRoom)));
                 if (move.ForcedBossMove) continue;
-                CombatUnit actor = Get(move.Id)!;
                 if (HordeMergeModel.Select(state.Rooms[move.NewRoom], actor) == 0)
                     foreach (int floor in new[] { move.OldRoom, move.NewRoom })
                     {
@@ -275,7 +277,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 bool okay = RoomCombatModel.DrainCharacterQueue(queue, callback =>
                 {
-                    if (!callback.IsDeathRoomFocus) dispatched.Add(callback);
+                    if (!callback.IsDeathRoomFocus && !callback.RelicDamageApplied) dispatched.Add(callback);
                     RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(state.Rooms[callback.RoomIndex], callback, queue.Add);
                     return Accept(fired);
                 }, callback => Accept(RoomCombatModel.SettleQueuedSpawnerAndCenter(state.Rooms[callback.RoomIndex], callback.Unit)),
