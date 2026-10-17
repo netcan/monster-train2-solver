@@ -371,6 +371,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalNimsOathScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalJudgesScalesScenario.Enabled && !OriginalJudgesScalesScenario.Acquired)
                         OriginalJudgesScalesScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalNoUpgradeCardCostScenario.Enabled && !OriginalNoUpgradeCardCostScenario.Acquired)
+                        OriginalNoUpgradeCardCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPyreCardCostScenario.Enabled && !OriginalPyreCardCostScenario.Acquired)
                         OriginalPyreCardCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMoonPhaseStatusRelicScenario.Enabled && !OriginalMoonPhaseStatusRelicScenario.Acquired)
@@ -1543,6 +1545,8 @@ namespace MonsterTrain2Poju.Probe
                     OriginalCheaperSpellCostScenario.Prepare(managers, log);
                 if (fullBattle && OriginalFirstCardCostScenario.Enabled && !OriginalFirstCardCostScenario.Prepared)
                     OriginalFirstCardCostScenario.Prepare(managers, log);
+                if (fullBattle && OriginalNoUpgradeCardCostScenario.Enabled && !OriginalNoUpgradeCardCostScenario.Prepared)
+                    OriginalNoUpgradeCardCostScenario.Prepare(managers, log);
                 if (fullBattle && OriginalRebalanceValorScenario.Enabled && !OriginalRebalanceValorScenario.Prepared)
                     OriginalRebalanceValorScenario.Prepare(managers, log);
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Prepared)

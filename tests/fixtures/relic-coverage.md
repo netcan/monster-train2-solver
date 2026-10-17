@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **186 distinct original collectable relics / 224 catalog entries
-(83.04%)** have accepted native evidence: 169 have full-battle effect evidence,
+As of 2026-10-18, **189 distinct original collectable relics / 224 catalog entries
+(84.38%)** have accepted native evidence: 172 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1553,4 +1553,20 @@ The 36,805-byte archive has 5,780 unique nodes and SHA-256 `754bacc3fd8f55387a1a
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-judges-scales.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-judges-scales-only tests/fixtures/full-battle-original-judges-scales.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-judges-scales.mt2f
+```
+
+## ReduceCostUnitIfNoUpgrade
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `ReduceCostUnitIfNoUpgrade` | `f03c7664-0485-4bcf-8bb9-f76321e090c3` | `full-battle-original-no-upgrade-cost.mt2f` | The unchanged owner installs a unique hidden `-1 Cost/+1 XCost` upgrade on Monster cards only. Native manager observations cover both `resetTemporary` values for Monster, Spell and Equipment; hand-added callbacks reinstall a missing marker idempotently, while a visible non-region permanent upgrade removes it. |
+
+The focused checker independently replays all captured callbacks and six manager calls, verifies exact owner/effect parameters and payload, and checks the Monster-positive plus Spell/Equipment-negative paths. The 63-stage winning battle has 27 actions, seven EndTurns and zero capture failures, mismatches, unsupported transitions or pending records. Independent search matches the recorded battle over 128/128 states with serial/parallel best equality. The 41,949-byte archive has 6,666 unique nodes and SHA-256 `324ecaf4b9a15141155dfa96055d6e854abe3677703a5dd194dd4e6df26b6c1d`; no JSON companion is tracked. Inventory is 408 archives: 370 full battles and 38 component calibrations. Original relic evidence is 189/224 (84.38%): 172 battle, 16 campaign and one native no-op owner.
+
+This support is limited to the captured original Monster-exclusive owner and hidden cost-upgrade lifecycle. Other owner identities or parameters, wildcard type behavior, preview execution and unobserved upgrade/callback shapes remain unsupported.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-no-upgrade-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-no-upgrade-card-cost-only tests/fixtures/full-battle-original-no-upgrade-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-no-upgrade-cost.mt2f
 ```

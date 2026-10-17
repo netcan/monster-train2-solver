@@ -17,17 +17,17 @@ Schema 8 retains the required card traits introduced in schema 6.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 186 original owners accepted (169 native battle owners,
+Current checkpoint: 189 original owners accepted (172 native battle owners,
 sixteen actual campaign-interface owners and one explicit native no-op owner);
-38 remain pending. The latest accepted owner is
-`FriendlyUnitsGainDeathwishPermanentHealth`: its unchanged friendly Deathwish
-trigger is installed and removed on the native entry/loss lifecycle, then applies
-exactly +6 permanent health to three carriers at encounter end. The 41-stage
-winning capture records 24 actions and five EndTurns with zero capture failures,
-mismatches, unsupported transitions or pending records. Dedicated checks verify
-14 exact births and independent 128-state serial/parallel replay/search pass. The
-evidence is limited to these captured Deathwish carriers and the encounter-end
-callback; it does not claim other trigger owners or cross-run persistence.
+35 remain pending. The latest accepted owner is
+`ReduceCostUnitIfNoUpgrade`: its unchanged Monster-only cost effect installs a
+unique hidden -1 Cost/+1 XCost modifier, reinstalls it idempotently on hand-added,
+and removes it after a visible permanent upgrade. The 63-stage winning capture
+records 27 actions and seven EndTurns with zero capture failures, mismatches,
+unsupported transitions or pending records. Focused checks replay six manager
+reset/retain observations and every captured callback; independent 128-state
+search has serial/parallel best equality. Preview execution and other owner,
+parameter or callback shapes remain unsupported.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle

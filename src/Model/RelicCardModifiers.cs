@@ -34,14 +34,26 @@ namespace MonsterTrain2Poju.Model
         public int ConditionCount { get; }
         public IReadOnlyList<RelicConditionState> Conditions { get; }
         public RelicTraitReplacement? TraitReplacement { get; }
+        public RelicNoUpgradeCardCostModifier? NoUpgradeCost { get; }
         public RelicCardModifier(int effectIndex, RelicCardUpgradeRule? rule, CardUpgradeModifier? upgrade,
             bool applyToCardlessSpawns, IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0,
-            RelicTraitReplacement? traitReplacement = null)
+            RelicTraitReplacement? traitReplacement = null, RelicNoUpgradeCardCostModifier? noUpgradeCost = null)
         { EffectIndex = effectIndex; Rule = rule; Upgrade = upgrade; ApplyToCardlessSpawns = applyToCardlessSpawns;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
-            ConditionCount = conditions?.Count ?? conditionCount; TraitReplacement = traitReplacement; }
+            ConditionCount = conditions?.Count ?? conditionCount; TraitReplacement = traitReplacement; NoUpgradeCost = noUpgradeCost; }
         internal RelicCardModifier WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
-            new RelicCardModifier(EffectIndex, Rule, Upgrade, ApplyToCardlessSpawns, conditions, traitReplacement: TraitReplacement);
+            new RelicCardModifier(EffectIndex, Rule, Upgrade, ApplyToCardlessSpawns, conditions,
+                traitReplacement: TraitReplacement, noUpgradeCost: NoUpgradeCost);
+    }
+    public sealed class RelicNoUpgradeCardCostModifier
+    {
+        public int EffectIndex { get; }
+        public string ExclusiveType { get; }
+        public int CostChangeAmount { get; }
+        public CardUpgradeModifier Upgrade { get; }
+        public RelicNoUpgradeCardCostModifier(int effectIndex, string exclusiveType, int costChangeAmount,
+            CardUpgradeModifier upgrade)
+        { EffectIndex = effectIndex; ExclusiveType = exclusiveType; CostChangeAmount = costChangeAmount; Upgrade = upgrade; }
     }
     public sealed class RelicTraitReplacement
     {
@@ -82,7 +94,8 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatRelicState relic)
         {
             var indices = relic.EffectTypes.Select((type, index) => (type, index)).Where(item =>
-                    item.type == RelicModel.AddTempUpgrade || item.type == RelicModel.ModifyTrait)
+                    item.type == RelicModel.AddTempUpgrade || item.type == RelicModel.ModifyTrait ||
+                    item.type == RelicModel.ModifyCardCostIfNoUpgrades)
                 .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.CardModifiers?.Count > 0 ? "Unexpected relic card modifier definitions." : null;
             if (relic.CardModifiers == null || !indices.SequenceEqual(relic.CardModifiers.Select(rule => rule.EffectIndex)))
@@ -100,6 +113,16 @@ namespace MonsterTrain2Poju.Model
                         !OnlyCardType(replacement.CardFilter, "OnlySpells", "Spell") ||
                         !OnlyCardType(replacement.CardFilterSecondary, "OnlyEquipment", "Equipment"))
                         return "Unmodeled RelicEffectModifyTrait payload or owner.";
+                    continue;
+                }
+                if (type == RelicModel.ModifyCardCostIfNoUpgrades)
+                {
+                    if (effect.NoUpgradeCost == null || effect.Rule != null || effect.Upgrade != null ||
+                        effect.TraitReplacement != null || effect.ApplyToCardlessSpawns || effect.ConditionCount != 0 ||
+                        effect.Conditions.Count != 0)
+                        return "Unmodeled unupgraded-card cost modifier payload.";
+                    string? costError = RelicNoUpgradeCardCostModel.Validate(relic, effect.NoUpgradeCost);
+                    if (costError != null) return costError;
                     continue;
                 }
                 if (effect.Rule == null || effect.TraitReplacement != null)
@@ -266,6 +289,51 @@ namespace MonsterTrain2Poju.Model
                         }
                         dispatches.Add(new RelicCardModifierDispatch(relicIndex, effectIndex, returned,
                             false, Array.Empty<RelicCardFilterResult>()));
+                        continue;
+                    }
+                    if (type == RelicModel.ModifyCardCostIfNoUpgrades)
+                    {
+                        if (!cardEffects.TryGetValue(effectIndex, out RelicCardModifier? costModifier) ||
+                            costModifier!.NoUpgradeCost == null)
+                            return Fail("Missing unupgraded-card cost definition.");
+                        bool returned = RelicNoUpgradeCardCostModel.IsCardOfInterest(card,
+                            costModifier.NoUpgradeCost, out error);
+                        if (error != null) return Fail(error);
+                        int noUpgradeTemporaryCountBefore = state.Temporary.Count;
+                        if (returned)
+                        {
+                            if (!RelicNoUpgradeCardCostModel.HasSlottedUpgrade(card, out bool hasSlottedUpgrade, out error))
+                                return Fail(error!);
+                            int costUpgradeCount = card.Temporary.Upgrades.Count(upgrade =>
+                                upgrade.DataId == costModifier.NoUpgradeCost.Upgrade.DataId);
+                            if (!resetTemporary && costUpgradeCount > 1)
+                                return Fail("Unique unupgraded-card cost modifier is duplicated.");
+                            bool hasCostUpgrade = costUpgradeCount > 0;
+                            if (hasSlottedUpgrade && hasCostUpgrade)
+                                state = CardUpgradeLifecycleModel.RemoveById(state,
+                                    costModifier.NoUpgradeCost.Upgrade.DataId).State;
+                            else if (!hasSlottedUpgrade && !hasCostUpgrade)
+                            {
+                                CardLifecycleUpgrade payload = Payload(costModifier.NoUpgradeCost.Upgrade, trackTemporary: true);
+                                state = CardUpgradeLifecycleModel.ApplyTemporary(state, payload).State;
+                            }
+                            if (state.Temporary.Count != noUpgradeTemporaryCountBefore || hasCostUpgrade && hasSlottedUpgrade)
+                            {
+                                var synchronized = new List<CardUpgradeModifier>(state.Temporary.Count);
+                                foreach (CardLifecycleUpgrade temporary in state.Temporary)
+                                {
+                                    if (!temporaryPayloads.TryGetValue(temporary.InstanceId, out CardUpgradeModifier? modifier))
+                                        return Fail("Unupgraded-card cost lost a temporary upgrade payload.");
+                                    synchronized.Add(modifier);
+                                }
+                                card = card.WithModifiers(card.Permanent, new CardModifiers(card.Temporary.Offsets,
+                                    synchronized, card.Temporary.PersistentHealth, card.Temporary.ExternalInteractions));
+                                if (!RefreshTemporaryPayloads(card.Temporary, state, temporaryPayloads))
+                                    return Fail("Unupgraded-card cost changed temporary upgrade lifecycle order.");
+                            }
+                        }
+                        dispatches.Add(new RelicCardModifierDispatch(relicIndex, effectIndex, returned,
+                            state.Temporary.Count > noUpgradeTemporaryCountBefore, Array.Empty<RelicCardFilterResult>()));
                         continue;
                     }
                     if (type == RelicModel.ModifyTrait)

@@ -1,15 +1,15 @@
 # Native regression fixtures
 
-FriendlyUnitsGainDeathwishPermanentHealth extension (2026-10-18): 405 archives
-(367 battles and 38 calibrations), 186/224 original relic owners (83.04%): 169
-full-battle owners, sixteen campaign-interface owners and one native no-op. The
-unchanged friendly Deathwish owner installs and removes a temporary trigger;
-three encounter-complete callbacks each apply exactly +6 permanent health. Its
-41-stage winning replay has 24 actions and zero differential counters. Native
-checks confirm 14 exact births and the three end-combat upgrades; independent
-128-state search has serial/parallel best equality. The 53,889-byte archive has
-7,724 unique nodes and SHA-256
-`fd382953aa9648ee91951cd6fe4f27463a2238ffd2d79f82f30daa16efda5e31`.
+ReduceCostUnitIfNoUpgrade extension (2026-10-18): 408 archives (370 battles and
+38 calibrations), 189/224 original relic owners (84.38%): 172 full-battle owners,
+sixteen campaign-interface owners and one native no-op. The unchanged owner
+installs a unique hidden -1 Cost/+1 XCost upgrade on Monster cards only; native
+hand-added callbacks reinstall it idempotently and a visible permanent upgrade
+removes it. Its 63-stage winning replay has 27 actions and zero differential
+counters. Focused checks replay six manager reset/retain observations and every
+captured callback; independent 128-state search has serial/parallel best equality.
+The 41,949-byte archive has 6,666 unique nodes and SHA-256
+`324ecaf4b9a15141155dfa96055d6e854abe3677703a5dd194dd4e6df26b6c1d`.
 
 ChampsHealBeginningOfTurn extension (2026-10-18): 404 archives (366 battles and
 38 calibrations), 184/224 original relic owners (82.14%): 167 full-battle owners,
@@ -5405,4 +5405,28 @@ persistence are outside this evidence boundary.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-equipment-growth-relics.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-equipment-growth-only tests/fixtures/full-battle-original-equipment-growth-relics.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-equipment-growth-relics.mt2f
+```
+
+### Original ReduceCostUnitIfNoUpgrade relic
+
+`full-battle-original-no-upgrade-cost.mt2f` captures the unchanged
+`RelicEffectModifyCardCostIfNoUpgrades` owner with Monster exclusivity and its
+unique hidden -1 Cost/+1 XCost upgrade. Native manager observations verify
+reset/retain behavior on Monster, Spell and Equipment; the focused scenario also
+checks hand-added installation/idempotency and removal after a visible permanent
+upgrade. The checker independently replays every callback and manager result.
+
+The 63-stage winning battle records 27 actions, seven EndTurns and zero capture
+failures, mismatches, unsupported transitions or pending records. Independent
+search matches the recorded battle over 128/128 states with serial/parallel best
+equality. Other owner parameters, wildcard type behavior, preview execution and
+unobserved callback shapes remain unsupported. The 41,949-byte archive has
+6,666 unique nodes and SHA-256
+`324ecaf4b9a15141155dfa96055d6e854abe3677703a5dd194dd4e6df26b6c1d`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-no-upgrade-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-no-upgrade-card-cost-only tests/fixtures/full-battle-original-no-upgrade-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-no-upgrade-cost.mt2f
 ```

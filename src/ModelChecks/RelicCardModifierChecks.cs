@@ -394,6 +394,8 @@ internal static class RelicCardModifierChecks
             scenario.GetString() == "original-purge-to-exhaust-relic";
         bool magebladeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() is "mageblade" or "original-mageblade-magnitude";
+        bool noUpgradeCardCostScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "original-reduce-cost-unit-no-upgrade";
         bool sawExpectedRejection = statusUpgradeScenario || unhealedHealthUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario || castTriggerUpgradeScenario ||
             replacementUpgradeScenario || extraToughTombsScenario || deployableRelicScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
@@ -797,7 +799,7 @@ internal static class RelicCardModifierChecks
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
-        if (requireScenarioCoverage && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
+        if (requireScenarioCoverage && !noUpgradeCardCostScenario && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
             !exhaustUpgradeScenario && !ephemeralUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !replacementUpgradeScenario &&
             !castTriggerUpgradeScenario && !allUnitsMultistrikeScenario && !magebladeScenario && !extraToughTombsScenario && !unhealedHealthUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||

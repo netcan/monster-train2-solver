@@ -305,6 +305,7 @@ param(
     [switch] $OriginalChampionStartTurnHealRelic,
     [switch] $OriginalNimsOathRelic,
     [switch] $OriginalJudgesScalesRelic,
+    [switch] $OriginalNoUpgradeCardCostRelic,
     [switch] $OriginalPyreHealthCardCostRelic,
     [switch] $OriginalNullRelic,
     [switch] $OriginalNullRelicBaseline,
@@ -509,6 +510,7 @@ if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 
 if ($OriginalChampionStartTurnHealRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNimsOathRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalJudgesScalesRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalNoUpgradeCardCostRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreHealthCardCostRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -963,6 +965,7 @@ if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] 
 if ($OriginalChampionStartTurnHealRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-champion-start-turn-heal' }
 if ($OriginalNimsOathRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nims-oath' }
 if ($OriginalJudgesScalesRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-judges-scales' }
+if ($OriginalNoUpgradeCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-cost-unit-no-upgrade' }
 if ($OriginalPyreHealthCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-health-card-cost' }
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
@@ -2024,6 +2027,29 @@ if ($OriginalJudgesScalesRelic -and ($trace.Schema -ne 211 -or
         -not $_.ModelSupported -or $null -ne $_.Error -or $null -ne $_.Difference -or $_.Choices.Count -ne 1 }).Count -gt 0 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-JUDGES-SCALES-ACQUIRED unchanged owner=3511a804-42be-465c-9d40-56b988c8a940' -Quiet))) {
     throw 'JudgesScales lacks an eligible deployment hand, native discard/cancel/replacement evidence or exact model replay.'
+}
+if ($OriginalNoUpgradeCardCostRelic -and ($trace.Schema -ne 212 -or
+    $trace.OriginalNoUpgradeCardCostSchema -ne 212 -or
+    $trace.ModifierScenario -ne 'original-reduce-cost-unit-no-upgrade' -or
+    $trace.OriginalNoUpgradeCardCost.Definition.OwnerId -ne 'f03c7664-0485-4bcf-8bb9-f76321e090c3' -or
+    $trace.OriginalNoUpgradeCardCost.Definition.AssetKey -ne 'ReduceCostUnitIfNoUpgrade' -or
+    $trace.OriginalNoUpgradeCardCost.Definition.EffectType -ne 'RelicEffectModifyCardCostIfNoUpgrades' -or
+    $trace.OriginalNoUpgradeCardCost.Definition.ParamInt -ne -1 -or
+    $trace.OriginalNoUpgradeCardCost.Definition.ParamCardType -ne 'Monster' -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or
+    $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+    @($trace.OriginalNoUpgradeCardCost.Callbacks).Count -lt 4 -or
+    @($trace.OriginalNoUpgradeCardCost.Callbacks | Where-Object { -not $_.ModelSupported -or
+        $null -eq $_.After -or $null -ne $_.Error -or $null -ne $_.Difference }).Count -gt 0 -or
+    @($trace.OriginalNoUpgradeCardCost.Callbacks | Where-Object { $_.Kind -eq 'OnCardAdded' -and
+        $_.Before.DataId -eq 'fc119000-0000-4000-8000-00000000052001' -and $_.Returned -eq $true -and $_.UpgradeAdded }).Count -eq 0 -or
+    @($trace.OriginalNoUpgradeCardCost.Callbacks | Where-Object { $_.Kind -eq 'OnPermanentCardUpgradeApplied' -and
+        $_.Before.DataId -eq 'fc119000-0000-4000-8000-00000000052001' -and $_.ModelSupported }).Count -eq 0 -or
+    @($trace.RelicCardModifiers | Where-Object { $_.Before.DataId -in @(
+        'fc119000-0000-4000-8000-00000000052001', 'fc119000-0000-4000-8000-00000000052002',
+        'fc119000-0000-4000-8000-00000000052003') }).Count -ne 6 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-NO-UPGRADE-COST-PREPARED' -Quiet))) {
+    throw 'ReduceCostUnitIfNoUpgrade lacks native card-modifier and callback lifecycle evidence.'
 }
 if ($OriginalPyreHealthCardCostRelic -and ($trace.OriginalPyreCardCostSchema -ne 209 -or
     $trace.ModifierScenario -ne 'original-pyre-health-card-cost' -or

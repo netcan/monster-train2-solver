@@ -12,10 +12,10 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => OriginalBalatroEventCavendishScenario.Enabled || OriginalRelicCountAttackScenario.Enabled || OriginalHealingPowerScenario.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_RELIC_UPGRADES") == "1" ||
             OriginalRelicBatchScenario.Enabled || OriginalCardAttackRelicScenario.Enabled || OriginalCardTypeCostScenario.Enabled || OriginalUpgradeCountRelicsScenario.Enabled ||
-            OriginalPurgeToExhaustScenario.Enabled;
+            OriginalPurgeToExhaustScenario.Enabled || OriginalNoUpgradeCardCostScenario.Enabled;
         internal static bool CaptureReady => OriginalRelicCountAttackScenario.CaptureReady || OriginalHealingPowerScenario.CaptureReady || RelicCardModifierScenario.CaptureReady || OriginalRelicBatchScenario.CaptureReady ||
             MagebladeScenario.CaptureReady || OriginalCardAttackRelicScenario.CaptureReady || OriginalBalatroEventCavendishScenario.CaptureReady || OriginalCardTypeCostScenario.CaptureReady || OriginalUpgradeCountRelicsScenario.CaptureReady ||
-            OriginalPurgeToExhaustScenario.CaptureReady;
+            OriginalPurgeToExhaustScenario.CaptureReady || OriginalNoUpgradeCardCostScenario.CaptureReady;
         internal static readonly List<Record> Records = new List<Record>();
         private static readonly List<Record> active = new List<Record>();
         internal sealed class Record
@@ -148,6 +148,55 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (__state == null) return; __state.Returned = __result;
                 __state.UpgradeAdded = cardState.GetTemporaryCardStateModifiers().GetCardUpgrades().Count > __state.UpgradeCount;
+            }
+        }
+        [HarmonyPatch(typeof(RelicEffectModifyCardCostIfNoUpgrades),
+            nameof(RelicEffectModifyCardCostIfNoUpgrades.ApplyCardStateModifiers))]
+        private static class NoUpgradeCostEffectPatch
+        {
+            private static void Prefix(RelicEffectModifyCardCostIfNoUpgrades __instance, CardState cardState,
+                out Dispatch? __state)
+            {
+                __state = null; if (active.Count == 0) return;
+                var record = active[active.Count - 1]; var index = Index(record, __instance);
+                __state = new Dispatch { RelicIndex = index.Relic, EffectIndex = index.Effect,
+                    UpgradeCount = cardState.GetTemporaryCardStateModifiers().GetCardUpgrades().Count };
+                record.Dispatches.Add(__state);
+            }
+            private static void Postfix(CardState cardState, bool __result, Dispatch? __state)
+            {
+                if (__state == null) return;
+                __state.Returned = __result;
+                __state.UpgradeAdded = cardState.GetTemporaryCardStateModifiers().GetCardUpgrades().Count > __state.UpgradeCount;
+            }
+        }
+        [HarmonyPatch(typeof(RelicEffectModifyCardCostIfNoUpgrades), nameof(RelicEffectModifyCardCostIfNoUpgrades.OnCardAdded))]
+        private static class NoUpgradeCostHandAddedPatch
+        {
+            private static void Prefix(RelicEffectModifyCardCostIfNoUpgrades __instance,
+                CardAddedToHandRelicEffectParams relicEffectParams,
+                out OriginalNoUpgradeCardCostScenario.CallbackRecord? __state)
+            {
+                __state = OriginalNoUpgradeCardCostScenario.Begin("OnCardAdded", __instance, relicEffectParams.cardState);
+            }
+            private static void Postfix(CardAddedToHandRelicEffectParams relicEffectParams, bool __result,
+                OriginalNoUpgradeCardCostScenario.CallbackRecord? __state)
+            {
+                OriginalNoUpgradeCardCostScenario.Complete(__state, relicEffectParams.cardState, __result);
+            }
+        }
+        [HarmonyPatch(typeof(RelicEffectModifyCardCostIfNoUpgrades),
+            nameof(RelicEffectModifyCardCostIfNoUpgrades.OnPermanentCardUpgradeApplied))]
+        private static class NoUpgradeCostPermanentUpgradePatch
+        {
+            private static void Prefix(RelicEffectModifyCardCostIfNoUpgrades __instance, CardState cardState,
+                out OriginalNoUpgradeCardCostScenario.CallbackRecord? __state)
+            {
+                __state = OriginalNoUpgradeCardCostScenario.Begin("OnPermanentCardUpgradeApplied", __instance, cardState);
+            }
+            private static void Postfix(CardState cardState, OriginalNoUpgradeCardCostScenario.CallbackRecord? __state)
+            {
+                OriginalNoUpgradeCardCostScenario.Complete(__state, cardState);
             }
         }
         [HarmonyPatch(typeof(RelicEffectModifyCardHealth), nameof(RelicEffectModifyCardHealth.ApplyCardStateModifiers))]

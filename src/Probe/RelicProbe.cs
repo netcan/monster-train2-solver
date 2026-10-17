@@ -53,8 +53,18 @@ namespace MonsterTrain2Poju.Probe
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnCorruptionAdded)
                     .Select(item => CorruptionStatus(item.Effect, item.Index)).ToArray();
                 var cardModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectAddTempUpgrade || item.Effect is RelicEffectModifyTrait).Select(item =>
+                    .Where(item => item.Effect is RelicEffectAddTempUpgrade || item.Effect is RelicEffectModifyTrait ||
+                        item.Effect.GetType().Name == RelicNoUpgradeCardCostModel.Effect).Select(item =>
                     {
+                        if (item.Effect.GetType().Name == RelicNoUpgradeCardCostModel.Effect)
+                        {
+                            object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
+                            var upgradeState = (CardUpgradeState)Field("costModUpgradeState");
+                            return new RelicCardModifier(item.Index, null, null, false,
+                                RelicCardModifierProbe.Conditions(item.Effect), noUpgradeCost:
+                                    new RelicNoUpgradeCardCostModifier(item.Index, Field("exclusiveType").ToString()!,
+                                        (int)Field("costChangeAmount"), CardModifierProbe.Upgrade(upgradeState)));
+                        }
                         if (item.Effect is not RelicEffectModifyTrait) return RelicCardModifierProbe.Definition(item.Effect, item.Index);
                         var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
                         CardUpgradeMaskRule? Filter(CardUpgradeMaskData? mask) => mask == null ? null : CardUpgradeMaskProbe.Rule(mask);
