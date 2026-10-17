@@ -61,7 +61,7 @@
 "SilverIncreasedCapacity"	"aab4971f-05c6-430a-8a6a-dfb654a41b0c"	"accepted-native-battle"	"RelicEffectChangeFloorCapacity"	""
 "PyregelOnEnterTopFloor"	"e4be072c-e389-4ae7-acc6-0c8aa4cf0078"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnEnterRoomIndex"	""
 "DamageShieldOnEquip"	"0c50313f-1f07-40c4-8a3e-54748b57981f"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
-"AddSnackOnKill"	"b6548209-3ccf-4deb-9896-f07d5df3dab9"	"pending"	"RelicEffectAddBattleCardToHandOnUnitTrigger"	""
+"AddSnackOnKill"	"b6548209-3ccf-4deb-9896-f07d5df3dab9"	"accepted-native-battle"	"RelicEffectAddBattleCardToHandOnUnitTrigger"	""
 "MoreDeploymentPhaseEmber"	"83116c76-f5cc-4912-8a56-872731393975"	"accepted-native-battle"	"RelicEffectModifyEnergyDuringDeployment"	""
 "FinalEndingArtifact"	"6bb39014-9b03-4620-b088-f618a7e680b7"	"pending"	"RelicEffectAddChampionCardToHand"	""
 "BalatroEventYorick"	"2bd14ebc-1589-4652-a002-54013f0eace4"	"pending"	"RelicEffectAddGoldOnExhaust"	""

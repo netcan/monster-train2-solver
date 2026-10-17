@@ -1105,6 +1105,8 @@ namespace MonsterTrain2Poju.Model
 
         public static PlayCardAction? ChooseUnitAndJunkPlay(BattleTurnState source)
             => ChoosePlay(source, false);
+        public static PlayCardAction? ChooseUnitAndJunkPlay(BattleTurnState source, Func<CardToken, bool> includeCard)
+            => ChoosePlay(source, false, includeCard);
         public static PlayCardAction? ChooseUnitSpellAndJunkPlay(BattleTurnState source)
             => ChoosePlay(source, true);
         public static PlayCardAction? ChooseUnitSpellAndJunkPlay(BattleTurnState source, Func<CardToken, bool> includeCard)

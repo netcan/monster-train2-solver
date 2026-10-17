@@ -2971,6 +2971,16 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }
 
+            private bool ApplyRelicUnitTriggerCardGeneration(WorkingUnit unit, string kind, int paramInt,
+                CombatRelicState owner, RelicResourceEffect effect)
+            {
+                CardGenerationResult result = RelicUnitTriggerCardGenerationModel.ApplyOne(context!, owner.DataId,
+                    effect.EffectIndex, unit.Freeze(), kind, unit.Alive, paramInt, source.Deployment, source.Preview);
+                if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                context = result.Context;
+                return true;
+            }
+
             private bool ApplyRelicUnitUpgradeTriggers(WorkingUnit unit, string kind, int paramInt, int paramInt2)
             {
                 if (context?.Relics == null) return true;
@@ -2982,6 +2992,13 @@ namespace MonsterTrain2Poju.Model
                     if (cardDrawOnHeal != null)
                     {
                         if (!ApplyRelicCardDrawOnHeal(unit, kind, relic, cardDrawOnHeal)) return false;
+                        continue;
+                    }
+                    var unitTriggerGeneration = relic.ResourceEffects?.SingleOrDefault(effect =>
+                        effect.EffectIndex == effectIndex && RelicUnitTriggerCardGenerationModel.IsEffect(effect.Type));
+                    if (unitTriggerGeneration != null)
+                    {
+                        if (!ApplyRelicUnitTriggerCardGeneration(unit, kind, paramInt, relic, unitTriggerGeneration)) return false;
                         continue;
                     }
                     var resource = relic.ResourceEffects?.SingleOrDefault(effect => effect.EffectIndex == effectIndex && RelicUnitResourceModel.IsEffect(effect.Type));

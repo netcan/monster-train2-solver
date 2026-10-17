@@ -682,11 +682,27 @@ internal static class BattleActionChecks
             Console.WriteLine("NATIVE-POLICY-CHAIN-SKIPPED: controlled native scenario actions are outside the generic captured policy; every recorded play and turn transition was still replayed.");
             return;
         }
+        bool addSnackOneActionPolicy = fixture.TryGetProperty("ModifierScenario", out var addSnackPolicy) &&
+            addSnackPolicy.GetString() == "original-add-snack-on-kill";
+        if (addSnackOneActionPolicy)
+            Require(policyActions.Length == 1 && policyTurns.Length > 0,
+                "AddSnackOnKill fixture must contain one model-selected action followed by natural EndTurns.");
+        Func<BattleTurnState, PlayCardAction?> CreatePolicyChooser()
+        {
+            bool selectedAction = false;
+            return source =>
+            {
+                if (addSnackOneActionPolicy && selectedAction) return null;
+                PlayCardAction? action = chooser(source);
+                if (action != null) selectedAction = true;
+                return action;
+            };
+        }
         string parent = JsonSerializer.Serialize(root);
-        BattleTurnState terminal = RunPolicy(root, policyActions, policyTurns, chooser, compareRoomEnabled);
+        BattleTurnState terminal = RunPolicy(root, policyActions, policyTurns, CreatePolicyChooser(), compareRoomEnabled);
         string expected = BattleTurnChecks.Comparable(terminal, compareRoomEnabled: compareRoomEnabled);
         Parallel.For(0, 16, _ => Require(BattleTurnChecks.Comparable(
-            RunPolicy(root, policyActions, policyTurns, chooser, compareRoomEnabled), compareRoomEnabled: compareRoomEnabled) == expected,
+            RunPolicy(root, policyActions, policyTurns, CreatePolicyChooser(), compareRoomEnabled), compareRoomEnabled: compareRoomEnabled) == expected,
             "Full policy parallel branches diverged."));
         Require(JsonSerializer.Serialize(root) == parent, "Full policy simulation mutated its root.");
         // Start independently after an actual mid-battle card action. Recompute the entire suffix.
@@ -695,7 +711,7 @@ internal static class BattleActionChecks
         // still independently checkable after the final ordinary card play.
         if (mid.ValueKind == FixtureKind.Undefined) mid = policyActions[^1];
         BattleTurnState midRoot = mid.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-        BattleSimulationResult suffix = BattleSimulator.Resolve(midRoot, chooser);
+        BattleSimulationResult suffix = BattleSimulator.Resolve(midRoot, addSnackOneActionPolicy ? _ => null : chooser);
         Require(suffix.Supported && BattleTurnChecks.Comparable(suffix.State!, compareRoomEnabled: compareRoomEnabled) == expected,
             "Mid-battle policy simulation diverged: " + suffix.UnsupportedReason);
         int firstTurn = midRoot.Spawn.Turn;
@@ -711,7 +727,8 @@ internal static class BattleActionChecks
                 "Mid-battle suffix decision differs after EndTurn " + index);
         }
         int hp = terminal.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.IsPyre)?.Health ?? 0;
-        Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {policyActions.Length} policy card plays, {policyTurns.Length} EndTurns, final Pyre {hp}, mid-battle root and 16 parallel branches.");
+        string actionPolicy = addSnackOneActionPolicy ? "one model-selected action then no further card plays" : "full recorded policy";
+        Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {policyActions.Length} policy card plays ({actionPolicy}), {policyTurns.Length} EndTurns, final Pyre {hp}, mid-battle root and 16 parallel branches.");
     }
 
     private static PlayCardAction? ChooseTypedDrawThenCards(BattleTurnState source)

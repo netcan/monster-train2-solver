@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **168 distinct original collectable relics / 224 catalog entries
-(75.00%)** have accepted native evidence: 152 have full-battle effect evidence,
+As of 2026-10-17, **169 distinct original collectable relics / 224 catalog entries
+(75.45%)** have accepted native evidence: 153 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -17,6 +17,14 @@ Rage and Frostbite consumers. All four catalog owners of
 `RelicEffectModifyStatusMagnitude` now have accepted evidence. Unknown status
 families and other effects on the remaining owners still require modeling and
 native proof.
+`AddSnackOnKill` now has three native enemy-Hero OnDeath witnesses that add six
+cards from its exact 19-entry weighted filtered pool, plus 312 gated callbacks.
+The 55-stage replay and one model-selected action have zero differential
+counters; independent 128-state search has serial/parallel best equality. The
+native run had no full-hand death; a synthetic full-hand control confirms both
+Battle RNG selections and the single manager notification without allocating a
+card. Generated-card play effects and multi-action terminal cleanup are outside
+this narrow support boundary.
 `RelicEffectModifyForgeUpgrade` appears on two catalog owners; BrokenRail now
 has one accepted native battle witness, while HephsBlueprints remains pending.
 The native source and callback effect for `RageOnBurnoutStackLoss` now have one
@@ -323,6 +331,7 @@ owner count.
 | `AddImpToHand` | `91211832-747e-4995-b4cb-7ca23c000f10` | [original after-draw generation][afterDrawGeneration] | Four natural post-draw additions from the unchanged filtered original Imp pool. TestEffect selection, exact Battle RNG, fresh identities, hand insertion and complete context match. |
 | `ChanceToVineGrasp` | `00063533-9277-485c-b100-13637a228f9a` | [original after-draw generation][afterDrawGeneration] | Four actual generated cards receive unchanged AddEphemeral as a temporary upgrade. Original name does not imply a probabilistic activation gate; its actual conditions are empty. |
 | `AddSnackToHand` | `81958958-6481-4847-afe1-cb651a041f6c` | [original after-draw generation][afterDrawGeneration] | Four actual post-draw hand additions, exact native selection/state and original filtered pool. Deployment and preview gates have pure controls. |
+| `AddSnackOnKill` | `b6548209-3ccf-4deb-9896-f07d5df3dab9` | [AddSnackOnKill][addSnackOnKill] | Three exact native enemy-Hero OnDeath callbacks add six cards from the original weighted pool; 312 callbacks are gated. Synthetic full-hand control verifies two RNG selections and one manager notification without card allocation. Generated-card play effects and native full-hand deaths are not claimed. |
 | `AddStingToHand` | `5e5d863b-514c-4026-a9b0-ffe56af2a3eb` | [original after-draw generation][afterDrawGeneration] | Three actual hand additions plus one native full-hand rejection. Selection still consumes Battle RNG before the failed insertion; rejection allocates no card identity. All 16 combined consumers and full policy replay match. |
 | `SpellWeaknessBelowPyre` | `5a96d89f-d7c0-49fa-88d1-8ec75a8f3140` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 2 Spell Weakness. Three distinct native Heroes have the exact status; spell damage and post-card removal match through the full battle. |
 | `PyregelOnEnterTopFloor` | `e4be072c-e389-4ae7-acc6-0c8aa4cf0078` | [room-entry status relics][roomEntry] | Its unchanged room-2 Heroes effect adds 10 Pyregel. Three distinct native Heroes have the exact status after entry. |
@@ -828,6 +837,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [equipmentGrowth]: full-battle-original-equipment-growth-relics.mt2f
 [healthChoice]: full-battle-original-health-choice-relic.mt2f
 [afterDrawGeneration]: full-battle-original-after-draw-generation-relics.mt2f
+[addSnackOnKill]: full-battle-original-add-snack-on-kill.mt2f
 [openingDraw]: full-battle-original-opening-draw-relics.mt2f
 [turnDraw]: full-battle-original-turn-draw-relics.mt2f
 [purgeGold]: campaign-purge-gold-calibration.mt2f
@@ -1046,4 +1056,32 @@ component calibrations. Original relic coverage is 168/224 (75.00%): 152 battle,
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-uncontrolled-group.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-uncontrolled-group-only tests/fixtures/full-battle-original-uncontrolled-group.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-uncontrolled-group.mt2f
+```
+
+## AddSnackOnKill
+
+The schema-192 archive captures the unchanged owner, exact ordered 19-entry
+weighted Class5Food pool, and native enemy-Hero OnDeath behavior. Three
+qualifying callbacks add six non-permanent cards; 312 callbacks are gated.
+Complete callback contexts match, including Battle RNG consumption and both
+effect/manager notifications. The winning 55-stage replay and one model-selected
+action have zero differential counters. Independent search matches the action
+and visits 128/128 states with serial/parallel best equality.
+
+The native run had no full-hand death. A synthetic control fills the hand from
+captured card identities and confirms that both selection attempts still consume
+Battle RNG while no card identity is allocated and only one manager notification
+is recorded. The policy stops after one model-selected action and never plays
+cards generated by this relic; generated-card play effects and multi-action
+terminal cleanup are outside this support boundary. The 30,100-byte archive has
+4,327 unique nodes and SHA-256
+`47996ad0a1d10f9b5f6720b0b6d347d1f967eb88fc025ce369ffa3273789dbb`; no JSON
+companion is tracked. Inventory is 390 archives: 352 battles and 38 component
+calibrations. Accepted original-owner coverage is 169/224 (75.45%): 153 battle,
+15 campaign and one native no-op.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-add-snack-on-kill.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-add-snack-on-kill-only tests/fixtures/full-battle-original-add-snack-on-kill.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-add-snack-on-kill.mt2f
 ```

@@ -266,6 +266,7 @@ param(
     [switch] $OriginalEquipmentGrowthRelics,
     [switch] $OriginalHealthChoiceRelic,
     [switch] $OriginalAfterDrawGenerationRelics,
+    [switch] $OriginalAddSnackOnKill,
     [switch] $OriginalGarfieldBoxRandomCard,
     [switch] $OriginalPartFactory,
     [switch] $OriginalBigDamageFromManyMorsels,
@@ -431,6 +432,13 @@ if ($OriginalConduitRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalEquipmentGrowthRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealthChoiceRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalAfterDrawGenerationRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalAddSnackOnKill) {
+    $BranchCardMasks = $true
+    if (-not $PSBoundParameters.ContainsKey('Policy')) { $Policy = 'units-spells-and-junk' }
+    if ($Policy -notin @('units-and-junk', 'units-spells-and-junk')) {
+        throw 'Original AddSnackOnKill requires a model-driven card policy so recorded actions remain searchable.'
+    }
+}
 if ($OriginalGarfieldBoxRandomCard) {
     $BranchCardMasks = $true
     if ($Policy -eq 'steward-once') { $Policy = 'units-and-junk' }
@@ -874,6 +882,7 @@ if ($OriginalConduitRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-co
 if ($OriginalEquipmentGrowthRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-equipment-growth-relics' }
 if ($OriginalHealthChoiceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-health-choice-relic' }
 if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-generation-relics' }
+if ($OriginalAddSnackOnKill) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-snack-on-kill' }
 if ($OriginalGarfieldBoxRandomCard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-garfield-box-random-card-per-turn' }
 if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
 if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = 'original-big-damage-many-morsels' }
@@ -1811,6 +1820,11 @@ if ($OriginalAfterDrawGenerationRelics -and ($trace.ModifierScenario -ne 'origin
     @($trace.RelicAfterDrawGeneration).Count -lt 8 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-AFTER-DRAW-GENERATION-PREPARED four unchanged owners' -Quiet))) {
     throw 'Original after-draw generation lacks unchanged owners or actual Test/Apply consumers.'
+}
+if ($OriginalAddSnackOnKill -and ($trace.Schema -ne 192 -or $trace.ModifierScenario -ne 'original-add-snack-on-kill' -or
+    -not $trace.OriginalAddSnackOnKillPrepared -or @($trace.RelicUnitTriggerCardGeneration).Count -lt 1 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-ADD-SNACK-ON-KILL-PREPARED unchanged relic' -Quiet))) {
+    throw 'Original AddSnackOnKill lacks an unchanged owner or native unit-death callback.'
 }
 if ($OriginalGarfieldBoxRandomCard -and ($trace.ModifierScenario -ne 'original-garfield-box-random-card-per-turn' -or
     $trace.Schema -ne 189 -or -not $trace.OriginalGarfieldBoxRandomCardPrepared -or

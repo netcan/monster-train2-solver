@@ -117,6 +117,23 @@ namespace MonsterTrain2Poju.Probe
                     second == null ? null : CardUpgradeMaskProbe.Rule(second), data.GetParamBool(), upgrade);
                 amount = data.GetParamInt();
             }
+            else if (RelicUnitTriggerCardGenerationModel.IsEffect(type))
+            {
+                var subtype = data.GetParamCharacterSubtype();
+                unitTrigger = new RelicUnitResourceRule(data.GetParamTrigger().ToString(), data.GetParamSourceTeam().ToString(),
+                    subtype == null || subtype.IsNone ? null : subtype.Key, Array.Empty<string>());
+                var upgradeData = data.GetParamCardUpgradeData();
+                CardUpgradeModifier? upgrade = null;
+                if (upgradeData != null)
+                {
+                    var state = new CardUpgradeState(); state.Setup(upgradeData);
+                    upgrade = CardModifierProbe.Upgrade(state);
+                }
+                var pool = data.GetParamCardPool()?.GetFilteredChoices() ?? new List<CardData>();
+                generation = new CardGenerationRule("HandPile", Math.Max(data.GetParamInt(), 1),
+                    pool.Select(CardGenerationProbe.Creation).ToArray(), upgrade: upgrade, permanent: false);
+                amount = Math.Max(data.GetParamInt(), 1);
+            }
             else if (RelicUnitResourceModel.IsEffect(type))
             {
                 var subtype = data.GetParamCharacterSubtype();

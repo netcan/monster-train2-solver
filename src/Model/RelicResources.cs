@@ -182,6 +182,7 @@ namespace MonsterTrain2Poju.Model
             type == RelicCardGenerationModel.PrecachedPlayerClan ||
             type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
+            RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn;
 
         internal static string? Validate(CombatRelicState relic)
@@ -212,6 +213,11 @@ namespace MonsterTrain2Poju.Model
                     string? drawError = RelicCardDrawOnHealModel.Validate(relic, rule);
                     if (drawError != null) return drawError;
                 }
+                else if (RelicUnitTriggerCardGenerationModel.IsEffect(rule.Type))
+                {
+                    string? generationError = RelicUnitTriggerCardGenerationModel.Validate(relic, rule);
+                    if (generationError != null) return generationError;
+                }
                 else if (rule.UnitTrigger != null) return "Unexpected unit resource callback on another effect.";
                 if (rule.Type == RelicCardGenerationModel.AfterDraw)
                 {
@@ -226,6 +232,11 @@ namespace MonsterTrain2Poju.Model
                 else if (rule.Type == RelicCardGenerationModel.PrecachedPlayerClan)
                 {
                     string? generationError = RelicCardGenerationModel.ValidatePrecachedPlayerClan(relic, rule);
+                    if (generationError != null) return generationError;
+                }
+                else if (RelicUnitTriggerCardGenerationModel.IsEffect(rule.Type))
+                {
+                    string? generationError = RelicUnitTriggerCardGenerationModel.Validate(relic, rule);
                     if (generationError != null) return generationError;
                 }
                 else if (rule.CardGeneration != null) return "Unexpected relic card generation on another resource effect.";
