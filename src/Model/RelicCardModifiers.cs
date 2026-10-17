@@ -222,6 +222,19 @@ namespace MonsterTrain2Poju.Model
                 card = card.WithModifiers(new CardModifiers(card.Permanent.Offsets, card.Permanent.Upgrades.Select((upgrade, index) =>
                     upgrade.WithStats(state.Permanent[index].Values.Stats)).ToArray(), card.Permanent.PersistentHealth,
                     card.Permanent.ExternalInteractions), CardModifiers.Empty());
+                if (workingRelics != null)
+                {
+                    for (int relicIndex = 0; relicIndex < workingRelics.Length; relicIndex++)
+                    {
+                        CombatRelicState relic = workingRelics[relicIndex];
+                        if (relic.CardAttackModifiers == null) continue;
+                        RelicCardAttackModifier[] attacks = relic.CardAttackModifiers.Select(effect =>
+                            effect.AppliedCardAttacks == null ? effect : effect.WithAppliedCardAttacks(
+                                effect.AppliedCardAttacks.Where(item => item.CardInstanceId != source.InstanceId).ToArray())).ToArray();
+                        workingRelics[relicIndex] = relic.WithCardAttackModifiers(attacks);
+                    }
+                    context = context?.WithRelics(workingRelics);
+                }
             }
             var dispatches = new List<RelicCardModifierDispatch>();
             for (int relicIndex = 0; relicIndex < (workingRelics?.Length ?? 0); relicIndex++)
@@ -294,8 +307,22 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (!attackEffects.TryGetValue(effectIndex, out RelicCardAttackModifier? attackEffect))
                             return Fail("Missing ordered relic card-attack definition.");
+                        CardInstanceState beforeAttack = card;
                         card = RelicCardAttackModel.Apply(card, attackEffect!, out bool returned, out error, out var filters, workingRelics)!;
                         if (card == null) return Fail(error!);
+                        if (returned && attackEffect!.AppliedCardAttacks != null)
+                        {
+                            bool inDeck = context?.CardInstances?.Any(item => item.InstanceId == source.InstanceId) == true &&
+                                (context.OtherPiles ?? Array.Empty<CardPileState>()).Where(pile => pile.Name == "Purged")
+                                    .SelectMany(pile => pile.Cards).All(item => item.InstanceId != source.InstanceId);
+                            int amount = unchecked(card.Temporary.Offsets.Damage - beforeAttack.Temporary.Offsets.Damage);
+                            RelicCardAttackModifier updated = attackEffect.WithAppliedCardAttacks(
+                                attackEffect.AppliedCardAttacks.Concat(new[] { new RelicCardAttackContribution(source.InstanceId, amount, inDeck) }).ToArray());
+                            RelicCardAttackModifier[] attacks = workingRelics![relicIndex].CardAttackModifiers!
+                                .Select(item => item.EffectIndex == effectIndex ? updated : item).ToArray();
+                            workingRelics[relicIndex] = workingRelics[relicIndex].WithCardAttackModifiers(attacks);
+                            context = context?.WithRelics(workingRelics);
+                        }
                         dispatches.Add(new RelicCardModifierDispatch(relicIndex, attackEffect!.EffectIndex, returned,
                             false, filters));
                         continue;

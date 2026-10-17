@@ -179,6 +179,8 @@ namespace MonsterTrain2Poju.Model
         internal const string ModifyCardTypeCost = "RelicEffectModifyCardTypeCost";
         internal const string ModifyCardHealth = "RelicEffectModifyCardHealth";
         internal const string ModifyCardAttack = "RelicEffectModifyCardAttack";
+        internal const string ChanceToDestroySelf = "RelicEffectChanceToDestroySelf";
+        internal const string BalatroBananaShake = "RelicEffectBalatroBananaShake";
         internal const string ModifyAttackByStatus = "RelicEffectAdjustAttackByStatusEffect";
         internal const string AddRemoveTempUpgradeOnUnitTrigger = "RelicEffectAddRemoveTempUpgradeOnUnitTrigger";
         internal const string AddTempSoloUnitUpgradeStartOfTurn = "RelicEffectAddTempSoloUnitUpgradeStartOfTurn";
@@ -228,9 +230,12 @@ namespace MonsterTrain2Poju.Model
                 if (attackError != null) return attackError;
                 if (string.IsNullOrEmpty(relic.DataId) || string.IsNullOrEmpty(relic.AssetKey))
                     return "Missing captured relic identity.";
+                string? endCombatError = RelicEndCombatModel.Validate(relic);
+                if (endCombatError != null) return endCombatError;
                 foreach (string effect in relic.EffectTypes)
                 {
-                    if (effect == ModifyCardHealingPower || effect == Null) continue;
+                    if (effect == ModifyCardHealingPower || effect == Null ||
+                        effect == ChanceToDestroySelf || effect == BalatroBananaShake) continue;
                     if (effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != RemoveStatusOnSpawn && effect != AddStatusOnTeamSpawn && effect != AddStatusOnRoomEntry && effect != AddStatusOnUnitMovedUpDown && effect != AddStatusOnCorruption && effect != ChanceAddEffectAfterSpawn && effect != AddTempUpgrade && effect != ModifyTrait && effect != AddTempUpgradeToHandCardsIfCheaper && effect != ModifyForgeUpgrade && effect != ModifyCardTypeCost && effect != ModifyCardHealth && effect != ModifyCardAttack && effect != ModifyAttackByStatus && effect != AddRemoveTempUpgradeOnUnitTrigger && effect != AddTempSoloUnitUpgradeStartOfTurn && effect != AddCardsNull && effect != ModifyCardMagicalPower && effect != ModifyCardMagicPowerOnCardPlayed && effect != CardDrawOnCardPlay && effect != CopyCardOnCardPlay && effect != MonsterSpellTargeting && effect != ModifyRoomCapacityOnCardPlay && effect != ModifyCorruptionOnCardPlayed && effect != FirstRoomCardOnAllFloors && effect != RelicStartCombatAttachmentModel.Effect && effect != AddTrigger && effect != AddStatusOnApplied && effect != AddStatusOnOtherStatusRemoved && effect != ModifyStatusMagnitude && effect != PreventStatusDecay && effect != ModifyCharacterAttackDamage && effect != ModifyCharacterMaxHealth && effect != AllDamageIsPiercing && effect != AdditionalForgePoints && effect != HealOnMoonPhase && effect != DamageOnMonsterSummoned && effect != DamageEnemyOnAscend && effect != DamageEnemyOnDescend && effect != RelicUnstableRebalanceModel.Effect && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
                 }
                 string? error = RelicAfterSpawnChanceStatusModel.Validate(relic) ?? RelicStartCombatAttachmentModel.Validate(relic) ?? RelicCardModifierModel.Validate(relic) ?? RelicCardTypeCostModel.Validate(relic) ?? RelicCardHealthModel.Validate(relic) ?? RelicCardAttackModel.Validate(relic) ?? RelicUnitUpgradeTriggerModel.Validate(relic) ?? RelicSoloUnitUpgradeModel.Validate(relic) ?? RelicMagicPowerModel.Validate(relic) ?? RelicCardPlayMagicPowerModel.Validate(relic) ?? RelicCardPlayCorruptionModel.Validate(relic) ?? RelicCardPlayGoldOnExhaustModel.Validate(relic) ?? RelicCopyCardOnCardPlayModel.Validate(relic) ?? RelicMonsterSpellTargetingModel.Validate(relic) ?? RelicCheaperSpellUpgradeModel.Validate(relic) ?? RelicUnstableRebalanceModel.Validate(relic) ?? RelicCardDrawOnCardPlayModel.Validate(relic) ?? RelicCardPlayRoomCapacityModel.Validate(relic) ?? RelicRoomAttachmentReplicationModel.Validate(relic) ?? RelicSummonDamageModel.Validate(relic) ?? RelicFloorTransitionDamageModel.Validate(relic) ?? RelicSpawnStatusModel.Validate(relic) ?? RelicRoomEntryStatusModel.Validate(relic) ?? RelicCorruptionStatusModel.Validate(relic) ?? RelicCharacterTriggerModel.Validate(relic) ?? RelicStatusStackModel.Validate(relic) ?? RelicStatusMagnitudeModel.Validate(relic) ?? RelicStatusDecayModel.Validate(relic) ?? RelicForgePointModel.Validate(relic) ?? RelicMoonPhaseHealModel.Validate(relic) ?? RelicMoonPhaseStatusModel.Validate(relic) ?? RelicResourceModel.Validate(relic);
@@ -238,5 +243,6 @@ namespace MonsterTrain2Poju.Model
             }
             return null;
         }
+
     }
 }

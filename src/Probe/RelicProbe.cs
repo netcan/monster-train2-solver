@@ -84,13 +84,26 @@ namespace MonsterTrain2Poju.Probe
                         object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
                         var subtype = (SubtypeData)Field("_characterSubtype");
                         var filter = (CardUpgradeMaskData)Field("_cardFilter");
+                        RelicCardAttackContribution[]? applied = null;
+                        if (relic.GetRelicDataID() == RelicEndCombatModel.CavendishId && FullBattleTrace.Active != null)
+                        {
+                            var tracking = (System.Collections.IEnumerable)AccessTools.Field(item.Effect.GetType(), "_appliedEffects").GetValue(item.Effect);
+                            applied = tracking.Cast<object>().Select(entry =>
+                            {
+                                Type tuple = entry.GetType();
+                                CardState card = (CardState)tuple.GetField("Item1")!.GetValue(entry);
+                                int amount = (int)tuple.GetField("Item2")!.GetValue(entry);
+                                bool inDeckState = AllGameManagers.Instance!.GetSaveManager().GetDeckState().Contains(card);
+                                return new RelicCardAttackContribution(FullBattleTrace.Active.CardId(card), amount, inDeckState);
+                            }).ToArray();
+                        }
                         return new RelicCardAttackModifier(item.Index, (string)Field("_characterName"),
                             subtype == null || subtype.IsNone ? "" : subtype.Key, (int)Field("_attackModifier"),
                             (float)Field("_attackMultiplier"), (int)Field("_unmodifiedAttackMultiplier"),
                             Field("_cardType").ToString(), (bool)Field("_multiplyByUpgradeCount"),
                             (bool)Field("_multiplyByRelicCount"), (bool)Field("_excludeChampions"),
                             (bool)Field("_excludeStartRelics"), filter == null ? null : CardUpgradeMaskProbe.Rule(filter),
-                            (bool)Field("_multiplyByRelicCount") ? CountRoles(managers) : null);
+                            (bool)Field("_multiplyByRelicCount") ? CountRoles(managers) : null, applied);
                     }).ToArray();
                 var triggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTrigger).Select(item => AddedTriggers(item.Effect, item.Index)).ToArray();

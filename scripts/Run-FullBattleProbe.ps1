@@ -275,6 +275,7 @@ param(
     [switch] $OriginalAddSnackOnKill,
     [switch] $OriginalFinalEndingArtifact,
     [switch] $OriginalBalatroEventYorick,
+    [switch] $OriginalBalatroEventCavendish,
     [switch] $OriginalGarfieldBoxRandomCard,
     [switch] $OriginalPartFactory,
     [switch] $OriginalBigDamageFromManyMorsels,
@@ -436,6 +437,7 @@ if ($OriginalMoonPhaseEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-
 if ($OriginalMoonPhaseHealRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseStatusRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardAttackRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalBalatroEventCavendish) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUpgradeCountRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealingPowerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStartCombatEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -468,6 +470,13 @@ if ($OriginalBalatroEventYorick) {
     if (-not $PSBoundParameters.ContainsKey('Policy')) { $Policy = 'units-spells-and-junk' }
     if ($Policy -notin @('units-and-junk', 'units-spells-and-junk')) {
         throw 'Original BalatroEventYorick requires a model-driven card policy so recorded actions remain searchable.'
+    }
+}
+if ($OriginalBalatroEventCavendish) {
+    $BranchCardMasks = $true
+    if (-not $PSBoundParameters.ContainsKey('Policy')) { $Policy = 'units-spells-and-junk' }
+    if ($Policy -notin @('units-and-junk', 'units-spells-and-junk')) {
+        throw 'Original BalatroEventCavendish requires a model-driven card policy so card modifiers remain searchable.'
     }
 }
 if ($OriginalGarfieldBoxRandomCard) {
@@ -628,6 +637,7 @@ $originalLogRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'AppD
 
 function Get-OriginalSignature {
     $parts = Get-ChildItem -LiteralPath $originalLogRoot -File -Force -Recurse |
+        Where-Object { $_.Extension -ne '.log' } |
         Sort-Object FullName | ForEach-Object {
             $_.FullName + ':' + $_.LastWriteTimeUtc.Ticks + ':' +
                 (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
@@ -923,6 +933,7 @@ if ($OriginalAfterDrawGenerationRelics) { $environment['MT2_PROBE_MODIFIERS'] = 
 if ($OriginalAddSnackOnKill) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-snack-on-kill' }
 if ($OriginalFinalEndingArtifact) { $environment['MT2_PROBE_MODIFIERS'] = 'original-final-ending-artifact' }
 if ($OriginalBalatroEventYorick) { $environment['MT2_PROBE_MODIFIERS'] = 'original-balatro-event-yorick' }
+if ($OriginalBalatroEventCavendish) { $environment['MT2_PROBE_MODIFIERS'] = 'original-balatro-event-cavendish' }
 if ($OriginalGarfieldBoxRandomCard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-garfield-box-random-card-per-turn' }
 if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
 if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = 'original-big-damage-many-morsels' }
@@ -1950,6 +1961,13 @@ if ($OriginalBalatroEventYorick -and ($trace.Schema -ne 194 -or $trace.ModifierS
     @($trace.RelicCardPlayGoldOnExhaustTests).Count -lt 3 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-BALATRO-EVENT-YORICK-PREPARED unchanged owner' -Quiet))) {
     throw 'BalatroEventYorick lacks its unchanged owner, native Test controls or natural gold callback.'
+}
+if ($OriginalBalatroEventCavendish -and ($trace.Schema -ne 204 -or $trace.ModifierScenario -ne 'original-balatro-event-cavendish' -or
+    -not $trace.OriginalBalatroEventCavendishPrepared -or @($trace.RelicCardModifiers).Count -lt 6 -or
+    -not $trace.OriginalBalatroEventCavendishEndCombatRestored -or @($trace.OriginalBalatroEventCavendishEndCombat).Count -ne 2 -or
+    -not $trace.OriginalBalatroEventCavendishCardlessCallbacksRestored -or @($trace.OriginalBalatroEventCavendishCardlessCallbacks).Count -ne 2 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-BALATRO-EVENT-CAVENDISH-PREPARED unchanged 3x unmodified Monster attack' -Quiet))) {
+    throw 'BalatroEventCavendish lacks unchanged-owner manager, end-combat miss/hit or modifier-reset observations.'
 }
 if ($OriginalGarfieldBoxRandomCard -and ($trace.ModifierScenario -ne 'original-garfield-box-random-card-per-turn' -or
     $trace.Schema -ne 189 -or -not $trace.OriginalGarfieldBoxRandomCardPrepared -or

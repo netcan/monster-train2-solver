@@ -33,11 +33,11 @@ namespace MonsterTrain2Poju.Probe
                     .Select(item => new StatisticCount(FullBattleTrace.Active?.UpgradeKey(item.Key) ?? item.Key, item.Value)).ToArray(),
                 spawner?.GetSpawnCharacterData() == null || spawner.GetSpawnCharacterData() == unit.GetSourceCharacterData(),
                 RelicProbe.HasStatusAttackHistory(AllGameManagers.Instance!) ? (int?)AccessTools.Property(state.GetType(), "DamageBuffFromStatusEffects").GetValue(state) : null,
-                mageblade.SingleOrDefault()?.AdditionalDamagePerMagicPower, RelicProbe.StatusAttackModifiers(AllGameManagers.Instance!));
+                mageblade.SingleOrDefault()?.AdditionalDamagePerMagicPower, RelicProbe.StatusAttackModifiers(AllGameManagers.Instance!), unit.IsChampion());
         }
         internal static UnitModifiers Definition(CharacterData data) => new UnitModifiers(data.GetAttackDamage(), 0, 0,
             data.GetSize(), data.GetEquipmentLimit(), data.GetCanBeHealed(), false, System.Array.Empty<CardUpgradeModifier>(),
             damageBuffFromStatusEffects: RelicProbe.HasStatusAttackHistory(AllGameManagers.Instance!) ? 0 : (int?)null,
-            statusAttackModifiers: RelicProbe.StatusAttackModifiers(AllGameManagers.Instance!));
+            statusAttackModifiers: RelicProbe.StatusAttackModifiers(AllGameManagers.Instance!), isChampion: data.IsChampion());
     }
 }

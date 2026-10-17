@@ -258,7 +258,7 @@ namespace MonsterTrain2Poju.Model
                 modifiers.DamageBuff, modifiers.RawSize, modifiers.EquipmentLimit, modifiers.CanBeHealed,
                 modifiers.IsClone, upgrades, modifiers.HealthFromUpgrades, modifiers.SpawnerMatchesDefinition,
                 modifiers.DamageBuffFromStatusEffects, modifiers.MagebladeDamagePerMagicPower,
-                modifiers.StatusAttackModifiers));
+                modifiers.StatusAttackModifiers, modifiers.IsChampion));
         }
 
         private static RoomCombatState WithUnit(RoomCombatState room, int unitId, CombatUnit changed) =>

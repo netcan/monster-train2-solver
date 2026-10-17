@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+BalatroEventCavendish extension (2026-10-17): 400 archives (362 battles and 38
+calibrations), 180/224 original relic owners (80.36%): 163 full-battle owners,
+sixteen campaign-interface owners and one native no-op. The unchanged three-
+effect relic adds +2x unmodified attack to ordinary Monster cards and cardless
+ordinary units; Champion and Spell controls stay unchanged. Native 1% end-combat
+miss/hit branches verify notification order, exact tracked deck undo and
+reacquisition. Its 48-stage battle has 25 actions and zero differential counters;
+focused checks and independent 128-state search pass. The 33,072-byte archive
+has 5,105 unique nodes and SHA-256
+`73e606fc0c3753e99d8a27c8a5d537a5017712c25b65df1469a6b21018198d0e`.
+
 HephsBlueprints extension (2026-10-17): 398 archives (360 battles and 38
 calibrations), 178/224 original relic owners (79.46%): 161 full-battle owners,
 sixteen campaign-interface owners and one native no-op. The unchanged original

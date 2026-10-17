@@ -19,7 +19,7 @@ namespace MonsterTrain2Poju.Probe
                 effects.Select(effect => (IReadOnlyList<UpgradeMaskStatus>)effect.GetParamStatusEffectStackData().Select(Status).ToArray()).ToArray(),
                 effects.Select(effect => effect.GetEffectStateName()).ToArray(), card.GetLinkedClassID(), card.IsConsumeRemainingEnergyCostType(), spawn?.GetSize() ?? 0,
                 (int)card.GetCardTargetMode(), spawn?.GetUnitAbilityCardData() != null, equipmentAbility, spawn?.GetGraftedEquipment() != null,
-                card.CanScaleWithMagicPower());
+                card.CanScaleWithMagicPower(), card.IsChampionCard(), spawn?.GetAttackDamage());
             CardMaskModifiers Modifiers(CardStateModifiers modifiers)
             {
                 int Field(string name) => (int)AccessTools.Field(typeof(CardStateModifiers), name).GetValue(modifiers);

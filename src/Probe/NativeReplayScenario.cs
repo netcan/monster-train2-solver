@@ -290,6 +290,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalAddSnackOnKillScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalBalatroEventYorickScenario.Enabled && !OriginalBalatroEventYorickScenario.Acquired)
                         OriginalBalatroEventYorickScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalBalatroEventCavendishScenario.Enabled && !OriginalBalatroEventCavendishScenario.Acquired)
+                        OriginalBalatroEventCavendishScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -708,6 +710,12 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalBalatroEventYorickScenario.Enabled)
             {
                 OriginalBalatroEventYorickScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalBalatroEventCavendishScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Cavendish multiplier fixture must start on deployment turn.");
+                OriginalBalatroEventCavendishScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalGarfieldBoxRandomCardScenario.Enabled)

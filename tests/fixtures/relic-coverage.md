@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **179 distinct original collectable relics / 224 catalog entries
-(79.91%)** have accepted native evidence: 162 have full-battle effect evidence,
+As of 2026-10-17, **180 distinct original collectable relics / 224 catalog entries
+(80.36%)** have accepted native evidence: 163 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -386,6 +386,7 @@ owner count.
 | `PurgeToExhaust` | `10648aee-8577-49b6-8659-318a7f922d5a` | [PurgeToExhaust][purgeToExhaust] | The unchanged ordered Spell/Equipment filters replace SelfPurge with Exhaust. Six native source/filter controls and 24 repeated manager calls match; a converted Spell is actually played into Exhausted with native private trait state. Full battle and independent 128-state search pass. |
 | `PyregelOnAscend_DH` | `394fb724-046f-448f-9531-f9d6caadae77` | [enemy ascend Pyregel][pyregelOnAscend] | The unchanged owner adds 2 Pyregel after enemy PostAscension; descend, player, rooted and immobile controls do not gain it. All 22 Bump replays, 40 full-battle stages and 42 actions match; independent search passes 74/74 states with serial/parallel best equality. |
 | `BalatroEventYorick` | `2bd14ebc-1589-4652-a002-54013f0eace4` | [schema-194 Balatro battle](full-battle-original-balatro-event-yorick.mt2f) | Its unchanged exhaust look-ahead matches 28 native Test calls and six natural Consume callbacks, including full train state and adjusted reward gold; non-Consume, threshold, preview and multiplier controls pass. Independent replay/search match. |
+| `BalatroEventCavendish` | `24c4ad26-f2b3-4a95-bddc-caab94bd4767` | [schema-204 Balatro battle](full-battle-original-balatro-event-cavendish.mt2f) | Its unchanged ordered attack, 1% end-combat destruction and banana-shake effects pass ordinary/champion/spell and cardless controls, deterministic miss/hit undo, and independent search. |
 | `2ChargesOnCardConsumed` | `217d553b-cddf-4a8c-a4c9-cfdb3c99389c` | [2Charges battle](full-battle-original-two-charges-on-card-consumed.mt2f) | Unchanged +1 corruption owner: an Exhaust carrier changes only its selected floor; a non-Exhaust play and all other floors remain unchanged. Five card actions replay; callback-bearing floors and above-maximum behavior are outside this capture. |
 | `ChanceForSpellWeakness` | `98989cbb-c729-4f87-8240-08f448db96d8` | [ChanceForSpellWeakness battle](full-battle-original-chance-for-spell-weakness.mt2f) | Unchanged 50% AfterSpawnEnchant effect adds one Spell Weakness to eligible enemy Heroes: seven exact rolls (four hits/three misses), four applications, and 496 gated tests with unchanged Battle RNG. Other owner identities and nested payload shapes remain unsupported. |
 
@@ -393,7 +394,7 @@ owner count.
 
 These sixteen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 156 battle owners. It does not claim whole-battle integration
+separate from the 163 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -498,6 +499,7 @@ archives contain these observed battle sizes:
 | [ExtraFeedTrigger](full-battle-original-extra-feed-trigger.mt2f) | 199 | 5 | 7 | 61 | Original Monsters OnFeed +1; live Pyre native query 2 vs OnDeath control 1 |
 | [HephsBlueprints](full-battle-original-hephs-blueprints.mt2f) | 200 | 17 | 5 | 39 | Equipment-only +2 damage/+2 Armor forge upgrade scales to +6/+6 at three Forge; Monster filter control |
 | [ModifyDragonsHoardBattleStart][startCombatHoard] | 201 | 21 | 7 | 60 | Deployment +1 Hoard, one card and monster resource refresh each |
+| [BalatroEventCavendish](full-battle-original-balatro-event-cavendish.mt2f) | 204 | 25 | 6 | 48 | Ordinary Monster +2x base attack; cardless positive/Champion exclusion; deterministic 1% miss/hit and exact deck undo |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -1384,4 +1386,41 @@ component calibrations. Original relic evidence is 179/224 (79.91%): 162 battle,
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-start-combat-hoard-relic.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-start-combat-hoard-only tests/fixtures/full-battle-original-start-combat-hoard-relic.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-start-combat-hoard-relic.mt2f
+```
+
+## BalatroEventCavendish
+
+| `BalatroEventCavendish` | `24c4ad26-f2b3-4a95-bddc-caab94bd4767` | Native acquired owner, ordered card attack, cardless callback and end-combat removal/undo |
+
+The schema-204 archive checks the unchanged three-effect owner in native order.
+Both card modifier reset modes match for an ordinary Monster, a Champion and a
+Spell; accumulated applications are tracked by card-instance identity so the
+1% removal branch can undo the exact amount on each deck copy. The full battle
+also captures natural manager resets, while the native `OnCharacterAdded`
+callback is isolated on a surviving ordinary unit: its unmodified attack 46
+becomes 138. A control using the actual Champion subtype remains at 46, and the
+unit's temporary cardless status, attack and subtype list are restored.
+
+The end-combat probe seeds the native Battle RNG to a miss (1) and hit (0). The
+miss retains the owner and only attempts the banana-shake effect; the hit emits
+the destruction trigger, undoes every tracked in-deck modifier, removes the
+owner, then attempts banana shake. Reacquisition restores card modifiers. Native
+terminal BattleWon stops before that end-of-combat callback; the final captured
+owner, tracked contributions and Battle RNG remain unchanged. Nonterminal clear
+callbacks are modeled separately.
+
+The winning 48-stage battle has 25 card actions, six EndTurns and zero capture
+failures, mismatches, unsupported transitions or pending records. Dedicated
+checks and independent search match all 25 recorded decisions, visit 128/128
+states, replay four steps and have serial/parallel best equality. The 33,072-byte
+archive has 5,105 unique nodes and SHA-256
+`73e606fc0c3753e99d8a27c8a5d537a5017712c25b65df1469a6b21018198d0e`; no JSON
+companion is tracked. Inventory is 400 archives: 362 full battles and 38
+component calibrations. Original relic evidence is 180/224 (80.36%): 163 battle,
+16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-balatro-event-cavendish.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-balatro-event-cavendish-only tests/fixtures/full-battle-original-balatro-event-cavendish.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-balatro-event-cavendish.mt2f
 ```

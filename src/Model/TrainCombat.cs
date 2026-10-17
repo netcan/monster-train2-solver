@@ -208,8 +208,11 @@ namespace MonsterTrain2Poju.Model
 
         public static TrainCombatResult ResolveCombat(TrainCombatState source)
         {
-            string? error = Validate(source);
+            string? error = Validate(source) ?? RelicEndCombatModel.Validate(source.Context);
             if (error != null) return Unsupported(error);
+            int[] removedFromDeck = (source.Context?.OtherPiles ?? Array.Empty<CardPileState>())
+                .Where(pile => pile.Name == "Purged").SelectMany(pile => pile.Cards)
+                .Select(card => card.InstanceId).Distinct().ToArray();
             RoomCombatState[] rooms = source.Rooms.ToArray();
             CombatContext? context = source.Context;
             var results = new List<RoomCombatResult>();
@@ -252,7 +255,19 @@ namespace MonsterTrain2Poju.Model
                     rooms[index] = WithContext(rooms[index], context);
                 }
             }
-            return new TrainCombatResult(Freeze(source, rooms, context), RoomOutcome.Cleared, results);
+            return FinishCombat(source, rooms, context, RoomOutcome.Cleared, results, removedFromDeck);
+        }
+
+        private static TrainCombatResult FinishCombat(TrainCombatState source, RoomCombatState[] rooms,
+            CombatContext? context, RoomOutcome outcome, IReadOnlyList<RoomCombatResult> results,
+            IReadOnlyCollection<int> removedFromDeck)
+        {
+            if (context != null)
+            {
+                context = RelicEndCombatModel.Apply(context, out string? error, removedFromDeck);
+                if (error != null) return Unsupported(error);
+            }
+            return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);
         }
 
         public static TrainCombatResult Ascend(TrainCombatState source)
