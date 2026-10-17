@@ -48,7 +48,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static string? Added(int room, CombatUnit before, CombatUnit after, string id,
-            ICollection<RoomCombatModel.QueuedCharacterTrigger> queue, CombatStatus? appliedDefinition = null)
+            ICollection<RoomCombatModel.QueuedCharacterTrigger> queue, CombatStatus? appliedDefinition = null,
+            CombatContext? context = null)
         {
             int old = before.RegisteredStatus(id)?.Stacks ?? 0;
             CombatStatus status = after.RegisteredStatus(id) ?? appliedDefinition!.WithStacks(0);
@@ -63,13 +64,15 @@ namespace MonsterTrain2Poju.Model
             if (id == "cooldown" && after.Ability?.HasAbility == true && old <= 0 && status.Stacks > 0)
                 queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnUnitAbilityUnavailable"));
             if (old != 0) return null;
+            bool hasNewStatusListener = after.Triggers.Any(trigger => trigger.Kind == "OnNewStatusEffectAdded") ||
+                RelicStatusAddedEffectModel.HasListener(context);
             if (!status.Hidden.HasValue || status.DisplayCategory == null)
-                return after.Triggers.Any(trigger => trigger.Kind == "OnNewStatusEffectAdded")
+                return hasNewStatusListener
                     ? "New-status callbacks require captured visibility/category definitions." : null;
             if (status.Hidden == true || status.DisplayCategory == "Persistent") return null;
             int? visible = after.CountUniqueVisibleStatuses();
             if (!visible.HasValue)
-                return after.Triggers.Any(trigger => trigger.Kind == "OnNewStatusEffectAdded")
+                return hasNewStatusListener
                     ? "New-status callbacks require the complete native status dictionary." : null;
             queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room, after, "OnNewStatusEffectAdded", paramInt: visible.Value, paramString: ""));
             return null;

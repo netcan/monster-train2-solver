@@ -143,7 +143,9 @@ namespace MonsterTrain2Poju.Probe
                             (bool)Field("_multiplyByRelicCount") ? CountRoles(managers) : null, applied);
                     }).ToArray();
                 var triggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectAddTrigger).Select(item => AddedTriggers(item.Effect, item.Index)).ToArray();
+                    .Where(item => item.Effect is RelicEffectAddTrigger || item.Effect is RelicEffectAddEffectOnStatusAdded)
+                    .Select(item => item.Effect is RelicEffectAddTrigger
+                        ? AddedTriggers(item.Effect, item.Index) : StatusAddedTrigger(item.Effect, item.Index)).ToArray();
                 var unitUpgradeTriggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddRemoveTempUpgradeOnUnitTrigger)
                     .Select(item => UnitUpgradeTrigger(item.Effect, item.Index)).ToArray();
@@ -509,6 +511,28 @@ namespace MonsterTrain2Poju.Probe
                 subtype?.IsPyre == true, ((List<CharacterData>)Field("characterFilter"))
                     .Where(character => character != null).Select(character => character.GetAssetKey()).ToArray(),
                 RelicCardModifierProbe.Conditions(effect), interactions);
+        }
+
+        private static RelicCharacterTriggers StatusAddedTrigger(IRelicEffect effect, int index)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            var subtype = (SubtypeData)Field("subtypeData");
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            CardEffectState[] effects = ((List<CardEffectState>)Field("_effects")).ToArray();
+            if (effects.Length != 1) throw new InvalidOperationException("Status-added relic must capture one native card effect.");
+            CardEffectState cardEffect = effects[0];
+            Team.Type targetTeam = cardEffect.GetTargetTeamType();
+            var action = new RelicStatusAddedEffect((int)Field("uniqueRequiredStatusCount"),
+                (bool)Field("triggerAtExactCount"), data.GetTargetMode().ToString(), effect.CanApplyInPreviewMode,
+                cardEffect.GetCardEffect().GetType().Name, cardEffect.GetTargetMode().ToString(),
+                targetTeam.HasFlag(Team.Type.Heroes), targetTeam.HasFlag(Team.Type.Monsters),
+                cardEffect.GetParamInt(), cardEffect.GetAdditionalParamInt(), cardEffect.GetParamBool(),
+                cardEffect.GetParamStatusEffectStackData().Select(status => status.statusId).ToArray());
+            Team.Type sourceTeam = (Team.Type)Field("sourceTeam");
+            return new RelicCharacterTriggers(index, sourceTeam.HasFlag(Team.Type.Monsters),
+                sourceTeam.HasFlag(Team.Type.Heroes), Array.Empty<CombatTrigger>(), false,
+                subtype?.Key, subtype == null || subtype.IsNone, subtype?.IsPyre == true,
+                conditions: RelicCardModifierProbe.Conditions(effect), statusAddedEffect: action);
         }
 
         private static RelicSpawnStatus SpawnStatus(IRelicEffect effect, int index)

@@ -307,6 +307,7 @@ param(
     [switch] $OriginalJudgesScalesRelic,
     [switch] $OriginalFirstImpBonusRelic,
     [switch] $OriginalMoonPhaseRoomsGainMagicPowerRelic,
+    [switch] $OriginalPropagateOnStatusEffectAppliedRelic,
     [switch] $OriginalNoUpgradeCardCostRelic,
     [switch] $OriginalPyreHealthCardCostRelic,
     [switch] $OriginalNullRelic,
@@ -514,6 +515,7 @@ if ($OriginalNimsOathRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalJudgesScalesRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFirstImpBonusRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseRoomsGainMagicPowerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalPropagateOnStatusEffectAppliedRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNoUpgradeCardCostRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreHealthCardCostRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -971,6 +973,7 @@ if ($OriginalNimsOathRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-ni
 if ($OriginalJudgesScalesRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-judges-scales' }
 if ($OriginalFirstImpBonusRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-imp-bonus' }
 if ($OriginalMoonPhaseRoomsGainMagicPowerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-rooms-magic-power' }
+if ($OriginalPropagateOnStatusEffectAppliedRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-propagate-on-status-effect-applied' }
 if ($OriginalNoUpgradeCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-cost-unit-no-upgrade' }
 if ($OriginalPyreHealthCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-health-card-cost' }
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **190 distinct original collectable relics / 224 catalog entries
-(84.82%)** have accepted native evidence: 173 have full-battle effect evidence,
+As of 2026-10-18, **192 distinct original collectable relics / 224 catalog entries
+(85.71%)** have accepted native evidence: 175 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1603,4 +1603,22 @@ The 36,489-byte archive has 5,570 unique nodes and SHA-256 `5df0de2f1cbf17910331
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-rooms-gain-magic-power.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-hand-upgrade-only tests/fixtures/full-battle-original-moon-phase-rooms-gain-magic-power.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-moon-phase-rooms-gain-magic-power.mt2f
+```
+
+## PropagateOnStatusEffectApplied
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `PropagateOnStatusEffectApplied` | `274bc27a-9be2-4908-aa84-641944188c08` | `full-battle-original-propagate-on-status-effect-applied.mt2f` | The unchanged owner listens to `OnNewStatusEffectAdded`; an exact count of three newly visible status types triggers `CardEffectAdjustAllStatusEffects` on the actor, adding two stacks to each existing, propagatable status allowed for that team. |
+
+The focused checker verifies the native owner/action payload, the exact-three positive and over-count negative observations, a completed asynchronous effect, and +2 on Valor, Spikes, Regen and Damage Shield. Model controls cover under/exact/over counts, player and enemy teams, preview, remove/reapply, team exclusions, unknown propagation metadata rejection, and immutable parallel branches. Native source queues the new-visible-status callback independently of actor-authored triggers; the model preserves that dispatch for both local birth and deferred callback paths. The 52-stage winning battle records 18 actions, six EndTurns, 11 train phases and nine spawns, with zero capture failures, mismatches, unsupported transitions or pending records. Independent search matches all recorded decisions over 128/128 states with serial/parallel best equality.
+
+The 31,011-byte archive has 4,746 unique nodes and SHA-256 `75028892a07a35a255d25d1fd41ddd338a3c62d85750fef5863d977b11585bfa`; no JSON companion is tracked. Inventory is 411 archives: 373 full battles and 38 component calibrations. Original relic evidence is 192/224 (85.71%): 175 battle, 16 campaign and one native no-op owner.
+
+This witness covers the captured exact-three owner on a Train Steward carrying four eligible positive statuses and model-tested generic status/team filtering. Other owners of this effect, other nested action definitions, and unobserved callback sources remain unsupported.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-propagate-on-status-effect-applied.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-propagate-on-status-effect-applied-only tests/fixtures/full-battle-original-propagate-on-status-effect-applied.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-propagate-on-status-effect-applied.mt2f
 ```

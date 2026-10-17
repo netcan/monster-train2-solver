@@ -375,6 +375,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalFirstImpBonusScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMoonPhaseRoomsGainMagicPowerScenario.Enabled && !OriginalMoonPhaseRoomsGainMagicPowerScenario.Acquired)
                         OriginalMoonPhaseRoomsGainMagicPowerScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalPropagateOnStatusEffectAppliedScenario.Enabled && !OriginalPropagateOnStatusEffectAppliedScenario.Acquired)
+                        OriginalPropagateOnStatusEffectAppliedScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalNoUpgradeCardCostScenario.Enabled && !OriginalNoUpgradeCardCostScenario.Acquired)
                         OriginalNoUpgradeCardCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPyreCardCostScenario.Enabled && !OriginalPyreCardCostScenario.Acquired)
@@ -569,6 +571,11 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            if (fullBattle && OriginalPropagateOnStatusEffectAppliedScenario.Acquired && !OriginalPropagateOnStatusEffectAppliedScenario.Prepared)
+            {
+                OriginalPropagateOnStatusEffectAppliedScenario.PrepareCarrier(managers, log);
+                return;
+            }
             if (fullBattle && !numericModifiersPrepared && RoomCapacityAttachmentScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Capacity attachment fixture must start on deployment turn.");

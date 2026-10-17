@@ -287,7 +287,8 @@ namespace MonsterTrain2Poju.Model
                         if (removingStatus) StatusCallbackModel.Removed(state.RoomIndex, beforeStatus, Snapshot(), status.Id, statusCallbacks);
                         else
                         {
-                            string? callbackError = StatusCallbackModel.Added(state.RoomIndex, beforeStatus, Snapshot(), status.Id, statusCallbacks, status);
+                            string? callbackError = StatusCallbackModel.Added(state.RoomIndex, beforeStatus, Snapshot(), status.Id,
+                                statusCallbacks, status, state.Context);
                             if (callbackError != null) return Unsupported(callbackError);
                         }
                     }

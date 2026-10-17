@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+PropagateOnStatusEffectApplied extension (2026-10-18): 411 archives (373 battles
+and 38 calibrations), 192/224 original relic owners (85.71%): 175 full-battle
+owners, sixteen campaign-interface owners and one native no-op. The unchanged
+owner propagates +2 stacks to every eligible existing status when a newly added
+status leaves the actor with exactly three visible status types. Two positive
+callbacks and the exact-count controls are captured. The 52-stage winning replay
+has 18 actions and zero differential counters; focused checks and independent
+128-state serial/parallel search pass. The 31,011-byte archive has 4,746 unique
+nodes and SHA-256
+`75028892a07a35a255d25d1fd41ddd338a3c62d85750fef5863d977b11585bfa`.
+
 MoonPhaseRoomsGainMagicPower extension (2026-10-18): 410 archives (372 battles
 and 38 calibrations), 191/224 original relic owners (85.27%): 174 full-battle
 owners, sixteen campaign-interface owners and one native no-op. The unchanged

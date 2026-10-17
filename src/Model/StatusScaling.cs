@@ -147,7 +147,8 @@ namespace MonsterTrain2Poju.Model
                 changed = horde.State!.Units.First(unit => unit.Id == targetId); context = horde.State.Context;
                 queue.AddRange(horde.PendingCallbacks);
             }
-            string? callbackError = StatusCallbackModel.Added(source.RoomIndex, target, changed, added.Id, queue, existing ?? added);
+            string? callbackError = StatusCallbackModel.Added(source.RoomIndex, target, changed, added.Id, queue,
+                existing ?? added, context);
             if (callbackError != null) return Unsupported(callbackError);
             callbackError = StatusCallbackModel.FilterPurifyQueue(context, queue);
             if (callbackError != null) return Unsupported(callbackError);

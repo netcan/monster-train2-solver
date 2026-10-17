@@ -4,6 +4,41 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
+    public sealed class RelicStatusAddedEffect
+    {
+        public int UniqueRequiredStatusCount { get; }
+        public bool TriggerAtExactCount { get; }
+        public string OuterTargetMode { get; }
+        public bool CanApplyInPreviewMode { get; }
+        public string CardEffectType { get; }
+        public string TargetMode { get; }
+        public bool TargetHeroes { get; }
+        public bool TargetMonsters { get; }
+        public int Adjustment { get; }
+        public int StatusFilter { get; }
+        public bool RequireValidTargets { get; }
+        public IReadOnlyList<string> StatusIds { get; }
+
+        public RelicStatusAddedEffect(int uniqueRequiredStatusCount, bool triggerAtExactCount, string outerTargetMode,
+            bool canApplyInPreviewMode, string cardEffectType, string targetMode, bool targetHeroes,
+            bool targetMonsters, int adjustment, int statusFilter, bool requireValidTargets,
+            IReadOnlyList<string> statusIds)
+        {
+            UniqueRequiredStatusCount = uniqueRequiredStatusCount;
+            TriggerAtExactCount = triggerAtExactCount;
+            OuterTargetMode = outerTargetMode;
+            CanApplyInPreviewMode = canApplyInPreviewMode;
+            CardEffectType = cardEffectType;
+            TargetMode = targetMode;
+            TargetHeroes = targetHeroes;
+            TargetMonsters = targetMonsters;
+            Adjustment = adjustment;
+            StatusFilter = statusFilter;
+            RequireValidTargets = requireValidTargets;
+            StatusIds = Array.AsReadOnly(statusIds.ToArray());
+        }
+    }
+
     public sealed class RelicCharacterTriggers
     {
         public int EffectIndex { get; }
@@ -17,10 +52,12 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CombatTrigger> Triggers { get; }
         public IReadOnlyList<RelicConditionState> Conditions { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
+        public RelicStatusAddedEffect? StatusAddedEffect { get; }
         public RelicCharacterTriggers(int effectIndex, bool sourcePlayer, bool sourceEnemy,
             IReadOnlyList<CombatTrigger> triggers, bool noCountModifiersAllowed, string? requiredSubtype = null,
             bool subtypeIsNone = true, bool subtypeIsPyre = false, IReadOnlyList<string>? characterAssetKeys = null,
-            IReadOnlyList<RelicConditionState>? conditions = null, IReadOnlyList<string>? externalInteractions = null)
+            IReadOnlyList<RelicConditionState>? conditions = null, IReadOnlyList<string>? externalInteractions = null,
+            RelicStatusAddedEffect? statusAddedEffect = null)
         {
             EffectIndex = effectIndex; SourcePlayer = sourcePlayer; SourceEnemy = sourceEnemy;
             RequiredSubtype = requiredSubtype; SubtypeIsNone = subtypeIsNone; SubtypeIsPyre = subtypeIsPyre;
@@ -29,10 +66,11 @@ namespace MonsterTrain2Poju.Model
             Triggers = Array.AsReadOnly(triggers.ToArray());
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             ExternalInteractions = Array.AsReadOnly((externalInteractions ?? Array.Empty<string>()).ToArray());
+            StatusAddedEffect = statusAddedEffect;
         }
         internal RelicCharacterTriggers WithConditions(IReadOnlyList<RelicConditionState> conditions) => new RelicCharacterTriggers(
             EffectIndex, SourcePlayer, SourceEnemy, Triggers, NoCountModifiersAllowed, RequiredSubtype, SubtypeIsNone,
-            SubtypeIsPyre, CharacterAssetKeys, conditions, ExternalInteractions);
+            SubtypeIsPyre, CharacterAssetKeys, conditions, ExternalInteractions, StatusAddedEffect);
     }
 
     internal static class RelicCharacterTriggerModel
@@ -40,7 +78,8 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
-                .Where(item => item.type == RelicModel.AddTrigger).Select(item => item.index).ToArray();
+                .Where(item => item.type == RelicModel.AddTrigger || item.type == RelicModel.AddEffectOnStatusAdded)
+                .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.TriggerAdditions?.Count > 0 ? "Unexpected relic character triggers." : null;
             if (relic.IsCovenant == null || relic.DisallowedInPlacementPhase == null || relic.TriggerAdditions == null ||
                 !indices.SequenceEqual(relic.TriggerAdditions.Select(rule => rule.EffectIndex)))
@@ -52,6 +91,15 @@ namespace MonsterTrain2Poju.Model
                     rule.CharacterAssetKeys.Any(string.IsNullOrEmpty) ||
                     rule.Conditions.Any(condition => condition.Comparator < 0 || condition.Comparator > 7))
                     return "Malformed native relic character trigger definition.";
+                bool installsTriggers = relic.EffectTypes[rule.EffectIndex] == RelicModel.AddTrigger;
+                if (installsTriggers != (rule.StatusAddedEffect == null) ||
+                    installsTriggers && rule.Triggers.Count == 0 || !installsTriggers && rule.Triggers.Count != 0)
+                    return "Malformed native relic character-action definition.";
+                if (!installsTriggers)
+                {
+                    string? actionError = RelicStatusAddedEffectModel.Validate(relic, rule);
+                    if (actionError != null) return actionError;
+                }
             }
             return null;
         }

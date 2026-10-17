@@ -648,7 +648,8 @@ namespace MonsterTrain2Poju.Model
                 return movementStatus;
             RoomCombatResult triggered = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue,
                 resetPreviewTriggers: false, refreshPyre: refreshPyre).TraceAllDispatches(queued.CaptureAllDispatches).QueuedTrigger(queued);
-            RoomCombatResult entered = RelicRoomEntryStatusModel.ApplyAfterEntry(triggered, queued, enqueue);
+            RoomCombatResult relicStatusEffect = RelicStatusAddedEffectModel.ApplyAfterTrigger(triggered, queued);
+            RoomCombatResult entered = RelicRoomEntryStatusModel.ApplyAfterEntry(relicStatusEffect, queued, enqueue);
             return RelicAfterSpawnChanceStatusModel.ApplyAfterEntry(entered, queued, enqueue);
         }
 
@@ -2788,6 +2789,21 @@ namespace MonsterTrain2Poju.Model
                     }
                     ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire, queued.ParamInt, queued.OverrideTarget, queued.DyingCharacter,
                         queued.TriggerCount, queued.LastSpawnedOverrideUnitId, queued.ParamInt2, queued.ParamString, queued.ExclusiveTriggerStateId);
+                    if (unsupportedReason == null && queued.Kind == "OnNewStatusEffectAdded")
+                    {
+                        var callback = new QueuedCharacterTrigger(queued.RoomIndex, queued.Unit.Freeze(), queued.Kind,
+                            paramInt: queued.ParamInt, paramInt2: queued.ParamInt2, paramString: queued.ParamString,
+                            triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId,
+                            captureAllDispatches: traceAllDispatches);
+                        RoomCombatResult relicEffect = RelicStatusAddedEffectModel.ApplyAfterTrigger(
+                            new RoomCombatResult(CurrentRoom(), RoomOutcome.Exchanged, 0, new List<CombatEvent>()), callback);
+                        if (!relicEffect.Supported) { unsupportedReason = relicEffect.UnsupportedReason; break; }
+                        ImportEnchantmentRoom(relicEffect.State!);
+                        events.AddRange(relicEffect.Events);
+                        dispatches.AddRange(relicEffect.Dispatches);
+                        foreach (QueuedCharacterTrigger child in relicEffect.PendingCallbacks) QueueCallback(child);
+                        battleWon |= relicEffect.Outcome == RoomOutcome.BattleWon;
+                    }
                 }
                 var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
                 deferredDamageDeaths.Clear();

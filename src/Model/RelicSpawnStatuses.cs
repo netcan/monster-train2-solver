@@ -130,7 +130,7 @@ namespace MonsterTrain2Poju.Model
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
             if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
-                relic.CardModifiers?.Count > 0 || relic.CardAttackModifiers?.Count > 0 || relic.TriggerAdditions?.Count > 0 ||
+                relic.CardModifiers?.Count > 0 || relic.CardAttackModifiers?.Count > 0 || relic.TriggerAdditions?.Any(rule => rule.Triggers.Count > 0) == true ||
                 relic.CardPlayMagicPowerModifiers?.Count > 0 || relic.CardDrawOnCardPlayModifiers?.Count > 0))
                 return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: prior);
             if (!source.Units.Any(unit => unit.Id == unitId) || fromCardId < 0 ||
