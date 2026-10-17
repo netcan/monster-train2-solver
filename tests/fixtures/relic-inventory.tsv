@@ -43,7 +43,7 @@
 "RageOnBurnoutStackLoss"	"85667d60-8053-4204-8c02-ba101dab7945"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnOtherStatusRemoved"	""
 "PyreRevengeAddPyregel"	"82b22203-9da1-4f83-9e84-826fb8d1d280"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "ProgressPacemaker"	"4446fd0c-f7c3-4a9d-96c3-bd12e4426a76"	"accepted-native-battle"	"RelicEffectAdjustMixAmount"	""
-"ExtractForEmberAndEchos"	"4d237444-5beb-43df-a545-c68a7ae86ba6"	"pending"	"RelicEffectEnergyOnCorruptRestrictedPlayed,RelicEffectCorruptionOnCorruptRestrictedPlayed"	""
+"ExtractForEmberAndEchos"	"4d237444-5beb-43df-a545-c68a7ae86ba6"	"accepted-native-battle"	"RelicEffectEnergyOnCorruptRestrictedPlayed,RelicEffectCorruptionOnCorruptRestrictedPlayed"	""
 "BossCapacity2"	"2d313e11-aa80-4116-b359-7560d3307544"	"accepted-native-battle"	"RelicEffectChangeFloorCapacity,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack"	""
 "DamageOnCorruptPlay"	"f302d4a1-13ba-4907-a26d-f0d8eead6f2e"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnCorruptionAdded,RelicEffectAddStatusEffectOnCorruptionAdded"	""
 "StewardSacrificeDamage"	"f6a4e405-98b9-4eeb-bae1-50cb204d12ed"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""

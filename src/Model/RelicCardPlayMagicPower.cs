@@ -67,7 +67,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RelicCardPlayMagicPowerResult Apply(CombatContext source, int playedCardId,
-            BattlePlayRules? definitions = null, int currentTurn = -1, int? selectedRoomIndex = null)
+            BattlePlayRules? definitions = null, int currentTurn = -1, int? selectedRoomIndex = null,
+            bool placement = false, bool preview = false, TrainCombatState? trainState = null)
         {
             bool hasMagicPower = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCardMagicPowerOnCardPlayed)) == true;
             bool hasCheaperSpellUpgrade = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddTempUpgradeToHandCardsIfCheaper)) == true;
@@ -75,11 +76,16 @@ namespace MonsterTrain2Poju.Model
             bool hasCardDraw = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CardDrawOnCardPlay)) == true;
             bool hasRoomCapacity = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyRoomCapacityOnCardPlay)) == true;
             bool hasRoomAttachmentReplication = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.FirstRoomCardOnAllFloors)) == true;
-            if (!hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasRoomCapacity && !hasRoomAttachmentReplication)
+            bool hasCorruptRestrictedCardPlay = source.Relics?.Any(relic => relic.EffectTypes.Any(type =>
+                type == RelicResourceModel.EnergyOnCorruptRestrictedPlayed ||
+                type == RelicResourceModel.CorruptionOnCorruptRestrictedPlayed)) == true;
+            if (!hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasRoomCapacity &&
+                !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay)
                 return new RelicCardPlayMagicPowerResult(source);
-            if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy) && source.CardInstances == null)
+            if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay) && source.CardInstances == null)
                 return Fail(source, "Native card-play relic effects require the current owned-card list.");
-            if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy) && !source.CardInstances!.Any(card => card.InstanceId == playedCardId))
+            if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay) &&
+                !source.CardInstances!.Any(card => card.InstanceId == playedCardId))
                 return Fail(source, "Native card-play relic effects require the played card in the owned-card list.");
 
             CombatContext context = source;
@@ -123,6 +129,20 @@ namespace MonsterTrain2Poju.Model
                             context, playedCardId, definitions, relicIndex, effectIndex, selectedRoom);
                         if (!replicated.Supported) return Fail(context, replicated.UnsupportedReason!);
                         context = replicated.Context!;
+                        continue;
+                    }
+                    if (relic.EffectTypes[effectIndex] == RelicResourceModel.EnergyOnCorruptRestrictedPlayed ||
+                        relic.EffectTypes[effectIndex] == RelicResourceModel.CorruptionOnCorruptRestrictedPlayed)
+                    {
+                        if (trainState == null)
+                            return Fail(context, "Corrupt Restricted card-play relic effects require the current train state.");
+                        int selectedRoom = context.QueryFrame?.SelectedRoomIndex ?? selectedRoomIndex ?? -1;
+                        TrainCombatResult applied = RelicCorruptRestrictedCardPlayModel.ApplyOne(
+                            CardSpellModel.WithContext(trainState, context), playedCardId, selectedRoom,
+                            relicIndex, effectIndex, placement, preview);
+                        if (!applied.Supported) return Fail(context, applied.UnsupportedReason!);
+                        trainState = applied.State;
+                        context = trainState!.Context!;
                         continue;
                     }
                     if (relic.EffectTypes[effectIndex] == RelicModel.AddTempUpgradeToHandCardsIfCheaper)

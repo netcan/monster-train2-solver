@@ -402,6 +402,7 @@ namespace MonsterTrain2Poju.Model
                 if (playingInstance == null) return Unsupported("Missing card instance modifiers.");
                 rule = CardModifierModel.Resolve(rule, playingInstance);
             }
+            bool supportsCorruptRestrictedTrait = false;
             if (rule.ExternalInteractions.Contains("Card traits") && playingInstance?.MaskDescriptor != null)
             {
                 CardUpgradeMaskCard mask;
@@ -410,8 +411,13 @@ namespace MonsterTrain2Poju.Model
                 { return Unsupported("Cannot resolve card play traits: " + exception.Message); }
                 if (mask.Traits.Contains("CardTraitUnplayable"))
                     return Illegal("The card has an Unplayable trait.");
+                string? traitError = RelicCorruptRestrictedCardPlayModel.ValidateCardTraits(playingInstance,
+                    out supportsCorruptRestrictedTrait);
+                if (traitError != null) return Unsupported(traitError);
             }
-            if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
+            string[] unsupportedInteractions = rule.ExternalInteractions.Where(interaction =>
+                interaction != "Card traits" || !supportsCorruptRestrictedTrait).ToArray();
+            if (unsupportedInteractions.Length > 0) return Unsupported(string.Join("; ", unsupportedInteractions));
             if (rule.CostType != "Default" && rule.CostType != "ConsumeRemainingEnergy")
                 return Unsupported("Unmodeled card cost type " + rule.CostType);
             if (rule.Cost < 0) return Unsupported("Negative card costs are not implemented.");
@@ -714,7 +720,9 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<RoomCapacityState>? capacitiesBeforeRelics = context.RoomCapacities;
             RelicCardPlayMagicPowerResult cardPlayMagicPower = RelicCardPlayMagicPowerModel.Apply(
                 context, card.InstanceId, source.PlayRules, source.Spawn.Turn,
-                context.QueryFrame?.SelectedRoomIndex ?? action.RoomIndex);
+                context.QueryFrame?.SelectedRoomIndex ?? action.RoomIndex, placement: source.Spawn.Turn == 0,
+                preview: context.IsolatedBattlePreview == true || train.Rooms.FirstOrDefault(room =>
+                    room.RoomIndex == action.RoomIndex)?.Preview == true, trainState: train);
             if (!cardPlayMagicPower.Supported) return Unsupported(cardPlayMagicPower.UnsupportedReason!);
             context = cardPlayMagicPower.Context;
             train = CardSpellModel.WithContext(train, context);

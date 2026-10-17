@@ -162,6 +162,8 @@ namespace MonsterTrain2Poju.Model
         public const string FloorCapacity = "RelicEffectChangeFloorCapacity";
         public const string MoonPhaseEnergy = "RelicEffectModifyEnergyOnMoonPhase";
         public const string EnergyOnCardEarlyDiscard = "RelicEffectEnergyOnCardEarlyDiscard";
+        public const string EnergyOnCorruptRestrictedPlayed = "RelicEffectEnergyOnCorruptRestrictedPlayed";
+        public const string CorruptionOnCorruptRestrictedPlayed = "RelicEffectCorruptionOnCorruptRestrictedPlayed";
         public const string AdditionalSmeltEmber = "RelicEffectAdditionalSmeltEmber";
         public const string AdjustMixAmount = "RelicEffectAdjustMixAmount";
         public const string ConserveEnergyEndOfTurn = "RelicEffectConserveEnergyEndOfTurn";
@@ -170,6 +172,7 @@ namespace MonsterTrain2Poju.Model
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == FloorCapacity || type == MoonPhaseEnergy ||
             type == EnergyOnCardEarlyDiscard ||
+            type == EnergyOnCorruptRestrictedPlayed || type == CorruptionOnCorruptRestrictedPlayed ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
             type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
@@ -229,6 +232,9 @@ namespace MonsterTrain2Poju.Model
                     return "Moon-phase energy amount or phase mask differs from its original parameters.";
                 if (rule.Type == EnergyOnCardEarlyDiscard && rule.Amount != rule.ParamInt)
                     return "Early-discard energy amount differs from its original parameter.";
+                if ((rule.Type == EnergyOnCorruptRestrictedPlayed || rule.Type == CorruptionOnCorruptRestrictedPlayed) &&
+                    (rule.Amount != rule.ParamInt || !relic.DisallowedInPlacementPhase.HasValue))
+                    return "Corrupt Restricted card-play resource amount or placement restriction differs from its native parameter.";
                 if (rule.Type == AdditionalSmeltEmber && rule.Amount != rule.ParamInt)
                     return "Additional smelt Ember amount differs from its original parameter.";
                 if (rule.Type == AdjustMixAmount && rule.Amount != rule.ParamInt)
@@ -264,6 +270,7 @@ namespace MonsterTrain2Poju.Model
                     return "Unexpected required mutator on a resource effect without that native gate.";
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == StartCombatEnergy || rule.Type == PyreAttack || rule.Type == PyreHealth ||
                     rule.Type == MoonPhaseEnergy || rule.Type == EnergyOnCardEarlyDiscard || rule.Type == ConserveEnergyEndOfTurn ||
+                    rule.Type == EnergyOnCorruptRestrictedPlayed || rule.Type == CorruptionOnCorruptRestrictedPlayed ||
                     RelicCardDrawOnHealModel.IsEffect(rule.Type)) &&
                     !relic.DisallowedInPlacementPhase.HasValue)
                     return "Missing native resource owner placement restriction.";

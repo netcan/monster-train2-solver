@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **155 distinct original collectable relics / 224 catalog entries
-(69.20%)** have accepted native evidence: 139 have full-battle effect evidence,
+As of 2026-10-17, **156 distinct original collectable relics / 224 catalog entries
+(69.64%)** have accepted native evidence: 140 have full-battle effect evidence,
 fifteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -23,6 +23,9 @@ The native source and callback effect for `RageOnBurnoutStackLoss` now have one
 accepted battle witness for a controlled friendly Ephemeral removal.
 `PyreRevengeAddPyregel` now has four live native OnHit witnesses whose complete
 Tower target sequences and +2 Pyregel results match across floors.
+`ExtractForEmberAndEchos` now has ordered native +1 Ember and +1 selected-room
+corruption witnesses for a zero-debit Corrupt Restricted carrier; the original
+owner definition is unchanged and its full battle plus 128-state search pass.
 
 The battle archives cited below report game `2.2.1`, module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, `NativeWon=true`, and zero
@@ -155,6 +158,7 @@ owner count.
 | `BrokenRail` | `1699b5c7-8c34-471c-8e5a-c9830e2bc482` | [BrokenRail forge upgrade][brokenRail] | The unchanged +2 HP forge upgrade scales to +6 at three forge points on one eligible ordinary monster summon. Native direct-play and full-battle state match; bounded 128-state search matches with serial/parallel best equality. Tracking/toggle/eligibility controls are pure; room-specific replacements and non-monster plays remain unsupported. |
 | `RageOnBurnoutStackLoss` | `85667d60-8053-4204-8c02-ba101dab7945` | [Ephemeral-loss Rage][rageBurnout] | The unchanged Monsters-team owner adds exactly 3 Rage when one friendly Ephemeral stack is removed. The native action and full 41-stage battle match with zero error counters; every recorded action and turn transition replays. Pure controls cover raw requested counts, absent/zero status callbacks, the all-stacks sentinel, team/status gates, exclusions, preview and immutable branches. The controlled scripted action is outside generic policy replay; this does not claim a bounded-search result or natural burnout lifecycle coverage. |
 | `PyreRevengeAddPyregel` | `82b22203-9da1-4f83-9e84-826fb8d1d280` | [Pyre Revenge Pyregel][pyreRevenge] | The unchanged Pyre-only OnHit trigger applies exactly +2 Pyregel to all eligible Heroes. Four live native callbacks match complete-train Tower target IDs and order, including remote-floor state writeback; the winning 60-stage replay has zero error counters. Pure controls cover Pyre-only installation, preview exclusion, cross-floor persistence and immutable branches. This does not claim bounded-search coverage. |
+| `ExtractForEmberAndEchos` | `4d237444-5beb-43df-a545-c68a7ae86ba6` | [ExtractForEmberAndEchos][extractForEmberAndEchos] | The unchanged ordered callbacks grant +1 Ember then +1 corruption to the selected room for a zero-debit Corrupt Restricted carrier. Native callback values and full 61-stage replay match with zero error counters; energy cap, nonmatching-card, preview, placement and immutable controls pass. Positive pre-play debit and conditional effects remain unsupported; 128-state search passes. |
 | `EmberOnTombDeath` | `4a5b1613-568c-4bf6-8bf7-15f8bf013345` | [unit resource relics][unitResources] | Original +5 Ember after actual Tomb sacrifice; ordinary friendly sacrifice and enemy deaths do not qualify. Complete manager contexts and exact resource/RNG state match. |
 | `Frenzystesia` | `56316fc2-b41a-41ae-aba8-e83fb668e8e1` | [unit resource relics][unitResources] | Original +1 Ember on the first equipment callback this turn. Two actual equipment additions prove the first-only condition, with notification count recorded once by the effect and again by RelicManager. Full 22-play/five-EndTurn policy matches, including native duration resets. |
 | `RandomEquipmentCardFirstTurn` | `7a1d5b5d-cd08-4935-b629-d3d441905100` | [original opening draw][openingDraw] | Natural Equipment primary draw plus controlled native fallback to an Equipment with the deployment-draw trait. Original temporary -99 cost, count expansion and CardDraw RNG match. |
@@ -768,3 +772,4 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [brokenRail]: full-battle-original-broken-rail.mt2f
 [rageBurnout]: full-battle-original-rage-on-burnout-stack-loss.mt2f
 [pyreRevenge]: full-battle-original-pyre-revenge.mt2f
+[extractForEmberAndEchos]: full-battle-original-extract-for-ember-and-echos.mt2f

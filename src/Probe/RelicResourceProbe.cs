@@ -219,6 +219,10 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (effect is RelicEffectEnergyOnCardEarlyDiscard)
                 amount = data.GetParamInt();
+            else if (effect is RelicEffectEnergyOnCorruptRestrictedPlayed)
+                amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
+            else if (effect is RelicEffectCorruptionOnCorruptRestrictedPlayed)
+                amount = (int)AccessTools.Field(effect.GetType(), "corruptionChange").GetValue(effect);
             else
                 amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,

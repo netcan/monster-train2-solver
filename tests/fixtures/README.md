@@ -1,5 +1,12 @@
 # Native regression fixtures
 
+ExtractForEmberAndEchos extension (2026-10-17): 377 archives (339 battles and
+38 calibrations), 156/224 original relic owners (69.64%): 140 full-battle
+owners, fifteen campaign-interface owners and one native no-op. The unchanged
+owner grants +1 Ember and adds +1 corruption to the selected room, in native
+effect order, when a zero-debit Corrupt Restricted card is played. The 61-stage
+winning replay and 128-state search pass with zero error counters.
+
 PyreRevengeAddPyregel extension (2026-10-17): 376 archives (338 battles and 38
 calibrations), 155/224 original relic owners (69.20%): 139 full-battle owners,
 fifteen campaign-interface owners and one native no-op. Four live Pyre OnHit
@@ -4828,4 +4835,28 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-pyre-revenge.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-pyre-revenge-only tests/fixtures/full-battle-original-pyre-revenge.mt2f
+```
+
+### Original ExtractForEmberAndEchos relic (schema 179)
+
+`full-battle-original-extract-for-ember-and-echos.mt2f` preserves the original
+owner and its ordered +1 Ember then +1 selected-room corruption callbacks. The
+isolated TrainStewardShield carrier has only `CardTraitCorruptRestricted` with
+zero pre-play corruption debit; callback records confirm both native effects
+complete on the selected room. The 61-stage winning replay, 13 card cycles,
+14 train phases, seven turns and five actions match with zero capture failures,
+mismatches, unsupported transitions or pending records. Pure controls cover
+energy caps, nonmatching cards, placement and preview gates, and immutable
+branches; positive pre-play debit and conditional payloads remain unsupported.
+The separate 128-state search passes.
+
+The binary is 28,645 bytes with 4,273 unique nodes and SHA-256
+`28a6cc82557439a5336c0602e73188d4e2570ee031e1a254689e950d4553d6ce`; it has no
+JSON companion. This is the 156th accepted original owner (140 full-battle
+owners, fifteen campaign-interface owners and one no-op); the inventory now has
+377 archives: 339 battles and 38 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-extract-for-ember-and-echos.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-extract-for-ember-and-echos-only tests/fixtures/full-battle-original-extract-for-ember-and-echos.mt2f
 ```

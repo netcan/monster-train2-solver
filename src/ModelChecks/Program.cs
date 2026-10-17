@@ -729,6 +729,17 @@ if (args.Length == 1 && args[0] == "--original-early-discard-energy-pure")
     HandRemovalChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--original-extract-for-ember-and-echos-pure")
+{
+    OriginalExtractForEmberAndEchosChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-extract-for-ember-and-echos-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalExtractForEmberAndEchosChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-cheaper-spell-cost-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

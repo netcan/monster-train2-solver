@@ -271,6 +271,7 @@ param(
     [switch] $OriginalBrokenRailRelic,
     [switch] $OriginalRageOnBurnoutStackLoss,
     [switch] $OriginalPyreRevenge,
+    [switch] $OriginalExtractForEmberAndEchos,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
@@ -391,6 +392,7 @@ if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells
 if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRageOnBurnoutStackLoss) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreRevenge) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalExtractForEmberAndEchos) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCarriageJack) { $Policy = 'units-and-junk' }
 if ($OriginalFirstRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalStartRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -812,6 +814,7 @@ if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-c
 if ($OriginalBrokenRailRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-rail' }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
 if ($OriginalPyreRevenge) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-revenge' }
+if ($OriginalExtractForEmberAndEchos) { $environment['MT2_PROBE_MODIFIERS'] = 'original-extract-for-ember-and-echos' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
 if ($OriginalCarriageJack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-carriage-jack' }
 if ($OriginalFirstRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-room-attachment' }
@@ -1640,6 +1643,26 @@ if ($OriginalPyreRevenge -and ($trace.Schema -ne 178 -or
     @($trace.TriggeredStatuses | Where-Object { $_.ActorId -eq $trace.OriginalPyreRevengeInstallation.UnitId -and $_.Kind -eq 'OnHit' }).Count -eq 0 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-PYRE-REVENGE-PREPARED one unchanged OnHit trigger installed on the live Pyre' -Quiet))) {
     throw 'PyreRevengeAddPyregel lacks its live Pyre trigger installation or OnHit effect witness.'
+}
+$extractCallbacks = @($trace.OriginalExtractForEmberAndEchosCallbacks | Where-Object {
+    $_.CardInstanceId -eq $trace.OriginalExtractForEmberAndEchosCarrierId
+})
+$extractActions = @($trace.Actions | Where-Object {
+    $_.ScenarioAction -and $_.Action.CardInstanceId -eq $trace.OriginalExtractForEmberAndEchosCarrierId
+})
+if ($OriginalExtractForEmberAndEchos -and ($trace.Schema -ne 179 -or
+    $trace.ModifierScenario -ne 'original-extract-for-ember-and-echos' -or
+    -not $trace.NativeWon -or -not $trace.OriginalExtractForEmberAndEchosPrepared -or
+    -not $trace.OriginalExtractForEmberAndEchosCarrierId -or
+    $extractActions.Count -eq 0 -or $extractCallbacks.Count -lt 2 -or
+    $extractCallbacks[0].Kind -ne 'Energy' -or $extractCallbacks[1].Kind -ne 'Corruption' -or
+    @($trace.OriginalExtractForEmberAndEchosCallbacks | Where-Object { $_.CardInstanceId -eq $trace.OriginalExtractForEmberAndEchosCarrierId -and
+        (-not $_.Completed -or $_.Amount -ne 1) }).Count -gt 0 -or
+    $extractCallbacks[0].RoomIndex -ne $extractActions[0].Action.RoomIndex -or
+    $extractCallbacks[1].RoomIndex -ne $extractActions[0].Action.RoomIndex -or
+    @($trace.OriginalExtractForEmberAndEchosCallbacks | Where-Object { -not $_.Completed }).Count -gt 0 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EXTRACT-EMBER-AND-ECHOS-PREPARED.*paramInt=0 paramBool=false cost=2' -Quiet))) {
+    throw 'ExtractForEmberAndEchos lacks its live Corrupt Restricted card-play effect witnesses.'
 }
 if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
     $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or
