@@ -20,12 +20,13 @@ namespace MonsterTrain2Poju.Probe
             public CombatEffect Effect { get; set; } = null!;
             public RoomCombatState Before { get; set; } = null!;
             public RoomCombatState? Actual { get; set; }
+            public TrainCombatState? BeforeTrain { get; set; }
             public CombatUnit[] BeforeUnits { get; set; } = Array.Empty<CombatUnit>();
             public CombatUnit[]? ActualUnits { get; set; }
             public string[] Interactions { get; set; } = Array.Empty<string>();
             public bool Completed { get; set; }
         }
-        private static IEnumerator Wrap(IEnumerator native, CardEffectState effect, CardEffectParams parameters)
+        private static IEnumerator Wrap(IEnumerator native, CardEffectState effect, CardEffectParams parameters, bool captureTrain = false)
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             CharacterState actor = parameters.selfTarget!;
@@ -41,7 +42,8 @@ namespace MonsterTrain2Poju.Probe
                 Targets = parameters.targets.Select(trace.UnitId).ToArray(),
                 Effect = new CombatEffect(effect.GetCardEffect() is CardEffectAddStatusEffectBasedOnHealth ? "CardEffectAddStatusEffectBasedOnHealth" : "CardEffectAddStatusEffect", effect.GetParamInt(), 0, "", 0, Array.Empty<string>(), false,
                     action: UnitTriggerActionProbe.Capture(effect), statusScaling: UnitTriggerActionProbe.Scaling(effect)),
-                Before = trace.Capture(room), BeforeUnits = units.Select(unit => trace.CaptureUnit(unit, interactions)).ToArray() };
+                Before = trace.Capture(room), BeforeTrain = captureTrain ? trace.CaptureTrain() : null,
+                BeforeUnits = units.Select(unit => trace.CaptureUnit(unit, interactions)).ToArray() };
                 Records.Add(record);
             }
             catch (Exception error) { trace.CaptureFailure(error); }
@@ -75,9 +77,11 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
             {
-                if (((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-status" && TriggeredStatusScenario.Prepared) || PurifyScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared) &&
+                bool pyreRevenge = OriginalPyreRevengeScenario.Prepared && cardEffectParams.selfTarget?.IsPyreHeart() == true &&
+                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnHit;
+                if (((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-status" && TriggeredStatusScenario.Prepared) || PurifyScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared || pyreRevenge) &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode && cardEffectParams.selfTarget != null)
-                    __result = Wrap(__result, cardEffectState, cardEffectParams);
+                    __result = Wrap(__result, cardEffectState, cardEffectParams, pyreRevenge);
             }
         }
     }

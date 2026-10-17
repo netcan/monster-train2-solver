@@ -270,6 +270,7 @@ param(
     [switch] $OriginalCardDrawOnHeal,
     [switch] $OriginalBrokenRailRelic,
     [switch] $OriginalRageOnBurnoutStackLoss,
+    [switch] $OriginalPyreRevenge,
     [switch] $OriginalUnitResourceRelics,
     [switch] $OriginalOpeningDrawRelics,
     [switch] $OriginalTurnDrawRelics,
@@ -389,6 +390,7 @@ if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-ca
 if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRageOnBurnoutStackLoss) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalPyreRevenge) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCarriageJack) { $Policy = 'units-and-junk' }
 if ($OriginalFirstRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalStartRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -809,6 +811,7 @@ if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-heal' }
 if ($OriginalBrokenRailRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-rail' }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
+if ($OriginalPyreRevenge) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-revenge' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
 if ($OriginalCarriageJack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-carriage-jack' }
 if ($OriginalFirstRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-first-room-attachment' }
@@ -1629,6 +1632,14 @@ if ($OriginalRageOnBurnoutStackLoss -and ($trace.Schema -ne 177 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 1 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-RAGE-ON-BURNOUT-STACK-LOSS-PREPARED one native Steward starts with Ephemeral' -Quiet))) {
     throw 'RageOnBurnoutStackLoss lacks its real native Ephemeral-removal action witness.'
+}
+if ($OriginalPyreRevenge -and ($trace.Schema -ne 178 -or
+    $trace.ModifierScenario -ne 'original-pyre-revenge' -or
+    -not $trace.NativeWon -or -not $trace.OriginalPyreRevengePrepared -or
+    -not $trace.OriginalPyreRevengeInstallation.Completed -or
+    @($trace.TriggeredStatuses | Where-Object { $_.ActorId -eq $trace.OriginalPyreRevengeInstallation.UnitId -and $_.Kind -eq 'OnHit' }).Count -eq 0 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-PYRE-REVENGE-PREPARED one unchanged OnHit trigger installed on the live Pyre' -Quiet))) {
+    throw 'PyreRevengeAddPyregel lacks its live Pyre trigger installation or OnHit effect witness.'
 }
 if (($OriginalNullRelic -or $OriginalNullRelicBaseline) -and ($null -eq $trace.OriginalNullRelic -or
     $trace.OriginalNullRelic.Present -ne $(if ($OriginalNullRelicBaseline) { 0 } else { 1 }) -or

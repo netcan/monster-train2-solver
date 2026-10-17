@@ -302,6 +302,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalBrokenRailScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRageOnBurnoutStackLossScenario.Enabled && !OriginalRageOnBurnoutStackLossScenario.Acquired)
                         OriginalRageOnBurnoutStackLossScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalPyreRevengeScenario.Enabled && !OriginalPyreRevengeScenario.Acquired)
+                        OriginalPyreRevengeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalNullRelicScenario.Enabled && !OriginalNullRelicScenario.Acquired)
                         OriginalNullRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRelicCountAttackScenario.Enabled && !OriginalRelicCountAttackScenario.Acquired)
@@ -664,6 +666,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalRageOnBurnoutStackLossScenario.Enabled)
             {
                 OriginalRageOnBurnoutStackLossScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalPyreRevengeScenario.Enabled)
+            {
+                OriginalPyreRevengeScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalTurnDrawScenario.Enabled)

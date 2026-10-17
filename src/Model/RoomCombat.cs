@@ -434,11 +434,13 @@ namespace MonsterTrain2Poju.Model
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
         public static RoomCombatResult Exchange(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-            bool updateSelectedRoom = true) => Run(state, false, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom);
+            bool updateSelectedRoom = true, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null) =>
+            Run(state, false, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom, externalTargets: externalTargets);
         public static RoomCombatResult Resolve(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-            bool updateSelectedRoom = true, CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1) =>
+            bool updateSelectedRoom = true, CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null) =>
             Run(state, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom,
-                externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex);
+                externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
 
         public static RoomCombatResult ApplyUnitPostCombat(RoomCombatState state, IReadOnlyList<int> cannotAttackOrHeal,
             IReadOnlyList<int> cannotFireTriggers, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
@@ -866,14 +868,15 @@ namespace MonsterTrain2Poju.Model
 
         private static RoomCombatResult Run(RoomCombatState state, bool entireRoom,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool updateSelectedRoom = true,
-            CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1)
+            CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
         {
             var events = new List<CombatEvent>();
             string? error = Validate(state);
             if (error != null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, error);
             var engine = new Engine(state, events, refreshPyre: refreshPyre,
-                externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex);
+                externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
             return engine.Run(entireRoom, updateSelectedRoom);
         }
 
@@ -1111,7 +1114,7 @@ namespace MonsterTrain2Poju.Model
                             }
                             if (action.Type == "Heal" && state.Units.Any(target => target.Modifiers == null))
                                 return "Triggered healing requires unit healability state.";
-                            if (!new[] { "Self", "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter", "LastSpawnedCharacter", "Pyre" }.Contains(action.Target))
+                            if (!new[] { "Self", "Room", "Tower", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter", "LastSpawnedCharacter", "Pyre" }.Contains(action.Target))
                                 return "Unmodeled triggered action target " + action.Target;
                             if ((action.Range != null || action.Target == "RandomInRoom") && state.Context == null)
                                 return "Triggered action randomness requires shared battle context.";
@@ -1286,6 +1289,7 @@ namespace MonsterTrain2Poju.Model
             private readonly HashSet<int> cannotAttackOrHeal = new HashSet<int>();
             private readonly HashSet<int> cannotFireTriggers = new HashSet<int>();
             private readonly HashSet<int> externalTurnActorIds = new HashSet<int>();
+            private readonly bool hasExternalTargetRoster;
             private readonly HashSet<int> activeCompanionBossIds;
             private string? unsupportedReason;
 
@@ -1297,7 +1301,8 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit? externalActor = null, int externalActorRoomIndex = -1, bool externalActorInRoom = true,
                 Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null,
                 CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
-                Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null)
+                Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null,
+                IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1327,6 +1332,18 @@ namespace MonsterTrain2Poju.Model
                         throw new ArgumentException("Invalid external Pyre target.", nameof(externalPyre));
                     units.Add(NewUnit(externalPyre, false, externalPyreRoomIndex));
                     externalTurnActorIds.Add(externalPyre.Id);
+                }
+                hasExternalTargetRoster = externalTargets != null;
+                if (externalTargets != null)
+                {
+                    var ids = units.Select(unit => unit.Source.Id).ToHashSet();
+                    foreach (var external in externalTargets)
+                    {
+                        if (external.RoomIndex < 0 || !ids.Add(external.Unit.Id))
+                            throw new ArgumentException("Invalid or duplicated external Tower target.", nameof(externalTargets));
+                        units.Add(NewUnit(external.Unit, false, external.RoomIndex));
+                        externalTurnActorIds.Add(external.Unit.Id);
+                    }
                 }
                 if (source.Preview && resetPreviewTriggers)
                     foreach (WorkingUnit unit in units)
@@ -1926,7 +1943,11 @@ namespace MonsterTrain2Poju.Model
                     copied = EnchantmentWorldModel.Room(copied, train.Context);
                 }
                 CombatUnit? externalActor = externalTurnActorIds.Contains(actor.Source.Id) ? actor.Freeze() : null;
-                var preview = new Engine(copied, new List<CombatEvent>(), externalActor: externalActor);
+                var previewTargets = hasExternalTargetRoster ? units
+                    .Where(unit => externalTurnActorIds.Contains(unit.Source.Id) && unit.Source.Id != externalActor?.Id)
+                    .Select(unit => (unit.RoomIndex, unit.Freeze())).ToArray() : null;
+                var preview = new Engine(copied, new List<CombatEvent>(), externalActor: externalActor,
+                    externalActorRoomIndex: externalActor == null ? -1 : actor.RoomIndex, externalTargets: previewTargets);
                 // A sweep preview shares the running-queue gate: its temporary callbacks
                 // stay queued rather than healing or damaging between individual targets.
                 preview.runningTriggerQueue = runningTriggerQueue;
@@ -3232,6 +3253,21 @@ namespace MonsterTrain2Poju.Model
                 if (action.Target == "Pyre")
                     return new CardTargets(units.Where(unit => unit.Source.IsPyre).Take(1)
                         .Select(unit => unit.Source.Id).ToArray());
+                if (action.Target == "Tower")
+                {
+                    if (!hasExternalTargetRoster)
+                        return new CardTargets(Array.Empty<int>(), "Tower trigger targeting requires complete-train unit snapshots.");
+                    WorkingUnit[] visible = units.Where(unit => unit.Alive && !unit.Removed && !unit.Despawned &&
+                        (unit.InRoom || externalTurnActorIds.Contains(unit.Source.Id))).ToArray();
+                    int topRoom = visible.Select(unit => unit.RoomIndex).Append(source.RoomIndex).Max();
+                    RoomCombatState[] floors = Enumerable.Range(0, topRoom + 1).Select(roomIndex =>
+                        new RoomCombatState(roomIndex, roomIndex == source.RoomIndex && source.Deployment,
+                            visible.Where(unit => unit.RoomIndex == roomIndex).Select(unit => unit.Freeze()).ToArray(),
+                            Array.Empty<string>(), context, source.Preview, CompanionBossSnapshot())).ToArray();
+                    var tower = new TrainCombatState(floors, Array.Empty<EnemyMovement>(), 1, context);
+                    return CardTargetModel.Collect(tower, source.RoomIndex, action, Array.Empty<int>(), isTesting: testing || source.Preview,
+                        ignorePyre: true);
+                }
                 if (action.Target == "LastAttackedCharacter")
                 {
                     // The override bypasses every team/status/health/subtype/boss filter,

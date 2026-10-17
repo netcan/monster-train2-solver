@@ -479,6 +479,14 @@ namespace MonsterTrain2Poju.Probe
                             effect.Type == "CardEffectPyreDamageIfNoPlayerUnits")));
                     CombatUnit? pyre = externalPyreTarget ? Capture(roomManager.GetRoom(pyreRoomIndex),
                         captureContext: false).Units.FirstOrDefault(unit => unit.IsPyre) : null;
+                    bool requiresTowerRoster = before.Units.SelectMany(unit => unit.Triggers)
+                        .SelectMany(trigger => trigger.Effects)
+                        .Any(effect => (effect.Action ?? effect.UnitUpgrade)?.Target == "Tower");
+                    TrainCombatState? beforeTrain = requiresTowerRoster ? CaptureTrain() : null;
+                    (int RoomIndex, CombatUnit Unit)[] externalTargets = beforeTrain?.Rooms
+                        .Where(item => item.RoomIndex != room.GetRoomIndex())
+                        .SelectMany(item => item.Units.Select(unit => (RoomIndex: item.RoomIndex, Unit: unit)))
+                        .Where(target => target.Unit.Id != (pyre?.Id ?? 0)).ToArray() ?? Array.Empty<(int, CombatUnit)>();
                     record = new StageRecord
                     {
                         Index = stages.Count,
@@ -486,11 +494,13 @@ namespace MonsterTrain2Poju.Probe
                         Kind = kind,
                         Room = room,
                         Before = before,
+                        ExternalTargets = externalTargets.Select(target => new TowerTargetSnapshot
+                            { RoomIndex = target.RoomIndex, Unit = target.Unit }).ToArray(),
                         ExternalPyre = pyre,
                         ExternalPyreRoomIndex = pyre == null ? -1 : pyreRoomIndex,
-                        Predicted = kind == "Exchange" ? RoomCombatModel.Exchange(before) :
+                        Predicted = kind == "Exchange" ? RoomCombatModel.Exchange(before, externalTargets: externalTargets) :
                             RoomCombatModel.Resolve(before, externalPyre: pyre,
-                                externalPyreRoomIndex: pyre == null ? -1 : pyreRoomIndex)
+                                externalPyreRoomIndex: pyre == null ? -1 : pyreRoomIndex, externalTargets: externalTargets)
                     };
                     stages.Add(record);
                 }
@@ -517,6 +527,16 @@ namespace MonsterTrain2Poju.Probe
                     stage.ActualExternalPyre = Capture(AllGameManagers.Instance!.GetRoomManager()!
                         .GetRoom(stage.ExternalPyreRoomIndex), captureContext: false).Units
                         .FirstOrDefault(unit => unit.IsPyre);
+                if (stage.ExternalTargets.Length > 0)
+                {
+                    TrainCombatState actualTrain = CaptureTrain();
+                    stage.ActualExternalTargets = stage.ExternalTargets.Select(target => new TowerTargetSnapshot
+                    {
+                        RoomIndex = target.RoomIndex,
+                        Unit = actualTrain.Rooms.Single(item => item.RoomIndex == target.RoomIndex).Units
+                            .Single(unit => unit.Id == target.Unit.Id)
+                    }).ToArray();
+                }
                 if (stage.Predicted.Supported)
                 {
                     JToken expected = JToken.FromObject(stage.Predicted.State!.Units);
@@ -525,6 +545,13 @@ namespace MonsterTrain2Poju.Probe
                     if (stage.ExternalPyre != null && !JToken.DeepEquals(JToken.FromObject(stage.Predicted.RetainedUnits
                         .Single(unit => unit.Id == stage.ExternalPyre.Id)), JToken.FromObject(stage.ActualExternalPyre!)))
                         stage.Difference = "External Pyre state differs";
+                    foreach (TowerTargetSnapshot target in stage.ExternalTargets)
+                    {
+                        CombatUnit expectedUnit = stage.Predicted.RetainedUnits.Single(unit => unit.Id == target.Unit.Id);
+                        CombatUnit actualUnit = stage.ActualExternalTargets!.Single(unit => unit.Unit.Id == target.Unit.Id).Unit;
+                        if (!JToken.DeepEquals(JToken.FromObject(expectedUnit), JToken.FromObject(actualUnit)))
+                        { stage.Difference = "External Tower target state differs for unit " + target.Unit.Id; break; }
+                    }
                     if (!JToken.DeepEquals(JToken.FromObject(BattleTurnProbe.ComparableContext(stage.Predicted.State.Context)!),
                         JToken.FromObject(BattleTurnProbe.ComparableContext(stage.Actual.Context)!))) stage.Difference = "Card piles, RNG or gold differ";
                     log.LogInfo("BATTLE-MODEL-" + (stage.Difference == null ? "MATCH" : "MISMATCH") +
@@ -577,11 +604,13 @@ namespace MonsterTrain2Poju.Probe
             string temporary = path + ".tmp";
             var snapshot = new
             {
-                Schema = OriginalRageOnBurnoutStackLossScenario.Prepared ? 177 : OriginalBrokenRailScenario.Prepared ? 176 : OriginalCardDrawOnHealScenario.Prepared ? 175 : OriginalFunguyDeckScalingScenario.Prepared ? 174 : MixScenario.CopyFirstSpellMode && MixScenario.Prepared ? 173 : MixScenario.NefariousOverflowMode && MixScenario.Prepared ? 172 : OriginalCheaperSpellCostScenario.Prepared ? 171 : OriginalEarlyDiscardEnergyScenario.Prepared ? 170 : OriginalBigDamageScenario.Prepared ? 169 : OriginalStartRoomAttachmentScenario.Prepared ? 168 : OriginalFirstRoomAttachmentScenario.Prepared ? 167 : OriginalMoonPhaseHealRelicScenario.Prepared ? 166 : OriginalCarriageJackScenario.Prepared ? 165 : CardEffectRemoveAllStatusScenario.Prepared ? 164 : DragonHoardScenario.Prepared ? 162 : UnplayedCardEffectsScenario.Prepared ? 163 : UnplayedCardTriggerScenario.Prepared ? 161 : OriginalCardDrawOnCardPlayScenario.Acquired ? 160 : RelicCardModifierScenario.CastTriggerUnitUpgrade ? 158 : RelicCardModifierScenario.CastTriggerUpgrade ? 157 : CardEffectRecursionScenario.DiscardMode ? 154 : CardEffectRecursionScenario.UpgradeReplacementChooseMode ? 153 : CardEffectRecursionScenario.UpgradeFilterChooseMode ? 152 : CardEffectRecursionScenario.UpgradeChooseMode ? 151 : CardEffectRecursionScenario.UpgradeMode ? 149 : CardEffectRecursionScenario.FilterMode ? 148 : CardEffectRecursionScenario.UpgradeToHandMode ? 150 : OriginalCardAttackRelicScenario.Prepared ? 147 : RelicCardModifierScenario.UnhealedHealthUpgrade ? 145 : OriginalMoonPhaseEnergyRelicScenario.Prepared ? 146 : SpawnStatusRelicScenario.OriginalChicotRelic ? 156 : SpawnStatusRelicScenario.OriginalTunedGearRelic ? 155 : SpawnStatusRelicScenario.Prepared && SpawnStatusRelicScenario.OriginalTeamSpawnStatusRelic ? 144 : RoomCapacityAttachmentScenario.Prepared ? 139 : RandomDiscardScenario.Prepared ? 138 : RelicCardModifierScenario.ExtraToughTombs ? 137 : OriginalUnitUpgradeTriggerRelicScenario.Prepared ? 133 : Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE") == "1" ? 135 : Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE") == "1" ? 129 : OriginalRoomEntryStatusRelicScenario.Prepared ? 132 : OriginalCardPlayMagicPowerScenario.Acquired ? 128 : OriginalEndlessReturnScenario.Prepared ? 126 : HandUpgradeScenario.PermanentConsumeOverTemporaryPrepared ? 125 : GenerationScenario.PermanentConsumePrepared ? 124 : HandUpgradeScenario.PermanentConsumePrepared ? 123 : RelicCardModifierScenario.ExhaustUpgrade ? 122 : SpawnStatusRelicScenario.Prepared && SpawnStatusRelicScenario.MixedCardlessOrder ? 121 : MagebladeScenario.Prepared && MagebladeScenario.OriginalMagnitudeRelic ? 143 : MagebladeScenario.Prepared ? 127 : OriginalFloorCapacityRelicScenario.Prepared ? 119 : PyreResourceRefreshScenario.Prepared ? 118 : OriginalResourceRelicBatchScenario.Prepared ? 117 : OriginalDecayRelicBatchScenario.Prepared ? 116 : OriginalLifecycleRelicBatchScenario.Prepared ? 115 : OriginalMagnitudeRelicBatchScenario.Prepared ? 114 : OriginalStatusRelicBatchScenario.BurnoutStacks ? 142 : OriginalStatusRelicBatchScenario.Prepared ? 136 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared && SpawnStatusRelicScenario.OriginalStealthWaxersRelic ? 140 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
+                Schema = OriginalPyreRevengeScenario.Prepared ? 178 : OriginalRageOnBurnoutStackLossScenario.Prepared ? 177 : OriginalBrokenRailScenario.Prepared ? 176 : OriginalCardDrawOnHealScenario.Prepared ? 175 : OriginalFunguyDeckScalingScenario.Prepared ? 174 : MixScenario.CopyFirstSpellMode && MixScenario.Prepared ? 173 : MixScenario.NefariousOverflowMode && MixScenario.Prepared ? 172 : OriginalCheaperSpellCostScenario.Prepared ? 171 : OriginalEarlyDiscardEnergyScenario.Prepared ? 170 : OriginalBigDamageScenario.Prepared ? 169 : OriginalStartRoomAttachmentScenario.Prepared ? 168 : OriginalFirstRoomAttachmentScenario.Prepared ? 167 : OriginalMoonPhaseHealRelicScenario.Prepared ? 166 : OriginalCarriageJackScenario.Prepared ? 165 : CardEffectRemoveAllStatusScenario.Prepared ? 164 : DragonHoardScenario.Prepared ? 162 : UnplayedCardEffectsScenario.Prepared ? 163 : UnplayedCardTriggerScenario.Prepared ? 161 : OriginalCardDrawOnCardPlayScenario.Acquired ? 160 : RelicCardModifierScenario.CastTriggerUnitUpgrade ? 158 : RelicCardModifierScenario.CastTriggerUpgrade ? 157 : CardEffectRecursionScenario.DiscardMode ? 154 : CardEffectRecursionScenario.UpgradeReplacementChooseMode ? 153 : CardEffectRecursionScenario.UpgradeFilterChooseMode ? 152 : CardEffectRecursionScenario.UpgradeChooseMode ? 151 : CardEffectRecursionScenario.UpgradeMode ? 149 : CardEffectRecursionScenario.FilterMode ? 148 : CardEffectRecursionScenario.UpgradeToHandMode ? 150 : OriginalCardAttackRelicScenario.Prepared ? 147 : RelicCardModifierScenario.UnhealedHealthUpgrade ? 145 : OriginalMoonPhaseEnergyRelicScenario.Prepared ? 146 : SpawnStatusRelicScenario.OriginalChicotRelic ? 156 : SpawnStatusRelicScenario.OriginalTunedGearRelic ? 155 : SpawnStatusRelicScenario.Prepared && SpawnStatusRelicScenario.OriginalTeamSpawnStatusRelic ? 144 : RoomCapacityAttachmentScenario.Prepared ? 139 : RandomDiscardScenario.Prepared ? 138 : RelicCardModifierScenario.ExtraToughTombs ? 137 : OriginalUnitUpgradeTriggerRelicScenario.Prepared ? 133 : Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_EPHEMERAL_UPGRADE") == "1" ? 135 : Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CARD_REPLACEMENT_UPGRADE") == "1" ? 129 : OriginalRoomEntryStatusRelicScenario.Prepared ? 132 : OriginalCardPlayMagicPowerScenario.Acquired ? 128 : OriginalEndlessReturnScenario.Prepared ? 126 : HandUpgradeScenario.PermanentConsumeOverTemporaryPrepared ? 125 : GenerationScenario.PermanentConsumePrepared ? 124 : HandUpgradeScenario.PermanentConsumePrepared ? 123 : RelicCardModifierScenario.ExhaustUpgrade ? 122 : SpawnStatusRelicScenario.Prepared && SpawnStatusRelicScenario.MixedCardlessOrder ? 121 : MagebladeScenario.Prepared && MagebladeScenario.OriginalMagnitudeRelic ? 143 : MagebladeScenario.Prepared ? 127 : OriginalFloorCapacityRelicScenario.Prepared ? 119 : PyreResourceRefreshScenario.Prepared ? 118 : OriginalResourceRelicBatchScenario.Prepared ? 117 : OriginalDecayRelicBatchScenario.Prepared ? 116 : OriginalLifecycleRelicBatchScenario.Prepared ? 115 : OriginalMagnitudeRelicBatchScenario.Prepared ? 114 : OriginalStatusRelicBatchScenario.BurnoutStacks ? 142 : OriginalStatusRelicBatchScenario.Prepared ? 136 : TypedDrawProbe.Enabled ? 112 : SpawnStatusRelicScenario.Prepared && SpawnStatusRelicScenario.OriginalStealthWaxersRelic ? 140 : SpawnStatusRelicScenario.Prepared ? SpawnStatusRelicScenario.Clones ? 111 : 110 : TriggerCountScenario.Prepared ? 109 : AbilityIncantScenario.Prepared ? 108 : CardAnimationSettlement.Enabled ? 106 : DeathDissolveSettlement.Enabled ? 105 : EnchantmentBattleScenario.Prepared ? 104 : 103,
                 OriginalFunguyDeckScalingPrepared = OriginalFunguyDeckScalingScenario.Prepared,
                 OriginalCardDrawOnHealPrepared = OriginalCardDrawOnHealScenario.Prepared,
                 OriginalBrokenRailPrepared = OriginalBrokenRailScenario.Prepared,
                 OriginalRageOnBurnoutStackLossPrepared = OriginalRageOnBurnoutStackLossScenario.Prepared,
+                OriginalPyreRevengePrepared = OriginalPyreRevengeScenario.Prepared,
+                OriginalPyreRevengeInstallation = OriginalPyreRevengeScenario.Installation,
                 OriginalFunguyDeckScaling = OriginalFunguyDeckScalingScenario.Evidence,
                 OriginalCopyFirstSpellPlayedPrepared = MixScenario.CopyFirstSpellMode && MixScenario.Prepared,
                 OriginalNefariousOverflowPrepared = MixScenario.NefariousOverflowMode && MixScenario.Prepared,
@@ -805,12 +834,20 @@ namespace MonsterTrain2Poju.Probe
             public string Kind { get; set; } = "";
             [JsonIgnore] public RoomState Room { get; set; } = null!;
             public RoomCombatState Before { get; set; } = null!;
+            public TowerTargetSnapshot[] ExternalTargets { get; set; } = Array.Empty<TowerTargetSnapshot>();
             public CombatUnit? ExternalPyre { get; set; }
             public int ExternalPyreRoomIndex { get; set; } = -1;
             public RoomCombatResult Predicted { get; set; } = null!;
             public RoomCombatState? Actual { get; set; }
             public CombatUnit? ActualExternalPyre { get; set; }
+            public TowerTargetSnapshot[]? ActualExternalTargets { get; set; }
             public string? Difference { get; set; }
+        }
+
+        private sealed class TowerTargetSnapshot
+        {
+            public int RoomIndex { get; set; }
+            public CombatUnit Unit { get; set; } = null!;
         }
 
         [HarmonyPatch(typeof(CardManager), "AddCardImpl")]

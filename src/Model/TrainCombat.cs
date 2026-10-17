@@ -221,9 +221,13 @@ namespace MonsterTrain2Poju.Model
                         effect.Type == "CardEffectPyreDamageIfNoPlayerUnits")));
                 CombatUnit? externalPyre = targetsPyre ? rooms[pyreRoomIndex].Units.FirstOrDefault(unit => unit.IsPyre) : null;
                 if (targetsPyre && externalPyre == null) return Unsupported("Conditional Pyre damage requires a Pyre unit.");
+                bool requiresTowerTargets = NeedsTowerTargets(rooms[index]);
+                (int RoomIndex, CombatUnit Unit)[] externalTargets = requiresTowerTargets
+                    ? TowerTargets(rooms[index], rooms, externalPyre?.Id ?? 0) : Array.Empty<(int, CombatUnit)>();
                 RoomCombatResult result = RoomCombatModel.Resolve(WithContext(rooms[index], context),
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
-                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : pyreRoomIndex);
+                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : pyreRoomIndex,
+                    externalTargets: requiresTowerTargets ? externalTargets : null);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[index] = result.State!; results.Add(result);
                 context = result.State!.Context;
@@ -233,6 +237,7 @@ namespace MonsterTrain2Poju.Model
                     rooms[pyreRoomIndex] = rooms[pyreRoomIndex].WithUnits(rooms[pyreRoomIndex].Units.Select(unit =>
                         unit.Id == changedPyre.Id ? changedPyre : unit).ToArray());
                 }
+                if (requiresTowerTargets) ApplyTowerUpdates(rooms, externalTargets, result.RetainedUnits);
                 SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome))
                     return new TrainCombatResult(Freeze(source, rooms, context), result.Outcome, results);
@@ -407,11 +412,16 @@ namespace MonsterTrain2Poju.Model
                 TrainCombatResult enabled = EnchantmentWorldModel.SetAllowUpdates(moving, true);
                 if (!enabled.Supported) return enabled;
                 // Tower attacks retain HeroManager's last selected floor.
-                RoomCombatResult result = RoomCombatModel.Resolve(enabled.State!.Rooms[pyre],
+                RoomCombatState pyreRoom = enabled.State!.Rooms[pyre];
+                bool requiresTowerTargets = NeedsTowerTargets(pyreRoom);
+                (int RoomIndex, CombatUnit Unit)[] externalTargets = requiresTowerTargets
+                    ? TowerTargets(pyreRoom, next) : Array.Empty<(int, CombatUnit)>();
+                RoomCombatResult result = RoomCombatModel.Resolve(pyreRoom,
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(next, changed, placement),
-                    updateSelectedRoom: false);
+                    updateSelectedRoom: false, externalTargets: requiresTowerTargets ? externalTargets : null);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 next[pyre] = result.State!;
+                if (requiresTowerTargets) ApplyTowerUpdates(next, externalTargets, result.RetainedUnits);
                 movementResults.Add(result);
                 moving = Freeze(enabled.State, next, result.State!.Context);
                 if (moving.Context?.Enchantments?.AutomaticLifecycle != true)
@@ -612,6 +622,31 @@ namespace MonsterTrain2Poju.Model
                     ? unit.WithEndsBattleOnDeath(singleSurvivor) : unit).ToArray();
                 rooms[index] = new RoomCombatState(room.RoomIndex, room.Deployment, units,
                     room.ExternalInteractions, room.Context, room.Preview, companionIds);
+            }
+        }
+
+        private static (int RoomIndex, CombatUnit Unit)[] TowerTargets(RoomCombatState activeRoom,
+            IReadOnlyList<RoomCombatState> rooms, int excludedUnitId = 0) => rooms
+            .Where(room => room.RoomIndex != activeRoom.RoomIndex)
+            .SelectMany(room => room.Units.Where(unit => unit.Id != excludedUnitId)
+                .Select(unit => (room.RoomIndex, unit))).ToArray();
+
+        private static bool NeedsTowerTargets(RoomCombatState room) => room.Units
+            .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects)
+            .Any(effect => effect.Action?.Target == "Tower" || effect.UnitUpgrade?.Target == "Tower");
+
+        private static void ApplyTowerUpdates(RoomCombatState[] rooms,
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)> targets, IReadOnlyList<CombatUnit> retained)
+        {
+            if (targets.Count == 0) return;
+            var targetIds = targets.Select(target => target.Unit.Id).ToHashSet();
+            var changed = retained.Where(unit => targetIds.Contains(unit.Id)).ToDictionary(unit => unit.Id);
+            for (int index = 0; index < rooms.Length; index++)
+            {
+                RoomCombatState room = rooms[index];
+                if (!room.Units.Any(unit => targetIds.Contains(unit.Id))) continue;
+                rooms[index] = room.WithUnits(room.Units.Select(unit => changed.TryGetValue(unit.Id, out CombatUnit? updated)
+                    ? updated : unit).ToArray());
             }
         }
 

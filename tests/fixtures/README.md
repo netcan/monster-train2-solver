@@ -1,5 +1,13 @@
 # Native regression fixtures
 
+PyreRevengeAddPyregel extension (2026-10-17): 376 archives (338 battles and 38
+calibrations), 155/224 original relic owners (69.20%): 139 full-battle owners,
+fifteen campaign-interface owners and one native no-op. Four live Pyre OnHit
+callbacks target the exact complete-train Heroes roster and apply +2 Pyregel;
+the winning replay has 60 matched room stages, 14 train phases, 21 card plays,
+seven EndTurns and zero capture failures, mismatches, unsupported transitions
+or pending records. Generic bounded search is not claimed for this callback.
+
 RageOnBurnoutStackLoss extension (2026-10-17): 375 archives (337 battles and 38
 calibrations), 154/224 original relic owners (68.75%): 138 full-battle owners,
 fifteen campaign-interface owners and one native no-op. The original +3 Rage
@@ -4796,4 +4804,28 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-rage-on-burnout-stack-loss.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-rage-on-burnout-stack-loss-only tests/fixtures/full-battle-original-rage-on-burnout-stack-loss.mt2f
+```
+
+### Original PyreRevengeAddPyregel relic (schema 178)
+
+`full-battle-original-pyre-revenge.mt2f` captures the unchanged Pyre-only relic
+trigger installed on the live Pyre. Four native OnHit callbacks carry the exact
+Tower target sequence from the complete train and add two Pyregel to every
+eligible Hero, including heroes on other floors. Independent model checks match
+trigger installation, target ordering, all remote unit writebacks, 60 room
+stages, 14 train phases, 21 card actions and seven EndTurns. Capture failures,
+mismatches, unsupported transitions and pending records are all zero. Pure
+controls cover Pyre-only installation, preview exclusion, the two-stack status
+effect, cross-floor persistence and immutable branches; this does not claim a
+bounded-search result.
+
+The binary is 50,044 bytes with 6,866 unique nodes and SHA-256
+`bdef5fae3d5d04a29b332b22938383f9fee11dadb83a37c18c3b3c4d3da552e2`; it has no
+JSON companion. This is the 155th accepted original owner (139 full-battle
+owners, fifteen campaign-interface owners and one no-op); the inventory now has
+376 archives: 338 battles and 38 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-pyre-revenge.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-pyre-revenge-only tests/fixtures/full-battle-original-pyre-revenge.mt2f
 ```

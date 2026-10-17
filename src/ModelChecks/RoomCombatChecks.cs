@@ -237,9 +237,13 @@ internal static class RoomCombatChecks
             CombatUnit? externalPyre = stage.TryGetProperty("ExternalPyre", out FixtureValue pyreValue) &&
                 pyreValue.ValueKind != FixtureKind.Null ? pyreValue.Deserialize<CombatUnit>() : null;
             int externalPyreRoomIndex = externalPyre == null ? -1 : stage.GetProperty("ExternalPyreRoomIndex").GetInt32();
+            (int RoomIndex, CombatUnit Unit)[] externalTargets = stage.TryGetProperty("ExternalTargets", out FixtureValue targetsValue)
+                ? targetsValue.EnumerateArray().Select(target => (target.GetProperty("RoomIndex").GetInt32(),
+                    target.GetProperty("Unit").Deserialize<CombatUnit>()!)).ToArray()
+                : Array.Empty<(int, CombatUnit)>();
             RoomCombatResult result = stage.GetProperty("Kind").GetString() == "Exchange"
-                ? RoomCombatModel.Exchange(state) : RoomCombatModel.Resolve(state,
-                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex);
+                ? RoomCombatModel.Exchange(state, externalTargets: externalTargets) : RoomCombatModel.Resolve(state,
+                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
             if (!result.Supported) { unsupported++; firstUnsupported ??= result.UnsupportedReason; continue; }
             // The oracle is the captured game state, not the recorded model prediction.
             CombatUnit[] actual = stage.GetProperty("Actual").GetProperty("Units").Deserialize<CombatUnit[]>()!;
@@ -254,6 +258,21 @@ internal static class RoomCombatChecks
                     .Single(unit => unit.Id == externalPyre.Id)), JsonSerializer.Serialize(actualPyre));
                 Require(pyreDifference == null, "Native external Pyre difference at stage " +
                     stage.GetProperty("Index").GetInt32() + ": " + pyreDifference);
+            }
+            if (externalTargets.Length > 0)
+            {
+                FixtureValue actualTargets = stage.GetProperty("ActualExternalTargets");
+                foreach (var target in externalTargets)
+                {
+                    FixtureValue actualTarget = actualTargets.EnumerateArray().Single(item =>
+                        item.GetProperty("RoomIndex").GetInt32() == target.RoomIndex &&
+                        item.GetProperty("Unit").GetProperty("Id").GetInt32() == target.Unit.Id);
+                    CombatUnit actualUnit = actualTarget.GetProperty("Unit").Deserialize<CombatUnit>()!;
+                    string? targetDifference = ModelJson.Difference(JsonSerializer.Serialize(result.RetainedUnits
+                        .Single(unit => unit.Id == target.Unit.Id)), JsonSerializer.Serialize(actualUnit));
+                    Require(targetDifference == null, "Native external Tower target difference at stage " +
+                        stage.GetProperty("Index").GetInt32() + " for unit " + target.Unit.Id + ": " + targetDifference);
+                }
             }
             if (state.Context != null)
             {
