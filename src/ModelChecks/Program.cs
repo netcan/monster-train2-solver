@@ -945,6 +945,17 @@ if (args.Length == 1 && args[0] == "--original-cheaper-spell-cost-pure")
     OriginalCheaperSpellCostChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--original-moon-phase-hand-upgrade-pure")
+{
+    OriginalMoonPhaseRoomsGainMagicPowerChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-moon-phase-hand-upgrade-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalMoonPhaseRoomsGainMagicPowerChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--relic-first-card-cost-pure")
 {
     RelicFirstCardCostChecks.Run();
@@ -1670,6 +1681,7 @@ RelicStatusDecayChecks.Run();
 RelicResourceChecks.Run();
 OriginalEarlyDiscardEnergyChecks.Run();
 OriginalCheaperSpellCostChecks.Run();
+OriginalMoonPhaseRoomsGainMagicPowerChecks.Run();
 RelicFirstCardCostChecks.Run();
 RelicPayCardCostWithPyreHealthChecks.Run();
 OriginalNefariousOverflowChecks.Run();

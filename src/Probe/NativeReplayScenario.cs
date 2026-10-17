@@ -373,6 +373,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalJudgesScalesScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalFirstImpBonusScenario.Enabled && !OriginalFirstImpBonusScenario.Acquired)
                         OriginalFirstImpBonusScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalMoonPhaseRoomsGainMagicPowerScenario.Enabled && !OriginalMoonPhaseRoomsGainMagicPowerScenario.Acquired)
+                        OriginalMoonPhaseRoomsGainMagicPowerScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalNoUpgradeCardCostScenario.Enabled && !OriginalNoUpgradeCardCostScenario.Acquired)
                         OriginalNoUpgradeCardCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPyreCardCostScenario.Enabled && !OriginalPyreCardCostScenario.Acquired)
@@ -1551,6 +1553,8 @@ namespace MonsterTrain2Poju.Probe
                     OriginalNoUpgradeCardCostScenario.Prepare(managers, log);
                 if (fullBattle && OriginalFirstImpBonusScenario.Enabled && !OriginalFirstImpBonusScenario.Prepared && combat!.GetTurnCount() > 0)
                     OriginalFirstImpBonusScenario.Prepare(managers, log);
+                if (fullBattle && OriginalMoonPhaseRoomsGainMagicPowerScenario.Enabled && combat!.GetTurnCount() > 0)
+                    OriginalMoonPhaseRoomsGainMagicPowerScenario.PrepareTurn(managers, log);
                 if (fullBattle && OriginalRebalanceValorScenario.Enabled && !OriginalRebalanceValorScenario.Prepared)
                     OriginalRebalanceValorScenario.Prepare(managers, log);
                 if (fullBattle && OriginalCardDrawOnCardPlayScenario.Enabled && !OriginalCardDrawOnCardPlayScenario.Prepared)

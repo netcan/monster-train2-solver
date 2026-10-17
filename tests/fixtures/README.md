@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+MoonPhaseRoomsGainMagicPower extension (2026-10-18): 410 archives (372 battles
+and 38 calibrations), 191/224 original relic owners (85.27%): 174 full-battle
+owners, sixteen campaign-interface owners and one native no-op. The unchanged
+owner applies its +10 damage/+10 heal upgrade to filter-matching hand spells at
+end-turn pre-discard during Full Moon only. Five native callbacks verify three
+Full Moon positives, two New Moon no-ops, and five filter controls. Its 49-stage
+winning replay has 16 actions and zero differential counters; focused checks
+and 128-state serial/parallel search pass. The 36,489-byte archive has 5,570
+unique nodes and SHA-256
+`5df0de2f1cbf1791033109eba70a73e396a9d870b37c0c74beb82f971d4226c8`.
+
 ReduceCostUnitIfNoUpgrade extension (2026-10-18): 408 archives (370 battles and
 38 calibrations), 189/224 original relic owners (84.38%): 172 full-battle owners,
 sixteen campaign-interface owners and one native no-op. The unchanged owner

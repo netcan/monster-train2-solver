@@ -1588,3 +1588,19 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-fir
 dotnet run --project src/ModelChecks -c Release -- --original-first-imp-bonus-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
 ```
+
+## MoonPhaseRoomsGainMagicPower
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `MoonPhaseRoomsGainMagicPower` | `e96497a1-3c1e-4adf-b897-8ef09b931d1d` | `full-battle-original-moon-phase-rooms-gain-magic-power.mt2f` | The unchanged owner applies its native `MoonPhaseRooms_UpgradeData` (+10 damage/+10 heal) to matching hand spells during the end-turn pre-discard callback on Full Moon only. The phase mask uses `CurrentMoonPhaseMatches(..., Ignore, -1, ...)`; the upgrade is non-unique and remains after discard. |
+
+The focused checker verifies the unchanged owner, both native positive/exclusion filters, upgrade values and lifetime, and five callbacks across alternating phases: three Full Moon positives receive the upgrade, two New Moon positives do not, and all five filter controls remain unchanged. Synthetic witness definitions exclude unrelated `CardTraitScalingAddEnergy` and `CardTraitAddCardUpgradeOnMoonPhase` callbacks; this fixture does not claim those card lifecycles are modeled. The 49-stage winning battle records 16 actions, six EndTurns, 11 train phases and nine spawns, with zero capture failures, mismatches, unsupported transitions or pending records. Independent search matches all 16 recorded decisions over 128/128 states with serial/parallel best equality.
+
+The 36,489-byte archive has 5,570 unique nodes and SHA-256 `5df0de2f1cbf1791033109eba70a73e396a9d870b37c0c74beb82f971d4226c8`; no JSON companion is tracked. Inventory is 410 archives: 372 full battles and 38 component calibrations. Original relic evidence is 191/224 (85.27%): 174 battle, 16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-rooms-gain-magic-power.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-hand-upgrade-only tests/fixtures/full-battle-original-moon-phase-rooms-gain-magic-power.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-moon-phase-rooms-gain-magic-power.mt2f
+```

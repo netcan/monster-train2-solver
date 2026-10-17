@@ -53,10 +53,26 @@ namespace MonsterTrain2Poju.Probe
                 var corruptionStatuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnCorruptionAdded)
                     .Select(item => CorruptionStatus(item.Effect, item.Index)).ToArray();
-                var cardModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    var cardModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade || item.Effect is RelicEffectModifyTrait ||
-                        item.Effect.GetType().Name == RelicNoUpgradeCardCostModel.Effect).Select(item =>
+                        item.Effect.GetType().Name == RelicNoUpgradeCardCostModel.Effect ||
+                        item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon).Select(item =>
                     {
+                        if (item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon)
+                        {
+                            object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
+                            var effectData = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                            var upgrade = new CardUpgradeState();
+                            upgrade.Setup((CardUpgradeData)Field("cardUpgradeData"));
+                            bool removeOnDiscard = (bool)Field("removeOnDiscard");
+                            upgrade.SetRemoveOnDiscard(removeOnDiscard);
+                            var payload = new RelicMoonPhaseHandUpgrade((int)Field("moonPhaseMask"), removeOnDiscard,
+                                ((RelicEffectBase)item.Effect).CanApplyInPreviewMode, effectData.GetEffectConditions().Count,
+                                CardModifierProbe.Upgrade(upgrade, rejectFilters: false, filtersAlreadyApplied: true),
+                                upgrade.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray());
+                            return new RelicCardModifier(item.Index, null, null, false,
+                                RelicCardModifierProbe.Conditions(item.Effect), moonPhaseHandUpgrade: payload);
+                        }
                         if (item.Effect.GetType().Name == RelicNoUpgradeCardCostModel.Effect)
                         {
                             object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);

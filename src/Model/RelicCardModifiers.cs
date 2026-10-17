@@ -25,6 +25,20 @@ namespace MonsterTrain2Poju.Model
             ConditionCount = conditions?.Count ?? conditionCount; }
     }
 
+    public sealed class RelicMoonPhaseHandUpgrade
+    {
+        public int MoonPhaseMask { get; }
+        public bool RemoveOnDiscard { get; }
+        public bool CanApplyInPreviewMode { get; }
+        public int ConditionCount { get; }
+        public CardUpgradeModifier Upgrade { get; }
+        public IReadOnlyList<CardUpgradeMaskRule> Filters { get; }
+        public RelicMoonPhaseHandUpgrade(int moonPhaseMask, bool removeOnDiscard, bool canApplyInPreviewMode,
+            int conditionCount, CardUpgradeModifier upgrade, IReadOnlyList<CardUpgradeMaskRule> filters)
+        { MoonPhaseMask = moonPhaseMask; RemoveOnDiscard = removeOnDiscard; CanApplyInPreviewMode = canApplyInPreviewMode;
+            ConditionCount = conditionCount; Upgrade = upgrade; Filters = Array.AsReadOnly(filters.ToArray()); }
+    }
+
     public sealed class RelicCardModifier
     {
         public int EffectIndex { get; }
@@ -35,15 +49,18 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<RelicConditionState> Conditions { get; }
         public RelicTraitReplacement? TraitReplacement { get; }
         public RelicNoUpgradeCardCostModifier? NoUpgradeCost { get; }
+        public RelicMoonPhaseHandUpgrade? MoonPhaseHandUpgrade { get; }
         public RelicCardModifier(int effectIndex, RelicCardUpgradeRule? rule, CardUpgradeModifier? upgrade,
             bool applyToCardlessSpawns, IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0,
-            RelicTraitReplacement? traitReplacement = null, RelicNoUpgradeCardCostModifier? noUpgradeCost = null)
+            RelicTraitReplacement? traitReplacement = null, RelicNoUpgradeCardCostModifier? noUpgradeCost = null,
+            RelicMoonPhaseHandUpgrade? moonPhaseHandUpgrade = null)
         { EffectIndex = effectIndex; Rule = rule; Upgrade = upgrade; ApplyToCardlessSpawns = applyToCardlessSpawns;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
-            ConditionCount = conditions?.Count ?? conditionCount; TraitReplacement = traitReplacement; NoUpgradeCost = noUpgradeCost; }
+            ConditionCount = conditions?.Count ?? conditionCount; TraitReplacement = traitReplacement; NoUpgradeCost = noUpgradeCost;
+            MoonPhaseHandUpgrade = moonPhaseHandUpgrade; }
         internal RelicCardModifier WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicCardModifier(EffectIndex, Rule, Upgrade, ApplyToCardlessSpawns, conditions,
-                traitReplacement: TraitReplacement, noUpgradeCost: NoUpgradeCost);
+                traitReplacement: TraitReplacement, noUpgradeCost: NoUpgradeCost, moonPhaseHandUpgrade: MoonPhaseHandUpgrade);
     }
     public sealed class RelicNoUpgradeCardCostModifier
     {
@@ -95,7 +112,7 @@ namespace MonsterTrain2Poju.Model
         {
             var indices = relic.EffectTypes.Select((type, index) => (type, index)).Where(item =>
                     item.type == RelicModel.AddTempUpgrade || item.type == RelicModel.ModifyTrait ||
-                    item.type == RelicModel.ModifyCardCostIfNoUpgrades)
+                    item.type == RelicModel.ModifyCardCostIfNoUpgrades || item.type == RelicModel.ApplyCardUpgradeToHandEndOfTurnOnMoon)
                 .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.CardModifiers?.Count > 0 ? "Unexpected relic card modifier definitions." : null;
             if (relic.CardModifiers == null || !indices.SequenceEqual(relic.CardModifiers.Select(rule => rule.EffectIndex)))
@@ -123,6 +140,19 @@ namespace MonsterTrain2Poju.Model
                         return "Unmodeled unupgraded-card cost modifier payload.";
                     string? costError = RelicNoUpgradeCardCostModel.Validate(relic, effect.NoUpgradeCost);
                     if (costError != null) return costError;
+                    continue;
+                }
+                if (type == RelicModel.ApplyCardUpgradeToHandEndOfTurnOnMoon)
+                {
+                    RelicMoonPhaseHandUpgrade? handUpgrade = effect.MoonPhaseHandUpgrade;
+                    if (relic.DataId != RelicMoonPhaseHandUpgradeModel.OwnerId || relic.AssetKey != RelicMoonPhaseHandUpgradeModel.OwnerKey ||
+                        relic.EffectTypes.Count != 1 || relic.IsCovenant == null || relic.DisallowedInPlacementPhase == null ||
+                        handUpgrade == null || effect.Rule != null || effect.Upgrade != null || effect.TraitReplacement != null ||
+                        effect.NoUpgradeCost != null || effect.ApplyToCardlessSpawns || effect.Conditions.Count != 0 || effect.ConditionCount != 0 ||
+                        handUpgrade.MoonPhaseMask < 1 || handUpgrade.MoonPhaseMask > 3 || handUpgrade.ConditionCount != 0 ||
+                        handUpgrade.Upgrade.MaskMetadata == null || handUpgrade.RemoveOnDiscard != handUpgrade.Upgrade.RemoveOnDiscard ||
+                        CardModifierModel.UpgradeInteractions(handUpgrade.Upgrade).Any())
+                        return "Unmodeled moon-phase end-turn hand upgrade payload or owner.";
                     continue;
                 }
                 if (effect.Rule == null || effect.TraitReplacement != null)

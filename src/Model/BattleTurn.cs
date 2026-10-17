@@ -229,6 +229,11 @@ namespace MonsterTrain2Poju.Model
             RelicCheaperSpellUpgradeResult endTurnRelics = RelicCheaperSpellUpgradeModel.EndTurnPreHandDiscard(context);
             if (!endTurnRelics.Supported) return Unsupported(endTurnRelics.UnsupportedReason!);
             context = endTurnRelics.Context;
+            RelicMoonPhaseHandUpgradeResult moonPhaseHandUpgrade = RelicMoonPhaseHandUpgradeModel.Apply(context,
+                source.MoonPhase == "New" ? 1 : source.MoonPhase == "Full" ? 2 : 0,
+                spawn.Turn == 0, context.IsolatedBattlePreview == true);
+            if (!moonPhaseHandUpgrade.Supported) return Unsupported(moonPhaseHandUpgrade.UnsupportedReason!);
+            context = moonPhaseHandUpgrade.Context;
             train = WithContext(train, context, spawn.Turn == 0);
             spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
             if (outputPlayRules != null)

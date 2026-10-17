@@ -17,17 +17,16 @@ Schema 8 retains the required card traits introduced in schema 6.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 189 original owners accepted (172 native battle owners,
+Current checkpoint: 191 original owners accepted (174 native battle owners,
 sixteen actual campaign-interface owners and one explicit native no-op owner);
-35 remain pending. The latest accepted owner is
-`ReduceCostUnitIfNoUpgrade`: its unchanged Monster-only cost effect installs a
-unique hidden -1 Cost/+1 XCost modifier, reinstalls it idempotently on hand-added,
-and removes it after a visible permanent upgrade. The 63-stage winning capture
-records 27 actions and seven EndTurns with zero capture failures, mismatches,
-unsupported transitions or pending records. Focused checks replay six manager
-reset/retain observations and every captured callback; independent 128-state
-search has serial/parallel best equality. Preview execution and other owner,
-parameter or callback shapes remain unsupported.
+33 remain pending. The latest accepted owner is
+`MoonPhaseRoomsGainMagicPower`: its unchanged end-turn pre-discard effect adds
++10 damage/+10 heal to matching hand spells on Full Moon only. Five native
+callbacks verify both phases and filter controls; the 49-stage winning capture
+has 16 actions and zero capture failures, mismatches, unsupported transitions
+or pending records. Focused checks and independent 128-state serial/parallel
+search pass. Other owners, preview execution and unrelated moon-phase card
+traits remain unsupported.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
@@ -37,3 +36,21 @@ and affected-fixture regression. Merchant/reward/draft effects
 need their actual campaign lifecycle evidence; definition enumeration and
 inert battle presence do not validate those effects. Pure no-op definitions
 must be explicitly identified without inventing activation evidence.
+
+The latest fixture, `full-battle-original-moon-phase-rooms-gain-magic-power.mt2f`,
+captures the unchanged owner and its Full Moon mask, Ignore room-modifier mode,
++10 damage/+10 heal upgrade, and two native filters. Across five pre-discard
+callbacks, three Full Moon positive witnesses receive the upgrade, two New Moon
+positives do not, and all five nonmatching controls remain unchanged. The
+upgrade is non-unique and remains after discard. The witness definitions avoid
+unrelated scaling-energy and moon-phase card-upgrade callbacks; support for
+those separate lifecycles is not claimed.
+
+The 49-stage winning battle records 16 actions, six EndTurns, 11 train phases
+and nine spawns, with zero differential counters. Focused native checks and
+128-state serial/parallel search pass. The 36,489-byte archive has 5,570 unique
+nodes and SHA-256
+`5df0de2f1cbf1791033109eba70a73e396a9d870b37c0c74beb82f971d4226c8`; no JSON
+companion is tracked. Inventory is 410 archives: 372 battles and 38 component
+calibrations. Original relic coverage is 191/224 (85.27%): 174 battle owners,
+sixteen campaign owners and one native no-op owner.
