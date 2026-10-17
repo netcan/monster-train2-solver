@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **180 distinct original collectable relics / 224 catalog entries
-(80.36%)** have accepted native evidence: 163 have full-battle effect evidence,
+As of 2026-10-18, **181 distinct original collectable relics / 224 catalog entries
+(80.80%)** have accepted native evidence: 164 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -235,6 +235,7 @@ owner count.
 | `BigDamageFromManyMorsels` | `15f3c641-14ba-4305-8c9f-cdb2ebb4e572` | [Big Damage from Many Morsels][bigDamage] | Six actual complete-train births replay the unchanged threshold effect; native checks cover 19/20/21 Snacks, player/Pyre/enemy gates, five Tower targets and seven room/character notifications. Its 113-stage winning battle has zero differential counters. Bounded search visits 128 states and replays three steps with serial/parallel best equality; unsupported branches remain excluded. |
 | `EmberOnEarlyDiscard` | `44149a09-df55-4864-b5d9-f30c4e659999` | [early discard energy][earlyDiscardEnergy] | The unchanged +1 effect triggers for card-caused discard of each card, but not Consume; five native steps gain Ember and 18 consume controls gain none. Pure checks cover the energy clamp, placement and preview gates. Full battle and independent 128/128-state replay/search match. |
 | `ReduceSpellCostOfCheaper` | `9cc85dbb-d0ae-409b-8f26-41d2202eb1e0` | [cheaper spell cost][cheaperSpellCost] | Unchanged FreeSpellBlessing applies only to filtered spells with strictly lower cost; equal-cost, zero-cost and X-cost controls are unchanged. Played-card and end-turn discard clean up tracked upgrades. Full battle and independent 128/128-state replay/search match. |
+| `ReduceFirstSpellCostPerDeckSize` | `64d9943e-02e7-469d-b516-c483a3ad8ccf` | [first spell cost per deck size][firstCardCost] | The unchanged 15-card DeckPile threshold applies cost/X-cost reduction to eligible Spells, clears hand upgrades after the first Spell, and re-arms through the per-room EndOfTurn callback. The schema-205 battle matches 52 stages and three scripted actions; dedicated checks and 128-state serial/parallel search pass with zero unsupported attempts. Other owners and card/pile variants are not claimed. |
 | `NefariousOverflow` | `b0575799-1511-489d-a05d-b5b2e6bf84c2` | [NefariousOverflow][nefariousOverflow] | The unchanged both-team payload adds 1 explosion damage per Unstable stack: the five-stack carrier's death kills the Mage and reduces the Guard's Armor 17→7. Proc-damage and growth hooks remain unsupported when nonzero. Full battle and independent 128/128-state replay/search match. |
 | `UncontrolledGroup` | `4c737e1e-7e5c-40ee-87a3-944859784283` | [UncontrolledGroup][uncontrolledGroup] | The unchanged ordered two-effect owner adds +5 Unstable to eligible nonlethal units on both teams; Blast Resistant suppresses the callback. Native growth callback and full 41-stage replay match, with independent 128/128-state search. Lethal pre-growth sacrifice and sibling payloads are not claimed. |
 | `CopyFirstSpellPlayed` | `0f4a9e72-cd34-4667-95f6-6a0ca69832f8` | [CopyFirstSpellPlayed][copyFirstSpell] | The unchanged once-per-turn owner copies the first direct Spell with temporary Ephemeral; its generated copy plays again the same turn without retriggering. Exact original owner only; sibling copy payloads are not generalized. |
@@ -865,6 +866,7 @@ dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
 [startCombatHoard]: full-battle-original-start-combat-hoard-relic.mt2f
 [earlyDiscardEnergy]: full-battle-original-early-discard-energy.mt2f
 [cheaperSpellCost]: full-battle-original-cheaper-spell-cost.mt2f
+[firstCardCost]: full-battle-original-first-card-cost.mt2f
 [nefariousOverflow]: full-battle-original-nefarious-overflow.mt2f
 [copyFirstSpell]: full-battle-original-copy-first-spell-played.mt2f
 [funguyDeckScaling]: full-battle-original-funguy-deck-scaling.mt2f

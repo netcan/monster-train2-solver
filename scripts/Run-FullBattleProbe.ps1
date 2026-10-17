@@ -281,6 +281,7 @@ param(
     [switch] $OriginalBigDamageFromManyMorsels,
     [switch] $OriginalEarlyDiscardEnergy,
     [switch] $OriginalCheaperSpellCost,
+    [switch] $OriginalFirstCardCost,
     [switch] $OriginalNefariousOverflow,
     [switch] $OriginalUncontrolledGroup,
     [switch] $OriginalCopyFirstSpellPlayed,
@@ -418,6 +419,7 @@ if ($OriginalChanceToCleanse) { $BranchCardMasks = $true; $Policy = 'units-and-j
 if ($OriginalExtraFeedTrigger) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalSummonWithAvarice) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalFirstCardCost) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
@@ -892,6 +894,7 @@ if ($OriginalChanceToCleanse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalExtraFeedTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'original-extra-feed-trigger' }
 if ($OriginalSummonWithAvarice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-summon-with-avarice' }
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
+if ($OriginalFirstCardCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-first-spell-cost-per-deck-size' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
 if ($OriginalUncontrolledGroup) { $environment['MT2_PROBE_MODIFIERS'] = 'original-uncontrolled-group' }
 if ($OriginalCopyFirstSpellPlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-spell-played' }
@@ -1780,6 +1783,13 @@ if ($OriginalCheaperSpellCost -and ($trace.Schema -ne 171 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CHEAPER-SPELL-RELIC-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 2)) {
     throw 'ReduceSpellCostOfCheaper lacks strict-cost, filter and cleanup actions in the isolated battle.'
+}
+if ($OriginalFirstCardCost -and ($trace.Schema -ne 205 -or
+    $trace.ModifierScenario -ne 'original-reduce-first-spell-cost-per-deck-size' -or
+    -not $trace.OriginalFirstCardCostPrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-FIRST-CARD-COST-PREPARED' -Quiet) -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -lt 3)) {
+    throw 'ReduceFirstSpellCostPerDeckSize lacks first-play cleanup, end-turn reset and retained next-turn Spell witnesses.'
 }
 if ($OriginalNefariousOverflow -and ($trace.Schema -ne 172 -or
     $trace.ModifierScenario -ne 'original-nefarious-overflow' -or

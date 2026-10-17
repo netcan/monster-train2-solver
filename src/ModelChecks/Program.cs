@@ -945,6 +945,18 @@ if (args.Length == 1 && args[0] == "--original-cheaper-spell-cost-pure")
     OriginalCheaperSpellCostChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--relic-first-card-cost-pure")
+{
+    RelicFirstCardCostChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-first-card-cost-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RelicFirstCardCostChecks.Native(fixture.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-unit-resources-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1590,6 +1602,7 @@ RelicStatusDecayChecks.Run();
 RelicResourceChecks.Run();
 OriginalEarlyDiscardEnergyChecks.Run();
 OriginalCheaperSpellCostChecks.Run();
+RelicFirstCardCostChecks.Run();
 OriginalNefariousOverflowChecks.Run();
 OriginalUncontrolledGroupChecks.Run();
 OriginalCopyFirstSpellChecks.Run();

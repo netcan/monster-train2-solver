@@ -450,9 +450,17 @@ namespace MonsterTrain2Poju.Model
             Run(state, false, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom, externalTargets: externalTargets);
         public static RoomCombatResult Resolve(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             bool updateSelectedRoom = true, CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
-            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null) =>
-            Run(state, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom,
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
+        {
+            RoomCombatResult result = Run(state, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom,
                 externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
+            if (!result.Supported || result.State!.Context == null) return result;
+            RelicFirstCardCostResult endOfTurn = RelicFirstCardCostModel.EndRoomCombat(result.State.Context);
+            if (!endOfTurn.Supported)
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, result.Rounds, result.Events.ToList(), endOfTurn.UnsupportedReason);
+            return new RoomCombatResult(result.State.WithContext(endOfTurn.Context), result.Outcome, result.Rounds,
+                result.Events.ToList(), result.UnsupportedReason, result.PendingCallbacks, result.RetainedUnits, result.Dispatches);
+        }
 
         public static RoomCombatResult ApplyUnitPostCombat(RoomCombatState state, IReadOnlyList<int> cannotAttackOrHeal,
             IReadOnlyList<int> cannotFireTriggers, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)

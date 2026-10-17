@@ -741,6 +741,11 @@ namespace MonsterTrain2Poju.Model
             if (!delayedStatusRemovals.Supported) return Unsupported(delayedStatusRemovals.UnsupportedReason!);
             train = delayedStatusRemovals.State!; context = train.Context!;
             if (delayedStatusRemovals.Outcome != RoomOutcome.Exchanged) outcome = delayedStatusRemovals.Outcome;
+            RelicFirstCardCostResult firstCardCost = RelicFirstCardCostModel.ApplyOnCardPlayed(context, card.InstanceId,
+                source.PlayRules);
+            if (!firstCardCost.Supported) return Unsupported(firstCardCost.UnsupportedReason!);
+            context = firstCardCost.Context;
+            train = CardSpellModel.WithContext(train, context);
             List<CardToken> hand = context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToList();
             List<CardToken> discard = context.Cards.Discard.ToList();
             if (effectsApplied && !(terminal && context.OtherPiles != null))

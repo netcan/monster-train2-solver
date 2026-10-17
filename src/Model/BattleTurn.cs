@@ -448,6 +448,10 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(triggers.Outcome)) return Finish(triggers.Outcome, 0, moon);
             }
             context = train.Context!;
+            RelicFirstCardCostResult firstCardCostBeforeDraw = RelicFirstCardCostModel.StartTurnBeforeDraw(context,
+                source.PlayRules);
+            if (!firstCardCostBeforeDraw.Supported) return Unsupported(firstCardCostBeforeDraw.UnsupportedReason!);
+            context = firstCardCostBeforeDraw.Context;
             if (train.Movement.Any(rule => rule.CompanionBoss))
             {
                 train = WithContext(train, EnergyModel.SetPhase(context, "BossActionPreCombat"), false);
@@ -499,6 +503,13 @@ namespace MonsterTrain2Poju.Model
                 statistics = statistics?.Increment(card.InstanceId, "TimesDrawn");
             context = context.WithStatistics(statistics);
             context = WithCards(context, drawn.State!);
+            foreach (CardToken card in drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)))
+            {
+                RelicFirstCardCostResult cardAdded = RelicFirstCardCostModel.ApplyOnCardAdded(context, card.InstanceId,
+                    source.PlayRules);
+                if (!cardAdded.Supported) return Unsupported(cardAdded.UnsupportedReason!);
+                context = cardAdded.Context;
+            }
             context = BonusDrawModel.ApplyUpgrades(context, drawn, source.PlayRules, out string? bonusError);
             if (bonusError != null) return Unsupported(bonusError);
             context = ConduitModel.Drawn(context, drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)).Select(card => card.InstanceId));

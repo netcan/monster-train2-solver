@@ -29,6 +29,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-big-damage-many-morsels.mt2f',
     'full-battle-original-early-discard-energy.mt2f',
     'full-battle-original-cheaper-spell-cost.mt2f',
+    'full-battle-original-first-card-cost.mt2f',
     'full-battle-original-nefarious-overflow.mt2f', 'full-battle-original-uncontrolled-group.mt2f',
     'full-battle-original-copy-first-spell-played.mt2f',
     'full-battle-original-copy-first-consume-played.mt2f',
@@ -524,7 +525,7 @@ $focusedBumpFixtures = @($fixtures | Where-Object {
 $focusedTeamSpawnStatusFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -eq 'full-battle-original-team-spawn-status.mt2f'
 })
-# This isolated relic fixture ends after two authored plays; its native and search checks run below.
+# These isolated relic fixtures have dedicated native checks; their search checks run below.
 $generalFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -notin @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f',
         'full-battle-original-damage-on-floor-transition.mt2f', 'full-battle-original-pyregel-on-ascend.mt2f',
@@ -535,6 +536,7 @@ $generalFixtures = @($fixtures | Where-Object {
         'full-battle-relic-card-cast-trigger-upgrades.mt2f',
         'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f',
         'full-battle-original-cheaper-spell-cost.mt2f',
+        'full-battle-original-first-card-cost.mt2f',
         'full-battle-original-uncontrolled-group.mt2f')
 })
 $buildArguments = @()
@@ -545,6 +547,9 @@ if ($generalFixtures.Count -gt 0) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release @buildArguments
 }
 if ($LASTEXITCODE -ne 0) { throw 'Independent model checks failed.' }
+
+dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --relic-first-card-cost-pure
+if ($LASTEXITCODE -ne 0) { throw 'First-card cost pure checks failed.' }
 
 foreach ($fixturePath in $focusedTeamSpawnStatusFixtures) {
     foreach ($mode in @('--room-combat-only', '--native-actions-only', '--unit-clone-only')) {
@@ -994,6 +999,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     foreach ($mode in @('--original-cheaper-spell-cost-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "ReduceSpellCostOfCheaper checks failed ($mode): $fixturePath" }
+    }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-first-card-cost.mt2f' })) {
+    foreach ($mode in @('--original-first-card-cost-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "ReduceFirstSpellCostPerDeckSize checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-nefarious-overflow.mt2f' })) {

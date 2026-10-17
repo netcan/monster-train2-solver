@@ -12,11 +12,20 @@ namespace MonsterTrain2Poju.Model
         public bool IgnoreRestrictions { get; }
         public string? RequiredSubtype { get; }
         public int ConditionCount { get; }
+        public string? PileType { get; }
+        public CardUpgradeModifier? FirstCardUpgrade { get; }
+        public bool? WaitingForFirstCard { get; }
 
         public RelicCardTypeCost(int effectIndex, string cardType, int amount, bool ignoreRestrictions,
-            string? requiredSubtype, int conditionCount)
+            string? requiredSubtype, int conditionCount, string? pileType = null,
+            CardUpgradeModifier? firstCardUpgrade = null, bool? waitingForFirstCard = null)
         { EffectIndex = effectIndex; CardType = cardType; Amount = amount;
-            IgnoreRestrictions = ignoreRestrictions; RequiredSubtype = requiredSubtype; ConditionCount = conditionCount; }
+            IgnoreRestrictions = ignoreRestrictions; RequiredSubtype = requiredSubtype; ConditionCount = conditionCount;
+            PileType = pileType; FirstCardUpgrade = firstCardUpgrade; WaitingForFirstCard = waitingForFirstCard; }
+
+        internal RelicCardTypeCost WithFirstCardState(CardUpgradeModifier upgrade, bool waiting) =>
+            new RelicCardTypeCost(EffectIndex, CardType, Amount, IgnoreRestrictions, RequiredSubtype,
+                ConditionCount, PileType, upgrade, waiting);
     }
 
     public static class RelicCardTypeCostModel
@@ -24,19 +33,31 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
-                .Where(item => item.type == RelicModel.ModifyCardTypeCost).Select(item => item.index).ToArray();
+                .Where(item => item.type is RelicModel.ModifyCardTypeCost or RelicFirstCardCostModel.Effect)
+                .Select(item => item.index).ToArray();
             if (indices.Length == 0)
                 return relic.CardTypeCosts?.Count > 0 ? "Unexpected relic card-type cost definitions." : null;
             if (relic.CardTypeCosts == null || !indices.SequenceEqual(relic.CardTypeCosts.Select(item => item.EffectIndex)))
                 return "Missing ordered relic card-type cost definitions.";
             foreach (RelicCardTypeCost rule in relic.CardTypeCosts)
-                if (rule.CardType is not ("Blight" or "Junk") || rule.RequiredSubtype != null || rule.ConditionCount != 0)
+            {
+                if (relic.EffectTypes[rule.EffectIndex] == RelicFirstCardCostModel.Effect)
+                {
+                    string? error = RelicFirstCardCostModel.Validate(relic, rule);
+                    if (error != null) return error;
+                    continue;
+                }
+                if (rule.PileType != null || rule.FirstCardUpgrade != null || rule.WaitingForFirstCard.HasValue ||
+                    rule.CardType is not ("Blight" or "Junk") || rule.RequiredSubtype != null || rule.ConditionCount != 0)
                     return "Unmodeled relic card-type cost restrictions or conditions.";
+            }
             return null;
         }
 
         internal static CardInstanceState Apply(CardInstanceState card, RelicCardTypeCost rule, out bool matched)
         {
+            if (rule.FirstCardUpgrade != null)
+            { matched = false; return card; }
             matched = card.MaskDescriptor!.Definition.CardType == rule.CardType;
             if (!matched) return card;
             CardModifiers original = card.Temporary;

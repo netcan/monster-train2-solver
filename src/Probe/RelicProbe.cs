@@ -63,8 +63,17 @@ namespace MonsterTrain2Poju.Probe
                                     Filter(data.GetParamCardFilter()), Filter(data.GetParamCardFilterSecondary())));
                     }).ToArray();
                 var cardTypeCosts = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectModifyCardTypeCost).Select(item => {
+                    .Where(item => item.Effect is RelicEffectModifyCardTypeCost ||
+                        item.Effect.GetType().Name == RelicFirstCardCostModel.Effect).Select(item => {
                         var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                        if (item.Effect.GetType().Name == RelicFirstCardCostModel.Effect)
+                        {
+                            var upgradeState = (CardUpgradeState)AccessTools.Field(item.Effect.GetType(), "costModUpgradeState").GetValue(item.Effect);
+                            var upgrade = CardModifierProbe.Upgrade(upgradeState, rejectFilters: false, filtersAlreadyApplied: true);
+                            bool waiting = (bool)AccessTools.Field(item.Effect.GetType(), "isWaitingToPlayUpgrade").GetValue(item.Effect);
+                            return new RelicCardTypeCost(item.Index, data.GetParamCardType().ToString(), data.GetParamMaxInt(),
+                                false, null, data.GetEffectConditions().Count, ((CardPile)data.GetParamMinInt()).ToString(), upgrade, waiting);
+                        }
                         SubtypeData? subtype = data.GetParamCharacterSubtype();
                         return new RelicCardTypeCost(item.Index, data.GetParamCardType().ToString(), data.GetParamInt(),
                             data.GetParamBool(), subtype == null || subtype.IsNone ? null : subtype.Key,
