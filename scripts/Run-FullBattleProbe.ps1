@@ -288,6 +288,7 @@ param(
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
     [switch] $OriginalBrokenRailRelic,
+    [switch] $OriginalHephsBlueprints,
     [switch] $OriginalRageOnBurnoutStackLoss,
     [switch] $OriginalPyreRevenge,
     [switch] $OriginalExtractForEmberAndEchos,
@@ -420,6 +421,7 @@ if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $Origi
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
 if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalHephsBlueprints) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRageOnBurnoutStackLoss) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreRevenge) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalExtractForEmberAndEchos) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
@@ -887,6 +889,7 @@ if ($OriginalMonsterSpellTargeting) { $environment['MT2_PROBE_MODIFIERS'] = 'ori
 if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-funguy-deck-scaling' }
 if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-heal' }
 if ($OriginalBrokenRailRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-rail' }
+if ($OriginalHephsBlueprints) { $environment['MT2_PROBE_MODIFIERS'] = 'original-hephs-blueprints' }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
 if ($OriginalPyreRevenge) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-revenge' }
 if ($OriginalExtractForEmberAndEchos) { $environment['MT2_PROBE_MODIFIERS'] = 'original-extract-for-ember-and-echos' }
@@ -1837,6 +1840,13 @@ if ($OriginalBrokenRailRelic -and ($trace.Schema -ne 176 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 1 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-BROKEN-RAIL-PREPARED points=3 native ordinary monster, 80 HP, 20 attack' -Quiet))) {
     throw 'BrokenRail lacks its prepared +2 HP per forge point native monster summon witness.'
+}
+if ($OriginalHephsBlueprints -and ($trace.Schema -ne 200 -or
+    $trace.ModifierScenario -ne 'original-hephs-blueprints' -or
+    -not $trace.OriginalHephsBlueprintsPrepared -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 2 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-HEPHS-BLUEPRINTS-PREPARED points=3 equipment-filter control monster then eligible equipment' -Quiet))) {
+    throw 'HephsBlueprints lacks its Equipment-filter control and eligible three-point native equipment play.'
 }
 if ($OriginalRageOnBurnoutStackLoss -and ($trace.Schema -ne 177 -or
     $trace.ModifierScenario -ne 'original-rage-on-burnout-stack-loss' -or

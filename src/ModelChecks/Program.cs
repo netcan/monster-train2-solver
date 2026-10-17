@@ -671,6 +671,18 @@ if (args.Length == 1 && args[0] == "--original-extra-feed-trigger-model-only")
     OriginalExtraFeedTriggerChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-hephs-blueprints-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalHephsBlueprintsChecks.Native(document.RootElement);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={document.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={document.UniqueNodeCount}");
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-hephs-blueprints-model-only")
+{
+    OriginalHephsBlueprintsChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-summon-with-avarice-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

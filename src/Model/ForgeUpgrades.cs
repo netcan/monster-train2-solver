@@ -32,8 +32,8 @@ namespace MonsterTrain2Poju.Model
             if (!cardRule.ForgeEligible.HasValue)
                 return Unsupported("Forge-eligible card state was not captured.");
             if (!cardRule.ForgeEligible.Value) return new ForgeUpgradeModelResult(source);
-            if (cardRule.Effect != "SpawnMonster")
-                return Unsupported("Automatic forge is only modeled for ordinary monster summons.");
+            if (cardRule.Effect != "SpawnMonster" && cardRule.Effect != "Equipment")
+                return Unsupported("Automatic forge is only modeled for ordinary monster summons and equipment plays.");
             if (card == null) return Unsupported("Forge-eligible play is missing its card instance.");
             ForgeUpgradeDefinition? definition = playRules.ForgeUpgrade;
             if (definition == null) return Unsupported("Native forge upgrade definitions were not captured.");

@@ -1,5 +1,23 @@
 # Native regression fixtures
 
+HephsBlueprints extension (2026-10-17): 398 archives (360 battles and 38
+calibrations), 178/224 original relic owners (79.46%): 161 full-battle owners,
+sixteen campaign-interface owners and one native no-op. The unchanged original
+Equipment-only forge upgrade scales +2 attack/+2 Armor to +6/+6 at three Forge
+points; a Monster control receives only the default forge effect. The 39-stage
+winning replay, focused model checks and independent 128-state search pass with
+zero native or search unsupported attempts. The 30,033-byte archive has 4,507
+unique nodes and SHA-256
+`55d6974cbff32d9e17db3a5878648301688e0120c37fb51fbd434b6dc152980a`.
+
+ExtraFeedTrigger extension (2026-10-17): 397 archives (359 battles and 38
+calibrations), 177/224 original relic owners (79.02%): 160 full-battle owners,
+sixteen campaign-interface owners and one native no-op. The unchanged owner
+adds +1 to the live Monsters Pyre OnFeed count (2 vs. the OnDeath control at 1).
+Its 61-stage battle, focused checks and independent 128-state search pass with
+zero native error counters. The 44,070-byte archive has 5,640 unique nodes and
+SHA-256 `3cf10ba1b2ecaee524e957bdd7821e5fd247ab6b33f37a80029fc3d572ccf8b0`.
+
 ChanceForSpellWeakness extension (2026-10-17): 394 archives (356 battles and 38
 calibrations), 174/224 original relic owners (77.68%): 157 full-battle owners,
 sixteen campaign-interface owners and one native no-op. Its unchanged 50%

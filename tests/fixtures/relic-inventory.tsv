@@ -155,7 +155,7 @@
 "UpgradeEquipmentOnDeath"	"b3e7888f-8f5e-4082-89b0-078d80ce4a9b"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "SilverIncreasedDraw"	"4a51a457-9c50-4623-b8f5-e1bd9aac561a"	"accepted-native-battle"	"RelicEffectChangeStartingHandSize"	""
 "AdvancedGrowth"	"449f6464-8164-48ad-bf66-6107b10f7f5c"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
-"HephsBlueprints"	"5152b7d0-4f8a-4b7b-8871-06c25bb1a5af"	"pending"	"RelicEffectModifyForgeUpgrade"	""
+"HephsBlueprints"	"5152b7d0-4f8a-4b7b-8871-06c25bb1a5af"	"accepted-native-battle"	"RelicEffectModifyForgeUpgrade"	""
 "UnitsGainLifesteal"	"a6b0b657-8893-4cc8-bc62-ec09544c4306"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
 "BalatroEventCanio"	"d8d1e069-938e-4141-b6ac-e20f4578163a"	"accepted-native-campaign"	"RelicEffectAddGoldOnPurge"	""
 "RandomUnitEveryFloor"	"297c5b7b-efb1-4834-96e0-de4a7e42ccbc"	"pending"	"RelicEffectNull,RelicEffectSpawnUnitFromDeck,RelicEffectSpawnUnitFromDeck,RelicEffectSpawnUnitFromDeck"	""

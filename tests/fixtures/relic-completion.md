@@ -17,15 +17,16 @@ Schema 8 retains the required card traits introduced in schema 6.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 173 original owners accepted (156 native battle owners,
+Current checkpoint: 178 original owners accepted (161 native battle owners,
 sixteen actual campaign-interface owners and one explicit native no-op owner);
-51 remain pending. The latest accepted native battle owner is
-`2ChargesOnCardConsumed`: an unchanged +1 corruption effect triggers only for an
-Exhaust carrier, changes only its selected floor, and passes a non-Exhaust
-control. Its 61-stage winning replay and independent 128-state search pass with
-zero unsupported attempts. `CorruptionAdded` callback floors and values already
-above maximum are outside this witness. Campaign acceptance does not imply those
-effect classes are integrated into battle branch state.
+46 remain pending. The latest accepted native battle owner is
+`HephsBlueprints`: its unchanged Equipment-only forge filter scales the original
++2 attack/+2 Armor upgrade to +6/+6 at three Forge points, while a Monster control
+receives only the default forge upgrade. Both controlled plays match the native
+action model and the independent 128-state search passes with zero unsupported
+attempts. Other equipment effect shapes are outside this witness. Campaign
+acceptance does not imply those effect classes are integrated into battle branch
+state.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle

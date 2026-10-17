@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **177 distinct original collectable relics / 224 catalog entries
-(79.02%)** have accepted native evidence: 160 have full-battle effect evidence,
+As of 2026-10-17, **178 distinct original collectable relics / 224 catalog entries
+(79.46%)** have accepted native evidence: 161 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -51,8 +51,8 @@ champion is not in that pool, so native deck-excluded count is zero; a synthetic
 filtered-pool control verifies exclusions. Eight candidates with external grant
 upgrade interactions are explicitly unsupported, and generated-card play is
 outside the policy boundary.
-`RelicEffectModifyForgeUpgrade` appears on two catalog owners; BrokenRail now
-has one accepted native battle witness, while HephsBlueprints remains pending.
+`RelicEffectModifyForgeUpgrade` appears on two catalog owners; BrokenRail and
+HephsBlueprints now both have accepted native battle witnesses.
 The native source and callback effect for `RageOnBurnoutStackLoss` now have one
 accepted battle witness for a controlled friendly Ephemeral removal.
 `PyreRevengeAddPyregel` now has four live native OnHit witnesses whose complete
@@ -496,6 +496,7 @@ archives contain these observed battle sizes:
 | [SummonWithAvarice](full-battle-original-summon-with-avarice.mt2f) | 197 | 5 | 7 | 61 | Five eligible player births gain two Avarice; ten combat stages isolate positive native gold |
 | [ChanceToCleanse](full-battle-original-chance-to-cleanse.mt2f) | 198 | 5 | 7 | 63 | Seven eligible 50% rolls (four hits/three misses), four applications and 510 gated tests |
 | [ExtraFeedTrigger](full-battle-original-extra-feed-trigger.mt2f) | 199 | 5 | 7 | 61 | Original Monsters OnFeed +1; live Pyre native query 2 vs OnDeath control 1 |
+| [HephsBlueprints](full-battle-original-hephs-blueprints.mt2f) | 200 | 17 | 5 | 39 | Equipment-only +2 damage/+2 Armor forge upgrade scales to +6/+6 at three Forge; Monster filter control |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -1317,4 +1318,39 @@ component calibrations. Original relic evidence is 177/224 (79.02%): 160 battle,
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-extra-feed-trigger.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-extra-feed-trigger-only tests/fixtures/full-battle-original-extra-feed-trigger.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-extra-feed-trigger.mt2f
+```
+
+## HephsBlueprints
+
+| `HephsBlueprints` | `5152b7d0-4f8a-4b7b-8871-06c25bb1a5af` | Native acquired owner, original Equipment filter and scaled forge payload |
+
+The schema-200 archive captures the unchanged `RelicEffectModifyForgeUpgrade`
+owner and its native `OnlyEquipmentNoEnemyTargetted` mask. At three Forge
+points, the original +2 attack/+2 Armor payload is added to the eligible
+Equipment card as +6/+6; the original type filter rejects a Monster control,
+which receives only the default forge upgrade. The equipment is then attached
+to the controlled Monster. Native source folds all temporary equipment-card
+upgrades into one anonymous host upgrade, so the checker verifies that host
+aggregate against every temporary upgrade on the equipment card rather than
+expecting the original `DataId` to survive attachment.
+
+Both scenario actions match the native game and shared action model. The
+winning 39-stage replay has 17 card actions, five EndTurns and zero capture
+failures, mismatches, unsupported transitions or pending records. Focused
+checks cover the Equipment type filter, scaling, Monster/default-forge control,
+inactive tracking, zero points, ineligible cards and immutable input.
+Independent search matches all 17 recorded decisions, visits 128/128 states,
+replays three steps and has serial/parallel best equality. The witness is
+limited to this owner payload and the captured ordinary-equipment path; other
+equipment effect shapes are not generalized. The 30,033-byte archive has 4,507
+unique nodes and SHA-256
+`55d6974cbff32d9e17db3a5878648301688e0120c37fb51fbd434b6dc152980a`; no JSON
+companion is tracked. Inventory is 398 archives: 360 full battles and 38
+component calibrations. Original relic evidence is 178/224 (79.46%): 161 battle,
+16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-hephs-blueprints.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-hephs-blueprints-only tests/fixtures/full-battle-original-hephs-blueprints.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-hephs-blueprints.mt2f
 ```
