@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **184 distinct original collectable relics / 224 catalog entries
-(82.14%)** have accepted native evidence: 167 have full-battle effect evidence,
+As of 2026-10-18, **185 distinct original collectable relics / 224 catalog entries
+(82.59%)** have accepted native evidence: 168 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1487,4 +1487,19 @@ component calibrations. Original relic evidence is 183/224 (81.70%): 166 battle,
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-front-room-health-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-front-room-health-upgrade-only tests/fixtures/full-battle-original-front-room-health-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-front-room-health-upgrade.mt2f
+```
+
+## PyreHealthForEmberCardCost
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `PyreHealthForEmberCardCost` | `7f4c8a90-2518-4a41-8c8c-0f5ca0b0a475` | `full-battle-original-pyre-health-card-cost.mt2f` | The unchanged owner permits a regular-turn underfunded non-X Spell to pay its final cost in Pyre health. An affordable card spends Ember, and an X-cost card bypasses the relic. The 49-stage winning battle has 31 actions, six EndTurns and zero capture failures, mismatches, unsupported transitions or pending records. The native checker confirms native `CanPlayHandCard`/relic eligibility, resource deltas, exact Pyre `OnHit` payload and three independent action replays; bounded search matches 128/128 states with serial/parallel best equality. |
+
+The witnessed payment is nonlethal and outside preview/deployment. Unknown Pyre damage hooks, lethal payment and placement/preview execution remain unsupported. The 35,916-byte archive has 5,903 unique nodes and SHA-256
+`bbb9a4461433a1f7b4d5cd4fe4a96c7cabc7b322792853b305e6ef7cfbe756c8`; no JSON companion is tracked. Inventory is 405 archives: 367 full battles and 38 component calibrations. Original relic evidence is 185/224 (82.59%): 168 battle, 16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-pyre-health-card-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-pyre-health-card-cost-only tests/fixtures/full-battle-original-pyre-health-card-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-pyre-health-card-cost.mt2f
 ```

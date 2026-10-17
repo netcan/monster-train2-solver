@@ -1,5 +1,15 @@
 # Native regression fixtures
 
+PyreHealthForEmberCardCost extension (2026-10-18): 405 archives (367 battles and
+38 calibrations), 185/224 original relic owners (82.59%): 168 full-battle owners,
+sixteen campaign-interface owners and one native no-op. The unchanged owner
+allows a regular-turn unaffordable card to pay its final cost in Pyre health;
+affordable and X-cost controls do not use the relic. Its 49-stage winning replay
+has 31 actions, six EndTurns and zero differential counters. Native checks confirm
+the exact OnHit amount and action replay; independent 128-state search has
+serial/parallel best equality. The 35,916-byte archive has 5,903 unique nodes and
+SHA-256 `bbb9a4461433a1f7b4d5cd4fe4a96c7cabc7b322792853b305e6ef7cfbe756c8`.
+
 ChampsHealBeginningOfTurn extension (2026-10-18): 404 archives (366 battles and
 38 calibrations), 184/224 original relic owners (82.14%): 167 full-battle owners,
 sixteen campaign-interface owners and one native no-op. The unchanged

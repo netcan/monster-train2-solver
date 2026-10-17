@@ -91,7 +91,7 @@
 "ShroomsGainRegen"	"bbe03be9-dae9-40bb-bb46-ab7553a17bd9"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "ChanceToCleanse"	"1e972d81-fc2f-4d4a-ade9-46edeb246dbd"	"accepted-native-battle"	"RelicEffectChanceAddEffectAfterSpawn"	""
 "BossCapacityDH"	"f7b0c251-7f96-4115-897a-d5b4a40a36ef"	"accepted-native-battle"	"RelicEffectChangeFloorCapacity,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack"	""
-"PyreHealthForEmberCardCost"	"7f4c8a90-2518-4a41-8c8c-0f5ca0b0a475"	"pending"	"RelicEffectPayCardCostWithPyreHealth"	""
+"PyreHealthForEmberCardCost"	"7f4c8a90-2518-4a41-8c8c-0f5ca0b0a475"	"accepted-native-battle"	"RelicEffectPayCardCostWithPyreHealth"	""
 "BossCapacity"	"9291142a-dc6f-4834-89f1-ceda778e06ec"	"accepted-native-battle"	"RelicEffectChangeFloorCapacity,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack"	""
 "FriendlyUnitsGainDeathwishPermanentHealth"	"cec4a632-fc04-48ba-b982-ffcd16a0710e"	"pending"	"RelicEffectAddTrigger"	""
 "LessDeployEmberMoreOtherEmber"	"7bc61ac1-f295-4bf5-a978-1c538c8f2e51"	"accepted-native-battle"	"RelicEffectModifyEnergyDuringDeployment,RelicEffectModifyEnergy"	""
