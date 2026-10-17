@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **175 distinct original collectable relics / 224 catalog entries
-(78.12%)** have accepted native evidence: 158 have full-battle effect evidence,
+As of 2026-10-17, **176 distinct original collectable relics / 224 catalog entries
+(78.57%)** have accepted native evidence: 159 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -494,6 +494,7 @@ archives contain these observed battle sizes:
 | [2ChargesOnCardConsumed](full-battle-original-two-charges-on-card-consumed.mt2f) | 195 | 5 | 7 | 61 | Exact +1 corruption on selected floor, with non-Exhaust and cross-floor controls |
 | [ChanceForSpellWeakness](full-battle-original-chance-for-spell-weakness.mt2f) | 196 | 5 | 7 | 61 | Seven eligible 50% rolls (four hits/three misses), four applications and 496 gated tests |
 | [SummonWithAvarice](full-battle-original-summon-with-avarice.mt2f) | 197 | 5 | 7 | 61 | Five eligible player births gain two Avarice; ten combat stages isolate positive native gold |
+| [ChanceToCleanse](full-battle-original-chance-to-cleanse.mt2f) | 198 | 5 | 7 | 63 | Seven eligible 50% rolls (four hits/three misses), four applications and 510 gated tests |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -1208,6 +1209,40 @@ campaign and one native no-op owner.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-chance-for-spell-weakness.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-chance-for-spell-weakness-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
+```
+
+## ChanceToCleanse
+
+| `ChanceToCleanse` | `1e972d81-fc2f-4d4a-ade9-46edeb246dbd` | Native acquired owner and exact nested cleanse payload |
+
+The schema-198 archive captures the unchanged `RelicEffectChanceAddEffectAfterSpawn`
+owner: Heroes team, original None subtype, 50% chance, no room restriction,
+exclusions or conditions. Its one self-targeted nested effect is
+`CardEffectRemoveAllStatusEffects`, category 0 (visible Positive), with
+remove-half disabled. Seven eligible `AfterSpawnEnchant` tests consume one
+matching native 0..100 Battle RNG draw each (four hits, three misses); 510
+gated tests preserve RNG. All four successful native applications complete
+without additional RNG, and two visible Positive status stacks are removed.
+
+Focused model controls verify exact Positive-only removal, preservation of
+Negative statuses on a hit, status preservation on a miss, and wrong trigger,
+team, preview, Untouchable, destroyed-actor and unknown-owner gates. Every
+recorded combat stage independently replays with zero differences. The winning
+battle has 63 stages, 13 card cycles, 14 train phases, 11 spawns, five card
+actions and seven EndTurns, with zero capture failures, mismatches, unsupported
+transitions or pending records. Independent search matches all five decisions,
+visits 128/128 states with serial/parallel best equality and replays four steps.
+The evidence covers this original owner and nested effect payload only. The
+31,639-byte archive has 4,826 unique nodes and SHA-256
+`0755bc75824ceef1b822a15624eeb50ba4d8f3f6df0514f867143ac021328074`; no JSON
+companion is tracked. Inventory is 396 archives: 358 full battles and 38
+component calibrations. Original relic evidence is 176/224 (78.57%): 159
+battle, 16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-chance-to-cleanse.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-chance-to-cleanse-only tests/fixtures/full-battle-original-chance-to-cleanse.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-chance-to-cleanse.mt2f
 ```
 
 ## SummonWithAvarice

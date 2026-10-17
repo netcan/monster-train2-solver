@@ -649,6 +649,17 @@ if (args.Length == 1 && args[0] == "--original-chance-for-spell-weakness-model-o
     OriginalChanceForSpellWeaknessChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-chance-to-cleanse-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalChanceToCleanseChecks.Native(document.RootElement);
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-chance-to-cleanse-model-only")
+{
+    OriginalChanceToCleanseChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-summon-with-avarice-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

@@ -61,6 +61,8 @@ namespace MonsterTrain2Poju.Model
         internal const string Effect = "RelicEffectChanceAddEffectAfterSpawn";
         internal const string DataId = "98989cbb-c729-4f87-8240-08f448db96d8";
         internal const string AssetKey = "ChanceForSpellWeakness";
+        internal const string CleanseDataId = "1e972d81-fc2f-4d4a-ade9-46edeb246dbd";
+        internal const string CleanseAssetKey = "ChanceToCleanse";
 
         internal static CombatStatus SpellWeakness(int stacks) => new("spell weakness", stacks,
             removeDuringDeployment: true, triggerVfxEnemy: false, triggerVfxPlayer: false,
@@ -93,22 +95,27 @@ namespace MonsterTrain2Poju.Model
             if (!indices.SequenceEqual((relic.AfterSpawnChanceRules ?? Array.Empty<RelicAfterSpawnChanceRule>())
                 .Select(rule => rule.EffectIndex))) return "Missing or unordered native after-spawn chance payload.";
             if (indices.Length == 0) return null;
-            if (relic.DataId != DataId || relic.AssetKey != AssetKey || relic.EffectTypes.Count != 1 ||
+            bool spellWeaknessOwner = relic.DataId == DataId && relic.AssetKey == AssetKey;
+            bool cleanseOwner = relic.DataId == CleanseDataId && relic.AssetKey == CleanseAssetKey;
+            if ((!spellWeaknessOwner && !cleanseOwner) || relic.EffectTypes.Count != 1 ||
                 relic.IsCovenant != false || relic.DisallowedInPlacementPhase != false)
                 return "Unmodeled native after-spawn chance effect owner.";
             RelicAfterSpawnChanceRule rule = relic.AfterSpawnChanceRules!.Single();
-            return rule.EffectIndex == 0 && rule.ChancePercent == 50 && rule.RoomRestriction == 0 &&
+            bool common = rule.EffectIndex == 0 && rule.ChancePercent == 50 && rule.RoomRestriction == 0 &&
                 rule.TargetTeam == "Heroes" && rule.HasRequiredSubtype && rule.RequiredSubtypeIsNone &&
                 rule.RequiredSubtype == "SubtypesData_None" && rule.ExcludedSubtypes.Count == 0 && rule.ConditionCount == 0 &&
                 !rule.CanApplyInPreviewMode && rule.CardEffectCount == 1 && rule.CardEffectHasOnlyCapturedPayload &&
                 rule.CardEffectPayloadIssues.Count == 0 && rule.CardEffectTargetCardType == "Spell" &&
-                rule.CardEffectParamMultiplier == 0f &&
-                rule.CardEffect == "CardEffectAddStatusEffect" &&
-                rule.CardEffectTarget == "Self" && rule.CardEffectTeam == "Heroes" &&
-                rule.CardEffectParamInt == 0 && rule.CardEffectAdditionalParamInt == 0 &&
-                !rule.CardEffectUsesRange && !rule.CardEffectParamBool && !rule.CardEffectParamBool2 &&
-                rule.StatusEffects.Count == 1 && IsOriginalSpellWeakness(rule.StatusEffects[0], 1)
-                    ? null : "Unmodeled native after-spawn chance effect payload.";
+                rule.CardEffectParamMultiplier == 0f && rule.CardEffectTarget == "Self" && rule.CardEffectTeam == "Heroes" &&
+                rule.CardEffectAdditionalParamInt == 0 && !rule.CardEffectUsesRange && !rule.CardEffectParamBool2;
+            if (!common) return "Unmodeled native after-spawn chance effect payload.";
+            if (spellWeaknessOwner)
+                return rule.CardEffect == "CardEffectAddStatusEffect" && rule.CardEffectParamInt == 0 &&
+                    !rule.CardEffectParamBool && rule.StatusEffects.Count == 1 && IsOriginalSpellWeakness(rule.StatusEffects[0], 1)
+                        ? null : "Unmodeled native after-spawn Spell Weakness payload.";
+            return rule.CardEffect == "CardEffectRemoveAllStatusEffects" && rule.CardEffectParamInt == 0 &&
+                !rule.CardEffectParamBool && rule.StatusEffects.Count == 0
+                    ? null : "Unmodeled native after-spawn cleanse payload.";
         }
 
         internal static RoomCombatResult ApplyAfterEntry(RoomCombatResult triggered,
@@ -139,16 +146,32 @@ namespace MonsterTrain2Poju.Model
                 RngDraw draw = state.Context!.BattleRng.Range(0, 100);
                 state = WithContext(state, state.Context.WithBattleRng(draw.State));
                 if (draw.Value >= rule.ChancePercent) continue;
-                foreach (CombatStatus status in rule.StatusEffects)
+                if (rule.CardEffect == "CardEffectRemoveAllStatusEffects")
                 {
-                    RoomCombatResult applied = StatusApplicationModel.ApplyRetained(state, actor.Id,
-                        status.WithStacks(status.Stacks), 0);
-                    if (!applied.Supported) return applied;
-                    state = applied.State!;
-                    events.AddRange(applied.Events);
-                    foreach (RoomCombatModel.QueuedCharacterTrigger callback in applied.PendingCallbacks) enqueue(callback);
-                    foreach (CombatUnit unit in applied.RetainedUnits) retained[unit.Id] = unit;
+                    var effect = new CardActionEffect("RemoveAllStatusEffects", rule.CardEffectTarget, rule.CardEffectParamInt,
+                        rule.CardEffectTeam == "Heroes", rule.CardEffectTeam == "Monsters", [],
+                        removeHalfStatusEffects: rule.CardEffectParamBool);
+                    RoomCombatResult removed = StatusRemovalModel.Effect(state, actor.Id, effect);
+                    if (!removed.Supported) return removed;
+                    state = removed.State!;
+                    events.AddRange(removed.Events);
+                    foreach (RoomCombatModel.QueuedCharacterTrigger callback in removed.PendingCallbacks) enqueue(callback);
+                    foreach (CombatUnit unit in removed.RetainedUnits) retained[unit.Id] = unit;
                     actor = state.Units.FirstOrDefault(unit => unit.Id == actor.Id) ?? actor;
+                }
+                else
+                {
+                    foreach (CombatStatus status in rule.StatusEffects)
+                    {
+                        RoomCombatResult applied = StatusApplicationModel.ApplyRetained(state, actor.Id,
+                            status.WithStacks(status.Stacks), 0);
+                        if (!applied.Supported) return applied;
+                        state = applied.State!;
+                        events.AddRange(applied.Events);
+                        foreach (RoomCombatModel.QueuedCharacterTrigger callback in applied.PendingCallbacks) enqueue(callback);
+                        foreach (CombatUnit unit in applied.RetainedUnits) retained[unit.Id] = unit;
+                        actor = state.Units.FirstOrDefault(unit => unit.Id == actor.Id) ?? actor;
+                    }
                 }
             }
             return new RoomCombatResult(state, triggered.Outcome, triggered.Rounds, events,

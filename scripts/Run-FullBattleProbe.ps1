@@ -243,6 +243,7 @@ param(
     [switch] $OriginalCardPlayMagicPower,
     [switch] $OriginalTwoChargesOnCardConsumed,
     [switch] $OriginalChanceForSpellWeakness,
+    [switch] $OriginalChanceToCleanse,
     [switch] $OriginalSummonWithAvarice,
     [switch] $OriginalCardDrawOnCardPlay,
     [switch] $OriginalCarriageJack,
@@ -409,6 +410,7 @@ if ($Mageblade -or $OriginalMagebladeMagnitudeRelic) { $BranchCardMasks = $true;
 if ($OriginalCardPlayMagicPower) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalTwoChargesOnCardConsumed) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalChanceForSpellWeakness) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalChanceToCleanse) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalSummonWithAvarice) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -870,6 +872,7 @@ if ($OriginalMagebladeMagnitudeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'o
 if ($OriginalCardPlayMagicPower) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-magic-power' }
 if ($OriginalTwoChargesOnCardConsumed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-two-charges-on-card-consumed' }
 if ($OriginalChanceForSpellWeakness) { $environment['MT2_PROBE_MODIFIERS'] = 'original-chance-for-spell-weakness' }
+if ($OriginalChanceToCleanse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-chance-to-cleanse' }
 if ($OriginalSummonWithAvarice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-summon-with-avarice' }
 if ($OriginalCheaperSpellCost) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-spell-cost-cheaper' }
 if ($OriginalNefariousOverflow) { $environment['MT2_PROBE_MODIFIERS'] = 'original-nefarious-overflow' }
@@ -1410,6 +1413,18 @@ if ($OriginalChanceForSpellWeakness -and (
     @($trace.RelicAfterSpawnChanceTests | Where-Object { $_.Trigger -eq 'AfterSpawnEnchant' -and $_.Team -eq 'Heroes' -and -not $_.IsDestroyed -and -not $_.Untouchable -and -not $_.Result }).Count -eq 0 -or
     @($trace.RelicAfterSpawnChanceApplications | Where-Object { -not $_.Completed -or $_.SpellWeaknessAfter -ne ($_.SpellWeaknessBefore + 1) }).Count -gt 0)) {
     throw 'ChanceForSpellWeakness lacks its unchanged owner, natural hit/miss rolls or completed +1 status applications.'
+}
+if ($OriginalChanceToCleanse -and (
+    $trace.Schema -ne 198 -or
+    -not $trace.OriginalChanceToCleansePrepared -or
+    $trace.ModifierScenario -ne 'original-chance-to-cleanse' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CHANCE-TO-CLEANSE-ACQUIRED unchanged owner' -Quiet) -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-CHANCE-TO-CLEANSE-PREPARED unchanged 50% owner' -Quiet) -or
+    @($trace.RelicAfterSpawnChanceTests | Where-Object { $_.Trigger -eq 'AfterSpawnEnchant' -and $_.Team -eq 'Heroes' -and -not $_.IsDestroyed -and -not $_.Untouchable }).Count -lt 2 -or
+    @($trace.RelicAfterSpawnChanceTests | Where-Object { $_.Trigger -eq 'AfterSpawnEnchant' -and $_.Team -eq 'Heroes' -and -not $_.IsDestroyed -and -not $_.Untouchable -and $_.Result }).Count -eq 0 -or
+    @($trace.RelicAfterSpawnChanceTests | Where-Object { $_.Trigger -eq 'AfterSpawnEnchant' -and $_.Team -eq 'Heroes' -and -not $_.IsDestroyed -and -not $_.Untouchable -and -not $_.Result }).Count -eq 0 -or
+    @($trace.RelicAfterSpawnChanceApplications | Where-Object { -not $_.Completed }).Count -gt 0)) {
+    throw 'ChanceToCleanse lacks its unchanged owner, natural 50% hit/miss rolls or completed native applications.'
 }
 if ($OriginalSummonWithAvarice -and (
     $trace.Schema -ne 197 -or

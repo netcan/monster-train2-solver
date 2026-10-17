@@ -264,6 +264,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalTwoChargesOnCardConsumedScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalChanceForSpellWeaknessScenario.Enabled && !OriginalChanceForSpellWeaknessScenario.Acquired)
                         OriginalChanceForSpellWeaknessScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalChanceToCleanseScenario.Enabled && !OriginalChanceToCleanseScenario.Acquired)
+                        OriginalChanceToCleanseScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSummonWithAvariceScenario.Enabled && !OriginalSummonWithAvariceScenario.Acquired)
                         OriginalSummonWithAvariceScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalExtractForEmberAndEchosScenario.Enabled && !OriginalExtractForEmberAndEchosScenario.Acquired)
@@ -559,6 +561,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("ChanceForSpellWeakness fixture must start on deployment turn.");
                 OriginalChanceForSpellWeaknessScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+                return;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalChanceToCleanseScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("ChanceToCleanse fixture must start on deployment turn.");
+                OriginalChanceToCleanseScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
                 return;
             }
@@ -1455,6 +1464,8 @@ namespace MonsterTrain2Poju.Probe
                     OriginalCardPlayMagicPowerScenario.Prepare(managers, log);
                 if (fullBattle && OriginalChanceForSpellWeaknessScenario.Enabled && !OriginalChanceForSpellWeaknessScenario.Prepared)
                     OriginalChanceForSpellWeaknessScenario.Prepare(managers, log);
+                if (fullBattle && OriginalChanceToCleanseScenario.Enabled && !OriginalChanceToCleanseScenario.Prepared)
+                    OriginalChanceToCleanseScenario.Prepare(managers, log);
                 if (fullBattle && OriginalSummonWithAvariceScenario.Enabled && !OriginalSummonWithAvariceScenario.Prepared)
                     OriginalSummonWithAvariceScenario.Prepare(managers, log);
                 if (fullBattle && OriginalExtractForEmberAndEchosScenario.Enabled && !OriginalExtractForEmberAndEchosScenario.Prepared)
