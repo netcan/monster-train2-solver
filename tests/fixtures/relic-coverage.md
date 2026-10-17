@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-17, **174 distinct original collectable relics / 224 catalog entries
-(77.68%)** have accepted native evidence: 157 have full-battle effect evidence,
+As of 2026-10-17, **175 distinct original collectable relics / 224 catalog entries
+(78.12%)** have accepted native evidence: 158 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -493,6 +493,7 @@ archives contain these observed battle sizes:
 | [Ephemeral-loss Rage][rageBurnout] | 177 | 18 | 5 | 41 | Original +3 Rage payload on one controlled friendly Ephemeral removal; all recorded actions and turns replay |
 | [2ChargesOnCardConsumed](full-battle-original-two-charges-on-card-consumed.mt2f) | 195 | 5 | 7 | 61 | Exact +1 corruption on selected floor, with non-Exhaust and cross-floor controls |
 | [ChanceForSpellWeakness](full-battle-original-chance-for-spell-weakness.mt2f) | 196 | 5 | 7 | 61 | Seven eligible 50% rolls (four hits/three misses), four applications and 496 gated tests |
+| [SummonWithAvarice](full-battle-original-summon-with-avarice.mt2f) | 197 | 5 | 7 | 61 | Five eligible player births gain two Avarice; ten combat stages isolate positive native gold |
 
 The checks that enforce these observations are
 [TriggerCountChecks.Native](../../src/ModelChecks/TriggerCountChecks.cs),
@@ -1207,4 +1208,42 @@ campaign and one native no-op owner.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-chance-for-spell-weakness.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-chance-for-spell-weakness-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
+```
+
+## SummonWithAvarice
+
+| `SummonWithAvarice` | `a9670728-2ad2-4776-be80-e1a08864f18c` | Native acquired owner and exact spawn payload |
+
+The schema-197 archive captures the unchanged `RelicEffectAddStatusEffectOnSpawn`
+owner. Its Monster-target rule requires the original None subtype, has no
+exclusions, conditions, room restriction, graft or character filter, and applies
+two `avarice` stacks. Five eligible player births gain exactly those two stacks;
+enemy births remain unchanged. Each captured birth independently replays with
+the native Battle RNG advance.
+
+Native source shows Avarice grants gold after positive damage from a DirectAttack
+or Trample hit, or from a source card marked as a UnitAbility. Focused controls
+cover a fully blocked attack, preview combat and ordinary Spell damage; a
+UnitAbility hit does grant gold. The captured reward multiplier and native
+minimum-one/nearest-increment rounding are applied per hit. The native replay
+contains ten combat stages with a positive, independently ablated Avarice-only
+gold contribution and zero battle differences.
+
+The winning replay has 61 stages, 13 card cycles, 14 train phases, 11 spawns,
+five card actions and seven EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. Independent search matches all
+five decisions, visits 128/128 states with serial/parallel best equality and
+replays four steps. This evidence is limited to the captured original owner,
+its two-stack birth payload and the tested Avarice damage sources; other owners
+and status-trigger combinations are not generalized. The 29,926-byte archive
+has 4,443 unique nodes and SHA-256
+`9475c27591a83feaee0d2e1c9fd67e50dfe50d1851d6b97a48dd6fe4b7ca4ee5`; no JSON
+companion is tracked. Inventory is 395 archives: 357 full battles and 38
+component calibrations. Original relic evidence is 175/224 (78.12%): 158
+battle, 16 campaign and one native no-op owner.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-summon-with-avarice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-summon-with-avarice-only tests/fixtures/full-battle-original-summon-with-avarice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-summon-with-avarice.mt2f
 ```

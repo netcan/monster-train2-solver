@@ -52,7 +52,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 bool bigDamageBirthCapture = OriginalBigDamageScenario.Prepared && !onlyCovenants &&
                     character.GetTeamType() == Team.Type.Monsters && !character.IsPyreHeart();
-                bool ordinaryBirthCapture = !onlyCovenants && (OriginalHealthChoiceScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared || OriginalConduitScenario.Prepared || OriginalCombatTriggerBatchScenario.Prepared || OriginalStealthSlayScenario.Prepared || SpawnStatusRelicScenario.Prepared || SpawnStatusRelicScenario.OriginalCombatRelicsAcquired || OriginalRelicBatchScenario.Prepared ||
+                bool ordinaryBirthCapture = !onlyCovenants && (OriginalHealthChoiceScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared || OriginalConduitScenario.Prepared || OriginalCombatTriggerBatchScenario.Prepared || OriginalStealthSlayScenario.Prepared || OriginalSummonWithAvariceScenario.Prepared || SpawnStatusRelicScenario.Prepared || SpawnStatusRelicScenario.OriginalCombatRelicsAcquired || OriginalRelicBatchScenario.Prepared ||
                     RelicCardModifierScenario.Prepared && RelicCardModifierScenario.AllUnitsMultistrikeMutator || bigDamageBirthCapture);
                 bool covenantBirthCapture = onlyCovenants && CovenantCharacterFilterScenario.Prepared;
                 bool completeTrainCapture = SpawnStatusRelicScenario.Clones || OriginalLifecycleRelicBatchScenario.Enabled || OriginalCombatTriggerBatchScenario.Enabled || OriginalConduitScenario.Enabled || OriginalEquipmentGrowthScenario.Enabled || OriginalStealthSlayScenario.Enabled || OriginalHealthChoiceScenario.Enabled || bigDamageBirthCapture;

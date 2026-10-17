@@ -649,6 +649,17 @@ if (args.Length == 1 && args[0] == "--original-chance-for-spell-weakness-model-o
     OriginalChanceForSpellWeaknessChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-summon-with-avarice-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalSummonWithAvariceChecks.Native(document.RootElement);
+    return;
+}
+if (args.Length == 1 && args[0] == "--original-summon-with-avarice-model-only")
+{
+    OriginalSummonWithAvariceChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-card-draw-on-card-play-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

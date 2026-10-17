@@ -441,7 +441,7 @@ namespace MonsterTrain2Poju.Model
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "decay", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality", "conduit",
-            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch"
+            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -2190,6 +2190,33 @@ namespace MonsterTrain2Poju.Model
                 // with a character attacker, including damage from a character effect.
                 if (!target.Alive && !target.DeathFinished && target.Count("undying") <= 0 && !UpdateEnchantments(target.Source.Id)) return;
                 if (actor != null && !actor.Despawned && !actor.Removed && !target.Alive) FireTriggers(actor, "OnKill", dyingCharacter: target);
+                if (actor != null && !actor.Despawned && !actor.Removed && damage > 0 && actor.Count("avarice") > 0)
+                {
+                    bool eligible = kind is "Attack" or "Trample";
+                    if (!eligible && sourceCardId > 0)
+                    {
+                        CardInstanceState? sourceCard = context?.FindCard(sourceCardId);
+                        if (sourceCard?.MaskDescriptor == null)
+                        {
+                            unsupportedReason = "Avarice requires captured native damage source card metadata.";
+                            return;
+                        }
+                        eligible = sourceCard.MaskDescriptor.Definition.AuthoredUnitAbility;
+                    }
+                    if (eligible && !source.Preview)
+                    {
+                        if (context == null) { unsupportedReason = "Avarice requires captured battle gold state."; return; }
+                        int reward = GoldRewardModel.Adjust(actor.Count("avarice"), roundIncrement: 1,
+                            multiplier: context.Resources?.GoldRewardMultiplier ?? 1f);
+                        if (reward > 0)
+                        {
+                            context = context.WithGold(Math.Max(0, unchecked(context.Gold + reward)));
+                            RefreshPyreAfterGold();
+                            if (unsupportedReason != null) return;
+                            Emit("Gold", actor, actor, reward);
+                        }
+                    }
+                }
                 // Native lifesteal heals by unmodified attack, even against armor; it happens before spikes.
                 // A dying sweep attacker has not been destroyed yet: its remaining
                 // attacks still consume lifesteal, while Heal itself refuses revival.
