@@ -59,6 +59,8 @@ namespace MonsterTrain2Poju.Model
         internal const string RelicKey = "CopyFirstSpellPlayed";
         internal const string ConsumeRelicId = "b7207406-3c55-4771-b9c9-ed99dd9e1f9b";
         internal const string ConsumeRelicKey = "CopyFirstConsumePlayed";
+        internal const string CopyConsumedId = "51368ce4-b037-49ef-801c-545405b78800";
+        internal const string CopyConsumedKey = "CopyConsumedCard";
         private const string EphemeralUpgradeId = "80a5edf4-6dc8-41a7-ab4e-9d0e914e0848";
 
         internal static string? Validate(CombatRelicState relic)
@@ -70,10 +72,11 @@ namespace MonsterTrain2Poju.Model
                 return relic.CopyCardOnCardPlayModifiers?.Count > 0 ? "Unexpected card-copy-on-card-play definitions." : null;
             bool copyFirstSpell = relic.DataId == RelicId && relic.AssetKey == RelicKey;
             bool copyFirstConsume = relic.DataId == ConsumeRelicId && relic.AssetKey == ConsumeRelicKey;
-            if ((!copyFirstSpell && !copyFirstConsume) || indices.Length != 1 || indices[0] != 0 ||
+            bool copyConsumed = relic.DataId == CopyConsumedId && relic.AssetKey == CopyConsumedKey;
+            if ((!copyFirstSpell && !copyFirstConsume && !copyConsumed) || indices.Length != 1 || indices[0] != 0 ||
                 relic.EffectTypes.Count != 1 || relic.CopyCardOnCardPlayModifiers?.Count != 1 ||
                 relic.CopyCardOnCardPlayModifiers[0].EffectIndex != 0)
-                return "Only the exact original CopyFirstSpellPlayed and CopyFirstConsumePlayed owners are modeled.";
+                return "Only the exact original CopyFirstSpellPlayed, CopyFirstConsumePlayed and CopyConsumedCard owners are modeled.";
 
             RelicCopyCardOnCardPlayModifier effect = relic.CopyCardOnCardPlayModifiers[0];
             CardUpgradeModifier? upgrade = effect.Upgrade;
@@ -88,13 +91,16 @@ namespace MonsterTrain2Poju.Model
                     upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == "CardTraitEphemeral") == true &&
                     upgrade.Lifecycle.RemovedRuntimeTypes.Count == 0 && upgrade.Lifecycle.Triggers.Count == 0
                 : upgrade == null;
-            string[] expectedTraits = copyFirstConsume ? ["CardTraitExhaustState"] : Array.Empty<string>();
-            if (effect.Count != 1 || effect.CardType != "Spell" || effect.PermanentCopy != copyFirstConsume || effect.ExcludeChampions ||
+            string[] expectedTraits = copyFirstConsume || copyConsumed ? ["CardTraitExhaustState"] : Array.Empty<string>();
+            int expectedCount = copyConsumed ? 2 : 1;
+            string expectedCardType = copyConsumed ? "Invalid" : "Spell";
+            int expectedComparator = copyConsumed ? 6 : 2;
+            if (effect.Count != expectedCount || effect.CardType != expectedCardType || effect.PermanentCopy != copyFirstConsume || effect.ExcludeChampions ||
                 !effect.RequiredTraits.SequenceEqual(expectedTraits) || effect.ConditionCount != 1 || conditions.Length != 1 ||
                 conditions[0].Query.Duration != expectedDuration || !conditions[0].TrackTriggerCount ||
-                conditions[0].Comparator != 2 || conditions[0].Value != 1 || conditions[0].AllowMultiple ||
+                conditions[0].Comparator != expectedComparator || conditions[0].Value != 1 || conditions[0].AllowMultiple ||
                 !validUpgrade)
-                return "Incomplete or unsupported native CopyFirstSpellPlayed/CopyFirstConsumePlayed payload.";
+                return "Incomplete or unsupported native card-copy-on-card-play payload.";
             return null;
         }
 
@@ -125,13 +131,14 @@ namespace MonsterTrain2Poju.Model
                 if (effect.RequiredTraits.Any(required => !traits.Any(trait => trait.RuntimeType == required)))
                     return new RelicCopyCardOnCardPlayResult(source);
             }
-            if (played.MaskDescriptor.Definition.CardType != effect.CardType)
+            if (effect.CardType != "Invalid" && played.MaskDescriptor.Definition.CardType != effect.CardType)
                 return new RelicCopyCardOnCardPlayResult(source);
 
             CardPlayRule? playRule = definitions?.Cards.SingleOrDefault(item => item.DataId == played.DataId);
             if (playRule == null || playRule.CardType == null || !playRule.IsAnyAbility.HasValue)
                 return Fail(source, "Card-copy-on-card-play requires captured card type and ability metadata.");
-            if (playRule.CardType != effect.CardType || playRule.IsAnyAbility.Value || playRule.Ability != null)
+            if ((effect.CardType != "Invalid" && playRule.CardType != effect.CardType) ||
+                playRule.IsAnyAbility.Value || playRule.Ability != null)
                 return new RelicCopyCardOnCardPlayResult(source);
 
             if (effect.Conditions.Count > 0)

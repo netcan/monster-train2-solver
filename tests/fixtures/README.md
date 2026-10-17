@@ -1,5 +1,12 @@
 # Native regression fixtures
 
+CopyConsumedCard extension (2026-10-17): 379 archives (341 battles and 38
+calibrations), 158/224 original relic owners (70.54%): 142 full-battle owners,
+fifteen campaign-interface owners and one native no-op. The unchanged owner
+copies a direct-play Consume Spell twice as non-permanent hand cards; playing a
+copy does not retrigger its ThisBattle condition. Its 61-stage winning replay
+and 128-state search pass with zero error counters.
+
 CopyFirstConsumePlayed extension (2026-10-17): 378 archives (340 battles and
 38 calibrations), 157/224 original relic owners (70.09%): 141 full-battle
 owners, fifteen campaign-interface owners and one native no-op. The unchanged
@@ -4892,4 +4899,29 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-copy-first-consume-played.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-copy-first-consume-only tests/fixtures/full-battle-original-copy-first-consume-played.mt2f
+```
+
+### Original CopyConsumedCard relic (schema 181)
+
+`full-battle-original-copy-consumed-card.mt2f` captures the unchanged
+`CopyConsumedCard` owner: two copies, any card type, required Consume trait, no
+upgrade and non-permanent copies, with a once-per-battle tracked trigger. The
+direct-play Consume Spell creates exactly two hand copies; playing one copy in
+the same battle creates no third copy. The 61-stage winning replay has 23
+matched decisions and zero capture failures, mismatches, unsupported
+transitions or pending records. Pure controls cover the Consume gate, exact
+owner payload, immutable state and ThisBattle boundary. Independent search
+matches 128/128 states, three replayed steps and serial/parallel best results.
+This is evidence for the original owner and captured Spell path, not every card
+type the native effect can accept.
+
+The binary is 37,031 bytes with 6,050 unique nodes and SHA-256
+`f170f1bbd878282078f558c087e42b61c2e48046a9eb0bd300919916dadc625f`; it has no
+JSON companion. This is the 158th accepted original owner (142 full-battle
+owners, fifteen campaign-interface owners and one no-op); the inventory now has
+379 archives: 341 battles and 38 component calibrations.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-copy-consumed-card.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-copy-consumed-card-only tests/fixtures/full-battle-original-copy-consumed-card.mt2f
 ```
