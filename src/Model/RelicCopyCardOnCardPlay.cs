@@ -61,6 +61,8 @@ namespace MonsterTrain2Poju.Model
         internal const string ConsumeRelicKey = "CopyFirstConsumePlayed";
         internal const string CopyConsumedId = "51368ce4-b037-49ef-801c-545405b78800";
         internal const string CopyConsumedKey = "CopyConsumedCard";
+        internal const string MothersRemnant3Id = "6b5ccd78-056a-4599-b05a-368bb9e1d6bc";
+        internal const string MothersRemnant3Key = "MothersRemnant3Relic";
         private const string EphemeralUpgradeId = "80a5edf4-6dc8-41a7-ab4e-9d0e914e0848";
 
         internal static string? Validate(CombatRelicState relic)
@@ -73,15 +75,16 @@ namespace MonsterTrain2Poju.Model
             bool copyFirstSpell = relic.DataId == RelicId && relic.AssetKey == RelicKey;
             bool copyFirstConsume = relic.DataId == ConsumeRelicId && relic.AssetKey == ConsumeRelicKey;
             bool copyConsumed = relic.DataId == CopyConsumedId && relic.AssetKey == CopyConsumedKey;
-            if ((!copyFirstSpell && !copyFirstConsume && !copyConsumed) || indices.Length != 1 || indices[0] != 0 ||
+            bool mothersRemnant3 = relic.DataId == MothersRemnant3Id && relic.AssetKey == MothersRemnant3Key;
+            if ((!copyFirstSpell && !copyFirstConsume && !copyConsumed && !mothersRemnant3) || indices.Length != 1 || indices[0] != 0 ||
                 relic.EffectTypes.Count != 1 || relic.CopyCardOnCardPlayModifiers?.Count != 1 ||
                 relic.CopyCardOnCardPlayModifiers[0].EffectIndex != 0)
-                return "Only the exact original CopyFirstSpellPlayed, CopyFirstConsumePlayed and CopyConsumedCard owners are modeled.";
+                return "Only exact original card-copy-on-play relic owners are modeled.";
 
             RelicCopyCardOnCardPlayModifier effect = relic.CopyCardOnCardPlayModifiers[0];
             CardUpgradeModifier? upgrade = effect.Upgrade;
             RelicConditionState[] conditions = effect.Conditions.ToArray();
-            string expectedDuration = copyFirstSpell ? "ThisTurn" : "ThisBattle";
+            string expectedDuration = copyFirstSpell || mothersRemnant3 ? "ThisTurn" : "ThisBattle";
             bool validUpgrade = copyFirstSpell
                 ? upgrade != null && upgrade.DataId == EphemeralUpgradeId && upgrade.AssetKey == "AddEphemeral" &&
                     upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Cost == 0 &&
@@ -93,9 +96,11 @@ namespace MonsterTrain2Poju.Model
                 : upgrade == null;
             string[] expectedTraits = copyFirstConsume || copyConsumed ? ["CardTraitExhaustState"] : Array.Empty<string>();
             int expectedCount = copyConsumed ? 2 : 1;
-            string expectedCardType = copyConsumed ? "Invalid" : "Spell";
-            int expectedComparator = copyConsumed ? 6 : 2;
-            if (effect.Count != expectedCount || effect.CardType != expectedCardType || effect.PermanentCopy != copyFirstConsume || effect.ExcludeChampions ||
+            string expectedCardType = copyConsumed || mothersRemnant3 ? "Invalid" : "Spell";
+            int expectedComparator = copyConsumed ? 6 : mothersRemnant3 ? 3 : 2;
+            bool expectedPermanent = copyFirstConsume || mothersRemnant3;
+            if (effect.Count != expectedCount || effect.CardType != expectedCardType || effect.PermanentCopy != expectedPermanent ||
+                effect.ExcludeChampions != mothersRemnant3 ||
                 !effect.RequiredTraits.SequenceEqual(expectedTraits) || effect.ConditionCount != 1 || conditions.Length != 1 ||
                 conditions[0].Query.Duration != expectedDuration || !conditions[0].TrackTriggerCount ||
                 conditions[0].Comparator != expectedComparator || conditions[0].Value != 1 || conditions[0].AllowMultiple ||
@@ -140,6 +145,13 @@ namespace MonsterTrain2Poju.Model
             if ((effect.CardType != "Invalid" && playRule.CardType != effect.CardType) ||
                 playRule.IsAnyAbility.Value || playRule.Ability != null)
                 return new RelicCopyCardOnCardPlayResult(source);
+            if (effect.ExcludeChampions)
+            {
+                bool? isChampion = played.MaskDescriptor.Definition.IsChampionCard;
+                if (!isChampion.HasValue)
+                    return Fail(source, "Champion-excluding card-copy-on-play requires captured champion-card classification.");
+                if (isChampion.Value) return new RelicCopyCardOnCardPlayResult(source);
+            }
 
             if (effect.Conditions.Count > 0)
             {
@@ -154,7 +166,10 @@ namespace MonsterTrain2Poju.Model
                 played.UnitUpgradeScalingTraits, played.CapacityScalingTraits, played.EquippedUnitId,
                 played.MaskDescriptor, played.ForgeCountScalingTraits, played.CanBeCopied, played.TrainHealScalingTraits);
             bool handHasSpace = source.Cards.Hand.Count < source.MaxHandSize;
-            var generation = new CardGenerationRule(handHasSpace ? "HandPile" : "DiscardPile", effect.Count,
+            bool copyHasEphemeralUpgrade = effect.Upgrade?.Lifecycle?.AddedTraits.Any(trait =>
+                trait.RuntimeType == "CardTraitEphemeral") == true;
+            string destination = handHasSpace ? "HandPile" : copyHasEphemeralUpgrade ? "DiscardPile" : "DeckPile";
+            var generation = new CardGenerationRule(destination, effect.Count,
                 new[] { creation }, copyModifiers: true, upgrade: effect.Upgrade, deterministicPoolSelection: true,
                 requireCopyableSource: true,
                 permanent: effect.PermanentCopy);
@@ -164,7 +179,7 @@ namespace MonsterTrain2Poju.Model
             if (copied.AddedCards.Count == 0)
                 return new RelicCopyCardOnCardPlayResult(source);
 
-            if (!handHasSpace)
+            if (destination == "DiscardPile")
             {
                 if (source.OtherPiles == null) return Fail(source, "Purging a full-hand ephemeral copy requires captured card piles.");
                 CardPileState? purged = source.OtherPiles.SingleOrDefault(pile => pile.Name == "Purged");

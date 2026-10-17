@@ -122,7 +122,7 @@
 "EmberFoundryCrucible"	"a034e00f-3a12-4c19-b626-4b8fd17c412a"	"accepted-native-battle"	"RelicEffectAdditionalSmeltEmber"	""
 "DrawToMaxStartOfCombat"	"2058bafa-a15c-4787-9b9e-4dc7fdf09b74"	"accepted-native-battle"	"RelicEffectDrawToMaxStartOfCombat"	""
 "PropagateOnStatusEffectApplied"	"274bc27a-9be2-4908-aa84-641944188c08"	"accepted-native-battle"	"RelicEffectAddEffectOnStatusAdded"	""
-"MothersRemnant3Relic"	"6b5ccd78-056a-4599-b05a-368bb9e1d6bc"	"pending"	"RelicEffectCopyCardOnCardPlay"	""
+"MothersRemnant3Relic"	"6b5ccd78-056a-4599-b05a-368bb9e1d6bc"	"accepted-native-battle"	"RelicEffectCopyCardOnCardPlay"	""
 "DoubleMagebladeDamage"	"622860d3-b2ca-45b0-991a-b7745e1dcd5c"	"accepted-native-battle"	"RelicEffectModifyStatusMagnitude"	""
 "ModifyDragonsHoardCap_DH"	"c3f91e0e-629f-4d3f-b422-ce1653147293"	"accepted-native-campaign"	"RelicEffectModifyDragonsHoardCap"	""
 "MoreSpikes"	"a6c957cc-e9f5-49b7-a6a3-cd7e95393289"	"accepted-native-battle"	"RelicEffectAdjustAttackByStatusEffect"	""

@@ -1,5 +1,16 @@
 # Native regression fixtures
 
+MothersRemnant3Relic extension (2026-10-18): 412 archives (374 battles and
+38 calibrations), 193/224 original relic owners (86.16%): 176 full-battle
+owners, sixteen campaign-interface owners and one native no-op. The unchanged
+owner permanently copies the first eligible directly played card each turn,
+excluding Champions; the full-hand native witness places its copy in the draw
+pile and a second same-turn card is not copied. The 64-stage winning replay has
+36 actions and zero differential counters; focused checks and independent
+128-state serial/parallel search pass. The 46,570-byte archive has 7,925 unique
+nodes and SHA-256
+`2ed1b92f320734342a582bffccd013964d7920c58e1aefe8e8fa27b75a57378e`.
+
 PropagateOnStatusEffectApplied extension (2026-10-18): 411 archives (373 battles
 and 38 calibrations), 192/224 original relic owners (85.71%): 175 full-battle
 owners, sixteen campaign-interface owners and one native no-op. The unchanged

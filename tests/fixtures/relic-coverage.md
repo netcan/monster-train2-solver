@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **192 distinct original collectable relics / 224 catalog entries
-(85.71%)** have accepted native evidence: 175 have full-battle effect evidence,
+As of 2026-10-18, **193 distinct original collectable relics / 224 catalog entries
+(86.16%)** have accepted native evidence: 176 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1621,4 +1621,22 @@ This witness covers the captured exact-three owner on a Train Steward carrying f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-propagate-on-status-effect-applied.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-propagate-on-status-effect-applied-only tests/fixtures/full-battle-original-propagate-on-status-effect-applied.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-propagate-on-status-effect-applied.mt2f
+```
+
+## MothersRemnant3Relic
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `MothersRemnant3Relic` | `6b5ccd78-056a-4599-b05a-368bb9e1d6bc` | `full-battle-original-mothers-remnant3.mt2f` | The unchanged owner permanently copies one eligible directly played, copyable non-Ability card per turn and excludes Champions before recording its once-per-turn condition. When the hand is full, the permanent copy enters the draw pile. |
+
+The focused checker verifies the exact owner payload, full-hand copy destination, permanent card state, single turn-gate increment, and a second same-turn eligible play that does not create another copy. Pure controls cover an open-hand copy, Champion exclusion without consuming the gate, unknown Champion metadata rejection, malformed owner rejection and immutable branches. The 64-stage winning battle records 36 actions, seven EndTurns, 14 train phases, 11 spawns and zero capture failures, mismatches, unsupported transitions or pending records. Independent search matches all 36 decisions, visits 128/128 states with serial/parallel best equality and replays three steps.
+
+The 46,570-byte archive has 7,925 unique nodes and SHA-256 `2ed1b92f320734342a582bffccd013964d7920c58e1aefe8e8fa27b75a57378e`; no JSON companion is tracked. Inventory is 412 archives: 374 full battles and 38 component calibrations. Original relic evidence is 193/224 (86.16%): 176 battle, sixteen campaign and one native no-op owner.
+
+This witness covers the unchanged owner on an eligible Spell and a same-turn repeat, with a full-hand permanent deck-pile copy. Other card-effect payloads, Champion play branches in a native battle, and alternate owner definitions remain outside this evidence boundary.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-mothers-remnant3.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-mothers-remnant3-only tests/fixtures/full-battle-original-mothers-remnant3.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-mothers-remnant3.mt2f
 ```

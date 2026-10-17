@@ -19,6 +19,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string CopyFirstSpellName = "original-copy-first-spell-played";
         internal const string CopyFirstConsumeName = "original-copy-first-consume-played";
         internal const string CopyConsumedCardName = "original-copy-consumed-card";
+        internal const string MothersRemnant3Name = "original-mothers-remnant3";
         internal const string MonsterSpellTargetingName = "original-monster-spell-targeting";
         private const string TinkermasterId = "db2193eb-a476-4cc4-9a26-2d0e35f46b74";
         private const string ProgressId = "4446fd0c-f7c3-4a9d-96c3-bd12e4426a76";
@@ -27,6 +28,7 @@ namespace MonsterTrain2Poju.Probe
         private const string CopyFirstSpellId = "0f4a9e72-cd34-4667-95f6-6a0ca69832f8";
         private const string CopyFirstConsumeId = "b7207406-3c55-4771-b9c9-ed99dd9e1f9b";
         private const string CopyConsumedCardId = "51368ce4-b037-49ef-801c-545405b78800";
+        private const string MothersRemnant3Id = "6b5ccd78-056a-4599-b05a-368bb9e1d6bc";
         private const string MonsterSpellTargetingId = "070c87f3-a48f-49d6-a288-04854ab3b0cf";
         private const string MonsterSpellWitnessId = "d9042b99-f328-4ae9-8995-1bb242a970c4";
         private const string MixologyId = "9582724d-2d5e-4349-a642-9720bbb833e9";
@@ -52,7 +54,7 @@ namespace MonsterTrain2Poju.Probe
         private static IReadOnlyList<ElixirMixSelection> pendingSelections = Array.Empty<ElixirMixSelection>();
         private static int pendingSelectionIndex;
         internal static bool Acquired { get; private set; }
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or TinkermasterName or ProgressName or NefariousOverflowName or UncontrolledGroupName or CopyFirstSpellName or CopyFirstConsumeName or CopyConsumedCardName or MonsterSpellTargetingName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or TinkermasterName or ProgressName or NefariousOverflowName or UncontrolledGroupName or CopyFirstSpellName or CopyFirstConsumeName or CopyConsumedCardName or MothersRemnant3Name or MonsterSpellTargetingName;
         internal static bool TinkermasterMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == TinkermasterName;
         internal static bool ProgressMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == ProgressName;
         internal static bool NefariousOverflowMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == NefariousOverflowName;
@@ -60,6 +62,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool CopyFirstSpellMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == CopyFirstSpellName;
         internal static bool CopyFirstConsumeMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == CopyFirstConsumeName;
         internal static bool CopyConsumedCardMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == CopyConsumedCardName;
+        internal static bool MothersRemnant3Mode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == MothersRemnant3Name;
         internal static bool MonsterSpellTargetingMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == MonsterSpellTargetingName;
         private static bool CopyConsumeMode => CopyFirstConsumeMode || CopyConsumedCardMode;
 
@@ -69,8 +72,8 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = managers.GetSaveManager();
             if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
                 throw new InvalidOperationException("Original Mix relic must be acquired before battle setup.");
-            string id = MonsterSpellTargetingMode ? MonsterSpellTargetingId : CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : UncontrolledGroupMode ? UncontrolledGroupId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId;
-            string key = MonsterSpellTargetingMode ? "SingleToTeamMonsterSpellTargeting" : CopyConsumedCardMode ? "CopyConsumedCard" : CopyFirstConsumeMode ? "CopyFirstConsumePlayed" : CopyFirstSpellMode ? "CopyFirstSpellPlayed" : UncontrolledGroupMode ? "UncontrolledGroup" : NefariousOverflowMode ? "NefariousOverflow" : TinkermasterMode ? "TinkermasterTools" : "ProgressPacemaker";
+            string id = MothersRemnant3Mode ? MothersRemnant3Id : MonsterSpellTargetingMode ? MonsterSpellTargetingId : CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : UncontrolledGroupMode ? UncontrolledGroupId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId;
+            string key = MothersRemnant3Mode ? "MothersRemnant3Relic" : MonsterSpellTargetingMode ? "SingleToTeamMonsterSpellTargeting" : CopyConsumedCardMode ? "CopyConsumedCard" : CopyFirstConsumeMode ? "CopyFirstConsumePlayed" : CopyFirstSpellMode ? "CopyFirstSpellPlayed" : UncontrolledGroupMode ? "UncontrolledGroup" : NefariousOverflowMode ? "NefariousOverflow" : TinkermasterMode ? "TinkermasterTools" : "ProgressPacemaker";
             CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
             RelicEffectData[] effects = relic.GetEffects().ToArray();
             RelicEffectData effect = effects[0];
@@ -94,9 +97,10 @@ namespace MonsterTrain2Poju.Probe
             bool validCopyFirstSpell = !CopyFirstSpellMode || ValidCopyFirstSpell(effect);
             bool validCopyFirstConsume = !CopyFirstConsumeMode || ValidCopyFirstConsume(effect);
             bool validCopyConsumedCard = !CopyConsumedCardMode || ValidCopyConsumedCard(effect);
+            bool validMothersRemnant3 = !MothersRemnant3Mode || ValidMothersRemnant3(effect, effects.Length);
             bool validMonsterSpellTargeting = !MonsterSpellTargetingMode || ValidMonsterSpellTargeting(effect);
             if (relic.name != key || relic.DisallowInDeploymentPhase || !validNefariousOverflow || !validUncontrolledGroup || !validCopyFirstSpell || !validCopyFirstConsume || !validCopyConsumedCard ||
-                !validMonsterSpellTargeting || !validMixRelic ||
+                !validMothersRemnant3 || !validMonsterSpellTargeting || !validMixRelic ||
                 save.GetCollectedRelics().Any(item => item.GetRelicDataID() == id))
                 throw new InvalidOperationException("Original scenario relic definition or acquisition changed.");
             save.AddRelic(relic);
@@ -118,6 +122,8 @@ namespace MonsterTrain2Poju.Probe
                     " cardType=" + effect.GetParamCardType() + " permanent=" + effect.GetParamBool() +
                     " requiredTraits=" + string.Join(",", effect.GetTraits().Select(trait => trait.GetTraitStateName())) +
                     " conditions=" + effect.GetEffectConditions().Count);
+            else if (MothersRemnant3Mode)
+                log.LogInfo("ORIGINAL-MOTHERS-REMNANT3-ACQUIRED unchanged count=1 cardType=Any permanent=true excludeChampions=true conditions=once-per-turn");
             else if (NefariousOverflowMode)
                 log.LogInfo("ORIGINAL-NEFARIOUS-OVERFLOW-ACQUIRED unchanged team=" + (int)effect.GetParamSourceTeam() +
                     " proc=" + effect.GetParamInt() + " explosionPerStack=" + effect.GetParamInt2() +
@@ -134,9 +140,9 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
-            if ((TinkermasterMode || ProgressMode || NefariousOverflowMode || UncontrolledGroupMode || CopyFirstSpellMode || CopyConsumeMode || MonsterSpellTargetingMode) && (!Acquired ||
+            if ((TinkermasterMode || ProgressMode || NefariousOverflowMode || UncontrolledGroupMode || CopyFirstSpellMode || CopyConsumeMode || MothersRemnant3Mode || MonsterSpellTargetingMode) && (!Acquired ||
                 managers.GetSaveManager().GetCollectedRelics().Count(item => item.GetRelicDataID() ==
-                    (MonsterSpellTargetingMode ? MonsterSpellTargetingId : CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : UncontrolledGroupMode ? UncontrolledGroupId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId)) != 1))
+                    (MothersRemnant3Mode ? MothersRemnant3Id : MonsterSpellTargetingMode ? MonsterSpellTargetingId : CopyConsumedCardMode ? CopyConsumedCardId : CopyFirstConsumeMode ? CopyFirstConsumeId : CopyFirstSpellMode ? CopyFirstSpellId : UncontrolledGroupMode ? UncontrolledGroupId : NefariousOverflowMode ? NefariousOverflowId : TinkermasterMode ? TinkermasterId : ProgressId)) != 1))
                 throw new InvalidOperationException("Original Mix relic is missing or duplicated at battle setup.");
             Prepared = false;
             logger = log;
@@ -163,9 +169,9 @@ namespace MonsterTrain2Poju.Probe
             pendingSelectionIndex = 0;
             CardManager cards = managers.GetCardManager()!;
             AllGameData gameData = managers.GetSaveManager().GetAllGameData();
-            CardData definition = MonsterSpellTargetingMode ? AddMonsterSpellWitness(gameData) : CopyFirstSpellMode || CopyConsumeMode ? AddCopyWitnessSpell(gameData, CopyConsumeMode) : gameData.FindCardData(MixologyId) ??
+            CardData definition = MonsterSpellTargetingMode ? AddMonsterSpellWitness(gameData) : CopyFirstSpellMode || CopyConsumeMode || MothersRemnant3Mode ? AddCopyWitnessSpell(gameData, CopyConsumeMode, MothersRemnant3Mode) : gameData.FindCardData(MixologyId) ??
                 throw new InvalidOperationException("Mix fixture requires original Mixology.");
-            if ((!MonsterSpellTargetingMode && !CopyFirstSpellMode && !CopyConsumeMode && definition.GetEffects().Count(effect => effect.GetEffectStateName() == typeof(CardEffectMix).Name) != 2) ||
+            if ((!MonsterSpellTargetingMode && !CopyFirstSpellMode && !CopyConsumeMode && !MothersRemnant3Mode && definition.GetEffects().Count(effect => effect.GetEffectStateName() == typeof(CardEffectMix).Name) != 2) ||
                 !cards.GetBelowHandSize())
                 throw new InvalidOperationException("Mix fixture requires its original effects and a free hand slot.");
             CardPile destination = MonsterSpellTargetingMode ? CardPile.DeckPileTop : CardPile.HandPile;
@@ -173,6 +179,15 @@ namespace MonsterTrain2Poju.Probe
             if (added == null || !(MonsterSpellTargetingMode ? cards.GetDrawPile() : cards.GetHand()).Contains(added))
                 throw new InvalidOperationException("Mix fixture could not place its scenario card in the requested pile.");
             sourceId = FullBattleTrace.Active!.CardId(added);
+            if (MothersRemnant3Mode)
+            {
+                CardState control = cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false);
+                if (control == null || !cards.GetHand().Contains(control))
+                    throw new InvalidOperationException("MothersRemnant3 fixture could not place its same-turn control card in hand.");
+                cards.DrawCards(cards.GetMaxHandSize());
+                if (cards.GetBelowHandSize())
+                    throw new InvalidOperationException("MothersRemnant3 fixture could not fill hand for the permanent deck-pile branch.");
+            }
             if (UncontrolledGroupMode)
             {
                 CardState carrierCard = cards.GetHand().FirstOrDefault(card => card.GetCardType() == CardType.Monster &&
@@ -191,6 +206,8 @@ namespace MonsterTrain2Poju.Probe
             Prepared = true;
             log.LogInfo(MonsterSpellTargetingMode
                 ? "ORIGINAL-MONSTER-SPELL-TARGETING-PREPARED unchanged relic, direct 1-damage Monster-target witness card=" + sourceId
+                : MothersRemnant3Mode
+                ? "ORIGINAL-MOTHERS-REMNANT3-PREPARED unchanged relic, full-hand Draw Spell witness and same-turn control card=" + sourceId
                 : CopyFirstSpellMode
                 ? "ORIGINAL-COPY-FIRST-SPELL-PREPARED unchanged relic, deterministic null-Spell witness card=" + sourceId
                 : CopyFirstConsumeMode
@@ -229,6 +246,20 @@ namespace MonsterTrain2Poju.Probe
                 return false;
             }
             if (CopyFirstSpellMode)
+            {
+                if (!copySourcePreludeMarked && action.CardInstanceId == sourceId)
+                {
+                    copySourcePreludeMarked = true;
+                    return true;
+                }
+                if (!copyControlPreludeMarked && playedOpeningElixirId != 0 && action.CardInstanceId == playedOpeningElixirId)
+                {
+                    copyControlPreludeMarked = true;
+                    return true;
+                }
+                return false;
+            }
+            if (MothersRemnant3Mode)
             {
                 if (!copySourcePreludeMarked && action.CardInstanceId == sourceId)
                 {
@@ -380,6 +411,35 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return BattleActionModel.ChooseUnitSpellAndJunkPlay(state);
             }
+            if (MothersRemnant3Mode)
+            {
+                if (!played)
+                {
+                    CardToken? source = state.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.InstanceId == sourceId);
+                    if (source != null)
+                    {
+                        played = true;
+                        return new PlayCardAction(sourceId, 0);
+                    }
+                }
+                if (playedOpeningElixirId == 0)
+                {
+                    CombatContext context = state.Spawn.Train.Context!;
+                    CardInstanceState? copy = context.CardInstances?.FirstOrDefault(card => card.DataId == CopyWitnessSpellId &&
+                        card.InstanceId != sourceId && context.Cards.Hand.Any(item => item.InstanceId == card.InstanceId));
+                    if (copy != null)
+                    {
+                        PlayCardAction? action = BattleActionModel.EnumerateSupportedPlays(state)
+                            .FirstOrDefault(item => item.CardInstanceId == copy.InstanceId);
+                        if (action != null)
+                        {
+                            playedOpeningElixirId = copy.InstanceId;
+                            return action;
+                        }
+                    }
+                }
+                return BattleActionModel.ChooseUnitSpellAndJunkPlay(state);
+            }
             if (!played)
             {
                 CardToken? source = state.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.InstanceId == sourceId);
@@ -485,6 +545,20 @@ namespace MonsterTrain2Poju.Probe
                 !(bool)Field("allowMultipleTriggersPerDuration");
         }
 
+        private static bool ValidMothersRemnant3(RelicEffectData effect, int effectCount)
+        {
+            if (effectCount != 1 || effect.GetEffectClassName() != RelicModel.CopyCardOnCardPlay || effect.GetParamInt() != 1 ||
+                effect.GetParamCardType() != CardType.Invalid || !effect.GetParamBool() || !effect.GetParamBool2() ||
+                effect.GetParamCardUpgradeData() != null || effect.GetTraits().Count != 0 || effect.GetEffectConditions().Count != 1)
+                return false;
+            RelicEffectCondition condition = effect.GetEffectConditions().Single();
+            object Field(string name) => AccessTools.Field(typeof(RelicEffectCondition), name).GetValue(condition);
+            return (bool)Field("paramTrackTriggerCount") && Field("paramEntryDuration").ToString() == "ThisTurn" &&
+                Field("paramTrackedValue").ToString() == "SubtypeInDeck" && Field("paramCardType").ToString() == "Any" &&
+                Field("paramSubtype").ToString() == "SubtypesData_None" && Convert.ToInt32(Field("paramComparator")) == 3 &&
+                (int)Field("paramInt") == 1 && !(bool)Field("allowMultipleTriggersPerDuration");
+        }
+
         private static bool ValidMonsterSpellTargeting(RelicEffectData effect)
         {
             if (effect.GetEffectClassName() != RelicMonsterSpellTargetingModel.Effect ||
@@ -526,7 +600,7 @@ namespace MonsterTrain2Poju.Probe
             return witness;
         }
 
-        private static CardData AddCopyWitnessSpell(AllGameData gameData, bool withConsume)
+        private static CardData AddCopyWitnessSpell(AllGameData gameData, bool withConsume, bool withDraw = false)
         {
             if (gameData.FindCardData(CopyWitnessSpellId) != null)
                 throw new InvalidOperationException("Copy-card-on-play witness card id is already registered.");
@@ -550,7 +624,15 @@ namespace MonsterTrain2Poju.Probe
                 traits.Add(consume);
             }
             Set(witness, "traits", traits);
-            Set(witness, "effects", new List<CardEffectData>());
+            var effects = new List<CardEffectData>();
+            if (withDraw)
+            {
+                var draw = new CardEffectData("CardEffectDraw", null!, Team.Type.None);
+                draw.Cheat_SetTargetMode(TargetMode.Room);
+                Set(draw, "paramInt", 1);
+                effects.Add(draw);
+            }
+            Set(witness, "effects", effects);
             Set(witness, "effectTriggers", new List<CharacterTriggerData>());
             Set(witness, "triggers", new List<CardTriggerEffectData>());
             Set(witness, "startingUpgrades", new List<CardUpgradeData>());
