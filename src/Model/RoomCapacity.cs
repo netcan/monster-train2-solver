@@ -18,15 +18,17 @@ namespace MonsterTrain2Poju.Model
         public int SpellCostDelta { get; }
         public RoomMoonPhaseRule? MoonPhase { get; }
         public int EnergyPerTurnDelta { get; }
+        public IReadOnlyList<CardUpgradeMaskRule>? CharacterFilters { get; }
         public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
             IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
             bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "", int spellCostDelta = 0,
-            RoomMoonPhaseRule? moonPhase = null, int energyPerTurnDelta = 0)
+            RoomMoonPhaseRule? moonPhase = null, int energyPerTurnDelta = 0, IReadOnlyList<CardUpgradeMaskRule>? characterFilters = null)
         {
             DataId = dataId; AssetKey = assetKey; AttachmentId = attachmentId; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
             CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
             AffectsHeroes = affectsHeroes; AffectsMonsters = affectsMonsters; IgnoreBosses = ignoreBosses; SpellCostDelta = spellCostDelta; MoonPhase = moonPhase;
             EnergyPerTurnDelta = energyPerTurnDelta;
+            CharacterFilters = characterFilters == null ? null : Array.AsReadOnly(characterFilters.ToArray());
         }
     }
 
@@ -66,6 +68,11 @@ namespace MonsterTrain2Poju.Model
     }
     public static class RoomCapacityModel
     {
+        public static string? ValidateCharacterFilters(IReadOnlyList<CardUpgradeMaskRule>? filters) =>
+            filters?.Any(filter => filter.Statuses.Required.Count > 0 || filter.Statuses.Excluded.Count > 0 ||
+                filter.RequiredSizes.Count > 0 || filter.ExcludedSizes.Count > 0 ||
+                filter.Subtypes.RequiredOperator is < 0 or > 1 || filter.Subtypes.ExcludedOperator is < 0 or > 1) == true
+                ? "Unmodeled room attachment character filter." : null;
         internal static int EnergyPerTurnDelta(CombatContext context) => context.RoomCapacities?
             .Sum(room => room.Attachments?.Sum(attachment => attachment.EnergyPerTurnDelta) ?? 0) ?? 0;
         internal static int SpellCostDelta(CombatContext? context, int roomIndex) =>
@@ -85,11 +92,12 @@ namespace MonsterTrain2Poju.Model
                     string.IsNullOrEmpty(attachment.AssetKey) || attachment.AttachmentType != 0 ||
                     attachment.SpellCostDelta != 0 && attachment.SpellCostDelta != -1 ||
                     attachment.EnergyPerTurnDelta != 0 && attachment.EnergyPerTurnDelta != 1 ||
+                    ValidateCharacterFilters(attachment.CharacterFilters) != null ||
                     attachment.MoonPhase != null && RoomMoonPhaseModel.Validate(attachment.MoonPhase) != null ||
                     attachment.AttachmentId.Length > 0 && (!Guid.TryParse(attachment.AttachmentId, out Guid attachmentGuid) || attachmentGuid == Guid.Empty) ||
                     attachment.CharacterUpgrades?.Any(upgrade => upgrade.ExternalInteractions.Count > 0 ||
                         upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||
-                        upgrade.Statuses.Count > 0 || upgrade.TriggerUpgrades?.Count > 0 && attachment.AttachmentId.Length == 0 ||
+                        upgrade.Statuses.Any(status => status.Id != "multistrike" || status.Stacks != 1) || upgrade.TriggerUpgrades?.Count > 0 && attachment.AttachmentId.Length == 0 ||
                         upgrade.AbilityUpgrade != null) == true) == true)
                 ? "Invalid room capacity state." : null;
         }

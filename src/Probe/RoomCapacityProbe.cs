@@ -34,6 +34,7 @@ namespace MonsterTrain2Poju.Probe
                 int delta = 0;
                 RoomMoonPhaseRule? moon = null;
                 var characterUpgrades = new List<CardUpgradeModifier>();
+                var characterFilters = new List<CardUpgradeMaskRule>();
                 foreach (var (state, definition) in attachment.UpgradeStates)
                 {
                     RoomModifierData[] roomModifiers = definition.GetRoomModifierUpgrades().ToArray();
@@ -44,16 +45,19 @@ namespace MonsterTrain2Poju.Probe
                     RoomModifierData[] energyModifiers = roomModifiers.Where(modifier =>
                         modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").ToArray();
                     var interactions = new List<string>();
+                    CardUpgradeMaskRule[] filters = state.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
+                    if (filters.Length > 0 && attachment.UpgradeStates.Count != 1) return null;
+                    characterFilters.AddRange(filters);
                     RoomMoonPhaseRule? phase = RoomMoonPhaseProbe.Rule(definition, interactions);
                     if (phase != null) { if (moon != null) return null; moon = phase; }
                     bool supported = interactions.Count == 0 && (phase != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length + energyModifiers.Length) &&
                         capacityModifiers.Length <= 1 && spellCostModifiers.Length <= 1 && energyModifiers.Length <= 1 && energyModifiers.All(modifier => modifier.GetParamInt() == 1) &&
                         state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
                         state.GetAdditionalUnhealedHP() == 0 && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
-                        state.GetAdditionalEquipmentLimit() == 0 && state.GetStatusEffectUpgrades().Count == 0 &&
+                        state.GetAdditionalEquipmentLimit() == 0 && state.GetStatusEffectUpgrades().All(status => status.statusId == "multistrike" && status.count == 1 && !status.fromPermanentUpgrade) &&
                         state.GetTraitDataUpgrades().Count == 0 && state.GetRemoveTraitUpgrades().Count == 0 &&
                         (attachment.CardState == null || state.GetTriggerUpgrades().Count == 0) && state.GetCardTriggerUpgrades().Count == 0 &&
-                        state.GetUpgradesToRemove().Count == 0 && state.GetFilters().Count == 0 &&
+                        state.GetUpgradesToRemove().Count == 0 && RoomCapacityModel.ValidateCharacterFilters(filters) == null &&
                         state.GetUnitAbilityUpgrade() == null && state.GetRoomAbilityUpgrade() == null && !state.IsUnique();
                     if (!supported) return null;
                     if (capacityModifiers.Length == 1) delta = unchecked(delta + capacityModifiers[0].GetParamInt());
@@ -72,7 +76,7 @@ namespace MonsterTrain2Poju.Probe
                     attachment.TrainSide.HasFlag(Team.Type.Monsters), ignoreBosses,
                     attachment.CardState == null ? attachment.Guid : "", spellCostDelta, moon,
                     attachment.UpgradeStates.SelectMany(item => item.Item2.GetRoomModifierUpgrades())
-                        .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").Sum(modifier => modifier.GetParamInt())));
+                        .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").Sum(modifier => modifier.GetParamInt()), characterFilters));
             }
             return result.ToArray();
         }

@@ -591,14 +591,15 @@ namespace MonsterTrain2Poju.Probe
             RoomModifierData[] capacities = modifiers.Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateCapacityModifier").ToArray();
             RoomModifierData[] spellCosts = modifiers.Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateSpellCostModifier").ToArray();
             RoomModifierData[] energies = modifiers.Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").ToArray();
+            CardUpgradeMaskRule[] characterFilters = upgrade.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
             bool supported = (moon != null || modifiers.Length == capacities.Length + spellCosts.Length + energies.Length && capacities.Length <= 1 && spellCosts.Length <= 1 &&
                 energies.Length <= 1 && energies.All(modifier => modifier.GetParamInt() == 1)) &&
                 upgrade.GetAttackDamageBuff() == 0 && upgrade.GetAdditionalHP() == 0 &&
                 upgrade.GetAdditionalUnhealedHP() == 0 && upgrade.GetCostReduction() == 0 && upgrade.GetAdditionalSize() == 0 &&
-                upgrade.GetAdditionalEquipmentLimit() == 0 && upgrade.GetStatusEffectUpgrades().Count == 0 &&
+                upgrade.GetAdditionalEquipmentLimit() == 0 && upgrade.GetStatusEffectUpgrades().All(status => status.statusId == "multistrike" && status.count == 1 && !status.fromPermanentUpgrade) &&
                 upgrade.GetTraitDataUpgrades().Count == 0 && upgrade.GetRemoveTraitUpgrades().Count == 0 &&
                 upgrade.GetTriggerUpgrades().Count == 0 && upgrade.GetCardTriggerUpgrades().Count == 0 &&
-                upgrade.GetUpgradesToRemove().Count == 0 && upgrade.GetFilters().Count == 0 &&
+                upgrade.GetUpgradesToRemove().Count == 0 && RoomCapacityModel.ValidateCharacterFilters(characterFilters) == null &&
                 upgrade.GetUnitAbilityUpgrade() == null && upgrade.GetRoomAbilityUpgrade() == null && !upgrade.IsUnique();
             if (!supported)
             {
@@ -611,7 +612,7 @@ namespace MonsterTrain2Poju.Probe
                 affectsHeroes: effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
                 affectsMonsters: effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
                 ignoreBosses: effect.GetTargetIgnoreBosses(), moonPhase: moon, spellCostDelta: spellCosts.Sum(modifier => modifier.GetParamInt()),
-                energyPerTurnDelta: energies.Sum(modifier => modifier.GetParamInt()));
+                energyPerTurnDelta: energies.Sum(modifier => modifier.GetParamInt()), characterFilters: characterFilters);
         }
 
         private static CardData? Fallback(CharacterData unit) => AllGameManagers.Instance!.GetSaveManager().GetAllGameData()

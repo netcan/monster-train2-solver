@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 472 archives (433 full battles and
+Current accepted inventory (2026-10-18): 473 archives (434 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,21 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-472 accepted archives. Refresh/check the index with
+473 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-stewards-quarters.mt2f` keeps two original Stewards Quarters, with
+same-floor ordinary, outside-floor Steward and later-born Steward controls.
+Only matching Stewards gain +20 attack and one Multistrike; replacement removes
+that contribution while preserving their starting Multistrike. Restoring the
+original room reapplies its upgrade. Capacity follows six/nine/six across
+replacement. The seven-play/five-EndTurn win, sixteen immutable full chains and
+bounded search are checked. Status/size character filters and other room status
+payloads remain guarded. Binary-only: 26,611 bytes/3,943 nodes, SHA-256
+`dba9c6d81b975277071a60387d7575376469dc4a13d1a99422049a4d693e21f0`.
+Use `-StewardsQuarters` and `--stewards-quarters-only`.
+Focused room/filter gate:
+`.probe-runs/model-checks-20261018-232250-bbc6268d/summary.json` (three passed).
 
 `full-battle-engine-upgrade.mt2f` keeps two original Engine Upgrades and original
 Fight Club replacements. Each Engine Upgrade costs zero, reduces friendly

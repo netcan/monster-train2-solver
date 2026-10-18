@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 472 binary archives, including 433
+Current accepted inventory (2026-10-18): 473 binary archives, including 434
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 472
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 473
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,17 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-stewards-quarters.mt2f` keeps two unchanged original rooms and a
+capacity replacement. Existing and later-born Stewards gain +20 attack and one
+Multistrike; a same-floor ordinary unit and outside-floor Steward do not.
+Replacement removes just the room contribution, preserving starting Multistrike;
+restoration reapplies it. Capacity follows six/nine/six. The seven-play/five-
+EndTurn win, sixteen immutable full chains and bounded search are checked.
+Character subtype filters are captured separately from character upgrades;
+status/size filters and other room status payloads retain explicit guards.
+Focused gate `model-checks-20261018-232250-bbc6268d` passed the new fixture,
+original room cards and Eclipse Chamber.
 
 `full-battle-engine-upgrade.mt2f` keeps two unchanged original attachments and
 successive Fight Club replacements. Friendly capacity falls by one on each
