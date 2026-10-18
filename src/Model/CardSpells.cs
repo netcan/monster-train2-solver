@@ -1555,6 +1555,18 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
                     bool lastPhysicalDeath = queued.CompletePhysicalRemovalAfterQueue && !callbacks.Any(item =>
                         item.CompletePhysicalRemovalAfterQueue && item.Kind == "OnDeath" && item.Unit.Team == queued.Unit.Team && item.Unit.Id > queued.Unit.Id);
+                    // A death-triggered relic can kill another unit before the
+                    // outer dying actor releases its point. Centering needs both
+                    // retained occupants, even after they leave the live room.
+                    if (state.Context?.SpawnPoints != null)
+                    {
+                        var occupied = state.Context.SpawnPoints.Units.Where(point => point.Current?.RoomIndex == room.RoomIndex)
+                            .Select(point => point.UnitId).ToHashSet();
+                        var present = room.Units.Select(unit => unit.Id).ToHashSet();
+                        room = new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Concat(retained.Values
+                            .Where(unit => occupied.Contains(unit.Id) && !present.Contains(unit.Id))).ToArray(),
+                            room.ExternalInteractions, room.Context, room.Preview, room.ActiveCompanionBossIds);
+                    }
                     RoomCombatResult returned = lastPhysicalDeath ? RoomCombatModel.SettleQueuedSpawnerAndCenter(room, queued.Unit, refreshPyre: Refresh) :
                         RoomCombatModel.SettleQueuedSpawner(room, queued.Unit, queued.PreservePhysicalPoint, refreshPyre: Refresh);
                     if (!returned.Supported) { callbackError = returned.UnsupportedReason; return false; }

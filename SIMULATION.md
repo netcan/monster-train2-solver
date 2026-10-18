@@ -1,11 +1,24 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 419 binary archives, including 381
+Current accepted inventory (2026-10-18): 420 binary archives, including 382
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 200/224 catalog entries (89.29%): 183 battle owners, 16 campaign
+covers 201/224 catalog entries (89.73%): 184 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`DamageOnBurnoutDeath` now has schema-224 native evidence for both ordered
+5-damage effects: death while still holding Ephemeral, and natural burnout after
+its final stack decays. Each hits every living enemy Hero on the actor's floor.
+The two callbacks cover three nonlethal hits and two kills; the subsequent
+zero-stack death does not deal a second burnout hit. All 742 native Tests,
+including team, trigger and status controls, preserve Battle RNG and match the
+model. Death-triggered enemy removal retains the outer dying actor's physical
+point until its own cleanup; preview damage uses the local engine's death queue.
+The 43-stage winning battle, seven controlled actions, independent four-EndTurn
+policy suffix, focused checks, serial/parallel search and six-archive affected
+regression pass with zero differential counters. Other owner payloads and
+arbitrary combined death/preview effects require separate evidence.
 
 `MoreCapacity` now has schema-223 native evidence for its natural deployment
 callback: friendly capacity on the middle floor rises from 5 to 7, selects that

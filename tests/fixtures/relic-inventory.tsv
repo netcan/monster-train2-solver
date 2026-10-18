@@ -165,7 +165,7 @@
 "NonBannerUnitsHaveDeployable"	"fb6332bb-3e1c-44ba-951b-39fbc8d43601"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""
 "AlliedClassRelic"	"656861c9-a96d-4c99-988c-390b75e5d8d4"	"accepted-native-campaign"	"RelicEffectOverrideCardDraftClassType"	""
 "SpawnWithRage"	"55ca34e9-047b-4b93-b390-d8d228a43261"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
-"DamageOnBurnoutDeath"	"cb54fe76-9b3c-47f9-972c-424ec3ee39f7"	"pending"	"RelicEffectDamageEnemyOnFriendlyTrigger,RelicEffectDamageEnemyOnFriendlyTrigger"	""
+"DamageOnBurnoutDeath"	"cb54fe76-9b3c-47f9-972c-424ec3ee39f7"	"accepted-native-battle"	"RelicEffectDamageEnemyOnFriendlyTrigger,RelicEffectDamageEnemyOnFriendlyTrigger"	""
 "ApplyExtraPyregel_DH"	"f3e1c306-964c-4373-96c3-61e606379f43"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied"	""
 "TunedGear"	"f12924bc-0600-4de0-ae2a-93534f251eb1"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
 "Frenzystesia"	"56316fc2-b41a-41ae-aba8-e83fb668e8e1"	"accepted-native-battle"	"RelicEffectEmberOnUnitTrigger"	""

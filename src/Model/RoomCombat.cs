@@ -3056,14 +3056,24 @@ namespace MonsterTrain2Poju.Model
                         int ownerIndex = context.Relics!.Select((owner, index) => (owner, index))
                             .Single(item => item.owner.DataId == relic.DataId).index;
                         RelicCardPlayDamageSelection selected = RelicFriendlyTriggerDamageModel.Select(train, unit.Freeze(), kind,
-                            source.RoomIndex, ownerIndex, effectIndex);
+                            source.RoomIndex, ownerIndex, effectIndex, paramInt);
                         if (!selected.Supported) { unsupportedReason = selected.UnsupportedReason; return false; }
                         foreach (int id in selected.Targets)
                         {
+                            if (source.Preview)
+                            {
+                                // Preview damage belongs to this engine's retained
+                                // units and death queue, without physical removal.
+                                Damage(null, units.Single(target => target.Source.Id == id), 5, "Spell", applyTraits: false);
+                                if (unsupportedReason != null) return false;
+                                continue;
+                            }
                             RoomCombatResult damaged = ApplyRelicDamage(CurrentRoom(), id, 5,
-                                callback => QueueCallback(callback.WithRelicDamageRemoval()));
+                                QueueRelicDamageCallback);
                             if (!damaged.Supported) { unsupportedReason = damaged.UnsupportedReason; return false; }
                             MergeSummon(damaged);
+                            foreach (QueuedCharacterTrigger callback in damaged.PendingCallbacks)
+                                QueueRelicDamageCallback(callback);
                         }
                         continue;
                     }
@@ -3171,6 +3181,17 @@ namespace MonsterTrain2Poju.Model
                     .Concat(units.Where(unit => !unit.InRoom)).ToArray();
                 units.Clear(); units.AddRange(ordered);
             }
+            private void QueueRelicDamageCallback(QueuedCharacterTrigger callback)
+            {
+                if (enqueueCharacterTrigger == null && callback.RemovalLifecycle)
+                {
+                    WorkingUnit dead = units.Single(target => target.Source.Id == callback.Unit.Id);
+                    dead.Apply(callback.Unit); dead.DeathFinished = true;
+                    deferredDamageDeaths.Add((dead, callback.ReturnSpawnerAfterQueue));
+                }
+                else QueueCallback(callback.WithRelicDamageRemoval());
+            }
+
             private void MergeSummon(RoomCombatResult result)
             {
                 context = result.State!.Context;

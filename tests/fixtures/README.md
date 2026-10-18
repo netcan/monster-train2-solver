@@ -1,9 +1,15 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 419 archives (381 full battles and
-38 component calibrations), 200/224 original relic owners (89.29%): 183 battle
+Current accepted inventory (2026-10-18): 420 archives (382 full battles and
+38 component calibrations), 201/224 original relic owners (89.73%): 184 battle
 owners, sixteen campaign-interface owners and one native no-op. The latest
-`MoreCapacity` fixture covers the natural middle-floor 5->7 deployment callback,
+`DamageOnBurnoutDeath` fixture covers both ordered room-damage callbacks:
+Ephemeral death and natural zero-stack burnout. Three nonlethal hits, two kills,
+status/team/trigger gates and no duplicate damage on the subsequent death match
+the native game. Its 43-stage winning replay, seven controlled actions, focused
+checks, independent four-EndTurn policy suffix and serial/parallel search pass
+with zero differential counters. Six affected archives pass regression.
+The previous `MoreCapacity` fixture covers the natural middle-floor 5->7 deployment callback,
 one notification, four later-turn no-ops and seven actual size-one deployments.
 Its 40-stage winning replay, independent full policy, focused checks and
 128-state serial/parallel search pass with zero differential counters.

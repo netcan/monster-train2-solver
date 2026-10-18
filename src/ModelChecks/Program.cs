@@ -152,6 +152,17 @@ if (args.Length == 1 && args[0] == "--more-capacity-pure")
     OriginalMoreCapacityChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--burnout-damage-pure")
+{
+    RelicBurnoutDamageChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-burnout-damage-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RelicBurnoutDamageChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-more-capacity-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1799,6 +1810,7 @@ RelicCardPlayDamageChecks.Run();
 RelicConsumeDamageChecks.Run();
 RelicEatenDamageChecks.Run();
 OriginalMoreCapacityChecks.Run();
+RelicBurnoutDamageChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **200 distinct original collectable relics / 224 catalog entries
-(89.29%)** have accepted native evidence: 183 have full-battle effect evidence,
+As of 2026-10-18, **201 distinct original collectable relics / 224 catalog entries
+(89.73%)** have accepted native evidence: 184 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1857,4 +1857,46 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-mor
 dotnet run --project src/ModelChecks -c Release -- --more-capacity-pure
 dotnet run --project src/ModelChecks -c Release -- --original-more-capacity-only tests/fixtures/full-battle-original-more-capacity.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-more-capacity.mt2f
+```
+
+## DamageOnBurnoutDeath
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `DamageOnBurnoutDeath` | `cb54fe76-9b3c-47f9-972c-424ec3ee39f7` | `full-battle-original-burnout-death-damage.mt2f` | The unchanged ordered `RelicEffectDamageEnemyOnFriendlyTrigger` pair deals 5 damage to every living enemy Hero on the triggering Monster's floor. The first effect observes an Ephemeral carrier's death, selecting the 12/6/4-HP enemy sequence; the second observes another carrier's natural zero-stack burnout and selects the two survivors. The five hits include three nonlethal results and two kills. A non-Ephemeral death does nothing, and the natural burnout's subsequent death does not double its damage. |
+
+The schema-224 winning battle matches 43 stages, seven actions, five EndTurns
+and seven spawns. Its 742 native Test calls include two positives and 740 gated
+callbacks, with exact ordered cached targets and unchanged complete state/RNG.
+Both applications match complete train/context/pile/physical-point state and
+sixteen immutable parallel branches. Independent policy replay checks all seven
+controlled actions individually, then runs a four-EndTurn suffix to native
+victory in sixteen branches. Search matches all seven recorded decisions,
+reports no unsupported alternatives and agrees between serial/parallel best
+results (116/103 visited states, three replayed steps).
+
+The original ordered triggers, Monsters source team, Room target mode, 5 damage,
+first-effect Ephemeral presence gate, placement permission, preview permission
+and empty conditions remain unchanged. Native death eligibility also requires
+the actor to be dead unless `paramInt == 1`; live-actor override, Pyre, empty-room,
+dead-enemy and off-floor controls have pure checks. Native preview consumers use
+the local engine's damage/death queue. Death-triggered nested damage preserves
+the outer corpse's occupied point until its own removal and completes enemy
+removal through the parent queue. Six affected archives pass the current
+regression. Standalone preview APIs, unknown owners/payloads and arbitrary
+combined death effects are outside this witness.
+
+The binary archive is 34,640 bytes, with 5,555 unique nodes and SHA-256
+`567ca338db72aab3fcf58542c428140284e643d277566de9382fe06c6d6aaa21`.
+Its source length is zero and source hash is all zeroes; no JSON companion is
+tracked. Accepted inventory is 420 archives: 382 battles and 38 component
+calibrations. Original-owner evidence is 201/224 (89.73%): 184 battle, sixteen
+campaign and one native no-op owner; 23 owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalBurnoutDamageRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-burnout-death-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --burnout-damage-pure
+dotnet run --project src/ModelChecks -c Release -- --original-burnout-damage-only tests/fixtures/full-battle-original-burnout-death-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-burnout-death-damage.mt2f
 ```

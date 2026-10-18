@@ -14,6 +14,8 @@ namespace MonsterTrain2Poju.Probe
         {
             public CombatUnit Actor { get; set; } = null!;
             public string Trigger { get; set; } = "";
+            public int EffectIndex { get; set; }
+            public int ParamInt { get; set; }
             public int RoomIndex { get; set; }
             public TrainCombatState Before { get; set; } = null!;
             public TrainCombatState? Predicted { get; set; }
@@ -27,6 +29,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal sealed class ApplicationRecord
         {
+            public int EffectIndex { get; set; }
             public int[] Targets { get; set; } = Array.Empty<int>();
             public TrainCombatState Before { get; set; } = null!;
             public TrainCombatState? Predicted { get; set; }
@@ -38,7 +41,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static readonly List<TestRecord> Tests = new List<TestRecord>();
         internal static readonly List<ApplicationRecord> Applications = new List<ApplicationRecord>();
-        private static bool Active => OriginalEatenDamageScenario.Prepared && FullBattleTrace.Active != null &&
+        private static bool Active => (OriginalEatenDamageScenario.Prepared || OriginalBurnoutDamageScenario.Prepared) && FullBattleTrace.Active != null &&
             !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         private static int[] Targets(RelicEffectDamageEnemyOnFriendlyTrigger effect) =>
             ((List<CharacterState>)AccessTools.Field(effect.GetType(), "_targets").GetValue(effect))
@@ -47,7 +50,8 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(RelicEffectDamageEnemyOnFriendlyTrigger), nameof(RelicEffectDamageEnemyOnFriendlyTrigger.TestCharacterTriggerEffect))]
         private static class TestPatch
         {
-            private static void Prefix(CharacterTriggerRelicEffectParams relicEffectParams, out TestRecord? __state)
+            private static void Prefix(RelicEffectDamageEnemyOnFriendlyTrigger __instance,
+                CharacterTriggerRelicEffectParams relicEffectParams, out TestRecord? __state)
             {
                 __state = null; if (!Active) return;
                 var row = new TestRecord(); __state = row; Tests.Add(row);
@@ -58,12 +62,14 @@ namespace MonsterTrain2Poju.Probe
                     // its identity before freezing the pre-Test context.
                     row.Actor = trace.CaptureUnit(relicEffectParams.characterState); row.Before = trace.CaptureTrain();
                     row.Trigger = relicEffectParams.trigger.ToString();
+                    row.ParamInt = relicEffectParams.paramInt;
+                    row.EffectIndex = __instance.SourceRelicState.GetEffects().FindIndex(effect => ReferenceEquals(effect, __instance));
                     row.RoomIndex = relicEffectParams.characterState.GetSpawnPoint(allowLastKnownSpawnPoint: true)?.GetRoomOwner()?.GetRoomIndex()
                         ?? AllGameManagers.Instance!.GetRoomManager()!.GetSelectedRoom();
                     int owner = row.Before.Context!.Relics!.Select((item, index) => (item, index))
-                        .Single(item => item.item.DataId == RelicFriendlyTriggerDamageModel.DataId).index;
+                        .Single(item => item.item.DataId == __instance.SourceRelicState.GetRelicDataID()).index;
                     RelicCardPlayDamageSelection selected = RelicFriendlyTriggerDamageModel.Select(row.Before, row.Actor,
-                        row.Trigger, row.RoomIndex, owner, 0);
+                        row.Trigger, row.RoomIndex, owner, row.EffectIndex, row.ParamInt);
                     row.Predicted = selected.State; row.Targets = selected.Targets.ToArray(); row.UnsupportedReason = selected.UnsupportedReason;
                 }
                 catch (Exception error) { row.Error = error.ToString(); FullBattleTrace.Active!.CaptureFailure(error); }
@@ -77,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
                     __state.Actual = FullBattleTrace.Active!.CaptureTrain();
                     if (__state.Predicted != null && (!JToken.DeepEquals(JToken.FromObject(__state.Predicted), JToken.FromObject(__state.Actual)) ||
                         __result != (__state.Targets.Length > 0) || __result && !__state.Targets.SequenceEqual(__state.CachedTargets)))
-                        __state.Difference = "Native OnEaten Test/weakest target differs from model.";
+                        __state.Difference = "Native friendly-trigger damage Test/targets differ from model.";
                 }
                 catch (Exception error) { __state.Error = error.ToString(); FullBattleTrace.Active!.CaptureFailure(error); }
             }
@@ -93,6 +99,7 @@ namespace MonsterTrain2Poju.Probe
             var row = new ApplicationRecord(); Applications.Add(row);
             try
             {
+                row.EffectIndex = effect.SourceRelicState.GetEffects().FindIndex(item => ReferenceEquals(item, effect));
                 row.Targets = Targets(effect); row.Before = FullBattleTrace.Active!.CaptureTrain();
                 TrainCombatResult predicted = RelicFriendlyTriggerDamageModel.ApplySelected(row.Before, row.Targets, deferPhysicalRemoval: true);
                 row.Predicted = predicted.State; row.UnsupportedReason = predicted.UnsupportedReason;
@@ -106,7 +113,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     row.Actual = FullBattleTrace.Active!.CaptureTrain();
                     if (row.Predicted != null && !JToken.DeepEquals(JToken.FromObject(row.Predicted), JToken.FromObject(row.Actual)))
-                        row.Difference = "Native OnEaten damage/death queue differs from model.";
+                        row.Difference = "Native friendly-trigger damage/death queue differs from model.";
                 }
                 catch (Exception error) { row.Error = error.ToString(); FullBattleTrace.Active!.CaptureFailure(error); }
             }
