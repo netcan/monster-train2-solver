@@ -68,6 +68,8 @@ namespace MonsterTrain2Poju.Model
     }
     public static class RoomCapacityModel
     {
+        public static bool SupportsCharacterStatus(string id, int stacks) =>
+            (id is "multistrike" or "silenced" or "endless") && stacks == 1 || id == "conduit" && stacks == 5;
         public static string? ValidateCharacterFilters(IReadOnlyList<CardUpgradeMaskRule>? filters) =>
             filters?.Any(filter => filter.Statuses.Required.Count > 0 || filter.Statuses.Excluded.Count > 0 ||
                 filter.RequiredSizes.Count > 0 || filter.ExcludedSizes.Count > 0 ||
@@ -97,7 +99,7 @@ namespace MonsterTrain2Poju.Model
                     attachment.AttachmentId.Length > 0 && (!Guid.TryParse(attachment.AttachmentId, out Guid attachmentGuid) || attachmentGuid == Guid.Empty) ||
                     attachment.CharacterUpgrades?.Any(upgrade => upgrade.ExternalInteractions.Count > 0 ||
                         upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||
-                        upgrade.Statuses.Any(status => status.Id is not ("multistrike" or "silenced" or "endless") || status.Stacks != 1) || upgrade.TriggerUpgrades?.Count > 0 && attachment.AttachmentId.Length == 0 ||
+                        upgrade.Statuses.Any(status => !SupportsCharacterStatus(status.Id, status.Stacks)) || upgrade.TriggerUpgrades?.Count > 0 && attachment.AttachmentId.Length == 0 ||
                         upgrade.AbilityUpgrade != null) == true) == true)
                 ? "Invalid room capacity state." : null;
         }

@@ -46,6 +46,7 @@ param(
     [switch] $StewardsQuarters,
     [switch] $ZoneOfSilence,
     [switch] $Memorial,
+    [switch] $Planetarium,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -487,6 +488,7 @@ if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($ZoneOfSilence) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Memorial) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($Planetarium) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -978,6 +980,7 @@ if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
 if ($ZoneOfSilence) { $environment['MT2_PROBE_MODIFIERS'] = 'zone-of-silence' }
 if ($Memorial) { $environment['MT2_PROBE_MODIFIERS'] = 'memorial' }
+if ($Planetarium) { $environment['MT2_PROBE_MODIFIERS'] = 'planetarium' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2163,6 +2166,9 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
     @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 -or
     @($trace.EclipseChamberRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Eclipse Chamber native evidence is incomplete.'
+}
+if ($Planetarium -and (-not $trace.PlanetariumPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
+    throw 'Planetarium requires original rooms, later birth, floor/damage controls, replacement/restoration and ten actual plays in a native win.'
 }
 if ($Memorial -and (-not $trace.MemorialPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 8)) {
     throw 'Memorial requires native Endless death/redraw/rebirth, replacement, ordinary second death and eight actual plays in a win.'

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 475 archives (436 full battles and
+Current accepted inventory (2026-10-18): 476 archives (437 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,22 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-475 accepted archives. Refresh/check the index with
+476 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-planetarium.mt2f` keeps two original Planetariums and an original
+Fight Club replacement. Existing and later-born units contribute five Conduit
+each; replacing/restoring the room produces power five/ten/zero/ten. Four actual
+damage spells deal ten/five/five/fifteen, covering floor isolation and tracker
+removal/reuse. Direct unit upgrades retain Conduit callbacks, and room character
+synchronization propagates its updated shared context. The ten-play/five-
+EndTurn win, sixteen immutable full chains and bounded search are checked.
+Other room modifier classes and Conduit physical movement remain guarded.
+Binary-only: 29,097 bytes/4,681 nodes, SHA-256
+`e9a29ba8cd8d45faee87b2fa8f0e503e2f3481088234d8791ea5fb1a7659321a`.
+Use `-Planetarium` and `--planetarium-only`.
+Focused Conduit/room gate:
+`.probe-runs/model-checks-20261018-233846-643e2e05/summary.json` (three passed).
 
 `full-battle-memorial.mt2f` keeps original Memorial of the Melted, two original
 Disassembles and a Fight Club replacement. Endless sends the selected dead

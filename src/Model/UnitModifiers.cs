@@ -253,7 +253,7 @@ namespace MonsterTrain2Poju.Model
                         bool removingStatus = remove || status.Stacks < 0;
                         if (removingStatus && existing == null && target.RegisteredStatus(status.Id) == null) continue;
                         if (!removingStatus && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
-                        if (!removingStatus && (nextModifiers.DamageBuffFromStatusEffects.HasValue ||
+                        if (!removingStatus && (status.Id == "conduit" || nextModifiers.DamageBuffFromStatusEffects.HasValue ||
                             state.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0) == true))
                         {
                             RoomCombatResult appliedStatus = StatusApplicationModel.ApplyRetained(Stage(), targetId, status, 0);
@@ -276,6 +276,13 @@ namespace MonsterTrain2Poju.Model
                             state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units,
                                 state.ExternalInteractions, attack.Context, state.Preview, state.ActiveCompanionBossIds);
                             Refresh(attack.Unit!);
+                            if (status.Id == "conduit")
+                            {
+                                if (!ConduitModel.Captured(state.Context)) return Unsupported("Conduit upgrade removal requires captured native room/card tracker state.");
+                                state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
+                                    ConduitModel.Change(state.Context!, state.RoomIndex, Snapshot(), source.Preview, refreshSelection: false,
+                                        order: state.Units.Select(unit => unit.Id).ToArray()), state.Preview, state.ActiveCompanionBossIds);
+                            }
                         }
                         if (status.Id == "horde" && (removingStatus ? stacks < oldStacks : stacks > oldStacks))
                         {

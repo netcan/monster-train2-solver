@@ -55,6 +55,7 @@ namespace MonsterTrain2Poju.Model
                 return Fail("Room attachment character synchronization requires before/after room states.");
 
             var rooms = new List<RoomCombatState>(source.Rooms.Count);
+            CombatContext? context = source.Context;
             foreach (RoomCombatState room in source.Rooms)
             {
                 RoomCapacityState? previous = before.FirstOrDefault(item => item.RoomIndex == room.RoomIndex);
@@ -66,7 +67,7 @@ namespace MonsterTrain2Poju.Model
                 }
 
                 RoomCombatState state = new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
-                    room.ExternalInteractions, source.Context, room.Preview, room.ActiveCompanionBossIds);
+                    room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds);
                 if (previous?.Attachments?.SingleOrDefault() is RoomCapacityAttachmentState removed)
                 {
                     foreach (CombatUnit original in state.Units.ToArray())
@@ -114,10 +115,12 @@ namespace MonsterTrain2Poju.Model
                             ? unit.WithMoonPhaseMask(mask) : unit).ToArray());
                     }
                 }
+                context = state.Context;
                 rooms.Add(state);
             }
-            return new RoomAttachmentUnitSyncResult(new TrainCombatState(rooms, source.Movement,
-                source.EnemySlotsPerRoom, source.Context));
+            return new RoomAttachmentUnitSyncResult(new TrainCombatState(rooms.Select(room => new RoomCombatState(room.RoomIndex,
+                room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
+                source.Movement, source.EnemySlotsPerRoom, context));
         }
 
         internal static RoomAttachmentUnitSyncResult SynchronizeMovement(TrainCombatState before, TrainCombatState after)
