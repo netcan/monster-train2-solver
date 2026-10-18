@@ -456,6 +456,12 @@ if (args.Length == 2 && args[0] == "--original-hostile-statuses-only")
     OriginalHostileStatusesChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-movement-spells-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalMovementSpellsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-scaled-damage-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

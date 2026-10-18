@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 528 archives (488 full battles and
+Current accepted inventory (2026-10-19): 529 archives (489 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,25 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-520 accepted archives. Refresh/check the index with
+529 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-movement-spells.mt2f` captures unchanged Begone, Challenge,
+Hidden Passage, Tiresome Climb, Dripfall, Hexcalation, Demonize, Cave In and
+Heavensward. One tracked enemy moves up/down five times; front/back positions,
+last-target Dazed/weakness and excluded top-floor controls match. Cave In moves
+both teams down; Heavensward moves two allies up then pulls the uniquely highest
+current HP ally (600 versus 500) to the front. Costs, one Consume route, actor
+HP/attack and Battle RNG match. Native movement properties and initial deck
+statistics are captured explicitly. Use `--original-movement-spells-only`;
+sixteen full immutable chains, the pure spell checks and the old original
+healing/cleanse checks pass. Search matches thirteen decisions/25 roots,
+128/128 states and three replayed steps with zero unsupported attempts and
+equal serial/parallel best. Source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-062907-181bee24` won in
+60.95 seconds with thirteen plays/six EndTurns, four counters zero and protected
+files unchanged. Binary-only: 35,454 bytes/5,517 nodes, SHA-256
+`c82f91788a6877f9233afa33685eb7382e67cdc3eb427ca9cc7f74a36537293d`.
 
 `full-battle-original-scaled-damage.mt2f` captures unchanged Deadly Plunge,
 Cleave, Ancient Resonance, Ancient Synergy and DamageExtinguish. An authored
