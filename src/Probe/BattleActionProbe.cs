@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
             "CardEffectAddCardUpgradeToUnitsPerStatusEffect", "CardEffectAddTempSwapStats",
             "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand",
-            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix", "CardEffectMixRandom", "CardEffectUnboxSmallBoxUnitCard"
+            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix", "CardEffectMixRandom", "CardEffectUnboxSmallBoxUnitCard", "CardEffectReturnUnitToHand"
         }, StringComparer.Ordinal);
         private readonly FullBattleTrace trace;
         private readonly UnitPlayModelProbe projection;
@@ -368,6 +368,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectFeederRules" ? "FeederRules" :
                 effect.GetEffectStateName() == "CardEffectFreezeCard" ? "FreezeCard" :
                 effect.GetEffectStateName() == "CardEffectDuplicateCardInHand" ? "DuplicateCard" :
+                effect.GetEffectStateName() == "CardEffectReturnUnitToHand" ? "ReturnUnit" :
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
                 effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
@@ -553,7 +554,8 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamCardPool() != null) : null,
                 transferAttackMultiplier: type == "TransferAttackFromUnit" ? effect.GetAdditionalParamInt() : 0,
                 unitTriggerKind: type == "PlayUnitTrigger" ? effect.GetParamTrigger().ToString() : null,
-                healDamageMultiplier: type == "HealRelative" ? (int?)effect.GetAdditionalParamInt() : null);
+                healDamageMultiplier: type == "HealRelative" ? (int?)effect.GetAdditionalParamInt() : null,
+                unitReturn: type == "ReturnUnit" ? new UnitReturnRule(effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamBool3()) : null);
         }
 
         private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,

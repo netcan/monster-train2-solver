@@ -499,7 +499,7 @@ namespace MonsterTrain2Poju.Model
                 corruptionAdd: effect.CorruptionAdd, nullTargetless: effect.NullTargetless,
                 nullForwardSelf: effect.NullForwardSelf, chooseDiscard: effect.ChooseDiscard,
                 transferAttackMultiplier: effect.TransferAttackMultiplier, statusTransfer: effect.StatusTransfer,
-                unitTriggerKind: effect.UnitTriggerKind, healDamageMultiplier: effect.HealDamageMultiplier);
+                unitTriggerKind: effect.UnitTriggerKind, healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn);
 
             int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal" || effect.Type == "HealOverheal" || effect.Type == "HealRelative"
                 ? UpgradedStat(UpgradedStat(value, effect.Type == "HealOverheal" || effect.Type == "HealRelative" ? "Heal" : effect.Type, true, instance.Permanent),

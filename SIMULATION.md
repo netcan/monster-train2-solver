@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 462 binary archives, including 423
+Current accepted inventory (2026-10-18): 463 binary archives, including 424
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 462
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 463
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,15 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-magnetic-relay.mt2f` adds two unchanged Magnetic Relays and replays
+the same recalled source. Native recall precedes Kill and suppresses the death
+gold control. Authored full-hand controls distinguish draw-top overflow with
+temporary upgrade/offset reset from a passing Test followed by no operation
+when overflow is disabled. Complete effect contexts, the 38-stage win, sixteen
+immutable chains and bounded search are checked. Equipment, ability cleanup,
+physical points, Horde, enchantments, temporary trait clearing and relic return
+callbacks remain explicit calibration boundaries.
 
 `full-battle-small-box.mt2f` adds unchanged empty/filled Small Boxes. Saved boxed
 templates have no battle identity; copied cards receive identities individually

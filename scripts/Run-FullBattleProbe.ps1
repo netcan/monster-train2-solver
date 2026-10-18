@@ -33,6 +33,7 @@ param(
     [switch] $AdaptiveMutation,
     [switch] $Mixalot,
     [switch] $SmallBox,
+    [switch] $MagneticRelay,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -461,6 +462,7 @@ if ($StardustInvocation) { $BranchCardMasks = $true; $Policy = 'units-spells-and
 if ($AdaptiveMutation) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Mixalot) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($SmallBox) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($MagneticRelay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -939,6 +941,7 @@ if ($StardustInvocation) { $environment['MT2_PROBE_MODIFIERS'] = 'stardust-invoc
 if ($AdaptiveMutation) { $environment['MT2_PROBE_MODIFIERS'] = 'adaptive-mutation' }
 if ($Mixalot) { $environment['MT2_PROBE_MODIFIERS'] = 'mixalot' }
 if ($SmallBox) { $environment['MT2_PROBE_MODIFIERS'] = 'small-box' }
+if ($MagneticRelay) { $environment['MT2_PROBE_MODIFIERS'] = 'magnetic-relay' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2103,6 +2106,10 @@ if ($OriginalOpeningDeckSpawnRelic -and ($trace.Schema -ne 244 -or -not $trace.O
     @($trace.RelicOpeningDeckSpawnApplications).Count -ne 3 -or
     @($trace.RelicOpeningDeckSpawnTests | Where-Object { $_.Isolated -and -not $_.Returned -and $_.CacheBefore.Count -gt 0 }).Count -eq 0)) {
     throw 'Original opening deck-spawn native evidence is incomplete or divergent.'
+}
+if ($MagneticRelay -and (-not $trace.MagneticRelayPrepared -or -not $trace.NativeWon -or @($trace.MagneticRelayRecords).Count -ne 4 -or
+    @($trace.MagneticRelayRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
+    throw 'Magnetic Relay native evidence is incomplete.'
 }
 if ($SmallBox -and (-not $trace.SmallBoxPrepared -or -not $trace.NativeWon -or @($trace.SmallBoxRecords).Count -ne 3 -or
     @($trace.SmallBoxRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {

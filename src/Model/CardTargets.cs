@@ -205,7 +205,7 @@ namespace MonsterTrain2Poju.Model
                 removeHalfStatusEffects: effect.RemoveHalfStatusEffects, overheal: effect.Overheal,
                 corruptionAdd: effect.CorruptionAdd, chooseDiscard: effect.ChooseDiscard,
                 transferAttackMultiplier: effect.TransferAttackMultiplier, statusTransfer: effect.StatusTransfer,
-                unitTriggerKind: effect.UnitTriggerKind, healDamageMultiplier: effect.HealDamageMultiplier), Array.Empty<int>());
+                unitTriggerKind: effect.UnitTriggerKind, healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn), Array.Empty<int>());
             return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.TargetSubtype.Length > 0
                 ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.TargetSubtype))).ToArray()) : result;

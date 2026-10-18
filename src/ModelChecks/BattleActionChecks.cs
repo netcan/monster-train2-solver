@@ -594,6 +594,9 @@ internal static class BattleActionChecks
             chooser = source => MixalotChecks.Choose(source, fixture.GetProperty("MixalotCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("SmallBoxPrepared", out var smallBoxPrepared) && smallBoxPrepared.GetBoolean())
             chooser = source => SmallBoxChecks.Choose(source, fixture.GetProperty("SmallBoxCardIds").Deserialize<int[]>()!);
+        if (fixture.TryGetProperty("MagneticRelayPrepared", out var magneticRelayPrepared) && magneticRelayPrepared.GetBoolean())
+            chooser = source => MagneticRelayChecks.Choose(source, fixture.GetProperty("MagneticRelayCardIds").Deserialize<int[]>()!,
+                fixture.GetProperty("MagneticRelayUnitCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
             chooser = BattleActionModel.ChooseEmptySpellThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var originalUnitRelicPolicy) && originalUnitRelicPolicy.GetString() == "original-unit-relic-batch")

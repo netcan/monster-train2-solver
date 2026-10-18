@@ -1029,6 +1029,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 SmallBoxScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && MagneticRelayScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Magnetic Relay fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                MagneticRelayScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && AdaptiveMutationScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Adaptive Mutation fixture must start on deployment turn.");
@@ -1974,6 +1980,7 @@ namespace MonsterTrain2Poju.Probe
                 if (AdaptiveMutationScenario.Enabled) pendingPlay = AdaptiveMutationScenario.Choose(decision, AdaptiveMutationScenario.CardIds);
                 if (MixalotScenario.Enabled) pendingPlay = MixalotScenario.Choose(decision, MixalotScenario.CardIds);
                 if (SmallBoxScenario.Enabled) pendingPlay = SmallBoxScenario.Choose(decision, SmallBoxScenario.CardIds);
+                if (MagneticRelayScenario.Enabled) pendingPlay = MagneticRelayScenario.Choose(decision, MagneticRelayScenario.CardIds, MagneticRelayScenario.UnitCardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);

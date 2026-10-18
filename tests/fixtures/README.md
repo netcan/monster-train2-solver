@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 462 archives (423 full battles and
+Current accepted inventory (2026-10-18): 463 archives (424 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,21 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-462 accepted archives. Refresh/check the index with
+463 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-magnetic-relay.mt2f` keeps two original Magnetic Relays. Recall
+removes the unit before Kill, returns the same source card and retains temporary
+upgrades and attack/cost offsets. Strengthened Stewards with death-gold triggers
+are controls; recall does not fire their death reward. Two authored fill-hand
+carriers prove draw-top overflow with complete temporary upgrade/offset reset,
+and a passing Test/full-hand no-op with overflow disabled. Complete effect
+contexts, the 38-stage win (12 plays/five EndTurns), sixteen immutable chains and
+bounded search are checked. Equipment, ability cleanup, physical points, Horde,
+enchantments, temporary trait clearing and relic callbacks remain guarded.
+Binary-only: 30,081 bytes/4,845 nodes, SHA-256
+`edf39f420f75b463bf40885f88889c2950135c22ce35df2576c3514226886020`.
+Use `-MagneticRelay` and `--magnetic-relay-only`.
 
 `full-battle-small-box.mt2f` keeps unchanged empty and filled Small Boxes. The
 full-hand isolated native call passes Test and still shuffles all three saved

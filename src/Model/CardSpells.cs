@@ -502,7 +502,7 @@ namespace MonsterTrain2Poju.Model
                         effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
                         chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
-                        healDamageMultiplier: effect.HealDamageMultiplier);
+                        healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -1052,6 +1052,21 @@ namespace MonsterTrain2Poju.Model
                         DrainDeaths();
                         if (routingError != null) return UnsupportedTrain(routingError);
                     }
+                    continue;
+                }
+                if (effect.Type == "ReturnUnit")
+                {
+                    if (selected.Preview) continue;
+                    int available = state.Context!.MaxHandSize - state.Context.Cards.Hand.Count;
+                    foreach (int id in targets.UnitIds)
+                    {
+                        if (!effect.UnitReturn!.OverflowToDraw && available-- <= 0) break;
+                        UnitReturnResult returned = UnitReturnModel.Apply(state, id, effect.UnitReturn);
+                        if (!returned.Supported) return UnsupportedTrain(returned.UnsupportedReason!);
+                        state = returned.State!;
+                        if (returned.RetainedUnit != null) retained[id] = returned.RetainedUnit;
+                    }
+                    piles = state.Context!.OtherPiles?.ToArray(); positions = CardTargetModel.Positions(state);
                     continue;
                 }
                 if (effect.Type == "Sacrifice" || effect.Type == "Kill")
@@ -2119,6 +2134,12 @@ namespace MonsterTrain2Poju.Model
                         return "Random mixing requires captured selection state and a nonnegative fixed count.";
                     continue;
                 }
+                if (effect.Type == "ReturnUnit")
+                {
+                    if (effect.UnitReturn == null || source.Context?.OtherPiles == null || source.Context.CardInstances == null)
+                        return "Unit recall requires captured options, piles and spawners.";
+                    continue;
+                }
                 if (effect.Type == "SwapStats" || effect.Type == "StatusNull") continue;
                 if (effect.Type == "Mix")
                 {
@@ -2295,6 +2316,7 @@ namespace MonsterTrain2Poju.Model
                 case "DamagePerHp": return count > 0;
                 case "DamageByUnitsKilled": return count > 0;
                 case "TransferAttackFromUnit": return count > 0;
+                case "ReturnUnit": return count > 0;
                 case "TransferAllStatusesFromUnit": return count > 0;
                 case "TransferAllStatuses": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
@@ -2423,10 +2445,13 @@ namespace MonsterTrain2Poju.Model
                 effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
                 chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
-                healDamageMultiplier: effect.HealDamageMultiplier);
+                healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
+            if (effect.Type == "ReturnUnit")
+                return state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) &&
+                    unit.Status("cardless")?.Stacks is not > 0);
             if (effect.Type is "Recursion" or "ChooseDiscard" or "FreezeCard" or "DuplicateCard") return targets.CardIds.Count;
             if (effect.Type == "AdjustAllStatusEffects")
             {

@@ -288,6 +288,12 @@ if (args.Length == 2 && args[0] == "--small-box-only")
     SmallBoxChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--magnetic-relay-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    MagneticRelayChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--adaptive-mutation-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
