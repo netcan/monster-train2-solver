@@ -1,7 +1,7 @@
 # Original card definition catalog
 
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
-and component fixtures. It does not increase their 450-archive acceptance count.
+and component fixtures. It does not increase their 452-archive acceptance count.
 
 The isolated `no-cards` run on 2026-10-18 inspected all 668 unique
 `AllGameData.GetAllCardData()` definitions from game module
@@ -23,9 +23,14 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261018-192625-d29ed7c6/card-catalog.mt2f`.
-The committed archive is byte-identical: 93,296 bytes, SHA-256
-`04a2873658dc570aec2314f0553680d31efab2fe61c25c02e7185b6ffb0c2e5f`.
+Source: `.probe-runs/full-battle-no-cards-20261018-194938-fa3a8bd7/card-catalog.mt2f`.
+The committed archive is byte-identical: 93,095 bytes, SHA-256
+`66c05b692d3eeec58867b45448394ee143748afbb1fcb90321af3c35916fe5dc`.
+The model projection includes the forced-feeding work in revision `32e4869`.
+Only Feast and ShroudSpike have semantic projection changes from the prior
+catalog; other trait descriptors gain an optional null FeedingQuery field.
+All 668 raw upgrade-mask definitions still match the accepted native calibration. Original
+card facts and projection guards remain separate from runtime evidence.
 
 Recreate with an otherwise unmodified sandbox scenario:
 
