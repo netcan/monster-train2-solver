@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **214 distinct original collectable relics / 224 catalog entries
-(95.54%)** have accepted native evidence: 196 have full-battle effect evidence,
+As of 2026-10-18, **215 distinct original collectable relics / 224 catalog entries
+(95.98%)** have accepted native evidence: 197 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2664,4 +2664,47 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-wol
 dotnet run --project src/ModelChecks -c Release -- --wolos-bloodletter-pure
 dotnet run --project src/ModelChecks -c Release -- --original-wolos-bloodletter-only tests/fixtures/full-battle-original-wolos-bloodletter.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-wolos-bloodletter.mt2f
+```
+
+## Original three-card-type energy and draw sequence
+
+| Original owner | Data ID | Native archive | Accepted effect evidence |
+| --- | --- | --- | --- |
+| `GainBonusOnThreeCardsPlayed` | `a67438aa-e1d7-45d6-bf62-fceddd2a723f` | `full-battle-original-card-type-sequence.mt2f` | The unchanged owner records distinct non-ability card types during Test. Each successful step notifies; the third grants +1 energy and draws one card. Fifteen exact Tests, nine applications and six start callbacks cover duplicate/ability/cap rejection, first/second-step notifications, an empty-pile energy bonus, separate list/counter resets and two natural Spell/Junk/Blight bonuses. All eight capture/differential counters are zero. |
+
+The schema-237 capture preserves the original owner, effect and condition
+definitions. Raw Apply has no Test guard and notifies even before the third
+type; raw start clears only the private type list. The manager separately
+checks placement, preview, conditions and Test, while condition duration reset
+is a distinct lifecycle operation. The ability control runs with an empty list
+before an ordinary Spell succeeds, so duplicate rejection cannot mask it.
+The raw third-type control grants energy with no available draw/discard card.
+Native DrawCards receives no played-card argument, and replay preserves that
+hand-capacity behavior. Native Monster/Equipment sequences, actual ability
+plays, preview execution and additional combined card/draw/relic callbacks
+require their own evidence.
+
+The 35-stage winning battle contains ten actions and five EndTurns. Full
+room/train/turn/action replay, an independent three-EndTurn suffix in sixteen
+immutable branches and serial/parallel search pass. Search matches ten recorded
+decisions, twenty-two root actions, zero unsupported attempts, 128/128 states
+and three replayed steps. Ten affected archives pass with two workers and both
+terminal exit codes zero: this owner, original card-play draw, spell-play
+thresholds, both energy-effects fixtures, bonus draw, typed draw, random draw
+cost, expensive-card upgrade and Wolos Bloodletter. Regression summary:
+`.probe-runs/model-checks-20261018-135135-d423338c/summary.json`.
+
+The binary archive is 28,469 bytes with 4,091 unique nodes and SHA-256
+`15890ab33b3500655efde69a3eba776de0bdac91b8a6f3fc59aa8da76a382fa6`.
+Source length/hash are zero and no JSON companion is tracked. Inventory is 434
+archives: 395 battles and 39 component calibrations. Accepted original-owner
+coverage is 215/224 (95.98%): 197 battle, seventeen campaign and one native no-op;
+nine owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCardTypeSequenceRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-type-sequence.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-type-sequence-pure
+dotnet run --project src/ModelChecks -c Release -- --original-card-type-sequence-only tests/fixtures/full-battle-original-card-type-sequence.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-type-sequence.mt2f
 ```

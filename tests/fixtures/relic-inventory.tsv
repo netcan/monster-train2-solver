@@ -180,7 +180,7 @@
 "ReduceRandomCardCostOnUnitPlay"	"128dd519-611c-4999-b7ac-e63ea027b1fa"	"accepted-native-battle"	"RelicEffectAddTempUpgradeToRandomCardInHand"	""
 "ManyBuffonAngelEquip"	"c97500a9-b0a4-4c18-b203-b9f4447c84c3"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "RandomTrainRoomCardFirstTurn"	"d245f9d5-e966-4a8e-a125-4aa5b48f1e7c"	"accepted-native-battle"	"RelicEffectDrawOnPreOpeningDrawCascade"	""
-"GainBonusOnThreeCardsPlayed"	"a67438aa-e1d7-45d6-bf62-fceddd2a723f"	"pending"	"RelicEffectEnergyAndCardDrawOnCardPlaySequence"	""
+"GainBonusOnThreeCardsPlayed"	"a67438aa-e1d7-45d6-bf62-fceddd2a723f"	"accepted-native-battle"	"RelicEffectEnergyAndCardDrawOnCardPlaySequence"	""
 "IncreaseFrostbiteStacks"	"9cb2b9b2-0308-4f71-92e8-e96a30b87416"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied,RelicEffectPreventStatusEffectDecay"	""
 "IncantTriggeredByUnitAbilities"	"17ee5d9c-4b87-4250-ad3b-dbe49d118e01"	"pending"	"RelicEffectAddEffectOnUnitSpawn"	""
 "IncreasePyregelStacks"	"f4c76f11-37d9-4bb5-867a-4d99b7cfa270"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied"	""

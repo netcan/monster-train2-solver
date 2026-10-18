@@ -81,6 +81,7 @@ namespace MonsterTrain2Poju.Model
             bool hasRandomHandUpgrade = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicRandomHandUpgradeModel.Effect)) == true;
             bool hasCardCopy = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CopyCardOnCardPlay)) == true;
             bool hasCardDraw = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CardDrawOnCardPlay)) == true;
+            bool hasCardTypeSequence = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicCardTypeSequenceModel.Effect)) == true;
             bool hasGoldOnExhaust = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicCardPlayGoldOnExhaustModel.Effect)) == true;
             bool hasMonsterSpellTargeting = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicMonsterSpellTargetingModel.Effect)) == true;
             bool hasRoomCapacity = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyRoomCapacityOnCardPlay)) == true;
@@ -93,7 +94,7 @@ namespace MonsterTrain2Poju.Model
                 type == RelicResourceModel.EnergyOnCorruptRestrictedPlayed ||
                 type == RelicResourceModel.CorruptionOnCorruptRestrictedPlayed)) == true;
             if (!hasRandomHandUpgrade && !hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasMonsterSpellTargeting && !hasRoomCapacity &&
-                !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay && !hasGoldOnExhaust && !hasCorruption && !hasDamageStatus && !hasCardPlayDamage && !hasConsumeDamage)
+                !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay && !hasGoldOnExhaust && !hasCorruption && !hasDamageStatus && !hasCardPlayDamage && !hasConsumeDamage && !hasCardTypeSequence)
                 return new RelicCardPlayMagicPowerResult(source);
             if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay || hasGoldOnExhaust || hasCorruption) && source.CardInstances == null)
                 return Fail(source, "Native card-play relic effects require the current owned-card list.");
@@ -109,6 +110,14 @@ namespace MonsterTrain2Poju.Model
                 for (int effectIndex = 0; effectIndex < context.Relics![relicIndex].EffectTypes.Count; effectIndex++)
                 {
                     CombatRelicState relic = context.Relics[relicIndex];
+                    if (relic.EffectTypes[effectIndex] == RelicCardTypeSequenceModel.Effect)
+                    {
+                        RelicFirstCardCostResult sequence = RelicCardTypeSequenceModel.Played(context, playedCardId, playedCardRule,
+                            definitions, placement, preview);
+                        if (!sequence.Supported) return Fail(context, sequence.UnsupportedReason!);
+                        context = sequence.Context;
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicRandomHandUpgradeModel.Effect)
                     {
                         if (placement && relic.DisallowedInPlacementPhase == true || preview && !relic.CardModifiers!.Single().RandomHandUpgrade!.CanApplyInPreviewMode) continue;

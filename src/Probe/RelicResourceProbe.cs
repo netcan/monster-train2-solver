@@ -122,7 +122,14 @@ namespace MonsterTrain2Poju.Probe
             RelicRandomDrawCostRule? randomDrawCost = null;
             RelicSuppressExhaustRule? suppressExhaust = null;
             RelicEndTurnHealthRule? endTurnHealth = null;
-            if (effect is RelicEffectDamageOrHealUnitsEndOfTurn)
+            RelicCardTypeSequenceRule? cardTypeSequence = null;
+            if (effect is RelicEffectEnergyAndCardDrawOnCardPlaySequence)
+            {
+                var types = (List<CardType>)AccessTools.Field(effect.GetType(), "typePlayedList").GetValue(effect);
+                cardTypeSequence = new RelicCardTypeSequenceRule(types.Select(type => type.ToString()).ToArray());
+                amount = (int)AccessTools.Field(effect.GetType(), "energy").GetValue(effect);
+            }
+            else if (effect is RelicEffectDamageOrHealUnitsEndOfTurn)
             {
                 object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
                 endTurnHealth = new RelicEndTurnHealthRule(Field("teamTarget").ToString()!, (bool)Field("isHeal"));
@@ -407,7 +414,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence);
         }
 
         internal static ResourceSnapshot Capture()

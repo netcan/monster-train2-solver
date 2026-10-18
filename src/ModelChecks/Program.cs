@@ -207,6 +207,17 @@ if (args.Length == 1 && args[0] == "--wolos-bloodletter-pure")
     OriginalWolosBloodletterChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--card-type-sequence-pure")
+{
+    OriginalCardTypeSequenceChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-card-type-sequence-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalCardTypeSequenceChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-wolos-bloodletter-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1960,6 +1971,7 @@ OriginalRandomDrawCostChecks.Run();
 OriginalSuppressExhaustChecks.Run();
 OriginalExpensiveCardUpgradeChecks.Run();
 OriginalWolosBloodletterChecks.Run();
+OriginalCardTypeSequenceChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

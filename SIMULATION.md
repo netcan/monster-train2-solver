@@ -1,11 +1,24 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 433 binary archives, including 394
+Current accepted inventory (2026-10-18): 434 binary archives, including 395
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 214/224 catalog entries (95.54%): 196 battle owners, 17 campaign
+covers 215/224 catalog entries (95.98%): 197 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`GainBonusOnThreeCardsPlayed` now has schema-237 native evidence for its unchanged
+three-distinct-card-type sequence. Fifteen Tests, nine applications and six
+start callbacks match full state and RNG. Tests record each new non-ability type;
+every successful step notifies, while only the third grants +1 energy and draws
+one card. Spell/Junk/Blight sequences activate on two natural turns. Independent
+ability, duplicate and three-type-cap controls match; an empty draw/discard pile
+still permits the energy bonus. Start callbacks clear the private type list
+independently of condition-counter duration resets. The 35-stage winning battle,
+ten actions, independent three-EndTurn suffix in sixteen immutable branches,
+128-state serial/parallel search and ten affected archives pass. Native
+Monster/Equipment sequences, actual ability plays, preview execution and
+additional combined card/draw/relic callbacks require separate evidence.
 
 `Inkbound_WolosBloodletter` now has schema-236 native evidence for unchanged
 +12 Monster attack and one end-turn damage to eligible player units. Nineteen

@@ -18,15 +18,16 @@ coverage inventory checks.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 214 original owners accepted (196 native battle owners,
+Current checkpoint: 215 original owners accepted (197 native battle owners,
 seventeen actual campaign-interface owners and one explicit native no-op owner);
-10 remain pending. The latest accepted owner is `Inkbound_WolosBloodletter`:
-its unchanged effects add 12 attack to Monster cards and apply one damage per
-eligible player unit at room end. Armor absorption, recurring health damage,
-untouchable exclusion, empty/Pyre rooms and lethal spawner routing match native
-evidence. Raw lethal damage leaves the spawner in Standby until outer room
-cleanup exhausts it. Native preview, healing/team variants and extra combined
-trigger/relic callbacks remain uncalibrated.
+9 remain pending. The latest accepted owner is `GainBonusOnThreeCardsPlayed`:
+its unchanged effect records distinct non-ability card types, notifies each
+successful step and grants +1 energy plus one draw on the third type. Independent
+ability/duplicate/cap controls and Spell/Junk/Blight sequences on two natural
+turns match native evidence. An empty draw/discard pile still permits the energy
+bonus. Raw start clears the type list separately from condition-counter duration
+resets. Native Monster/Equipment sequences, actual ability plays, preview
+execution and additional combined card/draw/relic callbacks remain uncalibrated.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
@@ -37,21 +38,22 @@ need their actual campaign lifecycle evidence; definition enumeration and
 inert battle presence do not validate those effects. Pure no-op definitions
 must be explicitly identified without inventing activation evidence.
 
-The latest fixture, `full-battle-original-wolos-bloodletter.mt2f`, captures
-nineteen Tests, eight damage applications, eleven per-target notifications and
-thirteen attack manager calls. Full state, target caches, return values, RNG,
-repeat/reset and Spell rejection match independently in sixteen immutable
-branches. The default multiplier of one is inert in the native additive attack
-branch, also fixing replay of the existing relic-count attack fixture.
+The latest fixture, `full-battle-original-card-type-sequence.mt2f`, captures
+fifteen Tests, nine applications and six start callbacks. Full state, private
+type lists, return values, RNG, first/second-step notifications, empty-pile
+energy and list/counter reset semantics match independently in sixteen immutable
+branches. The ability control precedes the first ordinary Spell, avoiding a
+confounded duplicate-type rejection. Native DrawCards does not receive the
+played card, and replay retains that hand-capacity behavior.
 
-The 38-stage winning battle records five actions and five EndTurns, with all
-eight differential counters zero. Focused checks, independent five-EndTurn suffix,
+The 35-stage winning battle records ten actions and five EndTurns, with all
+eight differential counters zero. Focused checks, independent three-EndTurn suffix,
 128-state serial/parallel search and ten affected archives pass, with zero
 unsupported search attempts. Both regression workers finish with exit zero.
-Regression summary: `.probe-runs/model-checks-20261018-133309-07737cb7/summary.json`.
-The 26,140-byte archive has 3,674
+Regression summary: `.probe-runs/model-checks-20261018-135135-d423338c/summary.json`.
+The 28,469-byte archive has 4,091
 unique nodes and SHA-256
-`7a6f0d50f1695bab3725eb3cb128953f91a566243ea8e6eec6c56630d91d105d`; no JSON
-companion is tracked. Inventory is 433 archives: 394 battles and 39 component
-calibrations. Original relic coverage is 214/224 (95.54%): 196 battle owners,
+`15890ab33b3500655efde69a3eba776de0bdac91b8a6f3fc59aa8da76a382fa6`; no JSON
+companion is tracked. Inventory is 434 archives: 395 battles and 39 component
+calibrations. Original relic coverage is 215/224 (95.98%): 197 battle owners,
 seventeen campaign owners and one native no-op owner.

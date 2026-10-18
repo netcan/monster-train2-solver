@@ -1,8 +1,19 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 433 archives (394 full battles and
-39 component calibrations), 214/224 original relic owners (95.54%): 196 battle
+Current accepted inventory (2026-10-18): 434 archives (395 full battles and
+39 component calibrations), 215/224 original relic owners (95.98%): 197 battle
 owners, seventeen campaign-interface owners and one native no-op. The latest
+`GainBonusOnThreeCardsPlayed` fixture covers its unchanged three-distinct-type
+sequence. Fifteen Tests, nine applications and six start callbacks match full
+state and RNG, with independent ability/duplicate/cap controls and Spell/Junk/
+Blight bonuses on two natural turns. Each successful type step notifies; the
+third grants +1 energy and one draw. An empty draw/discard pile still grants
+energy. Start callbacks clear the type list independently of condition-counter
+duration resets. The 35-stage winning battle, ten actions, independent
+three-EndTurn suffix, sixteen immutable branches, 128-state serial/parallel
+search and ten affected archives pass. Native Monster/Equipment sequences,
+actual ability plays, preview execution and additional combined card/draw/relic
+callbacks remain uncalibrated. The preceding
 `Inkbound_WolosBloodletter` fixture covers unchanged +12 Monster attack and
 one damage to eligible player units at each room's end of turn. Nineteen Tests,
 eight damage callbacks, eleven per-target notifications and thirteen attack

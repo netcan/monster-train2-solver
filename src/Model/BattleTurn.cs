@@ -463,6 +463,9 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(triggers.Outcome)) return Finish(triggers.Outcome, 0, moon);
             }
             context = train.Context!;
+            RelicFirstCardCostResult sequenceStart = RelicCardTypeSequenceModel.StartTurn(context);
+            if (!sequenceStart.Supported) return Unsupported(sequenceStart.UnsupportedReason!);
+            context = sequenceStart.Context;
             RelicFirstCardCostResult firstCardCostBeforeDraw = RelicFirstCardCostModel.StartTurnBeforeDraw(context,
                 source.PlayRules);
             if (!firstCardCostBeforeDraw.Supported) return Unsupported(firstCardCostBeforeDraw.UnsupportedReason!);
