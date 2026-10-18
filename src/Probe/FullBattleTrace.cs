@@ -782,6 +782,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalRoomCardsIds = OriginalRoomCardsScenario.CardIds,
                 OriginalForgeCardsPrepared = OriginalForgeCardsScenario.Prepared,
                 OriginalForgeCardsIds = OriginalForgeCardsScenario.CardIds,
+                OriginalStatusCardsPrepared = OriginalStatusCardsScenario.Prepared,
+                OriginalStatusCardsIds = OriginalStatusCardsScenario.CardIds,
                 RunCardGenerationPrepared = RunCardGenerationScenario.Prepared,
                 ArmamentDrivePrepared = ArmamentDriveScenario.Prepared,
                 ArmamentDriveCardIds = ArmamentDriveScenario.CardIds,

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 468 archives (429 full battles and
+Current accepted inventory (2026-10-18): 469 archives (430 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,19 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-468 accepted archives. Refresh/check the index with
+469 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
+Spike of the Legion. Model card-modifier resolution retains the propagation
+filter. Two same-floor units gain two Rage/Regen; the selected Glow Up target
+moves to the front and gains two more, then the two-energy X spell adds four.
+Nonpropagatable Armor, its neighbor and another floor stay unchanged where
+appropriate. The 36-stage win (six plays/five EndTurns), sixteen immutable full
+chains and bounded search are checked. Other status/relic combinations retain
+existing guards. Binary-only: 27,677 bytes/4,051 nodes, SHA-256
+`cc7449ad479ae8d49a318bd95fee6f8d93159637f2e7c823ec8f7aca41bcd817`.
+Use `-OriginalStatusCards` and `--original-status-cards-only`.
 
 `full-battle-original-forge-cards.mt2f` keeps original Masterwork, Starter Forge,
 Disassemble, Anvil Breaker and Railforged Spike. Front armor and selected sacrifice

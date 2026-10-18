@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 468 binary archives, including 429
+Current accepted inventory (2026-10-18): 469 binary archives, including 430
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 468
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 469
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,15 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
+Spike of the Legion. Card modifier resolution preserves the all-status filter.
+Proliferate adds two Rage/Regen to both same-floor units; Glow Up moves its
+selected unit to the front and adds two only to that retained target; the
+two-energy X spell adds four more. Armor, the neighboring unit and another
+floor provide negative controls. The 36-stage win (six plays/five EndTurns),
+sixteen immutable full chains and bounded search are checked. Other status and
+relic interactions retain their existing calibration boundaries.
 
 `full-battle-original-forge-cards.mt2f` plays unchanged Masterwork, Starter Forge,
 Disassemble, Anvil Breaker and Railforged Spike. The native forge chain is

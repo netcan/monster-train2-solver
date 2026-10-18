@@ -499,6 +499,7 @@ namespace MonsterTrain2Poju.Model
                 effect.DoNotFullyRemove, effect.TargetSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold, effect.GoldCostRequired,
                 effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom, effect.CountStatusOnlyOnTargets,
                 effect.SpawnFallbackUnit, effect.DisallowStatusStackModifiers,
+                statusAdjustmentFilter: effect.StatusAdjustmentFilter,
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
                 roomAttachment: effect.RoomAttachment, recursion: effect.Recursion,
