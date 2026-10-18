@@ -390,6 +390,12 @@ if (args.Length == 2 && args[0] == "--original-self-attack-only")
     OriginalSelfAttackChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-healing-cleanse-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalHealingCleanseChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-pile-status-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

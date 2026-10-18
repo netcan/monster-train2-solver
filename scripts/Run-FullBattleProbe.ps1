@@ -76,6 +76,7 @@ param(
     [switch] $OriginalStatusCompositions,
     [switch] $OriginalGraftedEquipment,
     [switch] $OriginalSelfAttack,
+    [switch] $OriginalHealingCleanse,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -555,6 +556,7 @@ if ($OriginalConsumedUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalStatusCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalGraftedEquipment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSelfAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalHealingCleanse) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1084,6 +1086,7 @@ if ($OriginalConsumedUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalStatusCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-compositions' }
 if ($OriginalGraftedEquipment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-grafted-equipment' }
 if ($OriginalSelfAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-self-attack' }
+if ($OriginalHealingCleanse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-healing-cleanse' }
 if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
@@ -2324,6 +2327,9 @@ if ($OriginalGraftedEquipment -and (-not $trace.OriginalGraftedEquipmentPrepared
 }
 if ($OriginalSelfAttack -and (-not $trace.OriginalSelfAttackPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 11)) {
     throw 'Original Animus of Speed witness lacks four targeted ability activations or a completed native battle.'
+}
+if ($OriginalHealingCleanse -and (-not $trace.OriginalHealingCleansePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 19)) {
+    throw 'Original healing/cleanse witness lacks its original cards and positive state controls or a completed native battle.'
 }
 if ($OriginalPileStatus -and (-not $trace.OriginalPileStatusPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or
     @($trace.OriginalPileStatusQueries).Count -ne 24 -or -not $trace.OriginalPileStatusQueriesUnchanged -or

@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 514 binary archives, including 474
+Current accepted inventory (2026-10-19): 515 binary archives, including 475
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 514
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 515
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,20 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-healing-cleanse.mt2f` adds ten unchanged healing/cleanse/
+transfer spells. Positive native paths cover both Witchweave teams, Regen and
+Burnout after healing, fourteen poison concentrated/doubled to twenty-eight,
+category-aware removal, one-health/+10 attack/two Lifesteal, two full heals,
+original graft removal/+30 attack and a heal before descending. Persistent
+Armor, friendly Regen and separately applied Spikes provide preservation
+controls. Nineteen plays/five EndTurns, three equipment transitions and sixteen
+independent complete replay chains pass. Authored durable targets/status/wound
+controls and a thirty-card hand isolate these original definitions. Other
+target/relic/upgrade combinations require separate native witnesses. Bounded
+search matches all nineteen decisions with zero unsupported attempts and equal
+serial/parallel results; the new and grafted-equipment fixtures pass the focused
+gate `model-checks-20261019-050102-0a5e583c`.
 
 `full-battle-original-self-attack.mt2f` covers unchanged Animus of Speed and
 its original zero-cost, cooldown-two ability. A selected back enemy takes 35;

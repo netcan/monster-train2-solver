@@ -317,7 +317,7 @@ namespace MonsterTrain2Poju.Probe
                 lastAttacker == null || normalizeDestroyedAttacker && (lastAttacker.IsDestroyed || !lastAttacker.IsAlive) ? 0 : UnitId(lastAttacker), statuses,
                 character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()),
                 new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning, character.SacrificeCard == null ? 0 : CardId(character.SacrificeCard), DeathSignalProbe.Capture(character),
-                BumpScenario.Enabled || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
+                BumpScenario.Enabled || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
                     ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss(),
                         character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless,
                         pairedBoss == null ? 0 : UnitId(pairedBoss))
@@ -880,6 +880,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalGraftedEquipmentControlsUnchanged = OriginalGraftedEquipmentScenario.ControlsUnchanged,
                 OriginalSelfAttackPrepared = OriginalSelfAttackScenario.Prepared,
                 OriginalSelfAttackIds = OriginalSelfAttackScenario.CardIds,
+                OriginalHealingCleansePrepared = OriginalHealingCleanseScenario.Prepared,
+                OriginalHealingCleanseIds = OriginalHealingCleanseScenario.CardIds,
                 OriginalStatusCompositionsIds = OriginalStatusCompositionsScenario.CardIds,
                 OriginalConsumedUpgradeIds = OriginalConsumedUpgradeScenario.CardIds,
                 OriginalConsumedUpgradeSamples = OriginalConsumedUpgradeScenario.Samples,

@@ -1137,6 +1137,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSelfAttackScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalHealingCleanseScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original healing/cleanse fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalHealingCleanseScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPileStatusScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original pile status fixture must start on deployment turn.");
@@ -2323,6 +2329,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalStatusCompositionsScenario.Enabled) pendingPlay = OriginalStatusCompositionsScenario.Choose(decision, OriginalStatusCompositionsScenario.CardIds);
                 if (OriginalGraftedEquipmentScenario.Enabled) pendingPlay = OriginalGraftedEquipmentScenario.Choose(decision, OriginalGraftedEquipmentScenario.CardIds);
                 if (OriginalSelfAttackScenario.Enabled) pendingPlay = OriginalSelfAttackScenario.Choose(decision, OriginalSelfAttackScenario.CardIds);
+                if (OriginalHealingCleanseScenario.Enabled) pendingPlay = OriginalHealingCleanseScenario.Choose(decision, OriginalHealingCleanseScenario.CardIds);
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);

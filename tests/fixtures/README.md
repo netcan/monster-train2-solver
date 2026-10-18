@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 514 archives (474 full battles and
+Current accepted inventory (2026-10-19): 515 archives (475 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,35 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-514 accepted archives. Refresh/check the index with
+515 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-healing-cleanse.mt2f` captures ten unchanged original
+spells: Starter Heal, Purifying Cleanse, Witchweave on both teams, Frost
+Channeling, Wickless Recruitment, Resin Removal, Risky Operation, Unleash the
+Wildwood, Weaponized Prosthetic and Restoring Retreat. Positive native paths
+prove four healing plus two Regen, fifteen healing plus three Burnout, both
+Witchweave branches, concentrating fourteen poison then doubling to twenty-eight,
+filtered cleanses, setting one health then +10 attack/two Lifesteal, two full
+friendly heals, removing/severing original Spiky Skin before +30 attack, and
+healing ten before descending a wounded ally. Resin Removal clears enemy Spikes
+but preserves persistent Armor/negative poison; friendly Regen remains. Removing
+Spiky Skin's health upgrade preserves its separately applied three Spikes.
+Authored durable units, wounds/statuses, an energy battery and a thirty-card
+hand isolate these effects. Physical positions, native movement properties and
+played-room references are captured for the descend. Nineteen plays/five
+EndTurns, three equipment transitions and sixteen immutable full chains pass.
+Source `.probe-runs/full-battle-units-spells-and-junk-20261019-045905-5a76fd51`
+won with all four counters zero and protected original profiles unchanged.
+Binary-only: 40,508 bytes/7,129 nodes, SHA-256
+`f9c3eae58dcc1eb6e484dc43b01c07a76a68e038b1affb6b7a3d9dae787115f9`.
+Use `--original-healing-cleanse-only`. Other relic/upgrade/target combinations
+need their own witnesses; this batch uses the existing model projection.
+Bounded search matches nineteen decisions/thirty-three root actions, visits
+128/128 states and replays three steps with zero unsupported attempts and equal
+serial/parallel best results. Focused gate
+`model-checks-20261019-050102-0a5e583c` passed this and the grafted-equipment
+battle; no full fixture regression was run for this batch.
 
 `full-battle-original-self-attack.mt2f` captures unchanged Animus of Speed and
 four activations of its original targeted ability. The first attack deals 35
