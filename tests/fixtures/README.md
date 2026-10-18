@@ -1,8 +1,18 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 429 archives (390 full battles and
-39 component calibrations), 210/224 original relic owners (93.75%): 192 battle
+Current accepted inventory (2026-10-18): 430 archives (391 full battles and
+39 component calibrations), 211/224 original relic owners (94.20%): 193 battle
 owners, seventeen campaign-interface owners and one native no-op. The latest
+`RandomCardCostOnDraw` fixture covers its unchanged biased random-cost callback
+and original +2 draw consumer. Twenty-six draws cover all six raw RNG outcomes,
+zero/high/X costs, existing positive/negative deltas and both temporary/permanent
+full reductions. Seven unchanged costs still advance Battle RNG; fifteen redraws
+confirm discard cleanup. Two explicit null/champion controls and two natural
+champion draws preserve state/RNG. The 35-stage winning battle, two deployments,
+independent five-EndTurn suffix with sixteen immutable branches, 128-state
+serial/parallel search and eight affected archives pass. Queued-upgrade ordering
+has a pure check; native preview and arbitrary combined draw/trait callbacks
+require separate evidence. The preceding
 `MooncycleFaeAddMagicPower` fixture covers four Full/New all-room callbacks,
 eight exact temporary +5 Attack/Conduit applications, eight spawner upgrades and
 four Persistent-spell consumers of selected-floor Conduit magic power. Thirteen

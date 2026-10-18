@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **210 distinct original collectable relics / 224 catalog entries
-(93.75%)** have accepted native evidence: 192 have full-battle effect evidence,
+As of 2026-10-18, **211 distinct original collectable relics / 224 catalog entries
+(94.20%)** have accepted native evidence: 193 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2391,4 +2391,67 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moo
 dotnet run --project src/ModelChecks -c Release -- --mooncycle-fae-pure
 dotnet run --project src/ModelChecks -c Release -- --original-mooncycle-fae-only tests/fixtures/full-battle-original-mooncycle-fae.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-mooncycle-fae.mt2f
+```
+
+## RandomCardCostOnDraw
+
+| Original relic asset | Data ID | Native fixture | Accepted effect evidence |
+| --- | --- | --- | --- |
+| `RandomCardCostOnDraw` | `834f4c02-2987-469c-8634-eac97f2f67c8` | `full-battle-original-random-draw-cost.mt2f` | Both unchanged effects run: 26 random-cost callbacks cover all six biased RNG outcomes, existing cost deltas, full reductions, X costs and discard/redraw cleanup; the original +2 draw mutation produces seven-card turns. Complete native state/RNG, independent policy replay and bounded search match. |
+
+The original owner allows deployment and contains, in order,
+RelicEffectRandomCardCostOnDraw and RelicEffectChangeStartingHandSize (+2).
+The cost effect uses minimum zero, maximum four and the special bias flag.
+Its raw integer Range(0,6) maps 0/1/2/3/4/5 to 0/1/2/3/1/2. Null and champion
+cards return false before RNG. Every other card consumes one Battle RNG draw,
+including full-cost-reduction cards and draws that add no upgrade. A full
+reduction in either modifier group then forces zero; otherwise a negative
+current-cost minus raw-cost delta reduces the roll, clamped at zero. Positive
+deltas are ignored. A changed cost adds an anonymous temporary cost-only upgrade
+with RemoveOnDiscard; it does not alter the X-cost type or XCost statistic.
+
+The isolated carrier deck has two authored Stewards and a champion control.
+Their triggers/abilities are cleared; the Stewards receive an authored full
+discount before the first recorded action. Nine effect-free spell carriers are
+created in the draw pile before recording: base zero/one/three/high costs,
+negative/positive existing deltas, temporary/permanent full reductions and an
+X-cost card. Every carrier is drawn naturally. All six raw RNG outcomes occur
+across 26 positive callbacks. Seven costs stay unchanged while RNG advances;
+fifteen redraw observations contain no surviving RemoveOnDiscard upgrade from
+the prior draw. Two natural champion draws and two explicit native null/champion
+controls return false with complete state/RNG unchanged. There are thirty
+callback records in total. The explicit controls call the original effect body
+and are identified separately from natural draws.
+
+The original second effect's registered float mutation is +2, and native turn
+snapshots consume a seven-card draw count. The full winning battle records
+35 stages, two deployment actions and five EndTurns. Native DEPTH-PASS and all
+eight general/specialized capture, mismatch, unsupported and pending counters
+are zero. Independent action replay and the five-EndTurn suffix match in sixteen
+immutable branches. Search matches two decisions and six root actions, with zero
+unsupported alternatives, serial/parallel best equivalence, 128/128 states and
+three replayed steps. All eight affected archives pass with two workers and
+terminal exit zero: this owner, branch-card-mask bonus draw, first-card cost,
+opening draw, typed draw, deck-turn draw, turn draw and resource relics.
+
+Pure checks cover the exact six-roll weights, positive/negative/full reductions,
+no-change RNG, high/zero/X costs, null/champion/absent-owner paths, deployment
+permission, discard cleanup and sixteen immutable branches. A queued-cost-upgrade
+draw check verifies that upgrades precede this callback. Native preview,
+arbitrary additional draw/trait callbacks and combined relic effects require
+separate native probes; this witness does not claim complete battle coverage.
+
+The schema-233 binary archive is 28,014 bytes, with 4,084 unique nodes and SHA-256
+`9c26ef4d81299c6157e388c346d508c3831af593e880f1b93da4b77a572457af`.
+Source length/hash are zero and no JSON companion is tracked. Accepted inventory
+is 430 archives: 391 battles and 39 component calibrations. Original-owner
+coverage is 211/224 (94.20%): 193 battle, seventeen campaign and one native no-op
+owner; thirteen owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalRandomDrawCostRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-random-draw-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --random-draw-cost-pure
+dotnet run --project src/ModelChecks -c Release -- --original-random-draw-cost-only tests/fixtures/full-battle-original-random-draw-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-random-draw-cost.mt2f
 ```

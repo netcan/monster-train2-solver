@@ -1,11 +1,24 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 429 binary archives, including 390
+Current accepted inventory (2026-10-18): 430 binary archives, including 391
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 210/224 catalog entries (93.75%): 192 battle owners, 17 campaign
+covers 211/224 catalog entries (94.20%): 193 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`RandomCardCostOnDraw` now has schema-233 native evidence for both unchanged
+effects. Twenty-six draws cover all six biased RNG outcomes: 0/1/2/3/4/5 map to
+0/1/2/3/1/2 before existing reductions. Native numeric costs, complete state and
+Battle RNG match across zero/high/X cards, positive/negative deltas and both
+temporary/permanent full reductions. Seven no-change callbacks still consume
+RNG; fifteen redraws prove temporary-cost cleanup. Two explicit null/champion
+controls and two natural champion draws preserve state/RNG, and the original
++2 draw mutation produces seven-card turns. The 35-stage winning battle, two
+deployments, independent five-EndTurn suffix with sixteen immutable branches,
+128-state serial/parallel search and eight affected archives pass. Queued draw
+upgrade ordering has a pure check. Native preview, additional draw/trait
+callbacks and arbitrary combined relic effects need separate native evidence.
 
 `MooncycleFaeAddMagicPower` now has schema-232 native evidence for its unchanged
 all-room mooncycle callback. Four Full/New applications give eight friendly Fae

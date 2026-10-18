@@ -204,7 +204,7 @@
 "FreezeReduceCost"	"d2de397e-6fce-442f-a9e4-c3f3ee7bdbcf"	"accepted-native-battle"	"RelicEffectApplyCardUpgradeToHandEndOfTurn"	""
 "ReduceStarterCost"	"d892106c-dbbc-40ac-bf0b-902882cdc69d"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""
 "StartOfTurnPropagate"	"a42d2f85-7b53-4d2b-9979-5e6269b4e01c"	"accepted-native-battle"	"RelicEffectAddEffectStartOfTurn"	""
-"RandomCardCostOnDraw"	"834f4c02-2987-469c-8634-eac97f2f67c8"	"pending"	"RelicEffectRandomCardCostOnDraw,RelicEffectChangeStartingHandSize"	""
+"RandomCardCostOnDraw"	"834f4c02-2987-469c-8634-eac97f2f67c8"	"accepted-native-battle"	"RelicEffectRandomCardCostOnDraw,RelicEffectChangeStartingHandSize"	""
 "IncreaseRageDamage"	"b9bddf11-acaa-40fb-bc40-eee83e478424"	"accepted-native-battle"	"RelicEffectModifyStatusMagnitude"	""
 "LifeInsurer"	"c1ae061c-5f95-4f1d-a8f0-6e027636a81e"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "ShroomsGainSapDecay"	"3accd42e-3f82-4bf1-9026-29a624d3dde5"	"accepted-native-battle"	"RelicEffectAddTrigger"	""

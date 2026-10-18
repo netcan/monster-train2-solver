@@ -526,15 +526,20 @@ namespace MonsterTrain2Poju.Model
                 statistics = statistics?.Increment(card.InstanceId, "TimesDrawn");
             context = context.WithStatistics(statistics);
             context = WithCards(context, drawn.State!);
+            // Draw upgrades precede ICardDrawnRelicEffect and the subsequent
+            // card-added-to-hand notification in CardManager.DrawSpecificCard.
+            context = BonusDrawModel.ApplyUpgrades(context, drawn, source.PlayRules, out string? bonusError);
+            if (bonusError != null) return Unsupported(bonusError);
             foreach (CardToken card in drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)))
             {
+                var randomized = RelicRandomDrawCostModel.Apply(context, card.InstanceId, out _);
+                if (!randomized.Supported) return Unsupported(randomized.UnsupportedReason!);
+                context = randomized.Context;
                 RelicFirstCardCostResult cardAdded = RelicFirstCardCostModel.ApplyOnCardAdded(context, card.InstanceId,
                     source.PlayRules);
                 if (!cardAdded.Supported) return Unsupported(cardAdded.UnsupportedReason!);
                 context = cardAdded.Context;
             }
-            context = BonusDrawModel.ApplyUpgrades(context, drawn, source.PlayRules, out string? bonusError);
-            if (bonusError != null) return Unsupported(bonusError);
             context = ConduitModel.Drawn(context, drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)).Select(card => card.InstanceId));
             train = WithContext(train, context, false);
             if (turn == 1 && context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicTurnDrawModel.Opening)) == true)

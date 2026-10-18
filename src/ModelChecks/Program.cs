@@ -187,6 +187,17 @@ if (args.Length == 1 && args[0] == "--mooncycle-fae-pure")
     OriginalMooncycleFaeChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--random-draw-cost-pure")
+{
+    OriginalRandomDrawCostChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-random-draw-cost-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalRandomDrawCostChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-mooncycle-fae-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1912,6 +1923,7 @@ OriginalRandomFreezeChecks.Run();
 OriginalRandomHandUpgradeChecks.Run();
 OriginalStartTurnPropagationChecks.Run();
 OriginalMooncycleFaeChecks.Run();
+OriginalRandomDrawCostChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();
