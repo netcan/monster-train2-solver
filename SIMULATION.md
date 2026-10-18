@@ -52,9 +52,9 @@ RNG; a full thirty-card hand frees one slot on play, rolls twice and creates
 one card. Every pool member is reachable before sampling. Fourteen plays/five
 EndTurns and sixteen immutable full chains pass. Other destinations, upgrades,
 character fire counts and victim-targeted triggers retain explicit boundaries.
-The existing Void Excavator spawn-modifier guard remains visible in search
-(109 recorded-frontier/eight search attempts); all recorded actions are matched
-and serial/parallel best results agree. `--battle-frontier-only` diagnoses the
+The refreshed witness includes all five Morsels and last-feeder references;
+recorded frontiers and search now have zero unsupported attempts, with equal
+serial/parallel best results. `--battle-frontier-only` diagnoses the
 first rejected native decision without running the bounded search again.
 
 `full-battle-original-on-kill.mt2f` adds unchanged Bloody Moon's fixed energy

@@ -47,21 +47,21 @@ one card, preserving RNG and allocation order. Authored targets, an anchor,
 battery/filler and temporary Freeze isolate these paths. All pool definitions
 are reachable before selection, so search does not depend on the sampled card.
 Fourteen plays/five EndTurns and sixteen independent complete chains pass.
-Source `.probe-runs/full-battle-units-spells-and-junk-20261019-051738-6d1919f4`
+Source `.probe-runs/full-battle-units-spells-and-junk-20261019-053416-76b21148`
 won with all four counters zero and protected original profiles unchanged.
-Binary-only: 44,512 bytes/8,080 nodes, SHA-256
-`d28b49a44e1e1e5034d1be21fadc5cb6eb8d453c71cab640b817308f08c783a0`.
+Binary-only: 44,675 bytes/8,093 nodes, SHA-256
+`abd3fcefc02db00ddaae229b024f2575902fd7b7ccb1f3ff67604ae3c1fbd267`.
 Use `--original-on-kill-generation-only`. Character fire counts, trigger
 upgrades, other generation destinations/modifiers and victim-targeted trigger
 effects require separate native evidence.
 Independent checks pass all fourteen actions, five turns and forty room stages;
 the prior Bloody Moon's sixteen complete chains also pass. Bounded search
 matches fourteen decisions/twenty-three roots, visits 128/128 states and replays
-three steps with equal serial/parallel results. It reports 109 unsupported
-recorded-frontier attempts/eight search attempts: generated Void Excavator's
-existing `Spawned effect modifiers` boundary still blocks its unit play.
+three steps with equal serial/parallel results. The refreshed capture includes
+the five original Morsel projections and last-feeder references: there are zero
+unsupported attempts across recorded frontiers and within search.
 `--battle-frontier-only` reports the first rejected frontier without rerunning
-bounded search. This batch does not claim complete generated-unit coverage.
+bounded search. Arbitrary generated-unit interactions need separate evidence.
 
 `full-battle-original-on-kill.mt2f` captures seven unchanged Bloody Moon plays.
 Its original 25 damage/two cost refunds two energy on overkill, exact lethal

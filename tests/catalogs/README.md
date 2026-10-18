@@ -23,10 +23,16 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-045358-6ae9a971/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,962 bytes, SHA-256
-`768756337a38d700269b81a35562d711777a9d6badb35b443f38b52c5b5856ed`.
-The projection reflects revision `89f536b`. All 668 existing raw definitions
+Source: `.probe-runs/full-battle-no-cards-20261019-053844-591738ee/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,890 bytes, SHA-256
+`79ad3a4577f4196729097140b3dd70df261970e9cb9b75678f59bc4cc2ebf491`.
+The projection reflects revision `7114fef`. Original Bloody Moon and Antumbra
+Assault retain their captured card-owned kill triggers. Original Morsels retain
+last-feeder status targets and initial zero feeder references in both native
+definition templates and living food units; Void Excavator's status effect keeps its unused
+upgrade field without imposing another effect type's modifier guard. Kill-trigger
+metadata remains branch-owned; missing payloads and unsupported trigger routes
+still reject. All 668 existing raw definitions
 match the previous snapshot, including ordered status lists and Dig Deep's
 pile-status `horde` mask. Animus of Speed's original ability now projects the
 calibrated selected-target self attack with normal prevention and cooldown;
@@ -36,7 +42,7 @@ This field captures native removal and List-filter status traits; Pyreborne
 Brainspike retains `cooldown` removal and `avarice` addition separately.
 Only Dante's Inferno's specific-card damage trait has this non-null field:
 `913694e9-bace-4480-8691-24f699ae583e` (Dante's Candle). This identity is captured
-from the actual native trait data. Frame 13,997/13,997, decision and RNG are unchanged.
+from the actual native trait data. Frame 14,143/14,143, decision and RNG are unchanged.
 The surrounding native battle won with all four capture counters zero and
 the protected original files unchanged. Five original grafted equipment cards
 retain their calibrated costs, upgrades and private Severed state. Automatic
