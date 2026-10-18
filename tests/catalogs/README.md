@@ -23,10 +23,18 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-001202-b8e6c17f/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,096 bytes, SHA-256
-`5048468d039d9471d4e74b53ddbe50bd11c51b60fd53096f594af38176f94404`.
-The projection reflects revision `b1704af`: original Horn Break, Branding Rite
+Source: `.probe-runs/full-battle-no-cards-20261019-005647-830e848b/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,346 bytes, SHA-256
+`ac65867b27e0185c163c9c8331dce8c7a352d48c6c359df0f3ffe91e1aaccbf5`.
+The projection reflects revision `f8025fa`. Native Battering Ram/Bramble Lash
+queries retain the Monsters armor/spikes masks and use live selected-room units
+for zero and positive two-unit sums. Source trait descriptors retain the ordered
+status IDs and query team; older missing masks stay unverified. The catalog
+operation preserved decision state, frame 13,983 and every deterministic RNG
+stream. All 668 shared raw definitions match the previous snapshot, excluding
+Rule/ProjectionError and the two newly captured source-query fields.
+
+Original Horn Break, Branding Rite
 and Inferno piercing have native controls for all four protection stages,
 including ordinary Spell Shield precedence. Inferno Room pre-combat damage
 includes lethal cleanup, preview writes, VFX room focus, replacement and
@@ -66,6 +74,10 @@ counters and retained native state/RNG/frame; all 668 shared raw definitions
 match this frozen catalog exactly. CardState.Setup provenance is attached to
 new instance descriptors, separately from mutable runtime traits. Missing old
 provenance remains null and cannot establish direct X-scaling source matches.
+The latest snapshot also retains that provenance in nested creation rules.
+Older Fused Weaponry/Goldy Whelp captures lack this non-null nested metadata;
+their previous paths remain mechanism evidence until fresh native captures.
+The newer Battering Ram/Bramble Lash sources match their exact query masks.
 
 Recreate with an otherwise unmodified sandbox scenario:
 
