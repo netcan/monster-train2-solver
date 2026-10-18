@@ -56,8 +56,13 @@ namespace MonsterTrain2Poju.Probe
                 }
                 // CardState.GetHealth excludes positive unhealed HP, which is added
                 // only to the spawned unit's maximum health during birth.
+                // CardState's displayed attack excludes an upgrade's DamageBuff;
+                // that field only contributes after CharacterState applies it.
+                int cardAttack = rule.SpawnUnit?.BaseAttack ?? 0;
+                if (definition.SpawnUnit != null && state.Permanent.Upgrades.Concat(state.Temporary.Upgrades).Any(upgrade => upgrade.DamageBuff != 0))
+                    cardAttack = CardModifierModel.UpgradedStat(definition.SpawnUnit.BaseAttack, "Damage", true, state.Permanent, state.Temporary);
                 if (data.GetCardType() == CardType.Monster && rule.SpawnUnit != null && (card.GetSize() != rule.SpawnUnit.Size ||
-                    card.GetTotalAttackDamage() != rule.SpawnUnit.BaseAttack || (int)Math.Round(card.GetHealth()) != rule.SpawnUnit.Health))
+                    card.GetTotalAttackDamage() != cardAttack || (int)Math.Round(card.GetHealth()) != rule.SpawnUnit.Health))
                     interactions.Add("Unmodeled unit card statistics");
                 if (rule.Effect == "Spell")
                 {

@@ -588,6 +588,8 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var cardDuplicateScenario) && cardDuplicateScenario.GetString() is "card-duplicate" or "stardust-invocation")
             chooser = source => CardDuplicateChecks.Choose(source, fixture.GetProperty("CardDuplicateCardIds").Deserialize<int[]>()!,
                 fixture.GetProperty("CardDuplicateRecipientCardId").GetInt32());
+        if (fixture.TryGetProperty("AdaptiveMutationPrepared", out var adaptivePrepared) && adaptivePrepared.GetBoolean())
+            chooser = source => AdaptiveMutationChecks.Choose(source, fixture.GetProperty("AdaptiveMutationCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
             chooser = BattleActionModel.ChooseEmptySpellThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var originalUnitRelicPolicy) && originalUnitRelicPolicy.GetString() == "original-unit-relic-batch")

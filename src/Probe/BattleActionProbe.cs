@@ -27,7 +27,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
             "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits", "CardEffectDrawType",
             "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
-            "CardEffectAddCardUpgradeToUnitsPerStatusEffect",
+            "CardEffectAddCardUpgradeToUnitsPerStatusEffect", "CardEffectAddTempSwapStats",
             "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand",
             "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix"
         }, StringComparer.Ordinal);
@@ -407,6 +407,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectHealAndDamageRelative" ? "HealRelative" :
                 effect.GetEffectStateName() == "CardEffectHealTrain" ? "HealTrain" :
                 effect.GetEffectStateName() == "CardEffectSetHealth" ? "SetHealth" :
+                effect.GetEffectStateName() == "CardEffectAddTempSwapStats" ? "SwapStats" :
                 effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
                 effect.GetEffectStateName() == "CardEffectKill" ? "Kill" :
                 effect.GetEffectStateName() == "CardEffectRecursion" ? "Recursion" :

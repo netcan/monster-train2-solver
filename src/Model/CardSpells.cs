@@ -1361,6 +1361,17 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState? targetRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
                     CombatUnit? target = targetRoom?.Units.FirstOrDefault(unit => unit.Id == id);
                     if (target == null) continue;
+                    if (effect.Type == "SwapStats")
+                    {
+                        RoomCombatResult swapped = UnitStatSwapModel.Apply(targetRoom!, id, deferCallbacks: true, refreshPyre: Refresh);
+                        if (!swapped.Supported) return UnsupportedTrain(swapped.UnsupportedReason!);
+                        state = ReplaceRoom(state, swapped.State!); events.AddRange(swapped.Events); callbacks.AddRange(swapped.PendingCallbacks);
+                        foreach (CombatUnit retainedUnit in swapped.RetainedUnits) retained[retainedUnit.Id] = retainedUnit;
+                        if (swapped.Outcome != RoomOutcome.Exchanged) outcome = swapped.Outcome;
+                        if (callbacks.Count > 0) DrainDeaths();
+                        if (routingError != null) return UnsupportedTrain(routingError);
+                        continue;
+                    }
                     if (effect.Type == "SetHealth")
                     {
                         if (effect.Value > target.MaxHealth) return UnsupportedTrain("SetHealth exceeds the target's maximum health.");
@@ -2080,7 +2091,7 @@ namespace MonsterTrain2Poju.Model
                         return "Heal-relative damage requires the calibrated fixed player drop target and nonnegative heal.";
                     continue;
                 }
-                if (effect.Type == "StatusNull") continue;
+                if (effect.Type == "SwapStats" || effect.Type == "StatusNull") continue;
                 if (effect.Type == "Mix")
                 {
                     if (effect.Value < 1 || source.Context.MixState == null || source.Context.OtherPiles == null)
@@ -2260,7 +2271,8 @@ namespace MonsterTrain2Poju.Model
                 case "TransferAllStatuses": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "HealOverheal": return count > 0;
-                case "HealRelative": return count > 0;
+                case "HealRelative":
+                case "SwapStats": return count > 0;
                 case "HealTrain": return count > 0;
                 case "Sacrifice": return count > 0;
                 case "Kill": return effect.Tests?.MustHaveValidTargets != true || count > 0;

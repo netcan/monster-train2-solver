@@ -138,6 +138,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-preserve.mt2f',
     'full-battle-mass-production.mt2f',
     'full-battle-stardust-invocation.mt2f',
+    'full-battle-adaptive-mutation.mt2f',
     'full-battle-shroud-spike-feeding.mt2f',
     'full-battle-original-opening-deck-spawn.mt2f',
     'full-battle-original-perkeo.mt2f',
@@ -1656,6 +1657,13 @@ foreach ($fixturePath in $soldierFixtures) {
     foreach ($mode in @('--soldier-of-fortune-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Soldier of Fortune checks failed ($mode): $fixturePath" }
+    }
+}
+$adaptiveFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-adaptive-mutation.mt2f' })
+foreach ($fixturePath in $adaptiveFixtures) {
+    foreach ($mode in @('--adaptive-mutation-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Adaptive Mutation checks failed ($mode): $fixturePath" }
     }
 }
 $duplicateFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-mass-production.mt2f', 'full-battle-stardust-invocation.mt2f') })

@@ -1017,6 +1017,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 PreserveScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && AdaptiveMutationScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Adaptive Mutation fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                AdaptiveMutationScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && CardDuplicateScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Duplication fixture must start on deployment turn.");
@@ -1953,6 +1959,7 @@ namespace MonsterTrain2Poju.Probe
                 if (RunCardGenerationScenario.Enabled) pendingPlay = RunCardGenerationScenario.Choose(decision);
                 if (ArmamentDriveScenario.Enabled) pendingPlay = ArmamentDriveScenario.Choose(decision);
                 if (PreserveScenario.Enabled) pendingPlay = PreserveScenario.Choose(decision);
+                if (AdaptiveMutationScenario.Enabled) pendingPlay = AdaptiveMutationScenario.Choose(decision, AdaptiveMutationScenario.CardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);

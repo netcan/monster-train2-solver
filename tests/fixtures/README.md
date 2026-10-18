@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 459 archives (420 full battles and
+Current accepted inventory (2026-10-18): 460 archives (421 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,23 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-459 accepted archives. Refresh/check the index with
+460 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-adaptive-mutation.mt2f` keeps three original Adaptive Mutations.
+The injured control needs another 501 HP after the original 999-point heal;
+the swap's internal healing is silent and cancels a separate +7 damage buff.
+Healing immunity preserves the current HP used as attack, while the healer
+uses its first PostCombatHealing scalar as its new maximum HP. Anonymous
+upgrades reach both live units and their temporary spawner state. Card-face
+attack excludes the upgrade's DamageBuff, which applies to the live unit.
+Complete states/RNG, the 37-stage win (20 plays/five EndTurns), sixteen immutable
+chains and bounded search are checked. Recipients, injuries and damage buff
+are authored controls; attack replacement statuses remain explicitly guarded.
+Zero-attack death, preview and arbitrary relic combinations lack a witness.
+Binary-only: 34,828 bytes/5,671 nodes, SHA-256
+`ce2820114e757d279ca4b546e71de9ded0c773408b2c21ed9fee7cc6b81a0cec`.
+Use `-AdaptiveMutation` and `--adaptive-mutation-only`.
 
 `full-battle-stardust-invocation.mt2f` keeps two original Stardust Invocations.
 Each advances the tracked moon phase before choosing one hand copy. Native
