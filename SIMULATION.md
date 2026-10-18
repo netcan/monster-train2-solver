@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 486 binary archives, including 447
+Current accepted inventory (2026-10-19): 487 binary archives, including 448
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 486
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 487
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,18 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-unpurgable-cards.mt2f` calibrates the default Unpurgable
+marker on original Blight, Dante's Candle and Titan Curse. It has no battle
+callback, and native `CardManager.PurgeCard` does not block it. A temporary
+SelfPurge on the original Blight positively reaches Purged; ordinary played
+cards discard and preserve Pyre health. Unplayed Blight/Candle copies deal
+one/three damage, then redraw with zero play statistics before later normal
+play. The first EndTurn reduces Pyre health eighty to seventy-six. Branch
+metadata now admits temporary SelfPurge alongside Freeze; other temporary
+trait families retain their guards. Seven plays/five EndTurns and sixteen
+immutable complete chains win. Campaign purge selection and other traits
+paired with the marker remain outside this acceptance.
 
 `full-battle-original-room-status-damage.mt2f` calibrates original Battering Ram
 and Bramble Lash against live friendly armor/spikes on the selected floor.

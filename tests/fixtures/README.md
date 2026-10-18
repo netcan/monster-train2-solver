@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 486 archives (447 full battles and
+Current accepted inventory (2026-10-19): 487 archives (448 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,23 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-486 accepted archives. Refresh/check the index with
+487 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-unpurgable-cards.mt2f` retains original Blight,
+Dante's Candle and Titan Curse, with exact default Unpurgable source metadata.
+Played normal cards pay one/one/two energy and discard without Pyre punishment.
+A temporary SelfPurge on one original Blight reaches Purged despite that marker.
+Two other copies remain unplayed: one/three damage reduces Pyre eighty to
+seventy-six, then both redraw without play statistics and later play normally.
+The native marker has no battle callbacks; campaign purge selection is outside
+this witness. Other traits and temporary trait families retain their guards.
+Seven plays/five EndTurns win with sixteen immutable full chains. Binary-only:
+24,718 bytes/3,305 nodes, SHA-256
+`3cb8c850835bcc7d75e838f29c718a25fec14b88d0f6fa879d5da5ea2694d335`.
+Use `-OriginalUnpurgableCards` and `--original-unpurgable-cards-only`.
+Focused gate `.probe-runs/model-checks-20261019-010926-8e649522` passed all three
+fixtures (this witness, unplayed Pyre damage and original purge-to-exhaust).
 
 `full-battle-original-room-status-damage.mt2f` retains original Battering Ram
 and Bramble Lash at zero and positive friendly status totals. Original Branding
