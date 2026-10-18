@@ -580,6 +580,8 @@ internal static class BattleActionChecks
             chooser = source => RestorationDetonationChecks.Choose(source, fixture.GetProperty("RestorationDetonationCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("ModifierScenario", out var runGenerationScenario) && runGenerationScenario.GetString() == "run-card-generation")
             chooser = RunCardGenerationChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var armamentScenario) && armamentScenario.GetString() == "armament-drive")
+            chooser = source => ArmamentDriveChecks.Choose(source, fixture.GetProperty("ArmamentDriveCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
             chooser = BattleActionModel.ChooseEmptySpellThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var originalUnitRelicPolicy) && originalUnitRelicPolicy.GetString() == "original-unit-relic-batch")

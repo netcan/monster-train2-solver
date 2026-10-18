@@ -892,7 +892,13 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "Generate")
                 {
-                    CardGenerationResult generated = CardGenerationModel.Apply(state.Context!, effect.Generation!, sourceCardId);
+                    CardGenerationRule generation = effect.Generation!;
+                    CombatUnit[] recipients = state.Rooms.SelectMany(room => room.Units).Where(unit => targets.UnitIds.Contains(unit.Id)).ToArray();
+                    if (generation.OnlyUnequippedTargets.HasValue && recipients.Length != targets.UnitIds.Count)
+                        return UnsupportedTrain("Per-target generation includes a target outside the captured train.");
+                    CardGenerationResult generated = generation.OnlyUnequippedTargets.HasValue
+                        ? CardGenerationModel.ApplyForTargets(state.Context!, generation, recipients, sourceCardId)
+                        : CardGenerationModel.Apply(state.Context!, generation, sourceCardId);
                     if (!generated.Supported) return UnsupportedTrain(generated.UnsupportedReason!);
                     state = WithContext(state, generated.Context!);
                     if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();

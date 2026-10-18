@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 455 binary archives, including 416
+Current accepted inventory (2026-10-18): 456 binary archives, including 417
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 455
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 456
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,19 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-armament-drive.mt2f` adds unchanged Armament Drive and
+`CardEffectAddBattleCardPerTarget`. Four original casts generate zero, two,
+one and zero cards as the room changes from empty to two unequipped units,
+one equipped unit and two equipped units. Three original Crafted Equipment
+cards receive the native temporary +15 attack/+15 HP upgrade; two are played
+between casts. All four sources Consume. Complete states/RNG, the 38-stage win
+(21 plays/five EndTurns), sixteen independent chains and bounded search match.
+Use `-ArmamentDrive` and `--armament-drive-only`. Recipients are authored; the
+spell and equipment definitions are unchanged. Missing target/equipment
+metadata, targets outside the captured train and generation above 4096 cards
+are guarded. Unit-trigger placement and arbitrary pool/relic combinations are
+outside this witness.
 
 `full-battle-run-card-generation.mt2f` covers unchanged Annihilate Room Damage
 stages one and two, permanent `CardEffectAddRunCard` generation, and its

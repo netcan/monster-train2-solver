@@ -750,6 +750,8 @@ namespace MonsterTrain2Poju.Probe
                 RestorationDetonationCardIds = RestorationDetonationScenario.HealCardIds,
                 RestorationDetonationRecords = RestorationDetonationScenario.Records,
                 RunCardGenerationPrepared = RunCardGenerationScenario.Prepared,
+                ArmamentDrivePrepared = ArmamentDriveScenario.Prepared,
+                ArmamentDriveCardIds = ArmamentDriveScenario.CardIds,
                 ForcedFeeding = ForcedFeedingScenario.Enabled,
                 ShroudSpikeFeeding = ForcedFeedingScenario.ScalingMode,
                 ForcedFeedingDeploymentRejected = ForcedFeedingScenario.DeploymentRejected,

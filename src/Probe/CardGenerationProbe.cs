@@ -60,8 +60,9 @@ namespace MonsterTrain2Poju.Probe
             var discard = AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetCardUpgradesOnAddCardToDiscardPile()
                 .Select(item => new DiscardGenerationUpgrade(item.UpgradeToCheck == null ? "" : item.UpgradeToCheck.GetID(), Upgrade(item.UpgradeToAdd))).ToArray();
             return new CardGenerationRule(((CardPile)data.GetParamInt()).ToString(), data.GetAdditionalParamInt(),
-                pool.Select(Creation).ToArray(), data.GetParamBool2(), data.GetParamBool(), data.GetCopyModifiersFromSource(),
-                data.GetIgnoreTempModifiersFromSource(), optional, discard, interactions);
+                pool.Select(Creation).ToArray(), data.GetEffectStateName() == "CardEffectAddBattleCard" && data.GetParamBool2(),
+                data.GetParamBool(), data.GetCopyModifiersFromSource(), data.GetIgnoreTempModifiersFromSource(), optional, discard, interactions,
+                onlyUnequippedTargets: data.GetEffectStateName() == "CardEffectAddBattleCardPerTarget" ? (bool?)data.GetParamBool2() : null);
         }
         private static CardUpgradeModifier Upgrade(CardUpgradeData data)
         { var state = new CardUpgradeState(); state.Setup(data); return CardModifierProbe.Upgrade(state); }

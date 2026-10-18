@@ -140,6 +140,7 @@ namespace MonsterTrain2Poju.Probe
             public CardGenerationResult Predicted { get; set; } = null!;
             public CombatContext? Actual { get; set; }
             public string? Difference { get; set; }
+            public CombatUnit[]? Targets { get; set; }
         }
         private static IEnumerator Wrap(IEnumerator native, CardEffectState state, CardEffectParams parameters)
         {
@@ -152,7 +153,15 @@ namespace MonsterTrain2Poju.Probe
                     CardState? source = parameters.selfTarget?.GetSpawnerCard() ?? parameters.playedCard;
                     record = new Record { Origin = parameters.selfTarget == null ? "Spell" : "Unit", SourceCardId = source == null ? 0 : trace.CardId(source),
                         Rule = CardGenerationProbe.Definition(state), Before = trace.CaptureContext() };
-                    record.Predicted = CardGenerationModel.Apply(record.Before, record.Rule, record.SourceCardId); Records.Add(record);
+                    if (record.Rule.OnlyUnequippedTargets.HasValue)
+                    {
+                        TrainCombatState train = trace.CaptureTrain();
+                        record.Targets = parameters.targets.Select(target => train.Rooms.SelectMany(room => room.Units)
+                            .Single(unit => unit.Id == trace.UnitId(target))).ToArray();
+                    }
+                    record.Predicted = record.Targets == null ? CardGenerationModel.Apply(record.Before, record.Rule, record.SourceCardId)
+                        : CardGenerationModel.ApplyForTargets(record.Before, record.Rule, record.Targets, record.SourceCardId);
+                    Records.Add(record);
                 }
             }
             catch (Exception error) { FullBattleTrace.Active?.CaptureFailure(error); }
@@ -188,6 +197,14 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
             {
                 if (RunCardGenerationScenario.Enabled) __result = Wrap(__result, cardEffectState, cardEffectParams);
+            }
+        }
+        [HarmonyPatch(typeof(CardEffectAddBattleCardPerTarget), nameof(CardEffectAddBattleCardPerTarget.ApplyEffect))]
+        private static class TargetGenerationPatch
+        {
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+            {
+                if (ArmamentDriveScenario.Enabled) __result = Wrap(__result, cardEffectState, cardEffectParams);
             }
         }
     }

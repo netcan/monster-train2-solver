@@ -134,6 +134,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-soldier-of-fortune.mt2f',
     'full-battle-restoration-detonation.mt2f',
     'full-battle-run-card-generation.mt2f',
+    'full-battle-armament-drive.mt2f',
     'full-battle-shroud-spike-feeding.mt2f',
     'full-battle-original-opening-deck-spawn.mt2f',
     'full-battle-original-perkeo.mt2f',
@@ -1652,6 +1653,13 @@ foreach ($fixturePath in $soldierFixtures) {
     foreach ($mode in @('--soldier-of-fortune-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Soldier of Fortune checks failed ($mode): $fixturePath" }
+    }
+}
+$armamentFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-armament-drive.mt2f' })
+foreach ($fixturePath in $armamentFixtures) {
+    foreach ($mode in @('--armament-drive-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Armament Drive checks failed ($mode): $fixturePath" }
     }
 }
 $runGenerationFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-run-card-generation.mt2f' })

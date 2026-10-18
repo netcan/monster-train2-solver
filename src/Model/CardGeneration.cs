@@ -67,6 +67,7 @@ namespace MonsterTrain2Poju.Model
         public bool UpgradeIsPermanent { get; }
         public bool? Permanent { get; }
         public bool? IgnoreIfEphemeral { get; }
+        public bool? OnlyUnequippedTargets { get; }
         public int? SelectedPoolIndex { get; }
         public IReadOnlyList<bool>? PoolEligibility { get; }
         public IReadOnlyList<string>? ChampionCardDataIds { get; }
@@ -76,23 +77,28 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<DiscardGenerationUpgrade>? discardCopyUpgrades = null, IReadOnlyList<string>? externalInteractions = null,
             bool deterministicPoolSelection = false, bool requireCopyableSource = false, bool upgradeIsPermanent = false,
             bool? permanent = null, int? selectedPoolIndex = null, IReadOnlyList<bool>? poolEligibility = null,
-            IReadOnlyList<string>? championCardDataIds = null, bool? ignoreIfEphemeral = null)
+            IReadOnlyList<string>? championCardDataIds = null, bool? ignoreIfEphemeral = null, bool? onlyUnequippedTargets = null)
         { Destination = destination; Count = count; Pool = Array.AsReadOnly(pool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
             RequireHandSpace = requireHandSpace; CopyModifiers = copyModifiers; IgnoreTemporaryModifiers = ignoreTemporaryModifiers; Upgrade = upgrade;
             DiscardCopyUpgrades = Array.AsReadOnly((discardCopyUpgrades ?? Array.Empty<DiscardGenerationUpgrade>()).ToArray());
             ExternalInteractions = Array.AsReadOnly((externalInteractions ?? Array.Empty<string>()).ToArray());
             DeterministicPoolSelection = deterministicPoolSelection; RequireCopyableSource = requireCopyableSource;
             UpgradeIsPermanent = upgradeIsPermanent; Permanent = permanent; IgnoreIfEphemeral = ignoreIfEphemeral; SelectedPoolIndex = selectedPoolIndex;
+            OnlyUnequippedTargets = onlyUnequippedTargets;
             PoolEligibility = poolEligibility == null ? null : Array.AsReadOnly(poolEligibility.ToArray());
             ChampionCardDataIds = championCardDataIds == null ? null : Array.AsReadOnly(championCardDataIds.Distinct(StringComparer.Ordinal).ToArray()); }
         public bool ShouldSerializePoolEligibility() => PoolEligibility != null;
         internal CardGenerationRule WithSelectedPoolIndex(int index) => new(Destination, Count, Pool, SkipDuplicateInHand,
             RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades, ExternalInteractions,
-            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index, PoolEligibility, ChampionCardDataIds, IgnoreIfEphemeral);
+            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index, PoolEligibility, ChampionCardDataIds, IgnoreIfEphemeral, OnlyUnequippedTargets);
         internal CardGenerationRule WithPoolEligibility(IReadOnlyList<bool> eligibility) => new(Destination, Count, Pool,
             SkipDuplicateInHand, RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades,
             ExternalInteractions, DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent,
-            SelectedPoolIndex, eligibility, ChampionCardDataIds, IgnoreIfEphemeral);
+            SelectedPoolIndex, eligibility, ChampionCardDataIds, IgnoreIfEphemeral, OnlyUnequippedTargets);
+        internal CardGenerationRule ForTargetCount(int count) => new(Destination, count, Pool, SkipDuplicateInHand,
+            RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades, ExternalInteractions,
+            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, SelectedPoolIndex,
+            PoolEligibility, ChampionCardDataIds, IgnoreIfEphemeral);
     }
 
     public sealed class CardGenerationResult
@@ -173,12 +179,26 @@ namespace MonsterTrain2Poju.Model
         public static CardGenerationResult Apply(CombatContext source, CardGenerationRule rule, int sourceCardId = 0)
             => Apply(source, rule, sourceCardId, false);
 
+        public static CardGenerationResult ApplyForTargets(CombatContext source, CardGenerationRule rule,
+            IReadOnlyList<CombatUnit> targets, int sourceCardId = 0)
+        {
+            if (!rule.OnlyUnequippedTargets.HasValue) return Unsupported("Missing per-target generation rule.");
+            if (rule.OnlyUnequippedTargets.Value && targets.Any(unit => unit.EquipmentCards == null))
+                return Unsupported("Unequipped generation requires captured equipment membership.");
+            int count = targets.Count(unit => !rule.OnlyUnequippedTargets.Value || unit.EquipmentCards!.Count == 0);
+            if (count == 0) return new CardGenerationResult(source, Array.Empty<CardToken>());
+            long total = (long)Math.Max(1, rule.Count) * count;
+            if (total > 4096) return Unsupported("Per-target generation exceeds the calibrated allocation bound.");
+            return Apply(source, rule.ForTargetCount((int)total), sourceCardId);
+        }
+
         internal static CardGenerationResult ApplyPartFactory(CombatContext source, CardGenerationRule rule)
             => Apply(source, rule, 0, true);
 
         private static CardGenerationResult Apply(CombatContext source, CardGenerationRule rule, int sourceCardId,
             bool allowDeferredGraftedSpawnCard)
         {
+            if (rule.OnlyUnequippedTargets.HasValue) return Unsupported("Per-target generation requires captured target units.");
             if (rule.IgnoreIfEphemeral == true && source.FindCard(sourceCardId) is CardInstanceState parent &&
                 CardBranchMaskModel.Resolve(parent).Traits.Contains("CardTraitEphemeral"))
                 return new CardGenerationResult(source, Array.Empty<CardToken>());

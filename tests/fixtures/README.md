@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 455 archives (416 full battles and
+Current accepted inventory (2026-10-18): 456 archives (417 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,21 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-455 accepted archives. Refresh/check the index with
+456 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-armament-drive.mt2f` preserves four original Armament Drives.
+Empty, two unequipped, one equipped and all equipped targets generate 0/2/1/0
+cards. Three unchanged Crafted Equipment definitions receive the native
+temporary +15 attack/+15 HP upgrade, and two are equipped between casts. All
+four original spells Consume. Authored recipients supply durable hosts.
+Full states/RNG, the 38-stage win (21 plays/five EndTurns), sixteen independent
+chains and bounded search match with zero errors. Missing target/equipment
+metadata, targets outside the captured train and counts above 4096 are guarded;
+unit-trigger placement and arbitrary pool/relic combinations are not covered.
+Binary-only: 35,376 bytes/5,829 nodes, SHA-256
+`8c70f100a0604b8ded09fc14ffa4cee80080bfd61912d77ef4cc017fb3cd1f52`.
+Use `-ArmamentDrive` and `--armament-drive-only`.
 
 `full-battle-run-card-generation.mt2f` exercises original Annihilate Room Damage
 stages one and two and permanent generation to all five piles. Authored
