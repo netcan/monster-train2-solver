@@ -20,17 +20,17 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 50 | 53 | No captured projection guards; at least one successful native play has the same captured definition projection. |
-| mechanism-only | 384 | 456 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
+| direct-native-play | 53 | 56 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| mechanism-only | 381 | 453 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
 | partial | 129 | 147 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 12 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
 
 These are evidence labels, not whole-card completion claims. A directly matched play proves that captured path; it does not prove every target, upgrade, relic combination, trigger or future branch. Indirect witnesses may execute an effect with no target; presence in a played chain is not a positive test of every parameter. The definition projection is conservative but is not a full raw-asset checksum.
 
-Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge with matching native definition parameters, and calibrated IgnoreArmor/ExhaustState traits with exact default raw parameters and captured runtime/declared identity. Original Consume witnesses distinguish played exhaustion from unplayed discard/redraw. Other traits need separate original-card calibration and are not promoted from rule equality alone. A shared DataId alone never establishes direct coverage. Upgrades on an instance do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically classified as original-card evidence.
+Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge with matching native definition parameters, and calibrated IgnoreArmor/ExhaustState/StrongerMagicPower traits with exact accepted raw parameters and captured runtime/declared identity. Original Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower witnesses cover raw Int zero/five variants and zero/five room power for damage and healing. Other traits need separate original-card calibration and are not promoted from rule equality alone. A shared DataId alone never establishes direct coverage. Upgrades on an instance do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically classified as original-card evidence.
 
-Across all classifications, 53 identities (50 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Across all classifications, 56 identities (53 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 
@@ -39,7 +39,7 @@ Across all classifications, 53 identities (50 logbook) have at least one definit
 - [Unplayed-trigger evidence](card-trigger-evidence.tsv): matched EndTurns with a positive new-copy or existing-spell-upgrade observation, source identity and zero-based `Turns` index. These supply mechanism evidence and do not count as direct card plays. Playing a card alone does not establish its unplayed trigger.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 441 full battles and 7380 native actions whose captured prediction is supported, actual state exists and difference is null. 347 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 442 full battles and 7388 native actions whose captured prediction is supported, actual state exists and difference is null. 347 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 

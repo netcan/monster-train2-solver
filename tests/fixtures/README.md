@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 481 archives (442 full battles and
+Current accepted inventory (2026-10-19): 482 archives (443 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,24 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-481 accepted archives. Refresh/check the index with
+482 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-strong-magic-cards.mt2f` retains original Cosmic Bolt,
+Duality, RIP and Planetarium. Zero/five room power gives damage 35/60 for
+Cosmic Bolt and healing 10/35 for Duality; RIP deals fifty to a damaged unit
+then adds three Dazed. The two original raw trait Int variants (zero/five)
+both use the native constant five multiplier. Costs and outside-floor health
+are checked. Duality exposed and fixed a target-team bug: selection must combine
+its enemy-damage and friendly-heal branches before testing effects separately.
+A negative control retains rejection for a spell with only the enemy branch.
+Eight plays, five EndTurns and sixteen immutable full chains win at Pyre 79.
+The witness covers Duality's healing branch; enemy damage combinations still
+need their own native paths. Binary-only: 26,579 bytes/3,682 nodes, SHA-256
+`5cfc36d9fb8422fd7172086da580ae7d358b009c8889c01e35aec41c6052b55f`.
+Use `-OriginalStrongMagicCards` and `--original-strong-magic-cards-only`.
+Focused strong-magic/Planetarium/target-filter gate:
+`.probe-runs/model-checks-20261019-002645-f35a482b/summary.json` (three passed).
 
 `full-battle-original-consume-cards.mt2f` retains unchanged Rage Serum,
 Liquid Courage, Quenching Oil, Spike Potion, Space Prism, Magic Juice and

@@ -456,9 +456,11 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit? victim = target.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
                 if (victim == null || victim.IsPyre || victim.Statuses.Any(status => status.Id == "untouchable"))
                     return Illegal("The card has no legal unit target in the selected room.");
-                CardActionEffect? targeted = actionEffects.FirstOrDefault(effect => effect.Target == "DropTargetCharacter" && effect.Type != "HandUpgrade");
-                if (targeted != null && (victim.Team == CombatTeam.Enemy && !targeted.AllowEnemy ||
-                    victim.Team == CombatTeam.Player && !targeted.AllowPlayer)) return Illegal("The card excludes the target team.");
+                CardActionEffect[] targeted = actionEffects.Where(effect => effect.Target == "DropTargetCharacter" && effect.Type != "HandUpgrade").ToArray();
+                // Duality's damage and healing select opposite teams. Native
+                // combines their teams, then tests/applies each effect separately.
+                if (targeted.Length > 0 && !targeted.Any(effect => victim.Team == CombatTeam.Enemy ? effect.AllowEnemy : effect.AllowPlayer))
+                    return Illegal("The card excludes the target team.");
             }
             else if (action.TargetUnitId != 0) return Illegal("This card does not take a unit target.");
             string? membershipError = CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId);

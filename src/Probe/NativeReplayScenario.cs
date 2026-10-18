@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalStrongMagicCardsScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original strong-magic fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalStrongMagicCardsScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalConsumeCardsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Consume fixture must start on deployment turn.");
@@ -2107,6 +2113,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalPiercingCardsScenario.Enabled) pendingPlay = OriginalPiercingCardsScenario.Choose(decision, OriginalPiercingCardsScenario.CardIds);
                 if (InfernoRoomScenario.Enabled) pendingPlay = InfernoRoomScenario.Choose(decision, InfernoRoomScenario.CardIds);
                 if (OriginalConsumeCardsScenario.Enabled) pendingPlay = OriginalConsumeCardsScenario.Choose(decision, OriginalConsumeCardsScenario.CardIds);
+                if (OriginalStrongMagicCardsScenario.Enabled) pendingPlay = OriginalStrongMagicCardsScenario.Choose(decision, OriginalStrongMagicCardsScenario.CardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);

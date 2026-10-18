@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 481 binary archives, including 442
+Current accepted inventory (2026-10-19): 482 binary archives, including 443
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 481
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 482
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,16 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-strong-magic-cards.mt2f` compares original Cosmic Bolt
+damage 35/60 and Duality healing 10/35 at zero/five room power, using original
+Planetarium. Original RIP deals fifty and adds three Dazed to a damaged target.
+The raw StrongerMagicPower Int zero/five variants both return a fixed multiplier
+of five. Duality's friendly branch exposed a first-effect-only target-team
+check; selection now combines targeted effect teams, with separate effect
+tests/application and a single-team negative control. Costs, outside-floor
+health and sixteen immutable eight-play/five-EndTurn chains are checked.
+Other uncalibrated source traits and whole-card branches remain explicit gaps.
 
 `full-battle-original-consume-cards.mt2f` calibrates original Consume source
 metadata with seven unchanged definitions and eight actual spell plays. Played
