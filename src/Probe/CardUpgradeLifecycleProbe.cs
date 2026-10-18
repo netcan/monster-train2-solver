@@ -42,7 +42,8 @@ namespace MonsterTrain2Poju.Probe
             bool conversion = data.GetTrigger().ToString() == "OnUnplayedPositive" && effects.Length == 1 &&
                 effects[0].GetEffectStateName() == "CardEffectBalatroConvertCard" && effects[0].GetParamInt() == 1;
             bool supportedKill = data.GetTrigger() == CardTriggerType.OnKill && data.GetTriggerEffects().Count == 0 &&
-                effects.Length == 1 && effects[0].GetEffectStateName() is "CardEffectGainEnergy" or "CardEffectAddBattleCard" or "CardEffectAddUpgradedCopy" && interactions.Count == 0;
+                effects.Length == 1 && effects[0].GetEffectStateName() is "CardEffectGainEnergy" or "CardEffectAddBattleCard" or "CardEffectAddUpgradedCopy" or
+                    "CardEffectRewardGold" or "CardEffectAdjustDragonsHoard" or "CardEffectAdjustForgePoints" && interactions.Count == 0;
             if (data.GetTrigger().ToString() != "OnCast" && !conversion && !supportedKill) interactions.Add("Unsupported card upgrade trigger " + data.GetTrigger());
             return new CardLifecycleTrigger(data.GetTrigger().ToString(), data.GetDescriptionKey(),
                 effects.Select(effect => effect.GetEffectStateName()).ToArray(), id, actions, interactions.Distinct().ToArray(),

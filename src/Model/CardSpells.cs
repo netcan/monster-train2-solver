@@ -2286,7 +2286,7 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        private static string? ValidateHoardRefresh(IEnumerable<CombatUnit> units, CombatContext? context,
+        internal static string? ValidateHoardRefresh(IEnumerable<CombatUnit> units, CombatContext? context,
             IReadOnlyList<CardActionEffect> effects)
         {
             if (context?.QueryFrame?.DragonsHoard is not int current || context.Resources?.DragonsHoardCap is not int cap || cap < 0)

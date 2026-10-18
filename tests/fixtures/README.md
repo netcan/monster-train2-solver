@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 520 archives (480 full battles and
+Current accepted inventory (2026-10-19): 523 archives (483 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -16,6 +16,33 @@ definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
 520 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+Three original card-owned resource kill witnesses share
+`--original-kill-resources-only` with separate native controls. Greed deals room
+damage and rewards two then three lethal hits (+50 gold total); Golden Touch
+gains one Hoard per lethal hit until its captured cap; Bonk gains three Forge
+Points per lethal hit. Undying revival still rewards a lethal hit, while shield
+and nonlethal damage do not. Resources, neighboring rooms, discard and energy
+remain independent. Source-card Forge scaling and synchronous gold/Pyre refresh
+reuse the calibrated resource models. Trigger-only effects now capture raw
+resource inputs; missing metadata and active Hoard-scaled unit refresh reject.
+All three native runs won with five EndTurns, zero capture/mismatch/unsupported/
+pending counters and unchanged protected files. Sixteen full immutable chains
+pass for each, together with Bloody Moon and Surgical Strike focused checks.
+Search has zero unsupported attempts and equal serial/parallel best for each.
+
+- `full-battle-original-kill-hoard.mt2f`: Golden Touch, 13 plays, native source
+  `full-battle-units-spells-and-junk-20261019-055827-039faaa4` (57.47 seconds),
+  34,946 bytes/5,490 nodes, SHA-256
+  `3ebd944f3bd45a840d3b79947fada59d6f8e62a3896bef1e1915bc5d16e79358`.
+- `full-battle-original-kill-forge.mt2f`: Bonk, 13 plays, native source
+  `full-battle-units-spells-and-junk-20261019-055931-640f2daf` (59.23 seconds),
+  34,610 bytes/5,438 nodes, SHA-256
+  `a20f9cb2b4daff0e504be66467eab311d40b5c373ad22d989d632810df95b4c6`.
+- `full-battle-original-kill-gold.mt2f`: Greed, 8 plays, native source
+  `full-battle-units-spells-and-junk-20261019-060037-2e5ea03e` (49.23 seconds),
+  31,451 bytes/4,602 nodes, SHA-256
+  `aa0acff0f3ad855b4af10697521f501bb85114e043fb8e2c3ede0979b86b8826`.
 
 `full-battle-original-kill-copy.mt2f` captures six unchanged Surgical Strike
 plays and one generated copy. Native OnKill suppression requires both Monsters

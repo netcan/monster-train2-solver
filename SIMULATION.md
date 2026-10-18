@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 520 binary archives, including 480
+Current accepted inventory (2026-10-19): 523 binary archives, including 483
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 520
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 523
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,17 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+Three `full-battle-original-kill-{gold,hoard,forge}.mt2f` witnesses add unchanged
+Greed, Golden Touch and Bonk. Fixed card-owned OnKill effects apply resources
+once per lethal hit, including Undying revival, and skip positive nonlethal and
+shield-blocked controls. Greed's two room spells reward two then three kills;
+Golden Touch reaches its captured Hoard cap and retains it on further kills;
+Bonk keeps the source-card Forge Points calculation. Resource capture includes
+trigger-only effects, and gold dispatches the existing synchronous Pyre refresh.
+Native plays (8/13/13), five EndTurns each and sixteen immutable complete chains
+match. Missing resource metadata and active Hoard-scaled unit refresh remain
+guarded. These use focused checks rather than a repeated full regression.
 
 `full-battle-original-kill-copy.mt2f` adds Surgical Strike's card-owned self-copy
 and native Monsters/FunGuy-only kill suppression. Ordinary friendly/enemy kills

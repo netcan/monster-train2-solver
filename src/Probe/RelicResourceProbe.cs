@@ -69,12 +69,18 @@ namespace MonsterTrain2Poju.Probe
             CardManager? cards = managers.GetCardManager();
             CardEffectState[] cardEffects = cards == null ? Array.Empty<CardEffectState>() :
                 cards.GetAllCards(new List<CardState>()).SelectMany(card => card.GetEffectStates()).ToArray();
+            // A resource effect can live only in a card trigger, with no matching
+            // main effect. Keep its raw save/balance inputs after the card leaves hand.
+            string[] triggerEffects = cards == null ? Array.Empty<string>() : cards.GetAllCards(new List<CardState>())
+                .SelectMany(card => card.GetCardTriggers()).SelectMany(trigger => trigger.GetCardEffects())
+                .Select(effect => effect.GetEffectStateName()).ToArray();
             bool dragonHoardCards = cardEffects
                 .Any(effect => effect.GetCardEffect() is IDragonsHoardCardEffect ||
-                    effect.GetCardEffect() is CardEffectRewardGoldPerDragonHoard);
+                    effect.GetCardEffect() is CardEffectRewardGoldPerDragonHoard) ||
+                triggerEffects.Contains("CardEffectAdjustDragonsHoard") || triggerEffects.Contains("CardEffectRewardGoldPerDragonHoard");
             bool trainHealCards = cardEffects.Any(effect => effect.GetCardEffect() is CardEffectHealTrain);
             runCardResourceObserved |= cardEffects.Any(effect => effect.GetCardEffect() is CardEffectAddRunCard);
-            goldRewardResourceObserved |= cardEffects.Any(effect => effect.GetCardEffect() is CardEffectRewardGold);
+            goldRewardResourceObserved |= cardEffects.Any(effect => effect.GetCardEffect() is CardEffectRewardGold) || triggerEffects.Contains("CardEffectRewardGold");
             dragonHoardResourceObserved |= dragonHoardCards;
             trainHealResourceObserved |= trainHealCards;
             grosMichelResourceObserved |= Current(managers).Any(owner => owner.GetRelicDataID() == RelicEndCombatModel.GrosMichelId);

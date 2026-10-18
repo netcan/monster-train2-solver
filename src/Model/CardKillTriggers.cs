@@ -14,6 +14,11 @@ namespace MonsterTrain2Poju.Model
                 trigger.Actions[0].Range != null) return false;
             CardActionEffect effect = trigger.Actions[0];
             CardGenerationRule? generation = effect.Generation;
+            // These effects ignore the character target list, including its team flags.
+            if (effect.Target == "Room" && effect.Value > 0 &&
+                (trigger.Effects.SequenceEqual(new[] { "CardEffectRewardGold" }) && effect.Type == "RewardGold" && effect.GoldCostRequired.HasValue ||
+                 trigger.Effects.SequenceEqual(new[] { "CardEffectAdjustDragonsHoard" }) && effect.Type == "AdjustDragonsHoard" ||
+                 trigger.Effects.SequenceEqual(new[] { "CardEffectAdjustForgePoints" }) && effect.Type == ForgePointsModel.Effect)) return true;
             if (trigger.Effects.SequenceEqual(new[] { "CardEffectAddUpgradedCopy" }))
                 // This native effect ignores the character target list and copies playedCard.
                 return effect.Type == "GenerateUpgradedCopy" && effect.Target == "LastTargetedCharacters" && generation != null &&
@@ -46,7 +51,7 @@ namespace MonsterTrain2Poju.Model
             var triggers = card.MaskDescriptor?.KillTriggers;
             if (triggers == null || triggers.Count == 0) return null;
             if (card.MaskDescriptor!.Definition.CardType != "Spell" || triggers.Any(trigger => !Supported(trigger)))
-                return "Uncalibrated card OnKill payload; only fixed spell energy, hand-pool generation and temporary hand self-copies are supported.";
+                return "Uncalibrated card OnKill payload; only fixed spell resources, hand-pool generation and temporary hand self-copies are supported.";
             if (triggers.Any(trigger => trigger.Actions[0].Type == "GenerateUpgradedCopy") &&
                 (descriptor!.Definition.HasStartingUpgrades != false || descriptor.Purified || descriptor.PermanentGraft || descriptor.AuthoredCastEffects.Count != 0 ||
                  descriptor.PermanentReplacements.Count != 0 || card.EffectCounters?.Count > 0 ||
@@ -57,7 +62,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static CombatContext Apply(CombatContext context, CardInstanceState card, bool preview, bool deployment,
-            int attackerUnitId, CombatUnit dying, out string? error)
+            int attackerUnitId, CombatUnit dying, System.Collections.Generic.IReadOnlyList<CombatUnit> activeUnits,
+            Func<CombatContext, RelicPyreAttackRefreshResult> refreshGold, out string? error)
         {
             error = Validate(card);
             if (error != null) return context;
@@ -81,11 +87,41 @@ namespace MonsterTrain2Poju.Model
                 { error = "Deployment card OnKill requires captured disallowed-trigger rules."; return context; }
                 if (deployment && trigger.DeploymentAllowed == false) continue;
                 CardActionEffect effect = trigger.Actions[0];
+                if (effect.Type is "RewardGold" or "AdjustDragonsHoard" or ForgePointsModel.Effect)
+                {
+                    if (context.EnergyState?.PyreAlive == null) { error = "Card OnKill resources require captured Pyre liveness."; return context; }
+                    if (context.EnergyState.PyreAlive == false) continue;
+                }
                 if (effect.Type == "GainEnergy")
                 {
                     error = EnergyModel.Validate(context);
                     if (error != null) return context;
                     context = EnergyModel.Apply(context, "GainEnergy", effect.Value);
+                }
+                else if (effect.Type == "RewardGold")
+                {
+                    if (context.Resources == null) { error = "Card OnKill gold requires captured gold reward rules."; return context; }
+                    int reward = GoldRewardModel.Adjust(effect.Value, multiplier: context.Resources.GoldRewardMultiplier);
+                    if (reward != 0)
+                    {
+                        var refreshed = refreshGold(context.WithGold(Math.Max(0, unchecked(context.Gold + reward))));
+                        if (!refreshed.Supported) { error = refreshed.UnsupportedReason; return context; }
+                        context = refreshed.Context!;
+                    }
+                }
+                else if (effect.Type == "AdjustDragonsHoard")
+                {
+                    if (context.QueryFrame?.DragonsHoard is not int current || context.Resources?.DragonsHoardCap is not int cap || cap < 0)
+                    { error = "Card OnKill Dragon's Hoard requires captured current amount and cap."; return context; }
+                    error = CardSpellModel.ValidateHoardRefresh(activeUnits, context, new[] { effect });
+                    if (error != null) return context;
+                    context = context.WithQueryFrame(context.QueryFrame.With(dragonsHoard: Math.Clamp(unchecked(current + effect.Value), 0, cap)));
+                }
+                else if (effect.Type == ForgePointsModel.Effect)
+                {
+                    ForgePointsResult changed = ForgePointsModel.Apply(context, effect.Value, card.InstanceId, deployment, preview);
+                    if (!changed.Supported) { error = changed.UnsupportedReason; return context; }
+                    context = changed.Context!;
                 }
                 else if (effect.Type == "GenerateUpgradedCopy")
                 {

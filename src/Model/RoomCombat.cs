@@ -2417,7 +2417,9 @@ namespace MonsterTrain2Poju.Model
                     if (unsupportedReason != null) return;
                     CardInstanceState killSource = context.FindCard(sourceCardId)!;
                     context = CardKillTriggerModel.Apply(context, killSource, source.Preview, source.Deployment,
-                        actor?.Source.Id ?? 0, target.Freeze(), out string? killError);
+                        actor?.Source.Id ?? 0, target.Freeze(), units.Select(unit => unit.Freeze()).Concat(
+                            context.Enchantments?.Rooms.SelectMany(room => room.Units) ?? Array.Empty<CombatUnit>()).ToArray(),
+                        RefreshGold, out string? killError);
                     if (killError != null) { unsupportedReason = killError; return; }
                 }
                 if (!target.Alive && !target.DeathFinished)
@@ -3411,13 +3413,19 @@ namespace MonsterTrain2Poju.Model
             private void RefreshPyreAfterGold()
             {
                 if (context?.Resources == null) return;
-                WorkingUnit? local = units.FirstOrDefault(unit => unit.Source.IsPyre && !unit.Destroyed);
-                RelicPyreAttackRefreshResult refreshed = local != null
-                    ? RelicResourceModel.RefreshPyreAttack(context, local.Freeze(), source.Deployment)
-                    : refreshPyre?.Invoke(context, source.Deployment) ?? new RelicPyreAttackRefreshResult(context, null);
+                RelicPyreAttackRefreshResult refreshed = RefreshGold(context);
                 if (!refreshed.Supported) { unsupportedReason = refreshed.UnsupportedReason; return; }
                 context = refreshed.Context;
-                if (local != null && refreshed.Pyre != null) local.Apply(refreshed.Pyre);
+            }
+
+            private RelicPyreAttackRefreshResult RefreshGold(CombatContext next)
+            {
+                WorkingUnit? local = units.FirstOrDefault(unit => unit.Source.IsPyre && !unit.Destroyed);
+                RelicPyreAttackRefreshResult refreshed = local != null
+                    ? RelicResourceModel.RefreshPyreAttack(next, local.Freeze(), source.Deployment)
+                    : refreshPyre?.Invoke(next, source.Deployment) ?? new RelicPyreAttackRefreshResult(next, null);
+                if (refreshed.Supported && local != null && refreshed.Pyre != null) local.Apply(refreshed.Pyre);
+                return refreshed;
             }
 
             private SpawnPointReference? SummonSourcePoint(WorkingUnit actor)
