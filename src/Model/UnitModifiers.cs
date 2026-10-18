@@ -112,8 +112,10 @@ namespace MonsterTrain2Poju.Model
             foreach (CombatStatus status in upgrade.Statuses)
             {
                 if (status.Stacks <= 0) continue;
+                // OnStacksAdded creates the Mageblade cache after admission.
+                CombatUnit statusTemplate = StatusAttackDamageModel.PrepareBirthTemplate(target, new[] { status });
                 error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
-                    new[] { CardSpellModel.Copy(target, target.Health, target.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray()) },
+                    new[] { CardSpellModel.Copy(statusTemplate, target.Health, target.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray()) },
                     Array.Empty<string>(), source.Context, source.Preview, source.ActiveCompanionBossIds),
                     allowDyingTarget ? targetId : (int?)null);
                 if (error != null) return Unsupported(error);
@@ -253,7 +255,7 @@ namespace MonsterTrain2Poju.Model
                         bool removingStatus = remove || status.Stacks < 0;
                         if (removingStatus && existing == null && target.RegisteredStatus(status.Id) == null) continue;
                         if (!removingStatus && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
-                        if (!removingStatus && (status.Id == "conduit" || nextModifiers.DamageBuffFromStatusEffects.HasValue ||
+                        if (!removingStatus && (status.Id is "conduit" or "mageblade" || nextModifiers.DamageBuffFromStatusEffects.HasValue ||
                             state.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0) == true))
                         {
                             RoomCombatResult appliedStatus = StatusApplicationModel.ApplyRetained(Stage(), targetId, status, 0);

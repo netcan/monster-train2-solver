@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 531 archives (491 full battles and
+Current accepted inventory (2026-10-19): 532 archives (492 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,29 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-531 accepted archives. Refresh/check the index with
+532 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-equipment-cards.mt2f` captures twelve unchanged originals:
+Exile's Diadem, Glass Cannon, Stoic Platemail, Moonlit Glaive, Potion Kit,
+Titansteel Dagger, Fortify, Bloodthirsty Blade, Heph's Hammer, Everlasting Light,
+Meat Shield and Combustible Suit. Three four-slot hosts receive four items each;
+exact paid costs, attack/current/max HP, size, statuses and Standby host bindings
+match without displacement or changes to the other hosts/floors. Moonlit Glaive
+creates its three-point Mageblade coefficient through the upgrade callback.
+Combat positively witnesses Bloodthirsty Blade equipment growth, Heph's Hammer
+kill capacity, Everlasting Light attack Valor, wounded Meat Shield healing and
+Fortify postcombat armor. Use `--original-equipment-cards-only`. Sixteen complete
+immutable chains, old original grafted equipment and Mageblade focused checks
+pass. Search matches nineteen decisions/24 root actions, 128/128 states and
+three replayed steps with equal serial/parallel best and zero unsupported search
+attempts; seven off-policy attempts at recorded decisions remain guarded.
+The card index increases from 221 to 233 definition-matched identities with all
+previous identities retained (491 indexed battles/7,893 plays). Native source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-065514-3c4bbf57` won in
+76.47 seconds with nineteen plays/five EndTurns, four counters zero and protected
+files unchanged. Binary-only: 39,843 bytes/6,750 nodes, SHA-256
+`88488b9a12a839168807906ff2adc385dfe1f1b0efeb452f15de00220eeec4ca`.
 
 `full-battle-original-support-spells.mt2f` captures unchanged Razorsharp Edge,
 Sharpen, Regen Potion, Remnant Pact, Machinist's Tome, Rootseeds, Perils of

@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 531 binary archives, including 491
+Current accepted inventory (2026-10-19): 532 binary archives, including 492
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 531
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 532
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,17 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-equipment-cards.mt2f` adds twelve unchanged originals:
+Exile's Diadem, Glass Cannon, Stoic Platemail, Moonlit Glaive, Potion Kit,
+Titansteel Dagger, Fortify, Bloodthirsty Blade, Heph's Hammer, Everlasting Light,
+Meat Shield and Combustible Suit. Paid attachment to three four-slot hosts
+matches exact attack/HP/size/status upgrades and native Standby host bindings.
+The first Mageblade upgrade now creates its cached coefficient through the
+status-added callback. Positive combat witnesses cover equipment growth, kill
+capacity, attack Valor, wounded healing and postcombat armor. Nineteen plays,
+five EndTurns and sixteen immutable complete chains match; automatic graft birth
+remains outside this fixture.
 
 `full-battle-original-support-spells.mt2f` adds thirteen unchanged originals:
 Razorsharp Edge, Sharpen, Regen Potion, Remnant Pact, Machinist's Tome, Rootseeds,

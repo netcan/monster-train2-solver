@@ -1167,6 +1167,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalUnitBuffsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalEquipmentCardsScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original equipment fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalEquipmentCardsScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalSupportSpellsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original support fixture must start on deployment turn.");
@@ -2424,6 +2430,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalBasicDamageScenario.Enabled) pendingPlay = OriginalBasicDamageScenario.Choose(decision, OriginalBasicDamageScenario.CardIds);
                 if (OriginalResourceSpellsScenario.Enabled) pendingPlay = OriginalResourceSpellsScenario.Choose(decision, OriginalResourceSpellsScenario.CardIds);
                 if (OriginalHostileStatusesScenario.Enabled) pendingPlay = OriginalHostileStatusesScenario.Choose(decision, OriginalHostileStatusesScenario.CardIds);
+                if (OriginalEquipmentCardsScenario.Enabled) pendingPlay = OriginalEquipmentCardsScenario.Choose(decision, OriginalEquipmentCardsScenario.CardIds);
                 if (OriginalSupportSpellsScenario.Enabled) pendingPlay = OriginalSupportSpellsScenario.Choose(decision, OriginalSupportSpellsScenario.CardIds);
                 if (OriginalRearrangeSpellsScenario.Enabled) pendingPlay = OriginalRearrangeSpellsScenario.Choose(decision, OriginalRearrangeSpellsScenario.CardIds);
                 if (OriginalMovementSpellsScenario.Enabled) pendingPlay = OriginalMovementSpellsScenario.Choose(decision, OriginalMovementSpellsScenario.CardIds);

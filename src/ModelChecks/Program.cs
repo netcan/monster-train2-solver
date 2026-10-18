@@ -456,6 +456,12 @@ if (args.Length == 2 && args[0] == "--original-hostile-statuses-only")
     OriginalHostileStatusesChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-equipment-cards-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalEquipmentCardsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--steelguard-pure")
 {
     OriginalSupportSpellsChecks.Steelguard();
