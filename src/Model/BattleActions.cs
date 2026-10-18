@@ -814,6 +814,16 @@ namespace MonsterTrain2Poju.Model
             }
             if (terminal) piles = piles.Select(CardPileModel.Clear).ToArray();
             CardInstanceState? discardInstance = context.FindCard(card.InstanceId) ?? playingInstance;
+            if (discardInstance != null)
+            {
+                CardInstanceState unfrozen = RelicFreezeHandUpgradeModel.Played(discardInstance);
+                if (!ReferenceEquals(unfrozen, discardInstance))
+                {
+                    context = context.WithCardInstances(context.CardInstances?.Select(instance =>
+                        instance.InstanceId == unfrozen.InstanceId ? unfrozen : instance).ToArray());
+                    discardInstance = unfrozen;
+                }
+            }
             bool skipNaturalDiscard = discardInstance?.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(discardInstance).Traits.Any(trait =>
                     trait is "CardTraitInfusion" or "CardTraitPersistent");

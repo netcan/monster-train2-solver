@@ -1,11 +1,25 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 423 binary archives, including 385
+Current accepted inventory (2026-10-18): 424 binary archives, including 386
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 204/224 catalog entries (91.07%): 187 battle owners, 16 campaign
+covers 205/224 catalog entries (91.52%): 188 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`FreezeReduceCost` now has schema-228 native evidence for the original frozen-hand
+filter and non-unique -99 cost upgrade at the end of floor-zero combat. Fifteen
+Tests preserve complete state/RNG: three active floor-zero applications and
+twelve nonzero-floor no-ops. Four upgrades are added; one retained frozen card
+accumulates three while an unfrozen Persistent card and ordinary discarded card
+receive none. Playing the first frozen card at zero cost removes its temporary
+Freeze trait and clears the removable discount. Frozen cards now retain their
+hand positions during bulk discard. The 35-stage winning battle, three controlled
+actions, independent three-EndTurn retain policy with sixteen immutable branches,
+focused checks, 128-state serial/parallel search and eight affected archives pass
+with zero differential counters. Deployment/preview and changed-payload gates
+have pure checks; Permafrost callbacks and arbitrary combined trait/upgrade
+interactions still need native evidence.
 
 `ChanceToSilence` now has schema-227 native evidence for six natural enemy
 OnSpawn applications of the unchanged muted effect. All 244 Tests (six positive,

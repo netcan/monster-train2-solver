@@ -167,6 +167,17 @@ if (args.Length == 1 && args[0] == "--kill-attack-pure")
     OriginalKillAttackChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--freeze-cost-pure")
+{
+    OriginalFreezeReduceCostChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-freeze-cost-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalFreezeReduceCostChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--spawn-silence-pure")
 {
     OriginalSpawnSilenceChecks.Run();
@@ -1847,6 +1858,7 @@ RelicBurnoutDamageChecks.Run();
 RelicHealDamageChecks.Run();
 OriginalKillAttackChecks.Run();
 OriginalSpawnSilenceChecks.Run();
+OriginalFreezeReduceCostChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

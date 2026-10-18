@@ -201,7 +201,7 @@
 "EmberOnTombDeath"	"4a5b1613-568c-4bf6-8bf7-15f8bf013345"	"accepted-native-battle"	"RelicEffectEmberOnUnitTrigger"	""
 "TinkermasterTools"	"db2193eb-a476-4cc4-9a26-2d0e35f46b74"	"accepted-native-battle"	"RelicEffectAdjustMixAmount"	""
 "Inkbound_WolosBloodletter"	"99814a66-c170-4b45-a466-6e164a125c59"	"pending"	"RelicEffectDamageOrHealUnitsEndOfTurn,RelicEffectModifyCardAttack"	""
-"FreezeReduceCost"	"d2de397e-6fce-442f-a9e4-c3f3ee7bdbcf"	"pending"	"RelicEffectApplyCardUpgradeToHandEndOfTurn"	""
+"FreezeReduceCost"	"d2de397e-6fce-442f-a9e4-c3f3ee7bdbcf"	"accepted-native-battle"	"RelicEffectApplyCardUpgradeToHandEndOfTurn"	""
 "ReduceStarterCost"	"d892106c-dbbc-40ac-bf0b-902882cdc69d"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""
 "StartOfTurnPropagate"	"a42d2f85-7b53-4d2b-9979-5e6269b4e01c"	"pending"	"RelicEffectAddEffectStartOfTurn"	""
 "RandomCardCostOnDraw"	"834f4c02-2987-469c-8634-eac97f2f67c8"	"pending"	"RelicEffectRandomCardCostOnDraw,RelicEffectChangeStartingHandSize"	""

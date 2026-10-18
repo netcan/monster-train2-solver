@@ -86,7 +86,7 @@ namespace MonsterTrain2Poju.Model
     public static class BattleTurnModel
     {
         internal static bool IsDeferredPersistentDiscard(string interaction) =>
-            interaction is "CardTraitPersistent Discard callback" or "CardTraitPersistent discard routing";
+            interaction is "CardTraitPersistent Discard callback" or "CardTraitPersistent discard routing" or "CardTraitFreeze discard routing";
 
         internal static IReadOnlyList<string> ActionInteractions(BattleTurnState source) =>
             source.ExternalInteractions.Where(interaction => !IsDeferredPersistentDiscard(interaction)).ToArray();
@@ -100,7 +100,7 @@ namespace MonsterTrain2Poju.Model
                 if (instance?.MaskDescriptor == null) return source.ExternalInteractions;
                 try
                 {
-                    if (CardBranchMaskModel.Resolve(instance).Traits.Contains("CardTraitPersistent"))
+                    if (CardBranchMaskModel.Resolve(instance).Traits.Any(trait => trait is "CardTraitPersistent" or "CardTraitFreeze"))
                         return source.ExternalInteractions;
                 }
                 catch (InvalidOperationException)
@@ -299,7 +299,7 @@ namespace MonsterTrain2Poju.Model
                     IReadOnlyList<string> traits = CardBranchMaskModel.Resolve(instance).Traits;
                     if (traits.Contains("CardTraitEphemeral", StringComparer.Ordinal))
                         ephemeralCardIds.Add(card.InstanceId);
-                    if (traits.Contains("CardTraitPersistent", StringComparer.Ordinal))
+                    if (traits.Contains("CardTraitPersistent", StringComparer.Ordinal) || traits.Contains("CardTraitFreeze", StringComparer.Ordinal))
                         persistentCardIds.Add(card.InstanceId);
                     if (traits.Contains("CardTraitInfusion", StringComparer.Ordinal))
                         infusionCardIds.Add(card.InstanceId);

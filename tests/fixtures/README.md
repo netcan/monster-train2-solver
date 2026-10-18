@@ -1,8 +1,17 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 423 archives (385 full battles and
-38 component calibrations), 204/224 original relic owners (91.07%): 187 battle
+Current accepted inventory (2026-10-18): 424 archives (386 full battles and
+38 component calibrations), 205/224 original relic owners (91.52%): 188 battle
 owners, sixteen campaign-interface owners and one native no-op. The latest
+`FreezeReduceCost` fixture covers three active floor-zero applications and twelve
+gated floors, four original -99 upgrades, repeated non-unique accumulation and
+unfrozen hand/discard controls. A discounted card is played at zero cost, loses
+its temporary Freeze trait and clears the upgrade on discard. The 35-stage
+winning replay, three actions, independent three-EndTurn retain policy with
+sixteen immutable branches, focused checks, 128-state serial/parallel search and
+eight affected archives pass with zero differential counters. Frozen retention,
+deployment/preview gates and changed payloads have pure controls. Permafrost and
+arbitrary combined trait/upgrade callbacks need separate evidence. The previous
 `ChanceToSilence` fixture covers six natural enemy OnSpawn applications, 238
 gated Tests and the unchanged TreasureCollector exclusion. Every application
 adds muted and consumes exactly one inner status-chance RNG draw; the outer

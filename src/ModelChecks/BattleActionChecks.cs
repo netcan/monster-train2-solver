@@ -671,19 +671,22 @@ internal static class BattleActionChecks
             return;
         }
         if (fixture.TryGetProperty("ModifierScenario", out var eatenDamagePolicy) &&
-            eatenDamagePolicy.GetString() is "original-eaten-damage" or "original-burnout-death-damage" or "original-heal-to-damage" or "original-kill-attack" or "original-chance-to-silence")
+            eatenDamagePolicy.GetString() is "original-eaten-damage" or "original-burnout-death-damage" or "original-heal-to-damage" or "original-kill-attack" or "original-chance-to-silence" or "original-freeze-reduce-cost")
         {
-            int scenarioActions = eatenDamagePolicy.GetString() switch { "original-eaten-damage" => 10, "original-burnout-death-damage" => 7, "original-kill-attack" or "original-chance-to-silence" => 2, _ => 9 };
+            int scenarioActions = eatenDamagePolicy.GetString() switch { "original-eaten-damage" => 10, "original-burnout-death-damage" => 7, "original-kill-attack" or "original-chance-to-silence" => 2, "original-freeze-reduce-cost" => 3, _ => 9 };
             Require(allActions.Length == scenarioActions && policyActions.Length == 0,
                 "Controlled relic coverage requires its complete scenario actions and no later native card plays.");
             BattleTurnState suffixRoot = allActions[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             FixtureValue[] suffixTurns = turns.EnumerateArray().Where(entry => entry.GetProperty("Before")
                 .GetProperty("Spawn").GetProperty("Turn").GetInt32() >= suffixRoot.Spawn.Turn).ToArray();
             string parentState = JsonSerializer.Serialize(suffixRoot);
-            BattleTurnState suffixTerminal = RunPolicy(suffixRoot, [], suffixTurns, chooser, compareRoomEnabled);
+            // This witness deliberately retains the remaining frozen/control cards.
+            Func<BattleTurnState, PlayCardAction?> suffixChooser = eatenDamagePolicy.GetString() == "original-freeze-reduce-cost"
+                ? _ => null : chooser;
+            BattleTurnState suffixTerminal = RunPolicy(suffixRoot, [], suffixTurns, suffixChooser, compareRoomEnabled);
             string expectedTerminal = BattleTurnChecks.Comparable(suffixTerminal, compareRoomEnabled: compareRoomEnabled);
             Parallel.For(0, 16, _ => Require(BattleTurnChecks.Comparable(
-                RunPolicy(suffixRoot, [], suffixTurns, chooser, compareRoomEnabled), compareRoomEnabled: compareRoomEnabled) == expectedTerminal,
+                RunPolicy(suffixRoot, [], suffixTurns, suffixChooser, compareRoomEnabled), compareRoomEnabled: compareRoomEnabled) == expectedTerminal,
                 "Controlled relic post-scenario policy branches diverged."));
             Require(JsonSerializer.Serialize(suffixRoot) == parentState, "Controlled relic post-scenario policy mutated its root.");
             Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {scenarioActions} controlled relic actions checked individually, independent {suffixTurns.Length}-EndTurn suffix to native victory, and 16 immutable parallel branches.");

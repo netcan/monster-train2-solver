@@ -56,8 +56,22 @@ namespace MonsterTrain2Poju.Probe
                     var cardModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade || item.Effect is RelicEffectModifyTrait ||
                         item.Effect.GetType().Name == RelicNoUpgradeCardCostModel.Effect ||
-                        item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon).Select(item =>
+                        item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon ||
+                        item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurn).Select(item =>
                     {
+                        if (item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurn)
+                        {
+                            object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
+                            var effectData = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                            var upgrade = new CardUpgradeState(); upgrade.Setup((CardUpgradeData)Field("cardUpgradeData"));
+                            bool remove = (bool)Field("removeOnDiscard"); upgrade.SetRemoveOnDiscard(remove);
+                            var traits = (List<CardTraitData>?)Field("triggerOnTraits");
+                            return new RelicCardModifier(item.Index, null, null, false,
+                                RelicCardModifierProbe.Conditions(item.Effect), freezeHandUpgrade: new RelicFreezeHandUpgrade(
+                                    traits?.Select(trait => trait.GetTraitStateName()).ToArray(), remove,
+                                    ((RelicEffectBase)item.Effect).CanApplyInPreviewMode, effectData.GetEffectConditions().Count,
+                                    upgrade.GetFilters().Count, CardModifierProbe.Upgrade(upgrade)));
+                        }
                         if (item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon)
                         {
                             object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **204 distinct original collectable relics / 224 catalog entries
-(91.07%)** have accepted native evidence: 187 have full-battle effect evidence,
+As of 2026-10-18, **205 distinct original collectable relics / 224 catalog entries
+(91.52%)** have accepted native evidence: 188 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2038,4 +2038,60 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-cha
 dotnet run --project src/ModelChecks -c Release -- --spawn-silence-pure
 dotnet run --project src/ModelChecks -c Release -- --original-spawn-silence-only tests/fixtures/full-battle-original-chance-to-silence.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-chance-to-silence.mt2f
+```
+
+## FreezeReduceCost
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `FreezeReduceCost` | `d2de397e-6fce-442f-a9e4-c3f3ee7bdbcf` | `full-battle-original-freeze-reduce-cost.mt2f` | The unchanged `RelicEffectApplyCardUpgradeToHandEndOfTurn` adds its non-unique `ReduceCostOnFreeze` (-99 cost, remove-on-discard) upgrade to cards whose runtime traits contain Freeze, after combat on floor zero. Two temporary-Freeze carriers receive four upgrades in total; the retained one accumulates three. A zero-cost play thaws the other and clears its removable discount. Unfrozen Persistent and ordinary discard controls never receive the upgrade. |
+
+The schema-228 winning battle matches all 35 stages, three actions and five
+EndTurns. All fifteen native Tests return true without changing complete state
+or Battle RNG. The manager excludes deployment; of fifteen Apply calls, twelve
+on nonzero floors preserve the complete train and three on floor zero apply the
+hand filter. Every raw application and parent state is independently checked in
+sixteen parallel branches. The original trait list, upgrade identity, -99 payload,
+non-unique flag, remove-on-discard lifetime, deployment prohibition, preview
+permission and empty conditions are captured unchanged.
+
+Frozen cards retain their original hand order during bulk discard. The first
+frozen carrier is deliberately kept through one positive callback, then played
+at zero cost on turn two. Its temporary Freeze trait is removed and its discount
+is cleared on the normal played-card discard. The second remains frozen, its
+three non-unique upgrades stack, and effective cost stays clamped to zero. A
+Persistent carrier remains in hand without becoming eligible; the ordinary
+carrier follows normal discard/draw routing and stays undiscounted.
+
+Independent action replay checks all three controlled plays. A separate policy
+then deliberately retains the remaining witness/control cards and completes the
+three-EndTurn suffix to native victory in sixteen immutable branches. This is
+the authored retain policy, not the generic play-every-affordable-card policy.
+Search matches all three recorded decisions, enumerates eighteen root actions,
+reports no unsupported alternatives and agrees between serial/parallel best
+results (128/128 visited states, three replayed steps).
+
+Eight affected archives pass with two workers and terminal exit zero: this owner,
+MoonPhaseRoomsGainMagicPower, first-card cost, choose-discard Persistent,
+branch-mask hand upgrades, ChanceToSilence, HealToDamage and AddAttackOnKill.
+Pure checks exercise room/deployment/preview gates, frozen hand-only filtering,
+unfrozen/draw-pile controls, repeated stacking, cost clamping, ordinary-discard
+versus played-card thawing, payload changes and parent isolation. The witness
+uses authored simple spells, temporary Freeze traits and two 80-HP/30-attack
+Stewards. Native Permafrost draw callbacks, other freeze-producing effects and
+arbitrary combined trait, upgrade and combat interactions need separate proof.
+
+The binary archive is 23,769 bytes, with 3,227 unique nodes and SHA-256
+`ef4b2f06e0a04a0dc54027d5ffc10680f99cb2d727dbc230345de6ad080d07b3`.
+Its source length is zero and source hash is all zeroes; no JSON companion is
+tracked. Accepted inventory is 424 archives: 386 battles and 38 component
+calibrations. Original-owner evidence is 205/224 (91.52%): 188 battle, sixteen
+campaign and one native no-op owner; nineteen owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalFreezeReduceCostRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-freeze-reduce-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --freeze-cost-pure
+dotnet run --project src/ModelChecks -c Release -- --original-freeze-cost-only tests/fixtures/full-battle-original-freeze-reduce-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-freeze-reduce-cost.mt2f
 ```

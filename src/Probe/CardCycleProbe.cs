@@ -53,13 +53,13 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CardTraitState trait in card.GetTraitStates())
                 {
                     // SelfPurge and Consume act only when wasPlayed=true; DiscardHand sets it false.
-                    if (!(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion)) &&
+                    if (!(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion || trait is CardTraitFreeze)) &&
                         callbacks.Any(callback => trait.GetType().GetMethod(callback,
                         BindingFlags.Instance | BindingFlags.Public)?.DeclaringType != typeof(CardTraitState)))
                         interactions.Add(trait.GetType().Name + " " + kind + " callback");
                     if (drawing && trait is CardTraitMagneticState)
                         interactions.Add("Magnetic draw priority");
-                    if (kind == "Discard" && trait is CardTraitPersistent)
+                    if (kind == "Discard" && (trait is CardTraitPersistent || trait is CardTraitFreeze))
                         interactions.Add(trait.GetType().Name + " discard routing");
                 }
                 if (kind == "Discard" && card.GetTriggers().Any(trigger =>
@@ -100,7 +100,7 @@ namespace MonsterTrain2Poju.Probe
                         .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitEphemeral))
                         .Select(trace.CardId).ToArray() : Array.Empty<int>();
                     int[] persistentCardIds = kind == "Discard" ? cards.GetHand()
-                        .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitPersistent))
+                        .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitPersistent || trait is CardTraitFreeze))
                         .Select(trace.CardId).ToArray() : Array.Empty<int>();
                     int[] infusionCardIds = kind == "Discard" ? cards.GetHand()
                         .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitInfusion))

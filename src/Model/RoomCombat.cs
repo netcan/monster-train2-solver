@@ -1486,6 +1486,13 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 Clear(true);
+                if (context != null && !battleWon && !units.Any(unit => unit.Source.IsPyre && !unit.Alive))
+                {
+                    RelicMoonPhaseHandUpgradeResult frozen = RelicFreezeHandUpgradeModel.Apply(context, source.RoomIndex,
+                        source.Deployment, source.Preview);
+                    if (!frozen.Supported) { unsupportedReason = frozen.UnsupportedReason; return Finish(RoomOutcome.Unsupported); }
+                    context = frozen.Context;
+                }
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Cleared);
             }

@@ -112,6 +112,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-heal-damage.mt2f',
     'full-battle-original-kill-attack.mt2f',
     'full-battle-original-chance-to-silence.mt2f',
+    'full-battle-original-freeze-reduce-cost.mt2f',
     'full-battle-original-propagate-on-status-effect-applied.mt2f',
     'full-battle-original-pyre-health-card-cost.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
@@ -1445,5 +1446,14 @@ foreach ($fixturePath in $originalSpawnSilenceFixtures) {
     foreach ($mode in @('--original-spawn-silence-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original ChanceToSilence checks failed ($mode): $fixturePath" }
+    }
+}
+$originalFreezeCostFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-original-freeze-reduce-cost.mt2f'
+})
+foreach ($fixturePath in $originalFreezeCostFixtures) {
+    foreach ($mode in @('--original-freeze-cost-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original FreezeReduceCost checks failed ($mode): $fixturePath" }
     }
 }
