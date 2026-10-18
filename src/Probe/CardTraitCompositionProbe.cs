@@ -38,7 +38,9 @@ namespace MonsterTrain2Poju.Probe
                 data == null ? Array.Empty<string>() : CastEffects(data), data?.GetTraitIsRemovable(),
                 trait is CardTraitScalingMagicPowerOnMoonPhase ? (float?)AccessTools.Field(typeof(CardTraitScalingMagicPowerOnMoonPhase), "MagicPowerMultiplier").GetValue(trait) : null,
                 feedingQuery: trait is CardTraitScalingFeederRules ? FeedingQuery(trait.StatValueData) : null,
-                handCostTargetType: trait is CardTraitIncreaseCostOfCardsInHand ? trait.GetParamCardType().ToString() : null);
+                handCostTargetType: trait is CardTraitIncreaseCostOfCardsInHand ? trait.GetParamCardType().ToString() : null,
+                moonPhaseUpgradeState: MoonPhaseCardUpgradeCalibration.Capturing && trait is CardTraitAddCardUpgradeOnMoonPhase
+                    ? MoonPhaseCardUpgradeCalibration.State(trait) : null);
         }
         internal static List<CardTraitState> Bases(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "traits").GetValue(card);
         internal static List<CardTraitState> Combined(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "combinedTraits").GetValue(card);

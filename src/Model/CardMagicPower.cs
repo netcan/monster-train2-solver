@@ -9,8 +9,12 @@ namespace MonsterTrain2Poju.Model
         public static int Multiplier(CardInstanceState card)
         {
             if (card.MaskDescriptor == null) return 1;
-            int multiplier = 1;
             var traits = CardTraitRefreshModel.Ensure(CardBranchMaskModel.OwnedState(card).Traits).Composition.CombinedTraits!;
+            return Multiplier(traits);
+        }
+        internal static int Multiplier(IEnumerable<CardTraitValue> traits)
+        {
+            int multiplier = 1;
             foreach (CardTraitValue trait in traits)
             {
                 int factor = 1;
@@ -34,8 +38,9 @@ namespace MonsterTrain2Poju.Model
         // Native only resets positive authored bases whose scaling is not owned
         // by another trait; zero, negative and anonymous values are preserved.
         public static CardInstanceState Refresh(CardInstanceState card)
+            => Refresh(card, Multiplier(card));
+        internal static CardInstanceState Refresh(CardInstanceState card, int multiplier)
         {
-            int multiplier = Multiplier(card);
             CardModifiers RefreshModifiers(CardModifiers modifiers) => new CardModifiers(modifiers.Offsets,
                 modifiers.Upgrades.Select(upgrade => WithValues(upgrade,
                     upgrade.CloneDamageBase.HasValue ? unchecked(upgrade.CloneDamageBase.Value * multiplier) : upgrade.Stats.Damage,

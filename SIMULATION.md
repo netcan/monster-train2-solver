@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 508 binary archives, including 469
-full battles and 39 component calibrations. Unchanged original relic evidence
+Current accepted inventory (2026-10-19): 509 binary archives, including 469
+full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 508
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 509
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,14 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`moon-card-upgrade-calibration.mt2f` calibrates the spell-owned moon upgrade
+lifecycle for Celestial Storm, Gravity, Heavenfall, Silver Strike and Starstruck.
+Seven original upgrade definitions and 135 complete native card states cover
+phase reversal/repeat, draw/discard reset, preview no-op, positive magic-power
+refresh and protection of an existing Stronger Magic Power trait. Sixteen
+independent immutable branches match. This component does not increase direct
+card-play evidence; whole-battle callback integration remains guarded.
 
 `full-battle-original-discard-draw.mt2f` models original Awoken's Rail Spike at
 paid X three/zero/ten. Played-discard drawing precedes blocking further deck

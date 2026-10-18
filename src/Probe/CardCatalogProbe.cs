@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
             if (Environment.GetEnvironmentVariable("MT2_PROBE_CARD_CATALOG") != "1") return;
             if (!CardBranchMaskProbe.Enabled)
                 throw new InvalidOperationException("Card catalog projections require branch card metadata.");
+            MoonPhaseCardUpgradeCalibration.Capture(trace, managers);
             var data = managers.GetSaveManager().GetAllGameData();
             var relics = managers.GetRelicManager();
             var cards = data.GetAllCardData().OrderBy(card => card.GetID(), StringComparer.Ordinal).ToArray();
@@ -45,6 +46,15 @@ namespace MonsterTrain2Poju.Probe
                     Mask = CardUpgradeMaskCalibration.Card(card, relics), Rule = rule, ProjectionError = error
                 };
             }).ToArray();
+            var moonUpgrades = cards.SelectMany(card => card.GetTraits().Select((trait, index) => new { card, trait, index }))
+                .Where(item => item.trait.GetTraitStateName() == "CardTraitAddCardUpgradeOnMoonPhase")
+                .Select(item =>
+                {
+                    var upgrade = new CardUpgradeState(); upgrade.Setup(item.trait.GetCardUpgradeDataParam());
+                    upgrade.SetAvoidClobberingExistingTraits(true);
+                    return new { CardDataId = item.card.GetID(), TraitIndex = item.index,
+                        Upgrade = CardModifierProbe.Upgrade(upgrade) };
+                }).ToArray();
             JObject afterRng = RngStates();
             bool unchanged = JToken.DeepEquals(before, JToken.FromObject(trace.CaptureDecision()));
             if (!unchanged || UnityEngine.Time.frameCount != frame || !JToken.DeepEquals(beforeRng, afterRng))
@@ -55,7 +65,7 @@ namespace MonsterTrain2Poju.Probe
                 BranchCardMasksEnabled = CardBranchMaskProbe.Enabled,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = beforeRng, RngAfter = afterRng,
-                DecisionUnchanged = unchanged, Cards = entries
+                DecisionUnchanged = unchanged, Cards = entries, MoonPhaseUpgradeDefinitions = moonUpgrades
             }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "card-catalog.mt2f")))
                 document.Write(output);

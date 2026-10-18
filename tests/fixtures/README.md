@@ -1,7 +1,7 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 508 archives (469 full battles and
-39 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current accepted inventory (2026-10-19): 509 archives (469 full battles and
+40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 The separate [per-card inventory](card-coverage.md) covers all 668 original
@@ -14,8 +14,20 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-508 accepted archives. Refresh/check the index with
+509 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`moon-card-upgrade-calibration.mt2f` retains 135 complete native card states
+from five original spells and seven moon-phase upgrade definitions. Reversal,
+repeated resource callbacks, preview no-op, draw/discard reset, magic-power
+rescaling and existing-trait protection match sixteen immutable branches.
+All operations run on detached cards; live decision, frame and every
+deterministic RNG remain unchanged. Binary-only: 6,287 bytes/809 nodes, SHA-256
+`e9005da046c42103f909f13fb54430b871439884754bc67fbe06cb1f0e8d9d78`.
+Use `--moon-card-upgrade-only`. Whole-battle callbacks remain guarded; this
+component does not count as successful original-card plays. Focused gate
+`model-checks-20261019-035838-afe1271b` passed this component and the existing
+card-upgrade lifecycle component.
 
 `full-battle-original-discard-draw.mt2f` retains original Awoken's Rail Spike.
 Paid X three/zero/ten draws three/zero/ten on played discard, then blocks further

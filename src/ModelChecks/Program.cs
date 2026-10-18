@@ -324,6 +324,12 @@ if (args.Length == 2 && args[0] == "--original-status-cards-only")
     OriginalStatusCardsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--moon-card-upgrade-only")
+{
+    using var moonUpgradeDocument = ModelJson.ReadFixture(args[1]);
+    MoonCardUpgradeChecks.Native(moonUpgradeDocument.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-discard-draw-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -2571,6 +2577,11 @@ foreach (string path in args.Where(path => path.Contains("card-owned-mask-calibr
     CardOwnedMaskChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("card-upgrade-lifecycle-calibration", StringComparison.OrdinalIgnoreCase)))
     CardUpgradeLifecycleChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("moon-card-upgrade-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var moonUpgradeDocument = ModelJson.ReadFixture(path);
+    MoonCardUpgradeChecks.Native(moonUpgradeDocument.RootElement);
+}
 foreach (string path in args.Where(path => path.Contains("relic-card-upgrade-calibration", StringComparison.OrdinalIgnoreCase)))
     RelicCardUpgradeChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)))

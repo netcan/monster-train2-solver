@@ -407,7 +407,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'physical-plane-calibration.mt2f', 'card-upgrade-mask-calibration.mt2f',
     'card-modifier-overflow-calibration.mt2f', 'card-trait-composition-calibration.mt2f',
     'card-status-composition-calibration.mt2f', 'card-owned-mask-calibration.mt2f',
-    'card-upgrade-lifecycle-calibration.mt2f', 'relic-card-upgrade-calibration.mt2f')
+    'card-upgrade-lifecycle-calibration.mt2f', 'relic-card-upgrade-calibration.mt2f', 'moon-card-upgrade-calibration.mt2f')
 $selectedFixtureNames = $fixtureNames
 if ($Fixture.Count -gt 0) {
     $selectedFixtureNames = @($Fixture | ForEach-Object { Split-Path -Leaf $_ })

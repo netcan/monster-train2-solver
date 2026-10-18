@@ -25,14 +25,16 @@ namespace MonsterTrain2Poju.Model
         public bool? DeploymentDrawFlag { get; }
         public string? SpecificCardDataId { get; }
         public IReadOnlyList<string>? StatusEffectIds { get; }
+        public CardUpgradeModifier? MoonPhaseUpgrade { get; }
         public CardSourceTrait(string type, int @int, int int2, int int3, bool @bool, string str, float @float,
             bool scaling, string trackedValue, string entryDuration, string? statusQueryTeam = null,
             IReadOnlyList<string>? statusQueryStatuses = null, string? handCostTargetType = null, bool? deploymentDrawFlag = null,
-            string? specificCardDataId = null, IReadOnlyList<string>? statusEffectIds = null)
+            string? specificCardDataId = null, IReadOnlyList<string>? statusEffectIds = null,
+            CardUpgradeModifier? moonPhaseUpgrade = null)
         { Type = type; Int = @int; Int2 = int2; Int3 = int3; Bool = @bool; Str = str; Float = @float;
             Scaling = scaling; TrackedValue = trackedValue; EntryDuration = entryDuration; StatusQueryTeam = statusQueryTeam;
             StatusQueryStatuses = statusQueryStatuses == null ? null : Array.AsReadOnly(statusQueryStatuses.ToArray());
             HandCostTargetType = handCostTargetType; DeploymentDrawFlag = deploymentDrawFlag; SpecificCardDataId = specificCardDataId;
-            StatusEffectIds = statusEffectIds == null ? null : Array.AsReadOnly(statusEffectIds.ToArray()); }
+            StatusEffectIds = statusEffectIds == null ? null : Array.AsReadOnly(statusEffectIds.ToArray()); MoonPhaseUpgrade = moonPhaseUpgrade; }
     }
 }
