@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 490 archives (451 full battles and
+Current accepted inventory (2026-10-19): 491 archives (452 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,26 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-490 accepted archives. Refresh/check the index with
+491 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-unplayable-cards.mt2f` queries unchanged UnplayableJunk,
+UnplayableUnpurgeable and ScrapMetal on all four floors. Twelve full-card native
+queries and their hand/play trait checks reject with Unplayable; decision state,
+RNG and frame are restored exactly. Scrap Metal cannot discard and stays in hand
+across EndTurn, while both ordinary unplayable cards discard/redraw without
+being played. Original Starter Scrap then smelts Persistent Scrap Metal: Refine
+3 adds three Forge and three ember, paying one energy for a net gain of two.
+Scrap Metal exhausts without play statistics. Unplayable attempts still reject
+with positive Forge points. Explicit discard and upgrade-added Refine guards
+remain. Three plays/five EndTurns win with sixteen immutable full chains.
+Binary-only: 24,444 bytes/3,164 nodes, SHA-256
+`dd04a01f29a0ffde9a7aa386525e3cf74b06f10d80edafd14343e36174dea284`.
+Use `-OriginalUnplayableCards` and `--original-unplayable-cards-only`.
+Bounded search matches all three decisions with twenty-six root actions, zero
+unsupported attempts and equal serial/parallel branches over 128 states.
+Focused gate `.probe-runs/model-checks-20261019-013923-9e235fb8` passed this
+witness, choose-discard Persistent and original Unpurgable cards (three fixtures).
 
 `full-battle-original-monster-hand-costs.mt2f` retains two original Titan
 Corruptions. The Monster-only surcharge makes three authored units pay two,

@@ -389,6 +389,10 @@ namespace MonsterTrain2Poju.Model
             if (uiRangeError != null) return Unsupported(uiRangeError);
             if (rule == null) return Unsupported("Missing play definition for " + card.DataId);
             CardInstanceState? playingInstance = context.CardInstances?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
+            // Native Unplayable rejects the attempt before card effects or Forge upgrades run.
+            if (playingInstance?.MaskDescriptor != null && CardExhaustModel.RefreshTraits(playingInstance)
+                .CombinedTraits?.Any(trait => trait.RuntimeType == "CardTraitUnplayable") == true)
+                return Illegal("The card has an Unplayable trait.");
             if (source.ForgePoints > 0)
             {
                 ForgeUpgradeModelResult forged = ForgeUpgradeModel.BeforeDirectCardPlay(context, source.PlayRules,

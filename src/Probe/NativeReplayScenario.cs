@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalUnplayableCardsScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Unplayable fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalUnplayableCardsScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMonsterHandCostsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Monster hand cost fixture must start on deployment turn.");
@@ -2167,6 +2173,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalHandCostsScenario.Enabled) pendingPlay = OriginalHandCostsScenario.Choose(decision, OriginalHandCostsScenario.CardIds);
                 if (OriginalLimitedRangeScenario.Enabled) pendingPlay = OriginalLimitedRangeScenario.Choose(decision, OriginalLimitedRangeScenario.CardIds);
                 if (OriginalMonsterHandCostsScenario.Enabled) pendingPlay = OriginalMonsterHandCostsScenario.Choose(decision, OriginalMonsterHandCostsScenario.CardIds);
+                if (OriginalUnplayableCardsScenario.Enabled) pendingPlay = OriginalUnplayableCardsScenario.Choose(decision, OriginalUnplayableCardsScenario.CardIds, OriginalUnplayableCardsScenario.NegativeIds[0]);
                 if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);
                 if (OriginalCorruptionDamageScenario.Enabled) pendingPlay = OriginalCorruptionDamageScenario.Choose(decision, OriginalCorruptionDamageScenario.CardIds);
                 if (OriginalXStatusCardsScenario.Enabled) pendingPlay = OriginalXStatusCardsScenario.Choose(decision, OriginalXStatusCardsScenario.CardIds);
