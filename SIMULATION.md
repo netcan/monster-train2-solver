@@ -1,11 +1,22 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 425 binary archives, including 386
+Current accepted inventory (2026-10-18): 426 binary archives, including 387
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 206/224 catalog entries (91.96%): 188 battle owners, 17 campaign
+covers 207/224 catalog entries (92.41%): 189 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`FreezeRandomEndOfTurn` now has schema-229 native evidence for its original
+one-card temporary Freeze effect before hand discard. Two positive and two empty
+Tests preserve complete state/RNG. Candidate counts fall from two to one to zero;
+the whole candidate list is shuffled, so the two-card application consumes one
+Battle RNG draw and the singleton consumes none. Already-frozen, Blight and Junk
+controls remain unchanged. The 35-stage winning battle, two deployment actions,
+independent five-EndTurn suffix with sixteen immutable branches, focused checks,
+serial/parallel search and eight affected archives pass. Deployment/preview,
+other card types and changed payloads have pure controls. Permafrost and arbitrary
+combined pre-discard or trait-added callbacks require separate native evidence.
 
 `DrawOnCorruption` now has an unchanged-owner campaign interface witness for
 `RelicEffectChangeNumCardsToApplyRandomDraftEnhancerTo`: its original +1 additive

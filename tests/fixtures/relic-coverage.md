@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **206 distinct original collectable relics / 224 catalog entries
-(91.96%)** have accepted native evidence: 188 have full-battle effect evidence,
+As of 2026-10-18, **207 distinct original collectable relics / 224 catalog entries
+(92.41%)** have accepted native evidence: 189 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2138,4 +2138,62 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-fre
 dotnet run --project src/ModelChecks -c Release -- --freeze-cost-pure
 dotnet run --project src/ModelChecks -c Release -- --original-freeze-cost-only tests/fixtures/full-battle-original-freeze-reduce-cost.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-freeze-reduce-cost.mt2f
+```
+
+## FreezeRandomEndOfTurn
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `FreezeRandomEndOfTurn` | `c07618e6-b679-4e2c-87a2-9203f52989cf` | `full-battle-original-random-freeze.mt2f` | The unchanged `RelicEffectFreezeRandomCards` filters the hand, shuffles all eligible cards with Battle RNG, and adds one temporary Freeze trait to the first card before hand discard. Two eligible spells are frozen on successive turns; already-frozen, Blight and Junk controls remain unchanged. |
+
+The schema-229 winning battle matches all 35 stages, two controlled deployment
+actions and five EndTurns. Four native Tests (two positive, two empty) preserve
+complete train state and Battle RNG. Ordered native candidates match the model;
+their counts fall from two to one to zero. Both raw native coroutine applications
+match complete card traits, hand/pile state, rooms and global context, including
+sixteen immutable parallel replays. Root and dedicated capture, mismatch,
+unsupported and pending counters are all zero, with terminal effects settled and
+the native trace reporting `DEPTH-PASS`.
+
+The two-card shuffle consumes one Battle RNG draw; the singleton shuffle consumes
+none. The complete candidate list is shuffled before selecting its first card.
+Each selected card receives exactly one removable temporary `CardTraitFreeze`
+with the native zero-valued parameters; the already-frozen control never receives
+a duplicate. Blight and Junk remain excluded. The original count of one, empty
+conditions, deployment prohibition and disabled preview permission are captured
+unchanged. All five authored 99-cost carriers have Persistent so they remain in
+hand throughout the witness, including the excluded controls. This isolates the
+eligibility and trait transition; the earlier FreezeReduceCost archive supplies
+the native Freeze-only retention and played-card thawing evidence.
+
+Independent action replay checks both deployments. Independent policy replay
+then completes all five EndTurns to native victory with sixteen immutable
+branches. Search matches both recorded decisions and six root actions without
+unsupported alternatives; serial/parallel best results agree (116/103 visited
+states, three replayed steps). Eight affected archives pass with two workers and
+terminal exit zero: this owner, FreezeReduceCost, MoonPhaseRoomsGainMagicPower,
+first-card cost, choose-discard Persistent, no-upgrade card cost, branch-mask hand
+upgrades and ChanceToSilence.
+
+Pure checks additionally exercise Monster/Spell/Equipment eligibility,
+deployment/preview/absent-owner gates, empty candidates, changed-count rejection
+and parent isolation. Native positive candidates here are spells; Monster and
+Equipment eligibility have pure checks only. The witness uses two authored
+80-HP/30-attack Stewards without character triggers. Permafrost draw callbacks,
+other freeze-producing effects, arbitrary combined pre-discard ordering and
+additional trait-added/relic callbacks require separate native evidence.
+
+The binary archive is 22,557 bytes, with 3,047 unique nodes and SHA-256
+`d457ec6467e19b6e79ab1adf151f0449e9e8cbaa360a2fe4b8baa22eadc8be6c`.
+Its source length is zero and source hash is all zeroes; no JSON companion is
+tracked. Accepted inventory is 426 archives: 387 battles and 39 component
+calibrations. Original-owner evidence is 207/224 (92.41%): 189 battle, seventeen
+campaign and one native no-op owner; seventeen owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalRandomFreezeRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-random-freeze.mt2f
+dotnet run --project src/ModelChecks -c Release -- --random-freeze-pure
+dotnet run --project src/ModelChecks -c Release -- --original-random-freeze-only tests/fixtures/full-battle-original-random-freeze.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-random-freeze.mt2f
 ```

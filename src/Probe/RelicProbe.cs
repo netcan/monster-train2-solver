@@ -57,8 +57,16 @@ namespace MonsterTrain2Poju.Probe
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade || item.Effect is RelicEffectModifyTrait ||
                         item.Effect.GetType().Name == RelicNoUpgradeCardCostModel.Effect ||
                         item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon ||
-                        item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurn).Select(item =>
+                        item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurn || item.Effect is RelicEffectFreezeRandomCards).Select(item =>
                     {
+                        if (item.Effect is RelicEffectFreezeRandomCards)
+                        {
+                            var effectData = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                            return new RelicCardModifier(item.Index, null, null, false,
+                                RelicCardModifierProbe.Conditions(item.Effect), randomFreeze: new RelicRandomFreeze(
+                                    (int)AccessTools.Field(item.Effect.GetType(), "numCards").GetValue(item.Effect),
+                                    effectData.GetEffectConditions().Count, ((RelicEffectBase)item.Effect).CanApplyInPreviewMode));
+                        }
                         if (item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurn)
                         {
                             object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);

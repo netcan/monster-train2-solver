@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Model
             return owner.DataId == DataId && owner.AssetKey == AssetKey && owner.IsCovenant == false &&
                 owner.DisallowedInPlacementPhase == true && owner.EffectTypes.SequenceEqual(new[] { Effect }) &&
                 modifier.EffectIndex == 0 && modifier.Rule == null && modifier.Upgrade == null &&
-                modifier.TraitReplacement == null && modifier.NoUpgradeCost == null && modifier.MoonPhaseHandUpgrade == null &&
+                modifier.TraitReplacement == null && modifier.NoUpgradeCost == null && modifier.MoonPhaseHandUpgrade == null && modifier.RandomFreeze == null &&
                 !modifier.ApplyToCardlessSpawns && modifier.ConditionCount == 0 && modifier.Conditions.Count == 0 &&
                 rule?.RequiredTraits != null && rule.RequiredTraits.SequenceEqual(new[] { "CardTraitFreeze" }) &&
                 rule.RemoveOnDiscard && !rule.CanApplyInPreviewMode && rule.ConditionCount == 0 && rule.FilterCount == 0 &&

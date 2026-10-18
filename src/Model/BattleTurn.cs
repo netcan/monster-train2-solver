@@ -234,6 +234,10 @@ namespace MonsterTrain2Poju.Model
                 spawn.Turn == 0, context.IsolatedBattlePreview == true);
             if (!moonPhaseHandUpgrade.Supported) return Unsupported(moonPhaseHandUpgrade.UnsupportedReason!);
             context = moonPhaseHandUpgrade.Context;
+            RelicMoonPhaseHandUpgradeResult randomFreeze = RelicRandomFreezeModel.Apply(context,
+                spawn.Turn == 0, context.IsolatedBattlePreview == true);
+            if (!randomFreeze.Supported) return Unsupported(randomFreeze.UnsupportedReason!);
+            context = randomFreeze.Context;
             train = WithContext(train, context, spawn.Turn == 0);
             spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
             if (outputPlayRules != null)

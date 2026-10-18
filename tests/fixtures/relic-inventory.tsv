@@ -195,7 +195,7 @@
 "EquippedUnitsGainArmor"	"9af0364b-8e05-45d9-be46-7b7dd1e721e7"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "FirstUnitGainDamageShield"	"60a2a8a3-5f7a-4a9d-b427-5f261145fa1f"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
 "WhelpDragonAttack_DH"	"72706202-526e-4377-9745-7df40a26ba7d"	"accepted-native-battle"	"RelicEffectModifyCardAttack,RelicEffectModifyCardAttack"	""
-"FreezeRandomEndOfTurn"	"c07618e6-b679-4e2c-87a2-9203f52989cf"	"pending"	"RelicEffectFreezeRandomCards"	""
+"FreezeRandomEndOfTurn"	"c07618e6-b679-4e2c-87a2-9203f52989cf"	"accepted-native-battle"	"RelicEffectFreezeRandomCards"	""
 "HairOfTheHybrid"	"ac208c49-610a-43e7-80cc-e9680cf84fcd"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "SpawnRandomMorsels"	"80a1b361-ee3a-43ae-86bd-da1ddac33a0a"	"pending"	"RelicEffectSpawnUnitStartOfCombat,RelicEffectSpawnUnitStartOfCombat,RelicEffectSpawnUnitStartOfCombat"	""
 "EmberOnTombDeath"	"4a5b1613-568c-4bf6-8bf7-15f8bf013345"	"accepted-native-battle"	"RelicEffectEmberOnUnitTrigger"	""

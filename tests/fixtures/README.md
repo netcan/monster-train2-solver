@@ -1,9 +1,17 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 425 archives (386 full battles and
-39 component calibrations), 206/224 original relic owners (91.96%): 188 battle
+Current accepted inventory (2026-10-18): 426 archives (387 full battles and
+39 component calibrations), 207/224 original relic owners (92.41%): 189 battle
 owners, seventeen campaign-interface owners and one native no-op. The latest
-`DrawOnCorruption` component calibration exercises the original +1 draft-enhancer
+`FreezeRandomEndOfTurn` fixture covers two original temporary Freeze applications,
+two empty Tests and unchanged already-frozen/Blight/Junk controls. Whole-candidate
+shuffle, singleton zero-draw RNG, exact temporary traits and persistent hand
+retention match. The 35-stage winning battle, two deployment actions, independent
+five-EndTurn suffix with sixteen immutable branches, focused checks,
+serial/parallel search and eight affected archives pass. Other card types,
+deployment/preview and strict payload guards have pure checks; Permafrost and
+arbitrary combined pre-discard/trait-added callbacks need separate evidence.
+The previous `DrawOnCorruption` component calibration exercises the original +1 draft-enhancer
 count mutation: five actual SaveManager queries return 1/2/1/2/1 through native
 acquisition/removal/reacquisition, and thirty native rule queries match lower
 clamping and integer overflow. Recorded state/frame/RNG are restored, sixteen
