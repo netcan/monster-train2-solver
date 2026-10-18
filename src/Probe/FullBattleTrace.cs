@@ -806,6 +806,8 @@ namespace MonsterTrain2Poju.Probe
                 MushyRoomCardIds = MushyRoomScenario.CardIds,
                 OriginalPiercingCardsPrepared = OriginalPiercingCardsScenario.Prepared,
                 OriginalPiercingCardsIds = OriginalPiercingCardsScenario.CardIds,
+                OriginalCorruptionDamagePrepared = OriginalCorruptionDamageScenario.Prepared,
+                OriginalCorruptionDamageIds = OriginalCorruptionDamageScenario.CardIds,
                 OriginalXStatusCardsPrepared = OriginalXStatusCardsScenario.Prepared,
                 OriginalXStatusCardsIds = OriginalXStatusCardsScenario.CardIds,
                 OriginalXDamageCardsPrepared = OriginalXDamageCardsScenario.Prepared,

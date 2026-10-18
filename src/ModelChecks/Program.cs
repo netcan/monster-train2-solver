@@ -324,6 +324,12 @@ if (args.Length == 2 && args[0] == "--original-status-cards-only")
     OriginalStatusCardsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-corruption-damage-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalCorruptionDamageChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-x-status-cards-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

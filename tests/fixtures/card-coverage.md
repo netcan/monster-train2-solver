@@ -20,8 +20,8 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 57 | 60 | No captured projection guards; at least one successful native play has the same captured definition projection. |
-| mechanism-only | 377 | 449 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
+| direct-native-play | 59 | 62 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| mechanism-only | 375 | 447 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
 | partial | 129 | 147 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 12 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
@@ -32,9 +32,11 @@ Definition matching compares all captured rule fields recursively, including sou
 
 PlayedCost status scaling is calibrated only at multiplier two/filter one with exact original source parameters. Spike of the Legion covers positive/zero X, propagatable Rage/Regeneration, unchanged armor, neighbor/floor controls and both Consume paths.
 
+CorruptionInTargetRoom damage scaling is calibrated at multiplier one, using original Echo Break at corruption zero/two/six. Original Unearthed Remains and Soul Siphon supply accumulation/fill-to-max; neighbor and selected-floor controls distinguish live selected-room state from cached/global values. Soul Siphon's negative amount with add mode fills the current maximum and also applies room-only Scorch. This witness targets friendly units; enemy-target paths need separate evidence.
+
 New descriptors retain the actual CardData supplied to CardState.Setup, with source trait parameters separate from runtime traits. All captured raw source fields must match the frozen catalog when present; X damage/status scaling requires this provenance and older missing metadata remains unverified. Missing provenance, changed multiplier/query/filter, and changed runtime parameters are rejected. Other trait families need separate calibration. A shared DataId alone never establishes direct coverage. Instance upgrades do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically original-card evidence.
 
-Across all classifications, 60 identities (57 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Across all classifications, 62 identities (59 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 
@@ -43,7 +45,7 @@ Across all classifications, 60 identities (57 logbook) have at least one definit
 - [Unplayed-trigger evidence](card-trigger-evidence.tsv): matched EndTurns with a positive new-copy or existing-spell-upgrade observation, source identity and zero-based `Turns` index. These supply mechanism evidence and do not count as direct card plays. Playing a card alone does not establish its unplayed trigger.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 444 full battles and 7402 native actions whose captured prediction is supported, actual state exists and difference is null. 349 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 445 full battles and 7412 native actions whose captured prediction is supported, actual state exists and difference is null. 349 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 

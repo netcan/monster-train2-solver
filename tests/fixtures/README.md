@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 484 archives (445 full battles and
+Current accepted inventory (2026-10-19): 485 archives (446 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,22 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-484 accepted archives. Refresh/check the index with
+485 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-corruption-damage.mt2f` retains four original Echo Breaks
+at selected-floor corruption zero/two/zero/six. Two original Unearthed Remains
+raise maximum corruption four to six and current corruption zero to two.
+Original Soul Siphon fills to six (negative amount in add mode) and gives
+Scorch one only to friendly units in that room. The immediately following
+Echo Break deals six. Neighboring and outside-floor units retain their full
+state during damage plays. Raw multiplier/query, one-energy payment and the
+three support cards' Consume destinations are checked. Ten plays/five EndTurns
+win with sixteen immutable full chains. Binary-only: 25,581 bytes/3,642 nodes,
+SHA-256 `92cba51d0e20046d157145976509790025fb8e6f8a10bbb63bede9e4d99edf86`.
+Use `-OriginalCorruptionDamage` and `--original-corruption-damage-only`.
+Focused corruption-damage/Soul-Siphon/X-damage gate:
+`.probe-runs/model-checks-20261019-004509-459c4455/summary.json` (three passed).
 
 `full-battle-original-x-status-cards.mt2f` retains two original Spikes of the
 Legion. X four adds eight Rage/Regeneration stacks to the target; X zero leaves

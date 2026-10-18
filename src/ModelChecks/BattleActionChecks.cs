@@ -631,6 +631,8 @@ internal static class BattleActionChecks
             chooser = source => GrowRoomChecks.Choose(source, fixture.GetProperty("MushyRoomCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalPiercingCardsPrepared", out var originalPiercingPrepared) && originalPiercingPrepared.GetBoolean())
             chooser = source => OriginalPiercingCardsChecks.Choose(source, fixture.GetProperty("OriginalPiercingCardsIds").Deserialize<int[]>()!);
+        if (fixture.TryGetProperty("OriginalCorruptionDamagePrepared", out var originalCorruptionPrepared) && originalCorruptionPrepared.GetBoolean())
+            chooser = source => OriginalCorruptionDamageChecks.Choose(source, fixture.GetProperty("OriginalCorruptionDamageIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalXStatusCardsPrepared", out var originalXStatusPrepared) && originalXStatusPrepared.GetBoolean())
             chooser = source => OriginalXStatusCardsChecks.Choose(source, fixture.GetProperty("OriginalXStatusCardsIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalXDamageCardsPrepared", out var originalXPrepared) && originalXPrepared.GetBoolean())

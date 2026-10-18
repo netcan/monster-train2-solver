@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 484 binary archives, including 445
+Current accepted inventory (2026-10-19): 485 binary archives, including 446
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 484
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 485
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,16 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-corruption-damage.mt2f` calibrates original Echo Break
+against selected-floor corruption zero/two/zero/six. Two unchanged Unearthed
+Remains raise maximum corruption from four to six and current corruption to
+two. Original Soul Siphon's negative amount in add mode fills that maximum;
+it also applies Scorch only to friendly units on the selected floor. Echo Break
+immediately observes six damage, while the zero-corruption floor and neighboring
+unit remain controls. Costs, raw source multiplier/query and Consume are checked
+across ten plays/five EndTurns and sixteen immutable complete chains. The native
+witness targets friendly units; enemy targeting remains a separate path.
 
 `full-battle-original-x-status-cards.mt2f` calibrates unchanged Spike of the
 Legion at X four/zero. Its original Consume/scaling trait pair adds twice the
