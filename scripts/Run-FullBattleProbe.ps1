@@ -72,6 +72,7 @@ param(
     [switch] $OriginalScaledBuff,
     [switch] $OriginalPileStatus,
     [switch] $OriginalDrawUpgradeScaling,
+    [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalRoomStatusDamage,
     [switch] $OriginalCorruptionDamage,
     [switch] $OriginalXStatusCards,
@@ -542,6 +543,7 @@ if ($OriginalPileRecursion) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalScaledBuff) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPileStatus) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDrawUpgradeScaling) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomStatusDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptionDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1062,6 +1064,7 @@ if ($OriginalPileRecursion) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pi
 if ($OriginalScaledBuff) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-buff' }
 if ($OriginalPileStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-status' }
 if ($OriginalDrawUpgradeScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-draw-upgrade-scaling' }
+if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
 if ($OriginalRoomStatusDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-status-damage' }
 if ($OriginalCorruptionDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corruption-damage' }
 if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
@@ -2254,6 +2257,13 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
 if ($OriginalMonsterHandCosts -and (-not $trace.OriginalMonsterHandCostsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalMonsterHandCostsSamples).Count -ne 7 -or @($trace.OriginalMonsterHandCostsDeploymentQueries).Count -ne 8 -or -not $trace.OriginalMonsterHandCostsQueriesUnchanged)) {
     throw 'Original Monster hand cost fixture lacks cost/filter controls or restored deployment eligibility queries.'
+}
+if ($OriginalScaledMoonPhase -and (-not $trace.OriginalScaledMoonPhasePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
+    @($trace.OriginalScaledMoonPhaseCounts).Count -ne 3 -or @($trace.OriginalScaledMoonPhaseQueries).Count -ne 12 -or
+    @($trace.OriginalScaledMoonPhaseStatusSamples).Count -ne 3 -or @($trace.OriginalScaledMoonPhasePhases).Count -ne 3 -or
+    @($trace.OriginalScaledMoonPhaseQueries | Where-Object { -not $_.StateUnchanged }).Count -ne 0 -or
+    @($trace.OriginalScaledMoonPhasePhases | Where-Object { -not $_.Completed }).Count -ne 0)) {
+    throw 'Original Lunacy witness lacks positive/zero/large X advances, matched/unmatched status controls or complete phase boundaries.'
 }
 if ($OriginalDrawUpgradeScaling -and (-not $trace.OriginalDrawUpgradeScalingPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalDrawUpgradeScalingSamples).Count -ne 3 -or @($trace.OriginalDrawUpgradeScalingQueries).Count -ne 3 -or

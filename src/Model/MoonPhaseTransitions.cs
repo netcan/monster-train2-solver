@@ -35,15 +35,17 @@ namespace MonsterTrain2Poju.Model
             StatisticQueryFrame? frame = source.Context?.QueryFrame;
             if (frame?.MoonPhase is not (1 or 2) || !frame.MoonPhaseTrackingActive.HasValue)
                 return "Missing active moon-phase snapshot.";
+            int advanceCount = effect.Value;
             if (effect.Type == "AdvanceMoonPhase" && sourceCardId > 0)
             {
                 CardInstanceState? card = source.Context!.FindCard(sourceCardId);
                 if (card?.MaskDescriptor == null)
                     return "Moon-phase advance requires captured card traits.";
-                if (CardBranchMaskModel.Resolve(card).Traits.Contains("CardTraitScalingAdvanceMoonPhase"))
-                    return "Moon-phase advance scaling requires native trait calibration.";
+                StatisticQueryResult scaled = CardMoonAdvanceScalingModel.Adjust(source.Context, sourceCardId, advanceCount);
+                if (!scaled.Supported) return scaled.UnsupportedReason;
+                advanceCount = scaled.Value;
             }
-            if (effect.Type == "AdvanceMoonPhase" && effect.Value <= 0) return null;
+            if (effect.Type == "AdvanceMoonPhase" && advanceCount <= 0) return null;
             if (frame.MoonPhaseTrackingActive != true) return null;
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger =>
                     UnitCallbacks.Contains(trigger.Kind))))
@@ -67,7 +69,7 @@ namespace MonsterTrain2Poju.Model
             if (frame.MoonPhaseTrackingActive == true)
             {
                 int phase = frame.MoonPhase.Value;
-                int count = effect.Type == "SetMoonPhase" ? 1 : Math.Max(0, effect.Value);
+                int count = effect.Type == "SetMoonPhase" ? 1 : Math.Max(0, advanceCount);
                 for (int index = 0; index < count; index++)
                 {
                     phase = effect.Type == "SetMoonPhase" ? effect.Value : phase == 1 ? 2 : 1;
@@ -103,7 +105,10 @@ namespace MonsterTrain2Poju.Model
             if (playerActionOnly && source.Context!.EnergyState!.Phase != "MonsterTurn") return new MoonPhaseTransitionResult(source);
             TrainCombatState state = source;
             int phase = state.Context!.QueryFrame!.MoonPhase!.Value;
-            int count = effect.Type == "SetMoonPhase" ? 1 : Math.Max(0, effect.Value);
+            StatisticQueryResult amount = effect.Type == "AdvanceMoonPhase" ? CardMoonAdvanceScalingModel.Adjust(state.Context, sourceCardId, effect.Value) :
+                new StatisticQueryResult(state.Context, effect.Value);
+            if (!amount.Supported) return new MoonPhaseTransitionResult(null, amount.UnsupportedReason);
+            int count = effect.Type == "SetMoonPhase" ? 1 : Math.Max(0, amount.Value);
             for (int index = 0; index < count; index++)
             {
                 int oldPhase = phase;

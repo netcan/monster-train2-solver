@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 504 archives (465 full battles and
+Current accepted inventory (2026-10-19): 505 archives (466 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,25 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-504 accepted archives. Refresh/check the index with
+505 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-scaled-moon-phase.mt2f` retains original Lunacy.
+X three/zero/ten advances the moon three/zero/ten times before adding that many
+Conduit stacks to one friendly unit. Three actual advance callbacks, three
+complete phase-effect train contexts, three actual status callbacks and twelve
+unchanged matched/unmatched incoming-status queries match. Phase parity,
+target/floor controls, unchanged attack/health and ordinary discard are checked.
+Exact native Float-one/PlayedCost source parameters and the ordered Conduit
+List filter are required. Other multipliers, added/replaced traits, moon-phase
+card-upgrade callbacks and unsupported relic combinations retain guards.
+Six plays/five EndTurns win with sixteen immutable chains and matching
+128-state serial/parallel search (ten roots, zero unsupported).
+Binary-only: 26,545 bytes/3,543 nodes, SHA-256
+`25ee178f531d4677cd7cfd7f2737eea262e4061db4e9d94933720446f3dba272`.
+Use `-OriginalScaledMoonPhase` and `--original-scaled-moon-phase-only`.
+Focused gate `model-checks-20261019-031256-b5bade87` passed this fixture,
+the existing moon advance fixture and original Conduit relic fixture.
 
 `full-battle-original-draw-upgrade-scaling.mt2f` retains original Prism Retrieval.
 X three/zero/ten scales the original +five attack/-one cost upgrade to

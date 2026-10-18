@@ -180,6 +180,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-scaled-buff.mt2f',
     'full-battle-original-pile-status.mt2f',
     'full-battle-original-draw-upgrade-scaling.mt2f',
+    'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-room-status-damage.mt2f',
     'full-battle-original-corruption-damage.mt2f',
     'full-battle-original-x-status-cards.mt2f',
@@ -1701,6 +1702,13 @@ foreach ($fixturePath in $soldierFixtures) {
     foreach ($mode in @('--soldier-of-fortune-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Soldier of Fortune checks failed ($mode): $fixturePath" }
+    }
+}
+$originalScaledMoonPhaseFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-scaled-moon-phase.mt2f' })
+foreach ($fixturePath in $originalScaledMoonPhaseFixtures) {
+    foreach ($mode in @('--original-scaled-moon-phase-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original scaled moon phase checks failed ($mode): $fixturePath" }
     }
 }
 $originalDrawUpgradeScalingFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-draw-upgrade-scaling.mt2f' })
