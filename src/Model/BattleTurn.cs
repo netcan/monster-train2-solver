@@ -535,15 +535,13 @@ namespace MonsterTrain2Poju.Model
             if (bonusError != null) return Unsupported(bonusError);
             foreach (CardToken card in drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)))
             {
-                var randomized = RelicRandomDrawCostModel.Apply(context, card.InstanceId, out _);
-                if (!randomized.Supported) return Unsupported(randomized.UnsupportedReason!);
-                context = randomized.Context;
+                context = RelicExpensiveCardUpgradeModel.Drawn(context, new[] { card.InstanceId }, out string? drawCallbackError);
+                if (drawCallbackError != null) return Unsupported(drawCallbackError);
                 RelicFirstCardCostResult cardAdded = RelicFirstCardCostModel.ApplyOnCardAdded(context, card.InstanceId,
                     source.PlayRules);
                 if (!cardAdded.Supported) return Unsupported(cardAdded.UnsupportedReason!);
                 context = cardAdded.Context;
             }
-            context = ConduitModel.Drawn(context, drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)).Select(card => card.InstanceId));
             train = WithContext(train, context, false);
             if (turn == 1 && context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicTurnDrawModel.Opening)) == true)
             {

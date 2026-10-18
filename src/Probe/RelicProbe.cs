@@ -55,11 +55,25 @@ namespace MonsterTrain2Poju.Probe
                     .Select(item => CorruptionStatus(item.Effect, item.Index)).ToArray();
                     var cardModifiers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade || item.Effect is RelicEffectModifyTrait ||
-                        item.Effect.GetType().Name == RelicNoUpgradeCardCostModel.Effect ||
+                        item.Effect.GetType().Name == RelicNoUpgradeCardCostModel.Effect || item.Effect is RelicEffectAddCardUpgradeToExpensiveCards ||
                         item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon ||
                         item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurn || item.Effect is RelicEffectFreezeRandomCards ||
                         item.Effect is RelicEffectAddTempUpgradeToRandomCardInHand).Select(item =>
                     {
+                        if (item.Effect is RelicEffectAddCardUpgradeToExpensiveCards)
+                        {
+                            object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
+                            var upgrade = (CardUpgradeState)Field("upgradeState");
+                            var expensiveData = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);
+                            var interactions = new List<string>();
+                            if (expensiveData.GetParamInt2() != 2 || expensiveData.GetParamInt3() != 0 || expensiveData.GetParamFloat() != 0 || expensiveData.GetParamBool2() || expensiveData.GetParamBool3() || expensiveData.GetParamBool4() ||
+                                expensiveData.GetParamCardEffectData().Count != 0 || expensiveData.GetTriggers().Count != 0 || expensiveData.GetParamCardFilter() != null || expensiveData.GetParamCardFilterSecondary() != null)
+                                interactions.Add("Changed original expensive-card definition");
+                            return new RelicCardModifier(item.Index, null, null, false, RelicCardModifierProbe.Conditions(item.Effect),
+                                expensiveCardUpgrade: new RelicExpensiveCardUpgradeRule(Field("exclusiveType").ToString()!, (int)Field("costRequirement"),
+                                    (bool)Field("includeConsumeEnergyTypeCards"), CardModifierProbe.Upgrade(upgrade, false, true),
+                                    upgrade.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray(), interactions));
+                        }
                         if (item.Effect is RelicEffectAddTempUpgradeToRandomCardInHand)
                         {
                             object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);

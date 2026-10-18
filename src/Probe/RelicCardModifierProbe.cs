@@ -12,10 +12,10 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => OriginalBalatroEventCavendishScenario.Enabled || OriginalRelicCountAttackScenario.Enabled || OriginalHealingPowerScenario.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_RELIC_UPGRADES") == "1" ||
             OriginalRelicBatchScenario.Enabled || OriginalCardAttackRelicScenario.Enabled || OriginalCardTypeCostScenario.Enabled || OriginalUpgradeCountRelicsScenario.Enabled ||
-            OriginalPurgeToExhaustScenario.Enabled || OriginalNoUpgradeCardCostScenario.Enabled;
+            OriginalPurgeToExhaustScenario.Enabled || OriginalNoUpgradeCardCostScenario.Enabled || OriginalExpensiveCardUpgradeScenario.Enabled;
         internal static bool CaptureReady => OriginalRelicCountAttackScenario.CaptureReady || OriginalHealingPowerScenario.CaptureReady || RelicCardModifierScenario.CaptureReady || OriginalRelicBatchScenario.CaptureReady ||
             MagebladeScenario.CaptureReady || OriginalCardAttackRelicScenario.CaptureReady || OriginalBalatroEventCavendishScenario.CaptureReady || OriginalCardTypeCostScenario.CaptureReady || OriginalUpgradeCountRelicsScenario.CaptureReady ||
-            OriginalPurgeToExhaustScenario.CaptureReady || OriginalNoUpgradeCardCostScenario.CaptureReady;
+            OriginalPurgeToExhaustScenario.CaptureReady || OriginalNoUpgradeCardCostScenario.CaptureReady || OriginalExpensiveCardUpgradeScenario.Prepared;
         internal static readonly List<Record> Records = new List<Record>();
         private static readonly List<Record> active = new List<Record>();
         internal sealed class Record
@@ -149,6 +149,21 @@ namespace MonsterTrain2Poju.Probe
                 if (__state == null) return; __state.Returned = __result;
                 __state.UpgradeAdded = cardState.GetTemporaryCardStateModifiers().GetCardUpgrades().Count > __state.UpgradeCount;
             }
+        }
+        [HarmonyPatch(typeof(RelicEffectAddCardUpgradeToExpensiveCards), nameof(RelicEffectAddCardUpgradeToExpensiveCards.ApplyCardStateModifiers))]
+        private static class ExpensiveEffectPatch
+        {
+            private static void Prefix(RelicEffectAddCardUpgradeToExpensiveCards __instance, CardState cardState, out Dispatch? __state)
+            {
+                __state = null; if (active.Count == 0) return;
+                Record record = active[active.Count - 1]; var index = Index(record, __instance);
+                __state = new Dispatch { RelicIndex = index.Relic, EffectIndex = index.Effect,
+                    UpgradeCount = cardState.GetTemporaryCardStateModifiers().GetCardUpgrades().Count };
+                record.Dispatches.Add(__state);
+            }
+            private static void Postfix(CardState cardState, bool __result, Dispatch? __state)
+            { if (__state == null) return; __state.Returned = __result;
+                __state.UpgradeAdded = cardState.GetTemporaryCardStateModifiers().GetCardUpgrades().Count > __state.UpgradeCount; }
         }
         [HarmonyPatch(typeof(RelicEffectModifyCardCostIfNoUpgrades),
             nameof(RelicEffectModifyCardCostIfNoUpgrades.ApplyCardStateModifiers))]

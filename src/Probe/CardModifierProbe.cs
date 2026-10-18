@@ -161,6 +161,7 @@ namespace MonsterTrain2Poju.Probe
                 trait.RuntimeType == trait.DeclaredName &&
                 (trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" or "CardTraitEphemeral" ||
                     trait.RuntimeType == "CardTraitDrawInDeploymentPhase" ||
+                    trait.RuntimeType == "CardTraitPermafrost" && upgrade.GetCardUpgradeDataId() == RelicExpensiveCardUpgradeModel.Effect ||
                     trait.RuntimeType == "CardTraitStrongerMagicPower" && CardBranchMaskProbe.Enabled)) &&
                 lifecycle.RemovedRuntimeTypes.All(type => type is "CardTraitIgnoreArmor" or "CardTraitExhaustState");
             if ((upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) && !supportedTraitLifecycle)

@@ -337,6 +337,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalRandomDrawCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSuppressExhaustScenario.Enabled && !OriginalSuppressExhaustScenario.Acquired)
                         OriginalSuppressExhaustScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalExpensiveCardUpgradeScenario.Enabled && !OriginalExpensiveCardUpgradeScenario.Acquired)
+                        OriginalExpensiveCardUpgradeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -1208,6 +1210,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSuppressExhaustScenario.PrepareDeployment(managers);
             }
+            if (fullBattle && OriginalExpensiveCardUpgradeScenario.Enabled && !OriginalExpensiveCardUpgradeScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalExpensiveCardUpgradeScenario.PrepareDeployment(managers);
+            }
             if (fullBattle && OriginalHealDamageScenario.Enabled && (!OriginalHealDamageScenario.Prepared ||
                 combat!.GetTurnCount() > 0 && !OriginalHealDamageScenario.CombatPrepared))
             {
@@ -1640,7 +1647,7 @@ namespace MonsterTrain2Poju.Probe
             }
             if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalRelicBatchScenario.Enabled && !OriginalHealingPowerScenario.Enabled &&
                 !OriginalCardAttackRelicScenario.Enabled && !OriginalCardTypeCostScenario.Enabled && !OriginalUpgradeCountRelicsScenario.Enabled &&
-                !OriginalPurgeToExhaustScenario.Enabled &&
+                !OriginalPurgeToExhaustScenario.Enabled && !OriginalExpensiveCardUpgradeScenario.Enabled &&
                 !RelicCardModifierScenario.Prepared)
             {
                 RelicCardModifierScenario.Prepare(managers, log);
@@ -1895,6 +1902,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalRandomDrawCostScenario.Choose(decision);
                 if (OriginalSuppressExhaustScenario.Enabled)
                     pendingPlay = OriginalSuppressExhaustScenario.Choose(decision);
+                if (OriginalExpensiveCardUpgradeScenario.Enabled)
+                    pendingPlay = OriginalExpensiveCardUpgradeScenario.Choose(decision);
                 if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
@@ -2112,6 +2121,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalMooncycleFaeScenario.Enabled && OriginalMooncycleFaeScenario.IsScenarioAction(action)) ||
                 (OriginalRandomDrawCostScenario.Enabled && OriginalRandomDrawCostScenario.IsScenarioAction(action)) ||
                 (OriginalSuppressExhaustScenario.Enabled && OriginalSuppressExhaustScenario.IsScenarioAction(action)) ||
+                (OriginalExpensiveCardUpgradeScenario.Enabled && OriginalExpensiveCardUpgradeScenario.IsScenarioAction(action)) ||
                 (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
                 (OriginalPurgeToExhaustScenario.Enabled && OriginalPurgeToExhaustScenario.IsScenarioPrelude(action)) ||
                 (OriginalUpgradeCountRelicsScenario.Enabled && OriginalUpgradeCountRelicsScenario.IsScenarioPrelude(action)) ||

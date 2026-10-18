@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **212 distinct original collectable relics / 224 catalog entries
-(94.64%)** have accepted native evidence: 194 have full-battle effect evidence,
+As of 2026-10-18, **213 distinct original collectable relics / 224 catalog entries
+(95.09%)** have accepted native evidence: 195 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2521,4 +2521,92 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-sup
 dotnet run --project src/ModelChecks -c Release -- --suppress-exhaust-pure
 dotnet run --project src/ModelChecks -c Release -- --original-suppress-exhaust-only tests/fixtures/full-battle-original-suppress-exhaust.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-suppress-exhaust.mt2f
+```
+
+## ApplyDazedOnAscendOrDescend
+
+| Original relic asset | Data ID | Native fixture | Accepted effect evidence |
+| --- | --- | --- | --- |
+| `ApplyDazedOnAscendOrDescend` | `4df794d8-3dd3-4ca0-8690-727a85414968` | `full-battle-original-expensive-card-upgrade.mt2f` | The unchanged original effect gives a unique Permafrost upgrade to cards costing at least three or any X-cost card. Six callback kinds, threshold changes, manager reset, six queries, two explicit previews, ordinary/X plays, redraw freezing and retained hand state match native/model replay. |
+
+Despite the asset name, the executed effect is
+RelicEffectAddCardUpgradeToExpensiveCards; unused Dazed metadata does not cause
+movement or status effects. The unchanged owner allows deployment and contains
+one effect with Invalid (unrestricted) card type, cost threshold three and X-cost
+inclusion. Its initialized upgrade is unique and uses the effect class name as
+its runtime upgrade ID. It adds only CardTraitPermafrost. The original stored
+CostGreaterThan3 filter is captured but is not evaluated by the native effect:
+its own cost predicate accepts a zero-cost X card. Ordinary costs include
+permanent and temporary numeric offsets, excluding trait-derived cost changes.
+
+Apply, hand addition and permanent-upgrade callbacks add a missing qualifying
+upgrade, remove an existing nonqualifying upgrade, and otherwise preserve it.
+The bool callbacks report interest even when no upgrade changes. An existing
+upgrade remains of interest after the cost drops below three, permitting its
+removal. HasApplied is a pure interest-and-presence query. The explicit Preview
+API makes the same upgrade changes without notifying OnTraitAdded. Normal
+addition notifies traits only with initialized scene managers and running
+combat. Permafrost adds an independent temporary CardTraitFreeze when absent;
+removing its source upgrade does not remove that Freeze. Playing clears Freeze
+while preserving Permafrost, and the next draw freezes the card again before
+relic draw and hand-addition callbacks. Numeric costs and RNG remain unchanged.
+
+The isolated scenario uses two authored Stewards with abilities/triggers cleared
+and six carriers: three-cost Spell, two-cost Spell, zero-cost X Spell, retained
+four-cost Spell, two-cost threshold-cycle Spell and three-cost Monster. Native
+manager controls refresh/query all six cards. Permanent cost changes take the
+threshold carrier through 2->3->2->3 using the manager's original permanent-
+upgrade notification. A manager reset proves unique reinstallation. Explicit
+upgrade removal precedes two Preview calls and an X hand-addition callback;
+the cards are already frozen for those controls. The original effect and
+upgrade definitions are unchanged. Four recorded actions deploy both Stewards
+and play the ordinary/X spells; the Monster carrier is not played. Both spells
+clear Freeze, then naturally regain it on redraw. The four-cost control remains
+frozen in hand across four nonterminal EndTurns.
+
+All 35 specialized records replay exactly: ten Apply, eleven Added, six Has,
+three Permanent, two Preview and three TraitDrawn callbacks. They include five
+upgrade additions, one removal retaining Freeze and two natural re-freezes.
+Ten manager records additionally prove ordered dispatch and five exact trigger
+notifications with 32 immutable manager branches. These sets overlap and are
+not 45 distinct effect applications. Specialized callback replay preserves
+parents across sixteen parallel branches.
+
+The schema-235 native battle wins with 35 stages, four actions and five EndTurns,
+settled terminal effects, DEPTH-PASS and all eight general/specialized capture,
+mismatch, unsupported and pending counters zero. Independent replay matches all
+four actions and the four-EndTurn suffix in sixteen branches. Search matches
+four recorded decisions and 26 root actions with no unsupported attempts,
+serial/parallel best equality, 128/128 states and three replayed steps. Ten
+affected archives pass with two workers and both terminal exit codes zero:
+this owner, random draw cost, no-upgrade cost, random freeze, Freeze cost,
+Conduit, typed draw, bonus draw, original opening draw and branch-mask generation.
+Regression summary: `.probe-runs/model-checks-20261018-130806-2732733f/summary.json`.
+Native source: `.game-reference/native-source/RelicEffectAddCardUpgradeToExpensiveCards.cs`
+and `.game-reference/native-source/CardTraitPermafrost.cs`; successful capture:
+`.probe-runs/full-battle-units-and-junk-20261018-130703-5b4a3edb/full-battle.mt2f`.
+
+Pure checks cover the exact 2/3 threshold, Equipment/Junk, temporary and full
+cost changes, unique refresh, unfrozen preview behavior, inactive/running-combat
+notification gating and missing combat input rejection. The explicit native
+Preview API is called on already-frozen cards; it does not establish native
+SaveManager.PreviewMode execution or prove that an unfrozen preview remains
+unfrozen. Battle-exterior notifications, Monster plays, later natural card
+generation, arbitrary additional trait/card callbacks, combined relics and
+the campaign DeckScreen UI need separate native evidence. The exact original
+owner/payload is validated without generalizing changed filters or upgrades.
+
+The binary archive is 23,832 bytes with 3,230 unique nodes and SHA-256
+`965eeb0cbf688c87ebb665ccc6c1e65c8ec1c4770ef82b14bb0afea7d793441c`.
+Source length/hash are zero and no JSON companion is tracked. Accepted inventory
+is 432 archives: 393 battles and 39 component calibrations. Original-owner
+coverage is 213/224 (95.09%): 195 battle, seventeen campaign and one native no-op
+owner; eleven owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalExpensiveCardUpgradeRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-expensive-card-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --expensive-card-upgrade-pure
+dotnet run --project src/ModelChecks -c Release -- --original-expensive-card-upgrade-only tests/fixtures/full-battle-original-expensive-card-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-expensive-card-upgrade.mt2f
 ```

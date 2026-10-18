@@ -93,8 +93,7 @@ namespace MonsterTrain2Poju.Model
                         cycle.Draw.Where(item => item.InstanceId != token.InstanceId).ToArray(), cycle.Discard, cycle.Rng, cycle.DrawModifier,
                         cycle.ExternalInteractions, cycle.BonusDraw, cycle.NextDrawUpgrades, cycle.NextUpgradeReferenceId));
                     context = context.WithStatistics(context.Statistics?.Increment(token.InstanceId, "TimesDrawn"));
-                    context = ConduitModel.Drawn(context, new[] { token.InstanceId });
-                    context = RelicRandomDrawCostModel.Drawn(context, new[] { token.InstanceId }, out failure);
+                    context = RelicExpensiveCardUpgradeModel.Drawn(context, new[] { token.InstanceId }, out failure);
                     if (failure != null) return count;
                 }
                 return count;

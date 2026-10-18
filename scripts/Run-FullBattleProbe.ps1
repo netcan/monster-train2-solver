@@ -308,6 +308,7 @@ param(
     [switch] $OriginalMooncycleFaeRelic,
     [switch] $OriginalRandomDrawCostRelic,
     [switch] $OriginalSuppressExhaustRelic,
+    [switch] $OriginalExpensiveCardUpgradeRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -543,6 +544,7 @@ if ($OriginalStartTurnPropagationRelic) { $BranchCardMasks = $true; $PhysicalSpa
 if ($OriginalMooncycleFaeRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalRandomDrawCostRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalSuppressExhaustRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalExpensiveCardUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1021,6 +1023,7 @@ if ($OriginalStartTurnPropagationRelic) { $environment['MT2_PROBE_MODIFIERS'] = 
 if ($OriginalMooncycleFaeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mooncycle-fae' }
 if ($OriginalRandomDrawCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-random-draw-cost' }
 if ($OriginalSuppressExhaustRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-suppress-exhaust' }
+if ($OriginalExpensiveCardUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-expensive-card-upgrade' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1969,6 +1972,14 @@ if ($OriginalSuppressExhaustRelic -and ($trace.Schema -ne 234 -or $trace.Origina
     $trace.OriginalSuppressExhaustUnsupported -ne 0 -or $trace.OriginalSuppressExhaustPending -ne 0 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 8 -or @($trace.RelicSuppressExhaustRecords).Count -lt 16)) {
     throw 'Original ChanceToNotConsume acceptance failed.'
+}
+if ($OriginalExpensiveCardUpgradeRelic -and ($trace.Schema -ne 235 -or $trace.OriginalExpensiveCardUpgradeSchema -ne 235 -or
+    $trace.ModifierScenario -ne 'original-expensive-card-upgrade' -or -not $trace.OriginalExpensiveCardUpgradePrepared -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.OriginalExpensiveCardUpgradeCaptureFailures -ne 0 -or $trace.OriginalExpensiveCardUpgradeMismatches -ne 0 -or
+    $trace.OriginalExpensiveCardUpgradeUnsupported -ne 0 -or $trace.OriginalExpensiveCardUpgradePending -ne 0 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 4 -or @($trace.RelicExpensiveCardUpgradeRecords).Count -lt 15)) {
+    throw 'Original expensive-card Permafrost acceptance failed.'
 }
 if ($OriginalRandomDrawCostRelic -and ($trace.Schema -ne 233 -or $trace.OriginalRandomDrawCostSchema -ne 233 -or
     $trace.ModifierScenario -ne 'original-random-draw-cost' -or -not $trace.OriginalRandomDrawCostPrepared -or

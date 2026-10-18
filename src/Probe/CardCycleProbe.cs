@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CardTraitState trait in card.GetTraitStates())
                 {
                     // SelfPurge and Consume act only when wasPlayed=true; DiscardHand sets it false.
-                    if (!(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion || trait is CardTraitFreeze)) &&
+                    if (!(drawing && trait is CardTraitPermafrost) && !(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion || trait is CardTraitFreeze)) &&
                         callbacks.Any(callback => trait.GetType().GetMethod(callback,
                         BindingFlags.Instance | BindingFlags.Public)?.DeclaringType != typeof(CardTraitState)))
                         interactions.Add(trait.GetType().Name + " " + kind + " callback");

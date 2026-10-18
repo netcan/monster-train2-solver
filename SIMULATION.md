@@ -1,11 +1,25 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 431 binary archives, including 392
+Current accepted inventory (2026-10-18): 432 binary archives, including 393
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 212/224 catalog entries (94.64%): 194 battle owners, 17 campaign
+covers 213/224 catalog entries (95.09%): 195 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`ApplyDazedOnAscendOrDescend` now has schema-235 native evidence for its actual
+cost>=3 or X-cost Permafrost effect. Its asset name and unused Dazed metadata
+do not describe the executed effect. Five upgrade additions, one removal after
+a cost decrease, six queries, two explicit previews and two natural redraws
+match full state. Removing Permafrost retains its independent temporary Freeze;
+playing clears Freeze, and a later draw restores it. The four-cost control
+remains in hand across four ordinary turns. The 35-stage winning battle, four
+actions, independent four-EndTurn suffix with sixteen immutable branches,
+128-state serial/parallel search and ten affected archives pass. Pure checks
+also cover Equipment/Junk and temporary/full costs, plus the running-combat
+notification gate and missing-input rejection. Native preview-mode execution,
+unfrozen preview controls, battle-exterior notifications, Monster plays and
+arbitrary combined card/relic callbacks require separate native evidence.
 
 `ChanceToNotConsume` now has schema-234 native evidence for its unchanged 50%
 Spell Consume suppression. Four natural Consume plays produce two hits into

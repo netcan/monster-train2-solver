@@ -119,6 +119,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-mooncycle-fae.mt2f',
     'full-battle-original-random-draw-cost.mt2f',
     'full-battle-original-suppress-exhaust.mt2f',
+    'full-battle-original-expensive-card-upgrade.mt2f',
     'full-battle-original-propagate-on-status-effect-applied.mt2f',
     'full-battle-original-pyre-health-card-cost.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
@@ -1516,5 +1517,14 @@ foreach ($fixturePath in $originalSuppressExhaustFixtures) {
     foreach ($mode in @('--original-suppress-exhaust-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original ChanceToNotConsume checks failed ($mode): $fixturePath" }
+    }
+}
+$originalExpensiveCardUpgradeFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-original-expensive-card-upgrade.mt2f'
+})
+foreach ($fixturePath in $originalExpensiveCardUpgradeFixtures) {
+    foreach ($mode in @('--original-expensive-card-upgrade-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original expensive-card Permafrost checks failed ($mode): $fixturePath" }
     }
 }

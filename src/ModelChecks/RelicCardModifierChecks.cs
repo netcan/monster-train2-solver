@@ -396,6 +396,8 @@ internal static class RelicCardModifierChecks
             scenario.GetString() is "mageblade" or "original-mageblade-magnitude";
         bool noUpgradeCardCostScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
             scenario.GetString() == "original-reduce-cost-unit-no-upgrade";
+        bool expensiveCardUpgradeScenario = root.TryGetProperty("ModifierScenario", out scenario) &&
+            scenario.GetString() == "original-expensive-card-upgrade";
         bool sawExpectedRejection = statusUpgradeScenario || unhealedHealthUpgradeScenario || piercingUpgradeScenario || abilityUpgradeScenario || triggerUpgradeScenario || castTriggerUpgradeScenario ||
             replacementUpgradeScenario || extraToughTombsScenario || deployableRelicScenario
             ? rows.Any(row => row.Dispatches.Any(effect => !effect.Returned && !effect.UpgradeAdded))
@@ -410,12 +412,14 @@ internal static class RelicCardModifierChecks
             rows.Any(row => row.Dispatches.Any(effect => !effect.Returned)), statusUpgradeScenario
                 ? "Native manager lacks reset and failed-eligibility rejection."
                 : "Native manager lacks reset/repeat/unique rejection and failed eligibility.");
-        string expectedOwner = magebladeScenario ? "PojuMagebladeMagicPowerRelic" : extraToughTombsScenario ? "ExtraToughTombs" :
+        string expectedOwner = expensiveCardUpgradeScenario ? RelicExpensiveCardUpgradeModel.AssetKey : magebladeScenario ? "PojuMagebladeMagicPowerRelic" : extraToughTombsScenario ? "ExtraToughTombs" :
             purgeToExhaustScenario ? "PurgeToExhaust" :
             root.TryGetProperty("ModifierScenario", out var ownerScenario) && ownerScenario.GetString() == "original-deployable-relic"
                 ? "NonBannerUnitsHaveDeployable" : allUnitsMultistrikeScenario ? "AllUnitsMultistrike" : "ReduceStarterCost";
         Require(rows.Any(row => row.Relics.Any(relic => relic.AssetKey == expectedOwner &&
-            (magebladeScenario
+            (expensiveCardUpgradeScenario
+                ? relic.EffectTypes.SequenceEqual(new[] { RelicExpensiveCardUpgradeModel.Effect }) && relic.CardModifiers?.Count == 1
+                : magebladeScenario
                 ? relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyCardMagicalPower }) &&
                     relic.MagicPowerModifiers?.Count == 1
                 : extraToughTombsScenario
@@ -799,13 +803,14 @@ internal static class RelicCardModifierChecks
             Before: row.GetProperty("Before").Deserialize<CombatContext>()!,
             Actual: row.GetProperty("Actual").Deserialize<CombatContext>()!)).ToArray();
         var births = generated.SelectMany(row => row.Actual.CardInstances!.Where(card => card.InstanceId >= row.Before.NextCardId)).ToArray();
-        if (requireScenarioCoverage && !noUpgradeCardCostScenario && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
+        if (requireScenarioCoverage && !expensiveCardUpgradeScenario && !noUpgradeCardCostScenario && !deployableRelicScenario && !statusUpgradeScenario && !piercingUpgradeScenario && !selfPurgeUpgradeScenario &&
             !exhaustUpgradeScenario && !ephemeralUpgradeScenario && !abilityUpgradeScenario && !triggerUpgradeScenario && !replacementUpgradeScenario &&
             !castTriggerUpgradeScenario && !allUnitsMultistrikeScenario && !magebladeScenario && !extraToughTombsScenario && !unhealedHealthUpgradeScenario)
             Require(births.Any(card => card.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ReduceStarterCost" ||
                 rows.SelectMany(row => row.Relics).SelectMany(relic => relic.CardModifiers ?? []).Any(effect => effect.Upgrade?.DataId == upgrade.DataId))),
                 "No battle-generated eligible card received an original relic upgrade.");
         string coverage = !requireScenarioCoverage ? "all recorded composite eligibility results" :
+            expensiveCardUpgradeScenario ? "original high-cost and X Permafrost modifier callbacks" :
             deployableRelicScenario ? "eligible deployment-phase units are independently played" :
             statusUpgradeScenario ? "card status upgrades reached summoned units" :
             piercingUpgradeScenario ? "IgnoreArmor relic traits retained on played cards" :

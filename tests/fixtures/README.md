@@ -1,8 +1,19 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 431 archives (392 full battles and
-39 component calibrations), 212/224 original relic owners (94.64%): 194 battle
+Current accepted inventory (2026-10-18): 432 archives (393 full battles and
+39 component calibrations), 213/224 original relic owners (95.09%): 195 battle
 owners, seventeen campaign-interface owners and one native no-op. The latest
+`ApplyDazedOnAscendOrDescend` fixture covers its actual cost>=3 or X-cost
+Permafrost callback. All six callback kinds match, including a cost-threshold
+cycle, unique manager reset, six queries and two explicit previews. Two natural
+spell plays clear Freeze while preserving Permafrost; two later draws restore
+Freeze. A four-cost control remains in hand across four ordinary turns.
+The 35-stage winning battle, four actions, independent four-EndTurn suffix,
+sixteen immutable branches, 128-state search and ten affected archives pass.
+Pure checks cover Equipment/Junk, temporary/full costs, battle-exterior trait
+notification gating and missing running-combat inputs. Native preview-mode
+execution, unfrozen preview controls, Monster plays, battle-exterior callbacks
+and arbitrary card/relic combinations need separate native evidence. The preceding
 `ChanceToNotConsume` fixture covers the unchanged 50% Spell Consume effect.
 Four natural Consume plays give two Discard hits and two Exhausted misses,
 with exact private trait state, play counts and Battle RNG. Explicit controls

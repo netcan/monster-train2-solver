@@ -197,6 +197,17 @@ if (args.Length == 1 && args[0] == "--suppress-exhaust-pure")
     OriginalSuppressExhaustChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--expensive-card-upgrade-pure")
+{
+    OriginalExpensiveCardUpgradeChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-expensive-card-upgrade-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalExpensiveCardUpgradeChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-suppress-exhaust-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1936,6 +1947,7 @@ OriginalStartTurnPropagationChecks.Run();
 OriginalMooncycleFaeChecks.Run();
 OriginalRandomDrawCostChecks.Run();
 OriginalSuppressExhaustChecks.Run();
+OriginalExpensiveCardUpgradeChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

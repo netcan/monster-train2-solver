@@ -59,19 +59,22 @@ namespace MonsterTrain2Poju.Model
         public RelicFreezeHandUpgrade? FreezeHandUpgrade { get; }
         public RelicRandomFreeze? RandomFreeze { get; }
         public RelicRandomHandUpgrade? RandomHandUpgrade { get; }
+        public RelicExpensiveCardUpgradeRule? ExpensiveCardUpgrade { get; }
         public RelicCardModifier(int effectIndex, RelicCardUpgradeRule? rule, CardUpgradeModifier? upgrade,
             bool applyToCardlessSpawns, IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0,
             RelicTraitReplacement? traitReplacement = null, RelicNoUpgradeCardCostModifier? noUpgradeCost = null,
             RelicMoonPhaseHandUpgrade? moonPhaseHandUpgrade = null, RelicFreezeHandUpgrade? freezeHandUpgrade = null,
-            RelicRandomFreeze? randomFreeze = null, RelicRandomHandUpgrade? randomHandUpgrade = null)
+            RelicRandomFreeze? randomFreeze = null, RelicRandomHandUpgrade? randomHandUpgrade = null,
+            RelicExpensiveCardUpgradeRule? expensiveCardUpgrade = null)
         { EffectIndex = effectIndex; Rule = rule; Upgrade = upgrade; ApplyToCardlessSpawns = applyToCardlessSpawns;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             ConditionCount = conditions?.Count ?? conditionCount; TraitReplacement = traitReplacement; NoUpgradeCost = noUpgradeCost;
-            MoonPhaseHandUpgrade = moonPhaseHandUpgrade; FreezeHandUpgrade = freezeHandUpgrade; RandomFreeze = randomFreeze; RandomHandUpgrade = randomHandUpgrade; }
+            MoonPhaseHandUpgrade = moonPhaseHandUpgrade; FreezeHandUpgrade = freezeHandUpgrade; RandomFreeze = randomFreeze; RandomHandUpgrade = randomHandUpgrade;
+            ExpensiveCardUpgrade = expensiveCardUpgrade; }
         internal RelicCardModifier WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicCardModifier(EffectIndex, Rule, Upgrade, ApplyToCardlessSpawns, conditions,
                 traitReplacement: TraitReplacement, noUpgradeCost: NoUpgradeCost, moonPhaseHandUpgrade: MoonPhaseHandUpgrade,
-                freezeHandUpgrade: FreezeHandUpgrade, randomFreeze: RandomFreeze, randomHandUpgrade: RandomHandUpgrade);
+                freezeHandUpgrade: FreezeHandUpgrade, randomFreeze: RandomFreeze, randomHandUpgrade: RandomHandUpgrade, expensiveCardUpgrade: ExpensiveCardUpgrade);
     }
     public sealed class RelicNoUpgradeCardCostModifier
     {
@@ -124,7 +127,8 @@ namespace MonsterTrain2Poju.Model
             var indices = relic.EffectTypes.Select((type, index) => (type, index)).Where(item =>
                     item.type == RelicModel.AddTempUpgrade || item.type == RelicModel.ModifyTrait ||
                     item.type == RelicModel.ModifyCardCostIfNoUpgrades || item.type == RelicModel.ApplyCardUpgradeToHandEndOfTurnOnMoon ||
-                    item.type == RelicFreezeHandUpgradeModel.Effect || item.type == RelicRandomFreezeModel.Effect || item.type == RelicRandomHandUpgradeModel.Effect)
+                    item.type == RelicFreezeHandUpgradeModel.Effect || item.type == RelicRandomFreezeModel.Effect || item.type == RelicRandomHandUpgradeModel.Effect ||
+                    item.type == RelicExpensiveCardUpgradeModel.Effect)
                 .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.CardModifiers?.Count > 0 ? "Unexpected relic card modifier definitions." : null;
             if (relic.CardModifiers == null || !indices.SequenceEqual(relic.CardModifiers.Select(rule => rule.EffectIndex)))
@@ -132,6 +136,13 @@ namespace MonsterTrain2Poju.Model
             foreach (var effect in relic.CardModifiers)
             {
                 string type = relic.EffectTypes[effect.EffectIndex];
+                if (type == RelicExpensiveCardUpgradeModel.Effect)
+                {
+                    string? expensiveError = RelicExpensiveCardUpgradeModel.Validate(relic, effect);
+                    if (expensiveError != null) return expensiveError;
+                    continue;
+                }
+                if (effect.ExpensiveCardUpgrade != null) return "Unexpected expensive-card payload on another effect.";
                 if (type == RelicRandomHandUpgradeModel.Effect)
                 {
                     string? randomError = RelicRandomHandUpgradeModel.Validate(relic, effect);
@@ -331,6 +342,21 @@ namespace MonsterTrain2Poju.Model
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
                     string type = relic.EffectTypes[effectIndex];
+                    if (type == RelicExpensiveCardUpgradeModel.Effect)
+                    {
+                        RelicExpensiveCardUpgradeRule rule = cardEffects[effectIndex].ExpensiveCardUpgrade!;
+                        bool had = RelicExpensiveCardUpgradeModel.HasUpgrade(card);
+                        if (context != null && RelicExpensiveCardUpgradeModel.MissingCombatFlag(card, rule, context))
+                            return Fail("Missing running-combat flag for expensive-card trait notification.");
+                        card = RelicExpensiveCardUpgradeModel.Refresh(card, rule, context?.QueryFrame?.RunningCombat == true, out bool returned);
+                        bool has = RelicExpensiveCardUpgradeModel.HasUpgrade(card);
+                        if (had && !has) state = CardUpgradeLifecycleModel.RemoveById(state, RelicExpensiveCardUpgradeModel.Effect).State;
+                        else if (!had && has) state = CardUpgradeLifecycleModel.ApplyTemporary(state, Payload(rule.Upgrade, trackTemporary: true)).State;
+                        state = new CardUpgradeLifecycleState(CardBranchMaskModel.OwnedState(card), state.Permanent, state.Temporary,
+                            state.AuthoredTriggers, state.UpgradeTriggers, state.StandbyOverride, state.StandbyPile);
+                        dispatches.Add(new RelicCardModifierDispatch(relicIndex, effectIndex, returned, !had && has, Array.Empty<RelicCardFilterResult>()));
+                        continue;
+                    }
                     if (type == RelicModel.ModifyCardTypeCost)
                     {
                         if (!costEffects.TryGetValue(effectIndex, out RelicCardTypeCost? costEffect))
