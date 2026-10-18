@@ -199,6 +199,9 @@ namespace MonsterTrain2Poju.Model
         public bool HasUnsupportedUnplayedTriggers { get; }
         public bool? ForgeEligible { get; }
         public bool HasKillTriggers { get; }
+        // False is the legacy schema default; retain exact rule identity for
+        // existing captures that predate card-owned kill-trigger metadata.
+        public bool ShouldSerializeHasKillTriggers() => HasKillTriggers;
         public CardPlayRule(string dataId, string assetKey, int cost, string effect, string destination,
             CombatUnit? spawnUnit, IReadOnlyList<string> externalInteractions, IReadOnlyList<CardActionEffect>? effects = null,
             IReadOnlyList<string>? upgradeInteractions = null, IReadOnlyList<string>? handDiscardInteractions = null,

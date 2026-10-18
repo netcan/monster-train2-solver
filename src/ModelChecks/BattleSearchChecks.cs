@@ -3,6 +3,25 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattleSearchChecks
 {
+    internal static void FrontierDiagnostics(FixtureValue fixture)
+    {
+        int index = 0;
+        foreach (FixtureValue entry in fixture.GetProperty("Actions").EnumerateArray())
+        {
+            BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(before);
+            if (frontier.HasUnsupportedAttempts)
+            {
+                foreach (var group in frontier.UnsupportedAttempts.GroupBy(attempt => attempt.Reason))
+                    Console.WriteLine("NATIVE-FRONTIER-UNSUPPORTED decision=" + index + " count=" + group.Count() + " reason=" + group.Key +
+                        " cards=" + string.Join(",", group.Select(attempt => attempt.Action == null ? "EndTurn" :
+                            before.Spawn.Train.Context!.FindCard(attempt.Action.CardInstanceId)?.DataId ?? attempt.Action.CardInstanceId.ToString()).Distinct()));
+                return;
+            }
+            index++;
+        }
+        Console.WriteLine("NATIVE-FRONTIER-DIAGNOSTICS PASS: " + index + " decisions, zero unsupported attempts.");
+    }
     internal static void Native(FixtureValue fixture)
     {
         FixtureValue actions = fixture.GetProperty("Actions");

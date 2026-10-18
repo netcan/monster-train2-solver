@@ -78,6 +78,7 @@ param(
     [switch] $OriginalSelfAttack,
     [switch] $OriginalHealingCleanse,
     [switch] $OriginalOnKill,
+    [switch] $OriginalOnKillGeneration,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -559,6 +560,7 @@ if ($OriginalGraftedEquipment) { $BranchCardMasks = $true; $Policy = 'units-spel
 if ($OriginalSelfAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHealingCleanse) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOnKill) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalOnKillGeneration) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1090,6 +1092,7 @@ if ($OriginalGraftedEquipment) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalSelfAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-self-attack' }
 if ($OriginalHealingCleanse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-healing-cleanse' }
 if ($OriginalOnKill) { $environment['MT2_PROBE_MODIFIERS'] = 'original-on-kill' }
+if ($OriginalOnKillGeneration) { $environment['MT2_PROBE_MODIFIERS'] = 'original-on-kill-generation' }
 if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
@@ -2336,6 +2339,9 @@ if ($OriginalHealingCleanse -and (-not $trace.OriginalHealingCleansePrepared -or
 }
 if ($OriginalOnKill -and (-not $trace.OriginalOnKillPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 13)) {
     throw 'Original Bloody Moon witness lacks seven original plays and lethal/nonlethal/shield/Undying controls or a completed native battle.'
+}
+if ($OriginalOnKillGeneration -and (-not $trace.OriginalOnKillGenerationPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 14)) {
+    throw 'Original Antumbra Assault witness lacks seven original plays, native pool RNG/full-hand controls or a completed native battle.'
 }
 if ($OriginalPileStatus -and (-not $trace.OriginalPileStatusPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or
     @($trace.OriginalPileStatusQueries).Count -ne 24 -or -not $trace.OriginalPileStatusQueriesUnchanged -or

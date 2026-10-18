@@ -121,6 +121,11 @@ namespace MonsterTrain2Poju.Probe
                 bool? forgeEligible = nativeCardsByDataId.TryGetValue(id, out CardState? nativeCard)
                     ? CardForgeHelper.IsCardOfInterest(nativeCard, managers.GetCoreManagers()) : CardGenerationProbe.ForgeEligibility(data);
                 CardPlayRule rule = Definition(data, unplayedOrder, forgeEligible); reachable.Add(id, rule);
+                // Include every weighted OnKill pool member before the first roll,
+                // so generated-card legality/search does not depend on its outcome.
+                foreach (CardEffectData effect in data.GetCardTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnKill)
+                    .SelectMany(trigger => trigger.GetCardEffects()).Where(effect => effect.GetEffectStateName() == "CardEffectAddBattleCard"))
+                    foreach (CardCreationRule child in CardGenerationProbe.Definition(effect).Pool) pending.Enqueue(child.DataId);
                 CombatUnit[] spawned = new[] { rule.SpawnUnit, rule.Summon?.Additional?.Unit }
                     .Where(unit => unit != null).Cast<CombatUnit>()
                     .Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>()).ToArray();
@@ -334,10 +339,10 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Unimplemented card-trigger effect " + effect.GetEffectStateName());
                 return new CardActionEffect("Unsupported", "None", 0, false, false, Array.Empty<CombatStatus>());
             }
-            return DescribeSpellEffect(source, effect, interactions);
+            return DescribeSpellEffect(source, effect, interactions, cardTrigger: true);
         }
 
-        private static CardActionEffect DescribeSpellEffect(CardData? data, CardEffectData effect, List<string> interactions)
+        private static CardActionEffect DescribeSpellEffect(CardData? data, CardEffectData effect, List<string> interactions, bool cardTrigger = false)
         {
             if (AbilityLifecycleProbe.Known(effect.GetEffectStateName())) return AbilityLifecycleProbe.Describe(effect);
             if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) return AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool());
@@ -353,6 +358,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
             bool deckSpellUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToSpellsInDeck";
             bool upgradedCopy = effect.GetEffectStateName() == "CardEffectAddUpgradedCopy";
+            bool cardOnlyGenerationTarget = cardTrigger && effect.GetEffectStateName() == "CardEffectAddBattleCard" && effect.GetTargetMode() == TargetMode.Hand;
             bool cardOnlyDrawTarget = (effect.GetEffectStateName() == "CardEffectDrawType" ||
                 effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard") &&
                 (effect.GetTargetMode() == TargetMode.DrawPile || effect.GetTargetMode() == TargetMode.Hand ||
@@ -380,7 +386,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() != "CardEffectFeederRules" &&
                 !effect.GetParamSubtype().IsNone ||
                 (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
-                    !cardOnlyDrawTarget && !randomDiscardHandTarget && !recursionCardPileTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
+                    !cardOnlyGenerationTarget && !cardOnlyDrawTarget && !randomDiscardHandTarget && !recursionCardPileTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                 interactions.Add("Spell scaling or target filters");
             string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
                 effect.GetEffectStateName() == "CardEffectNULL" ? "Null" :

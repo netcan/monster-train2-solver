@@ -41,9 +41,9 @@ namespace MonsterTrain2Poju.Probe
             CardActionEffect[] actions = effects.Select(effect => BattleActionProbe.DescribeTriggerEffect(effect, interactions)).ToArray();
             bool conversion = data.GetTrigger().ToString() == "OnUnplayedPositive" && effects.Length == 1 &&
                 effects[0].GetEffectStateName() == "CardEffectBalatroConvertCard" && effects[0].GetParamInt() == 1;
-            bool energyKill = data.GetTrigger() == CardTriggerType.OnKill && data.GetTriggerEffects().Count == 0 &&
-                effects.Length == 1 && effects[0].GetEffectStateName() == "CardEffectGainEnergy" && interactions.Count == 0;
-            if (data.GetTrigger().ToString() != "OnCast" && !conversion && !energyKill) interactions.Add("Unsupported card upgrade trigger " + data.GetTrigger());
+            bool supportedKill = data.GetTrigger() == CardTriggerType.OnKill && data.GetTriggerEffects().Count == 0 &&
+                effects.Length == 1 && effects[0].GetEffectStateName() is "CardEffectGainEnergy" or "CardEffectAddBattleCard" && interactions.Count == 0;
+            if (data.GetTrigger().ToString() != "OnCast" && !conversion && !supportedKill) interactions.Add("Unsupported card upgrade trigger " + data.GetTrigger());
             return new CardLifecycleTrigger(data.GetTrigger().ToString(), data.GetDescriptionKey(),
                 effects.Select(effect => effect.GetEffectStateName()).ToArray(), id, actions, interactions.Distinct().ToArray(),
                 data.GetTrigger() == CardTriggerType.OnKill ? !AllGameManagers.Instance!.GetAllGameData().GetBalanceData()

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 516 archives (476 full battles and
+Current accepted inventory (2026-10-19): 517 archives (477 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,35 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-516 accepted archives. Refresh/check the index with
+517 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-on-kill-generation.mt2f` captures seven unchanged
+Antumbra Assault plays. Its original five damage/one cost creates two Morsels
+after a deployment kill, an exact kill, a lethal Undying revival and later
+deaths. Positive nonlethal/shield controls consume no generation RNG. The
+nineteen-slot pool retains weights 5/5/4/4/1 for Shadow Morsel, Molten Morsel,
+Morsel Jeweler, Void Excavator and Morsel Miner. With thirty cards in hand,
+playing the final spell opens one slot: native still rolls twice but creates
+one card, preserving RNG and allocation order. Authored targets, an anchor,
+battery/filler and temporary Freeze isolate these paths. All pool definitions
+are reachable before selection, so search does not depend on the sampled card.
+Fourteen plays/five EndTurns and sixteen independent complete chains pass.
+Source `.probe-runs/full-battle-units-spells-and-junk-20261019-051738-6d1919f4`
+won with all four counters zero and protected original profiles unchanged.
+Binary-only: 44,512 bytes/8,080 nodes, SHA-256
+`d28b49a44e1e1e5034d1be21fadc5cb6eb8d453c71cab640b817308f08c783a0`.
+Use `--original-on-kill-generation-only`. Character fire counts, trigger
+upgrades, other generation destinations/modifiers and victim-targeted trigger
+effects require separate native evidence.
+Independent checks pass all fourteen actions, five turns and forty room stages;
+the prior Bloody Moon's sixteen complete chains also pass. Bounded search
+matches fourteen decisions/twenty-three roots, visits 128/128 states and replays
+three steps with equal serial/parallel results. It reports 109 unsupported
+recorded-frontier attempts/eight search attempts: generated Void Excavator's
+existing `Spawned effect modifiers` boundary still blocks its unit play.
+`--battle-frontier-only` reports the first rejected frontier without rerunning
+bounded search. This batch does not claim complete generated-unit coverage.
 
 `full-battle-original-on-kill.mt2f` captures seven unchanged Bloody Moon plays.
 Its original 25 damage/two cost refunds two energy on overkill, exact lethal

@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 516 binary archives, including 476
+Current accepted inventory (2026-10-19): 517 binary archives, including 477
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 516
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 517
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,18 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-on-kill-generation.mt2f` adds unchanged Antumbra Assault's
+two-Morsel reward, including deployment, exact kills and Undying revival. The
+nineteen-slot pool preserves 5/5/4/4/1 weights. Nonlethal/shield controls draw no
+RNG; a full thirty-card hand frees one slot on play, rolls twice and creates
+one card. Every pool member is reachable before sampling. Fourteen plays/five
+EndTurns and sixteen immutable full chains pass. Other destinations, upgrades,
+character fire counts and victim-targeted triggers retain explicit boundaries.
+The existing Void Excavator spawn-modifier guard remains visible in search
+(109 recorded-frontier/eight search attempts); all recorded actions are matched
+and serial/parallel best results agree. `--battle-frontier-only` diagnoses the
+first rejected native decision without running the bounded search again.
 
 `full-battle-original-on-kill.mt2f` adds unchanged Bloody Moon's fixed energy
 reward inside damage/death. Overkill, exact kills, a lethal Undying revival and

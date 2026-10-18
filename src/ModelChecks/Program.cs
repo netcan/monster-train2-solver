@@ -402,6 +402,12 @@ if (args.Length == 2 && args[0] == "--original-on-kill-only")
     OriginalOnKillChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-on-kill-generation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalOnKillGenerationChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-pile-status-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1116,6 +1122,12 @@ if (args.Length == 2 && args[0] == "--battle-search-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     BattleSearchChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--battle-frontier-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattleSearchChecks.FrontierDiagnostics(fixture.RootElement);
     return;
 }
 

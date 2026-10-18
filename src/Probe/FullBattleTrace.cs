@@ -885,6 +885,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalOnKillPrepared = OriginalOnKillScenario.Prepared,
                 OriginalOnKillIds = OriginalOnKillScenario.CardIds,
                 OriginalOnKillDeploymentAllowed = OriginalOnKillScenario.DeploymentAllowed,
+                OriginalOnKillGenerationPrepared = OriginalOnKillGenerationScenario.Prepared,
+                OriginalOnKillGenerationIds = OriginalOnKillGenerationScenario.CardIds,
                 OriginalStatusCompositionsIds = OriginalStatusCompositionsScenario.CardIds,
                 OriginalConsumedUpgradeIds = OriginalConsumedUpgradeScenario.CardIds,
                 OriginalConsumedUpgradeSamples = OriginalConsumedUpgradeScenario.Samples,
