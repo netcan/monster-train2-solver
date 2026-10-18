@@ -33,16 +33,18 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CombatUnit> RetainedUnits { get; }
         public BattlePlayRules? PlayRules { get; }
         internal IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> PendingCallbacks { get; }
+        internal IReadOnlyList<NextDrawUpgradeRule>? DiscardDrawUpgrades { get; }
         public bool Supported => State != null;
         internal TrainSpellResult(TrainCombatState? state, RoomOutcome outcome, IReadOnlyList<CombatEvent> events, string? error = null,
             IReadOnlyList<SpellTargetCollection>? collections = null, IReadOnlyList<CardPileState>? otherPiles = null,
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pendingCallbacks = null, IReadOnlyList<CombatUnit>? retainedUnits = null,
-            BattlePlayRules? playRules = null)
+            BattlePlayRules? playRules = null, IReadOnlyList<NextDrawUpgradeRule>? discardDrawUpgrades = null)
         { State = state; Outcome = outcome; Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = error;
             TargetCollections = Array.AsReadOnly((collections ?? Array.Empty<SpellTargetCollection>()).ToArray());
             RetainedUnits = Array.AsReadOnly((retainedUnits ?? Array.Empty<CombatUnit>()).ToArray());
             OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray());
             PlayRules = playRules;
+            DiscardDrawUpgrades = discardDrawUpgrades == null ? null : Array.AsReadOnly(discardDrawUpgrades.ToArray());
             PendingCallbacks = Array.AsReadOnly((pendingCallbacks ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToArray()); }
     }
 
@@ -1734,9 +1736,16 @@ namespace MonsterTrain2Poju.Model
             // when the callback list is empty. Finish that work at this boundary.
             if (!deferFinalCallbacks || callbacks.Count == 0) DrainDeaths();
             if (routingError != null) return UnsupportedTrain(routingError);
-            state = WithContext(state, (piles == null ? state.Context! : state.Context!.WithOtherPiles(piles)).AfterCardEffects());
+            CombatContext effectsContext = piles == null ? state.Context! : state.Context!.WithOtherPiles(piles);
+            // Native temporarily hides this queue during OnCast, then restores it
+            // for played-discard traits before the final card cleanup clears it.
+            var discardDrawUpgrades = deferFinalCallbacks && !onCastEffects && !onUnplayedNegativeEffects &&
+                CardDiscardDrawModel.Present(effectsContext.FindCard(sourceCardId)) ? effectsContext.Cards.NextDrawUpgrades : null;
+            effectsContext = effectsContext.AfterCardEffects();
+            state = WithContext(state, effectsContext);
             return new TrainSpellResult(state, outcome, events, collections: collections, otherPiles: piles,
-                pendingCallbacks: deferFinalCallbacks ? callbacks : null, retainedUnits: retained.Values.ToArray(), playRules: definitions);
+                pendingCallbacks: deferFinalCallbacks ? callbacks : null, retainedUnits: retained.Values.ToArray(), playRules: definitions,
+                discardDrawUpgrades: discardDrawUpgrades);
 
             void RouteDeadCard(int cardId)
             {

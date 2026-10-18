@@ -266,6 +266,12 @@ namespace MonsterTrain2Poju.Model
             {
                 context = RelicEndCombatModel.Apply(context, out string? error, removedFromDeck);
                 if (error != null) return Unsupported(error);
+                // The live hand display refreshes Rail Spike's statistic after the
+                // full train settles, rather than inside an individual room.
+                if (outcome == RoomOutcome.Cleared && !rooms.Any(room => room.Preview) && context.Statistics?.StoredCards != null &&
+                    context.Cards.Hand.Any(token => CardDiscardDrawModel.Present(context.FindCard(token.InstanceId))))
+                    context = context.WithStatistics(context.Statistics.RefreshOwnedCards(context.Cards.Hand.Concat(context.Cards.Draw)
+                        .Concat(context.Cards.Discard).Concat(context.OtherPiles?.SelectMany(pile => pile.Cards) ?? Array.Empty<CardToken>()).Select(token => token.InstanceId)));
             }
             return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);
         }

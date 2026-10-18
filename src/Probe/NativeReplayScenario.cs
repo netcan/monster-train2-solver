@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalDiscardDrawScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original discard draw fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalDiscardDrawScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalSpellCompositionsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original spell compositions fixture must start on deployment turn.");
@@ -2286,6 +2292,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);
+                if (OriginalDiscardDrawScenario.Enabled) pendingPlay = OriginalDiscardDrawScenario.Choose(decision, OriginalDiscardDrawScenario.CardIds);
                 if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);
                 if (OriginalCorruptionDamageScenario.Enabled) pendingPlay = OriginalCorruptionDamageScenario.Choose(decision, OriginalCorruptionDamageScenario.CardIds);
                 if (OriginalXStatusCardsScenario.Enabled) pendingPlay = OriginalXStatusCardsScenario.Choose(decision, OriginalXStatusCardsScenario.CardIds);

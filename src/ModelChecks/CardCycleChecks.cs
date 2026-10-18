@@ -68,7 +68,7 @@ internal static class CardCycleChecks
                 var prepared = cycle.GetProperty("Kind").GetString() == "Draw"
                     ? EquipmentModel.ReturnStandby(context, cycle.GetProperty("LivingUnitIds").Deserialize<int[]>()!).Cards : context.Cards;
                 before = new CardCycleState(prepared.Hand, prepared.Draw, prepared.Discard, prepared.Rng, prepared.DrawModifier,
-                    before.ExternalInteractions, prepared.BonusDraw, prepared.NextDrawUpgrades, prepared.NextUpgradeReferenceId);
+                    before.ExternalInteractions, prepared.BonusDraw, prepared.NextDrawUpgrades, prepared.NextUpgradeReferenceId, prepared.DeckDrawDisabledThisTurn);
                 drawContext = context.WithCards(before);
             }
             CardCycleResult result = cycle.GetProperty("Kind").GetString() == "Draw"
@@ -107,7 +107,7 @@ internal static class CardCycleChecks
     }
 
     private static string Comparable(CardCycleState state) => JsonSerializer.Serialize(new
-        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw, state.NextDrawUpgrades, state.NextUpgradeReferenceId });
+        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw, state.NextDrawUpgrades, state.NextUpgradeReferenceId, state.DeckDrawDisabledThisTurn });
     private static CardCycleState Read(FixtureValue state)
     {
         // System.Text.Json needs an explicit adapter for the immutable four-word RNG struct.
@@ -121,7 +121,8 @@ internal static class CardCycleChecks
             state.GetProperty("ExternalInteractions").Deserialize<string[]>()!,
             state.TryGetProperty("BonusDraw", out var bonus) ? bonus.Deserialize<BonusDrawState>() : null,
             state.TryGetProperty("NextDrawUpgrades", out var next) ? next.Deserialize<NextDrawUpgradeRule[]>() : null,
-            state.TryGetProperty("NextUpgradeReferenceId", out var reference) ? reference.Deserialize<int?>() : null);
+            state.TryGetProperty("NextUpgradeReferenceId", out var reference) ? reference.Deserialize<int?>() : null,
+            state.TryGetProperty("DeckDrawDisabledThisTurn", out var disabled) ? disabled.Deserialize<bool?>() : null);
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

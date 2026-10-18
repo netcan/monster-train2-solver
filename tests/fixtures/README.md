@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 507 archives (468 full battles and
+Current accepted inventory (2026-10-19): 508 archives (469 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,28 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-507 accepted archives. Refresh/check the index with
+508 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-discard-draw.mt2f` retains original Awoken's Rail Spike.
+Paid X three/zero/ten draws three/zero/ten on played discard, then blocks further
+deck draws even at zero X. Ordinary draw attempts and a typed Monster draw
+leave the deck alone; the next player turn resets blocking. Complete played
+and unplayed discard contexts match; unplayed copies neither draw nor block.
+Thirteen individual draw contexts, three original minus-one cost/plus-one X
+upgrade schedules, three queue clears and Consume match. A held Rail Spike's
+display query refreshes owned-card statistics after the full train settles,
+with separate room/whole-train controls. Missing/changed source parameters,
+unknown draw-block state, OnCast effects and active relic combinations retain
+guards. This isolated probe uses an authored thirty-card hand limit to observe
+all thirteen positive draws; ordinary hand caps and reshuffles need separate
+witnesses. Eleven plays/five EndTurns win with sixteen immutable chains and
+128-state serial/parallel search (46 roots, zero unsupported, three replayed
+steps). Focused gate `model-checks-20261019-034713-49410b69` passed all three
+related fixtures. The queue stays hidden through post-play callbacks and is
+restored immediately before discard. Binary-only: 46,934 bytes/9,066 nodes, SHA-256
+`c533d9e0b89cc34e3cb864f42498a516532efb26cc65a496c22dcc99efde2c3d`.
+Use `-OriginalDiscardDraw` and `--original-discard-draw-only`.
 
 `full-battle-original-spell-compositions.mt2f` retains seven unchanged spells:
 Flash Freeze, Dark Deal, Engraft, Glimmer, Focused Growth, Fae's Blessing and

@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 507 binary archives, including 468
+Current accepted inventory (2026-10-19): 508 binary archives, including 469
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 507
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 508
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,22 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-discard-draw.mt2f` models original Awoken's Rail Spike at
+paid X three/zero/ten. Played-discard drawing precedes blocking further deck
+draws, including zero X; natural discard is a no-op and the next player turn
+resets blocking. Complete discard contexts, thirteen individual draws, original
+minus-one cost/plus-one X upgrades, ordinary/typed draw refusal, three queue
+clears and Consume match. A held card's displayed statistic refresh occurs
+after the full train settles, with room/whole-train controls. An authored
+thirty-card hand limit isolates positive draws; normal caps, reshuffles and
+other scaling combinations need separate witnesses. Exact source parameters,
+captured draw-block state and immutable copies are required; OnCast effects
+and active relic combinations retain guards. Eleven plays/five EndTurns,
+sixteen immutable chains and 128-state serial/parallel search pass (46 roots,
+zero unsupported, three replayed steps). Focused gate
+`model-checks-20261019-034713-49410b69` passed all three related fixtures. The
+queued upgrades remain hidden through post-play callbacks until discard.
 
 `full-battle-original-spell-compositions.mt2f` supplies direct original-card
 witnesses for Flash Freeze, Dark Deal, Engraft, Glimmer, Focused Growth, Fae's

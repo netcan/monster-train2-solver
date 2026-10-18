@@ -515,7 +515,7 @@ namespace MonsterTrain2Poju.Model
             context = context.WithOtherPiles(piles);
             // Native direct play removes the card from hand before queued effects execute.
             context = new CombatContext(new CardCycleState(context.Cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
-                context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId),
+                context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn),
                 context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
                 context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState);
             target = new RoomCombatState(target.RoomIndex, target.Deployment, target.Units, target.ExternalInteractions,
@@ -531,6 +531,7 @@ namespace MonsterTrain2Poju.Model
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
             int? spawnedId = null;
             bool effectsApplied = false;
+            IReadOnlyList<NextDrawUpgradeRule>? discardDrawUpgrades = null;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingSpellCallbacks = Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();
             IReadOnlyList<CombatUnit> retainedSpellUnits = Array.Empty<CombatUnit>();
@@ -736,6 +737,7 @@ namespace MonsterTrain2Poju.Model
                 if (result.Outcome != RoomOutcome.Exchanged || outcome == RoomOutcome.Exchanged) outcome = result.Outcome;
                 effectsApplied = true;
                 outputPlayRules = result.PlayRules ?? outputPlayRules;
+                discardDrawUpgrades = result.DiscardDrawUpgrades;
                 pendingSpellCallbacks = result.PendingCallbacks;
                 retainedSpellUnits = result.RetainedUnits;
                 foreach (SpellTargetCollection collection in result.TargetCollections)
@@ -878,6 +880,8 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             if (terminal) piles = piles.Select(CardPileModel.Clear).ToArray();
+            if (discardDrawUpgrades != null)
+                context = context.WithCards(context.Cards.WithNextDrawUpgrades(discardDrawUpgrades));
             CardInstanceState? discardInstance = context.FindCard(card.InstanceId) ?? playingInstance;
             if (discardInstance != null)
             {
@@ -963,6 +967,18 @@ namespace MonsterTrain2Poju.Model
                     CardScaledEnergyResult gained = CardScaledEnergyModel.Discarded(context, energyCard, wasPlayed: true);
                     if (!gained.Supported) return Unsupported(gained.UnsupportedReason!);
                     context = gained.Context!;
+                    if (CardDiscardDrawModel.Present(energyCard))
+                    {
+                        // Earlier discard traits have already removed the played card before
+                        // its scaling draw runs. Keep the cards that this callback draws.
+                        context = context.WithCards(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
+                            context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw,
+                            context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn)).WithOtherPiles(piles);
+                        TypedDrawResult discardDraw = CardDiscardDrawModel.Discarded(context, energyCard, wasPlayed: true, source.PlayRules);
+                        if (!discardDraw.Supported) return Unsupported(discardDraw.UnsupportedReason!);
+                        context = discardDraw.Context!;
+                        hand = context.Cards.Hand.ToList(); discard = context.Cards.Discard.ToList();
+                    }
                 }
             }
             BattleStatistics? statistics = context.Statistics;
@@ -980,7 +996,7 @@ namespace MonsterTrain2Poju.Model
             }
             context = context.AfterCardEffects();
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
-                context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId), context.BattleRng,
+                context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
                 terminal ? playingInstance == null ? context.CardInstances : new[] { skipNaturalDiscard
                     ? context.FindCard(card.InstanceId) ?? playingInstance : (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, nativePlayedCost, consumeSuppression == RelicSuppressExhaustModel.Trait) } :
@@ -1192,7 +1208,7 @@ namespace MonsterTrain2Poju.Model
             context = context.WithCards(new CardCycleState(context.Cards.Hand.Where(card => card.InstanceId != action.CardInstanceId).ToArray(),
                 context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier,
                 context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades,
-                context.Cards.NextUpgradeReferenceId));
+                context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn));
             var choices = new List<ElixirMixSelection>();
             foreach (PlayCardAction branch in Expand(0, context)) yield return branch;
 

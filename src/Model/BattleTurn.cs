@@ -362,7 +362,7 @@ namespace MonsterTrain2Poju.Model
             {
                 ShuffleResult<CardToken> shuffled = cards.Rng.Shuffle(cards.Draw.Concat(cards.Discard).ToArray());
                 cards = new CardCycleState(cards.Hand, shuffled.Items, Array.Empty<CardToken>(), shuffled.State,
-                    cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
+                    cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
             }
             context = WithCards(context, cards);
             if (discardedIds.Count > 0) context = UnitStandbyModel.ReturnReady(CardExhaustModel.ReturnReady(context));
@@ -474,6 +474,8 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(triggers.Outcome)) return Finish(triggers.Outcome, 0, moon);
             }
             context = train.Context!;
+            if (context.Cards.DeckDrawDisabledThisTurn.HasValue)
+                context = context.WithCards(context.Cards.WithDrawDisabled(false));
             RelicFirstCardCostResult sequenceStart = RelicCardTypeSequenceModel.StartTurn(context);
             if (!sequenceStart.Supported) return Unsupported(sequenceStart.UnsupportedReason!);
             context = sequenceStart.Context;

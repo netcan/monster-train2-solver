@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CardTraitState trait in card.GetTraitStates())
                 {
                     // SelfPurge and Consume act only when wasPlayed=true; DiscardHand sets it false.
-                    if (!(drawing && trait is CardTraitPermafrost) && !(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion || trait is CardTraitFreeze || trait is CardTraitScalingAddEnergy)) &&
+                    if (!(drawing && trait is CardTraitPermafrost) && !(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion || trait is CardTraitFreeze || trait is CardTraitScalingAddEnergy || trait is CardTraitScalingAddCards)) &&
                         callbacks.Any(callback => trait.GetType().GetMethod(callback,
                         BindingFlags.Instance | BindingFlags.Public)?.DeclaringType != typeof(CardTraitState)))
                         interactions.Add(trait.GetType().Name + " " + kind + " callback");
@@ -77,12 +77,13 @@ namespace MonsterTrain2Poju.Probe
                         !(ConduitProbe.Enabled && modifier is RoomStateConduitModifier))))
                     interactions.Add("Room card-manager modifiers");
             }
-            if (cards.GetDrawingDeckCardsDisabledThisTurn()) interactions.Add("Deck draw disabled");
+            if (cards.GetDrawingDeckCardsDisabledThisTurn() && !OriginalDiscardDrawScenario.Enabled) interactions.Add("Deck draw disabled");
             uint[] words = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
             return new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(words[0], words[1], words[2], words[3]), state.DrawModifier,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), BonusDrawProbe.Capture(cards, FullBattleTrace.Active!),
-                TypedDrawProbe.CaptureQueue(cards), TypedDrawProbe.NextUpgradeReferenceId);
+                TypedDrawProbe.CaptureQueue(cards), TypedDrawProbe.NextUpgradeReferenceId,
+                OriginalDiscardDrawScenario.Enabled ? cards.GetDrawingDeckCardsDisabledThisTurn() : (bool?)null);
         }
 
         private IEnumerator Wrap(IEnumerator native, CardManager cards, string kind, int handSize)
@@ -110,7 +111,7 @@ namespace MonsterTrain2Poju.Probe
                     int[]? livingIds = kind == "Draw" ? trace.CaptureTrain().Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToArray() : null;
                     CardCycleState prepared = standbyContext == null ? before : EquipmentModel.ReturnStandby(standbyContext, livingIds!).Cards;
                     prepared = new CardCycleState(prepared.Hand, prepared.Draw, prepared.Discard, prepared.Rng, prepared.DrawModifier,
-                        before.ExternalInteractions, prepared.BonusDraw, prepared.NextDrawUpgrades, prepared.NextUpgradeReferenceId);
+                        before.ExternalInteractions, prepared.BonusDraw, prepared.NextDrawUpgrades, prepared.NextUpgradeReferenceId, prepared.DeckDrawDisabledThisTurn);
                     BattlePlayRules? definitions = standbyContext != null && RelicCorruptedAngelsModel.Enabled(standbyContext)
                         ? trace.CaptureDecision().PlayRules : null;
                     TypedDrawResult? interleaved = definitions == null ? null :
@@ -154,7 +155,7 @@ namespace MonsterTrain2Poju.Probe
         }
 
         private static JToken Comparable(CardCycleState state) => JToken.FromObject(new
-        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw, state.NextDrawUpgrades, state.NextUpgradeReferenceId });
+        { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw, state.NextDrawUpgrades, state.NextUpgradeReferenceId, state.DeckDrawDisabledThisTurn });
 
         private Record? BeginSpellDraw(CardManager cards, int count, CardState? playedCard, CardType cardType)
         {
@@ -164,7 +165,7 @@ namespace MonsterTrain2Poju.Probe
             CardCycleState before = Capture(cards, "SpellDraw");
             int id = FullBattleTrace.Active.CardId(playedCard);
             if (cardType != CardType.Invalid) before = new CardCycleState(before.Hand, before.Draw, before.Discard,
-                before.Rng, before.DrawModifier, before.ExternalInteractions.Concat(new[] { "Unmodeled typed draw" }).ToArray(), before.BonusDraw, before.NextDrawUpgrades, before.NextUpgradeReferenceId);
+                before.Rng, before.DrawModifier, before.ExternalInteractions.Concat(new[] { "Unmodeled typed draw" }).ToArray(), before.BonusDraw, before.NextDrawUpgrades, before.NextUpgradeReferenceId, before.DeckDrawDisabledThisTurn);
             var record = new Record { Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = "SpellDraw",
                 HandSize = count, MaxHandSize = cards.GetMaxHandSize(), PlayedCardId = id, Before = before,
                 Predicted = CardCycleModel.DrawCards(before, count, cards.GetMaxHandSize(), id) };
