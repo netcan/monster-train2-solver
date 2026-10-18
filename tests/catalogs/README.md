@@ -23,17 +23,17 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-040724-5506b27b/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,766 bytes, SHA-256
-`68a26f84ebdcd4f848ebc8e67223a0ca4eddcaf8565e9201b769f8b18ae231f4`.
-The projection reflects revision `f813b49`. All 668 existing raw definitions
+Source: `.probe-runs/full-battle-no-cards-20261019-041747-a073c070/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,791 bytes, SHA-256
+`7d5b150534a48c0a35c5af9a0f4afe7f60bbcdcbab696db671a3a9037152b667`.
+The projection reflects revision `b0115ba`. All 668 existing raw definitions
 match the previous snapshot, including all ordered status lists and Dig Deep's
 pile-status `horde` mask.
 This field captures native removal and List-filter status traits; Pyreborne
 Brainspike retains `cooldown` removal and `avarice` addition separately.
 Only Dante's Inferno's specific-card damage trait has this non-null field:
 `913694e9-bace-4480-8691-24f699ae583e` (Dante's Candle). This identity is captured
-from the actual native trait data. Frame 11,974/11,974, decision and RNG are unchanged.
+from the actual native trait data. Frame 13,903/13,903, decision and RNG are unchanged.
 The surrounding native battle won with all four capture counters zero and
 the protected original files unchanged. Positive Corrupt Restricted hand
 spells now retain their calibrated selected-room cost; source-room abilities
