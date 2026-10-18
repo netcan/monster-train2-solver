@@ -23,13 +23,16 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-060239-1f5fdca6/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,906 bytes, SHA-256
-`ae5adabed020bd862ecb3b580f3b105f6ce70365fdd6a5ed4c81385f2ddc2d8a`.
-The projection reflects revision `7a0410f`, adding the fixed card-owned resource
-kill effects of Greed, Golden Touch and Bonk. All raw fields across 668 cards
-match the preceding catalog. Native frame 14038/14038, all RNG and decision
-state remain unchanged; the baseline won in 44.37 seconds with all counters zero.
+Source: `.probe-runs/full-battle-no-cards-20261019-062209-c1108340/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,810 bytes, SHA-256
+`4dc05bdeae326c25fed71a5eaf16c09a740f58c3f33f0a0dd082554531a43875`.
+The projection reflects revision `a057684`. Ancient Synergy's damage trait now
+captures `QueryCardType=Spell`, required to identify its native TypeInDeck
+filter. This is the only new raw field; all prior fields across 668 cards match.
+Null fields are omitted on unrelated source traits. Native frame 13801/13801,
+all RNG and decision state remain unchanged; the baseline won in 44.20 seconds
+with all counters zero. Greed, Golden Touch and Bonk retain their fixed
+card-owned resource kill effects.
 Original Surgical Strike retains its source-card self-copy and original
 temporary Ephemeral upgrade. Its source suppression trait retains `KillTargetTeam=Monsters` and
 `KillTargetSubtype=SubtypesData_FunGuy`, read directly from native CardTraitData.
