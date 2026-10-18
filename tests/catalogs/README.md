@@ -23,13 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261018-221102-267cfd71/card-catalog.mt2f`.
-The committed archive is byte-identical: 94,121 bytes, SHA-256
-`aaa0c701ef64516eef3ba53ba508e4623f5042520f969550d7e217fd1f3d80e4`.
-The projection reflects revision `d31771a`: Magnetic Relay unit recall and
-Transcend Imp post-spawn trigger replay now join the calibrated primitives.
-Recall equipment/ability callbacks and stateful or repeated trigger history
-remain runtime guards. Saved boxed-card contents remain separate from owned
+Source: `.probe-runs/full-battle-no-cards-20261018-224537-f9dff065/card-catalog.mt2f`.
+The committed archive is byte-identical: 94,402 bytes, SHA-256
+`e32f5a735705fd2ae3c517d16657c7da9949ec7d4167b19f75142287d2ab5d99`.
+The projection reflects revision `396abde`: Fused Weaponry ordered equipment
+merging and Eclipse Chamber room phase understanding/post-combat growth join
+the calibrated primitives. Nested/trait-bearing merge sources, permanent
+offsets, changed copy flags, room phase callbacks and friendly floor movement
+remain runtime guards. Recall equipment/ability callbacks and stateful or
+repeated trigger history are also guarded. Saved boxed-card contents remain separate from owned
 identities, and creation descriptors retain original starting-upgrade metadata.
 Projection support alone does not establish
 direct original-card coverage or remove runtime guards. All 668 raw card
