@@ -957,6 +957,13 @@ namespace MonsterTrain2Poju.Model
                 var suppressionApplied = RelicSuppressExhaustModel.Discarded(context, out _, consumeSuppression, preview: context.IsolatedBattlePreview == true);
                 if (!suppressionApplied.Supported) return Unsupported(suppressionApplied.UnsupportedReason!);
                 context = suppressionApplied.Context;
+                CardInstanceState? energyCard = context.FindCard(card.InstanceId) ?? discardInstance;
+                if (energyCard != null)
+                {
+                    CardScaledEnergyResult gained = CardScaledEnergyModel.Discarded(context, energyCard, wasPlayed: true);
+                    if (!gained.Supported) return Unsupported(gained.UnsupportedReason!);
+                    context = gained.Context!;
+                }
             }
             BattleStatistics? statistics = context.Statistics;
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });

@@ -34,6 +34,15 @@ manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
 
+`full-battle-original-scaled-energy.mt2f` models GainXEnergy's played-discard
+callback before the paid-cost statistic clears. Paying X=3 returns six current
+ember; X=0 returns zero. Unplayed originals discard/redraw without ember, and
+both played cards consume. Seven observed callbacks match complete context,
+including unchanged future income. Five plays/five EndTurns match sixteen
+immutable chains and bounded serial/parallel search. Exact unchanged base
+source parameters and live paid cost are required; next-turn routes and
+added/replaced traits keep explicit guards.
+
 `full-battle-original-specific-card-damage.mt2f` models original Dante's
 Inferno's ten damage per permanent Dante's Candle, overriding incoming damage.
 Twelve restored native queries cover zero/one/three counted cards, input zero/99

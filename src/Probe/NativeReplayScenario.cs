@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalScaledEnergyScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original scaled energy fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalScaledEnergyScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalSpecificCardDamageScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original specific-card damage fixture must start on deployment turn.");
@@ -2209,6 +2215,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalCorruptRestrictedScenario.Enabled) pendingPlay = OriginalCorruptRestrictedScenario.Choose(decision, OriginalCorruptRestrictedScenario.CardIds);
                 if (OriginalStatusStackDamageScenario.Enabled) pendingPlay = OriginalStatusStackDamageScenario.Choose(decision, OriginalStatusStackDamageScenario.CardIds);
                 if (OriginalSpecificCardDamageScenario.Enabled) pendingPlay = OriginalSpecificCardDamageScenario.Choose(decision, OriginalSpecificCardDamageScenario.CardIds);
+                if (OriginalScaledEnergyScenario.Enabled) pendingPlay = OriginalScaledEnergyScenario.Choose(decision, OriginalScaledEnergyScenario.CardIds);
                 if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);
                 if (OriginalCorruptionDamageScenario.Enabled) pendingPlay = OriginalCorruptionDamageScenario.Choose(decision, OriginalCorruptionDamageScenario.CardIds);
                 if (OriginalXStatusCardsScenario.Enabled) pendingPlay = OriginalXStatusCardsScenario.Choose(decision, OriginalXStatusCardsScenario.CardIds);

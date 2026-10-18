@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 496 archives (457 full battles and
+Current accepted inventory (2026-10-19): 497 archives (458 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,25 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-496 accepted archives. Refresh/check the index with
+497 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-scaled-energy.mt2f` retains original GainXEnergy with
+Consume and its played-discard scaling callback. Paying X=3 yields six current
+ember after payment; X=0 yields zero. An unplayed original repeatedly discards
+and redraws without granting ember. Seven observed callbacks independently
+match complete context, including paid cost before discard clears it and
+unchanged next-turn/every-turn income. Both played cards consume; units remain
+unchanged. Source parameters and the live paid-cost statistic are required;
+next-turn routes and added/replaced traits retain guards.
+Five plays/five EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (22 root actions, zero unsupported).
+Binary-only: 26,709 bytes/3,562 nodes, SHA-256
+`3f848e2cd0271b900f8e65f13b8f8e4ae81053efb5d30a0c98c94b1fa30c7f1a`.
+Use `-OriginalScaledEnergy` and `--original-scaled-energy-only`.
+Focused regression `model-checks-20261019-021436-e03772bb` passed this fixture,
+the native energy-effects witness and original Vent/Forever Consumed, with all
+three terminal exit codes zero.
 
 `full-battle-original-specific-card-damage.mt2f` retains original Dante's
 Inferno and a numeric +5 damage upgrade on another copy. Twelve native trait
