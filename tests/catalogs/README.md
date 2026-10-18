@@ -23,16 +23,16 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-023751-5f662633/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,142 bytes, SHA-256
-`3ea2e2ad64d9fbab83faf5f6231d0737f2b6d2bc2b38c5219b9a3e74d414d43e`.
-The projection reflects revision `9b6efb8`. The 668 raw definitions match
+Source: `.probe-runs/full-battle-no-cards-20261019-024303-68da9f86/card-catalog.mt2f`.
+The committed archive is byte-identical: 94,921 bytes, SHA-256
+`23d4c33d4bb04a1be715b6e124b78a7907329dcf6136f33439ef638450736de5`.
+The projection reflects revision `3c62387`. The 668 raw definitions match
 the previous snapshot exactly, including ordered `StatusEffectIds`.
 This field captures native removal and List-filter status traits; Pyreborne
 Brainspike retains `cooldown` removal and `avarice` addition separately.
 Only Dante's Inferno's specific-card damage trait has this non-null field:
 `913694e9-bace-4480-8691-24f699ae583e` (Dante's Candle). This identity is captured
-from the actual native trait data. Frame 13,906/13,906, decision and RNG are unchanged.
+from the actual native trait data. Frame 13,965/13,965, decision and RNG are unchanged.
 The surrounding native battle won with all four capture counters zero and
 the protected original files unchanged. Positive Corrupt Restricted hand
 spells now retain their calibrated selected-room cost; source-room abilities
@@ -50,7 +50,9 @@ Original Moonbeam retains its calibrated X applications of fixed front-enemy
 damage, including zero X and lethal retargeting. Other targeting and range
 modes and added/replaced source traits remain guarded.
 Original Mulch retains its calibrated visible permanent-deck future draw and
-Consume. Other pile-scaling routes retain explicit projection guards.
+Consume. Original Unearth Treasure retains its calibrated exhausted-pile
+threshold, random spell recursion, exact source-family filter, Consume and
+Distinct marker. Other pile-scaling routes retain explicit projection guards.
 Original Unplayable markers retain
 their native rejection behavior. Scrap Metal retains Persistent discard guards
 and its calibrated single-base Refine 3 smelt path. A separate native legality
