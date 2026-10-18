@@ -456,6 +456,17 @@ if (args.Length == 2 && args[0] == "--original-hostile-statuses-only")
     OriginalHostileStatusesChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 1 && args[0] == "--steelguard-pure")
+{
+    OriginalSupportSpellsChecks.Steelguard();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-support-spells-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalSupportSpellsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-rearrange-spells-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

@@ -200,6 +200,7 @@ internal static class CardCoverageInventory
         bool requiresRaw = traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAddDamage" or "CardTraitScalingAddStatusEffect" or "CardTraitUnpurgable" or "CardTraitIncreaseCostOfCardsInHand" or "CardTraitLimitedRange" or "CardTraitDrawInDeploymentPhase" or "CardTraitUnplayable" or "CardTraitPersistent" or "CardTraitRefine" or "CardTraitPermafrost" or "CardTraitDamageOverflow" or "CardTraitCorruptRestricted" or "CardTraitAddDamagePerStatusEffect" or "CardTraitScalingAddDamagePerCard" or "CardTraitScalingAddEnergy" or "CardTraitScalingRemoveStatusEffect" or "CardTraitScalingAddEffectApplications" or "CardTraitScalingCardDrawCountPerPile");
         requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingBuffDamage" or "CardTraitScalingStatusEffectPerPile" or "CardTraitScalingTempCardUpgradeToCard" or "CardTraitScalingByConsumedTempCardUpgradeToCard" or "CardTraitShowCardTargets" or "CardTraitScalingAdvanceMoonPhase" or "CardTraitScalingAddCards" or "CardTraitAddCardUpgradeOnMoonPhase");
         requiresRaw |= traits.Any(trait => Text(trait, "Type") == "CardTraitGraftedEquipment");
+        requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAdjustCapacity" or "CardTraitScalingHealTrain");
         foreach (string source in new[] { "CardInstances", "CardRegistry" })
         foreach (FixtureValue instance in Array(context, source))
         {
@@ -289,6 +290,11 @@ internal static class CardCoverageInventory
                 trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") && !Flag(trait, "Scaling") &&
                 Text(trait, "Str").Length == 0 && trait.GetProperty("Float").GetDouble() == 2 &&
                 Text(trait, "TrackedValue") == "MagicPowerInTargetRoom" && Text(trait, "EntryDuration") == "ThisTurn";
+        if (type == "CardTraitScalingAddStatusEffect" && trait.GetProperty("Int").GetInt32() == 2 &&
+            trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") &&
+            Text(trait, "Str") == "" && trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") &&
+            Text(trait, "TrackedValue") == "CorruptionInTargetRoom" && Text(trait, "EntryDuration") == "ThisTurn" &&
+            Strings(trait, "StatusEffectIds").SequenceEqual(new[] { "armor" })) return true;
         if (type == "CardTraitScalingAddStatusEffect")
             return trait.GetProperty("Int").GetInt32() == 2 &&
                 (trait.GetProperty("Int2").GetInt32() == 1 && Text(trait, "EntryDuration") == "ThisTurn" ||
@@ -305,6 +311,13 @@ internal static class CardCoverageInventory
         if (trait.GetProperty("Int2").GetInt32() != 0 || trait.GetProperty("Int3").GetInt32() != 0 ||
             Flag(trait, "Bool") || Text(trait, "Str").Length > 0) return false;
         int value = trait.GetProperty("Int").GetInt32();
+        if (Text(trait, "EntryDuration") == "ThisTurn" && !Flag(trait, "Scaling"))
+        {
+            if (type is "CardTraitScalingHealTrain" or "CardTraitExhaustState" && value == 2 &&
+                trait.GetProperty("Float").GetDouble() == 1 && Text(trait, "TrackedValue") == "DragonsHoardAmount") return true;
+            if (type == "CardTraitScalingAdjustCapacity" && value == 1 && trait.GetProperty("Float").GetDouble() == 1 && Text(trait, "TrackedValue") == "PlayedCost") return true;
+            if (type == "CardTraitExhaustState" && value == 0 && trait.GetProperty("Float").GetDouble() == 0 && Text(trait, "TrackedValue") == "CorruptionInTargetRoom") return true;
+        }
         if (type == "CardTraitScalingAddDamage" && trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") &&
             Text(trait, "EntryDuration") == "ThisBattle" && (value == 3 && Text(trait, "TrackedValue") == "AnyMonsterDeath" ||
                 value == 2 && Text(trait, "TrackedValue") == "TypeInDeck" && Text(trait, "QueryCardType") == "Spell")) return true;

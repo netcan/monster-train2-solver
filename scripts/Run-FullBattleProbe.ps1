@@ -90,6 +90,7 @@ param(
     [switch] $OriginalScaledDamage,
     [switch] $OriginalMovementSpells,
     [switch] $OriginalRearrangeSpells,
+    [switch] $OriginalSupportSpells,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -580,6 +581,7 @@ if ($OriginalFriendlyStatuses) { $BranchCardMasks = $true; $PhysicalSpawnPoints 
 if ($OriginalBasicDamage) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalResourceSpells) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHostileStatuses) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSupportSpells) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRearrangeSpells) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMovementSpells) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledDamage) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -1122,6 +1124,7 @@ if ($OriginalFriendlyStatuses) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalBasicDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-basic-damage' }
 if ($OriginalResourceSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-resource-spells' }
 if ($OriginalHostileStatuses) { $environment['MT2_PROBE_MODIFIERS'] = 'original-hostile-statuses' }
+if ($OriginalSupportSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-support-spells' }
 if ($OriginalRearrangeSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rearrange-spells' }
 if ($OriginalMovementSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-movement-spells' }
 if ($OriginalScaledDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-damage' }
@@ -2390,6 +2393,9 @@ if ($OriginalUnitBuffs -and (-not $trace.OriginalUnitBuffsPrepared -or -not $tra
 }
 if ($OriginalKillCopy -and (-not $trace.OriginalKillCopyPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 12)) {
     throw 'Original Surgical Strike witness lacks original and copied plays with target-team and lethal controls.'
+}
+if ($OriginalSupportSpells -and (-not $trace.OriginalSupportSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 27)) {
+    throw 'Original support spell witness lacks thirteen unchanged originals and positive resource/healing controls.'
 }
 if ($OriginalRearrangeSpells -and (-not $trace.OriginalRearrangeSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 19)) {
     throw 'Original rearrange spell witness lacks eleven unchanged originals and positive composition controls.'

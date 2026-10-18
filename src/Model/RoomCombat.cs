@@ -455,7 +455,7 @@ namespace MonsterTrain2Poju.Model
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "decay", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality", "conduit",
-            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany"
+            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -2301,9 +2301,15 @@ namespace MonsterTrain2Poju.Model
                 if (damage > 0 && target.Has("armor") && !cardPiercing && !unitPiercing)
                 {
                     int armor = target.Amount("armor");
-                    int spent = Math.Min(target.Count("armor"), damage);
-                    blocked += Math.Min(damage, armor);
-                    damage = Math.Max(0, damage - armor);
+                    int armorStacks = target.Count("armor");
+                    int armorLimit = target.Statuses.TryGetValue("steelguard", out CombatStatus? steelguard) ? steelguard.ParamInt : 0;
+                    int applicable = armorLimit > 0 ? Math.Min(armorStacks, armorLimit) : armorStacks;
+                    int spent = Math.Min(applicable, damage);
+                    int remaining = armorLimit > 0 && armorStacks > applicable ? 0 : Math.Max(0, damage - armor);
+                    int armorBlocked = damage - remaining;
+                    if (armorLimit > 0) armorBlocked = Math.Min(armorBlocked, unchecked(applicable * target.Statuses["armor"].ParamInt));
+                    blocked += armorBlocked;
+                    damage = remaining;
                     Trigger(target, "armor", spent);
                 }
                 if (damage > 0 && target.Has("fragile")) damage = target.Health + damage - 1;

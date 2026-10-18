@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 530 binary archives, including 490
+Current accepted inventory (2026-10-19): 531 binary archives, including 491
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 530
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 531
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,18 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-support-spells.mt2f` adds thirteen unchanged originals:
+Razorsharp Edge, Sharpen, Regen Potion, Remnant Pact, Machinist's Tome, Rootseeds,
+Perils of Production, Glittering Draught, Tidal Turning, Shelter, Eternal
+Kinstone, Pay Off and Renovate. Positive healing, four Conduit/fourteen overheal,
+three-Corruption armor, permanent Corruption and three-Hoard Pyre healing match.
+Renovate's Both mask prioritizes friendly capacity, adding twenty-one/zero from
+X while preserving enemy capacity. Steelguard now caps armor loss at its raw
+parameter, fully blocks hits while armor exceeds the cap, and retains ordinary
+below-cap/piercing behavior. Four native damage controls and pure exact-cap
+checks cover this rule. Twenty-seven plays/five EndTurns and sixteen immutable
+complete chains match; physical Conduit movement remains outside this fixture.
 
 `full-battle-original-rearrange-spells.mt2f` adds eleven unchanged originals:
 Horrify, Vine Grasp, Hosting Kin, March of Shields, Soulcrushing Guilt, Selfless

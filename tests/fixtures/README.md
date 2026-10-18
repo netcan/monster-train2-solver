@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 530 archives (490 full battles and
+Current accepted inventory (2026-10-19): 531 archives (491 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,34 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-530 accepted archives. Refresh/check the index with
+531 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-support-spells.mt2f` captures unchanged Razorsharp Edge,
+Sharpen, Regen Potion, Remnant Pact, Machinist's Tome, Rootseeds, Perils of
+Production, Glittering Draught, Tidal Turning, Shelter, Eternal Kinstone, Pay
+Off and Renovate. Thirteen originals/fourteen plays exercise exact attack/HP,
+Rage/Emberdrain, upgrade-backed Endless/Steelguard, next-turn draw/energy,
+positive healing, four Conduit and fourteen full-health overheal armor versus
+an injured ally's fourteen healing. Shelter grants six armor from three
+Corruption; Kinstone adds one permanent/immediate Corruption; Pay Off heals
+six Pyre HP from three Hoard. Renovate's Both mask prioritizes friendly capacity
+and adds twenty-one/zero from positive/zero X without changing enemy capacity.
+Seven Consume routes, one Sharpen RNG draw and neighboring floor controls match.
+Steelguard caps armor loss at fifteen: a 54-damage hit spends fifteen out of
+twenty armor while preserving HP; the next spends five and damages HP by 49.
+Piercing preserves armor and deals 54 HP damage; no armor also takes all 54.
+Pure 14/15/16/30 armor boundaries verify the strict cap comparison and immutable
+parents. Use `--original-support-spells-only` or `--steelguard-pure`. Sixteen
+complete immutable chains, old overheal/spell checks and the original Conduit
+relic fixture pass. Search matches twenty-seven decisions/47 roots, 128/128
+states and three replayed steps with zero unsupported attempts and equal
+serial/parallel best. This scenario captures stationary Conduit without physical
+spawn points; the existing physical-Conduit guard remains. Source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-064326-a66ca769` won in
+119.32 seconds with twenty-seven plays/five EndTurns, four counters zero and
+protected files unchanged. Binary-only: 44,009 bytes/8,567 nodes, SHA-256
+`6d4eb9233981010bf0873c95dde578671ff49d2f721ecf1566da651a68739c1e`.
 
 `full-battle-original-rearrange-spells.mt2f` captures unchanged Horrify, Vine
 Grasp, Hosting Kin, March of Shields, Soulcrushing Guilt, Selfless Sacrifice,
