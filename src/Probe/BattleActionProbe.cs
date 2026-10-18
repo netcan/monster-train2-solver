@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         private static readonly HashSet<string> SpellEffectTypes = new HashSet<string>(new[]
         {
-            "CardEffectNULL", "CardEffectFeederRules", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
+            "CardEffectNULL", "CardEffectAddStatusEffectNull", "CardEffectFeederRules", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
             "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown",
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
@@ -358,6 +358,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Spell scaling or target filters");
             string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
                 effect.GetEffectStateName() == "CardEffectNULL" ? "Null" :
+                effect.GetEffectStateName() == "CardEffectAddStatusEffectNull" ? "StatusNull" :
                 effect.GetEffectStateName() == "CardEffectFeederRules" ? "FeederRules" :
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :

@@ -252,6 +252,12 @@ if (args.Length == 2 && args[0] == "--original-opening-morsels-only")
     OriginalOpeningMorselsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--soldier-of-fortune-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    SoldierOfFortuneChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--forced-feeding-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

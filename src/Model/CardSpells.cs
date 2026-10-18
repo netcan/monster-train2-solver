@@ -399,9 +399,9 @@ namespace MonsterTrain2Poju.Model
                 Remember(effect, index, targets, ref last);
                 if (targets.BattleRng.HasValue)
                     state = WithContext(state, state.Context!.WithBattleRng(targets.BattleRng.Value));
-                if (effect.Type == "Null")
+                if (effect.Type == "Null" || effect.Type == "StatusNull")
                 {
-                    if (effect.NullForwardSelf)
+                    if (effect.Type == "Null" && effect.NullForwardSelf)
                     {
                         if (targets.UnitIds.Count == 0)
                             return UnsupportedTrain("Null target forwarding requires a collected unit.");
@@ -1980,6 +1980,7 @@ namespace MonsterTrain2Poju.Model
                         return "Unit-trigger cards require the calibrated fixed OnEaten payload.";
                     continue;
                 }
+                if (effect.Type == "StatusNull") continue;
                 if (effect.Type == "Mix")
                 {
                     if (effect.Value < 1 || source.Context.MixState == null || source.Context.OtherPiles == null)
@@ -2132,6 +2133,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "Generate" && effect.Generation?.RequireHandSpace == true && context != null && context.Cards.Hand.Count >= context.MaxHandSize) return false;
             switch (effect.Type)
             {
+                case "StatusNull": return true;
                 case "Null": return count > 0 || effect.NullTargetless;
                 case "RemoveStatus": return string.IsNullOrEmpty(effect.Filters?.Subtype) || count > 0;
                 case "Draw": return context != null && context.Cards.Hand.Count - 1 < context.MaxHandSize;

@@ -23,6 +23,7 @@ param(
     [switch] $SacrificeUpgrades,
     [switch] $SacrificeEffects,
     [switch] $SetHealth,
+    [switch] $SoldierOfFortune,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -673,6 +674,7 @@ $cardRecursionModes = @($CardRecursion, $CardRecursionDiscard, $CardRecursionCho
 if ($cardRecursionModes.Count -gt 1) { throw 'Choose one CardRecursion scenario.' }
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($SetHealth) { $Policy = 'units-spells-and-junk' }
+if ($SoldierOfFortune) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($DamageByUnitsKilled) { $Policy = 'units-spells-and-junk' }
 if ($TransferAttack) { $Policy = 'units-spells-and-junk' }
 if ($BrainTransfer) { $Policy = 'units-spells-and-junk' }
@@ -909,6 +911,7 @@ if ($SacrificeEffects) {
     $environment['MT2_PROBE_MODIFIERS'] = 'sacrifice-effects'
 }
 if ($SetHealth) { $environment['MT2_PROBE_MODIFIERS'] = 'set-health' }
+if ($SoldierOfFortune) { $environment['MT2_PROBE_MODIFIERS'] = 'soldier-of-fortune' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2073,6 +2076,13 @@ if ($OriginalOpeningDeckSpawnRelic -and ($trace.Schema -ne 244 -or -not $trace.O
     @($trace.RelicOpeningDeckSpawnApplications).Count -ne 3 -or
     @($trace.RelicOpeningDeckSpawnTests | Where-Object { $_.Isolated -and -not $_.Returned -and $_.CacheBefore.Count -gt 0 }).Count -eq 0)) {
     throw 'Original opening deck-spawn native evidence is incomplete or divergent.'
+}
+if ($SoldierOfFortune -and (-not $trace.SoldierOfFortunePrepared -or -not $trace.NativeWon -or
+    -not $trace.SoldierOfFortuneEmptyTargetTest -or @($trace.SoldierOfFortuneGoldTests).Count -ne 4 -or
+    @($trace.SoldierOfFortuneGoldTests | Where-Object { $_.Returned -ne ($_.Gold -ge 30) }).Count -ne 0 -or
+    @($trace.SoldierOfFortuneNullRecords).Count -ne 3 -or
+    @($trace.SoldierOfFortuneNullRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
+    throw 'Soldier of Fortune requires paid draws, insufficient-gold tests and completed empty-target no-ops.'
 }
 if ($ForcedFeeding -and (-not $trace.ForcedFeedingDeploymentRejected -or
     $trace.ForcedFeedingCaptureFailures -ne 0 -or $trace.ForcedFeedingMismatches -ne 0 -or

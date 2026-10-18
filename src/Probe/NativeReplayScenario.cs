@@ -987,6 +987,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 SetHealthScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && SoldierOfFortuneScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Soldier fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                SoldierOfFortuneScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && modifierScenario == "damage-by-units-killed")
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Damage-by-units-killed fixture must start on deployment turn.");
@@ -1912,6 +1918,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalDeployableRelicScenario.Enabled) pendingPlay = OriginalDeployableRelicScenario.Choose(decision) ?? pendingPlay;
                 if (modifierScenario == "sacrifice-effects") pendingPlay = SacrificeScenario.Choose(decision);
                 if (modifierScenario == "set-health") pendingPlay = SetHealthScenario.Choose(decision);
+                if (SoldierOfFortuneScenario.Enabled) pendingPlay = SoldierOfFortuneScenario.Choose(decision);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);
                 if (modifierScenario == BrainTransferScenario.Name) pendingPlay = BrainTransferScenario.Choose(decision);

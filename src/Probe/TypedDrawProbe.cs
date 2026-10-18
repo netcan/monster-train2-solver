@@ -17,10 +17,10 @@ namespace MonsterTrain2Poju.Probe
         private static Record? current;
         private static readonly Dictionary<CardUpgradeState, int> sharedReferences = new Dictionary<CardUpgradeState, int>();
         private static int nextUpgradeReferenceId = 1;
-        private static bool TrackReferences => Enabled || OriginalCorruptedAngelsScenario.CostOrder != null;
+        private static bool TrackReferences => Enabled || SoldierOfFortuneScenario.Enabled || OriginalCorruptedAngelsScenario.CostOrder != null;
         internal static int? NextUpgradeReferenceId => TrackReferences ? nextUpgradeReferenceId : (int?)null;
         internal static int? SharedReferenceId(CardUpgradeState upgrade) => TrackReferences && sharedReferences.TryGetValue(upgrade, out int id) ? id : (int?)null;
-        private static bool Recording => Enabled && TypedDrawScenario.Prepared && FullBattleTrace.Active != null &&
+        private static bool Recording => (Enabled && TypedDrawScenario.Prepared || SoldierOfFortuneScenario.Prepared) && FullBattleTrace.Active != null &&
             !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
 
         internal static TypedDrawRule DrawRule(CardEffectData effect) => new TypedDrawRule(effect.GetTargetCardType().ToString(),
@@ -41,7 +41,7 @@ namespace MonsterTrain2Poju.Probe
         {
             var queue = (IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextDrawnTempCardUpgrades").GetValue(cards);
             NextDrawUpgradeRule[] values = queue.Select(UpgradeRule).ToArray();
-            return values.Length == 0 && !Enabled ? null : values;
+            return values.Length == 0 && !Enabled && !SoldierOfFortuneScenario.Enabled ? null : values;
         }
 
         internal sealed class Record

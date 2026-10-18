@@ -131,6 +131,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-opening-morsels.mt2f',
     'full-battle-card-backed-feeding.mt2f',
     'full-battle-forced-feeding.mt2f',
+    'full-battle-soldier-of-fortune.mt2f',
     'full-battle-shroud-spike-feeding.mt2f',
     'full-battle-original-opening-deck-spawn.mt2f',
     'full-battle-original-perkeo.mt2f',
@@ -1642,6 +1643,13 @@ foreach ($fixturePath in $forcedFeedingFixtures) {
     foreach ($mode in @('--forced-feeding-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Forced feeding checks failed ($mode): $fixturePath" }
+    }
+}
+$soldierFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-soldier-of-fortune.mt2f' })
+foreach ($fixturePath in $soldierFixtures) {
+    foreach ($mode in @('--soldier-of-fortune-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Soldier of Fortune checks failed ($mode): $fixturePath" }
     }
 }
 $originalDecayDeathFixtures = @($fixtures | Where-Object {

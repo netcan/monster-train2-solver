@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 452 archives (413 full battles and
+Current accepted inventory (2026-10-18): 453 archives (414 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,21 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-452 accepted archives. Refresh/check the index with
+453 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-soldier-of-fortune.mt2f` retains three unchanged originals. Two
+casts each spend 30 gold and temporarily upgrade the drawn unit; at zero gold,
+the third still draws a unit without paying or upgrading. All three Consume.
+The status-null effect accepts empty targets and changes no native state/RNG;
+the distinct `CardEffectNULL` target test and forwarding behavior are retained.
+Native 0/29/30/60-gold tests, three exact draws, two upgrade schedules, complete
+states/RNG, sixteen independent chains and bounded search are checked. The
+39-stage win has eighteen plays/five EndTurns and zero errors. Binary-only:
+31,956 bytes/4,935 nodes, SHA-256
+`f62a818287da12b6032610608afd6225f255a8dd2d7d481d0ff355c1e790aa7b`.
+Use `-SoldierOfFortune` and `--soldier-of-fortune-only`. The scenario strengthens
+training recipients before the root; the original spell definition is unchanged.
 
 `full-battle-forced-feeding.mt2f` covers unchanged Feast, deployment rejection,
 one no-feeder cast, three positive casts, surviving Eatmany and final meals.
