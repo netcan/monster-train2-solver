@@ -410,6 +410,13 @@ namespace MonsterTrain2Poju.Model
                 if (playingInstance == null) return Unsupported("Missing card instance modifiers.");
                 rule = CardModifierModel.Resolve(rule, playingInstance);
             }
+            if (playingInstance != null && CardPlayRangeModel.HasLimitedRange(playingInstance))
+            {
+                RoomPlayRule[] pyreRooms = source.PlayRules.Rooms.Where(room => room.IsPyre).ToArray();
+                if (pyreRooms.Length != 1) return Unsupported("Limited Range requires one captured Pyre room.");
+                if (!CardPlayRangeModel.Allows(action.RoomIndex, pyreRooms[0].RoomIndex))
+                    return Illegal("Limited Range only permits the Pyre room and the room immediately below it.");
+            }
             bool supportsCorruptRestrictedTrait = false;
             if (rule.ExternalInteractions.Contains("Card traits") && playingInstance?.MaskDescriptor != null)
             {

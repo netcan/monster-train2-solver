@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 488 archives (449 full battles and
+Current accepted inventory (2026-10-19): 489 archives (450 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,25 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-488 accepted archives. Refresh/check the index with
+489 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-limited-range.mt2f` retains original Ice and Pyre. It pays
+one energy for ninety front-enemy damage on the top floor and one for a valid
+empty-Pyre cast that leaves every unit unchanged. Explicit lower-floor attempts
+are illegal because of Limited Range. Twelve restored queries cover all four
+floors for original Ice and Pyre, Siren Song and Trap Chute, checking both native
+hand/play methods and their exact errors (24 results). State, frame and RNG
+stay unchanged. The authored durable ascending enemy and temporary Freeze
+isolate the two original spells. Siren Song/Trap Chute room payload and ability
+guards remain separate. Three plays/seven EndTurns win with sixteen immutable
+full chains. Binary-only: 26,562 bytes/3,554 nodes, SHA-256
+`b45cc69abddebc5506a389d2e6f7ce86e1f592c1b0ab23eb110cd71a8fceee91`.
+Use `-OriginalLimitedRange` and `--original-limited-range-only`.
+Focused gate `.probe-runs/model-checks-20261019-012749-3bb4aea6` passed both this
+witness and original strong-magic cards. Bounded search matched all three
+decisions with seven root actions, zero unsupported attempts and equal
+serial/parallel best branches over 128 states.
 
 `full-battle-original-hand-costs.mt2f` retains two original Titan Banes. Their
 four ordered type filters add two energy to spells, units, room attachments
