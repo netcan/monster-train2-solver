@@ -86,7 +86,7 @@ namespace MonsterTrain2Poju.Model
 
         public static CardRecursionResult Apply(CardCycleState cards, IReadOnlyList<CardPileState>? otherPiles,
             UnityRng battleRng, CardActionEffect effect, BattlePlayRules? definitions, int sourceCardId, int maxHandSize,
-            IReadOnlyList<int>? selectedCardIds = null, IReadOnlyList<CardInstanceState>? cardRegistry = null)
+            IReadOnlyList<int>? selectedCardIds = null, IReadOnlyList<CardInstanceState>? cardRegistry = null, int? drawCount = null)
         {
             IReadOnlyList<int> eligible = EligibleCards(cards, otherPiles, effect, definitions, sourceCardId,
                 out string? error, cardRegistry);
@@ -111,7 +111,7 @@ namespace MonsterTrain2Poju.Model
                 if (selectedCardIds != null)
                     return new CardRecursionResult(null, null, null, "Random card recursion cannot take a selected card.");
                 ShuffleResult<int> shuffled = battleRng.Shuffle(eligible);
-                int count = Math.Min(eligible.Count, Math.Max(0, effect.Value));
+                int count = Math.Min(eligible.Count, Math.Max(0, drawCount ?? effect.Value));
                 selected = shuffled.Items.Take(count).ToArray();
                 nextBattleRng = shuffled.State;
             }

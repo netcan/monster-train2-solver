@@ -581,9 +581,11 @@ namespace MonsterTrain2Poju.Model
                 {
                     IReadOnlyList<int>? selectedCardIds = recursionSelections?.FirstOrDefault(selection =>
                         selection.EffectIndex == index)?.CardInstanceIds;
+                    StatisticQueryResult drawCount = CardPileDrawModel.Adjust(state.Context!, sourceCardId, effect.Value, forRecursion: true);
+                    if (!drawCount.Supported) return UnsupportedTrain(drawCount.UnsupportedReason!);
                     CardRecursionResult recursion = CardRecursionModel.Apply(state.Context!.Cards, piles,
                         state.Context.BattleRng, effect, definitions, sourceCardId, state.Context.MaxHandSize,
-                        selectedCardIds, state.Context.CardRegistry);
+                        selectedCardIds, state.Context.CardRegistry, drawCount.Value);
                     if (!recursion.Supported) return UnsupportedTrain(recursion.UnsupportedReason!);
                     BattleStatistics? statistics = state.Context.Statistics;
                     foreach (int cardId in recursion.RestoredCardIds.Where(id =>

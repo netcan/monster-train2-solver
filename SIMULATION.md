@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 500 binary archives, including 461
+Current accepted inventory (2026-10-19): 501 binary archives, including 462
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 500
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 501
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,16 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-pile-recursion.mt2f` models original Unearth Treasure.
+Zero/4/5/10 exhausted-card queries prove a constant threshold bonus; counting
+five total cards including two Monsters returns two of three eligible spells.
+After live pile changes the next cast sees four exhausted cards and returns
+one eligible spell. Its original filter excludes previously consumed copies of
+itself. Two actual callbacks match identities/order, physical piles and Battle
+RNG; pure queries restore pile/standby layout, decision, frame and RNG. One
+ember per cast, Consume, unchanged units, four plays/five EndTurns, sixteen
+immutable chains and bounded search match. Other pile modes remain guarded.
 
 `full-battle-original-pile-draw.mt2f` models original Mulch's future-draw bonus
 from the native visible permanent-deck count. Restored zero/14/15/29/30-card

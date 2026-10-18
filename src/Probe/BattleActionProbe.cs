@@ -215,9 +215,13 @@ namespace MonsterTrain2Poju.Probe
                 trait.GetParamInt() != 0 && (trait.GetParamBool() || data.IsUnitAbility() || data.IsRoomAbility())))
                 interactions.Add("Positive Corrupt Restricted source-room/unit abilities are not calibrated.");
             if (data.GetTraits().Any(trait => trait.GetTraitStateName() == CardPileDrawModel.Trait &&
-                (trait.GetParamInt() != 1 || trait.GetParamInt2() != 0 || trait.GetParamInt3() != 15 || !trait.GetParamBool() ||
-                 data.GetEffects().Any(effect => effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn"))))
-                interactions.Add("Pile-scaled draw outside Mulch's visible-deck future-draw route is not calibrated.");
+                !(trait.GetParamInt() == 1 &&
+                  (trait.GetParamInt2() == 0 && trait.GetParamInt3() == 15 && trait.GetParamBool() &&
+                   data.GetEffects().All(effect => effect.GetEffectStateName() == "CardEffectDrawAdditionalNextTurn") ||
+                   trait.GetParamInt2() == 2 && trait.GetParamInt3() == 5 && !trait.GetParamBool() &&
+                   data.GetEffects().All(effect => effect.GetEffectStateName() == "CardEffectRecursion" && effect.GetTargetMode() == TargetMode.Exhaust &&
+                       effect.GetTargetCardSelectionMode() == CardEffectData.CardSelectionMode.RandomToHand)))))
+                interactions.Add("Pile-scaled draw outside calibrated Mulch/Unearth Treasure routes is not calibrated.");
             bool selfPurge = data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitSelfPurge");
             CardEffectData[] effects = data.GetEffects().ToArray();
             string kind = effects.Length == 0 ? "CardEffectNULL" : effects.Length == 1 ? effects[0].GetEffectStateName() : "MultipleEffects";

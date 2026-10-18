@@ -324,6 +324,12 @@ if (args.Length == 2 && args[0] == "--original-status-cards-only")
     OriginalStatusCardsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-pile-recursion-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalPileRecursionChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-pile-draw-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

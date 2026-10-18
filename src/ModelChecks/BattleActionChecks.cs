@@ -659,6 +659,8 @@ internal static class BattleActionChecks
             chooser = source => OriginalEffectApplicationsChecks.Choose(source, fixture.GetProperty("OriginalEffectApplicationsIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalPileDrawPrepared", out var originalPileDrawPrepared) && originalPileDrawPrepared.GetBoolean())
             chooser = source => OriginalPileDrawChecks.Choose(source, fixture.GetProperty("OriginalPileDrawIds").Deserialize<int[]>()!);
+        if (fixture.TryGetProperty("OriginalPileRecursionPrepared", out var originalPileRecursionPrepared) && originalPileRecursionPrepared.GetBoolean())
+            chooser = source => OriginalPileRecursionChecks.Choose(source, fixture.GetProperty("OriginalPileRecursionIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalRoomStatusDamagePrepared", out var originalRoomStatusPrepared) && originalRoomStatusPrepared.GetBoolean())
             chooser = source => OriginalRoomStatusDamageChecks.Choose(source, fixture.GetProperty("OriginalRoomStatusDamageIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalCorruptionDamagePrepared", out var originalCorruptionPrepared) && originalCorruptionPrepared.GetBoolean())

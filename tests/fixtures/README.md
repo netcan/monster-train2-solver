@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 500 archives (461 full battles and
+Current accepted inventory (2026-10-19): 501 archives (462 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,29 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-500 accepted archives. Refresh/check the index with
+501 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-pile-recursion.mt2f` retains original Unearth Treasure.
+Four restored native queries at zero/four/five/ten exhausted cards give a
+constant zero/zero/one/one bonus. This is a threshold, not repeated division.
+The first cast counts five total exhausted cards (including two Monster cards),
+then randomly returns two of three eligible spells. The next cast sees four
+exhausted cards and returns the remaining eligible spell. The original filter
+excludes the first consumed Unearth Treasure from the second cast's candidates.
+Both observed callbacks independently match returned identities/order, physical
+piles and Battle RNG. Card source parameters, live source-pile capture, one
+ember per cast, Consume and unaffected-unit controls are retained. All queries
+restore pile order, standby dictionary layout, decision, frame and deterministic
+RNG. Other pile/query modes and added/replaced traits remain guarded.
+Four plays/five EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (14 root actions, zero unsupported).
+Binary-only: 27,655 bytes/3,816 nodes, SHA-256
+`c880536486b6ceaa58a1b75b7f4139c08db15b7df276ce8702a2995aed852bea`.
+Use `-OriginalPileRecursion` and `--original-pile-recursion-only`.
+Focused regression `model-checks-20261019-024206-a64b12ed` passed this fixture,
+the original random-recursion fixture and Mulch, all three terminal exit codes
+zero.
 
 `full-battle-original-pile-draw.mt2f` retains original Mulch and Consume.
 Five native queries at zero/fourteen/fifteen/twenty-nine/thirty visible permanent
