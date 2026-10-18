@@ -1,11 +1,22 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 417 binary archives, including 379
+Current accepted inventory (2026-10-18): 418 binary archives, including 380
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 198/224 catalog entries (88.39%): 181 battle owners, 16 campaign
+covers 199/224 catalog entries (88.84%): 182 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`DamageOnEaten` now has schema-222 native evidence for five 5-damage callbacks
+against the weakest enemy Hero on the triggering friendly unit's floor. Three
+nonlethal hits, two kills and wrong-trigger/enemy-team/empty-room/reset controls
+match complete native states without changing Battle RNG. The 51-stage winning
+battle, focused checks, independent five-EndTurn policy suffix with sixteen
+immutable branches, and serial/parallel search pass with zero differential
+counters. Authored `CardEffectPlayUnitTrigger` cards invoke real OnEaten callbacks
+after deployment; deployment suppresses their queued OnEaten trigger. This
+calibrates the relic callback, not the complete Snack feeding/removal lifecycle,
+OnFeed, preview execution or arbitrary combined effects.
 
 `DamageOnConsume` now has schema-221 native evidence for four 30-damage
 front-enemy callbacks, including two kills, plus non-Consume and empty-room/reset

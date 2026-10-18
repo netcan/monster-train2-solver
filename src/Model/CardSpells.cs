@@ -460,7 +460,7 @@ namespace MonsterTrain2Poju.Model
                         effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
                         effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
                         chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
-                        statusTransfer: effect.StatusTransfer);
+                        statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind);
                 }
                 if (effect.Type == "ChooseDiscard")
                 {
@@ -498,6 +498,24 @@ namespace MonsterTrain2Poju.Model
                     }
                     state = WithContext(state, changed);
                     if (recursion.OtherPiles != null) piles = recursion.OtherPiles.ToArray();
+                    continue;
+                }
+                if (effect.Type == "PlayUnitTrigger")
+                {
+                    // CombatManager.QueueTrigger rejects OnEaten during deployment.
+                    if (state.Rooms.Single(room => room.RoomIndex == collectionRoom).Deployment) continue;
+                    var pending = targets.UnitIds.Select(id => {
+                        RoomCombatState room = state.Rooms.Single(item => item.Units.Any(unit => unit.Id == id));
+                        return new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex,
+                            room.Units.Single(unit => unit.Id == id), effect.UnitTriggerKind!);
+                    }).ToArray();
+                    UnitCloneResult triggered = UnitCloneModel.Drain(new UnitCloneResult(state, 0, outcome, null,
+                        Array.Empty<CombatEvent>(), Array.Empty<UnitCloneBoundary>(), pending));
+                    if (!triggered.Supported) return UnsupportedTrain(triggered.UnsupportedReason!);
+                    state = triggered.State!; events.AddRange(triggered.Events);
+                    if (triggered.Outcome != RoomOutcome.Exchanged) outcome = triggered.Outcome;
+                    positions = CardTargetModel.Positions(state);
+                    if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                     continue;
                 }
                 if (effect.Type == "SpawnOrStatus")
@@ -1899,6 +1917,12 @@ namespace MonsterTrain2Poju.Model
                     if (forgeError != null) return forgeError;
                     continue;
                 }
+                if (effect.Type == "PlayUnitTrigger")
+                {
+                    if (effect.UnitTriggerKind != "OnEaten" || effect.Range != null)
+                        return "Unit-trigger cards require the calibrated fixed OnEaten payload.";
+                    continue;
+                }
                 if (effect.Type == "Mix")
                 {
                     if (effect.Value < 1 || source.Context.MixState == null || source.Context.OtherPiles == null)
@@ -2185,7 +2209,7 @@ namespace MonsterTrain2Poju.Model
                 effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
                 effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
                 chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
-                statusTransfer: effect.StatusTransfer);
+                statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

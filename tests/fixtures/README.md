@@ -1,9 +1,15 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 417 archives (379 full battles and
-38 component calibrations), 198/224 original relic owners (88.39%): 181 battle
+Current accepted inventory (2026-10-18): 418 archives (380 full battles and
+38 component calibrations), 199/224 original relic owners (88.84%): 182 battle
 owners, sixteen campaign-interface owners and one native no-op. The latest
-`DamageOnConsume` fixture covers four 30-damage front-enemy callbacks including
+`DamageOnEaten` fixture covers five weakest-enemy callbacks, three nonlethal
+hits and two kills, plus wrong-trigger/enemy-team/empty-room/reset controls.
+Its 51-stage winning replay and focused checks have zero differential counters;
+the independent five-EndTurn suffix and serial/parallel search pass. Authored
+native trigger cards calibrate OnEaten after deployment, not the complete feeding
+or food-removal lifecycle. The previous `DamageOnConsume` fixture covers four
+30-damage front-enemy callbacks including
 two kills, front-slot cleanup, and non-Consume/empty-room/reset controls.
 Its 32-stage winning battle has ten actions and zero differential counters;
 focused checks and independent 128-state serial/parallel search pass.

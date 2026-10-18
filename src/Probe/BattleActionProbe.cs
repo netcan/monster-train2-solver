@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         private static readonly HashSet<string> SpellEffectTypes = new HashSet<string>(new[]
         {
-            "CardEffectNULL", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect",
+            "CardEffectNULL", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
             "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown",
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
@@ -376,6 +376,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectDebuffDamage" ? "DebuffAttack" :
                 effect.GetEffectStateName() == "CardEffectBuffMaxHealth" ? "BuffHealth" :
                 effect.GetEffectStateName() == "CardEffectDebuffMaxHealth" ? "DebuffHealth" :
+                effect.GetEffectStateName() == "CardEffectPlayUnitTrigger" ? "PlayUnitTrigger" :
                 effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" :
                 effect.GetEffectStateName() == "CardEffectHealAndOverheal" ? "HealOverheal" :
                 effect.GetEffectStateName() == "CardEffectHealTrain" ? "HealTrain" :
@@ -517,7 +518,8 @@ namespace MonsterTrain2Poju.Probe
                 nullForwardSelf: type == "Null" && effect.GetAdditionalParamInt() == 1,
                 chooseDiscard: type == "ChooseDiscard" ? new CardChooseDiscardRule(effect.GetAdditionalParamInt(),
                     effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamCardPool() != null) : null,
-                transferAttackMultiplier: type == "TransferAttackFromUnit" ? effect.GetAdditionalParamInt() : 0);
+                transferAttackMultiplier: type == "TransferAttackFromUnit" ? effect.GetAdditionalParamInt() : 0,
+                unitTriggerKind: type == "PlayUnitTrigger" ? effect.GetParamTrigger().ToString() : null);
         }
 
         private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,

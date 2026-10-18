@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **198 distinct original collectable relics / 224 catalog entries
-(88.39%)** have accepted native evidence: 181 have full-battle effect evidence,
+As of 2026-10-18, **199 distinct original collectable relics / 224 catalog entries
+(88.84%)** have accepted native evidence: 182 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1740,4 +1740,61 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-con
 dotnet run --project src/ModelChecks -c Release -- --consume-damage-pure
 dotnet run --project src/ModelChecks -c Release -- --original-consume-damage-only tests/fixtures/full-battle-original-consume-damage.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-consume-damage.mt2f
+```
+
+## DamageOnEaten
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `DamageOnEaten` | `38990528-6639-4cb2-b310-4e14193256a0` | `full-battle-original-eaten-damage.mt2f` | The unchanged `RelicEffectDamageEnemyOnFriendlyTrigger` deals 5 damage to the weakest living enemy Hero on the triggering friendly Monster's floor after OnEaten. Five native applications choose the 6-HP back enemy twice, then the 12-HP front enemy three times: three nonlethal hits and two kills. Wrong-trigger, enemy-actor, empty-room and post-kill reset controls leave the state and Battle RNG unchanged. |
+
+The witness uses authored zero-cost `CardEffectPlayUnitTrigger` cards to invoke
+real OnEaten callbacks. The owner, trigger, team, subtype/status gates, damage,
+target mode, conditions and preview-eligibility definition remain unchanged.
+Native `CombatManager.QueueTrigger` suppresses OnEaten during deployment, so the
+positive witness runs on turn one after two deployment carriers. Scenario setup
+freezes the completed deployment EndTurn before adding the next decision's
+enemy and spell carriers; individual native actions and turns are independently
+replayed. Actor identities are registered before freezing the pre-Test context,
+including callbacks emitted while a newly spawned enemy has no physical point.
+
+The schema-222 winning battle has 51 stages, ten card actions, six EndTurns,
+eleven train phases and nine spawns. All general and dedicated capture-failure,
+mismatch, unsupported and pending counters are zero. The focused checker
+independently replays all 350 native Tests and five completed damage/death
+callbacks, compares complete train state and cached targets, verifies unchanged
+Battle RNG, and checks sixteen immutable parallel application branches. Pure
+checks cover deployment suppression, retained-dead exclusion, team/Pyre/empty
+gates, unknown-owner rejection and uncalibrated card-trigger rejection.
+
+Independent search matches all ten recorded decisions, explores 116 serial/103
+parallel states, has serial/parallel best equality and zero unsupported attempts,
+and replays three steps. The independent generic card policy starts after the
+last controlled action, reaches the native victory through five EndTurns, and
+matches sixteen immutable parallel branches. The integrated checker exits zero
+for the new archive. Four affected archives (`original-consume-damage`,
+`original-card-play-damage`, `original-unit-resource-relics` and
+`original-add-snack-on-kill`) also exit zero through their general/focused and
+search gates. AddSnackOnKill retains its eight explicitly unsupported search
+alternatives; its recorded decision is supported. This does not claim that every
+alternative generated card is playable.
+
+The 34,008-byte archive has 5,496 unique nodes and SHA-256
+`fdf77aee197bca2aafda8d73b64f692e4fd849fd05a61cabdeeee6670eee6835`;
+its source length is zero and no JSON companion is tracked. Source run:
+`.probe-runs/full-battle-units-and-junk-20261018-093627-7f984cd0`.
+
+Coverage is limited to this unchanged owner and the recorded native callback
+paths. Complete Snack feeding, food removal/Eaten-pile routing, OnFeed, preview
+execution, other damage owners/payloads and arbitrary combined effects are not
+claimed. Inventory is 418 archives: 380 full battles and 38 component
+calibrations. Accepted original evidence is 199/224 (88.84%): 182 battle, sixteen
+campaign and one native no-op owner; 25 owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalEatenDamageRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-eaten-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --eaten-damage-pure
+dotnet run --project src/ModelChecks -c Release -- --original-eaten-damage-only tests/fixtures/full-battle-original-eaten-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-eaten-damage.mt2f
 ```

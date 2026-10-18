@@ -294,6 +294,7 @@ param(
     [switch] $OriginalDeckTurnDrawRelic,
     [switch] $OriginalCardPlayDamageRelic,
     [switch] $OriginalConsumeDamageRelic,
+    [switch] $OriginalEatenDamageRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -516,6 +517,7 @@ if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells
 if ($OriginalDeckTurnDrawRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardPlayDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalConsumeDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -980,6 +982,7 @@ if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-t
 if ($OriginalDeckTurnDrawRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deck-turn-draw' }
 if ($OriginalCardPlayDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-play-damage' }
 if ($OriginalConsumeDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-damage' }
+if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eaten-damage' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1897,6 +1900,16 @@ if ($OriginalTribouletRelic -and ($trace.Schema -ne 217 -or $trace.OriginalTribo
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-TRIBOULET-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 1)) {
     throw 'Triboulet lacks its unchanged owner, Rare deck seed, or cardless Monster-spawn witness.'
+}
+if ($OriginalEatenDamageRelic -and ($trace.Schema -ne 222 -or $trace.OriginalEatenDamageSchema -ne 222 -or
+    $trace.ModifierScenario -ne 'original-eaten-damage' -or -not $trace.OriginalEatenDamagePrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EATEN-DAMAGE-PREPARED' -Quiet) -or
+    $trace.OriginalEatenDamageCaptureFailures -ne 0 -or $trace.OriginalEatenDamageMismatches -ne 0 -or
+    $trace.OriginalEatenDamageUnsupported -ne 0 -or $trace.OriginalEatenDamagePending -ne 0 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 10 -or
+    @($trace.RelicEatenDamageApplications).Count -ne 5 -or
+    @($trace.RelicEatenDamageTests | Where-Object { -not $_.Result }).Count -lt 4)) {
+    throw 'DamageOnEaten lacks unchanged owner, weakest-enemy damage/death callbacks or trigger/team/empty-room/reset controls.'
 }
 if ($OriginalConsumeDamageRelic -and ($trace.Schema -ne 221 -or $trace.OriginalConsumeDamageSchema -ne 221 -or
     $trace.ModifierScenario -ne 'original-consume-damage' -or -not $trace.OriginalConsumeDamagePrepared -or

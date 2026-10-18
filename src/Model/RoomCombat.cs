@@ -3049,6 +3049,24 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatRelicState relic in context.Relics)
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
+                    if (relic.EffectTypes[effectIndex] == RelicFriendlyTriggerDamageModel.Effect)
+                    {
+                        RoomCombatState frame = CurrentRoom();
+                        var train = new TrainCombatState([frame], [], 0, context);
+                        int ownerIndex = context.Relics!.Select((owner, index) => (owner, index))
+                            .Single(item => item.owner.DataId == relic.DataId).index;
+                        RelicCardPlayDamageSelection selected = RelicFriendlyTriggerDamageModel.Select(train, unit.Freeze(), kind,
+                            source.RoomIndex, ownerIndex, effectIndex);
+                        if (!selected.Supported) { unsupportedReason = selected.UnsupportedReason; return false; }
+                        foreach (int id in selected.Targets)
+                        {
+                            RoomCombatResult damaged = ApplyRelicDamage(CurrentRoom(), id, 5,
+                                callback => QueueCallback(callback.WithRelicDamageRemoval()));
+                            if (!damaged.Supported) { unsupportedReason = damaged.UnsupportedReason; return false; }
+                            MergeSummon(damaged);
+                        }
+                        continue;
+                    }
                     var cardDrawOnHeal = relic.ResourceEffects?.SingleOrDefault(effect =>
                         effect.EffectIndex == effectIndex && RelicCardDrawOnHealModel.IsEffect(effect.Type));
                     if (cardDrawOnHeal != null)

@@ -117,6 +117,7 @@ namespace MonsterTrain2Poju.Probe
             RelicStartTurnHealRule? startTurnHeal = null;
             RelicStartTurnRoomEffectRule? startTurnRoomEffect = null;
             RelicCardPlayDamageRule? cardPlayDamage = null;
+            RelicFriendlyTriggerDamageRule? unitDamage = null;
             if (effect is RelicEffectDrawOnPreOpeningDraw)
             {
                 var upgradeData = data.GetParamCardUpgradeData(); CardUpgradeModifier? upgrade = null;
@@ -218,6 +219,14 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "damageAmount").GetValue(effect);
                 cardPlayDamage = new RelicCardPlayDamageRule(data.GetParamCardType().ToString(), data.GetTargetMode().ToString(),
                     data.GetParamSourceTeam().ToString(), data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray());
+            }
+            else if (effect is RelicEffectDamageEnemyOnFriendlyTrigger)
+            {
+                amount = (int)AccessTools.Field(effect.GetType(), "damageAmount").GetValue(effect);
+                unitTrigger = new RelicUnitResourceRule(data.GetParamTrigger().ToString(), data.GetParamSourceTeam().ToString(),
+                    data.GetParamCharacterSubtype().IsNone ? null : data.GetParamCharacterSubtype().Key,
+                    data.GetParamStatusEffects().Select(status => status.statusId).ToArray());
+                unitDamage = new RelicFriendlyTriggerDamageRule(data.GetTargetMode().ToString());
             }
             else if (effect is RelicEffectDamageOnExhaust)
             {
@@ -350,7 +359,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage);
         }
 
         internal static ResourceSnapshot Capture()
