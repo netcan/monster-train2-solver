@@ -20,8 +20,8 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 59 | 62 | No captured projection guards; at least one successful native play has the same captured definition projection. |
-| mechanism-only | 375 | 447 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
+| direct-native-play | 61 | 64 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| mechanism-only | 373 | 445 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
 | partial | 129 | 147 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 12 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
@@ -38,7 +38,7 @@ StatusEffectCountInTargetRoom damage scaling is calibrated only for native Monst
 
 New descriptors retain the actual CardData supplied to CardState.Setup, with source trait parameters separate from runtime traits. All captured raw source fields must match the frozen catalog when present; X damage/status scaling requires this provenance and older missing metadata remains unverified. Missing provenance, changed multiplier/query/filter, and changed runtime parameters are rejected. Other trait families need separate calibration. A shared DataId alone never establishes direct coverage. Instance upgrades do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically original-card evidence.
 
-Across all classifications, 62 identities (59 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Across all classifications, 64 identities (61 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 

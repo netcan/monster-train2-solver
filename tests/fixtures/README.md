@@ -236,9 +236,10 @@ shared Goldmance ability. Zero Hoard permits activation and grants no gold;
 three Hoard grants fifteen gold without consuming Hoard. Each Whelp receives
 its own two-stack cooldown. The native win (seven plays/five EndTurns),
 sixteen immutable full chains and bounded search are checked. Authored
-protectors and a Hoard adjustment isolate the controls. Binary-only: 27,788
-bytes/3,927 nodes, SHA-256
-`58f42fa894ea2ac28a1aa2f5213417c64985c00f58264fad3496b866b8046713`.
+protectors and a Hoard adjustment isolate the controls. The 2026-10-19 refresh
+retains actual source traits in nested ability creation metadata. Binary-only:
+28,118 bytes/3,975 nodes, SHA-256
+`3ed60e86e55947e37f4386099ede4068a60029bbeb8306e211672e96097697a9`.
 Use `-Goldmance` and `--goldmance-only`.
 Focused Goldmance/ability-activation gate:
 `.probe-runs/model-checks-20261018-231357-40a527a4/summary.json` (two passed).
@@ -316,8 +317,9 @@ Standby; only a merge with a hand source draws its result immediately. Full
 contexts/RNG, the 32-stage win (seven plays/five EndTurns), sixteen immutable
 chains and bounded search are checked. Permanent offsets, trait/ability/nested
 sources, changed copy flags, merged cloning and creation relic ordering remain
-guarded. Binary-only: 30,021 bytes/4,487 nodes, SHA-256
-`a399256aa36dd64ae38f914651056bda6ceb190277dfc0ab00d73ee74dffb3b3`.
+guarded. The 2026-10-19 refresh retains actual source traits in nested equipment
+creation metadata. Binary-only: 30,407 bytes/4,548 nodes, SHA-256
+`1b10eb813bba467bb2b31ff5dd83a0ad48c1c4ead1b4263fe437c590c2af612e`.
 Use `-FusedWeaponry` and `--fused-weaponry-only`.
 
 `full-battle-transcend-imp.mt2f` keeps three original Transcend Imps: empty

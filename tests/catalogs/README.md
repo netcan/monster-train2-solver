@@ -75,9 +75,16 @@ match this frozen catalog exactly. CardState.Setup provenance is attached to
 new instance descriptors, separately from mutable runtime traits. Missing old
 provenance remains null and cannot establish direct X-scaling source matches.
 The latest snapshot also retains that provenance in nested creation rules.
-Older Fused Weaponry/Goldy Whelp captures lack this non-null nested metadata;
-their previous paths remain mechanism evidence until fresh native captures.
-The newer Battering Ram/Bramble Lash sources match their exact query masks.
+Older Fused Weaponry/Goldy Whelp captures lacked this non-null nested metadata.
+Fresh captures on 2026-10-19 retain it, with all native failure counters zero,
+protected original profiles unchanged and sixteen independent full chains each:
+Fused Weaponry `.probe-runs/full-battle-units-spells-and-junk-20261019-005937-67e20938`,
+Goldmance `.probe-runs/full-battle-units-spells-and-junk-20261019-010124-aa9450e0`.
+Their source identities match again without inferring missing fields. The new
+Battering Ram/Bramble Lash sources match their exact query masks as well.
+Both refreshes also pass bounded search: seven native decisions each, zero
+unsupported attempts, equal serial/parallel best results and 128 explored
+states. Root action counts are 114 for Fused Weaponry and sixteen for Goldmance.
 
 Recreate with an otherwise unmodified sandbox scenario:
 
