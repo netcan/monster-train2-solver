@@ -73,6 +73,7 @@ param(
     [switch] $OriginalPileStatus,
     [switch] $OriginalDrawUpgradeScaling,
     [switch] $OriginalScaledMoonPhase,
+    [switch] $OriginalPositiveStatus,
     [switch] $OriginalRoomStatusDamage,
     [switch] $OriginalCorruptionDamage,
     [switch] $OriginalXStatusCards,
@@ -544,6 +545,7 @@ if ($OriginalScaledBuff) { $BranchCardMasks = $true; $Policy = 'units-spells-and
 if ($OriginalPileStatus) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDrawUpgradeScaling) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomStatusDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptionDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1065,6 +1067,7 @@ if ($OriginalScaledBuff) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scale
 if ($OriginalPileStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-status' }
 if ($OriginalDrawUpgradeScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-draw-upgrade-scaling' }
 if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
+if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalRoomStatusDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-status-damage' }
 if ($OriginalCorruptionDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corruption-damage' }
 if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
@@ -2257,6 +2260,11 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
 if ($OriginalMonsterHandCosts -and (-not $trace.OriginalMonsterHandCostsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalMonsterHandCostsSamples).Count -ne 7 -or @($trace.OriginalMonsterHandCostsDeploymentQueries).Count -ne 8 -or -not $trace.OriginalMonsterHandCostsQueriesUnchanged)) {
     throw 'Original Monster hand cost fixture lacks cost/filter controls or restored deployment eligibility queries.'
+}
+if ($OriginalPositiveStatus -and (-not $trace.OriginalPositiveStatusPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10 -or
+    @($trace.OriginalPositiveStatusQueries).Count -ne 4 -or -not $trace.OriginalPositiveStatusQueriesUnchanged -or
+    @($trace.OriginalPositiveStatusEffects).Count -lt 5 -or @($trace.OriginalPositiveStatusEffects | Where-Object { -not $_.Completed }).Count -ne 0)) {
+    throw 'Original positive status coverage incomplete.'
 }
 if ($OriginalScaledMoonPhase -and (-not $trace.OriginalScaledMoonPhasePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalScaledMoonPhaseCounts).Count -ne 3 -or @($trace.OriginalScaledMoonPhaseQueries).Count -ne 12 -or

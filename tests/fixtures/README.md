@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 505 archives (466 full battles and
+Current accepted inventory (2026-10-19): 506 archives (467 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,27 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-505 accepted archives. Refresh/check the index with
+506 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-positive-status.mt2f` retains original Symphony of the Soul.
+Three original cost-two/Corrupt-five plays target a friendly unit, an enemy and
+a friendly unit without positive statuses or armor. Rage/Regeneration double;
+Persistent armor is excluded from that stage and only doubles on the friendly
+target through the second effect. Enemy armor and negative statuses stay put.
+Five complete native effect train contexts match, including the empty-positive
+no-op; the friendly zero-armor cast still advances chance RNG once. Four
+restored below/at/above threshold queries preserve decision/frame/all RNG.
+Ember, six-to-one corruption, ordinary discard and non-target/floor controls
+match. Ten plays/five EndTurns win; sixteen immutable chains and 128-state
+serial/parallel search pass (25 roots, zero unsupported). Horde-positive and
+relic-modified combinations need separate witnesses. Binary-only: 30,064
+bytes/4,325 nodes, SHA-256
+`26f68c9bf13a84603e54c1edce2aec8c567422b4ed01313dec66328006a52ccc`.
+Use `-OriginalPositiveStatus` and `--original-positive-status-only`.
+Focused gate `model-checks-20261019-032103-48402714` passed this fixture and
+the existing Corrupt Restricted fixture. Source projections are unchanged;
+the frozen native catalog remains valid.
 
 `full-battle-original-scaled-moon-phase.mt2f` retains original Lunacy.
 X three/zero/ten advances the moon three/zero/ten times before adding that many

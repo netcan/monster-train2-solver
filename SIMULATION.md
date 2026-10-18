@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 505 binary archives, including 466
+Current accepted inventory (2026-10-19): 506 binary archives, including 467
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 505
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 506
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,17 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-positive-status.mt2f` models original Symphony of the Soul.
+Friendly/enemy/empty-positive casts distinguish Positive Rage/Regeneration
+from Persistent armor and negative statuses: only the second friendly effect
+doubles armor. Five complete effect contexts, four restored Corrupt-five
+legality queries, six-to-one corruption, cost-two payment, ordinary discard,
+non-target/floor controls and exact chance RNG (even with zero armor) match.
+Ten plays/five EndTurns win with sixteen immutable chains and 128-state
+serial/parallel search (25 roots, zero unsupported). Horde-positive and
+relic-modified combinations need separate witnesses.
+Focused gate `model-checks-20261019-032103-48402714` passed two related fixtures.
 
 `full-battle-original-scaled-moon-phase.mt2f` models original Lunacy at X
 three/zero/ten: moon advance counts match paid cost, before the same Conduit
