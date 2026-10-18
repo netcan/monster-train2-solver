@@ -683,6 +683,8 @@ internal static class BattleActionChecks
             chooser = source => OriginalOnKillGenerationChecks.Choose(source, fixture.GetProperty("OriginalOnKillGenerationIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalMorselEatenPrepared", out var originalMorselEatenPrepared) && originalMorselEatenPrepared.GetBoolean())
             chooser = source => OriginalMorselEatenChecks.Choose(source, fixture.GetProperty("OriginalMorselEatenIds").Deserialize<int[]>()!);
+        if (fixture.TryGetProperty("OriginalUnitBuffsPrepared", out var originalUnitBuffsPrepared) && originalUnitBuffsPrepared.GetBoolean())
+            chooser = source => OriginalUnitBuffsChecks.Choose(source, fixture.GetProperty("OriginalUnitBuffsIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalScaledMoonPhasePrepared", out var originalScaledMoonPhasePrepared) && originalScaledMoonPhasePrepared.GetBoolean())
             chooser = source => OriginalScaledMoonPhaseChecks.Choose(source, fixture.GetProperty("OriginalScaledMoonPhaseIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalPositiveStatusPrepared", out var originalPositiveStatusPrepared) && originalPositiveStatusPrepared.GetBoolean())

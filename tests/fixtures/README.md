@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 518 archives (478 full battles and
+Current accepted inventory (2026-10-19): 519 archives (479 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,27 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-518 accepted archives. Refresh/check the index with
+519 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-unit-buffs.mt2f` captures unchanged Cycle of Life,
+Steel Enhancer, Wicklash, Wick Extension, Void Binding, Umbra Stone,
+Tome of Horrors and Wildwood Tome. Three authored anchors, a battery and
+temporary Freeze isolate original costs and positive upgrades/statuses. Wick
+Extension extends the Burnout target from two to seven and adds five attack,
+while leaving the ordinary same-floor ally unchanged. Ordered health/Spikes,
+attack/health, attack/Burnout, shield/Rage/Emberdrain, Trample, Unstable/Undying
+and Quick match. Four original Consume routes and ordinary discards match;
+same-floor ally/enemy and neighbor-floor controls remain unchanged.
+Source `.probe-runs/full-battle-units-spells-and-junk-20261019-053955-3962c864`
+won in 49.85 seconds with twelve plays/five EndTurns, all four capture counters
+zero and protected original files unchanged. Binary-only: 29,277 bytes/4,286
+nodes, SHA-256 `7037aaa2bb86d231d560f5747f7c83fd7400b033336dcb4aea61492dae3e446f`.
+Use `--original-unit-buffs-only`. Sixteen independent full chains pass; bounded
+search matches twelve decisions/seventeen roots, 128/128 states and three
+replayed steps, with zero unsupported attempts and equal serial/parallel best.
+The existing original status composition checker also passes. This adds native
+evidence using existing model effects; mixed relic/upgrade paths need witnesses.
 
 `full-battle-original-morsel-eaten.mt2f` captures unchanged Shadow Morsel,
 Molten Morsel, Morsel Jeweler, Void Excavator and Morsel Miner. Three authored

@@ -892,6 +892,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalMorselVoidIgnoredUpgradeId = OriginalMorselEatenScenario.VoidIgnoredUpgradeId,
                 OriginalMorselVoidIgnoredCopy = OriginalMorselEatenScenario.VoidIgnoredCopy,
                 OriginalMorselVoidIgnoredClassFilter = OriginalMorselEatenScenario.VoidIgnoredClassFilter,
+                OriginalUnitBuffsPrepared = OriginalUnitBuffsScenario.Prepared,
+                OriginalUnitBuffsIds = OriginalUnitBuffsScenario.CardIds,
                 OriginalStatusCompositionsIds = OriginalStatusCompositionsScenario.CardIds,
                 OriginalConsumedUpgradeIds = OriginalConsumedUpgradeScenario.CardIds,
                 OriginalConsumedUpgradeSamples = OriginalConsumedUpgradeScenario.Samples,

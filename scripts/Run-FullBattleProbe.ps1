@@ -80,6 +80,7 @@ param(
     [switch] $OriginalOnKill,
     [switch] $OriginalOnKillGeneration,
     [switch] $OriginalMorselEaten,
+    [switch] $OriginalUnitBuffs,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -563,6 +564,7 @@ if ($OriginalHealingCleanse) { $BranchCardMasks = $true; $PhysicalSpawnPoints = 
 if ($OriginalOnKill) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOnKillGeneration) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMorselEaten) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalUnitBuffs) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1096,6 +1098,7 @@ if ($OriginalHealingCleanse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-h
 if ($OriginalOnKill) { $environment['MT2_PROBE_MODIFIERS'] = 'original-on-kill' }
 if ($OriginalOnKillGeneration) { $environment['MT2_PROBE_MODIFIERS'] = 'original-on-kill-generation' }
 if ($OriginalMorselEaten) { $environment['MT2_PROBE_MODIFIERS'] = 'original-morsel-eaten' }
+if ($OriginalUnitBuffs) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-buffs' }
 if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
@@ -2351,6 +2354,9 @@ if ($OriginalMorselEaten -and (-not $trace.OriginalMorselEatenPrepared -or -not 
     $trace.OriginalOpeningMorselsUnsupported -ne 0 -or $trace.OriginalOpeningMorselsPending -ne 0 -or
     ($trace.NativeMorselFeeding | ForEach-Object { $_.ExpectedEaten } | Measure-Object -Sum).Sum -ne 5)) {
     throw 'Original Morsel witness lacks all five original summons and exact native feeding transitions.'
+}
+if ($OriginalUnitBuffs -and (-not $trace.OriginalUnitBuffsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 12)) {
+    throw 'Original unit buff witness lacks eight original spells and positive upgrade/status controls.'
 }
 if ($OriginalPileStatus -and (-not $trace.OriginalPileStatusPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or
     @($trace.OriginalPileStatusQueries).Count -ne 24 -or -not $trace.OriginalPileStatusQueriesUnchanged -or

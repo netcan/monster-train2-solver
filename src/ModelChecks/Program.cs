@@ -414,6 +414,12 @@ if (args.Length == 2 && args[0] == "--original-morsel-eaten-only")
     OriginalMorselEatenChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-unit-buffs-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalUnitBuffsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-pile-status-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

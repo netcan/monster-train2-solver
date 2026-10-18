@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 518 binary archives, including 478
+Current accepted inventory (2026-10-19): 519 binary archives, including 479
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 518
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 519
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,14 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-unit-buffs.mt2f` adds eight unchanged original spells:
+Cycle of Life, Steel Enhancer, Wicklash, Wick Extension, Void Binding, Umbra
+Stone, Tome of Horrors and Wildwood Tome. Positive ordered upgrades/statuses,
+Burnout-only room filtering, four Consume routes and same/neighbor-floor
+controls match complete native state. Twelve plays/five EndTurns and sixteen
+immutable full chains pass; bounded serial/parallel search has no unsupported
+attempts. This adds original-card evidence without changing model effects.
 
 `full-battle-original-morsel-eaten.mt2f` adds all five unchanged original
 Morsels' ordinary summons and eating, including Jeweler's last-feeder shield

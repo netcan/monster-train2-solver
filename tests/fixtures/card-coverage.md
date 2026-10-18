@@ -20,8 +20,8 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 131 | 135 | No captured projection guards; at least one successful native play has the same captured definition projection. |
-| mechanism-only | 346 | 419 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
+| direct-native-play | 139 | 143 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| mechanism-only | 338 | 411 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
 | partial | 86 | 103 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 11 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
@@ -76,7 +76,7 @@ Original Symphony of the Soul calibrates Corrupt five and Positive-category mult
 
 Original Bloody Moon and Antumbra Assault each add seven unchanged plays with deployment, exact kills, Undying revival, nonlethal and shield controls. Antumbra preserves the original 5/5/4/4/1 pool, two RNG draws when only one hand slot is free, and all pool definitions before selection. All five original Morsels have ordinary summon and eating witnesses, including Jeweler health/shield, Void attack/lifesteal, source-card Eaten routing and exact food statistics. Last-feeder references are captured consistently in food templates and live units. Added traits, relic combinations and other kill-trigger routes need separate witnesses.
 
-Across all classifications, 137 identities (133 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Across all classifications, 145 identities (141 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 
@@ -86,7 +86,7 @@ Across all classifications, 137 identities (133 logbook) have at least one defin
 - [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 477 full battles and 7683 native actions whose captured prediction is supported, actual state exists and difference is null. 409 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 478 full battles and 7695 native actions whose captured prediction is supported, actual state exists and difference is null. 410 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 
