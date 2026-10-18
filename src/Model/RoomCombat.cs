@@ -1563,10 +1563,11 @@ namespace MonsterTrain2Poju.Model
                     .FirstOrDefault(room => room.RoomIndex == source.RoomIndex)?.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
                 {
                     RoomMoonPhaseRule? rule = attachment.MoonPhase;
-                    if (rule == null || source.Deployment && rule.DisallowedInDeployment) continue;
-                    string? error = RoomMoonPhaseModel.Validate(rule);
+                    RoomPostCombatRule? post = attachment.PostCombat;
+                    if (rule == null && post == null || source.Deployment && (rule?.DisallowedInDeployment ?? post!.DisallowedInDeployment)) continue;
+                    string? error = rule != null ? RoomMoonPhaseModel.Validate(rule) : RoomPostCombatModel.Validate(post!);
                     if (error != null) { unsupportedReason = error; return; }
-                    RoomCombatResult result = CardSpellModel.Apply(CurrentRoom(), rule.PostCombatEffects, 0);
+                    RoomCombatResult result = CardSpellModel.Apply(CurrentRoom(), rule?.PostCombatEffects ?? post!.Effects, 0);
                     if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return; }
                     context = result.State!.Context;
                     foreach (CombatUnit changed in result.State.Units) units.Single(unit => unit.Source.Id == changed.Id).Apply(changed);

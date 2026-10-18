@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 476 binary archives, including 437
+Current accepted inventory (2026-10-18): 477 binary archives, including 438
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 476
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 477
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,15 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-grow-room.mt2f` retains two original Grow Rooms and a Fight Club
+replacement. Native post-combat pulses on turns one and three grow existing
+propagatable statuses by one; armor and outside-floor units remain unchanged.
+Deployment, the replaced room on turn two and terminal combat do not pulse.
+Each callback has independently captured full train states, compared with an
+isolated model application. The five-play/five-EndTurn win, sixteen immutable
+full chains and bounded search are checked. Other post-combat payloads,
+deployment flags and mixed room modifier compositions remain guarded.
 
 `full-battle-planetarium.mt2f` keeps two unchanged original rooms and a Fight
 Club replacement. Existing/later contributors, replacement and restoration

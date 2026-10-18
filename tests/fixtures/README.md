@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 476 archives (437 full battles and
+Current accepted inventory (2026-10-18): 477 archives (438 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,21 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-476 accepted archives. Refresh/check the index with
+477 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-grow-room.mt2f` retains original Grow Room post-combat effects and
+a Fight Club replacement. Native pulses grow existing propagatable statuses
+on turns one and three, preserving armor and outside-floor state. Deployment,
+the replacement turn and terminal combat do not pulse. Each native callback's
+complete before/after train state is compared independently, followed by sixteen
+immutable full battle chains and bounded search. Five plays/five EndTurns win
+with zero capture failures, mismatches, unsupported stages or pending captures.
+Other post-combat payloads and modifier compositions remain guarded.
+Binary-only: 24,639 bytes/3,219 nodes, SHA-256
+`899924ea26e2fa25d6e47c348f98ae54d953d53008712d962271e0b5698dc252`.
+Use `-GrowRoom` and `--grow-room-only`. Focused room/status gate:
+`.probe-runs/model-checks-20261018-234946-d74193d0/summary.json` (three passed).
 
 `full-battle-planetarium.mt2f` keeps two original Planetariums and an original
 Fight Club replacement. Existing and later-born units contribute five Conduit

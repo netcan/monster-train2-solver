@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && GrowRoomScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Grow Room fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                GrowRoomScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && PlanetariumScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Planetarium fixture must start on deployment turn.");
@@ -2072,6 +2078,7 @@ namespace MonsterTrain2Poju.Probe
                 if (ZoneOfSilenceScenario.Enabled) pendingPlay = ZoneOfSilenceScenario.Choose(decision, ZoneOfSilenceScenario.CardIds);
                 if (MemorialScenario.Enabled) pendingPlay = MemorialScenario.Choose(decision, MemorialScenario.CardIds);
                 if (PlanetariumScenario.Enabled) pendingPlay = PlanetariumScenario.Choose(decision, PlanetariumScenario.CardIds);
+                if (GrowRoomScenario.Enabled) pendingPlay = GrowRoomScenario.Choose(decision, GrowRoomScenario.CardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);

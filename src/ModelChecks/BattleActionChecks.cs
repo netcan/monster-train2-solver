@@ -625,6 +625,8 @@ internal static class BattleActionChecks
             chooser = source => MemorialChecks.Choose(source, fixture.GetProperty("MemorialCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("PlanetariumPrepared", out var planetariumPrepared) && planetariumPrepared.GetBoolean())
             chooser = source => PlanetariumChecks.Choose(source, fixture.GetProperty("PlanetariumCardIds").Deserialize<int[]>()!);
+        if (fixture.TryGetProperty("GrowRoomPrepared", out var growRoomPrepared) && growRoomPrepared.GetBoolean())
+            chooser = source => GrowRoomChecks.Choose(source, fixture.GetProperty("GrowRoomCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
             chooser = BattleActionModel.ChooseEmptySpellThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var originalUnitRelicPolicy) && originalUnitRelicPolicy.GetString() == "original-unit-relic-batch")
