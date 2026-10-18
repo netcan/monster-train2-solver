@@ -24,6 +24,7 @@ param(
     [switch] $SacrificeEffects,
     [switch] $SetHealth,
     [switch] $SoldierOfFortune,
+    [switch] $RestorationDetonation,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -443,6 +444,7 @@ if (($OriginalEggCard -or $OriginalEggCardDelayed) -and
     ($OriginalEggTransformation -or $SpawnStatusRelics -or $OriginalEggHatchRelic -or ($OriginalEggCard -and $OriginalEggCardDelayed))) {
     throw 'OriginalEggCard is an isolated original-card scenario.'
 }
+if ($RestorationDetonation) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -912,6 +914,7 @@ if ($SacrificeEffects) {
 }
 if ($SetHealth) { $environment['MT2_PROBE_MODIFIERS'] = 'set-health' }
 if ($SoldierOfFortune) { $environment['MT2_PROBE_MODIFIERS'] = 'soldier-of-fortune' }
+if ($RestorationDetonation) { $environment['MT2_PROBE_MODIFIERS'] = 'restoration-detonation' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2076,6 +2079,11 @@ if ($OriginalOpeningDeckSpawnRelic -and ($trace.Schema -ne 244 -or -not $trace.O
     @($trace.RelicOpeningDeckSpawnApplications).Count -ne 3 -or
     @($trace.RelicOpeningDeckSpawnTests | Where-Object { $_.Isolated -and -not $_.Returned -and $_.CacheBefore.Count -gt 0 }).Count -eq 0)) {
     throw 'Original opening deck-spawn native evidence is incomplete or divergent.'
+}
+if ($RestorationDetonation -and (-not $trace.RestorationDetonationPrepared -or -not $trace.NativeWon -or
+    @($trace.RestorationDetonationRecords).Count -ne 4 -or
+    @($trace.RestorationDetonationRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
+    throw 'Restoration Detonation requires four completed original casts.'
 }
 if ($SoldierOfFortune -and (-not $trace.SoldierOfFortunePrepared -or -not $trace.NativeWon -or
     -not $trace.SoldierOfFortuneEmptyTargetTest -or @($trace.SoldierOfFortuneGoldTests).Count -ne 4 -or

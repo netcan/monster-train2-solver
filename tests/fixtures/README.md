@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 453 archives (414 full battles and
+Current accepted inventory (2026-10-18): 454 archives (415 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,23 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-453 accepted archives. Refresh/check the index with
+454 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-restoration-detonation.mt2f` retains four unchanged Restoration
+Detonations. Full-health and heal-immunity targets cause no damage; 15/30 actual
+restored HP produce native damage requests of 75/150 to the opposing front unit.
+An authored OnHeal gold trigger settles before each positive damage request.
+The effect boundary retains the pending victim removal until the card callback
+queue drains. Full effect states/RNG, eight plays/five EndTurns, sixteen
+independent chains and bounded search match. The 32-stage win has zero errors.
+Binary-only: 30,853 bytes/4,751 nodes, SHA-256
+`ce849f7d4d29c90877fd18a26e29fe133323b5eb92353ae8e56679119ae45693`.
+Use `-RestorationDetonation` and `--restoration-detonation-only`. Recipients and
+the injury spell are authored before the root; two original instances receive
+temporary Freeze to retain the positive controls. Ranges, character-source and
+preview damage, non-player or cross-room targets, and targets removed by OnHeal
+remain guarded pending separate native calibration.
 
 `full-battle-soldier-of-fortune.mt2f` retains three unchanged originals. Two
 casts each spend 30 gold and temporarily upgrade the drawn unit; at zero gold,

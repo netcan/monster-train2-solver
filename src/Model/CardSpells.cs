@@ -485,7 +485,8 @@ namespace MonsterTrain2Poju.Model
                         effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
                         effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
                         chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
-                        statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind);
+                        statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
+                        healDamageMultiplier: effect.HealDamageMultiplier);
                 }
                 if (effect.Type == "ChooseDiscard")
                 {
@@ -1261,6 +1262,65 @@ namespace MonsterTrain2Poju.Model
                     }
                     continue;
                 }
+                if (effect.Type == "HealRelative")
+                {
+                    if (selected.Preview || selfUnitId > 0)
+                        return UnsupportedTrain("Heal-relative preview or character-source damage requires native calibration.");
+                    foreach (int healingId in targets.UnitIds)
+                    {
+                        RoomCombatState? healingRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == healingId));
+                        CombatUnit? healingTarget = healingRoom?.Units.FirstOrDefault(unit => unit.Id == healingId);
+                        if (healingTarget == null) continue;
+                        RoomCombatResult healed = RoomCombatModel.ApplyCardHeal(healingRoom!, healingId, effect.Value, refreshPyre: Refresh);
+                        if (!healed.Supported) return UnsupportedTrain(healed.UnsupportedReason!);
+                        state = ReplaceRoom(state, healed.State!); events.AddRange(healed.Events); callbacks.AddRange(healed.PendingCallbacks);
+                        foreach (CombatUnit unit in healed.RetainedUnits) retained[unit.Id] = unit;
+                        if (healingTarget.Triggers.Any(trigger => trigger.Kind == "OnHeal" && (!trigger.Once || !trigger.HasTriggered) &&
+                            (!healingRoom!.Deployment || trigger.SkipDuringDeployment != true) &&
+                            (trigger.IgnoreSilence || healingTarget.Status("silenced") == null))) focusedRoom = null;
+                        DrainDeaths();
+                        if (routingError != null) return UnsupportedTrain(routingError);
+                        healingRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == healingId));
+                        CombatUnit? restored = healingRoom?.Units.FirstOrDefault(unit => unit.Id == healingId);
+                        if (restored == null) return UnsupportedTrain("Heal-relative target left the train during healing callbacks.");
+                        float product = (float)unchecked(restored.Health - healingTarget.Health) * (float)effect.HealDamageMultiplier!.Value;
+                        double rounded = Math.Round(product, MidpointRounding.ToEven);
+                        if (double.IsNaN(rounded) || rounded < int.MinValue || rounded > int.MaxValue)
+                            return UnsupportedTrain("Heal-relative damage exceeds the calibrated native integer range.");
+                        int relativeDamage = Math.Max(0, (int)rounded);
+                        if (relativeDamage == 0) continue;
+                        var front = new CardActionEffect("Damage", "FrontInRoom", relativeDamage,
+                            restored.Team == CombatTeam.Player, restored.Team == CombatTeam.Enemy, Array.Empty<CombatStatus>());
+                        CardTargets victims = Collect(state, healingRoom!.RoomIndex, front, Array.Empty<int>(), null, -1, 0, definitions,
+                            pendingDeadRooms: pendingDeadRooms, positions: positions, sourceCardId: sourceCardId);
+                        if (!victims.Supported) return UnsupportedTrain(victims.UnsupportedReason!);
+                        if (victims.UnitIds.Count == 0) continue;
+                        int victimId = victims.UnitIds[0];
+                        CombatUnit victim = state.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == victimId);
+                        DamageScalingResult scaled = DamageScalingModel.Apply(state.Context, sourceCardId, sourceCardId, relativeDamage);
+                        if (!scaled.Supported) return UnsupportedTrain(scaled.UnsupportedReason!);
+                        state = WithContext(state, scaled.Context!);
+                        FocusDamageStatuses(victim, healingRoom, Math.Max(0, scaled.Damage));
+                        var priorDeaths = callbacks.ToArray(); callbacks.Clear();
+                        TrainSpellResult damaged = ApplyNativeDamageStep(state, healingRoom.RoomIndex, victimId,
+                            Math.Max(0, scaled.Damage), sourceCardId, priorDeaths);
+                        if (!damaged.Supported) return UnsupportedTrain(damaged.UnsupportedReason!);
+                        state = damaged.State!; events.AddRange(damaged.Events); callbacks.AddRange(damaged.PendingCallbacks);
+                        foreach (CombatUnit unit in damaged.RetainedUnits) retained[unit.Id] = unit;
+                        foreach (var removed in priorDeaths)
+                        {
+                            pendingDeadRooms.Remove(removed.Unit.Id); deferredExhaustion.Remove(removed.Unit.SpawnerCardId);
+                        }
+                        if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                        if (!state.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == victimId)) pendingDeadRooms[victimId] = healingRoom.RoomIndex;
+                        if (damaged.Outcome != RoomOutcome.Exchanged)
+                        {
+                            outcome = damaged.Outcome;
+                            bossDead |= outcome == RoomOutcome.BattleWon;
+                        }
+                    }
+                    continue;
+                }
                 // Keep this effect's collection fixed; triggers may kill a later target.
                 for (int targetIndex = 0; targetIndex < targets.UnitIds.Count; targetIndex++)
                 {
@@ -1980,6 +2040,13 @@ namespace MonsterTrain2Poju.Model
                         return "Unit-trigger cards require the calibrated fixed OnEaten payload.";
                     continue;
                 }
+                if (effect.Type == "HealRelative")
+                {
+                    if (!effect.HealDamageMultiplier.HasValue || effect.Range != null || effect.Value < 0 ||
+                        effect.Target != "DropTargetCharacter" || !effect.AllowPlayer || effect.AllowEnemy)
+                        return "Heal-relative damage requires the calibrated fixed player drop target and nonnegative heal.";
+                    continue;
+                }
                 if (effect.Type == "StatusNull") continue;
                 if (effect.Type == "Mix")
                 {
@@ -2148,6 +2215,7 @@ namespace MonsterTrain2Poju.Model
                 case "TransferAllStatuses": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "HealOverheal": return count > 0;
+                case "HealRelative": return count > 0;
                 case "HealTrain": return count > 0;
                 case "Sacrifice": return count > 0;
                 case "Kill": return effect.Tests?.MustHaveValidTargets != true || count > 0;
@@ -2269,7 +2337,8 @@ namespace MonsterTrain2Poju.Model
                 effect.DamagePerHpLastAttacker, effect.DamagePerHpIncludeArmor, effect.RoomAttachment, effect.Recursion,
                 effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
                 chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
-                statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind);
+                statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
+                healDamageMultiplier: effect.HealDamageMultiplier);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

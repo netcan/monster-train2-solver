@@ -310,6 +310,8 @@ internal static class RoomCombatChecks
         TypedDrawNativeChecks.Native(fixture);
         if (fixture.TryGetProperty("SoldierOfFortunePrepared", out var soldier) && soldier.GetBoolean())
             SoldierOfFortuneChecks.Native(fixture);
+        if (fixture.TryGetProperty("RestorationDetonationPrepared", out var restoration) && restoration.GetBoolean())
+            RestorationDetonationChecks.Native(fixture);
         CardBranchMaskChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out var relicScenario) && relicScenario.GetString() == "original-relic-batch")
             OriginalRelicBatchChecks.Native(fixture);

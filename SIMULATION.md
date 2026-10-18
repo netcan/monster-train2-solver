@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 453 binary archives, including 414
+Current accepted inventory (2026-10-18): 454 binary archives, including 415
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 453
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 454
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,19 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-restoration-detonation.mt2f` adds unchanged Restoration Detonation.
+Healing callbacks settle before actual restored HP is multiplied and the
+opposing front target is collected. Native damage requests are 75/150 for
+15/30 restored HP; full-health and heal-immunity controls request no damage.
+Complete effect states include the still-pending victim removal, and whole-card
+callbacks then finish it. The 32-stage win (eight plays/five EndTurns), sixteen
+independent chains and bounded search match with zero errors. Use
+`-RestorationDetonation` and `--restoration-detonation-only`. Authored recipients,
+OnHeal rewards, an injury card and two temporary Freeze modifiers are setup
+controls; the four original spell definitions are unchanged. The current model
+guards ranged/negative heals, character-source/preview damage, non-player or
+cross-room targets, and a healing target removed during its callbacks.
 
 `full-battle-soldier-of-fortune.mt2f` covers unchanged Soldier of Fortune and
 the native `CardEffectAddStatusEffectNull` no-op. Empty targets pass its test;

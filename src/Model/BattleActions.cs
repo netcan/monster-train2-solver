@@ -64,6 +64,7 @@ namespace MonsterTrain2Poju.Model
         public int TransferAttackMultiplier { get; }
         public StatusTransferRule? StatusTransfer { get; }
         public string? UnitTriggerKind { get; }
+        public int? HealDamageMultiplier { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
@@ -78,7 +79,8 @@ namespace MonsterTrain2Poju.Model
             CardUpgradeMaskRule? cardFilter = null, IReadOnlyList<CardUpgradeMaskRule>? upgradeFilters = null,
             bool? removeHalfStatusEffects = null, OverhealRule? overheal = null, bool? corruptionAdd = null,
             bool nullTargetless = false, bool nullForwardSelf = false, CardChooseDiscardRule? chooseDiscard = null,
-            int transferAttackMultiplier = 0, StatusTransferRule? statusTransfer = null, string? unitTriggerKind = null)
+            int transferAttackMultiplier = 0, StatusTransferRule? statusTransfer = null, string? unitTriggerKind = null,
+            int? healDamageMultiplier = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -93,7 +95,8 @@ namespace MonsterTrain2Poju.Model
             UpgradeFilters = Array.AsReadOnly((upgradeFilters ?? Array.Empty<CardUpgradeMaskRule>()).ToArray());
             Overheal = overheal; CorruptionAdd = corruptionAdd;
             NullTargetless = nullTargetless; NullForwardSelf = nullForwardSelf; ChooseDiscard = chooseDiscard;
-            TransferAttackMultiplier = transferAttackMultiplier; StatusTransfer = statusTransfer; UnitTriggerKind = unitTriggerKind; }
+            TransferAttackMultiplier = transferAttackMultiplier; StatusTransfer = statusTransfer; UnitTriggerKind = unitTriggerKind;
+            HealDamageMultiplier = healDamageMultiplier; }
     }
 
     public sealed class StatusTransferRule
