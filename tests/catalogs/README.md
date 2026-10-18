@@ -3,7 +3,7 @@
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
 and component fixtures. It does not increase their 480-archive acceptance count.
 
-The isolated `no-cards` run on 2026-10-18 inspected all 668 unique
+The isolated `no-cards` run on 2026-10-19 inspected all 668 unique
 `AllGameData.GetAllCardData()` definitions from game module
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. Native predicates identify 563 logbook
 entries, 536 mastery entries, 91 unit abilities and four room abilities. These
@@ -23,10 +23,14 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261018-235719-d7105a30/card-catalog.mt2f`.
-The committed archive is byte-identical: 94,948 bytes, SHA-256
-`d1b59b946426d675e941653f202d752508ade6a9698598eaf31cdb71089fa335`.
-The projection reflects revision `78293d9`: original Grow Room propagatable
+Source: `.probe-runs/full-battle-no-cards-20261019-001202-b8e6c17f/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,096 bytes, SHA-256
+`5048468d039d9471d4e74b53ddbe50bd11c51b60fd53096f594af38176f94404`.
+The projection reflects revision `b1704af`: original Horn Break, Branding Rite
+and Inferno piercing have native controls for all four protection stages,
+including ordinary Spell Shield precedence. Inferno Room pre-combat damage
+includes lethal cleanup, preview writes, VFX room focus, replacement and
+restoration. Original Grow Room propagatable
 status growth and Mushy Room enemy Sap callbacks have isolated full train
 comparisons, positive restoration and floor/team controls. Raw room metadata
 now retains deployment restrictions and nested effect filters: Grow Room skips
@@ -47,9 +51,8 @@ repeated trigger history are also guarded. Saved boxed-card contents remain sepa
 identities, and creation descriptors retain original starting-upgrade metadata.
 Projection support alone does not establish
 direct original-card coverage or remove runtime guards. All shared raw fields
-of all 668 card definitions match the previous catalog, excluding Rule and
-ProjectionError; only the new room deployment and nested filter fields are
-omitted from that comparison.
+of all 668 card definitions match the previous catalog, excluding only Rule and
+ProjectionError.
 The new room energy/filter fields make some older captures insufficient for
 exact definition matching; they remain mechanism evidence. The matcher does
 not infer absent non-null metadata from a shared DataId.
