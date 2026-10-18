@@ -129,7 +129,15 @@ namespace MonsterTrain2Poju.Probe
             RelicUnitSpawnEffectRule? unitSpawnEffect = null;
             RelicDeathEffectRule? deathEffect = null;
             RelicOpeningSpawnRule? openingSpawn = null;
-            if (effect is RelicEffectSpawnUnitStartOfCombat)
+            RelicOpeningDeckSpawnRule? deckSpawn = null;
+            if (effect is RelicEffectSpawnUnitFromDeck)
+            {
+                var cached = (List<CardState>)AccessTools.Field(effect.GetType(), "toProcessCards").GetValue(effect);
+                deckSpawn = new((int)AccessTools.Field(effect.GetType(), "roomIndex").GetValue(effect),
+                    cached.Select(card => FullBattleTrace.Active!.CardId(card)).ToArray());
+                amount = 0;
+            }
+            else if (effect is RelicEffectSpawnUnitStartOfCombat)
             {
                 openingSpawn = new RelicOpeningSpawnRule(data.GetParamSourceTeam().ToString(), data.GetParamCharacters().Select(character =>
                 {
@@ -459,7 +467,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn);
         }
 
         internal static ResourceSnapshot Capture()

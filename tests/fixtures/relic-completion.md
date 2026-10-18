@@ -18,9 +18,9 @@ coverage inventory checks.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 221 original owners accepted (203 native battle owners,
+Current checkpoint: 222 original owners accepted (204 native battle owners,
 seventeen actual campaign-interface owners and one explicit native no-op owner);
-3 remain pending. The latest accepted owner is `SpawnRandomMorsels`.
+2 remain pending. The latest accepted owner is `RandomUnitEveryFloor`.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
@@ -30,7 +30,32 @@ and affected-fixture regression. Merchant/reward/draft effects need their actual
 campaign lifecycle evidence; enumeration and inert battle presence do not
 validate effects. Pure no-op definitions require explicit identification.
 
-The schema-243 `full-battle-original-opening-morsels.mt2f` witness retains the
+The schema-244 `full-battle-original-opening-deck-spawn.mt2f` witness retains
+unchanged `RandomUnitEveryFloor`, its Null effect and three ordered spawn effects.
+Native Tests cache only Monster cards in draw-pile order, giving 4/3/2 pools
+with a non-Monster exclusion control. Apply shuffles the cache with CardDraw
+RNG and births a card-backed non-clone unit on floors 0,1,2. Source cards are
+discarded as played, bound to their units in Standby and restored to drawable;
+natural card play, energy spending and relic-manager notification do not occur.
+An isolated seeded-cache negative Test clears four entries with no remaining
+unit cards, while the original owner/global train remain unchanged.
+The 39-stage Pyre80 win has one ordinary play, five EndTurns, nine card cycles,
+nine train phases, seven spawns and all eight error counters zero. Focused
+complete-state checks, independent full policy/mid-battle replay, sixteen
+immutable branches and 127/127-state serial/parallel search pass. Search
+matches one recorded decision/fifteen root actions, replays two steps to the
+turn boundary and has zero unsupported attempts and equal best results.
+All twenty affected archives pass, both workers terminate with zero exits and
+the three tested assembly hashes remain unchanged:
+`.probe-runs/model-checks-20261018-162024-f8e9f681/summary.json`.
+The 23,972-byte binary has 3,199 unique nodes, zero source length/hash, no JSON
+companion and SHA-256
+`3bc876a8c5e00b6d87c131828ec3c552b4c2911f360b23a207e704cae0cec3b6`.
+Current inventory is 441 archives: 402 battles and 39 components. Corrupt-trait
+births, full physical slots, birth-time removal and additional combined
+birth/discard callbacks need separate native evidence.
+
+The preceding schema-243 `full-battle-original-opening-morsels.mt2f` witness retains the
 unchanged owner, its three ordered effects and the original Miner OnEaten body.
 Floors 2,1,0 receive cardless, non-clone Miners without fallback/source cards,
 RNG or relic-manager notifications. Two native isolated invalid-floor Test
@@ -79,8 +104,7 @@ was 439 archives: 400 battles and 39 component calibrations. Other transfer
 definitions, preview-only lifecycles and additional combined death/status
 callbacks require separate native evidence.
 
-Pending owners: `RandomUnitEveryFloor`, `BalatroEventPerkeo` and
-`CorruptedAngelsArtifact`.
+Pending owners: `BalatroEventPerkeo` and `CorruptedAngelsArtifact`.
 
 The preceding schema-241 `full-battle-original-bone-dog.mt2f` witness exercises the
 unchanged 25% once-per-run resurrection through actual lethal Pyre damage.

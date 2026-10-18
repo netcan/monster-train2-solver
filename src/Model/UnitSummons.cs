@@ -58,7 +58,7 @@ namespace MonsterTrain2Poju.Model
             int position, bool isCardless, CombatStatus? cardlessStatus = null)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, true);
         internal static UnitBirthResult SpawnFront(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
-            int position, bool isCardless, CombatStatus cardlessStatus)
+            int position, bool isCardless, CombatStatus? cardlessStatus)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, false);
         internal static UnitBirthResult SpawnWithStatus(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, CombatStatus cardlessStatus, SpawnStatusApplication cardStatus)

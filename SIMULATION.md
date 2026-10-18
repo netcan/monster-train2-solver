@@ -1,11 +1,34 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 440 binary archives, including 401
+Current accepted inventory (2026-10-18): 441 binary archives, including 402
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 221/224 catalog entries (98.66%): 203 battle owners, 17 campaign
+covers 222/224 catalog entries (99.11%): 204 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`RandomUnitEveryFloor` has schema-244 evidence for its unchanged Null plus three
+ordered start-of-battle effects. Native Test caches only Monster cards from the
+draw pile; Apply shuffles that cache with CardDraw RNG and creates a card-backed,
+non-clone unit on floors 0,1,2. These are births and played-discard callbacks,
+without a natural card play, energy cost or relic-manager notification. The source
+card moves to Standby, binds to the unit and regains drawable eligibility.
+Three positive pools shrink 4/3/2 while excluding a non-Monster control; an
+isolated seeded-cache test clears four entries when no unit remains. Complete
+train state, live discard statistics and immutable branches match native.
+The 39-stage Pyre80 win records one ordinary play and five EndTurns, with all
+eight error counters zero. Independent full policy/mid-battle replay, 127-state
+serial/parallel search and twenty affected archives pass. Both workers exit
+zero with unchanged tested binaries:
+`.probe-runs/model-checks-20261018-162024-f8e9f681/summary.json`.
+Corrupt-trait births, full physical slots, birth-time removal and additional
+combined birth/discard callbacks require separate native evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalOpeningDeckSpawnRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-opening-deck-spawn.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-opening-deck-spawn-only tests/fixtures/full-battle-original-opening-deck-spawn.mt2f
+```
 
 `SpawnRandomMorsels` has schema-243 evidence for its unchanged three ordered
 start-of-battle effects. Despite its name, it deterministically creates the

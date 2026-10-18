@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **221 distinct original collectable relics / 224 catalog entries
-(98.66%)** have accepted native evidence: 203 have full-battle effect evidence,
+As of 2026-10-18, **222 distinct original collectable relics / 224 catalog entries
+(99.11%)** have accepted native evidence: 204 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -3014,4 +3014,39 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalOpeningMorselsRel
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-opening-morsels.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-opening-morsels-only tests/fixtures/full-battle-original-opening-morsels.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-opening-morsels.mt2f
+```
+
+## Start-of-battle units from the original draw pile
+
+| Original owner | Data ID | Native evidence | Covered behavior |
+| --- | --- | --- | --- |
+| `RandomUnitEveryFloor` | `297c5b7b-efb1-4834-96e0-de4a7e42ccbc` | `full-battle-original-opening-deck-spawn.mt2f` | Unchanged Null and three ordered effects cache Monster-only draw-pile pools of 4/3/2, shuffle each with CardDraw RNG and create card-backed non-clone units on floors 0/1/2. Source cards are discarded as played, bound in Standby and restored to drawable without natural card play, energy cost or relic-manager notification. A seeded isolated negative Test clears four cached entries. |
+
+The schema-244 witness checks complete train state, live discard statistics,
+source-card/unit binding and native cache mutations. Each positive Test excludes
+a non-Monster card. The isolated negative Test leaves the actual original owner
+and global train untouched. All eight capture/difference/unsupported/pending
+counters are zero; the 39-stage native win ends at Pyre80 with one ordinary
+model-selected play, five EndTurns, nine card cycles, nine train phases and seven
+spawns. Original profile/log files remain unchanged.
+Focused checks, complete independent policy/mid-battle replay, sixteen immutable
+branches and twenty affected archives pass. Search matches one recorded decision
+and fifteen root actions, visits 127/127 states, replays two steps to the turn
+boundary and has zero unsupported attempts and equal serial/parallel best results.
+Both regression workers terminate with zero exits and unchanged assembly hashes:
+`.probe-runs/model-checks-20261018-162024-f8e9f681/summary.json`.
+
+The 23,972-byte archive has 3,199 unique nodes and SHA-256
+`3bc876a8c5e00b6d87c131828ec3c552b4c2911f360b23a207e704cae0cec3b6`.
+Source length/hash are zero, with no JSON companion. Inventory is 441 archives:
+402 battles and 39 component calibrations. Accepted coverage is 222/224 (99.11%):
+204 battle owners, seventeen campaign owners and one native no-op; two pending.
+Corrupt-trait births, full physical slots, birth-time removal and additional
+combined birth/discard callbacks require separate native evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalOpeningDeckSpawnRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-opening-deck-spawn.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-opening-deck-spawn-only tests/fixtures/full-battle-original-opening-deck-spawn.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-opening-deck-spawn.mt2f
 ```

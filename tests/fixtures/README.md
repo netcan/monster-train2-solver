@@ -1,10 +1,28 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 440 archives (401 full battles and
-39 component calibrations), 221/224 original relic owners (98.66%): 203 battle
+Current accepted inventory (2026-10-18): 441 archives (402 full battles and
+39 component calibrations), 222/224 original relic owners (99.11%): 204 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
-The latest `full-battle-original-opening-morsels.mt2f` retains the unchanged
+The latest `full-battle-original-opening-deck-spawn.mt2f` retains unchanged
+`RandomUnitEveryFloor` and its ordered Null plus three spawn effects. Native
+Tests cache Monster-only draw-pile pools of 4/3/2; Apply shuffles with CardDraw
+RNG, creates card-backed non-clone units on floors 0/1/2, discards each source
+as played and binds it in Standby, restoring drawable eligibility without a
+natural play, energy cost or relic-manager notification. A seeded isolated
+negative Test clears its four cached cards without changing the actual owner.
+The 39-stage Pyre80 win has one ordinary play/five EndTurns and eight zero
+error counters. Focused complete-state checks, independent policy/mid-battle
+replay, sixteen immutable branches, 127-state serial/parallel search and twenty
+affected archives pass, with terminal zero exits and unchanged tested binaries:
+`.probe-runs/model-checks-20261018-162024-f8e9f681/summary.json`.
+The 23,972-byte archive has 3,199 unique nodes and SHA-256
+`3bc876a8c5e00b6d87c131828ec3c552b4c2911f360b23a207e704cae0cec3b6`.
+Source length/hash are zero, with no JSON companion. Corrupt-trait births,
+full physical slots, birth-time removal and additional combined birth/discard
+callbacks remain separate evidence boundaries.
+
+The preceding `full-battle-original-opening-morsels.mt2f` retains the unchanged
 `SpawnRandomMorsels` owner and original Miner OnEaten +9/+9 body. Three native
 callbacks create cardless, non-clone Miners on floors 2,1,0 without card allocation,
 gameplay RNG or relic-manager notification. Two isolated invalid-floor tests

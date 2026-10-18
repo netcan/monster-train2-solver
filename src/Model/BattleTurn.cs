@@ -443,9 +443,9 @@ namespace MonsterTrain2Poju.Model
                 if (!initialOrder.Supported) return Unsupported(initialOrder.UnsupportedReason!);
                 train = initialOrder.State!;
                 if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(type =>
-                    RelicResourceModel.IsOpeningCorruption(type) || type == RelicResourceModel.StartCombatEnergy || type == RelicOpeningSpawnModel.Effect)) == true)
+                    RelicResourceModel.IsOpeningCorruption(type) || type == RelicResourceModel.StartCombatEnergy || type == RelicOpeningSpawnModel.Effect || type == RelicOpeningDeckSpawnModel.Effect)) == true)
                 {
-                    TrainCombatResult opening = RelicResourceModel.ApplyOpeningCorruption(train);
+                    TrainCombatResult opening = RelicResourceModel.ApplyOpeningCorruption(train, definitions: source.PlayRules);
                     if (!opening.Supported) return Unsupported(opening.UnsupportedReason!);
                     train = opening.State!;
                 }

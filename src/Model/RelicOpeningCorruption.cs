@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Model
         public static bool IsOpeningCorruption(string type) => type == MaxCorruptionStart || type == PermanentCorruptionStart || type == CorruptionPostOpeningDraw;
 
         public static TrainCombatResult ApplyOpeningCorruption(TrainCombatState source, bool postDraw = false,
-            bool placement = false, bool preview = false)
+            bool placement = false, bool preview = false, BattlePlayRules? definitions = null)
         {
             TrainCombatResult Failed(string reason) => new TrainCombatResult(null, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>(), reason);
             if (source.Context == null) return Failed("Opening corruption requires a captured context.");
@@ -25,12 +25,24 @@ namespace MonsterTrain2Poju.Model
                 for (int ruleIndex = 0; ruleIndex < (owner.ResourceEffects?.Count ?? 0); ruleIndex++)
                 {
                     RelicResourceEffect rule = train.Context!.Relics![relicIndex].ResourceEffects![ruleIndex];
-                    if (!(IsOpeningCorruption(rule.Type) || rule.Type == StartCombatEnergy || rule.Type == RelicOpeningSpawnModel.Effect) || (rule.Type == CorruptionPostOpeningDraw) != postDraw ||
+                    if (!(IsOpeningCorruption(rule.Type) || rule.Type == StartCombatEnergy || rule.Type == RelicOpeningSpawnModel.Effect || rule.Type == RelicOpeningDeckSpawnModel.Effect) || (rule.Type == CorruptionPostOpeningDraw) != postDraw ||
                         preview && !rule.CanApplyInPreviewMode) continue;
                     var evaluation = RelicConditionModel.Evaluate(train.Context, rule.Conditions);
                     if (!evaluation.Supported) return Failed(evaluation.UnsupportedReason!);
                     train = CardSpellModel.WithContext(train, evaluation.Context);
                     if (!evaluation.Passed) continue;
+                    if (rule.Type == RelicOpeningDeckSpawnModel.Effect)
+                    {
+                        TrainCombatResult tested = RelicOpeningDeckSpawnModel.Test(train, owner.DataId, rule.EffectIndex, out bool passed);
+                        if (!tested.Supported) return Failed(tested.UnsupportedReason!);
+                        train = tested.State!;
+                        if (!passed) continue;
+                        if (definitions == null) return Failed("Opening deck-spawn requires captured play definitions.");
+                        TrainCombatResult spawned = RelicOpeningDeckSpawnModel.Apply(train, definitions, owner.DataId, rule.EffectIndex);
+                        if (!spawned.Supported) return Failed(spawned.UnsupportedReason!);
+                        train = spawned.State!;
+                        continue;
+                    }
                     if (rule.Type == RelicOpeningSpawnModel.Effect)
                     {
                         TrainCombatResult spawned = RelicOpeningSpawnModel.Apply(train, owner.DataId, rule.EffectIndex);

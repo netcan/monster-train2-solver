@@ -158,7 +158,7 @@
 "HephsBlueprints"	"5152b7d0-4f8a-4b7b-8871-06c25bb1a5af"	"accepted-native-battle"	"RelicEffectModifyForgeUpgrade"	""
 "UnitsGainLifesteal"	"a6b0b657-8893-4cc8-bc62-ec09544c4306"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
 "BalatroEventCanio"	"d8d1e069-938e-4141-b6ac-e20f4578163a"	"accepted-native-campaign"	"RelicEffectAddGoldOnPurge"	""
-"RandomUnitEveryFloor"	"297c5b7b-efb1-4834-96e0-de4a7e42ccbc"	"pending"	"RelicEffectNull,RelicEffectSpawnUnitFromDeck,RelicEffectSpawnUnitFromDeck,RelicEffectSpawnUnitFromDeck"	""
+"RandomUnitEveryFloor"	"297c5b7b-efb1-4834-96e0-de4a7e42ccbc"	"accepted-native-battle"	"RelicEffectNull,RelicEffectSpawnUnitFromDeck,RelicEffectSpawnUnitFromDeck,RelicEffectSpawnUnitFromDeck"	""
 "IncreaseBurnoutStacks"	"dc32326b-0952-4b3b-8bc8-cec909476c5f"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied"	""
 "IncreaseArmorStacks_DH"	"c9b18f6f-20d1-4228-bfab-b740609db8dc"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "HealToDamage"	"ae618996-fea4-431e-8911-f9715f96c898"	"accepted-native-battle"	"RelicEffectDamageEnemyOnHeal"	""
