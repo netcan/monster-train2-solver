@@ -478,6 +478,8 @@ internal static class BattleActionChecks
             chooser = RelicEndCombatModel.ChooseGrosMichelPlay;
         if (fixture.TryGetProperty("ModifierScenario", out var boneDogPolicy) && boneDogPolicy.GetString() == "original-bone-dog")
             chooser = RelicPyreResurrectionModel.ChoosePlay;
+        if (fixture.TryGetProperty("ModifierScenario", out var decayDeathPolicy) && decayDeathPolicy.GetString() == "original-decay-death")
+            chooser = RelicDecayDeathModel.ChoosePlay;
         if (fixture.TryGetProperty("ModifierScenario", out var cardDrawOnHealPolicy) &&
             cardDrawOnHealPolicy.GetString() == "original-card-draw-on-heal")
             chooser = source => BattleActionModel.ChooseUnitSpellAndJunkPlay(source, card =>

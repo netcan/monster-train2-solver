@@ -315,6 +315,7 @@ param(
     [switch] $OriginalSpawnRetreatRelic,
     [switch] $OriginalGrosMichelRelic,
     [switch] $OriginalBoneDogRelic,
+    [switch] $OriginalDecayDeathRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -557,6 +558,7 @@ if ($OriginalWhelpCooldownRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoint
 if ($OriginalSpawnRetreatRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalGrosMichelRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalBoneDogRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalDecayDeathRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1042,6 +1044,7 @@ if ($OriginalWhelpCooldownRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalSpawnRetreatRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spawn-retreat' }
 if ($OriginalGrosMichelRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-gros-michel' }
 if ($OriginalBoneDogRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-bone-dog' }
+if ($OriginalDecayDeathRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-decay-death' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1997,6 +2000,13 @@ if ($OriginalWolosBloodletterRelic -and ($trace.Schema -ne 236 -or -not $trace.O
     $trace.OriginalWolosBloodletterUnsupported -ne 0 -or $trace.OriginalWolosBloodletterPending -ne 0 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 5 -or @($trace.RelicWolosBloodletterRecords).Count -lt 12)) {
     throw 'Original Wolos Bloodletter acceptance failed.'
+}
+if ($OriginalDecayDeathRelic -and ($trace.Schema -ne 242 -or -not $trace.OriginalDecayDeathPrepared -or
+    $trace.ModifierScenario -ne 'original-decay-death' -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.OriginalDecayDeathCaptureFailures -ne 0 -or $trace.OriginalDecayDeathMismatches -ne 0 -or
+    $trace.OriginalDecayDeathUnsupported -ne 0 -or $trace.OriginalDecayDeathPending -ne 0 -or
+    @($trace.RelicDecayDeathApplications).Count -lt 2 -or @($trace.Actions).Count -ne 6)) {
+    throw 'Original Decay-death native evidence is incomplete or divergent.'
 }
 if ($OriginalBoneDogRelic -and ($trace.Schema -ne 241 -or -not $trace.OriginalBoneDogPrepared -or
     $trace.ModifierScenario -ne 'original-bone-dog' -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or

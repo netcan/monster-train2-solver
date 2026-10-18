@@ -18,9 +18,9 @@ coverage inventory checks.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 219 original owners accepted (201 native battle owners,
+Current checkpoint: 220 original owners accepted (202 native battle owners,
 seventeen actual campaign-interface owners and one explicit native no-op owner);
-5 remain pending. The latest accepted owner is `BoneDogTitanPyreLife`.
+4 remain pending. The latest accepted owner is `OnDecayDeathApplyStatusEffects`.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
@@ -30,7 +30,35 @@ and affected-fixture regression. Merchant/reward/draft effects need their actual
 campaign lifecycle evidence; enumeration and inert battle presence do not
 validate effects. Pure no-op definitions require explicit identification.
 
-The schema-241 `full-battle-original-bone-dog.mt2f` witness exercises the
+The schema-242 `full-battle-original-decay-death.mt2f` witness exercises the
+unchanged all-team lethal Decay OnHit test and explicit friendly Decay transfer.
+It compares 320 native tests and four complete applications: both teams,
+ceil(5/2)=3 on each of two recipients, source-stack retention, unrelated positive
+and negative statuses, untouchable units, other rooms and an actual no-recipient
+death. Living actors, OnDeath, other damage types and null actors are controls.
+Even an empty eligible team still produces one relic notification without RNG.
+
+The 39-stage win records six ordinary model-selected plays, five EndTurns,
+nine card cycles, nine train phases and seven spawns, ending at Pyre78 with all
+eight differential counters zero and original profile/log files unchanged.
+Focused checks, independent full policy replay with sixteen immutable branches,
+128-state serial/parallel search and twenty affected archives pass. Search matches
+six recorded decisions and eighteen root actions with zero unsupported attempts
+and the same best result. Both regression workers terminate with exit zero and
+unchanged tested assembly hashes. Summary:
+`.probe-runs/model-checks-20261018-154054-e3b5eb66/summary.json`.
+
+The archive is 29,887 bytes with 4,563 unique nodes and SHA-256
+`9d3568d3546a175c9658a6fce1884dea2e4d6e11635f711a4fa4602bf879ed85`.
+Source length/hash are zero, with no tracked JSON companion. Current inventory
+is 439 archives: 400 battles and 39 component calibrations. Other transfer
+definitions, preview-only lifecycles and additional combined death/status
+callbacks require separate native evidence.
+
+Pending owners: `RandomUnitEveryFloor`, `SpawnRandomMorsels`,
+`BalatroEventPerkeo` and `CorruptedAngelsArtifact`.
+
+The preceding schema-241 `full-battle-original-bone-dog.mt2f` witness exercises the
 unchanged 25% once-per-run resurrection through actual lethal Pyre damage.
 An authored one-HP Steward dies first without consuming eligibility. With
 Pyre maxHP81/currentHP1/attack100 and authored enemy attack one, a lethal hit
@@ -58,6 +86,6 @@ remain outside this witness. Known lethal Pyre card-cost paths remain rejected.
 
 The archive has 26,329 bytes, 3,606 unique nodes and SHA-256
 `1827d0a4d977333a34f6fb3684785f1f4fdfd38c3d939d96a5187ccb2d47255a`.
-Source length/hash are zero and no JSON companion is tracked. Inventory is
-438 archives: 399 battles and 39 component calibrations. Accepted original
-coverage is 219/224 (97.77%): 201 battle, seventeen campaign and one native no-op.
+Source length/hash are zero and no JSON companion is tracked. At that checkpoint,
+inventory was 438 archives: 399 battles and 39 component calibrations, and accepted
+coverage was 219/224 (97.77%): 201 battle, seventeen campaign and one native no-op.

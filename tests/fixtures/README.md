@@ -1,10 +1,24 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 438 archives (399 full battles and
-39 component calibrations), 219/224 original relic owners (97.77%): 201 battle
+Current accepted inventory (2026-10-18): 439 archives (400 full battles and
+39 component calibrations), 220/224 original relic owners (98.21%): 202 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
-The latest `BoneDogTitanPyreLife` fixture covers unchanged 25% once-per-run
+The latest `OnDecayDeathApplyStatusEffects` fixture covers its original all-team
+lethal Decay OnHit gate and explicit Decay transfer. Five stacks become three
+on each of two eligible teammates; source stacks stay intact. Untouchable,
+other-team and other-floor state stays unchanged. A source with no eligible
+teammates still triggers one notification. The 320 native tests/four applications,
+39-stage win, six ordinary plays/five EndTurns independent replay, sixteen
+immutable branches, 128-state serial/parallel search and twenty affected archives
+pass. All eight differential counters are zero. The 29,887-byte binary has
+4,563 unique nodes and SHA-256
+`9d3568d3546a175c9658a6fce1884dea2e4d6e11635f711a4fa4602bf879ed85`.
+Source length/hash are zero and no JSON companion is tracked. Other transfer
+definitions, preview-only lifecycles and additional combined callbacks need
+separate evidence.
+
+The preceding `BoneDogTitanPyreLife` fixture covers unchanged 25% once-per-run
 Pyre resurrection through actual lethal combat damage. At 1/81 HP the Pyre
 retains one HP through callbacks, then restores ceil(81*.25)=21 without Heal.
 The persistent flag is marked before notification. Internal attack preview

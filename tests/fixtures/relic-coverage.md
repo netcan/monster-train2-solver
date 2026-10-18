@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **219 distinct original collectable relics / 224 catalog entries
-(97.77%)** have accepted native evidence: 201 have full-battle effect evidence,
+As of 2026-10-18, **220 distinct original collectable relics / 224 catalog entries
+(98.21%)** have accepted native evidence: 202 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2931,4 +2931,49 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-bon
 dotnet run --project src/ModelChecks -c Release -- --bone-dog-pure
 dotnet run --project src/ModelChecks -c Release -- --original-bone-dog-only tests/fixtures/full-battle-original-bone-dog.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-bone-dog.mt2f
+```
+
+## Original Decay death transfer
+
+| Original owner | Native ID | Evidence | Accepted effect |
+| --- | --- | --- | --- |
+| `OnDecayDeathApplyStatusEffects` | `d916bcc3-85ff-49ee-937d-32d7253a4e4d` | [native full battle](full-battle-original-decay-death.mt2f) | Unchanged all-team lethal Decay OnHit gate; explicit Decay stacks ceil-distributed to living targetable teammates on the source floor, source stacks retained, one notification even with no recipients. |
+
+Despite the class name, `RelicEffectAddEffectOnUnitDeath` tests OnHit with a dead
+actor and native damage type 8, rather than OnDeath. The nested transfer is
+EvenlyDistributedAcrossFriendlyTeam, DebuffsOnly, SourceRoomOnly, SkipRemove,
+with stack modification disabled and explicit Decay selection. The explicit
+list keeps both Regen and another negative status, Spell Weakness, on the source.
+Native recipients are visited in reverse physical order and ceil(5/2)=3 stacks
+are added to each of two teammates. Dead, untouchable and opposite-team units
+are excluded; no eligible recipient still produces one relic notification.
+
+The schema-242 archive captures 320 exact native tests and four complete
+applications. Actual friendly and enemy Decay deaths, an isolated no-recipient
+death, living OnHit actors, OnDeath, other damage types and a null actor supply
+positive and control paths. Full train-state comparison preserves other rooms,
+RNG and card state. Each manager boundary replays in sixteen immutable branches.
+The 39-stage winning battle records six ordinary model-selected plays, five
+EndTurns, nine card cycles, nine train phases and seven spawns, ending at Pyre78
+with all eight differential counters zero and original profile/log files unchanged.
+Independent full policy replay, eighteen root actions, 128/128-state serial and
+parallel search, and twenty affected archives pass. Search matches six recorded
+decisions with zero unsupported attempts and equal best results. Both regression
+workers exit zero with unchanged tested assembly hashes:
+`.probe-runs/model-checks-20261018-154054-e3b5eb66/summary.json`.
+
+The 29,887-byte binary has 4,563 unique nodes and SHA-256
+`9d3568d3546a175c9658a6fce1884dea2e4d6e11635f711a4fa4602bf879ed85`.
+Source length/hash are zero and no JSON companion is tracked. Inventory is
+439 archives: 400 battles and 39 component calibrations. Accepted coverage is
+220/224 (98.21%): 202 battle owners, seventeen campaign owners and one native
+no-op; four owners remain pending. Other transfer definitions, preview-only
+lifecycles and additional combined death/status callbacks require separate proof.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalDecayDeathRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-decay-death.mt2f
+dotnet run --project src/ModelChecks -c Release -- --decay-death-pure
+dotnet run --project src/ModelChecks -c Release -- --original-decay-death-only tests/fixtures/full-battle-original-decay-death.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-decay-death.mt2f
 ```

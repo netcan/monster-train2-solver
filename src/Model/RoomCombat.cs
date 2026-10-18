@@ -2315,7 +2315,9 @@ namespace MonsterTrain2Poju.Model
                     Damage(target, actor, retaliation, "Spikes");
                 }
                 if (target.DeathFinished) return;
-                if (damage > 0 || blocked > 0) FireTriggers(target, "OnHit", paramInt: damage);
+                if (damage > 0 || blocked > 0) FireTriggers(target, "OnHit", paramInt: damage,
+                    paramInt2: kind == "Attack" ? 4 : kind == "Trample" ? 6 : kind == "Spikes" ? 1 : kind == "Poison" ? 2 :
+                        kind == "Decay" ? 8 : kind == "CorruptPoison" ? 7 : kind == "Corruption" ? 9 : kind == "SpellOverflow" ? 10 : 0);
                 // A played spell finishes its hit queue while this victim already has its
                 // new HP. Only previously finished deaths are eligible for removal here.
                 if (nativeCardDamage && !runningTriggerQueue) DrainLocalTriggerQueue();
@@ -3111,6 +3113,15 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatRelicState relic in context.Relics)
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
+                    if (relic.EffectTypes[effectIndex] == RelicDecayDeathModel.Effect)
+                    {
+                        if (!RelicDecayDeathModel.Test(unit.Freeze(), kind, paramInt2)) continue;
+                        RoomCombatResult transferred = RelicDecayDeathModel.Apply(CurrentRoom(), unit.Freeze());
+                        if (!transferred.Supported) { unsupportedReason = transferred.UnsupportedReason; return false; }
+                        MergeSummon(transferred);
+                        foreach (QueuedCharacterTrigger callback in transferred.PendingCallbacks) QueueCallback(callback);
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicUnitSpawnEffectModel.Effect)
                     {
                         RelicConditionEvaluation checkedEffect = RelicUnitSpawnEffectModel.Check(context, unit.Freeze(), kind, source.Preview);

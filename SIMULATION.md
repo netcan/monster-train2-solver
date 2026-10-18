@@ -1,11 +1,26 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 438 binary archives, including 399
+Current accepted inventory (2026-10-18): 439 binary archives, including 400
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 219/224 catalog entries (97.77%): 201 battle owners, 17 campaign
+covers 220/224 catalog entries (98.21%): 202 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`OnDecayDeathApplyStatusEffects` has schema-242 evidence for its unchanged
+all-team lethal Decay OnHit callback. It transfers only explicit Decay stacks
+to living, targetable teammates on the source floor, in reverse physical order,
+using ceil(stacks / recipients), while retaining the dead source's stacks.
+The native callback still notifies once when no eligible recipient exists.
+The witness compares 320 native tests and four complete applications, including
+both teams, ceil(5/2)=3, unrelated positive/negative statuses, untouchable units,
+no recipients, living actors, other triggers, other damage types and null actors.
+The 39-stage win has six ordinary model-selected plays, five EndTurns and zero
+differential errors. Focused checks, independent full policy replay with sixteen
+immutable branches, 128-state serial/parallel search and twenty affected archives
+pass. Search matches six recorded decisions and eighteen root actions with zero
+unsupported attempts. Other transfer definitions, preview-only lifecycles and
+additional combined death/status callbacks require separate native evidence.
 
 `BoneDogTitanPyreLife` now has schema-241 evidence for its unchanged 25%
 once-per-run Pyre resurrection. An actual lethal hit at 1/81 HP restores 21 HP

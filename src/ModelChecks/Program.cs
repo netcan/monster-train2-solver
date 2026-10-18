@@ -228,6 +228,17 @@ if (args.Length == 2 && args[0] == "--original-spawn-retreat-only")
     OriginalSpawnRetreatChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 1 && args[0] == "--decay-death-pure")
+{
+    OriginalDecayDeathChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-decay-death-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalDecayDeathChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--bone-dog-pure")
 {
     OriginalBoneDogChecks.Run();
@@ -2020,6 +2031,7 @@ OriginalWhelpCooldownChecks.Run();
 OriginalSpawnRetreatChecks.Run();
 OriginalGrosMichelChecks.Run();
 OriginalBoneDogChecks.Run();
+OriginalDecayDeathChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();
