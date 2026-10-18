@@ -1,11 +1,20 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 418 binary archives, including 380
+Current accepted inventory (2026-10-18): 419 binary archives, including 381
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 199/224 catalog entries (88.84%): 182 battle owners, 16 campaign
+covers 200/224 catalog entries (89.29%): 183 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`MoreCapacity` now has schema-223 native evidence for its natural deployment
+callback: friendly capacity on the middle floor rises from 5 to 7, selects that
+floor and notifies once. Four later-turn timing checks do nothing. Seven authored
+size-one Stewards are actually deployed there, and the captured full floor rejects
+an eighth in model checks. The 40-stage winning battle, independent full policy,
+128-state serial/parallel search and four-archive affected regression pass with
+zero differential counters. The claim covers this original +2/floor-one owner;
+preview, missing-floor and capacity-bound controls are pure checks.
 
 `DamageOnEaten` now has schema-222 native evidence for five 5-damage callbacks
 against the weakest enemy Hero on the triggering friendly unit's floor. Three

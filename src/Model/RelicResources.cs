@@ -274,7 +274,7 @@ namespace MonsterTrain2Poju.Model
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
-            type == StartTurnRoomEffect || type == PostOpeningDiscardReplacement;
+            type == StartTurnRoomEffect || type == PostOpeningDiscardReplacement || type == RelicSingleFloorCapacityModel.Effect;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -288,6 +288,11 @@ namespace MonsterTrain2Poju.Model
             foreach (RelicResourceEffect rule in rules)
             {
                 if (rule.Type != relic.EffectTypes[rule.EffectIndex]) return "Relic resource runtime type differs from its effect index.";
+                if (rule.Type == RelicSingleFloorCapacityModel.Effect)
+                {
+                    string? capacityError = RelicSingleFloorCapacityModel.Validate(relic, rule);
+                    if (capacityError != null) return capacityError;
+                }
                 if (rule.Type == RelicFriendlyTriggerDamageModel.Effect)
                 {
                     string? damageError = RelicFriendlyTriggerDamageModel.Validate(relic, rule);

@@ -319,6 +319,8 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "corruptionChange").GetValue(effect);
             else if (effect is RelicEffectAddPermanentCorruptionStartOfCombat)
                 amount = (int)AccessTools.Field(effect.GetType(), "addPermanentAmount").GetValue(effect);
+            else if (effect is RelicEffectChangeSingleFloorCapacity)
+                amount = (int)AccessTools.Field(effect.GetType(), "adjustAmount").GetValue(effect);
             else if (effect is RelicEffectConserveEnergyEndOfTurn conserve)
             {
                 IConserveEnergyEndOfTurnRelicEffect.ConserveParamaters parameters = conserve.GetConserveParameters();
@@ -358,7 +360,7 @@ namespace MonsterTrain2Poju.Probe
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
-                effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0,
+                effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity ? data.GetParamFloat() : 0,
                 generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage);
         }
 

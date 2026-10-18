@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **199 distinct original collectable relics / 224 catalog entries
-(88.84%)** have accepted native evidence: 182 have full-battle effect evidence,
+As of 2026-10-18, **200 distinct original collectable relics / 224 catalog entries
+(89.29%)** have accepted native evidence: 183 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1797,4 +1797,64 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-eat
 dotnet run --project src/ModelChecks -c Release -- --eaten-damage-pure
 dotnet run --project src/ModelChecks -c Release -- --original-eaten-damage-only tests/fixtures/full-battle-original-eaten-damage.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-eaten-damage.mt2f
+```
+
+## MoreCapacity
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `MoreCapacity` | `775d24d8-98eb-4f22-ae50-d7069bf05757` | `full-battle-original-more-capacity.mt2f` | The unchanged `RelicEffectChangeSingleFloorCapacity` naturally runs before deployment draw, raises middle-floor friendly capacity from 5 to 7, selects that floor and emits one manager notification. Four subsequent turn-phase Tests return false. Seven actual size-one Steward plays fill the expanded floor; the eighth ordinary Steward is played elsewhere. |
+
+The original amount +2, float floor index 1, owner identity, placement permission,
+empty conditions and disabled preview application remain unchanged. The native
+timing Test checks turn zero and target-room existence. The application delegates
+to the existing room-capacity adjustment and its 1..30 bound. Early opening API
+snapshots compare every floor's complete capacity/attachment/corruption state,
+selected floor, original relic definitions, raw resources and Battle RNG; a
+separate native notification hook confirms one notification. These observations
+precede ordinary decision capture. They are an API projection, not a claim that
+every opening engine field is captured by the effect probe.
+
+The authored deck has eight zero-cost, size-one Stewards with strengthened combat
+stats. The remaining opening carriers are drawn before decisions. Seven ordered
+scenario plays fill floor one; the eighth is chosen by the ordinary unit policy.
+The focused checker verifies seven actual friendly units and capacity seven in
+the native state, then rejects an eighth middle-floor deployment from that
+captured state in model enumeration. No native rejected eighth-play request is
+claimed. Pure checks cover other-floor/enemy exclusions, later turns, preview,
+missing target room, removed/unknown owner, the upper capacity bound and sixteen
+immutable parallel branches.
+
+The schema-223 winning battle has 40 stages, eight actions, five EndTurns, nine
+train phases and seven spawns. General and dedicated capture failures, mismatches,
+unsupported transitions and pending records are all zero. All six timing/apply
+observations pass dedicated replay. Independent full-policy replay covers the
+ordinary card action and all five EndTurns to native victory with Pyre HP 80,
+restarts from a later root and matches sixteen immutable parallel branches.
+Independent search matches eight recorded decisions, explores 128/128 states,
+has serial/parallel best equality and zero unsupported attempts, and replays
+three steps.
+
+The integrated checker exits zero for the new archive and affected
+`original-floor-capacity-relics`, `room-capacity` and
+`original-opening-corruption-relics` archives through their general/focused gates.
+Both dedicated searches selected by that run pass with zero unsupported attempts.
+The 24,836-byte archive has 3,725 unique nodes and SHA-256
+`5dcb464bba3847e8f99984464d05714947081c65f90b7d43bba253258752b4a2`.
+Its source length is zero and no JSON companion is tracked. Source run:
+`.probe-runs/full-battle-units-and-junk-20261018-095325-31ddb25f`.
+
+Coverage is limited to the unchanged owner and recorded normal four-floor battle
+paths. Other owner identities, target floors, signed amounts, custom train
+layouts and arbitrary combined timing effects require separate evidence.
+Inventory is 419 archives: 381 full battles and 38 component calibrations.
+Accepted original relic evidence is 200/224 (89.29%): 183 battle, sixteen campaign
+and one native no-op owner; 24 owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMoreCapacityRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-more-capacity.mt2f
+dotnet run --project src/ModelChecks -c Release -- --more-capacity-pure
+dotnet run --project src/ModelChecks -c Release -- --original-more-capacity-only tests/fixtures/full-battle-original-more-capacity.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-more-capacity.mt2f
 ```

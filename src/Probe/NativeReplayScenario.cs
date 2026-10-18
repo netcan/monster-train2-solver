@@ -313,6 +313,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalConsumeDamageScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalEatenDamageScenario.Enabled && !OriginalEatenDamageScenario.Acquired)
                         OriginalEatenDamageScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalMoreCapacityScenario.Enabled && !OriginalMoreCapacityScenario.Acquired)
+                        OriginalMoreCapacityScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -1139,6 +1141,12 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (fullBattle && OriginalMoreCapacityScenario.Enabled && !OriginalMoreCapacityScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalMoreCapacityScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && OriginalEatenDamageScenario.Enabled && (!OriginalEatenDamageScenario.Prepared ||
                 combat!.GetTurnCount() > 0 && !OriginalEatenDamageScenario.CombatPrepared))
             {
@@ -1770,6 +1778,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalConsumeDamageScenario.Choose(decision, pendingPlay);
                 if (OriginalEatenDamageScenario.Enabled)
                     pendingPlay = OriginalEatenDamageScenario.Choose(decision, pendingPlay);
+                if (OriginalMoreCapacityScenario.Enabled)
+                    pendingPlay = OriginalMoreCapacityScenario.Choose(decision, pendingPlay);
                 if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
@@ -1975,6 +1985,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalCardPlayDamageScenario.Enabled && OriginalCardPlayDamageScenario.IsScenarioAction(action)) ||
                 (OriginalConsumeDamageScenario.Enabled && OriginalConsumeDamageScenario.IsScenarioAction(action)) ||
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
+                (OriginalMoreCapacityScenario.Enabled && OriginalMoreCapacityScenario.IsScenarioAction(action)) ||
                 (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
                 (OriginalPurgeToExhaustScenario.Enabled && OriginalPurgeToExhaustScenario.IsScenarioPrelude(action)) ||
                 (OriginalUpgradeCountRelicsScenario.Enabled && OriginalUpgradeCountRelicsScenario.IsScenarioPrelude(action)) ||

@@ -480,6 +480,9 @@ namespace MonsterTrain2Poju.Model
             if (!soloUnitUpgrades.Supported) return Unsupported(soloUnitUpgrades.UnsupportedReason!);
             train = soloUnitUpgrades.State!;
             int startTurnRoom = train.Context!.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom;
+            RoomCapacityResult singleFloorCapacity = RelicSingleFloorCapacityModel.Apply(train.Context!, turn);
+            if (!singleFloorCapacity.Supported) return Unsupported(singleFloorCapacity.UnsupportedReason!);
+            train = WithContext(train, singleFloorCapacity.Context!, false);
             RelicStartTurnHealResult startTurnHealing = RelicStartTurnHealModel.Apply(train, turn, startTurnRoom);
             if (!startTurnHealing.Supported) return Unsupported(startTurnHealing.UnsupportedReason!);
             train = startTurnHealing.State!;
