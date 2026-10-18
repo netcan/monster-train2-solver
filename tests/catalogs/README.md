@@ -23,16 +23,17 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-024646-528cff9e/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,141 bytes, SHA-256
-`edd13e9262d042ae22e501624aeffff4fa03fe1acdf42722bf1c4c6b8ca016a1`.
-The projection reflects revision `6680db5`. The 668 raw definitions match
-the previous snapshot exactly, including ordered `StatusEffectIds`.
+Source: `.probe-runs/full-battle-no-cards-20261019-025644-56ed744f/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,057 bytes, SHA-256
+`0a0034cebc27380f3b7de30d38043cb05791b2592074d90d26d2c81e9b54cbd7`.
+The projection reflects revision `3714f82`. The 668 raw definitions match
+the previous snapshot apart from newly captured `StatusEffectIds` on Dig Deep's
+pile-status trait (`horde`). Existing ordered status lists remain identical.
 This field captures native removal and List-filter status traits; Pyreborne
 Brainspike retains `cooldown` removal and `avarice` addition separately.
 Only Dante's Inferno's specific-card damage trait has this non-null field:
 `913694e9-bace-4480-8691-24f699ae583e` (Dante's Candle). This identity is captured
-from the actual native trait data. Frame 10,163/10,163, decision and RNG are unchanged.
+from the actual native trait data. Frame 11,798/11,798, decision and RNG are unchanged.
 The surrounding native battle won with all four capture counters zero and
 the protected original files unchanged. Positive Corrupt Restricted hand
 spells now retain their calibrated selected-room cost; source-room abilities
@@ -56,6 +57,9 @@ Distinct marker. Other pile-scaling routes retain explicit projection guards.
 Original Pyre Plating retains its calibrated X-scaled Pyre attack buff,
 List-filter armor and Consume; other buff targets and changed source traits
 remain guarded.
+Original Dig Deep retains its visible permanent-deck Horde scaling and
+new/existing-unit routes. Missing pile-status lists and relic stack-modifier
+combinations remain guarded.
 Original Unplayable markers retain
 their native rejection behavior. Scrap Metal retains Persistent discard guards
 and its calibrated single-base Refine 3 smelt path. A separate native legality
