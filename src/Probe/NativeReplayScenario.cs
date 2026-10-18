@@ -1167,6 +1167,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalUnitBuffsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalFriendlyStatusesScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original friendly statuses fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalFriendlyStatusesScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalKillResourcesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original kill resources fixture must start on deployment turn.");
@@ -2372,6 +2378,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalUnitBuffsScenario.Enabled) pendingPlay = OriginalUnitBuffsScenario.Choose(decision, OriginalUnitBuffsScenario.CardIds);
                 if (OriginalKillCopyScenario.Enabled) pendingPlay = OriginalKillCopyScenario.Choose(decision, OriginalKillCopyScenario.CardIds);
                 if (OriginalKillResourcesScenario.Enabled) pendingPlay = OriginalKillResourcesScenario.Choose(decision, OriginalKillResourcesScenario.CardIds, OriginalKillResourcesScenario.Resource);
+                if (OriginalFriendlyStatusesScenario.Enabled) pendingPlay = OriginalFriendlyStatusesScenario.Choose(decision, OriginalFriendlyStatusesScenario.CardIds);
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);

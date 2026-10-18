@@ -83,6 +83,7 @@ param(
     [switch] $OriginalUnitBuffs,
     [switch] $OriginalKillCopy,
     [ValidateSet('', 'Greed', 'GoldenTouch', 'Bonk')][string] $OriginalKillResource = '',
+    [switch] $OriginalFriendlyStatuses,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -569,6 +570,7 @@ if ($OriginalMorselEaten) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $tr
 if ($OriginalUnitBuffs) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalKillCopy) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalKillResource) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalFriendlyStatuses) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1104,6 +1106,7 @@ if ($OriginalOnKillGeneration) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalMorselEaten) { $environment['MT2_PROBE_MODIFIERS'] = 'original-morsel-eaten' }
 if ($OriginalUnitBuffs) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-buffs' }
 if ($OriginalKillCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-kill-copy' }
+if ($OriginalFriendlyStatuses) { $environment['MT2_PROBE_MODIFIERS'] = 'original-friendly-statuses' }
 if ($OriginalKillResource) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-kill-resources'
     $environment['MT2_PROBE_KILL_RESOURCE'] = $OriginalKillResource
@@ -2369,6 +2372,9 @@ if ($OriginalUnitBuffs -and (-not $trace.OriginalUnitBuffsPrepared -or -not $tra
 }
 if ($OriginalKillCopy -and (-not $trace.OriginalKillCopyPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 12)) {
     throw 'Original Surgical Strike witness lacks original and copied plays with target-team and lethal controls.'
+}
+if ($OriginalFriendlyStatuses -and (-not $trace.OriginalFriendlyStatusesPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 16)) {
+    throw 'Original friendly status witness lacks twelve unchanged spells and positive target controls.'
 }
 if ($OriginalKillResource -and (-not $trace.OriginalKillResourcesPrepared -or $trace.OriginalKillResource -ne $OriginalKillResource -or
     -not $trace.NativeWon -or @($trace.Actions).Count -ne $(if ($OriginalKillResource -eq 'Greed') { 8 } else { 13 }))) {

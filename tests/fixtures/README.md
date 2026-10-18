@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 523 archives (483 full battles and
+Current accepted inventory (2026-10-19): 524 archives (484 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -16,6 +16,25 @@ definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
 520 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-friendly-statuses.mt2f` captures unchanged Immortal Trade,
+Furnace Tap, Onehorn's Tome, Ritual of Battle, Inspire, Insatiable Hunger,
+Immortality Potion, Forevermore Serum, Faulty Body, Pseudoscience, Ritual Tome
+and Sanctuary. Three anchors isolate selected targets, same-floor room targets
+and a neighboring control floor. Exact positive status changes, original costs,
+seven Consume routes and five complete EndTurns match. Pseudoscience uses one
+Battle RNG draw to choose Spikes from its three-entry pool; it leaves Lifesteal
+and Undying unchanged. This does not claim all random outcomes were drawn.
+Ritual Tome retains its unused ExhaustState Int=4/MoonPhase source parameters;
+native exhaustion reads play counts and relics, and this witness exhausts it.
+Use `--original-friendly-statuses-only`; sixteen immutable chains and existing
+original unit buff checks pass. Search matches sixteen decisions/25 roots,
+128/128 states and three replayed steps, with zero unsupported attempts and
+equal serial/parallel best. Source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-060338-9c1acf17` won in
+63.62 seconds with sixteen plays, all four counters zero and protected files
+unchanged. Binary-only: 37,316 bytes/6,139 nodes, SHA-256
+`5e2fbacbbddebee900cb7bf6b0c8b26e6d40a3cd4f17f3d642bf33f9c3487ac3`.
 
 Three original card-owned resource kill witnesses share
 `--original-kill-resources-only` with separate native controls. Greed deals room

@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 523 binary archives, including 483
+Current accepted inventory (2026-10-19): 524 binary archives, including 484
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 523
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 524
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,16 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-friendly-statuses.mt2f` adds twelve unchanged originals:
+Immortal Trade, Furnace Tap, Onehorn's Tome, Ritual of Battle, Inspire,
+Insatiable Hunger, Immortality Potion, Forevermore Serum, Faulty Body,
+Pseudoscience, Ritual Tome and Sanctuary. Positive selected/room status changes,
+same/neighbor-floor controls, original costs and seven Consume routes match.
+Pseudoscience retains its three-entry pool, selects only Spikes with exactly one
+Battle RNG draw in this witness, and leaves the two unselected statuses intact.
+Sixteen plays/five EndTurns and sixteen immutable full chains pass. This batch
+adds original-play evidence using existing modeled effects.
 
 Three `full-battle-original-kill-{gold,hoard,forge}.mt2f` witnesses add unchanged
 Greed, Golden Touch and Bonk. Fixed card-owned OnKill effects apply resources
