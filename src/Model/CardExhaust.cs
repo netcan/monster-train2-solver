@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Model
     public static class CardExhaustModel
     {
         private const string Trait = "CardTraitExhaustState";
-        private static CardTraitCompositionState RefreshTraits(CardInstanceState card)
+        internal static CardTraitCompositionState RefreshTraits(CardInstanceState card)
         {
             CardMaskDescriptor? descriptor = card.MaskDescriptor;
             if (descriptor == null) return new CardTraitCompositionState([], [], [], [], []);

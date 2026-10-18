@@ -327,6 +327,7 @@ param(
     [switch] $OriginalOpeningMorselsRelic,
     [switch] $CardBackedFeeding,
     [switch] $ForcedFeeding,
+    [switch] $ShroudSpikeFeeding,
     [switch] $OriginalOpeningDeckSpawnRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
@@ -579,6 +580,7 @@ if ($OriginalSpawnRetreatRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints
 if ($OriginalGrosMichelRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalBoneDogRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalDecayDeathRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($ShroudSpikeFeeding) { $ForcedFeeding = $true }
 if ($ForcedFeeding) { $CardBackedFeeding = $true }
 if ($CardBackedFeeding) { $OriginalOpeningMorselsRelic = $true }
 if ($OriginalOpeningMorselsRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
@@ -1077,6 +1079,7 @@ if ($OriginalDecayDeathRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalOpeningMorselsRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-morsels' }
 if ($CardBackedFeeding) { $environment['MT2_PROBE_FOOD_CARDS'] = '1' }
 if ($ForcedFeeding) { $environment['MT2_PROBE_FORCED_FEEDING'] = '1' }
+if ($ShroudSpikeFeeding) { $environment['MT2_PROBE_SHROUD_SPIKE'] = '1' }
 if ($OriginalOpeningDeckSpawnRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-deck-spawn' }
 if ($OriginalPerkeoRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perkeo' }
 if ($OriginalCorruptedAngelsRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupted-angels' }
@@ -2077,6 +2080,11 @@ if ($ForcedFeeding -and (-not $trace.ForcedFeedingDeploymentRejected -or
     @($trace.ForcedFeedingRecords | Where-Object { $_.Meals -gt 0 }).Count -lt 2 -or
     @($trace.ForcedFeedingRecords | Where-Object { $_.Meals -eq 0 }).Count -lt 1)) {
     throw 'Forced feeding native evidence is incomplete or divergent.'
+}
+if ($ShroudSpikeFeeding -and (-not $trace.ShroudSpikeFeeding -or
+    @($trace.ForcedFeedingRecords | Where-Object { $_.Meals -gt 0 -and $_.TriggerCount -eq 6 }).Count -eq 0 -or
+    @($trace.ForcedFeedingRecords | Where-Object { $_.Meals -gt 0 -and $_.TriggerCount -eq 0 }).Count -eq 0)) {
+    throw 'Shroud Spike needs both a paid six-trigger meal and a zero-cost consumed meal.'
 }
 if ($OriginalOpeningMorselsRelic -and ($trace.Schema -ne 243 -or -not $trace.OriginalOpeningMorselsPrepared -or
     -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or

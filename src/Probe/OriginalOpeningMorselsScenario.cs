@@ -75,6 +75,12 @@ namespace MonsterTrain2Poju.Probe
             Set(steward, "health", 100); Set(steward, "attackDamage", 50); Set(steward, "size", 1);
             Set(steward, "triggers", new List<CharacterTriggerData>()); Set(steward, "startingStatusEffects", Array.Empty<StatusEffectStackData>());
             Set(steward, "unitAbility", null!); Set(card, "cost", 0); Set(card, "traits", new List<CardTraitData>());
+            if (ForcedFeedingScenario.ScalingMode)
+            {
+                CharacterTriggerData onFeed = HealingScenario.HealGold(5, false, false);
+                Set(onFeed, "trigger", CharacterTriggerData.Trigger.OnFeed);
+                Set(steward, "triggers", new List<CharacterTriggerData> { onFeed });
+            }
             save.GetDeckState().Clear(); save.AddCardToDeck(card, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
             if (FoodCardsMode)
             {
@@ -102,7 +108,9 @@ namespace MonsterTrain2Poju.Probe
                 var definitions = (List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(data);
                 definitions.Add(repeated); definitions.Add(gear);
                 CardData feast = data.GetAllCardData().Single(item => item.name == "Feast");
-                foreach (CardData addition in ForcedFeedingScenario.Enabled ? new[] { repeated, feast, feast, feast } : new[] { food, repeated, food, gear })
+                CardData spike = data.GetAllCardData().Single(item => item.name == "ShroudSpike");
+                foreach (CardData addition in ForcedFeedingScenario.ScalingMode ? new[] { repeated, feast, spike, spike } :
+                    ForcedFeedingScenario.Enabled ? new[] { repeated, feast, feast, feast } : new[] { food, repeated, food, gear })
                     save.AddCardToDeck(addition, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
             }
             CollectableRelicData owner = data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicOpeningSpawnModel.DataId);

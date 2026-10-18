@@ -11,7 +11,21 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static CardTraitValue Definition(CardTraitData data) => new CardTraitValue(
             TypeNameCache.GetType(data.GetTraitStateName()).FullName, data.GetTraitStateName(), data.GetParamInt(), data.GetParamInt(),
-            data.GetTraitIsRemovable(), (int)data.GetStackMode(), parameterUpgradeCastEffects: CastEffects(data));
+            data.GetTraitIsRemovable(), (int)data.GetStackMode(), parameterUpgradeCastEffects: CastEffects(data), feedingQuery: FeedingQuery(data));
+        private static CardStatisticQuery? FeedingQuery(CardTraitData data)
+        {
+            if (data.GetTraitStateName() != "CardTraitScalingFeederRules") return null;
+            var trait = new CardTraitScalingFeederRules(); trait.Setup(data, CardState.None);
+            return FeedingQuery(trait.StatValueData);
+        }
+        private static CardStatisticQuery FeedingQuery(CardStatistics.StatValueData data)
+        {
+            CardStatisticQuery query = DamageScalingProbe.Query(data, 0, false);
+            // Capture static query parameters. Evaluation supplies the live
+            // source cost and type from the branch-owned card descriptor.
+            return new CardStatisticQuery(query.Type, query.Duration, query.TypeMatchDataIds, query.SubtypeMatchDataIds,
+                query.SubtypeIsNone, query.Subtype, query.SpecificCardDataId, targetTeam: query.TargetTeam);
+        }
         private static string[] CastEffects(CardTraitData data) => data.GetCardUpgradeDataParam()?.GetCardTriggerUpgrades()
             .Where(trigger => trigger.GetTrigger() == CardTriggerType.OnCast).SelectMany(trigger => trigger.GetCardEffects())
             .Select(effect => effect.GetEffectStateName()).ToArray() ?? Array.Empty<string>();
@@ -21,7 +35,8 @@ namespace MonsterTrain2Poju.Probe
             return new CardTraitValue(trait.GetType().FullName, data?.GetTraitStateName(), data?.GetParamInt() ?? 0,
                 trait.GetParamInt(), trait.GetTraitIsRemovable(), (int)trait.GetStackMode(), trait.IsTemporaryReplacement(),
                 data == null ? Array.Empty<string>() : CastEffects(data), data?.GetTraitIsRemovable(),
-                trait is CardTraitScalingMagicPowerOnMoonPhase ? (float?)AccessTools.Field(typeof(CardTraitScalingMagicPowerOnMoonPhase), "MagicPowerMultiplier").GetValue(trait) : null);
+                trait is CardTraitScalingMagicPowerOnMoonPhase ? (float?)AccessTools.Field(typeof(CardTraitScalingMagicPowerOnMoonPhase), "MagicPowerMultiplier").GetValue(trait) : null,
+                feedingQuery: trait is CardTraitScalingFeederRules ? FeedingQuery(trait.StatValueData) : null);
         }
         internal static List<CardTraitState> Bases(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "traits").GetValue(card);
         internal static List<CardTraitState> Combined(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "combinedTraits").GetValue(card);

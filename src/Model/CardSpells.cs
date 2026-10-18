@@ -415,7 +415,15 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState feedingRoom = state.Rooms.Single(room => room.Units.Any(unit => unit.Id == targets.UnitIds[0]));
                     if (targets.UnitIds.Any(id => feedingRoom.Units.All(unit => unit.Id != id)))
                         return UnsupportedTrain("Forced feeding across multiple rooms requires native calibration.");
-                    RoomCombatResult fed = RoomCombatModel.ApplyFeeding(feedingRoom, CombatTeam.Player, targets.UnitIds);
+                    if (!feedingRoom.Units.Any(unit => targets.UnitIds.Contains(unit.Id) && RoomCombatModel.IsFood(unit)) ||
+                        !feedingRoom.Units.Any(unit => unit.Team == CombatTeam.Player && !RoomCombatModel.IsFood(unit) && unit.Status("untouchable") == null))
+                        continue;
+                    CardInstanceState? feedingCard = state.Context!.FindCard(sourceCardId) ?? resolvingCard;
+                    StatisticQueryResult repetitions = ForcedFeedingModel.TriggerCount(state.Context!, feedingCard);
+                    if (!repetitions.Supported) return UnsupportedTrain(repetitions.UnsupportedReason!);
+                    state = WithContext(state, repetitions.Context!);
+                    feedingRoom = state.Rooms.Single(room => room.RoomIndex == feedingRoom.RoomIndex);
+                    RoomCombatResult fed = RoomCombatModel.ApplyFeeding(feedingRoom, CombatTeam.Player, targets.UnitIds, repetitions.Value);
                     if (!fed.Supported) return UnsupportedTrain(fed.UnsupportedReason!);
                     state = ReplaceRoom(state, fed.State!);
                     events.AddRange(fed.Events); callbacks.AddRange(fed.PendingCallbacks);

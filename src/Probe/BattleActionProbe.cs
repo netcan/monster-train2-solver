@@ -351,6 +351,7 @@ namespace MonsterTrain2Poju.Probe
             if (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() || effect.GetUseMagicPowerMultiplier() ||
                 effect.GetEffectStateName() != "CardEffectSacrifice" && effect.GetEffectStateName() != "CardEffectKill" &&
                 effect.GetEffectStateName() != "CardEffectRecursion" && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" &&
+                effect.GetEffectStateName() != "CardEffectFeederRules" &&
                 !effect.GetParamSubtype().IsNone ||
                 (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
                     !cardOnlyDrawTarget && !randomDiscardHandTarget && !recursionCardPileTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))

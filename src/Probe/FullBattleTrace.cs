@@ -743,6 +743,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalOpeningMorselsPrepared = OriginalOpeningMorselsScenario.Prepared,
                 CardBackedFeeding = OriginalOpeningMorselsScenario.FoodCardsMode,
                 ForcedFeeding = ForcedFeedingScenario.Enabled,
+                ShroudSpikeFeeding = ForcedFeedingScenario.ScalingMode,
                 ForcedFeedingDeploymentRejected = ForcedFeedingScenario.DeploymentRejected,
                 ForcedFeedingRecords = ForcedFeedingScenario.Records,
                 ForcedFeedingCaptureFailures = ForcedFeedingScenario.Records.Count(row => row.Error != null),

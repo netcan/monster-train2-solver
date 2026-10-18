@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 451 binary archives, including 412
+Current accepted inventory (2026-10-18): 452 binary archives, including 413
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 451
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 452
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -36,10 +36,24 @@ including surviving Eatmany and final source-card routing. Its 41-stage win has
 six plays/five EndTurns and zero capture, mismatch, unsupported or pending rows.
 Focused checks replay every decision and sixteen independent immutable chains;
 bounded search checks serial/parallel agreement, not global optimality.
-ScalingFeederRules and self-overridden feeders remain guarded separately.
+Self-overridden feeders remain guarded separately.
+
+`full-battle-shroud-spike-feeding.mt2f` adds two unchanged Shroud Spikes. The
+first pays three Ember and repeats both OnEaten and OnFeed six times; native
+Miner rewards total +54/+54 and an authored OnFeed control grants 30 gold.
+The second pays zero: it still consumes the final Eatmany meal and moves its
+source card to Eaten, with zero rewards, callbacks and food-stat increments.
+Both spells Consume. Query metadata follows immutable trait composition while
+the actual paid-cost ledger and live X-cost modifiers remain authoritative.
+Its 41-stage win has six plays/five EndTurns and all native counters zero.
+Full replay and sixteen immutable chains match every decision; the 128-state
+search is a serial/parallel consistency check. Non-paid-cost scaling queries,
+uncalibrated trait installation, self-feeders and counts outside 0..4096 remain
+guarded. This does not establish all food/removal/relic combinations.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -ForcedFeeding -BinaryCapture -SkipBuild
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -ShroudSpikeFeeding -BinaryCapture -SkipBuild
 ```
 
 `full-battle-tower-corruption-callbacks.mt2f` places Keeper of Echoes on two

@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Model
         public bool Removable { get; }
         public bool? DefinitionRemovable { get; }
         public float? MagicPowerScale { get; }
+        public CardStatisticQuery? FeedingQuery { get; }
         public int StackMode { get; }
         public bool TemporaryReplacement { get; }
         public IReadOnlyList<string> ParameterUpgradeCastEffects { get; }
@@ -21,17 +22,19 @@ namespace MonsterTrain2Poju.Model
         public bool HasData => DeclaredName != null;
         public CardTraitValue(string runtimeType, string? declaredName, int definitionParamInt, int paramInt,
             bool removable, int stackMode, bool temporaryReplacement = false, IReadOnlyList<string>? parameterUpgradeCastEffects = null,
-            bool? definitionRemovable = null, float? magicPowerScale = null)
+            bool? definitionRemovable = null, float? magicPowerScale = null, CardStatisticQuery? feedingQuery = null)
         {
             RuntimeType = runtimeType; DeclaredName = declaredName; DefinitionParamInt = definitionParamInt; ParamInt = paramInt;
             Removable = removable; StackMode = stackMode; TemporaryReplacement = temporaryReplacement;
             DefinitionRemovable = definitionRemovable ?? (declaredName == null ? true : removable);
             MagicPowerScale = runtimeType == "CardTraitScalingMagicPowerOnMoonPhase" ? magicPowerScale ?? 1f : magicPowerScale;
+            FeedingQuery = runtimeType == "CardTraitScalingFeederRules" ? feedingQuery : null;
             ParameterUpgradeCastEffects = Array.AsReadOnly((parameterUpgradeCastEffects ?? Array.Empty<string>()).ToArray());
         }
         internal CardTraitValue Retyped(CardTraitReplacement replacement, bool temporary) =>
             new CardTraitValue(replacement.NewRuntimeType, replacement.NewName, DefinitionParamInt, DefinitionParamInt,
-                DefinitionRemovable ?? Removable, StackMode, temporary, ParameterUpgradeCastEffects, DefinitionRemovable);
+                DefinitionRemovable ?? Removable, StackMode, temporary, ParameterUpgradeCastEffects, DefinitionRemovable,
+                feedingQuery: FeedingQuery);
         internal static CardTraitValue Dummy() => new CardTraitValue("CardTraitDummy", null, 0, 0, false, 0);
     }
 
@@ -101,7 +104,8 @@ namespace MonsterTrain2Poju.Model
                 // Upgrade definitions instantiate a fresh state with the declared
                 // parameter, even when the persistent input has a changed parameter.
                 else added = new CardTraitValue(trait.RuntimeType, trait.DeclaredName, trait.DefinitionParamInt,
-                    trait.DefinitionParamInt, trait.Removable, trait.StackMode, false, trait.ParameterUpgradeCastEffects);
+                    trait.DefinitionParamInt, trait.Removable, trait.StackMode, false, trait.ParameterUpgradeCastEffects,
+                    feedingQuery: trait.FeedingQuery);
                 combined.Add(added); present.Add(added.RuntimeType);
             }
             if (present.Contains("CardTraitExhaustState") && present.Contains("CardTraitSelfPurge"))

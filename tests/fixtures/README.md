@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 451 archives (412 full battles and
+Current accepted inventory (2026-10-18): 452 archives (413 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,7 +9,7 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-451 accepted archives. Refresh/check the index with
+452 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
 `full-battle-forced-feeding.mt2f` covers unchanged Feast, deployment rejection,
@@ -18,8 +18,18 @@ Its 41-stage win has six plays/five EndTurns and zero errors. Full native states
 RNG, food statistics and sixteen independent chains match. Binary-only:
 29,238 bytes/4,106 nodes, SHA-256
 `4975f1149cd6f03ca2916adfdc62ecdbd5824223200ad80db35aa7915d9dac4d`.
-Use `-ForcedFeeding` and `--forced-feeding-only`. Scaling and self-overridden
-feeders remain outside this witness.
+Use `-ForcedFeeding` and `--forced-feeding-only`. Self-overridden feeders remain
+outside this witness.
+
+`full-battle-shroud-spike-feeding.mt2f` retains two unchanged Shroud Spikes:
+3 Ember gives six OnEaten/OnFeed callbacks (+54/+54, 30 control gold); 0 Ember
+still consumes the food and both cards Consume, while giving no food rewards.
+The 41-stage win has six plays/five EndTurns and zero errors. Full states/RNG,
+run statistics, replay and sixteen immutable branches match. Binary-only:
+29,497 bytes/4,152 nodes, SHA-256
+`e3a50ab220b91a8ad06d9d840970565c8e7ca0814eb33daff3f66327dc2a443f`.
+Use `-ShroudSpikeFeeding` and `--forced-feeding-only`. Trait installation and
+self-overridden feeders retain separate evidence boundaries.
 
 `full-battle-tower-corruption-callbacks.mt2f` covers two Keepers on different
 floors, sequential corruption commits and notification-driven room focus before
