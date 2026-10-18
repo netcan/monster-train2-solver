@@ -486,6 +486,7 @@ namespace MonsterTrain2Poju.Model
                 damagePerHpLastAttacker: effect.DamagePerHpLastAttacker,
                 damagePerHpIncludeArmor: effect.DamagePerHpIncludeArmor,
                 roomAttachment: effect.RoomAttachment, recursion: effect.Recursion,
+                cardFilter: effect.CardFilter, upgradeFilters: effect.UpgradeFilters,
                 removeHalfStatusEffects: effect.RemoveHalfStatusEffects, overheal: effect.Overheal,
                 corruptionAdd: effect.CorruptionAdd, nullTargetless: effect.NullTargetless,
                 nullForwardSelf: effect.NullForwardSelf, chooseDiscard: effect.ChooseDiscard,

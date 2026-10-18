@@ -488,6 +488,17 @@ namespace MonsterTrain2Poju.Model
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                         healDamageMultiplier: effect.HealDamageMultiplier);
                 }
+                if (effect.Type == "DuplicateCard")
+                {
+                    IReadOnlyList<int>? selectedIds = recursionSelections?.FirstOrDefault(selection => selection.EffectIndex == index)?.CardInstanceIds;
+                    if (selectedIds?.Count > 1) return UnsupportedTrain("Hand duplication requires a single card selection.");
+                    CardGenerationResult copied = CardDuplicateModel.Apply(state.Context!, effect, sourceCardId,
+                        selectedIds?.Count == 1 ? selectedIds[0] : null);
+                    if (!copied.Supported) return UnsupportedTrain(copied.UnsupportedReason!);
+                    state = WithContext(state, copied.Context!);
+                    if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                    continue;
+                }
                 if (effect.Type == "FreezeCard")
                 {
                     IReadOnlyList<int>? selectedIds = recursionSelections?.FirstOrDefault(selection => selection.EffectIndex == index)?.CardInstanceIds;
@@ -1950,9 +1961,9 @@ namespace MonsterTrain2Poju.Model
                         return "Missing upgraded-copy source or generation rules.";
                     continue;
                 }
-                if (effect.Type == "FreezeCard")
+                if (effect.Type is "FreezeCard" or "DuplicateCard")
                 {
-                    if (source.Context?.CardRegistry == null) return "Chosen freeze requires captured card instances.";
+                    if (source.Context?.CardRegistry == null) return "Hand-card choice requires captured card instances.";
                     continue;
                 }
                 if (effect.Type == "ChooseDiscard")
@@ -2147,6 +2158,11 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0,
             int sourceCardId = 0, int lastSacrificedUnitId = 0, bool hasPriorTargets = false)
         {
+            if (effect.Type == "DuplicateCard")
+            {
+                IReadOnlyList<int> cardIds = CardDuplicateModel.EligibleCards(state.Context!, effect, sourceCardId, out string? error);
+                return new CardTargets(Array.Empty<int>(), error, cardIds: cardIds);
+            }
             if (effect.Type == "FreezeCard")
             {
                 IReadOnlyList<int> cardIds = CardFreezeModel.EligibleCards(state.Context!, sourceCardId, out string? error);
@@ -2220,6 +2236,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == ForgePointsModel.Effect) return ForgePointsModel.Test(pyreAlive ?? context?.EnergyState?.PyreAlive);
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
             if (effect.Type == "FreezeCard") return !preview && !bossDead;
+            if (effect.Type == "DuplicateCard") return !preview && !bossDead && count > 0;
             if (preview && (effect.Type == "Draw" || effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade" || effect.Type == "DrawNextTurn" || effect.Type == "DiscardHand" || effect.Type == "RandomDiscard" || effect.Type == "ChooseDiscard" || effect.Type == "Generate")) return false;
             if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DrawType" && effect.Type != "ScheduleNextDrawUpgrade" && effect.Type != "DrawNextTurn" && effect.Type != "DiscardHand" && effect.Type != "RandomDiscard" && effect.Type != "Generate"))) return false;
             if (effect.Type == "RandomDiscard") return context != null &&
@@ -2346,7 +2363,7 @@ namespace MonsterTrain2Poju.Model
         private static bool AttackChange(CardActionEffect effect) => effect.Type == "BuffAttack" || effect.Type == "DebuffAttack";
         private static bool CardOnlyPileTarget(CardActionEffect effect) =>
             effect.Type == "RandomDiscard" && effect.Target == "Hand" || effect.Type == "Recursion" ||
-            effect.Type is "ChooseDiscard" or "FreezeCard" || CardOnlyDrawTarget(effect);
+            effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" || CardOnlyDrawTarget(effect);
         private static bool CardOnlyDrawTarget(CardActionEffect effect) =>
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
             (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
@@ -2370,7 +2387,7 @@ namespace MonsterTrain2Poju.Model
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
-            if (effect.Type is "Recursion" or "ChooseDiscard" or "FreezeCard") return targets.CardIds.Count;
+            if (effect.Type is "Recursion" or "ChooseDiscard" or "FreezeCard" or "DuplicateCard") return targets.CardIds.Count;
             if (effect.Type == "AdjustAllStatusEffects")
             {
                 if (effect.StatusAdjustmentFilter == 0 && effect.Statuses.Count == 0) return 0;

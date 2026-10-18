@@ -276,6 +276,12 @@ if (args.Length == 2 && args[0] == "--preserve-only")
     PreserveChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--card-duplicate-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CardDuplicateChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--soldier-of-fortune-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

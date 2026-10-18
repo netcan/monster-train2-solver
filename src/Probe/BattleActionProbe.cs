@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         private static readonly HashSet<string> SpellEffectTypes = new HashSet<string>(new[]
         {
-            "CardEffectNULL", "CardEffectAddStatusEffectNull", "CardEffectFeederRules", "CardEffectFreezeCard", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
+            "CardEffectNULL", "CardEffectAddStatusEffectNull", "CardEffectFeederRules", "CardEffectFreezeCard", "CardEffectDuplicateCardInHand", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
             "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown",
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
@@ -333,7 +333,8 @@ namespace MonsterTrain2Poju.Probe
                 (effect.GetTargetMode() == TargetMode.DrawPile || effect.GetTargetMode() == TargetMode.Hand ||
                  effect.GetTargetMode() == TargetMode.LastDrawnCard);
             bool randomDiscardHandTarget = (effect.GetEffectStateName() == "CardEffectRandomDiscard" ||
-                effect.GetEffectStateName() == "CardEffectChooseDiscard") && effect.GetTargetMode() == TargetMode.Hand;
+                effect.GetEffectStateName() == "CardEffectChooseDiscard" || effect.GetEffectStateName() == "CardEffectDuplicateCardInHand" ||
+                effect.GetEffectStateName() == "CardEffectFreezeCard") && effect.GetTargetMode() == TargetMode.Hand;
             bool recursionCardPileTarget = effect.GetEffectStateName() == "CardEffectRecursion" &&
                 (effect.GetTargetMode() == TargetMode.Exhaust || effect.GetTargetMode() == TargetMode.Eaten || effect.GetTargetMode() == TargetMode.Discard);
             var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
@@ -361,6 +362,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAddStatusEffectNull" ? "StatusNull" :
                 effect.GetEffectStateName() == "CardEffectFeederRules" ? "FeederRules" :
                 effect.GetEffectStateName() == "CardEffectFreezeCard" ? "FreezeCard" :
+                effect.GetEffectStateName() == "CardEffectDuplicateCardInHand" ? "DuplicateCard" :
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
                 effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
@@ -454,7 +456,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" ||
                 effect.GetEffectStateName() == "CardEffectBuffEquipment") && effect.GetParamBool();
             if (type == "UnitUpgrade" || type == "UnitUpgradePerStatus" || type == "RemoveUnitUpgrade" ||
-                type == "AttachEquipment" || type == "BuffEquipment" || handUpgrade || deckSpellUpgrade)
+                type == "AttachEquipment" || type == "BuffEquipment" || type == "DuplicateCard" && effect.GetParamCardUpgradeData() != null || handUpgrade || deckSpellUpgrade)
             {
                 if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
                 else
@@ -462,10 +464,10 @@ namespace MonsterTrain2Poju.Probe
                     CardUpgradeData upgradeData = effect.GetParamCardUpgradeData();
                     var upgradeState = new CardUpgradeState(); upgradeState.Setup(upgradeData);
                     bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" ||
-                        effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" || deckSpellUpgrade;
+                        effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" || deckSpellUpgrade || type == "DuplicateCard";
                     upgrade = CardModifierProbe.Upgrade(upgradeState, false, filtersAlreadyApplied: filtersIgnoredByEffect);
                     interactions.AddRange(upgrade.ExternalInteractions);
-                    if (deckSpellUpgrade) upgradeFilters = upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
+                    if (deckSpellUpgrade || type == "DuplicateCard") upgradeFilters = upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
                     if (scaleUpgrade && !upgradeData.CanScaleUpgradeToSingleInstance()) interactions.Add("Invalid scaled unit upgrade definition");
                 }
                 lifetime = type == "BuffEquipment" ? "TemporaryUntilUnitDeath" : deckSpellUpgrade ? "TemporaryUntilEndOfBattle" : handUpgrade ?
@@ -515,6 +517,7 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
                     excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()),
                 type == "Generate" ? CardGenerationProbe.Definition(effect) : generation, type == "AdjustCapacity" && effect.GetParamBool(),
+                cardFilter: type == "DuplicateCard" && effect.GetParamCardFilter() != null ? CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter()) : null,
                 copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,
                 scaleUpgrade: scaleUpgrade, doNotFullyRemove: type == "Sacrifice" ? effect.GetParamBool() : (bool?)null,
                 targetSubtype: type == "DamageByUnitsKilled" ? effect.GetParamStr() :

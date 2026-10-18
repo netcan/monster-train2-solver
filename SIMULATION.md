@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 457 binary archives, including 418
+Current accepted inventory (2026-10-18): 458 binary archives, including 419
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 457
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 458
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,18 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-mass-production.mt2f` adds unchanged Mass Production and chosen
+hand-card duplication. Two full-hand casts leave a source vacancy and generate
+one card each, ignoring ParamInt=3. Native self-only/eligible Tests, card masks,
+Infusion exclusion and inherited permanent/temporary upgrades are checked.
+The original optional -1 cost/+1 X-cost upgrade is filtered on the new card
+before source modifiers are copied; its lifetime is permanent although the
+generated card is temporary. Complete states/RNG, the 38-stage win (21 plays/
+five EndTurns), sixteen independent chains and bounded search match with zero
+errors. Use `-CardDuplicate` and `--card-duplicate-only`. Recipient definitions
+with starting upgrades and changed trait-based copyability are guarded;
+arbitrary upgrade/relic combinations remain outside this witness.
 
 `full-battle-preserve.mt2f` adds unchanged Preserve and chosen hand-card Freeze.
 Two native selections freeze an authored Junk and spell; a third original cast

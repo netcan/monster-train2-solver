@@ -1057,7 +1057,7 @@ namespace MonsterTrain2Poju.Model
             PlayCardAction action, CardPlayRule rule)
         {
             var choiceEffects = rule.Effects.Concat(rule.OnCastEffects).Select((effect, index) => (effect, index))
-                .Where(item => item.effect.Type is "ChooseDiscard" or "FreezeCard" || item.effect.Type == "Recursion" &&
+                .Where(item => item.effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" || item.effect.Type == "Recursion" &&
                     item.effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck").ToArray();
             if (choiceEffects.Length == 0)
             {
@@ -1085,6 +1085,7 @@ namespace MonsterTrain2Poju.Model
                 IReadOnlyList<int> eligible = effect.Type == "ChooseDiscard"
                     ? CardChooseDiscardModel.EligibleCards(context, effect, action.CardInstanceId, out error)
                     : effect.Type == "FreezeCard" ? CardFreezeModel.EligibleCards(context, action.CardInstanceId, out error)
+                    : effect.Type == "DuplicateCard" ? CardDuplicateModel.EligibleCards(context, effect, action.CardInstanceId, out error)
                     : CardRecursionModel.EligibleCards(context.Cards, context.OtherPiles, effect, source.PlayRules,
                         action.CardInstanceId, out error, context.CardRegistry);
                 if (error != null || eligible.Count == 0)

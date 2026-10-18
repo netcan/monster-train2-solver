@@ -318,6 +318,8 @@ internal static class RoomCombatChecks
             ArmamentDriveChecks.Native(fixture);
         if (fixture.TryGetProperty("PreservePrepared", out var preserve) && preserve.GetBoolean())
             PreserveChecks.Native(fixture);
+        if (fixture.TryGetProperty("CardDuplicatePrepared", out var cardDuplicate) && cardDuplicate.GetBoolean())
+            CardDuplicateChecks.Native(fixture);
         CardBranchMaskChecks.Native(fixture);
         if (fixture.TryGetProperty("ModifierScenario", out var relicScenario) && relicScenario.GetString() == "original-relic-batch")
             OriginalRelicBatchChecks.Native(fixture);

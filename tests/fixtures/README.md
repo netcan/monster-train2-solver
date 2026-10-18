@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 457 archives (418 full battles and
+Current accepted inventory (2026-10-18): 458 archives (419 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,23 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-457 accepted archives. Refresh/check the index with
+458 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-mass-production.mt2f` keeps two original Mass Productions. Each
+starts with a full hand, leaves one vacancy on play and creates exactly one
+copy despite ParamInt=3. Native filters permit the authored equipment and
+reject the self-only Test; Infusion fillers are uncopyable. The optional -1
+cost/+1 X-cost upgrade is filtered on the newly created card, then installed
+permanently before the chosen card's permanent +3/+4 and temporary +2 attack
+upgrades are copied. The card copy itself remains temporary. Complete effect
+states/RNG, the 38-stage win (21 plays/five EndTurns), sixteen independent
+chains and bounded search match with zero errors. Copies of definitions with
+starting upgrades or changed trait-based copyability remain guarded; arbitrary
+upgrade/relic combinations are outside this witness. Binary-only: 35,575
+bytes/5,807 nodes, SHA-256
+`df501cfb7fd26ee363ad6df3c2b9d4a88b01220a0404a63f80083f9c0657140b`.
+Use `-CardDuplicate` and `--card-duplicate-only`.
 
 `full-battle-preserve.mt2f` keeps three original Preserves. Two select an
 authored Junk and a spell; the third has no eligible hand cards and remains a

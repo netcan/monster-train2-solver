@@ -71,13 +71,15 @@ namespace MonsterTrain2Poju.Model
         public int? SelectedPoolIndex { get; }
         public IReadOnlyList<bool>? PoolEligibility { get; }
         public IReadOnlyList<string>? ChampionCardDataIds { get; }
+        public IReadOnlyList<CardUpgradeMaskRule>? OptionalUpgradeFilters { get; }
         public CardGenerationRule(string destination, int count, IReadOnlyList<CardCreationRule> pool,
             bool skipDuplicateInHand = false, bool requireHandSpace = false, bool copyModifiers = false,
             bool ignoreTemporaryModifiers = false, CardUpgradeModifier? upgrade = null,
             IReadOnlyList<DiscardGenerationUpgrade>? discardCopyUpgrades = null, IReadOnlyList<string>? externalInteractions = null,
             bool deterministicPoolSelection = false, bool requireCopyableSource = false, bool upgradeIsPermanent = false,
             bool? permanent = null, int? selectedPoolIndex = null, IReadOnlyList<bool>? poolEligibility = null,
-            IReadOnlyList<string>? championCardDataIds = null, bool? ignoreIfEphemeral = null, bool? onlyUnequippedTargets = null)
+            IReadOnlyList<string>? championCardDataIds = null, bool? ignoreIfEphemeral = null, bool? onlyUnequippedTargets = null,
+            IReadOnlyList<CardUpgradeMaskRule>? optionalUpgradeFilters = null)
         { Destination = destination; Count = count; Pool = Array.AsReadOnly(pool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
             RequireHandSpace = requireHandSpace; CopyModifiers = copyModifiers; IgnoreTemporaryModifiers = ignoreTemporaryModifiers; Upgrade = upgrade;
             DiscardCopyUpgrades = Array.AsReadOnly((discardCopyUpgrades ?? Array.Empty<DiscardGenerationUpgrade>()).ToArray());
@@ -85,20 +87,21 @@ namespace MonsterTrain2Poju.Model
             DeterministicPoolSelection = deterministicPoolSelection; RequireCopyableSource = requireCopyableSource;
             UpgradeIsPermanent = upgradeIsPermanent; Permanent = permanent; IgnoreIfEphemeral = ignoreIfEphemeral; SelectedPoolIndex = selectedPoolIndex;
             OnlyUnequippedTargets = onlyUnequippedTargets;
+            OptionalUpgradeFilters = optionalUpgradeFilters == null ? null : Array.AsReadOnly(optionalUpgradeFilters.ToArray());
             PoolEligibility = poolEligibility == null ? null : Array.AsReadOnly(poolEligibility.ToArray());
             ChampionCardDataIds = championCardDataIds == null ? null : Array.AsReadOnly(championCardDataIds.Distinct(StringComparer.Ordinal).ToArray()); }
         public bool ShouldSerializePoolEligibility() => PoolEligibility != null;
         internal CardGenerationRule WithSelectedPoolIndex(int index) => new(Destination, Count, Pool, SkipDuplicateInHand,
             RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades, ExternalInteractions,
-            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index, PoolEligibility, ChampionCardDataIds, IgnoreIfEphemeral, OnlyUnequippedTargets);
+            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index, PoolEligibility, ChampionCardDataIds, IgnoreIfEphemeral, OnlyUnequippedTargets, OptionalUpgradeFilters);
         internal CardGenerationRule WithPoolEligibility(IReadOnlyList<bool> eligibility) => new(Destination, Count, Pool,
             SkipDuplicateInHand, RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades,
             ExternalInteractions, DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent,
-            SelectedPoolIndex, eligibility, ChampionCardDataIds, IgnoreIfEphemeral, OnlyUnequippedTargets);
+            SelectedPoolIndex, eligibility, ChampionCardDataIds, IgnoreIfEphemeral, OnlyUnequippedTargets, OptionalUpgradeFilters);
         internal CardGenerationRule ForTargetCount(int count) => new(Destination, count, Pool, SkipDuplicateInHand,
             RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades, ExternalInteractions,
             DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, SelectedPoolIndex,
-            PoolEligibility, ChampionCardDataIds, IgnoreIfEphemeral);
+            PoolEligibility, ChampionCardDataIds, IgnoreIfEphemeral, optionalUpgradeFilters: OptionalUpgradeFilters);
     }
 
     public sealed class CardGenerationResult
@@ -285,9 +288,16 @@ namespace MonsterTrain2Poju.Model
                     permanent = UnitModifierModel.Add(permanent, upgrade.WithSharedReference(null));
                     RefreshUpgrades();
                 }
-                if (rule.Upgrade != null)
+                bool applyOptionalUpgrade = rule.Upgrade != null;
+                if (applyOptionalUpgrade && rule.OptionalUpgradeFilters?.Count > 0)
                 {
-                    if (rule.Upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.Upgrade.ExternalInteractions));
+                    if (candidate.MaskDescriptor == null) return Unsupported("Optional generation-upgrade filters require captured card metadata.");
+                    CardUpgradeMaskCard maskCard = CardBranchMaskModel.Resolve(candidate.WithModifiers(permanent, temporary));
+                    applyOptionalUpgrade = rule.OptionalUpgradeFilters.All(filter => CardUpgradeMaskModel.FilterCard(filter, maskCard));
+                }
+                if (applyOptionalUpgrade)
+                {
+                    if (rule.Upgrade!.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.Upgrade.ExternalInteractions));
                     if (rule.UpgradeIsPermanent)
                     {
                         error = CardExhaustModel.PermanentUpgradeError(candidate, rule.Upgrade);
