@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 482 archives (443 full battles and
+Current accepted inventory (2026-10-19): 483 archives (444 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,25 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-482 accepted archives. Refresh/check the index with
+483 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-x-damage-cards.mt2f` retains original Vent and Forever
+Consumed at X zero/three and zero/two, respectively. Zero X has two live enemies
+and leaves health/armor unchanged. Vent deals fifteen to the enemy room,
+removing a Mage and fifteen armor; Forever deals 160 to the surviving front
+enemy, accounting for armor and health. Original Spell Sanctum drains three
+energy on another floor; authored batteries then independently supply three/two.
+Temporary instance Freeze retains all seven waiting cards through deployment
+and is removed on play. Raw source traits remain unchanged through both phases.
+The nine-play/five-EndTurn win has sixteen immutable full-chain comparisons.
+Only PlayedCost damage scalars five/eighty with the captured original parameters
+are accepted by the source matcher; older captures without SourceTraits remain
+mechanism evidence for these traits. Binary-only: 26,207 bytes/3,643 nodes,
+SHA-256 `2e97af978e9992e7e81be29eb942e1e22ee022f2b7818590606a7758ad29125f`.
+Use `-OriginalXDamageCards` and `--original-x-damage-cards-only`.
+Focused X-damage/generation/merge/freeze gate:
+`.probe-runs/model-checks-20261019-003432-fadf0ab6/summary.json` (four passed).
 
 `full-battle-original-strong-magic-cards.mt2f` retains original Cosmic Bolt,
 Duality, RIP and Planetarium. Zero/five room power gives damage 35/60 for

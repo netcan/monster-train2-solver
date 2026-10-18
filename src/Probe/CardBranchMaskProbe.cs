@@ -15,7 +15,8 @@ namespace MonsterTrain2Poju.Probe
             var state = CardOwnedMaskProbe.Capture(card);
             return new CardMaskDescriptor(state.Definition, state.BaseCost, state.Traits.Composition.BaseTraits,
                 state.InstalledCastEffects, state.Purified, state.PermanentGraft,
-                state.Traits.Composition.TemporaryTraits, state.Traits.Composition.PermanentReplacements);
+                state.Traits.Composition.TemporaryTraits, state.Traits.Composition.PermanentReplacements,
+                CardSourceTraitProbe.Capture(card));
         }
         internal static CardUpgradeMaskMetadata? Upgrade(CardUpgradeState upgrade) => !Enabled ? null :
             new CardUpgradeMaskMetadata(upgrade.GetStatusEffectUpgrades().Select(status =>
@@ -37,7 +38,8 @@ namespace MonsterTrain2Poju.Probe
             var traits = CardTraitCompositionModel.Refresh(new CardTraitCompositionState(data.GetTraits().Select(CardTraitCompositionProbe.Definition).ToArray(),
                 Array.Empty<CardTraitValue>(), Array.Empty<IReadOnlyList<CardTraitValue>>(), Array.Empty<string>(), Array.Empty<CardTraitReplacement>())).BaseTraits;
             return new CardMaskDescriptor(definition, data.GetCost(), traits, data.GetCardTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnCast)
-                .SelectMany(trigger => trigger.GetCardEffects()).Select(effect => effect.GetEffectStateName()).ToArray());
+                .SelectMany(trigger => trigger.GetCardEffects()).Select(effect => effect.GetEffectStateName()).ToArray(),
+                sourceTraits: data.GetTraits().Select(CardSourceTraitProbe.Capture).ToArray());
         }
         internal static void Observe(FullBattleTrace trace, CombatContext context)
         {

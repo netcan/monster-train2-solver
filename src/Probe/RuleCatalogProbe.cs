@@ -81,14 +81,7 @@ namespace MonsterTrain2Poju.Probe
                     Id = card.GetID(), AssetKey = card.name, Cost = card.GetCost(), Type = card.GetCardType().ToString(),
                     SpawnCharacter = card.GetSpawnCharacterData()?.GetAssetKey(),
                     Effects = card.GetEffects().Select(Effect).ToArray(),
-                    Traits = card.GetTraits().Select(trait => new
-                    {
-                        Type = trait.GetTraitStateName(), Int = trait.GetParamInt(), Int2 = trait.GetParamInt2(),
-                        Int3 = trait.GetParamInt3(), Bool = trait.GetParamBool(), Str = trait.GetParamStr(),
-                        Float = trait.GetParamFloat(), Scaling = trait.GetUseScalingParams(),
-                        TrackedValue = trait.GetParamTrackedValue().ToString(),
-                        EntryDuration = trait.GetParamEntryDuration().ToString()
-                    }).ToArray(),
+                    Traits = card.GetTraits().Select(CardSourceTraitProbe.Capture).ToArray(),
                     Triggers = card.GetCardTriggers().Select(trigger => new
                     {
                         Kind = trigger.GetTrigger().ToString(),

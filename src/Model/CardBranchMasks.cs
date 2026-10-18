@@ -29,17 +29,20 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string> AuthoredCastEffects { get; }
         public bool Purified { get; }
         public bool PermanentGraft { get; }
+        public IReadOnlyList<CardSourceTrait>? SourceTraits { get; }
         public CardMaskDescriptor(CardMaskDefinition definition, int baseCost, IReadOnlyList<CardTraitValue> baseTraits,
             IReadOnlyList<string> authoredCastEffects, bool purified = false, bool permanentGraft = false,
-            IReadOnlyList<CardTraitValue>? temporaryTraits = null, IReadOnlyList<CardTraitReplacement>? permanentReplacements = null)
+            IReadOnlyList<CardTraitValue>? temporaryTraits = null, IReadOnlyList<CardTraitReplacement>? permanentReplacements = null,
+            IReadOnlyList<CardSourceTrait>? sourceTraits = null)
         { Definition = definition; BaseCost = baseCost; BaseTraits = Array.AsReadOnly(baseTraits.ToArray());
             TemporaryTraits = Array.AsReadOnly((temporaryTraits ?? Array.Empty<CardTraitValue>()).ToArray());
             PermanentReplacements = Array.AsReadOnly((permanentReplacements ?? Array.Empty<CardTraitReplacement>()).ToArray());
-            AuthoredCastEffects = Array.AsReadOnly(authoredCastEffects.ToArray()); Purified = purified; PermanentGraft = permanentGraft; }
+            AuthoredCastEffects = Array.AsReadOnly(authoredCastEffects.ToArray()); Purified = purified; PermanentGraft = permanentGraft;
+            SourceTraits = sourceTraits == null ? null : Array.AsReadOnly(sourceTraits.ToArray()); }
         internal CardMaskDescriptor WithBaseTraits(IReadOnlyList<CardTraitValue> traits) => new CardMaskDescriptor(
-            Definition, BaseCost, traits, AuthoredCastEffects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements);
+            Definition, BaseCost, traits, AuthoredCastEffects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements, SourceTraits);
         internal CardMaskDescriptor WithAuthoredCastEffects(IReadOnlyList<string> effects) => new CardMaskDescriptor(
-            Definition, BaseCost, BaseTraits, effects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements);
+            Definition, BaseCost, BaseTraits, effects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements, SourceTraits);
     }
 
     public static class CardBranchMaskModel

@@ -187,18 +187,15 @@ internal static class CardCoverageInventory
         // Rule projections do not retain every raw trait parameter. Until those
         // parameters have their own original-card witnesses, do not promote them.
         FixtureValue[] traits = Array(definition, "Traits");
-        if (traits.Any(trait => Text(trait, "Type") is not ("CardTraitSelfPurge" or "CardTraitIgnoreArmor" or "CardTraitExhaustState" or "CardTraitStrongerMagicPower"))) return false;
-        // These calibrated traits do not use asset parameters. StrongerMagicPower
-        // always returns five, including the original zero/five Int variants.
-        if (traits.Any(trait => Text(trait, "Type") != "CardTraitSelfPurge" &&
-            ((Text(trait, "Type") == "CardTraitStrongerMagicPower" ? trait.GetProperty("Int").GetInt32() is not (0 or 5) : trait.GetProperty("Int").GetInt32() != 0) || trait.GetProperty("Int2").GetInt32() != 0 ||
-             trait.GetProperty("Int3").GetInt32() != 0 || Flag(trait, "Bool") || Text(trait, "Str").Length > 0 ||
-             trait.GetProperty("Float").GetDouble() != 0 || Flag(trait, "Scaling")))) return false;
+        if (traits.Any(trait => !CalibratedSourceTrait(trait))) return false;
+        bool requiresRaw = traits.Any(trait => Text(trait, "Type") == "CardTraitScalingAddDamage");
         foreach (string source in new[] { "CardInstances", "CardRegistry" })
         foreach (FixtureValue instance in Array(context, source))
         {
             if (instance.GetProperty("InstanceId").GetInt32() != instanceId) continue;
             if (!instance.TryGetProperty("MaskDescriptor", out FixtureValue mask) || mask.ValueKind != FixtureKind.Object) continue;
+            bool hasRaw = mask.TryGetProperty("SourceTraits", out FixtureValue raw) && raw.ValueKind == FixtureKind.Array;
+            if (requiresRaw && !hasRaw || hasRaw && !Equivalent(raw, definition.GetProperty("Traits"))) return false;
             if (!mask.TryGetProperty("Definition", out FixtureValue sourceDefinition) || sourceDefinition.ValueKind != FixtureKind.Object ||
                 Text(sourceDefinition, "DataId") != Text(definition, "Id") || Text(sourceDefinition, "CardType") != Text(definition, "Type") ||
                 !Strings(sourceDefinition, "MainEffectNames").SequenceEqual(Array(definition, "Effects").Select(effect => Text(effect, "Type")))) return false;
@@ -212,6 +209,21 @@ internal static class CardCoverageInventory
             return true;
         }
         return false; // Legacy schemas without base-trait evidence stay unverified.
+    }
+
+    private static bool CalibratedSourceTrait(FixtureValue trait)
+    {
+        string type = Text(trait, "Type");
+        if (type == "CardTraitSelfPurge") return true;
+        if (trait.GetProperty("Int2").GetInt32() != 0 || trait.GetProperty("Int3").GetInt32() != 0 ||
+            Flag(trait, "Bool") || Text(trait, "Str").Length > 0) return false;
+        int value = trait.GetProperty("Int").GetInt32();
+        if (type == "CardTraitScalingAddDamage")
+            return value is 5 or 80 && trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") &&
+                Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn";
+        if (trait.GetProperty("Float").GetDouble() != 0 || Flag(trait, "Scaling")) return false;
+        return type == "CardTraitStrongerMagicPower" ? value is 0 or 5 :
+            type is "CardTraitIgnoreArmor" or "CardTraitExhaustState" && value == 0;
     }
 
     private static IEnumerable<string> Primitives(FixtureValue rule, bool includeUnplayed = true)
@@ -335,7 +347,8 @@ internal static class CardCoverageInventory
             ("unreviewed", "Projection failed or a required primitive has no indexed transition witness; support is unknown.") })
             text.Append($"| {level} | {cards.Count(card => card.Logbook && card.Coverage == level)} | {cards.Count(card => card.Coverage == level)} | {meaning} |\n");
         text.Append("\nThese are evidence labels, not whole-card completion claims. A directly matched play proves that captured path; it does not prove every target, upgrade, relic combination, trigger or future branch. Indirect witnesses may execute an effect with no target; presence in a played chain is not a positive test of every parameter. The definition projection is conservative but is not a full raw-asset checksum.\n\n");
-        text.Append("Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge with matching native definition parameters, and calibrated IgnoreArmor/ExhaustState/StrongerMagicPower traits with exact accepted raw parameters and captured runtime/declared identity. Original Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower witnesses cover raw Int zero/five variants and zero/five room power for damage and healing. Other traits need separate original-card calibration and are not promoted from rule equality alone. A shared DataId alone never establishes direct coverage. Upgrades on an instance do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically classified as original-card evidence.\n\n");
+        text.Append("Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge, calibrated IgnoreArmor/ExhaustState/StrongerMagicPower parameters, and PlayedCost damage scalars five/eighty with exact source parameters and runtime/declared identity. Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower covers raw Int zero/five and zero/five room power for damage/healing. The X-damage witnesses cover enemy-present zero and positive X.\n\n");
+        text.Append("New descriptors retain the actual CardData supplied to CardState.Setup, with source trait parameters separate from runtime traits. All captured raw source fields must match the frozen catalog when present; X damage requires this provenance and older missing metadata remains unverified. Missing provenance, changed multiplier/query, and changed runtime parameters are rejected. Other trait families need separate calibration. A shared DataId alone never establishes direct coverage. Instance upgrades do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically original-card evidence.\n\n");
         text.Append($"Across all classifications, {cards.Count(card => card.DirectPlays > 0)} identities ({cards.Count(card => card.Logbook && card.DirectPlays > 0)} logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.\n\n");
         text.Append("## Reproducible files\n\n- [Per-card inventory](card-inventory.tsv): identity, type/role, native effects/traits, evidence level, direct/other plays, primitive witnesses and exact projection guard paths.\n- [Played-card evidence](card-play-evidence.tsv): one row per original identity/archive, with zero-based indices into that archive's `Actions` array.\n- [Unplayed-trigger evidence](card-trigger-evidence.tsv): matched EndTurns with a positive new-copy or existing-spell-upgrade observation, source identity and zero-based `Turns` index. These supply mechanism evidence and do not count as direct card plays. Playing a card alone does not establish its unplayed trigger.\n- [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.\n\n");
         text.Append($"Indexed {indexed} full battles and {actions} native actions whose captured prediction is supported, actual state exists and difference is null. {nonCatalog} actions use scenario-only identities; {unresolved} actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: {excluded.Count}. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.\n\n");

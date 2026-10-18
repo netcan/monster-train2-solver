@@ -37,13 +37,7 @@ namespace MonsterTrain2Poju.Probe
                     IsUnitAbility = card.IsUnitAbility(), IsRoomAbility = card.IsRoomAbility(), Archived = card.IsArchived,
                     SpawnCharacter = card.GetSpawnCharacterData()?.GetAssetKey(),
                     Effects = card.GetEffects().Select(RuleCatalogProbe.Effect).ToArray(),
-                    Traits = card.GetTraits().Select(trait => new
-                    {
-                        Type = trait.GetTraitStateName(), Int = trait.GetParamInt(), Int2 = trait.GetParamInt2(),
-                        Int3 = trait.GetParamInt3(), Bool = trait.GetParamBool(), Str = trait.GetParamStr(),
-                        Float = trait.GetParamFloat(), Scaling = trait.GetUseScalingParams(),
-                        TrackedValue = trait.GetParamTrackedValue().ToString(), EntryDuration = trait.GetParamEntryDuration().ToString()
-                    }).ToArray(),
+                    Traits = card.GetTraits().Select(CardSourceTraitProbe.Capture).ToArray(),
                     Triggers = card.GetCardTriggers().Select(trigger => new
                     {
                         Kind = trigger.GetTrigger().ToString(), Effects = trigger.GetCardEffects().Select(RuleCatalogProbe.Effect).ToArray()

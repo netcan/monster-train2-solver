@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 482 binary archives, including 443
+Current accepted inventory (2026-10-19): 483 binary archives, including 444
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 482
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 483
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,17 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-x-damage-cards.mt2f` calibrates original Vent/Forever
+Consumed at zero and positive X with live enemies. Paid cost belongs to the
+played instance: Vent at three deals fifteen to the whole enemy room, while
+Forever at two deals 160 to the front unit, including armor. Frozen instance
+traits retain the waiting hand through deployment, then disappear on play.
+The source parameter record is independent of runtime traits: a CardState.Setup
+hook records its actual CardData, without inferring from a shared DataId.
+Immutable descriptor updates retain these source facts; old descriptors keep
+null provenance. Sixteen complete nine-play/five-EndTurn branches are checked.
+Other statistic queries/scalars still require their own original-card evidence.
 
 `full-battle-original-strong-magic-cards.mt2f` compares original Cosmic Bolt
 damage 35/60 and Duality healing 10/35 at zero/five room power, using original

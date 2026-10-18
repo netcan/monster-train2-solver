@@ -1,7 +1,7 @@
 # Original card definition catalog
 
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
-and component fixtures. It does not increase their 482-archive acceptance count.
+and component fixtures. It does not increase their 483-archive acceptance count.
 
 The isolated `no-cards` run on 2026-10-19 inspected all 668 unique
 `AllGameData.GetAllCardData()` definitions from game module
@@ -58,6 +58,14 @@ exact definition matching; they remain mechanism evidence. The matcher does
 not infer absent non-null metadata from a shared DataId.
 All 668 raw upgrade-mask definitions still match the accepted native calibration. Original
 card facts and projection guards remain separate from runtime evidence.
+
+Source trait capture now shares its parameter serializer with this catalog.
+The independent metadata baseline
+`.probe-runs/full-battle-no-cards-20261019-003014-166d4764` passed all capture
+counters and retained native state/RNG/frame; all 668 shared raw definitions
+match this frozen catalog exactly. CardState.Setup provenance is attached to
+new instance descriptors, separately from mutable runtime traits. Missing old
+provenance remains null and cannot establish direct X-scaling source matches.
 
 Recreate with an otherwise unmodified sandbox scenario:
 
