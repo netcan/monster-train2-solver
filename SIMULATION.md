@@ -1,11 +1,25 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 432 binary archives, including 393
+Current accepted inventory (2026-10-18): 433 binary archives, including 394
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 213/224 catalog entries (95.09%): 195 battle owners, 17 campaign
+covers 214/224 catalog entries (95.54%): 196 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`Inkbound_WolosBloodletter` now has schema-236 native evidence for unchanged
++12 Monster attack and one end-turn damage to eligible player units. Nineteen
+Tests, eight applications, eleven per-target notifications and thirteen attack
+manager calls match full state and RNG. Armor absorbs a first hit, subsequent
+hits reduce health, and untouchable/Pyre targets are excluded. Raw lethal damage
+leaves the spawner in Standby; the outer room cleanup exhausts it later. Its
+unused nested damage, Dazed and Conduit metadata do not execute. The additive
+attack branch ignores its default multiplier of one, also restoring replay of
+the existing relic-count attack archive. The 38-stage winning battle, five
+actions, independent five-EndTurn suffix in sixteen immutable branches,
+128-state serial/parallel search and ten affected archives pass. Native preview,
+healing/team variants and extra combined trigger/relic callbacks require their
+own native evidence.
 
 `ApplyDazedOnAscendOrDescend` now has schema-235 native evidence for its actual
 cost>=3 or X-cost Permafrost effect. Its asset name and unused Dazed metadata

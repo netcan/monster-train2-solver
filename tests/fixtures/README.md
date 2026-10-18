@@ -1,8 +1,18 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 432 archives (393 full battles and
-39 component calibrations), 213/224 original relic owners (95.09%): 195 battle
+Current accepted inventory (2026-10-18): 433 archives (394 full battles and
+39 component calibrations), 214/224 original relic owners (95.54%): 196 battle
 owners, seventeen campaign-interface owners and one native no-op. The latest
+`Inkbound_WolosBloodletter` fixture covers unchanged +12 Monster attack and
+one damage to eligible player units at each room's end of turn. Nineteen Tests,
+eight damage callbacks, eleven per-target notifications and thirteen attack
+manager calls match full state. Armor absorbs the first hit; untouchable and
+Pyre targets are excluded. A lethal callback leaves its spawner in Standby;
+the outer room cleanup subsequently exhausts it. The 38-stage winning battle,
+five actions, independent five-EndTurn suffix, sixteen immutable branches,
+128-state search and ten affected archives pass. Native preview, healing/team
+variants and additional combined trigger/relic callbacks remain uncalibrated.
+The preceding
 `ApplyDazedOnAscendOrDescend` fixture covers its actual cost>=3 or X-cost
 Permafrost callback. All six callback kinds match, including a cost-threshold
 cycle, unique manager reset, six queries and two explicit previews. Two natural

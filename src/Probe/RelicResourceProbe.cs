@@ -121,7 +121,14 @@ namespace MonsterTrain2Poju.Probe
             RelicMooncycleRoomEffectRule? mooncycleRoomEffect = null;
             RelicRandomDrawCostRule? randomDrawCost = null;
             RelicSuppressExhaustRule? suppressExhaust = null;
-            if (effect is RelicEffectSuppressExhaust)
+            RelicEndTurnHealthRule? endTurnHealth = null;
+            if (effect is RelicEffectDamageOrHealUnitsEndOfTurn)
+            {
+                object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+                endTurnHealth = new RelicEndTurnHealthRule(Field("teamTarget").ToString()!, (bool)Field("isHeal"));
+                amount = (int)Field("healthDelta");
+            }
+            else if (effect is RelicEffectSuppressExhaust)
             {
                 var interactions = new List<string>();
                 if (data.GetParamCardEffectData().Count != 0 || data.GetTriggers().Count != 0 || data.GetParamCardUpgradeData() != null ||
@@ -400,7 +407,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth);
         }
 
         internal static ResourceSnapshot Capture()

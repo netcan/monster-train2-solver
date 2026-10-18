@@ -370,6 +370,9 @@ internal static class RoomCombatChecks
         else if (fixture.TryGetProperty("ModifierScenario", out var integrationScenario) &&
             integrationScenario.GetString() is "typed-draw" or "original-balatro-event-cavendish")
             RelicCardModifierChecks.Native(fixture, requireScenarioCoverage: false);
+        else if (fixture.TryGetProperty("ModifierScenario", out var bloodletterScenario) &&
+            bloodletterScenario.GetString() == "original-wolos-bloodletter")
+            OriginalWolosBloodletterChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage: true);
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);

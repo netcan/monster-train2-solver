@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **213 distinct original collectable relics / 224 catalog entries
-(95.09%)** have accepted native evidence: 195 have full-battle effect evidence,
+As of 2026-10-18, **214 distinct original collectable relics / 224 catalog entries
+(95.54%)** have accepted native evidence: 196 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2609,4 +2609,59 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-exp
 dotnet run --project src/ModelChecks -c Release -- --expensive-card-upgrade-pure
 dotnet run --project src/ModelChecks -c Release -- --original-expensive-card-upgrade-only tests/fixtures/full-battle-original-expensive-card-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-expensive-card-upgrade.mt2f
+```
+
+## Original Wolos Bloodletter end-turn damage
+
+| Original owner | Data ID | Native archive | Accepted effect evidence |
+| --- | --- | --- | --- |
+| `Inkbound_WolosBloodletter` | `99814a66-c170-4b45-a466-6e164a125c59` | `full-battle-original-wolos-bloodletter.mt2f` | The unchanged ordered effects add 12 attack to Monster cards and apply one damage per eligible player unit at the end of room combat. Nineteen exact Tests, eight applications, eleven per-target notifications and thirteen manager calls cover repeat/reset, Spell rejection, empty/Pyre rooms, untouchable exclusion, armor absorption, recurring health damage and lethal spawner routing. All eight capture/differential counters are zero. |
+
+Native source: `.game-reference/native-source/RelicEffectDamageOrHealUnitsEndOfTurn.cs`
+and `.game-reference/native-source/RelicEffectModifyCardAttack.cs`. Successful capture:
+`.probe-runs/full-battle-units-and-junk-20261018-132819-a9496758/full-battle.mt2f`.
+The original relic definitions remain unchanged; the five test Monster carriers
+and a Spell control are authored specifically for this isolated scenario.
+
+Test repopulates its private target cache and returns whether any eligible room
+entries remain. Apply repopulates that cache again, excludes destroyed units,
+notifies once per target and selects its room before calling native default
+damage without an attacker or played card. Armor consumes the first hit without
+health loss; later applications reduce health. The untouchable carrier remains
+unchanged. The one-health carrier dies during the callback, but its spawner
+remains in Standby until `DoRoomCombat` performs the outer dead-character cleanup.
+The raw callback and completed room therefore have intentionally different
+spawner-routing states, both independently matched against native evidence.
+
+The +12 attack effect uses the additive branch before the original inert float
+multiplier of one. That same source behavior fixes rejection of the existing
+`MoreOrLessArtifactsRelic` archive without changing its recorded state. The health
+effect ignores its unused float and nested Dazed/Conduit/damage metadata; those
+fields must not create additional effects. Healing, other source teams, native
+preview execution and extra combined OnHit/OnDeath/summon/relic callbacks are
+outside this original-owner calibration.
+
+The 38-stage winning battle contains five actions and five EndTurns. Full
+room/train/turn/action replay, an independent five-EndTurn suffix in sixteen
+immutable branches and serial/parallel search all pass. Search matches five
+recorded decisions, nineteen root actions, zero unsupported attempts, 128/128
+states and three replayed steps. Ten affected archives pass with two workers
+and both terminal exit codes zero: this owner, original card attack, relic-count
+attack, heal damage, Burnout death damage, Freeze cost, expensive-card upgrade,
+both death-summon fixtures and physical spawn points. Regression summary:
+`.probe-runs/model-checks-20261018-133309-07737cb7/summary.json`.
+
+The binary archive is 26,140 bytes with 3,674 unique nodes and SHA-256
+`7a6f0d50f1695bab3725eb3cb128953f91a566243ea8e6eec6c56630d91d105d`.
+Source length/hash are zero and no JSON companion is tracked. Inventory is 433
+archives: 394 battles and 39 component calibrations. Accepted original-owner
+coverage is 214/224 (95.54%): 196 battle, seventeen campaign and one native no-op;
+ten owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalWolosBloodletterRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-wolos-bloodletter.mt2f
+dotnet run --project src/ModelChecks -c Release -- --wolos-bloodletter-pure
+dotnet run --project src/ModelChecks -c Release -- --original-wolos-bloodletter-only tests/fixtures/full-battle-original-wolos-bloodletter.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-wolos-bloodletter.mt2f
 ```

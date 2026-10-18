@@ -309,6 +309,7 @@ param(
     [switch] $OriginalRandomDrawCostRelic,
     [switch] $OriginalSuppressExhaustRelic,
     [switch] $OriginalExpensiveCardUpgradeRelic,
+    [switch] $OriginalWolosBloodletterRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -545,6 +546,7 @@ if ($OriginalMooncycleFaeRelic) { $BranchCardMasks = $true; $Policy = 'units-and
 if ($OriginalRandomDrawCostRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalSuppressExhaustRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalExpensiveCardUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalWolosBloodletterRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1024,6 +1026,7 @@ if ($OriginalMooncycleFaeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalRandomDrawCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-random-draw-cost' }
 if ($OriginalSuppressExhaustRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-suppress-exhaust' }
 if ($OriginalExpensiveCardUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-expensive-card-upgrade' }
+if ($OriginalWolosBloodletterRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wolos-bloodletter' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1972,6 +1975,13 @@ if ($OriginalSuppressExhaustRelic -and ($trace.Schema -ne 234 -or $trace.Origina
     $trace.OriginalSuppressExhaustUnsupported -ne 0 -or $trace.OriginalSuppressExhaustPending -ne 0 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 8 -or @($trace.RelicSuppressExhaustRecords).Count -lt 16)) {
     throw 'Original ChanceToNotConsume acceptance failed.'
+}
+if ($OriginalWolosBloodletterRelic -and ($trace.Schema -ne 236 -or -not $trace.OriginalWolosBloodletterPrepared -or
+    $trace.ModifierScenario -ne 'original-wolos-bloodletter' -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.OriginalWolosBloodletterCaptureFailures -ne 0 -or $trace.OriginalWolosBloodletterMismatches -ne 0 -or
+    $trace.OriginalWolosBloodletterUnsupported -ne 0 -or $trace.OriginalWolosBloodletterPending -ne 0 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 5 -or @($trace.RelicWolosBloodletterRecords).Count -lt 12)) {
+    throw 'Original Wolos Bloodletter acceptance failed.'
 }
 if ($OriginalExpensiveCardUpgradeRelic -and ($trace.Schema -ne 235 -or $trace.OriginalExpensiveCardUpgradeSchema -ne 235 -or
     $trace.ModifierScenario -ne 'original-expensive-card-upgrade' -or -not $trace.OriginalExpensiveCardUpgradePrepared -or

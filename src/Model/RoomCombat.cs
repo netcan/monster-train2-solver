@@ -1487,6 +1487,9 @@ namespace MonsterTrain2Poju.Model
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 Clear(true);
                 if (context != null && !battleWon && !units.Any(unit => unit.Source.IsPyre && !unit.Alive))
+                    RunEndTurnHealthRelics();
+                if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
+                if (context != null && !battleWon && !units.Any(unit => unit.Source.IsPyre && !unit.Alive))
                 {
                     RelicMoonPhaseHandUpgradeResult frozen = RelicFreezeHandUpgradeModel.Apply(context, source.RoomIndex,
                         source.Deployment, source.Preview);
@@ -1495,6 +1498,29 @@ namespace MonsterTrain2Poju.Model
                 }
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Cleared);
+            }
+
+            private void RunEndTurnHealthRelics()
+            {
+                foreach (CombatRelicState owner in context?.Relics ?? Array.Empty<CombatRelicState>())
+                foreach (RelicResourceEffect effect in owner.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
+                {
+                    if (effect.Type != RelicEndTurnHealthModel.Effect || source.Deployment && owner.DisallowedInPlacementPhase == true) continue;
+                    string? error = RelicEndTurnHealthModel.Validate(owner, effect);
+                    if (error != null) { unsupportedReason = error; return; }
+                    var room = new RoomCombatState(source.RoomIndex, source.Deployment,
+                        units.Where(unit => unit.InRoom && !unit.Removed).Select(unit => unit.Freeze()).ToArray(),
+                        source.ExternalInteractions, context, source.Preview, CompanionBossSnapshot());
+                    foreach (int id in RelicEndTurnHealthModel.Targets(room))
+                    {
+                        WorkingUnit target = units.Single(unit => unit.Source.Id == id);
+                        if (target.Destroyed) continue;
+                        context = context!.WithQueryFrame(context.QueryFrame?.With(selectedRoomIndex: source.RoomIndex));
+                        if (target.Alive) Damage(null, target, effect.Amount, "Spell", applyTraits: false);
+                        if (unsupportedReason != null) return;
+                        if (!runningTriggerQueue && enqueueCharacterTrigger == null) DrainLocalTriggerQueue();
+                    }
+                }
             }
 
             internal RoomCombatResult UnitPostCombat(IReadOnlyList<int> cannotHeal, IReadOnlyList<int> cannotTrigger)

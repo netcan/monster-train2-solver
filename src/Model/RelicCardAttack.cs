@@ -80,8 +80,10 @@ namespace MonsterTrain2Poju.Model
                     return "Relic card-attack multiplier is not finite.";
                 int activeModes = (effect.AttackModifier != 0 ? 1 : 0) +
                     (effect.AttackMultiplier > 1f ? 1 : 0) + (effect.UnmodifiedAttackMultiplier > 1 ? 1 : 0);
+                // Native additive effects ignore the default multiplier of one.
                 if (activeModes != 1 || effect.AttackMultiplier < 0f ||
-                    effect.AttackMultiplier > 0f && effect.AttackMultiplier <= 1f ||
+                    effect.AttackMultiplier > 0f && effect.AttackMultiplier <= 1f &&
+                    !(effect.AttackModifier != 0 && effect.AttackMultiplier == 1f) ||
                     effect.UnmodifiedAttackMultiplier < 0)
                     return "Relic card-attack modifier must select one supported additive or multiplicative mode.";
                 if (effect.MultiplyByRelicCount && (effect.CountRoles == null || effect.CountRoles.Any(role => string.IsNullOrEmpty(role.Id)) ||
