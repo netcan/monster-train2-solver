@@ -198,7 +198,7 @@ namespace MonsterTrain2Poju.Probe
         private static class FoodPatch
         {
             private static void Postfix(RoomState room, Team.Type teamType, ref IEnumerator __result)
-            { if (Active) __result = ObserveFood(__result, room, teamType); }
+            { if (Active || OriginalMorselEatenScenario.Prepared && FullBattleTrace.Active != null && !observing && !AllGameManagers.Instance!.GetSaveManager().PreviewMode) __result = ObserveFood(__result, room, teamType); }
         }
         private static IEnumerator ObserveFood(IEnumerator native, RoomState room, Team.Type team)
         {

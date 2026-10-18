@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 517 archives (477 full battles and
+Current accepted inventory (2026-10-19): 518 archives (478 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,27 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-517 accepted archives. Refresh/check the index with
+518 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-morsel-eaten.mt2f` captures unchanged Shadow Morsel,
+Molten Morsel, Morsel Jeweler, Void Excavator and Morsel Miner. Three authored
+anchors and temporary hand Freeze isolate eight ordinary plays and five meals
+across all three floors. The native witness retains Jeweler's team-independent
+last-feeder shield and health upgrade, Void's +6 attack/lifesteal and the
+original unused upgrade field on its status effect. Native status effects do
+not read that shared editor field; other effect modifier guards stay in place.
+Source cards enter Eaten without damage deaths. Thirty-nine empty/enemy
+feeding controls, full train/card/RNG/stat comparisons and sixteen independent
+immutable feeding and complete-battle branches pass.
+Source `.probe-runs/full-battle-units-spells-and-junk-20261019-053313-524c345c`
+won in 54.41 seconds with all capture counters zero and protected original
+files unchanged. Binary-only: 30,459 bytes/4,380 nodes, SHA-256
+`2830ad2fdc70c07324260ada1c97003a8f5b33da38f4b728c00767b29a853b21`.
+Use `--original-morsel-eaten-only`; bounded search matches eight decisions,
+24 root actions, 128/128 states and three replayed steps, with zero unsupported
+attempts and equal serial/parallel results. Added traits and relic combinations
+still require their own evidence.
 
 `full-battle-original-on-kill-generation.mt2f` captures seven unchanged
 Antumbra Assault plays. Its original five damage/one cost creates two Morsels

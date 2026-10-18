@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 517 binary archives, including 477
+Current accepted inventory (2026-10-19): 518 binary archives, including 478
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 517
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 518
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,17 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-morsel-eaten.mt2f` adds all five unchanged original
+Morsels' ordinary summons and eating, including Jeweler's last-feeder shield
+despite its empty team mask and Void's +6 attack/lifesteal. The native status
+effect ignores its retained editor-only upgrade field; projection now checks
+that field only for effect types that consume it. Last-feeder status targets
+use the existing captured relationship resolver. Eight plays, five meals,
+thirty-nine feeding controls and sixteen immutable complete chains match full
+native state, cards, RNG and food statistics. Bounded search has no unsupported
+attempts and serial/parallel results agree. Arbitrary added traits and relic
+combinations need separate witnesses.
 
 `full-battle-original-on-kill-generation.mt2f` adds unchanged Antumbra Assault's
 two-Morsel reward, including deployment, exact kills and Undying revival. The

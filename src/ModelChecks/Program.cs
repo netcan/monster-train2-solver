@@ -408,6 +408,12 @@ if (args.Length == 2 && args[0] == "--original-on-kill-generation-only")
     OriginalOnKillGenerationChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-morsel-eaten-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalMorselEatenChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-pile-status-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

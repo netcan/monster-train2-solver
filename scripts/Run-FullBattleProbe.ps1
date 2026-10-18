@@ -79,6 +79,7 @@ param(
     [switch] $OriginalHealingCleanse,
     [switch] $OriginalOnKill,
     [switch] $OriginalOnKillGeneration,
+    [switch] $OriginalMorselEaten,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -561,6 +562,7 @@ if ($OriginalSelfAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and
 if ($OriginalHealingCleanse) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOnKill) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOnKillGeneration) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalMorselEaten) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1093,6 +1095,7 @@ if ($OriginalSelfAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-self-
 if ($OriginalHealingCleanse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-healing-cleanse' }
 if ($OriginalOnKill) { $environment['MT2_PROBE_MODIFIERS'] = 'original-on-kill' }
 if ($OriginalOnKillGeneration) { $environment['MT2_PROBE_MODIFIERS'] = 'original-on-kill-generation' }
+if ($OriginalMorselEaten) { $environment['MT2_PROBE_MODIFIERS'] = 'original-morsel-eaten' }
 if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
@@ -2342,6 +2345,12 @@ if ($OriginalOnKill -and (-not $trace.OriginalOnKillPrepared -or -not $trace.Nat
 }
 if ($OriginalOnKillGeneration -and (-not $trace.OriginalOnKillGenerationPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 14)) {
     throw 'Original Antumbra Assault witness lacks seven original plays, native pool RNG/full-hand controls or a completed native battle.'
+}
+if ($OriginalMorselEaten -and (-not $trace.OriginalMorselEatenPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 8 -or
+    $trace.OriginalOpeningMorselsCaptureFailures -ne 0 -or $trace.OriginalOpeningMorselsMismatches -ne 0 -or
+    $trace.OriginalOpeningMorselsUnsupported -ne 0 -or $trace.OriginalOpeningMorselsPending -ne 0 -or
+    ($trace.NativeMorselFeeding | ForEach-Object { $_.ExpectedEaten } | Measure-Object -Sum).Sum -ne 5)) {
+    throw 'Original Morsel witness lacks all five original summons and exact native feeding transitions.'
 }
 if ($OriginalPileStatus -and (-not $trace.OriginalPileStatusPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or
     @($trace.OriginalPileStatusQueries).Count -ne 24 -or -not $trace.OriginalPileStatusQueriesUnchanged -or

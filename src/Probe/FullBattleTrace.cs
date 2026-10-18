@@ -321,7 +321,7 @@ namespace MonsterTrain2Poju.Probe
                     ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss(),
                         character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless,
                         pairedBoss == null ? 0 : UnitId(pairedBoss))
-                    : null, lastFeederId: OriginalOpeningMorselsScenario.Enabled ?
+                    : null, lastFeederId: OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ?
                         (character.GetLastFeederCharacter() == null ? 0 : UnitId(character.GetLastFeederCharacter())) : (int?)null,
                     moonPhaseMask: EclipseChamberScenario.Enabled ? (int)character.GetMoonPhaseMask() : (int?)null);
         }
@@ -887,6 +887,11 @@ namespace MonsterTrain2Poju.Probe
                 OriginalOnKillDeploymentAllowed = OriginalOnKillScenario.DeploymentAllowed,
                 OriginalOnKillGenerationPrepared = OriginalOnKillGenerationScenario.Prepared,
                 OriginalOnKillGenerationIds = OriginalOnKillGenerationScenario.CardIds,
+                OriginalMorselEatenPrepared = OriginalMorselEatenScenario.Prepared,
+                OriginalMorselEatenIds = OriginalMorselEatenScenario.CardIds,
+                OriginalMorselVoidIgnoredUpgradeId = OriginalMorselEatenScenario.VoidIgnoredUpgradeId,
+                OriginalMorselVoidIgnoredCopy = OriginalMorselEatenScenario.VoidIgnoredCopy,
+                OriginalMorselVoidIgnoredClassFilter = OriginalMorselEatenScenario.VoidIgnoredClassFilter,
                 OriginalStatusCompositionsIds = OriginalStatusCompositionsScenario.CardIds,
                 OriginalConsumedUpgradeIds = OriginalConsumedUpgradeScenario.CardIds,
                 OriginalConsumedUpgradeSamples = OriginalConsumedUpgradeScenario.Samples,
