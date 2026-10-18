@@ -676,7 +676,7 @@ namespace MonsterTrain2Poju.Probe
                 if (consume)
                 {
                     if (typeof(CardTraitSalvage).IsAssignableFrom(type)) interactions.Add("Salvage consumption callback");
-                    if (type == typeof(CardTraitGraftedEquipment)) interactions.Add("Grafted equipment standby trait state");
+                    if (type == typeof(CardTraitGraftedEquipment) && !CardBranchMaskProbe.Enabled) interactions.Add("Grafted equipment standby trait state");
                 }
                 else if (type == typeof(CardTraitEphemeral) || type == typeof(CardTraitInfusion) || type == typeof(CardTraitPersistent) || type == typeof(CardTraitTreasure) ||
                     type != typeof(CardTraitSelfPurge) && type != typeof(CardTraitExhaustState) && type != typeof(CardTraitScalingAddEnergy) &&

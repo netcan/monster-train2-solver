@@ -374,6 +374,8 @@ namespace MonsterTrain2Poju.Model
         {
             string? moonError = CardMoonUpgradeModel.Validate(instance);
             if (moonError != null) return moonError;
+            string? graftError = CardGraftedEquipmentModel.Validate(instance);
+            if (graftError != null) return graftError;
             if (instance.Permanent.MergedEquipment?.Validate() is string mergeError) return mergeError;
             string? exhaustError = CardExhaustModel.Validate(instance);
             if (exhaustError != null) return exhaustError;
@@ -417,6 +419,8 @@ namespace MonsterTrain2Poju.Model
             if (exhaustError != null) interactions.Add(exhaustError);
             string? moonError = CardMoonUpgradeModel.Validate(instance);
             if (moonError != null) interactions.Add(moonError);
+            string? graftError = CardGraftedEquipmentModel.Validate(instance);
+            if (graftError != null) interactions.Add(graftError);
             if (CardExhaustModel.HasConsume(instance) && instance.ExhaustState == null) interactions.Add("Consume requires captured private trait state.");
             if (rule.DataId != instance.DataId) interactions.Add("Card instance definition differs.");
             if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");

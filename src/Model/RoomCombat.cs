@@ -1667,9 +1667,16 @@ namespace MonsterTrain2Poju.Model
                         if (!ApplyUpgrade(target, upgrade, "TemporaryUntilUnitDeath", false, null, 0, null, true, EquipmentUpgradeKey(cardId, definitions),
                             equipmentSourceCardId: cardId))
                             return Finish(RoomOutcome.Unsupported);
+                    if (CardGraftedEquipmentModel.Present(card!) && target.Source.Triggers.Any(trigger =>
+                        (trigger.Kind == "OnDeath" || trigger.Kind == "OnHatched") && trigger.Effects.Any(effect => effect.Summon != null)))
+                    { unsupportedReason = "Grafted equipment child-unit standby handoff is not calibrated."; return Finish(RoomOutcome.Unsupported); }
                     if (!target.Removed)
+                    {
+                        if (CardGraftedEquipmentModel.Present(card!))
+                            QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(), "OnGraftEquipmentAdded"));
                         foreach (WorkingUnit unit in units.Where(unit => !unit.Removed && unit.InRoom).OrderBy(unit => unit.Source.Team))
                             QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), "OnEquipmentAddedToAny"));
+                    }
                     QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(), "OnEquipmentAdded"));
                     context = context!.WithCard((context.FindCard(cardId) ?? card!).WithEquippedUnit(targetId));
                     if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
@@ -1696,6 +1703,8 @@ namespace MonsterTrain2Poju.Model
             {
                 if (target.Source.EquipmentCards!.Contains(cardId))
                 {
+                    CardInstanceState? graft = context?.FindCard(cardId);
+                    if (graft != null && !source.Preview) context = context!.WithCard(CardGraftedEquipmentModel.SetSevered(graft, true));
                     if (!EquipmentUpgrades(cardId, definitions, out _, out var upgrades)) return false;
                     foreach (var upgrade in upgrades)
                     {

@@ -12,7 +12,8 @@ namespace MonsterTrain2Poju.Probe
         internal static CardTraitValue Definition(CardTraitData data) => new CardTraitValue(
             TypeNameCache.GetType(data.GetTraitStateName()).FullName, data.GetTraitStateName(), data.GetParamInt(), data.GetParamInt(),
             data.GetTraitIsRemovable(), (int)data.GetStackMode(), parameterUpgradeCastEffects: CastEffects(data), feedingQuery: FeedingQuery(data),
-            handCostTargetType: data.GetTraitStateName() == "CardTraitIncreaseCostOfCardsInHand" ? data.GetParamCardType().ToString() : null);
+            handCostTargetType: data.GetTraitStateName() == "CardTraitIncreaseCostOfCardsInHand" ? data.GetParamCardType().ToString() : null,
+            graftSevered: data.GetTraitStateName() == CardGraftedEquipmentModel.Trait ? false : (bool?)null);
         private static CardStatisticQuery? FeedingQuery(CardTraitData data)
         {
             if (data.GetTraitStateName() != "CardTraitScalingFeederRules") return null;
@@ -40,7 +41,8 @@ namespace MonsterTrain2Poju.Probe
                 feedingQuery: trait is CardTraitScalingFeederRules ? FeedingQuery(trait.StatValueData) : null,
                 handCostTargetType: trait is CardTraitIncreaseCostOfCardsInHand ? trait.GetParamCardType().ToString() : null,
                 moonPhaseUpgradeState: (CardBranchMaskProbe.Enabled || MoonPhaseCardUpgradeCalibration.Capturing) && trait is CardTraitAddCardUpgradeOnMoonPhase
-                    ? MoonPhaseCardUpgradeCalibration.State(trait) : null);
+                    ? MoonPhaseCardUpgradeCalibration.State(trait) : null,
+                graftSevered: trait is CardTraitGraftedEquipment graft ? graft.Severed : (bool?)null);
         }
         internal static List<CardTraitState> Bases(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "traits").GetValue(card);
         internal static List<CardTraitState> Combined(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "combinedTraits").GetValue(card);

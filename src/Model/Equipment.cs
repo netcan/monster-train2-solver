@@ -100,7 +100,11 @@ namespace MonsterTrain2Poju.Model
             if (card == null) return context; // Terminal clearing or an earlier return.
             CardCycleState cards = context.Cards;
             CardPileState[] piles = context.OtherPiles!.Select(pile => pile == standby ? CardPileModel.Remove(pile, card.InstanceId) : pile.Name == "Exhausted" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
-            if (condition.ReturnToHand)
+            CardInstanceState? instance = context.FindCard(card.InstanceId);
+            bool intactGraft = instance?.MaskDescriptor?.BaseTraits.Any(trait => trait.RuntimeType == CardGraftedEquipmentModel.Trait && trait.GraftSevered == false) == true;
+            if (instance != null && CardGraftedEquipmentModel.Present(instance))
+                context = context.WithCard(CardGraftedEquipmentModel.SetSevered(instance, true).WithEquippedUnit(0));
+            if (condition.ReturnToHand || intactGraft)
                 cards = new CardCycleState(cards.Hand.Count < context.MaxHandSize ? new[] { card }.Concat(cards.Hand).ToArray() : cards.Hand,
                     cards.Hand.Count < context.MaxHandSize ? cards.Draw : cards.Draw.Concat(new[] { card }).ToArray(), cards.Discard,
                     cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
@@ -113,6 +117,8 @@ namespace MonsterTrain2Poju.Model
         }
         internal static CombatContext ReturnAttached(CombatContext context, CombatUnit unit)
         {
+            // Detached historical entries wait for the global standby pass;
+            // releasing them here would expose returns inside a room stage.
             foreach (int cardId in unit.EquipmentCards ?? Array.Empty<int>())
             {
                 EquipmentStandbyCondition? condition = context.OtherPiles?.FirstOrDefault(pile => pile.Name == "Standby")?

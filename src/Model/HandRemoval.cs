@@ -145,6 +145,8 @@ namespace MonsterTrain2Poju.Model
             {
                 CardPileState standby = piles!.Single(pile => pile.Name == "Standby");
                 if (!standby.Cards.Any(item => item.InstanceId == card.InstanceId) || !processing.Add(card.InstanceId)) return;
+                CardInstanceState? graft = context.FindCard(card.InstanceId);
+                if (graft != null && CardGraftedEquipmentModel.Present(graft)) context = context.WithCard(CardGraftedEquipmentModel.SetSevered(graft, true));
                 CardPileState exhausted = piles.Single(pile => pile.Name == "Exhausted");
                 piles = piles.Select(pile => pile == exhausted ? CardPileModel.Add(CardPileModel.Remove(exhausted, card.InstanceId), card) : pile).ToArray();
                 context = context.WithStatistics(context.Statistics?.Increment(card.InstanceId, "TimesExhausted"));

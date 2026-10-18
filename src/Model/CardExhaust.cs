@@ -139,6 +139,7 @@ namespace MonsterTrain2Poju.Model
         }
         public static CardInstanceState ResetTraits(CardInstanceState card)
         {
+            card = CardGraftedEquipmentModel.SetSevered(card, false);
             if (!HasConsume(card) || card.ExhaustState == null) return card;
             CardExhaustState state = card.ExhaustState; int active = ActiveBaseIndex(card);
             return card.WithExhaustState(new CardExhaustState(state.PlayCountModifier,
@@ -172,6 +173,8 @@ namespace MonsterTrain2Poju.Model
             {
                 if (condition.KeepInStandBy) continue;
                 CardToken card = standby!.Cards.Single(item => item.InstanceId == condition.CardId);
+                CardInstanceState? graft = context.FindCard(card.InstanceId);
+                if (graft != null && CardGraftedEquipmentModel.Present(graft)) context = context.WithCard(CardGraftedEquipmentModel.SetSevered(graft, true));
                 CardInstanceState? retained = condition.ExhaustedCardId.HasValue ? context.FindCard(condition.ExhaustedCardId.Value) : null;
                 if (condition.ExhaustedCardId.HasValue && retained == null) throw new InvalidOperationException("Missing retained Consume standby card.");
                 bool discard = retained != null && !HasConsume(retained);

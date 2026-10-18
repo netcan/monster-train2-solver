@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 512 binary archives, including 472
+Current accepted inventory (2026-10-19): 513 binary archives, including 473
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 512
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 513
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,17 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-grafted-equipment.mt2f` covers five unchanged original
+equipment definitions, their exact costs/upgrades and private Severed state.
+Replacement/removal severs equipment but keeps its standby entry until the
+original host dies. Intact equipment selects a hand return on host death before
+standby exit severs and detaches it. Forced consumption covers both states;
+ten isolated native reset queries clear the flag and prove idempotence.
+Fourteen plays/six EndTurns, twelve equipment transitions, sixteen independent
+full replay chains and bounded serial/parallel search pass with zero failure
+counters. Automatic birth grafts, child handoff, copied private state and
+added/replaced traits remain guarded; merge still excludes source traits.
 
 `moon-card-upgrade-calibration.mt2f` calibrates the spell-owned moon upgrade
 lifecycle for Celestial Storm, Gravity, Heavenfall, Silver Strike and Starstruck.

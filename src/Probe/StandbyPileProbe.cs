@@ -46,8 +46,11 @@ namespace MonsterTrain2Poju.Probe
                 var callback = (Delegate)AccessTools.Field(typeof(RemoveFromStandByCondition), "conditionFunction").GetValue(pair.Value);
                 object closure = callback.Target;
                 CharacterState? host = Host(closure);
-                if (ReferenceEquals(host, null) || FullBattleTrace.Active == null || pair.Key.HasTrait<CardTraitGraftedEquipment>())
-                    throw new InvalidOperationException("Unmodeled equipment standby closure or grafted equipment.");
+                if (ReferenceEquals(host, null) || FullBattleTrace.Active == null)
+                    throw new InvalidOperationException("Unmodeled equipment standby closure.");
+                if (pair.Key.HasTrait<CardTraitGraftedEquipment>() && (!CardBranchMaskProbe.Enabled || host.WillSpawnChildUnitsOnDeath() ||
+                    CardGraftedEquipmentModel.Validate(CardModifierProbe.Capture(new[] { pair.Key }, FullBattleTrace.Active.CardId).Single()) != null))
+                    throw new InvalidOperationException("Unmodeled grafted equipment source or child-unit standby handoff.");
                 conditions.Add(new EquipmentStandbyCondition(FullBattleTrace.Active.CardId(pair.Key), FullBattleTrace.Active.UnitId(host),
                     pair.Key.HasTrait<CardTraitReturnToHandEquipment>()));
             }

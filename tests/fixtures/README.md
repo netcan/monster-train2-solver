@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 512 archives (472 full battles and
+Current accepted inventory (2026-10-19): 513 archives (473 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,30 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-512 accepted archives. Refresh/check the index with
+513 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-grafted-equipment.mt2f` captures unchanged Double Edged
+Arms, Scissor Hands, Spiky Skin, Twisted Assistant's Back and Vampire's Tooth.
+Their exact costs, upgrades and attached identities match. Four replacements
+and explicit removal sever the old grafts, retaining their standby entries until
+the original host dies; all five then exhaust. An intact graft returns to hand
+on host death, selecting its destination before standby exit severs/detaches it.
+Forced hand consumption covers both intact and already severed cards. Ten
+detached native reset queries cover clearing Severed and idempotence without
+changing decision/RNG/frame. Fourteen plays, six EndTurns, twelve independent
+equipment transitions and sixteen complete immutable replay chains match.
+Source `.probe-runs/full-battle-units-spells-and-junk-20261019-043628-384c759d`
+won with all four failure counters zero. Bounded search matches fourteen
+decisions/seventeen roots, visits 128/123 states and replays two steps with no
+unsupported attempts and equal serial/parallel best results. Binary-only:
+34,283 bytes/5,361 nodes, SHA-256
+`633ff24eed49bc9f97508ff740915cffb326a7719fb74f93e6507318277d5f1a`.
+Use `--original-grafted-equipment-only`. Automatic birth grafts, child-unit
+handoff, added/replaced graft traits, copying and graft merge remain guarded.
+Focused gate `model-checks-20261019-044111-30cb8447` passed this fixture and
+equipment overflow after preserving the room/global standby timing boundary;
+the hand-removal fixture passed `model-checks-20261019-044007-faef81ae`.
 
 `full-battle-original-status-compositions.mt2f` adds seven unchanged original
 spells: Benediction, Divinity, Full Throttle, Ensnare, Energy Siphon, Acid Shower

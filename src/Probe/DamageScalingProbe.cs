@@ -9,6 +9,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class DamageScalingProbe
     {
         internal static bool Known(string name) => name == "CardTraitShowCardTargets" || name == "CardTraitReturnToHandEquipment" || name == "CardTraitScalingAdjustCapacity" || name == "CardTraitSelfPurge" || name == "CardTraitInfusion" || name == "CardTraitPersistent" || name == "CardTraitScalingAddDamage" || name == "CardTraitScalingAddStatusEffect" ||
+            name == CardGraftedEquipmentModel.Trait && CardBranchMaskProbe.Enabled ||
             name == "CardTraitScalingAddForged" || name == "CardTraitScalingHealTrain" || name == "CardTraitFreeze" ||
             (name == "CardTraitScalingFeederRules" || name == "CardTraitDistinct" || name == CardCorruptRestrictedModel.Trait || name == CardStatusDamageModel.Trait || name == CardSpecificDamageModel.Trait || name == CardScaledEnergyModel.Trait || name == CardStatusRemovalScalingModel.Trait || name == CardEffectApplicationsModel.Trait) && CardBranchMaskProbe.Enabled ||
             (name == "CardTraitDamageOverflow" || name == "CardTraitPermafrost" || name == "CardTraitEphemeral" || name == CardPileDrawModel.Trait || name == CardBuffDamageModel.Trait || name == CardPileStatusModel.Trait || name == CardDrawUpgradeScalingModel.Trait || name == CardConsumedUpgradeModel.Trait || name == CardMoonAdvanceScalingModel.Trait || name == CardDiscardDrawModel.Trait) && CardBranchMaskProbe.Enabled ||

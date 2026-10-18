@@ -1125,6 +1125,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalStatusCompositionsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalGraftedEquipmentScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original grafted equipment fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalGraftedEquipmentScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPileStatusScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original pile status fixture must start on deployment turn.");
@@ -2309,6 +2315,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalDrawUpgradeScalingScenario.Enabled) pendingPlay = OriginalDrawUpgradeScalingScenario.Choose(decision, OriginalDrawUpgradeScalingScenario.CardIds);
                 if (OriginalConsumedUpgradeScenario.Enabled) pendingPlay = OriginalConsumedUpgradeScenario.Choose(decision, OriginalConsumedUpgradeScenario.CardIds);
                 if (OriginalStatusCompositionsScenario.Enabled) pendingPlay = OriginalStatusCompositionsScenario.Choose(decision, OriginalStatusCompositionsScenario.CardIds);
+                if (OriginalGraftedEquipmentScenario.Enabled) pendingPlay = OriginalGraftedEquipmentScenario.Choose(decision, OriginalGraftedEquipmentScenario.CardIds);
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);

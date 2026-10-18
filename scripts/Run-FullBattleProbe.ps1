@@ -74,6 +74,7 @@ param(
     [switch] $OriginalDrawUpgradeScaling,
     [switch] $OriginalConsumedUpgrade,
     [switch] $OriginalStatusCompositions,
+    [switch] $OriginalGraftedEquipment,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -551,6 +552,7 @@ if ($OriginalPileStatus) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $tru
 if ($OriginalDrawUpgradeScaling) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalConsumedUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalGraftedEquipment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1078,6 +1080,7 @@ if ($OriginalPileStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-
 if ($OriginalDrawUpgradeScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-draw-upgrade-scaling' }
 if ($OriginalConsumedUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consumed-upgrade' }
 if ($OriginalStatusCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-compositions' }
+if ($OriginalGraftedEquipment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-grafted-equipment' }
 if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
@@ -2311,6 +2314,10 @@ if ($OriginalConsumedUpgrade -and (-not $trace.OriginalConsumedUpgradePrepared -
 }
 if ($OriginalStatusCompositions -and (-not $trace.OriginalStatusCompositionsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
     throw 'Original status-composition witness lacks all seven original spell plays and a completed native battle.'
+}
+if ($OriginalGraftedEquipment -and (-not $trace.OriginalGraftedEquipmentPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 14 -or
+    @($trace.OriginalGraftedEquipmentResets).Count -ne 10 -or -not $trace.OriginalGraftedEquipmentControlsUnchanged)) {
+    throw 'Original grafted equipment witness lacks all five definitions, replacement/removal/death or unchanged detached reset controls.'
 }
 if ($OriginalPileStatus -and (-not $trace.OriginalPileStatusPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or
     @($trace.OriginalPileStatusQueries).Count -ne 24 -or -not $trace.OriginalPileStatusQueriesUnchanged -or
