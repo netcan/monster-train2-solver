@@ -42,7 +42,7 @@ namespace MonsterTrain2Poju.Model
                 raw.EquipmentCards == null ? null : Array.Empty<int>(), resolved.NextTriggerId, resolved.Ability,
                 raw.StatusDictionary == null ? null : new StatusDictionaryState(Array.Empty<string?>(), Array.Empty<int>()),
                 raw.AbilityRules, raw.HordeDefinition, false, raw.SacrificeCardId.HasValue ? 0 : (int?)null, death,
-                bumpRules: raw.BumpRules, lastFeederId: raw.LastFeederId);
+                bumpRules: raw.BumpRules, lastFeederId: raw.LastFeederId, moonPhaseMask: raw.MoonPhaseMask);
         }
 
         internal static CombatUnit Restore(CombatUnit preview, IReadOnlyCollection<int> removedIds, bool afterFrame = false,
@@ -68,7 +68,7 @@ namespace MonsterTrain2Poju.Model
                 restored.Modifiers, restored.IsBoss, restored.LastAttackerId, restored.StatusRegistry, restored.EquipmentCards,
                 restored.NextTriggerId, restored.Ability, restored.StatusDictionary, restored.AbilityRules,
                 restored.HordeDefinition, restored.IsSpawning, restored.SacrificeCardId,
-                restored.DeathState!.WithLifecycle(restored.DeathState.IsDespawned, true), bumpRules: restored.BumpRules, lastFeederId: restored.LastFeederId);
+                restored.DeathState!.WithLifecycle(restored.DeathState.IsDespawned, true), bumpRules: restored.BumpRules, lastFeederId: restored.LastFeederId, moonPhaseMask: restored.MoonPhaseMask);
         }
 
         internal static EnchantmentRetainedUnit[] Retain(EnchantmentWorld observed, int firstPreviewId, IReadOnlyCollection<int> removedIds,

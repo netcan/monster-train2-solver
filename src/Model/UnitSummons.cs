@@ -125,7 +125,7 @@ namespace MonsterTrain2Poju.Model
                 spawnerCardId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss,
                 template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId,
                 template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, true,
-                template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules, lastFeederId: template.LastFeederId);
+                template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules, lastFeederId: template.LastFeederId, moonPhaseMask: template.MoonPhaseMask);
             if (source.Preview)
                 spawned = spawned.WithDeathState((spawned.DeathState ?? new UnitDeathState(false, false, false))
                     .WithPreviewPrimary(PreviewBirthModel.InitialPrimary(raw, template, spawned.Id, spawnerCardId)));

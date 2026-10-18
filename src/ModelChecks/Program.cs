@@ -306,6 +306,12 @@ if (args.Length == 2 && args[0] == "--fused-weaponry-only")
     EquipmentMergeChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--eclipse-chamber-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EclipseChamberChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--adaptive-mutation-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

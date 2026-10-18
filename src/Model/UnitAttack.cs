@@ -22,7 +22,7 @@ namespace MonsterTrain2Poju.Model
                 old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion);
             var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(old.AttackDamage + buff)),
                 target.Health, target.MaxHealth, target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, target.Statuses, target.Triggers,
-                target.SpawnerCardId, target.Size, target.StatusImmunities, target.Subtypes, modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState, bumpRules: target.BumpRules, lastFeederId: target.LastFeederId);
+                target.SpawnerCardId, target.Size, target.StatusImmunities, target.Subtypes, modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState, bumpRules: target.BumpRules, lastFeederId: target.LastFeederId, moonPhaseMask: target.MoonPhaseMask);
             return new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment,
                 source.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(), source.ExternalInteractions, source.Context,
                 source.Preview, source.ActiveCompanionBossIds),

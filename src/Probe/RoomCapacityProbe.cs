@@ -32,6 +32,7 @@ namespace MonsterTrain2Poju.Probe
                 if (!attachment.IsActive || (int)attachment.AttachType != 0 || attachment.UpgradeStates.Count == 0 ||
                     attachment.CardState == null && attachment.UpgradeStates.Count != 1) return null;
                 int delta = 0;
+                RoomMoonPhaseRule? moon = null;
                 var characterUpgrades = new List<CardUpgradeModifier>();
                 foreach (var (state, definition) in attachment.UpgradeStates)
                 {
@@ -40,7 +41,10 @@ namespace MonsterTrain2Poju.Probe
                         modifier.GetRoomStateModifierClassName() == "RoomStateCapacityModifier").ToArray();
                     RoomModifierData[] spellCostModifiers = roomModifiers.Where(modifier =>
                         modifier.GetRoomStateModifierClassName() == "RoomStateSpellCostModifier").ToArray();
-                    bool supported = roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length &&
+                    var interactions = new List<string>();
+                    RoomMoonPhaseRule? phase = RoomMoonPhaseProbe.Rule(definition, interactions);
+                    if (phase != null) { if (moon != null) return null; moon = phase; }
+                    bool supported = interactions.Count == 0 && (phase != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length) &&
                         capacityModifiers.Length <= 1 && spellCostModifiers.Length <= 1 &&
                         state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
                         state.GetAdditionalUnhealedHP() == 0 && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
@@ -64,7 +68,7 @@ namespace MonsterTrain2Poju.Probe
                 result.Add(new RoomCapacityAttachmentState(dataId, assetKey, (int)attachment.AttachType, delta,
                     characterUpgrades, attachment.TrainSide.HasFlag(Team.Type.Heroes),
                     attachment.TrainSide.HasFlag(Team.Type.Monsters), ignoreBosses,
-                    attachment.CardState == null ? attachment.Guid : "", spellCostDelta));
+                    attachment.CardState == null ? attachment.Guid : "", spellCostDelta, moon));
             }
             return result.ToArray();
         }

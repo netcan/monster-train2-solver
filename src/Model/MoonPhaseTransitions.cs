@@ -48,6 +48,8 @@ namespace MonsterTrain2Poju.Model
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger =>
                     UnitCallbacks.Contains(trigger.Kind))))
             {
+                if (source.Context!.RoomCapacities?.Any(room => room.Attachments?.Any(attachment => attachment.MoonPhase != null) == true) == true)
+                    return "Room mask phase-shift callbacks require separate native calibration.";
                 int oldPhase = frame.MoonPhase.Value;
                 string oldStatus = oldPhase == 1 ? "newmoon" : "fullmoon";
                 string otherStatus = oldPhase == 1 ? "fullmoon" : "newmoon";

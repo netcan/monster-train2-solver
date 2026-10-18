@@ -864,6 +864,13 @@ namespace MonsterTrain2Poju.Model
                     state = WithContext(state, EnergyModel.Apply(state.Context!, effect.Type, effect.Value));
                     continue;
                 }
+                if (effect.Type == "RefreshMoonPhase")
+                {
+                    if (selected.Preview) continue;
+                    MoonPhaseTransitionResult refreshed = RoomMoonPhaseModel.Refresh(state, effect.Value != 0);
+                    if (!refreshed.Supported) return UnsupportedTrain(refreshed.UnsupportedReason!);
+                    state = refreshed.State!; continue;
+                }
                 if (effect.Type == "SetMoonPhase" || effect.Type == "AdvanceMoonPhase")
                 {
                     MoonPhaseTransitionResult shifted = MoonPhaseTransitionModel.Apply(state, effect, sourceCardId);
@@ -2129,6 +2136,12 @@ namespace MonsterTrain2Poju.Model
                     if (energyError != null) return energyError;
                     continue;
                 }
+                if (effect.Type == "RefreshMoonPhase")
+                {
+                    string? refreshError = RoomMoonPhaseModel.Refresh(SingleRoom(source), effect.Value != 0).UnsupportedReason;
+                    if (refreshError != null) return refreshError;
+                    continue;
+                }
                 if (effect.Type == "SetMoonPhase" || effect.Type == "AdvanceMoonPhase")
                     continue;
                 if (effect.Type == ForgePointsModel.Effect)
@@ -2746,7 +2759,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static CombatUnit Copy(CombatUnit unit, int health, IReadOnlyList<CombatStatus> statuses) =>
             new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, health, unit.MaxHealth, unit.CanAttack,
-                unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules, lastFeederId: unit.LastFeederId);
+                unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules, lastFeederId: unit.LastFeederId, moonPhaseMask: unit.MoonPhaseMask);
         private static RoomCombatResult Unchanged(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static TrainSpellResult UnsupportedTrain(string reason) => new TrainSpellResult(null, RoomOutcome.Unsupported,
             Array.Empty<CombatEvent>(), reason);

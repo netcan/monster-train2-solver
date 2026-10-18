@@ -121,7 +121,7 @@ namespace MonsterTrain2Poju.Probe
                     isDespawned: OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? false : (bool?)null,
                     isDestroyed: OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? false : (bool?)null),
                     bumpRules: BumpScenario.Enabled || AbilityTeleportScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? new UnitBumpRules(data.GetLoopsBetweenTrainFloors(), data.IsCompanionBoss(), data.IsOuterTrainBoss()) : null,
-                    lastFeederId: OriginalOpeningMorselsScenario.Enabled ? 0 : (int?)null),
+                    lastFeederId: OriginalOpeningMorselsScenario.Enabled ? 0 : (int?)null, moonPhaseMask: EclipseChamberScenario.Enabled ? (int)PlayerManager.MoonPhase.None : (int?)null),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());
         }
 

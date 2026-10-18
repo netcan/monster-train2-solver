@@ -101,6 +101,19 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
 
+                if (previous?.Attachments?.Any(item => item.MoonPhase != null) == true || current?.Attachments?.Any(item => item.MoonPhase != null) == true)
+                {
+                    if (state.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost")))
+                        return Fail("Room attachment phase callbacks require native calibration.");
+                    if (state.Context?.QueryFrame?.MoonPhase is int phase && state.Context.QueryFrame.MoonPhaseTrackingActive == true)
+                    {
+                        RoomCapacityAttachmentState? oldAttachment = previous?.Attachments?.SingleOrDefault();
+                        RoomCapacityAttachmentState? newAttachment = current?.Attachments?.SingleOrDefault();
+                        int mask = RoomMoonPhaseModel.Effective(state.Context, room.RoomIndex, phase);
+                        state = state.WithUnits(state.Units.Select(unit => (oldAttachment != null && Affected(unit, oldAttachment) || newAttachment != null && Affected(unit, newAttachment))
+                            ? unit.WithMoonPhaseMask(mask) : unit).ToArray());
+                    }
+                }
                 rooms.Add(state);
             }
             return new RoomAttachmentUnitSyncResult(new TrainCombatState(rooms, source.Movement,
@@ -123,6 +136,9 @@ namespace MonsterTrain2Poju.Model
                 if (oldRoom == null || newRoom == null || oldRoom.RoomIndex == newRoom.RoomIndex) continue;
                 RoomCapacityState? oldCapacity = previousRooms.FirstOrDefault(room => room.RoomIndex == oldRoom.RoomIndex);
                 RoomCapacityState? newCapacity = currentRooms.FirstOrDefault(room => room.RoomIndex == newRoom.RoomIndex);
+                if (previousUnit.Team == CombatTeam.Player && (oldCapacity?.Attachments?.Any(attachment => attachment.MoonPhase != null) == true ||
+                    newCapacity?.Attachments?.Any(attachment => attachment.MoonPhase != null) == true))
+                    return Fail("Moving friendly units through moon-override rooms requires native callback calibration.");
                 if (oldCapacity == null || newCapacity == null) continue;
                 if ((oldCapacity.Attachments == null && oldCapacity.AttachmentsAddedFromCards > 0) ||
                     (newCapacity.Attachments == null && newCapacity.AttachmentsAddedFromCards > 0))

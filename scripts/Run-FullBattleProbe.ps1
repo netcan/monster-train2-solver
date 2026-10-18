@@ -36,6 +36,7 @@ param(
     [switch] $MagneticRelay,
     [switch] $TranscendImp,
     [switch] $FusedWeaponry,
+    [switch] $EclipseChamber,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -467,6 +468,7 @@ if ($SmallBox) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MagneticRelay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TranscendImp) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($FusedWeaponry) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($EclipseChamber) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -948,6 +950,7 @@ if ($SmallBox) { $environment['MT2_PROBE_MODIFIERS'] = 'small-box' }
 if ($MagneticRelay) { $environment['MT2_PROBE_MODIFIERS'] = 'magnetic-relay' }
 if ($TranscendImp) { $environment['MT2_PROBE_MODIFIERS'] = 'transcend-imp' }
 if ($FusedWeaponry) { $environment['MT2_PROBE_MODIFIERS'] = 'fused-weaponry' }
+if ($EclipseChamber) { $environment['MT2_PROBE_MODIFIERS'] = 'eclipse-chamber' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2128,6 +2131,11 @@ if ($FusedWeaponry -and (-not $trace.EquipmentMergePrepared -or -not $trace.Nati
 if ($SmallBox -and (-not $trace.SmallBoxPrepared -or -not $trace.NativeWon -or @($trace.SmallBoxRecords).Count -ne 3 -or
     @($trace.SmallBoxRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Small Box native evidence is incomplete.'
+}
+if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.NativeWon -or
+    @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 -or
+    @($trace.EclipseChamberRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
+    throw 'Eclipse Chamber native evidence is incomplete.'
 }
 if ($Mixalot -and (-not $trace.MixalotPrepared -or -not $trace.NativeWon -or @($trace.MixalotRecords).Count -ne 4 -or
     @($trace.MixalotRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {

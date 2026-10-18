@@ -20,7 +20,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectRemoveAllStatusEffects", "CardEffectTransferAllStatusEffectsFromUnit", "CardEffectTransferAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption",
-            "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase",
+            "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase", "CardEffectUpdateMoonPhaseResource",
             "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
             "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectSetHealth", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
@@ -374,6 +374,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectReturnUnitToHand" ? "ReturnUnit" :
                 effect.GetEffectStateName() == "CardEffectReplayTrigger" ? "ReplayTrigger" :
                 effect.GetEffectStateName() == "CardEffectMergeEquipment" ? "MergeEquipment" :
+                effect.GetEffectStateName() == "CardEffectUpdateMoonPhaseResource" ? "RefreshMoonPhase" :
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
                 effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
@@ -516,7 +517,7 @@ namespace MonsterTrain2Poju.Probe
                 if (data == null) interactions.Add("Room attachment trigger requires card ownership.");
                 else roomAttachment = CapacityAttachment(data, effect, interactions);
             }
-            return new CardActionEffect(type, effect.GetTargetMode().ToString(), effect.GetParamInt(),
+            return new CardActionEffect(type, effect.GetTargetMode().ToString(), type == "RefreshMoonPhase" ? (effect.GetParamBool() ? 1 : 0) : effect.GetParamInt(),
                 type == "SpawnOrStatus" || effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
                 type != "SpawnOrStatus" && effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses, upgrade, lifetime,
                 new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(),
@@ -586,7 +587,8 @@ namespace MonsterTrain2Poju.Probe
             var upgrade = new CardUpgradeState();
             upgrade.Setup(definition);
             RoomModifierData[] modifiers = definition.GetRoomModifierUpgrades().ToArray();
-            bool supported = modifiers.Length == 1 && modifiers[0].GetRoomStateModifierClassName() == "RoomStateCapacityModifier" &&
+            RoomMoonPhaseRule? moon = RoomMoonPhaseProbe.Rule(definition, interactions);
+            bool supported = (moon != null || modifiers.Length == 1 && modifiers[0].GetRoomStateModifierClassName() == "RoomStateCapacityModifier") &&
                 upgrade.GetAttackDamage() == 0 && upgrade.GetAttackDamageBuff() == 0 && upgrade.GetAdditionalHP() == 0 &&
                 upgrade.GetAdditionalUnhealedHP() == 0 && upgrade.GetCostReduction() == 0 && upgrade.GetAdditionalSize() == 0 &&
                 upgrade.GetAdditionalEquipmentLimit() == 0 && upgrade.GetStatusEffectUpgrades().Count == 0 &&
@@ -600,11 +602,11 @@ namespace MonsterTrain2Poju.Probe
                 return null;
             }
             return new RoomCapacityAttachmentState(card.GetID(), card.name, effect.GetAdditionalParamInt(),
-                modifiers[0].GetParamInt(), [CardModifierProbe.Upgrade(upgrade, rejectFilters: false,
+                moon == null ? modifiers[0].GetParamInt() : 0, [CardModifierProbe.Upgrade(upgrade, rejectFilters: false,
                     filtersAlreadyApplied: true, roomAttachmentUnitUpgrade: true)],
                 affectsHeroes: effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
                 affectsMonsters: effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
-                ignoreBosses: effect.GetTargetIgnoreBosses());
+                ignoreBosses: effect.GetTargetIgnoreBosses(), moonPhase: moon);
         }
 
         private static CardData? Fallback(CharacterData unit) => AllGameManagers.Instance!.GetSaveManager().GetAllGameData()
@@ -627,7 +629,7 @@ namespace MonsterTrain2Poju.Probe
                 lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards,
                 nextTriggerId: source.NextTriggerId, ability: source.Ability, statusDictionary: source.StatusDictionary,
                 abilityRules: source.AbilityRules, hordeDefinition: source.HordeDefinition, isSpawning: source.IsSpawning,
-                sacrificeCardId: source.SacrificeCardId, deathState: source.DeathState, bumpRules: source.BumpRules, lastFeederId: source.LastFeederId);
+                sacrificeCardId: source.SacrificeCardId, deathState: source.DeathState, bumpRules: source.BumpRules, lastFeederId: source.LastFeederId, moonPhaseMask: source.MoonPhaseMask);
         }
 
         internal static CardPlayRule BirthDefinition(CardData data, CharacterData monster, bool sourceAbsent = false)

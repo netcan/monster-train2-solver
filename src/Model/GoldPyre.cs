@@ -52,7 +52,7 @@ namespace MonsterTrain2Poju.Model
                 livePyre.IsBoss, livePyre.LastAttackerId, livePyre.StatusRegistry, livePyre.EquipmentCards,
                 livePyre.NextTriggerId, livePyre.Ability, livePyre.StatusDictionary, livePyre.AbilityRules,
                 livePyre.HordeDefinition, livePyre.IsSpawning, livePyre.SacrificeCardId, livePyre.DeathState,
-                livePyre.BumpRules, livePyre.LastFeederId);
+                livePyre.BumpRules, livePyre.LastFeederId, livePyre.MoonPhaseMask);
             CombatContext context = attack.Context!;
             EnchantmentWorld? world = context.Enchantments;
             if (world != null)

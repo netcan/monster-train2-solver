@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 465 archives (426 full battles and
+Current accepted inventory (2026-10-18): 466 archives (427 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,24 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-465 accepted archives. Refresh/check the index with
+466 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-eclipse-chamber.mt2f` keeps two original Eclipse Chambers, original
+Moonrise and an original capacity-room replacement. Authored Silent and ordinary
+units prove same-floor subtype filtering, another Silent unit proves floor
+isolation, and a later birth inherits the active room's extra New bit. Unit
+understanding masks are captured separately from global phase status icons;
+ordinary updates preserve the native None bit. Replacement removes the extra
+bit. Two character and eight queued support refreshes match complete contexts
+and RNG; six +15 attack growth applications and six floor/subtype controls
+match, with deployment and terminal skips. Native activation reset is settled
+before the first decision. The 35-stage win (eight plays/five EndTurns), sixteen
+immutable chains and bounded search are checked. Resource traits, phase-mask
+character callbacks, friendly floor movement and refresh previews stay guarded.
+Binary-only: 28,712 bytes/4,384 nodes, SHA-256
+`124d84a35ec0fcdc44dc7d36303ff1cfae4708be8f088b66e0de6f18077c8c5f`.
+Use `-EclipseChamber` and `--eclipse-chamber-only`.
 
 `full-battle-fused-weaponry.mt2f` keeps three original Fused Weaponries: cancel,
 ordered hand/discard merge and draw/discard merge. Test accepts two identities

@@ -24,7 +24,8 @@ namespace MonsterTrain2Poju.Model
         {
             if (phase != 1 && phase != 2) return source;
             RoomCombatState[] rooms = source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                room.Units.Select(unit => WithPhase(unit, phase)).ToArray(), room.ExternalInteractions,
+                room.Units.Select(unit => WithPhase(unit, phase)
+                    .WithMoonPhaseMask(RoomMoonPhaseModel.Effective(source.Context, room.RoomIndex, phase))).ToArray(), room.ExternalInteractions,
                 room.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             return CardSpellModel.WithContext(new TrainCombatState(rooms, source.Movement,
                 source.EnemySlotsPerRoom, source.Context), source.Context!);

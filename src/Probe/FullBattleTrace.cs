@@ -322,7 +322,8 @@ namespace MonsterTrain2Poju.Probe
                         character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless,
                         pairedBoss == null ? 0 : UnitId(pairedBoss))
                     : null, lastFeederId: OriginalOpeningMorselsScenario.Enabled ?
-                        (character.GetLastFeederCharacter() == null ? 0 : UnitId(character.GetLastFeederCharacter())) : (int?)null);
+                        (character.GetLastFeederCharacter() == null ? 0 : UnitId(character.GetLastFeederCharacter())) : (int?)null,
+                    moonPhaseMask: EclipseChamberScenario.Enabled ? (int)character.GetMoonPhaseMask() : (int?)null);
         }
 
         internal CombatContext CaptureContext()
@@ -774,6 +775,9 @@ namespace MonsterTrain2Poju.Probe
                 EquipmentMergeUnitIds = EquipmentMergeScenario.UnitIds,
                 EquipmentMergeRecords = EquipmentMergeScenario.Records,
                 EquipmentMergeTests = EquipmentMergeScenario.Tests,
+                EclipseChamberPrepared = EclipseChamberScenario.Prepared,
+                EclipseChamberCardIds = EclipseChamberScenario.CardIds,
+                EclipseChamberRecords = EclipseChamberScenario.Records,
                 RunCardGenerationPrepared = RunCardGenerationScenario.Prepared,
                 ArmamentDrivePrepared = ArmamentDriveScenario.Prepared,
                 ArmamentDriveCardIds = ArmamentDriveScenario.CardIds,
