@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 532 binary archives, including 492
+Current accepted inventory (2026-10-19): 533 binary archives, including 493
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 532
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 533
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,16 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-status-units.mt2f` adds eleven unchanged units:
+Spikedriver Spider, Horned Warrior, Animus of Will, Steel Steward, Test Subject
+Alpha, Follower, Nine-Lived Nightmare, Dreg, Miser, Basher and Shadowsiege.
+Exact paid births retain original attack/HP/size and every authored starting
+status. Large native damage controls positively verify Steel Steward's capped
+armor loss and Nine-Lived Nightmare's eight-to-seven Undying reanimation;
+Dreg's final Burnout stack expires and removes the unit. Twenty-one plays,
+five EndTurns and sixteen immutable full chains match. This establishes the
+captured birth/combat paths, not every unit's optional status trigger.
 
 `full-battle-original-equipment-cards.mt2f` adds twelve unchanged originals:
 Exile's Diadem, Glass Cannon, Stoic Platemail, Moonlit Glaive, Potion Kit,

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 532 archives (492 full battles and
+Current accepted inventory (2026-10-19): 533 archives (493 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,29 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-532 accepted archives. Refresh/check the index with
+533 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-status-units.mt2f` captures eleven unchanged units:
+Spikedriver Spider, Horned Warrior, Animus of Will, Steel Steward, Test Subject
+Alpha, Follower, Nine-Lived Nightmare, Dreg, Miser, Basher and Shadowsiege.
+Three zero-attack tanks and paid capacity controls allow original summons with
+exact attack/current/max HP, size and starting statuses. Two 54-damage controls
+positively verify Steelguard's fifteen-armor limit without HP loss; another
+lethal hit reanimates Nine-Lived Nightmare at one HP and reduces Undying from
+eight to seven. Dreg is present at one Burnout before combat and absent after
+its expiry. Other floors remain unchanged by each birth. These witnesses cover
+the captured paths; they do not assert every optional status callback occurred.
+Use `--original-status-units-only`. Sixteen immutable complete chains and the
+old focused Steelguard boundaries pass. Search matches twenty-one decisions/52
+root actions, 128/128 states and three replayed steps with zero unsupported
+attempts and equal serial/parallel best. The index increases from 233 to 244
+definition-matched identities, retaining every previous match (492 indexed
+battles/7,914 actions). Native source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-065916-4d09b9e7` won in
+106.46 seconds with twenty-one plays/five EndTurns, four counters zero and
+protected files unchanged. Binary-only: 43,271 bytes/7,715 nodes, SHA-256
+`bbfadaf9bfd746464281f2613d8927e489ac5e7f952ac28dff250011d023cad2`.
 
 `full-battle-original-equipment-cards.mt2f` captures twelve unchanged originals:
 Exile's Diadem, Glass Cannon, Stoic Platemail, Moonlit Glaive, Potion Kit,
