@@ -20,8 +20,8 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 71 | 74 | No captured projection guards; at least one successful native play has the same captured definition projection. |
-| mechanism-only | 370 | 443 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
+| direct-native-play | 73 | 76 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| mechanism-only | 368 | 441 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
 | partial | 122 | 139 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 12 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
@@ -46,11 +46,13 @@ Original Titan Corruption has Monster-only hand cost stacking/removal and Spell/
 
 Default Permafrost has original Preserve, Unnamed Tome and Ice Tornado witnesses for automatic Freeze, retained hand, thaw on play, natural redraw/re-freeze and repeated idempotent callbacks with unchanged decision/RNG/frame. Preserve positively freezes Junk, Tome applies enemy Silence and Consumes, and Ice Tornado has two positive random-damage plays across natural redraw. Exact default source parameters and runtime provenance are required; older missing metadata is not inferred.
 
+Original Pyreball and Pyreclasm calibrate DamageOverflow source Int two (native Hero team). A nonlethal friendly-primary control leaves enemies unchanged; five-health friendly primary deaths spill fifteen/145 to every enemy in the selected room, preserving friendly siblings and the outside floor. Armor is applied separately to each enemy. Exact default source parameters and runtime provenance are required. Fanning the Flame retains its separate OnKill trigger guard.
+
 Unplayable source values zero/three and Persistent/Refine value three have original native witnesses. The separate legality index records 12 restored full-card rejection queries across 3 definitions (2 logbook), with exact rule/source metadata. These are native rejection observations, not successful card plays; the dedicated checker independently verifies Illegal results and immutable parents. Ordinary unplayable cards discard/redraw, Persistent Scrap Metal stays in hand, and original Starter Scrap smelts it for Refine 3. Explicit discard and upgrade-added Refine remain guarded. These observations do not raise direct-play counts.
 
 New descriptors retain the actual CardData supplied to CardState.Setup, with source trait parameters separate from runtime traits. All captured raw source fields must match the frozen catalog when present; X damage/status scaling requires this provenance and older missing metadata remains unverified. Missing provenance, changed multiplier/query/filter, and changed runtime parameters are rejected. Other trait families need separate calibration. A shared DataId alone never establishes direct coverage. Instance upgrades do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically original-card evidence.
 
-Across all classifications, 74 identities (71 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Across all classifications, 76 identities (73 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 
@@ -60,7 +62,7 @@ Across all classifications, 74 identities (71 logbook) have at least one definit
 - [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 452 full battles and 7466 native actions whose captured prediction is supported, actual state exists and difference is null. 356 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 453 full battles and 7474 native actions whose captured prediction is supported, actual state exists and difference is null. 359 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 492 archives (453 full battles and
+Current accepted inventory (2026-10-19): 493 archives (454 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,25 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-492 accepted archives. Refresh/check the index with
+493 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-overflow-cards.mt2f` retains original Pyreball and Pyreclasm.
+Their native Hero-team overflow targets enemies even when the primary is
+friendly. Pyreball first deals twenty nonlethal damage to a friendly control
+without spilling. Two five-health friendly victims then die to twenty/150
+damage, spilling fifteen/145 to every enemy on that floor. Enemy armor reduces
+each spill independently; friendly siblings and the outside floor stay intact.
+The original costs two/four and Pyreclasm's StrongerMagicPower remain unchanged.
+Authored units, battery and enemy health are explicit controls. Eight plays/five
+EndTurns win with sixteen immutable full chains and matching 128-state search
+(sixteen root actions, zero unsupported). Binary-only: 26,396 bytes/3,668 nodes,
+SHA-256 `542f635346a8adae8506e313c9a348bf804318c2a69ba1b1220eaf890a57d069`.
+Use `-OriginalOverflowCards` and `--original-overflow-cards-only`.
+Exact source Int two/provenance is required; Fanning the Flame's separate OnKill
+trigger remains guarded.
+Focused gate `.probe-runs/model-checks-20261019-014924-740a26ac` passed this
+witness and the original piercing cards (two fixtures).
 
 `full-battle-original-permafrost-cards.mt2f` retains original Preserve,
 Unnamed Tome and Ice Tornado, including automatic temporary Freeze at creation.

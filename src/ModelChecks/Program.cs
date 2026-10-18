@@ -324,6 +324,12 @@ if (args.Length == 2 && args[0] == "--original-status-cards-only")
     OriginalStatusCardsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-overflow-cards-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalOverflowCardsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-permafrost-cards-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

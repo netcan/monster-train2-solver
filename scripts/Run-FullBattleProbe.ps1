@@ -60,6 +60,7 @@ param(
     [switch] $OriginalMonsterHandCosts,
     [switch] $OriginalUnplayableCards,
     [switch] $OriginalPermafrostCards,
+    [switch] $OriginalOverflowCards,
     [switch] $OriginalRoomStatusDamage,
     [switch] $OriginalCorruptionDamage,
     [switch] $OriginalXStatusCards,
@@ -518,6 +519,7 @@ if ($OriginalLimitedRange) { $BranchCardMasks = $true; $Policy = 'units-spells-a
 if ($OriginalMonsterHandCosts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnplayableCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPermafrostCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalOverflowCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomStatusDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptionDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1026,6 +1028,7 @@ if ($OriginalLimitedRange) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lim
 if ($OriginalMonsterHandCosts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-monster-hand-costs' }
 if ($OriginalUnplayableCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unplayable-cards' }
 if ($OriginalPermafrostCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-permafrost-cards' }
+if ($OriginalOverflowCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-overflow-cards' }
 if ($OriginalRoomStatusDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-status-damage' }
 if ($OriginalCorruptionDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corruption-damage' }
 if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
@@ -2218,6 +2221,9 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
 if ($OriginalMonsterHandCosts -and (-not $trace.OriginalMonsterHandCostsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalMonsterHandCostsSamples).Count -ne 7 -or @($trace.OriginalMonsterHandCostsDeploymentQueries).Count -ne 8 -or -not $trace.OriginalMonsterHandCostsQueriesUnchanged)) {
     throw 'Original Monster hand cost fixture lacks cost/filter controls or restored deployment eligibility queries.'
+}
+if ($OriginalOverflowCards -and (-not $trace.OriginalOverflowCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 8)) {
+    throw 'Original overflow fixture lacks nonlethal and both positive Hero-team spill controls.'
 }
 if ($OriginalPermafrostCards -and (-not $trace.OriginalPermafrostCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalPermafrostCardsDraws | Where-Object Control).Count -ne 6 -or -not $trace.OriginalPermafrostCardsQueriesUnchanged)) {

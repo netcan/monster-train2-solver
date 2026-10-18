@@ -832,6 +832,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalPermafrostCardsInitial = OriginalPermafrostCardsScenario.Initial,
                 OriginalPermafrostCardsDraws = OriginalPermafrostCardsScenario.Draws,
                 OriginalPermafrostCardsQueriesUnchanged = OriginalPermafrostCardsScenario.QueriesUnchanged,
+                OriginalOverflowCardsPrepared = OriginalOverflowCardsScenario.Prepared,
+                OriginalOverflowCardsIds = OriginalOverflowCardsScenario.CardIds,
                 OriginalRoomStatusDamagePrepared = OriginalRoomStatusDamageScenario.Prepared,
                 OriginalRoomStatusDamageIds = OriginalRoomStatusDamageScenario.CardIds,
                 OriginalCorruptionDamagePrepared = OriginalCorruptionDamageScenario.Prepared,

@@ -168,6 +168,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-monster-hand-costs.mt2f',
     'full-battle-original-unplayable-cards.mt2f',
     'full-battle-original-permafrost-cards.mt2f',
+    'full-battle-original-overflow-cards.mt2f',
     'full-battle-original-room-status-damage.mt2f',
     'full-battle-original-corruption-damage.mt2f',
     'full-battle-original-x-status-cards.mt2f',
@@ -1689,6 +1690,13 @@ foreach ($fixturePath in $soldierFixtures) {
     foreach ($mode in @('--soldier-of-fortune-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Soldier of Fortune checks failed ($mode): $fixturePath" }
+    }
+}
+$originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })
+foreach ($fixturePath in $originalOverflowFixtures) {
+    foreach ($mode in @('--original-overflow-cards-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original overflow checks failed ($mode): $fixturePath" }
     }
 }
 $originalPermafrostFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-permafrost-cards.mt2f' })

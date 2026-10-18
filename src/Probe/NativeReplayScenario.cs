@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalOverflowCardsScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original overflow fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalOverflowCardsScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPermafrostCardsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Permafrost fixture must start on deployment turn.");
@@ -2181,6 +2187,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalMonsterHandCostsScenario.Enabled) pendingPlay = OriginalMonsterHandCostsScenario.Choose(decision, OriginalMonsterHandCostsScenario.CardIds);
                 if (OriginalUnplayableCardsScenario.Enabled) pendingPlay = OriginalUnplayableCardsScenario.Choose(decision, OriginalUnplayableCardsScenario.CardIds, OriginalUnplayableCardsScenario.NegativeIds[0]);
                 if (OriginalPermafrostCardsScenario.Enabled) pendingPlay = OriginalPermafrostCardsScenario.Choose(decision, OriginalPermafrostCardsScenario.CardIds, OriginalPermafrostCardsScenario.JunkId);
+                if (OriginalOverflowCardsScenario.Enabled) pendingPlay = OriginalOverflowCardsScenario.Choose(decision, OriginalOverflowCardsScenario.CardIds);
                 if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);
                 if (OriginalCorruptionDamageScenario.Enabled) pendingPlay = OriginalCorruptionDamageScenario.Choose(decision, OriginalCorruptionDamageScenario.CardIds);
                 if (OriginalXStatusCardsScenario.Enabled) pendingPlay = OriginalXStatusCardsScenario.Choose(decision, OriginalXStatusCardsScenario.CardIds);
