@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 524 archives (484 full battles and
+Current accepted inventory (2026-10-19): 525 archives (485 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -16,6 +16,19 @@ definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
 520 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-basic-damage.mt2f` captures unchanged Excavation Eruption,
+Icestorm, Twin Shards, Ice Spear, Torch and Flicker. An authored health buff keeps
+two enemy candidates alive through all six spells. Exact health-plus-armor
+damage, three/five random hits with exact Battle RNG consumption, front/selected/
+room targets, original costs, discard and friendly/neighbor-floor controls match.
+Use `--original-basic-damage-only`; sixteen immutable full chains pass. Search
+matches eleven decisions/37 roots, 128/128 states and three replayed steps,
+with zero unsupported attempts and equal serial/parallel best. Source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-060807-d7a39a4c` won in
+49.30 seconds with eleven plays/five EndTurns, all four counters zero and
+protected files unchanged. Binary-only: 32,439 bytes/4,785 nodes, SHA-256
+`d6695af33945ffc88417172fffb1c1c51721570277c710604d2bd014151779e3`.
 
 `full-battle-original-friendly-statuses.mt2f` captures unchanged Immortal Trade,
 Furnace Tap, Onehorn's Tome, Ritual of Battle, Inspire, Insatiable Hunger,
