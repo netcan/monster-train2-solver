@@ -347,6 +347,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalWhelpCooldownScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSpawnRetreatScenario.Enabled && !OriginalSpawnRetreatScenario.Acquired)
                         OriginalSpawnRetreatScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalBoneDogScenario.Enabled && !OriginalBoneDogScenario.Acquired)
+                        OriginalBoneDogScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalGrosMichelScenario.Enabled && !OriginalGrosMichelScenario.Acquired)
                         OriginalGrosMichelScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
@@ -1240,6 +1242,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSpawnRetreatScenario.PrepareDeployment(managers);
             }
+            if (fullBattle && OriginalBoneDogScenario.Enabled && !OriginalBoneDogScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalBoneDogScenario.PrepareDeployment(managers);
+            }
             if (fullBattle && OriginalGrosMichelScenario.Enabled && !OriginalGrosMichelScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -1949,6 +1956,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalSpawnRetreatScenario.Choose(decision);
                 if (OriginalGrosMichelScenario.Enabled)
                     pendingPlay = RelicEndCombatModel.ChooseGrosMichelPlay(decision);
+                if (OriginalBoneDogScenario.Enabled)
+                    pendingPlay = OriginalBoneDogScenario.Choose(decision);
                 if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||

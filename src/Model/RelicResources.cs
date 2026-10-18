@@ -287,7 +287,7 @@ namespace MonsterTrain2Poju.Model
         public const string PostOpeningDiscardReplacement = RelicJudgesScalesModel.Effect;
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus ||
-            type == EnergyOnCardEarlyDiscard || type == RelicEndCombatModel.GrosMichelDestroy ||
+            type == EnergyOnCardEarlyDiscard || type == RelicEndCombatModel.GrosMichelDestroy || type == RelicPyreResurrectionModel.Effect ||
             type == GoldOnExhaust ||
             type == EnergyOnCorruptRestrictedPlayed || type == CorruptionOnCorruptRestrictedPlayed ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
@@ -313,6 +313,11 @@ namespace MonsterTrain2Poju.Model
             foreach (RelicResourceEffect rule in rules)
             {
                 if (rule.Type != relic.EffectTypes[rule.EffectIndex]) return "Relic resource runtime type differs from its effect index.";
+                if (rule.Type == RelicPyreResurrectionModel.Effect)
+                {
+                    string? resurrectionError = RelicPyreResurrectionModel.Validate(relic, rule);
+                    if (resurrectionError != null) return resurrectionError;
+                }
                 if (rule.Type == RelicUnitSpawnEffectModel.Effect)
                 {
                     string? spawnError = RelicUnitSpawnEffectModel.Validate(relic, rule);

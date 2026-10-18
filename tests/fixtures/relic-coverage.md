@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **218 distinct original collectable relics / 224 catalog entries
-(97.32%)** have accepted native evidence: 200 have full-battle effect evidence,
+As of 2026-10-18, **219 distinct original collectable relics / 224 catalog entries
+(97.77%)** have accepted native evidence: 201 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -85,6 +85,7 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-cha
 dotnet run --project src/ModelChecks -c Release -- --original-champion-start-turn-heal-only tests/fixtures/full-battle-original-champion-start-turn-heal.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-champion-start-turn-heal.mt2f
 ```
+
 The native source and callback effect for `RageOnBurnoutStackLoss` now have one
 accepted battle witness for a controlled friendly Ephemeral removal.
 `PyreRevengeAddPyregel` now has four live native OnHit witnesses whose complete
@@ -2880,4 +2881,54 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-gro
 dotnet run --project src/ModelChecks -c Release -- --gros-michel-pure
 dotnet run --project src/ModelChecks -c Release -- --original-gros-michel-only tests/fixtures/full-battle-original-gros-michel.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-gros-michel.mt2f
+```
+
+## Native Pyre resurrection
+
+| Original asset key | Data ID | Original effect | Accepted evidence |
+| --- | --- | --- | --- |
+| `BoneDogTitanPyreLife` | `d7264164-b519-43e2-bcf3-055afee3d8dd` | `RelicEffectPyreHeartResurrection` | `full-battle-original-bone-dog.mt2f`: actual lethal hit restores 1/81 to 21 HP; persistent marking, notification and HP ordering; internal preview, ordinary death and later-turn consumed controls; independent full policy and search. |
+
+The unchanged original owner is acquired before battle. An authored one-HP
+Steward dies without consuming resurrection; authored Pyre maxHP81/currentHP1/
+attack100 and enemy attack one expose a real lethal hit with upward rounding.
+The manager ignores ordinary condition gates, marks the once-per-run flag,
+notifies once, and returns .25. The character retains one HP during callbacks,
+then restores 21 without a Heal callback. A later-turn direct manager call
+returns false even after ThisTurn condition bookkeeping resets. Nine actual
+Pyre hits are observed, including the unique flag 0-to-1 transition.
+
+The internal boss-kill preview uses the same interface despite the effect's
+ordinary CanApplyInPreviewMode=false metadata. Preview save restoration restores
+eligibility but leaves the shared effect's condition count at one; the actual
+manager observes it and advances it to two. Native scalar preview records,
+complete real manager states and complete room/train/turn comparisons verify
+this behavior. Passive birth/status queries refresh statistic membership even
+when the unused comparator-zero condition fails. Later lower-floor movement
+also restores its selected destination after tower PostCombat callbacks.
+
+All eight differential counters are zero. The 52-stage win, one model-selected
+play, seven-EndTurn independent full policy with sixteen immutable branches,
+eleven-state serial/parallel one-turn search and twenty affected archives pass.
+Search matches three root actions and one recorded decision, replays two steps
+and has zero unsupported attempts. Regression summary:
+`.probe-runs/model-checks-20261018-152107-bb38cb51/summary.json`.
+Both workers exit zero and all three tested assembly hashes remain unchanged.
+Lethal SaveManager HP changes, non-combat consumers, cross-battle reacquisition,
+other preview lifecycles and additional combined callbacks remain uncalibrated;
+known lethal Pyre card-cost paths remain explicitly rejected.
+
+The archive has 26,329 bytes, 3,606 unique nodes and SHA-256
+`1827d0a4d977333a34f6fb3684785f1f4fdfd38c3d939d96a5187ccb2d47255a`.
+Source length/hash are zero and no JSON companion is tracked. Inventory is
+438 archives: 399 battles and 39 component calibrations. Coverage is 219/224
+(97.77%): 201 battle owners, seventeen campaign owners and one native no-op;
+five owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalBoneDogRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-bone-dog.mt2f
+dotnet run --project src/ModelChecks -c Release -- --bone-dog-pure
+dotnet run --project src/ModelChecks -c Release -- --original-bone-dog-only tests/fixtures/full-battle-original-bone-dog.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-bone-dog.mt2f
 ```

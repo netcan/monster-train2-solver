@@ -149,7 +149,7 @@
 "DamageOnCardPlayed"	"b6e80269-efdd-4e28-97b3-8b19e8236b2e"	"accepted-native-battle"	"RelicEffectDamageOnCardPlayed"	""
 "MoonPhaseModifyEmber"	"70096a91-220a-4ab3-b8d0-b8fe8f3a819c"	"accepted-native-battle"	"RelicEffectModifyEnergyOnMoonPhase"	""
 "DamageOnConsume"	"2d2450a5-4ed5-4d9a-bba2-15c9eb0eee6d"	"accepted-native-battle"	"RelicEffectDamageOnExhaust"	""
-"BoneDogTitanPyreLife"	"d7264164-b519-43e2-bcf3-055afee3d8dd"	"pending"	"RelicEffectPyreHeartResurrection"	""
+"BoneDogTitanPyreLife"	"d7264164-b519-43e2-bcf3-055afee3d8dd"	"accepted-native-battle"	"RelicEffectPyreHeartResurrection"	""
 "DamageOnEaten"	"38990528-6639-4cb2-b310-4e14193256a0"	"accepted-native-battle"	"RelicEffectDamageEnemyOnFriendlyTrigger"	""
 "Inkbound_Clepsydranium"	"b0972732-ea21-42d0-844d-05fb5ff028e6"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "UpgradeEquipmentOnDeath"	"b3e7888f-8f5e-4082-89b0-078d80ce4a9b"	"accepted-native-battle"	"RelicEffectAddTrigger"	""

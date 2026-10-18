@@ -476,6 +476,8 @@ internal static class BattleActionChecks
             ? BattleActionModel.ChooseUnitSpellAndJunkPlay : BattleActionModel.ChooseUnitAndJunkPlay;
         if (fixture.TryGetProperty("ModifierScenario", out var grosMichelPolicy) && grosMichelPolicy.GetString() == "original-gros-michel")
             chooser = RelicEndCombatModel.ChooseGrosMichelPlay;
+        if (fixture.TryGetProperty("ModifierScenario", out var boneDogPolicy) && boneDogPolicy.GetString() == "original-bone-dog")
+            chooser = RelicPyreResurrectionModel.ChoosePlay;
         if (fixture.TryGetProperty("ModifierScenario", out var cardDrawOnHealPolicy) &&
             cardDrawOnHealPolicy.GetString() == "original-card-draw-on-heal")
             chooser = source => BattleActionModel.ChooseUnitSpellAndJunkPlay(source, card =>

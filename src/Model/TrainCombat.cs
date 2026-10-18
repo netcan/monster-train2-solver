@@ -280,6 +280,7 @@ namespace MonsterTrain2Poju.Model
             var rooms = source.Rooms.Select(room => room.Units.ToList()).ToArray();
             int pyre = rooms.Length - 1;
             bool enteredPyre = false;
+            int lastMovementSource = -1, lastPyreEntrySource = -1;
             var moved = new HashSet<int>();
             var movements = source.Movement.ToDictionary(rule => rule.UnitId);
             var looped = new List<int>();
@@ -368,6 +369,7 @@ namespace MonsterTrain2Poju.Model
                         highestRoomIndexMovedInto = Math.Max(highestRoomIndexMovedInto, destination);
                     }
                     enteredPyre |= destination == pyre;
+                    if (destination == pyre) lastPyreEntrySource = index;
                 }
                 if (destroyThroughRoom.HasValue)
                 {
@@ -388,8 +390,11 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (highestRoomIndexMovedInto >= 0 && !source.Rooms[index].Preview &&
                     movementContext?.QueryFrame?.SelectedRoomIndex != null)
+                {
                     movementContext = movementContext.WithQueryFrame(movementContext.QueryFrame.With(
                         selectedRoomIndex: highestRoomIndexMovedInto));
+                    lastMovementSource = index;
+                }
             }
             RoomCombatState[] next = source.Rooms.Select((room, index) => new RoomCombatState(room.RoomIndex,
                 room.Deployment, BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions,
@@ -439,6 +444,12 @@ namespace MonsterTrain2Poju.Model
                 if (requiresTowerTargets) ApplyTowerUpdates(next, externalTargets, result.RetainedUnits);
                 movementResults.Add(result);
                 moving = Freeze(enabled.State, next, result.State!.Context);
+                // Native resolves tower combat within the top-down movement loop. Later
+                // lower-floor movement selects its destination after tower PostCombat callbacks.
+                if (!Terminal(result.Outcome) && lastMovementSource >= 0 && lastMovementSource < lastPyreEntrySource &&
+                    movementContext?.QueryFrame?.SelectedRoomIndex is int laterSelection && moving.Context?.QueryFrame != null)
+                    moving = Freeze(moving, moving.Rooms.ToArray(), moving.Context.WithQueryFrame(
+                        moving.Context.QueryFrame.With(selectedRoomIndex: laterSelection)));
                 if (moving.Context?.Enchantments?.AutomaticLifecycle != true)
                     return new TrainCombatResult(moving, result.Outcome, movementResults,
                         destroyedRoomIndexes: destroyedRooms);

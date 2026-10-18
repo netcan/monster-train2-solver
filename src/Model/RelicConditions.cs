@@ -48,6 +48,8 @@ namespace MonsterTrain2Poju.Model
                     conditions = relic.RoomAttachmentReplications?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
                 if (relic.EffectTypes[index] == RelicMonsterSpellTargetingModel.Effect)
                     conditions = relic.MonsterSpellTargetingModifiers?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
+                if (relic.EffectTypes[index] == RelicPyreResurrectionModel.Effect)
+                    conditions = relic.ResourceEffects?.SingleOrDefault(effect => effect.EffectIndex == index)?.Conditions;
                 if (conditions == null) continue;
                 var evaluation = Evaluate(context, conditions);
                 if (!evaluation.Supported) return evaluation;

@@ -18,44 +18,46 @@ coverage inventory checks.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 218 original owners accepted (200 native battle owners,
+Current checkpoint: 219 original owners accepted (201 native battle owners,
 seventeen actual campaign-interface owners and one explicit native no-op owner);
-6 remain pending. The latest accepted owner is `BalatroEventGrosMichel`:
-its unchanged +10 non-Champion Monster attack, two saved waiting rounds then
-10% destruction, and Banana Shake all execute. Two low waiting rolls advance
-the counter; a mature miss retains the owner; a mature hit removes it and
-undoes tracked deck attack while retaining live-unit attack. A later birth
-loses the +10 bonus. The saved count remains two after removal, and the manager
-still runs Banana Shake's attempt callback. Native preview, cardless/clone/
-Champion births, cross-battle reacquisition, purged/non-deck cleanup,
-simultaneous banana owners and additional callbacks remain uncalibrated.
+5 remain pending. The latest accepted owner is `BoneDogTitanPyreLife`.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
 effects need a winning native capture with zero error counters, independent
 policy replay or explicit replay of every recorded action and turn transition,
-and affected-fixture regression. Merchant/reward/draft effects
-need their actual campaign lifecycle evidence; definition enumeration and
-inert battle presence do not validate those effects. Pure no-op definitions
-must be explicitly identified without inventing activation evidence.
+and affected-fixture regression. Merchant/reward/draft effects need their actual
+campaign lifecycle evidence; enumeration and inert battle presence do not
+validate effects. Pure no-op definitions require explicit identification.
 
-The latest fixture, `full-battle-original-gros-michel.mt2f`, captures four Tests,
-four applications and four Banana Shake attempts. One initial seed produces
-natural rolls 0, 7, 31 and 3. All callback states, RNG, notifications, saved count
-and contribution undo match in sixteen immutable branches. Six accumulated/
-reset Monster, Champion and Spell card-modifier controls also match.
+The schema-241 `full-battle-original-bone-dog.mt2f` witness exercises the
+unchanged 25% once-per-run resurrection through actual lethal Pyre damage.
+An authored one-HP Steward dies first without consuming eligibility. With
+Pyre maxHP81/currentHP1/attack100 and authored enemy attack one, a lethal hit
+marks the persistent run flag before notification, retains one HP through
+callbacks, then restores ceil(81*.25)=21 HP without Heal. Nine actual Pyre hits
+are observed. A later-turn manager call returns false after ThisTurn condition
+bookkeeping resets. The internal attack preview also runs the manager:
+its save flag is restored but shared relic conditions retain the notification,
+so preview/actual advance the condition count to one/two. Passive birth/status
+condition queries refresh card-stat membership even when the condition fails.
 
-The 40-stage winning battle records three model-selected actions and five
-EndTurns, with all eight differential counters zero. Focused checks, independent
-full policy replay, 128-state serial/parallel search and twelve affected archives pass.
-The new fixture has zero unsupported search attempts. Both regression workers
-finish with exit zero and all three tested assembly hashes remain unchanged.
-Search matches all three recorded decisions and twelve root actions;
-serial/parallel modes visit 128/128 states and return the same best result.
-Regression summary: `.probe-runs/model-checks-20261018-150239-00a6ed67/summary.json`.
-The 26,395-byte archive has 3,581
-unique nodes and SHA-256
-`9eef1d92102f4cbc2ee350702e990b1afee414a527cb7b79f010709bafb4a0ce`; no JSON
-companion is tracked. Inventory is 437 archives: 398 battles and 39 component
-calibrations. Original relic coverage is 218/224 (97.32%): 200 battle owners,
-seventeen campaign owners and one native no-op owner.
+The 52-stage winning battle records one model-selected action, seven EndTurns,
+thirteen card cycles, fourteen train phases and eleven spawns, with all eight
+differential counters zero. Focused checks, full independent policy replay with
+sixteen immutable branches, serial/parallel search and twenty affected archives
+pass. Search matches one recorded decision and three root actions; both modes
+visit eleven states, replay two steps and stop at the turn boundary, with zero
+unsupported attempts and the same best result. Both regression workers finish
+with exit zero and all three tested assembly hashes remain unchanged.
+Regression summary: `.probe-runs/model-checks-20261018-152107-bb38cb51/summary.json`.
+
+Lethal SaveManager HP changes, non-combat consumers, cross-battle reacquisition,
+other preview lifecycles and additional combined damage/hit/death/relic callbacks
+remain outside this witness. Known lethal Pyre card-cost paths remain rejected.
+
+The archive has 26,329 bytes, 3,606 unique nodes and SHA-256
+`1827d0a4d977333a34f6fb3684785f1f4fdfd38c3d939d96a5187ccb2d47255a`.
+Source length/hash are zero and no JSON companion is tracked. Inventory is
+438 archives: 399 battles and 39 component calibrations. Accepted original
+coverage is 219/224 (97.77%): 201 battle, seventeen campaign and one native no-op.

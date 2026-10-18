@@ -2052,6 +2052,12 @@ namespace MonsterTrain2Poju.Model
                 // Native restores characters, but CardStatistics is shared: queries can refresh its
                 // membership and SetAttackDamageDealt survives, including nested retaliation.
                 context = context.WithStatistics(preview.context!.Statistics);
+                // Native previews share relic effect objects. Bone Dog's persistent run flag is
+                // restored with the save, but its OnTrigger condition bookkeeping survives.
+                if (context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicPyreResurrectionModel.Effect)) == true)
+                    context = context.WithRelics(context.Relics.Select(owner => owner.EffectTypes.Contains(RelicPyreResurrectionModel.Effect)
+                        ? owner.WithResourceEffects(preview.context.Relics!.Single(other => other.DataId == owner.DataId).ResourceEffects!)
+                        : owner).ToArray());
                 BattleSpawnPoints? restoredPoints = context.SpawnPoints?.NextPreviewCopyId.HasValue == true ?
                     BattleSpawnPoints.EndPreview(context.SpawnPoints, preview.context.SpawnPoints!, clearBirths: false) : null;
                 if (restoredPoints != null) context = context.WithSpawnPoints(restoredPoints);
@@ -2223,6 +2229,18 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (damage > 0 && target.Has("fragile")) damage = target.Health + damage - 1;
                 if (target.Has("untouchable")) damage = 0;
+                int hpAfterPyreResurrection = 0;
+                if (target.Source.IsPyre && target.Health - damage <= 0 && context != null)
+                {
+                    context = RelicPyreResurrectionModel.TryApply(context, out float percentage, out string? resurrectionError);
+                    if (resurrectionError != null) { unsupportedReason = resurrectionError; return; }
+                    if (percentage > 0)
+                    {
+                        hpAfterPyreResurrection = (int)Math.Ceiling(target.Source.MaxHealth * percentage);
+                        damage = 0;
+                        blocked = target.Health;
+                    }
+                }
                 if (actor != null && context?.Statistics != null)
                     context = context.WithStatistics(context.Statistics.WithLastAttackDamage(checked(damage + blocked)));
                 ApplyDamageOverflow(actor, target, damage, kind, sourceCardId);
@@ -2315,6 +2333,9 @@ namespace MonsterTrain2Poju.Model
                     if (!TryRevive(actor, target, sourceCardId))
                         Death(actor, target, sourceCardId, deferRemoval: runningTriggerQueue || nativeCardDamage);
                 }
+                // CharacterState restores HP after hit/death callbacks, without invoking Heal.
+                if (!target.DeathFinished && hpAfterPyreResurrection > 0)
+                    target.Health = hpAfterPyreResurrection;
             }
 
             private WorkingUnit? NextTrampleTarget(WorkingUnit attacked)

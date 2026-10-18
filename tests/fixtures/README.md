@@ -1,10 +1,25 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 437 archives (398 full battles and
-39 component calibrations), 218/224 original relic owners (97.32%): 200 battle
+Current accepted inventory (2026-10-18): 438 archives (399 full battles and
+39 component calibrations), 219/224 original relic owners (97.77%): 201 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
-The latest `BalatroEventGrosMichel` fixture covers its unchanged +10
+The latest `BoneDogTitanPyreLife` fixture covers unchanged 25% once-per-run
+Pyre resurrection through actual lethal combat damage. At 1/81 HP the Pyre
+retains one HP through callbacks, then restores ceil(81*.25)=21 without Heal.
+The persistent flag is marked before notification. Internal attack preview
+bookkeeping survives save restoration; actual notification increments the
+shared condition count a second time. Ordinary friendly death and a later-turn
+consumed manager call are controls. All eight differential counters are zero.
+The 52-stage win, one play, seven-EndTurn independent policy with sixteen
+branches, eleven-state serial/parallel one-turn search and twenty affected
+archives pass. The 26,329-byte archive has 3,606 unique nodes and SHA-256
+`1827d0a4d977333a34f6fb3684785f1f4fdfd38c3d939d96a5187ccb2d47255a`.
+It has no text source or tracked JSON companion. Lethal save-interface HP
+changes, cross-battle reacquisition, other preview lifecycles and additional
+combined callbacks require separate evidence.
+
+The preceding `BalatroEventGrosMichel` fixture covers its unchanged +10
 non-Champion Monster attack, two waiting rounds then 10% destruction, and
 Banana Shake. Four natural combat-end callbacks draw 0, 7, 31 and 3 from one
 initial seed: two low waiting rolls, a mature miss and a mature hit. The saved

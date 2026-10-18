@@ -421,6 +421,8 @@ namespace MonsterTrain2Poju.Probe
                     subtype == null || subtype.IsNone ? null : subtype.Key, data.GetEffectConditions().Count);
                 amount = data.GetParamInt();
             }
+            else if (effect is RelicEffectPyreHeartResurrection)
+                amount = 0; // The native effect initializes only ParamFloat; ParamInt is unused.
             else if (effect is GrosMichelRelicEffectChanceToDestroySelf)
                 amount = (int)AccessTools.Field(effect.GetType(), "chanceToDestroySelf").GetValue(effect);
             else if (effect is RelicEffectEnergyOnCardEarlyDiscard)
@@ -436,7 +438,7 @@ namespace MonsterTrain2Poju.Probe
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
-                effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust ? data.GetParamFloat() : 0,
+                effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ? data.GetParamFloat() : 0,
                 generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect);
         }
 

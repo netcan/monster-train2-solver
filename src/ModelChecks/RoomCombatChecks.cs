@@ -385,6 +385,9 @@ internal static class RoomCombatChecks
         else if (fixture.TryGetProperty("ModifierScenario", out var grosMichelScenario) &&
             grosMichelScenario.GetString() == "original-gros-michel")
             OriginalGrosMichelChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out var boneDogScenario) &&
+            boneDogScenario.GetString() == "original-bone-dog")
+            OriginalBoneDogChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage: true);
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);

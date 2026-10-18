@@ -1,11 +1,28 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 437 binary archives, including 398
+Current accepted inventory (2026-10-18): 438 binary archives, including 399
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 218/224 catalog entries (97.32%): 200 battle owners, 17 campaign
+covers 219/224 catalog entries (97.77%): 201 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`BoneDogTitanPyreLife` now has schema-241 evidence for its unchanged 25%
+once-per-run Pyre resurrection. An actual lethal hit at 1/81 HP restores 21 HP
+with upward rounding. The native manager marks the persistent flag before
+notification, retains current HP during hit callbacks, then restores HP without
+a Heal callback. An internal attack preview restores the run flag but shares
+effect-condition bookkeeping: preview/actual notifications advance the count
+to one/two. Ordinary friendly death leaves eligibility intact; a later-turn
+manager call returns false even after ThisTurn conditions reset. Passive birth
+and status callbacks still query the condition and refresh card-stat membership.
+The 52-stage winning battle has one model-selected play, seven EndTurns,
+nine Pyre hits and zero differential errors. Focused checks, independent full
+policy replay with sixteen immutable branches, an eleven-state serial/parallel
+one-turn search and twenty affected archives pass. Source-unchanged acquisition
+uses an authored one-HP Steward, Pyre attack 100/maxHP81/HP1 and enemy attack
+one. Lethal SaveManager HP changes, cross-battle reacquisition, other preview
+lifecycles and additional combined callbacks remain outside this witness.
 
 `BalatroEventGrosMichel` now has schema-240 evidence for all three original
 effects: +10 attack on non-Champion Monster cards, two waiting combat rounds
