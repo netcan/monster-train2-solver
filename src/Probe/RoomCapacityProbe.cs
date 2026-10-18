@@ -41,11 +41,13 @@ namespace MonsterTrain2Poju.Probe
                         modifier.GetRoomStateModifierClassName() == "RoomStateCapacityModifier").ToArray();
                     RoomModifierData[] spellCostModifiers = roomModifiers.Where(modifier =>
                         modifier.GetRoomStateModifierClassName() == "RoomStateSpellCostModifier").ToArray();
+                    RoomModifierData[] energyModifiers = roomModifiers.Where(modifier =>
+                        modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").ToArray();
                     var interactions = new List<string>();
                     RoomMoonPhaseRule? phase = RoomMoonPhaseProbe.Rule(definition, interactions);
                     if (phase != null) { if (moon != null) return null; moon = phase; }
-                    bool supported = interactions.Count == 0 && (phase != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length) &&
-                        capacityModifiers.Length <= 1 && spellCostModifiers.Length <= 1 &&
+                    bool supported = interactions.Count == 0 && (phase != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length + energyModifiers.Length) &&
+                        capacityModifiers.Length <= 1 && spellCostModifiers.Length <= 1 && energyModifiers.Length <= 1 && energyModifiers.All(modifier => modifier.GetParamInt() == 1) &&
                         state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
                         state.GetAdditionalUnhealedHP() == 0 && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
                         state.GetAdditionalEquipmentLimit() == 0 && state.GetStatusEffectUpgrades().Count == 0 &&
@@ -68,7 +70,9 @@ namespace MonsterTrain2Poju.Probe
                 result.Add(new RoomCapacityAttachmentState(dataId, assetKey, (int)attachment.AttachType, delta,
                     characterUpgrades, attachment.TrainSide.HasFlag(Team.Type.Heroes),
                     attachment.TrainSide.HasFlag(Team.Type.Monsters), ignoreBosses,
-                    attachment.CardState == null ? attachment.Guid : "", spellCostDelta, moon));
+                    attachment.CardState == null ? attachment.Guid : "", spellCostDelta, moon,
+                    attachment.UpgradeStates.SelectMany(item => item.Item2.GetRoomModifierUpgrades())
+                        .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").Sum(modifier => modifier.GetParamInt())));
             }
             return result.ToArray();
         }

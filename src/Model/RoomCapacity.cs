@@ -17,14 +17,16 @@ namespace MonsterTrain2Poju.Model
         public bool IgnoreBosses { get; }
         public int SpellCostDelta { get; }
         public RoomMoonPhaseRule? MoonPhase { get; }
+        public int EnergyPerTurnDelta { get; }
         public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
             IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
             bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "", int spellCostDelta = 0,
-            RoomMoonPhaseRule? moonPhase = null)
+            RoomMoonPhaseRule? moonPhase = null, int energyPerTurnDelta = 0)
         {
             DataId = dataId; AssetKey = assetKey; AttachmentId = attachmentId; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
             CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
             AffectsHeroes = affectsHeroes; AffectsMonsters = affectsMonsters; IgnoreBosses = ignoreBosses; SpellCostDelta = spellCostDelta; MoonPhase = moonPhase;
+            EnergyPerTurnDelta = energyPerTurnDelta;
         }
     }
 
@@ -64,6 +66,8 @@ namespace MonsterTrain2Poju.Model
     }
     public static class RoomCapacityModel
     {
+        internal static int EnergyPerTurnDelta(CombatContext context) => context.RoomCapacities?
+            .Sum(room => room.Attachments?.Sum(attachment => attachment.EnergyPerTurnDelta) ?? 0) ?? 0;
         internal static int SpellCostDelta(CombatContext? context, int roomIndex) =>
             context?.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == roomIndex)?.Attachments?
                 .Sum(attachment => attachment.SpellCostDelta) ?? 0;
@@ -80,6 +84,7 @@ namespace MonsterTrain2Poju.Model
                 context.RoomCapacities.Any(room => room.Attachments?.Any(attachment => string.IsNullOrEmpty(attachment.DataId) ||
                     string.IsNullOrEmpty(attachment.AssetKey) || attachment.AttachmentType != 0 ||
                     attachment.SpellCostDelta != 0 && attachment.SpellCostDelta != -1 ||
+                    attachment.EnergyPerTurnDelta != 0 && attachment.EnergyPerTurnDelta != 1 ||
                     attachment.MoonPhase != null && RoomMoonPhaseModel.Validate(attachment.MoonPhase) != null ||
                     attachment.AttachmentId.Length > 0 && (!Guid.TryParse(attachment.AttachmentId, out Guid attachmentGuid) || attachmentGuid == Guid.Empty) ||
                     attachment.CharacterUpgrades?.Any(upgrade => upgrade.ExternalInteractions.Count > 0 ||

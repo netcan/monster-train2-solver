@@ -63,7 +63,7 @@ namespace MonsterTrain2Poju.Model
         internal static CombatContext StartTurn(CombatContext context, int baseEnergy)
         {
             if (context.EnergyState == null) return context.WithQueryFrame(context.QueryFrame?.With(energy: baseEnergy));
-            int income = unchecked(baseEnergy + context.EnergyState.NextTurn + context.EnergyState.EveryTurn);
+            int income = unchecked(baseEnergy + context.EnergyState.NextTurn + context.EnergyState.EveryTurn + RoomCapacityModel.EnergyPerTurnDelta(context));
             context = SetPhase(context, "MonsterTurn");
             if (income > 0) context = Add(context, income);
             return context.WithEnergyState(context.EnergyState!.With(nextTurn: 0));

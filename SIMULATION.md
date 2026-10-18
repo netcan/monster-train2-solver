@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 471 binary archives, including 432
+Current accepted inventory (2026-10-18): 472 binary archives, including 433
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 471
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 472
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,17 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-engine-upgrade.mt2f` keeps two unchanged original attachments and
+successive Fight Club replacements. Friendly capacity falls by one on each
+floor; their delayed energy contributions sum across floors. Next-turn income
+is five, then four after one replacement, then three after both replacements.
+The six-play/five-EndTurn native win, sixteen immutable full chains and bounded
+search are checked. Both ordinary and relic resource start-turn paths include
+the room contribution; other room modifier classes remain guarded.
+Focused gate `model-checks-20261018-231851-9da8f1e4` passed the new fixture,
+original room cards and original resource relics. The frozen card catalog still
+uses its recorded projection revision until the next explicit refresh.
 
 `full-battle-goldmance.mt2f` activates the unchanged original ability on two
 original Goldy Whelps. Zero Hoard is legal and grants no gold; three Hoard

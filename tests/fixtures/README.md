@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 471 archives (432 full battles and
+Current accepted inventory (2026-10-18): 472 archives (433 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,21 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-471 accepted archives. Refresh/check the index with
+472 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-engine-upgrade.mt2f` keeps two original Engine Upgrades and original
+Fight Club replacements. Each Engine Upgrade costs zero, reduces friendly
+capacity by one and contributes one energy from the next turn. Two floors sum
+to five energy; successive replacements restore capacity and reduce subsequent
+income to four, then three. Native statistics are settled after the active deck
+is isolated and before the first decision. The six-play/five-EndTurn win,
+sixteen immutable full chains and bounded search are checked. Other room
+modifier classes remain guarded. Binary-only: 23,713 bytes/3,103 nodes, SHA-256
+`f330aa8987cc6aa0fb0127ce3effa920091060b7cb30a21c33b70d8efaba35c1`.
+Use `-EngineUpgrade` and `--engine-upgrade-only`.
+Focused room/resource gate:
+`.probe-runs/model-checks-20261018-231851-9da8f1e4/summary.json` (three passed).
 
 `full-battle-goldmance.mt2f` keeps two original Goldy Whelps and their original
 shared Goldmance ability. Zero Hoard permits activation and grants no gold;
