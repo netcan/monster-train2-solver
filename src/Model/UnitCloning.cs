@@ -374,7 +374,7 @@ namespace MonsterTrain2Poju.Model
             new CombatUnit(unit.Id, unit.AssetKey, unit.Team, attack, hp, maxHp, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath,
                 unit.Statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, modifiers, unit.IsBoss,
                 unit.LastAttackerId, unit.StatusRegistry, equipment ?? unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary,
-                unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, unit.BumpRules);
+                unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, unit.BumpRules, unit.LastFeederId);
         internal static TrainCombatState ReplaceUnit(TrainCombatState state, CombatUnit unit) => EnchantmentWorldModel.Rebase(
             new TrainCombatState(state.Rooms.Select(room =>
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Select(actor => actor.Id == unit.Id ? unit : actor).ToArray(),

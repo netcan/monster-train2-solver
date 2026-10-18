@@ -575,7 +575,7 @@ namespace MonsterTrain2Poju.Probe
                 lastAttackerId: 0, statusRegistry: source.StatusRegistry, equipmentCards: source.EquipmentCards,
                 nextTriggerId: source.NextTriggerId, ability: source.Ability, statusDictionary: source.StatusDictionary,
                 abilityRules: source.AbilityRules, hordeDefinition: source.HordeDefinition, isSpawning: source.IsSpawning,
-                sacrificeCardId: source.SacrificeCardId, deathState: source.DeathState, bumpRules: source.BumpRules);
+                sacrificeCardId: source.SacrificeCardId, deathState: source.DeathState, bumpRules: source.BumpRules, lastFeederId: source.LastFeederId);
         }
 
         internal static CardPlayRule BirthDefinition(CardData data, CharacterData monster, bool sourceAbsent = false)

@@ -1,10 +1,27 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 439 archives (400 full battles and
-39 component calibrations), 220/224 original relic owners (98.21%): 202 battle
+Current accepted inventory (2026-10-18): 440 archives (401 full battles and
+39 component calibrations), 221/224 original relic owners (98.66%): 203 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
-The latest `OnDecayDeathApplyStatusEffects` fixture covers its original all-team
+The latest `full-battle-original-opening-morsels.mt2f` retains the unchanged
+`SpawnRandomMorsels` owner and original Miner OnEaten +9/+9 body. Three native
+callbacks create cardless, non-clone Miners on floors 2,1,0 without card allocation,
+gameplay RNG or relic-manager notification. Two isolated invalid-floor tests
+leave state intact. Forty actual feeder-manager calls include a real +9/+9 meal,
+despawn without damage-death and three food/no-feeder controls; FoodUnitsEaten
+increments once. The 42-stage Pyre79 win has one ordinary play/five EndTurns,
+all eight differential counters zero and unchanged original files. Focused
+checks, independent full policy/mid-battle replay, sixteen immutable branches,
+14-state serial/parallel search and 24 affected archives pass. Regression summary:
+`.probe-runs/model-checks-20261018-160603-bf7a4709/summary.json`.
+The 24,798-byte archive has 3,362 unique nodes and SHA-256
+`3cd901fa0c00402357eac809c6827069ebb7c40c49de54a34640b98213717a7a`.
+Source length/hash are zero, with no JSON companion. Card-backed/equipped/
+repeatedly edible food, forced-feeding card effects, additional callback
+combinations and metagame unlock consumers remain separate evidence boundaries.
+
+The preceding `OnDecayDeathApplyStatusEffects` fixture covers its original all-team
 lethal Decay OnHit gate and explicit Decay transfer. Five stacks become three
 on each of two eligible teammates; source stacks stay intact. Untouchable,
 other-team and other-floor state stays unchanged. A source with no eligible

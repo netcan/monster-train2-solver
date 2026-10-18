@@ -1,11 +1,36 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 439 binary archives, including 400
+Current accepted inventory (2026-10-18): 440 binary archives, including 401
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 220/224 catalog entries (98.21%): 202 battle owners, 17 campaign
+covers 221/224 catalog entries (98.66%): 203 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`SpawnRandomMorsels` has schema-243 evidence for its unchanged three ordered
+start-of-battle effects. Despite its name, it deterministically creates the
+original Morsel Miner on floors 2, 1 and 0 after initial enemies spawn, before
+turn-one PreCombat. Each birth uses a front physical slot, no source/fallback
+card, the cardless status and no clone flag, RNG draw or relic-manager notification.
+The native original OnEaten consumer grants its last feeder +9 Attack/+9 Health
+until battle end. Food relationships are assigned before the complete OnEaten
+queue runs; food then despawns without damage-death/Harvest, followed by OnFeed.
+The witness checks three births, two isolated invalid-floor Test controls,
+40 actual feeder-manager calls, one real meal, three food/no-feeder controls,
+and the FoodUnitsEaten run-stat delta. Its 42-stage win has one ordinary
+model-selected play, five EndTurns, Pyre79 and all eight error counters zero.
+Independent full policy/mid-battle replay, sixteen immutable branches, a
+14-state serial/parallel search and 24 affected archives pass. Both regression
+workers exit zero with unchanged tested binaries; summary:
+`.probe-runs/model-checks-20261018-160603-bf7a4709/summary.json`.
+Card-backed/equipped/repeatedly edible food, card-effect forced feeding,
+additional combined callbacks and metagame unlock consumers need separate evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalOpeningMorselsRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-opening-morsels.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-opening-morsels-only tests/fixtures/full-battle-original-opening-morsels.mt2f
+```
 
 `OnDecayDeathApplyStatusEffects` has schema-242 evidence for its unchanged
 all-team lethal Decay OnHit callback. It transfers only explicit Decay stacks

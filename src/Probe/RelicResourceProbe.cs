@@ -128,7 +128,18 @@ namespace MonsterTrain2Poju.Probe
             RelicCardTypeSequenceRule? cardTypeSequence = null;
             RelicUnitSpawnEffectRule? unitSpawnEffect = null;
             RelicDeathEffectRule? deathEffect = null;
-            if (effect is RelicEffectAddEffectOnUnitDeath)
+            RelicOpeningSpawnRule? openingSpawn = null;
+            if (effect is RelicEffectSpawnUnitStartOfCombat)
+            {
+                openingSpawn = new RelicOpeningSpawnRule(data.GetParamSourceTeam().ToString(), data.GetParamCharacters().Select(character =>
+                {
+                    var interactions = new List<string>();
+                    CombatUnit unit = BattleActionProbe.SpawnTemplate(character, true, interactions);
+                    return new SummonUnitDefinition(character.GetID(), unit, null, interactions);
+                }).ToArray());
+                amount = 0;
+            }
+            else if (effect is RelicEffectAddEffectOnUnitDeath)
             {
                 if (data.GetParamCardEffectData().Count != 1) throw new InvalidOperationException("Unmodeled death effect list.");
                 deathEffect = new RelicDeathEffectRule(AccessTools.Field(effect.GetType(), "sourceTeam").GetValue(effect).ToString()!,
@@ -448,7 +459,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn);
         }
 
         internal static ResourceSnapshot Capture()

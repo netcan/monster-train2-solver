@@ -443,7 +443,7 @@ namespace MonsterTrain2Poju.Model
                 if (!initialOrder.Supported) return Unsupported(initialOrder.UnsupportedReason!);
                 train = initialOrder.State!;
                 if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(type =>
-                    RelicResourceModel.IsOpeningCorruption(type) || type == RelicResourceModel.StartCombatEnergy)) == true)
+                    RelicResourceModel.IsOpeningCorruption(type) || type == RelicResourceModel.StartCombatEnergy || type == RelicOpeningSpawnModel.Effect)) == true)
                 {
                     TrainCombatResult opening = RelicResourceModel.ApplyOpeningCorruption(train);
                     if (!opening.Supported) return Unsupported(opening.UnsupportedReason!);

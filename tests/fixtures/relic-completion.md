@@ -18,9 +18,9 @@ coverage inventory checks.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 220 original owners accepted (202 native battle owners,
+Current checkpoint: 221 original owners accepted (203 native battle owners,
 seventeen actual campaign-interface owners and one explicit native no-op owner);
-4 remain pending. The latest accepted owner is `OnDecayDeathApplyStatusEffects`.
+3 remain pending. The latest accepted owner is `SpawnRandomMorsels`.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
@@ -30,7 +30,31 @@ and affected-fixture regression. Merchant/reward/draft effects need their actual
 campaign lifecycle evidence; enumeration and inert battle presence do not
 validate effects. Pure no-op definitions require explicit identification.
 
-The schema-242 `full-battle-original-decay-death.mt2f` witness exercises the
+The schema-243 `full-battle-original-opening-morsels.mt2f` witness retains the
+unchanged owner, its three ordered effects and the original Miner OnEaten body.
+Floors 2,1,0 receive cardless, non-clone Miners without fallback/source cards,
+RNG or relic-manager notifications. Two native isolated invalid-floor Test
+controls leave state unchanged. Forty actual feeder-manager calls include one
+real +9 Attack/+9 Health until battle end and three food/no-feeder controls.
+Food receives its last-feeder relationship before OnEaten dispatch, then
+despawns without damage-death/Harvest; OnFeed follows. The native FoodUnitsEaten
+counter increases by one. The 42-stage win records one ordinary model-selected
+play, five EndTurns, nine card cycles, nine train phases and seven spawns, ending
+at Pyre79 with all eight error counters zero and original files unchanged.
+Focused checks, complete independent policy and mid-battle replay, sixteen
+immutable branches and 14/14-state serial/parallel search pass. Search matches
+one decision/three root actions, replays two steps to the turn boundary and has
+zero unsupported attempts with equal best results. All 24 affected archives pass;
+both workers exit zero and all tested assembly hashes remain unchanged:
+`.probe-runs/model-checks-20261018-160603-bf7a4709/summary.json`.
+The archive has 24,798 bytes/3,362 unique nodes, zero source length/hash, no JSON
+companion and SHA-256
+`3cd901fa0c00402357eac809c6827069ebb7c40c49de54a34640b98213717a7a`.
+Current inventory is 440 archives: 401 battles and 39 components. Card-backed,
+equipped or repeatedly edible food, forced-feeding card effects, additional
+combined callbacks and metagame unlock consumers require separate evidence.
+
+The preceding schema-242 `full-battle-original-decay-death.mt2f` witness exercises the
 unchanged all-team lethal Decay OnHit test and explicit friendly Decay transfer.
 It compares 320 native tests and four complete applications: both teams,
 ceil(5/2)=3 on each of two recipients, source-stack retention, unrelated positive
@@ -50,13 +74,13 @@ unchanged tested assembly hashes. Summary:
 
 The archive is 29,887 bytes with 4,563 unique nodes and SHA-256
 `9d3568d3546a175c9658a6fce1884dea2e4d6e11635f711a4fa4602bf879ed85`.
-Source length/hash are zero, with no tracked JSON companion. Current inventory
-is 439 archives: 400 battles and 39 component calibrations. Other transfer
+Source length/hash are zero, with no tracked JSON companion. That checkpoint's inventory
+was 439 archives: 400 battles and 39 component calibrations. Other transfer
 definitions, preview-only lifecycles and additional combined death/status
 callbacks require separate native evidence.
 
-Pending owners: `RandomUnitEveryFloor`, `SpawnRandomMorsels`,
-`BalatroEventPerkeo` and `CorruptedAngelsArtifact`.
+Pending owners: `RandomUnitEveryFloor`, `BalatroEventPerkeo` and
+`CorruptedAngelsArtifact`.
 
 The preceding schema-241 `full-battle-original-bone-dog.mt2f` witness exercises the
 unchanged 25% once-per-run resurrection through actual lethal Pyre damage.

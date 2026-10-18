@@ -25,12 +25,20 @@ namespace MonsterTrain2Poju.Model
                 for (int ruleIndex = 0; ruleIndex < (owner.ResourceEffects?.Count ?? 0); ruleIndex++)
                 {
                     RelicResourceEffect rule = train.Context!.Relics![relicIndex].ResourceEffects![ruleIndex];
-                    if (!(IsOpeningCorruption(rule.Type) || rule.Type == StartCombatEnergy) || (rule.Type == CorruptionPostOpeningDraw) != postDraw ||
+                    if (!(IsOpeningCorruption(rule.Type) || rule.Type == StartCombatEnergy || rule.Type == RelicOpeningSpawnModel.Effect) || (rule.Type == CorruptionPostOpeningDraw) != postDraw ||
                         preview && !rule.CanApplyInPreviewMode) continue;
                     var evaluation = RelicConditionModel.Evaluate(train.Context, rule.Conditions);
                     if (!evaluation.Supported) return Failed(evaluation.UnsupportedReason!);
                     train = CardSpellModel.WithContext(train, evaluation.Context);
-                    if (!evaluation.Passed || rule.Amount == 0) continue;
+                    if (!evaluation.Passed) continue;
+                    if (rule.Type == RelicOpeningSpawnModel.Effect)
+                    {
+                        TrainCombatResult spawned = RelicOpeningSpawnModel.Apply(train, owner.DataId, rule.EffectIndex);
+                        if (!spawned.Supported) return Failed(spawned.UnsupportedReason!);
+                        train = spawned.State!;
+                        continue;
+                    }
+                    if (rule.Amount == 0) continue;
                     // The start-battle manager dispatches energy and corruption
                     // together in owner/effect order, before any timing income.
                     if (rule.Type == StartCombatEnergy)

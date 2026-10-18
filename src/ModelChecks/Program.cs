@@ -228,6 +228,12 @@ if (args.Length == 2 && args[0] == "--original-spawn-retreat-only")
     OriginalSpawnRetreatChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-opening-morsels-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalOpeningMorselsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--decay-death-pure")
 {
     OriginalDecayDeathChecks.Run();
@@ -2032,6 +2038,7 @@ OriginalSpawnRetreatChecks.Run();
 OriginalGrosMichelChecks.Run();
 OriginalBoneDogChecks.Run();
 OriginalDecayDeathChecks.Run();
+OriginalOpeningMorselsChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

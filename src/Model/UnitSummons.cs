@@ -57,6 +57,9 @@ namespace MonsterTrain2Poju.Model
         public static UnitBirthResult Spawn(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus = null)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, true);
+        internal static UnitBirthResult SpawnFront(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
+            int position, bool isCardless, CombatStatus cardlessStatus)
+            => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, false);
         internal static UnitBirthResult SpawnWithStatus(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, CombatStatus cardlessStatus, SpawnStatusApplication cardStatus)
             => SpawnCore(source, definition, spawnerCardId, position, true, cardlessStatus, null, null, true,
@@ -122,7 +125,7 @@ namespace MonsterTrain2Poju.Model
                 spawnerCardId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss,
                 template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId,
                 template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition, true,
-                template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
+                template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules, lastFeederId: template.LastFeederId);
             if (source.Preview)
                 spawned = spawned.WithDeathState((spawned.DeathState ?? new UnitDeathState(false, false, false))
                     .WithPreviewPrimary(PreviewBirthModel.InitialPrimary(raw, template, spawned.Id, spawnerCardId)));

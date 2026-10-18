@@ -391,6 +391,9 @@ internal static class RoomCombatChecks
         else if (fixture.TryGetProperty("ModifierScenario", out var decayDeathScenario) &&
             decayDeathScenario.GetString() == "original-decay-death")
             OriginalDecayDeathChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out var openingMorselsScenario) &&
+            openingMorselsScenario.GetString() == "original-opening-morsels")
+            OriginalOpeningMorselsChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage: true);
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);

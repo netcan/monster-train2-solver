@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **220 distinct original collectable relics / 224 catalog entries
-(98.21%)** have accepted native evidence: 202 have full-battle effect evidence,
+As of 2026-10-18, **221 distinct original collectable relics / 224 catalog entries
+(98.66%)** have accepted native evidence: 203 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2976,4 +2976,42 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-dec
 dotnet run --project src/ModelChecks -c Release -- --decay-death-pure
 dotnet run --project src/ModelChecks -c Release -- --original-decay-death-only tests/fixtures/full-battle-original-decay-death.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-decay-death.mt2f
+```
+
+## Start-of-battle original Morsels
+
+| Original owner | Data ID | Native evidence | Covered behavior |
+| --- | --- | --- | --- |
+| `SpawnRandomMorsels` | `80a1b361-ee3a-43ae-86bd-da1ddac33a0a` | `full-battle-original-opening-morsels.mt2f` | Three unchanged ordered start-of-battle callbacks create the original Miner on floors 2,1,0. Its original OnEaten grants the last feeder +9 Attack/+9 Health until battle end. Birth is cardless/non-clone, with no fallback/source card, RNG draw or relic-manager notification. Two native invalid-floor controls, one real meal and three food/no-feeder controls pass. |
+
+The schema-243 witness preserves the original owner and complete Miner trigger
+payload. All foods receive their feeder relationship before the OnEaten queue
+runs; food then despawns without damage-death/Harvest, and OnFeed follows.
+Forty actual feeder-manager calls compare complete train state, including the
+native FoodUnitsEaten run-stat delta. The 42-stage win records one ordinary
+model-selected play, five EndTurns, nine card cycles, nine train phases and seven
+spawns, ending at Pyre79. All eight capture/difference/unsupported/pending
+counters are zero and original profile/log files remain unchanged.
+Dedicated checks, independent complete policy and mid-battle replay, sixteen
+immutable branches and 24 affected archives pass. Bounded search matches one
+recorded decision and three root actions, visits 14/14 states, replays two steps
+to the turn boundary, and has zero unsupported attempts and equal serial/parallel
+best results. Both regression workers terminate with exit zero and unchanged
+tested assembly hashes:
+`.probe-runs/model-checks-20261018-160603-bf7a4709/summary.json`.
+
+The 24,798-byte binary has 3,362 unique nodes and SHA-256
+`3cd901fa0c00402357eac809c6827069ebb7c40c49de54a34640b98213717a7a`.
+Source length/hash are zero, with no JSON companion. Inventory is 440 archives:
+401 battles and 39 component calibrations. Accepted coverage is 221/224 (98.66%):
+203 battle owners, seventeen campaign owners and one native no-op. Three owners
+remain pending. Card-backed/equipped/repeatedly edible food, forced-feeding card
+effects, additional callback combinations and metagame unlock consumers need
+separate native evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalOpeningMorselsRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-opening-morsels.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-opening-morsels-only tests/fixtures/full-battle-original-opening-morsels.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-opening-morsels.mt2f
 ```

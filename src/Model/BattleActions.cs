@@ -575,7 +575,7 @@ namespace MonsterTrain2Poju.Model
                     var spawned = new CombatUnit(allocated.UnitId, template.AssetKey, CombatTeam.Player, template.BaseAttack,
                         template.Health, template.MaxHealth, template.CanAttack, false, false, template.Statuses,
                         template.Triggers, card.InstanceId, template.Size, template.StatusImmunities, template.Subtypes, template.Modifiers, template.IsBoss, template.LastAttackerId, template.StatusRegistry, template.EquipmentCards, template.NextTriggerId, template.Ability, template.StatusDictionary, template.AbilityRules, template.HordeDefinition,
-                        template.IsSpawning.HasValue ? true : (bool?)null, template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules);
+                        template.IsSpawning.HasValue ? true : (bool?)null, template.SacrificeCardId, template.DeathState, bumpRules: template.BumpRules, lastFeederId: template.LastFeederId);
                     context = context.WithStatistics(context.Statistics?.Spawn(action.RoomIndex, template.Subtypes));
                     spawnedId = spawned.Id;
                     var nextPlayers = players.ToList();

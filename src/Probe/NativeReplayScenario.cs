@@ -347,6 +347,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalWhelpCooldownScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSpawnRetreatScenario.Enabled && !OriginalSpawnRetreatScenario.Acquired)
                         OriginalSpawnRetreatScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalOpeningMorselsScenario.Enabled && !OriginalOpeningMorselsScenario.Acquired)
+                        OriginalOpeningMorselsScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalDecayDeathScenario.Enabled && !OriginalDecayDeathScenario.Acquired)
                         OriginalDecayDeathScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalBoneDogScenario.Enabled && !OriginalBoneDogScenario.Acquired)
@@ -1244,6 +1246,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSpawnRetreatScenario.PrepareDeployment(managers);
             }
+            if (fullBattle && OriginalOpeningMorselsScenario.Enabled && !OriginalOpeningMorselsScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalOpeningMorselsScenario.PrepareDeployment(managers);
+            }
             if (fullBattle && OriginalDecayDeathScenario.Enabled && !OriginalDecayDeathScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -1694,7 +1701,7 @@ namespace MonsterTrain2Poju.Probe
                 else NumericUpgradeScenario.Prepare(managers, log);
                 return;
             }
-            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalGrosMichelScenario.Enabled && !OriginalRelicBatchScenario.Enabled && !OriginalHealingPowerScenario.Enabled &&
+            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalOpeningMorselsScenario.Enabled && !OriginalGrosMichelScenario.Enabled && !OriginalRelicBatchScenario.Enabled && !OriginalHealingPowerScenario.Enabled &&
                 !OriginalCardAttackRelicScenario.Enabled && !OriginalCardTypeCostScenario.Enabled && !OriginalUpgradeCountRelicsScenario.Enabled &&
                 !OriginalPurgeToExhaustScenario.Enabled && !OriginalExpensiveCardUpgradeScenario.Enabled && !OriginalWolosBloodletterScenario.Enabled &&
                 !RelicCardModifierScenario.Prepared)

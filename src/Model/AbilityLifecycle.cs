@@ -221,7 +221,7 @@ namespace MonsterTrain2Poju.Model
                 unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, statuses, unit.EquipmentCards,
                 unit.NextTriggerId.HasValue ? triggers.Length : (int?)null, ability,
                 unit.StatusDictionary == null ? null : new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>()),
-                unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules);
+                unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules, lastFeederId: unit.LastFeederId);
             return SuppressAtSpawn(initialized, context);
         }
 
@@ -237,7 +237,7 @@ namespace MonsterTrain2Poju.Model
                 unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, statuses, unit.EquipmentCards,
                 unit.NextTriggerId.HasValue ? triggers.Length : (int?)null, null,
                 unit.StatusDictionary == null ? null : new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>()),
-                unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules);
+                unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules, lastFeederId: unit.LastFeederId);
         }
         internal static string? SpawnError(CombatUnit unit, CombatContext? context) =>
             unit.Ability?.HasAbility == true && context?.PermanentlyDisabledAbilities?.Contains(unit.Ability.DataId) == true &&
@@ -246,7 +246,7 @@ namespace MonsterTrain2Poju.Model
             new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack,
                 unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities,
                 unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, next,
-                ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules);
+                ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules, lastFeederId: unit.LastFeederId);
         private static RoomCombatState Replace(RoomCombatState state, CombatUnit unit) => state.WithUnits(
             state.Units.Select(item => item.Id == unit.Id ? unit : item).ToArray());
         private static RoomCombatState Context(RoomCombatState state, CombatContext context) => state.WithContext(context);
