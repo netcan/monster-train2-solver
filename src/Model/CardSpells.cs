@@ -645,8 +645,11 @@ namespace MonsterTrain2Poju.Model
                             !effect.DisallowStatusStackModifiers, "CardEffectSpawnMonsterOrAddStatusEffect");
                         UnitBirthResult born = UnitBirthModel.SpawnWithStatus(birthRoom, birthRule.WithSpawn(effect.SpawnFallbackUnit),
                             0, 0, new CombatStatus("cardless", 1, triggerVfxEnemy: false, triggerVfxPlayer: false,
-                                stackable: false, hidden: false, displayCategory: "Persistent", propagatable: false,
-                                excludeHeroPropagation: false, excludeMonsterPropagation: false), additionalStatus);
+                                stackable: false, hidden: false, displayCategory: "Persistent",
+                                // Legacy captures omitted these three status-definition fields together.
+                                propagatable: effect.Statuses[0].Propagatable.HasValue ? false : (bool?)null,
+                                excludeHeroPropagation: effect.Statuses[0].ExcludeHeroPropagation.HasValue ? false : (bool?)null,
+                                excludeMonsterPropagation: effect.Statuses[0].ExcludeMonsterPropagation.HasValue ? false : (bool?)null), additionalStatus);
                         if (!born.Supported) return UnsupportedTrain(born.Result.UnsupportedReason!);
                         state = ReplaceRoom(state, born.Result.State!);
                         events.AddRange(born.Result.Events);

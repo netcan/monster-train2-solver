@@ -54,7 +54,8 @@ namespace MonsterTrain2Poju.Model
                 if (!additional.Supported) return additional;
                 context = additional.Context; stacks = unchecked(stacks + additional.Stacks);
             }
-            return new StatusScalingResult(context, stacks);
+            StatusScalingResult pile = CardPileStatusModel.Bonus(context, sourceCardId, statusId);
+            return pile.Supported ? new StatusScalingResult(pile.Context, unchecked(stacks + pile.Stacks)) : pile;
         }
 
         // Returns only this trait's bonus, as the native callback does.

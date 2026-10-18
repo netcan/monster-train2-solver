@@ -80,7 +80,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Initialize(RoomCombatState source, CombatUnit template, IReadOnlyList<CombatStatus> applications,
             ICollection<RoomCombatModel.QueuedCharacterTrigger> queue, System.Action<CombatUnit>? update = null,
-            System.Action<RoomCombatState>? updateRoom = null, SpawnStatusApplication? cardStatus = null)
+            System.Action<RoomCombatState>? updateRoom = null, SpawnStatusApplication? cardStatus = null,
+            System.Action<CombatContext?>? updateContext = null)
         {
             // Native installs authored immunities after applying starting statuses.
             CombatUnit empty = new CombatUnit(template.Id, template.AssetKey, template.Team, template.BaseAttack, template.Health,
@@ -145,6 +146,8 @@ namespace MonsterTrain2Poju.Model
                     updateRoom?.Invoke(initializing);
                 }
             }
+            // Card-sourced starting statuses also update statistics without an enchantment world.
+            if (cardStatus != null) updateContext?.Invoke(initializing.Context);
             return null;
         }
 

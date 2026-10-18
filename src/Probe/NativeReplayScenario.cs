@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalPileStatusScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original pile status fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalPileStatusScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalScaledBuffScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original scaled buff fixture must start on deployment turn.");
@@ -2251,6 +2257,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalPileDrawScenario.Enabled) pendingPlay = OriginalPileDrawScenario.Choose(decision, OriginalPileDrawScenario.CardIds);
                 if (OriginalPileRecursionScenario.Enabled) pendingPlay = OriginalPileRecursionScenario.Choose(decision, OriginalPileRecursionScenario.CardIds);
                 if (OriginalScaledBuffScenario.Enabled) pendingPlay = OriginalScaledBuffScenario.Choose(decision, OriginalScaledBuffScenario.CardIds);
+                if (OriginalPileStatusScenario.Enabled) pendingPlay = OriginalPileStatusScenario.Choose(decision, OriginalPileStatusScenario.CardIds);
                 if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);
                 if (OriginalCorruptionDamageScenario.Enabled) pendingPlay = OriginalCorruptionDamageScenario.Choose(decision, OriginalCorruptionDamageScenario.CardIds);
                 if (OriginalXStatusCardsScenario.Enabled) pendingPlay = OriginalXStatusCardsScenario.Choose(decision, OriginalXStatusCardsScenario.CardIds);

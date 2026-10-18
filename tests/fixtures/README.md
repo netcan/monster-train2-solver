@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 502 archives (463 full battles and
+Current accepted inventory (2026-10-19): 503 archives (464 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,26 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-502 accepted archives. Refresh/check the index with
+503 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-pile-status.mt2f` retains original Dig Deep.
+Twenty-four restored queries cover zero/nine/ten/nineteen/twenty/thirty
+visible permanent cards, matched Horde/unmatched armor and zero/nine incoming
+stacks. The bonus is visible deck count divided by ten; the runtime draw pile
+stays empty. Two cost-two casts create one four-stack FunGuy, then extend the
+same unit to eight stacks (24 attack/32 health). Other floors stay unchanged.
+The first birth retains all four added-status statistic stacks in the shared
+context. Missing source/resource metadata, changed thresholds, added/replaced
+traits and relic status-stack modifiers remain guarded.
+Five plays/six EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (16 root actions, zero unsupported). Focused
+gate `model-checks-20261019-025939-8febd9b8` passes this witness and the older
+spawn-or-status fixture; Mulch also passes the preceding focused worker. The
+older spawn fixture's omitted propagation metadata remains unknown.
+Binary-only: 30,745 bytes/4,303 nodes, SHA-256
+`399a97fbad60a893c2a3176d6326d30e366b5f10de1f5d380a8fe298eee2f976`.
+Use `-OriginalPileStatus` and `--original-pile-status-only`.
 
 `full-battle-original-scaled-buff.mt2f` retains original Pyre Plating.
 Paying X three/zero/ten adds twelve/zero/forty Pyre attack and six/zero/twenty

@@ -1745,7 +1745,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     var callbacks = new List<QueuedCharacterTrigger>();
                     unsupportedReason = StatusCallbackModel.Initialize(CurrentRoom(), spawned.Freeze(), startingApplications,
-                        callbacks, spawned.Apply, ImportEnchantmentRoom, additionalStatus);
+                        callbacks, spawned.Apply, ImportEnchantmentRoom, additionalStatus, updateContext: changed => context = changed);
                     if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
                     foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
                 }
