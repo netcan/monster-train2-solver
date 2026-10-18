@@ -1,11 +1,22 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 416 binary archives, including 378
+Current accepted inventory (2026-10-18): 417 binary archives, including 379
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 197/224 catalog entries (87.95%): 180 battle owners, 16 campaign
+covers 198/224 catalog entries (88.39%): 181 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`DamageOnConsume` now has schema-221 native evidence for four 30-damage
+front-enemy callbacks, including two kills, plus non-Consume and empty-room/reset
+controls. Native eligibility uses the actual Consume trait and its next-play
+threshold, rather than the card-type parameter. Neither Test nor Apply advances
+Battle RNG. The full action settles a front death and compacts the surviving
+enemy forward; the raw callback preserves its earlier physical-slot boundary.
+The 32-stage winning battle, focused checker and independent 128-state
+serial/parallel search pass with zero differential counters. Consume Monster
+eligibility, delayed thresholds and dead-front exclusion also have pure checks;
+other owner payloads and arbitrary combined effects are not claimed.
 
 `DamageOnCardPlayed` now has isolated schema-220 native evidence for its
 unchanged Spell-only, random enemy-Hero, 3-damage payload. Native Test advances

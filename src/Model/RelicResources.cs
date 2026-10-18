@@ -267,7 +267,7 @@ namespace MonsterTrain2Poju.Model
             type == RelicCardGenerationModel.PrecachedPlayerClan ||
             type == RelicCardGenerationModel.ChampionCardAfterDraw ||
             type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening || type == RelicDeckTurnDrawModel.Effect ||
-            type == RelicCardPlayDamageModel.Effect ||
+            type == RelicCardPlayDamageModel.Effect || type == RelicConsumeDamageModel.Effect ||
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
@@ -288,6 +288,11 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Type == RelicCardPlayDamageModel.Effect)
                 {
                     string? damageError = RelicCardPlayDamageModel.Validate(relic, rule);
+                    if (damageError != null) return damageError;
+                }
+                else if (rule.Type == RelicConsumeDamageModel.Effect)
+                {
+                    string? damageError = RelicConsumeDamageModel.Validate(relic, rule);
                     if (damageError != null) return damageError;
                 }
                 else if (rule.CardPlayDamage != null) return "Unexpected card-play damage payload on another effect.";

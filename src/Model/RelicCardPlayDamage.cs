@@ -73,17 +73,17 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static TrainCombatResult ApplySelected(TrainCombatState source, IReadOnlyList<int> targets,
-            bool deferPhysicalRemoval = false)
+            bool deferPhysicalRemoval = false, int damageAmount = 3, bool selectTargetRoom = true)
         {
             if (targets.Count == 0) return new(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
             if (targets.Count != 1) return Fail("Original card-play damage requires one native random target.");
             RoomCombatState? room = source.Rooms.SingleOrDefault(item => item.Units.Any(unit => unit.Id == targets[0]));
             if (room == null || source.Context == null) return Fail("Missing selected card-play damage target.");
-            TrainCombatState state = CardSpellModel.WithContext(source, source.Context.WithQueryFrame(
-                source.Context.QueryFrame?.With(selectedRoomIndex: room.RoomIndex)));
+            TrainCombatState state = selectTargetRoom ? CardSpellModel.WithContext(source, source.Context.WithQueryFrame(
+                source.Context.QueryFrame?.With(selectedRoomIndex: room.RoomIndex))) : source;
             room = state.Rooms.Single(item => item.RoomIndex == room.RoomIndex);
             var pending = new List<RoomCombatModel.QueuedCharacterTrigger>();
-            RoomCombatResult damaged = RoomCombatModel.ApplyRelicDamage(room, targets[0], 3,
+            RoomCombatResult damaged = RoomCombatModel.ApplyRelicDamage(room, targets[0], damageAmount,
                 callback => pending.Add(callback.WithRelicDamageRemoval()));
             if (!damaged.Supported) return Fail(damaged.UnsupportedReason!);
             RelicDamageQueueModel.Import(ref state, damaged.State!);
@@ -94,6 +94,17 @@ namespace MonsterTrain2Poju.Model
             RoomOutcome outcome = damaged.Outcome;
             if (!RelicDamageQueueModel.Settle(ref state, pending, events, dispatches, dispatched, ref outcome, out string? error, deferPhysicalRemoval))
                 return Fail(error!);
+            if (!deferPhysicalRemoval && state.Context?.SpawnPoints != null &&
+                !state.Rooms.SelectMany(item => item.Units).Any(unit => unit.Id == targets[0]))
+            {
+                // RemoveDeadCharacters finishes room-order updates before a stable
+                // card decision; the raw damage coroutine retains the old slots.
+                CombatTeam team = room.Units.Single(unit => unit.Id == targets[0]).Team;
+                RoomCombatState settled = state.Rooms.Single(item => item.RoomIndex == room.RoomIndex);
+                BattleSpawnPointResult compacted = BattleSpawnPointModel.Apply(state.Context.SpawnPoints, settled, "Compact", team);
+                if (!compacted.Supported) return Fail(compacted.Error!);
+                state = CardSpellModel.WithContext(state, state.Context.WithSpawnPoints(compacted.State!));
+            }
             return new(state, outcome, new[] { damaged });
         }
 

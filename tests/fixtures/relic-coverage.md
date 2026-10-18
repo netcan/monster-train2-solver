@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **197 distinct original collectable relics / 224 catalog entries
-(87.95%)** have accepted native evidence: 180 have full-battle effect evidence,
+As of 2026-10-18, **198 distinct original collectable relics / 224 catalog entries
+(88.39%)** have accepted native evidence: 181 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1718,4 +1718,26 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-car
 dotnet run --project src/ModelChecks -c Release -- --card-play-damage-pure
 dotnet run --project src/ModelChecks -c Release -- --original-card-play-damage-only tests/fixtures/full-battle-original-card-play-damage.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-play-damage.mt2f
+```
+
+## DamageOnConsume
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `DamageOnConsume` | `2d2450a5-4ed5-4d9a-bba2-15c9eb0eee6d` | `full-battle-original-consume-damage.mt2f` | The unchanged `RelicEffectDamageOnExhaust` checks the played card's actual Consume trait and next-play threshold, then deals 30 damage to the front living enemy Hero in that room. Four native applications cover two 31-to-1 HP hits and two kills, advancing to the second enemy after the first dies. Monster/non-Consume, empty-room and post-kill reset controls leave enemies and Battle RNG unchanged. |
+
+The native effect does not use its `ParamCardType` as a card-type filter. Pure checks verify Consume Spell/Monster eligibility, an additional-play threshold, the transition to an eligible next play, dead-front exclusion, missing private trait metadata and owner guards, plus sixteen immutable parallel selection branches. The native Spell carriers have empty effects; their actual Consume private state and pile lifecycle remain captured. Native positive paths for Consume Monsters, additional-play thresholds and preview applications are not claimed.
+
+The schema-221 winning battle has 32 stages, ten card actions, five EndTurns, nine train phases and seven spawns. Full-battle and dedicated Test/Application capture failures, mismatches, unsupported transitions and pending records are all zero. The focused checker independently compares complete train state, cached front targets, four completed damage/death queues and sixteen immutable application branches. Both Test and Apply preserve Battle RNG. At the raw damage callback the dead unit can retain its physical slot; before the next card decision native room-order updates move the surviving back enemy forward. The shared card-play damage settlement now models both boundaries.
+
+Independent replay/search matches all ten recorded decisions, explores 128/128 states, has serial/parallel best equality and zero unsupported attempts, and replays three steps. The integrated checker exits zero for this archive and affected `original-card-play-damage`, `original-two-charges-on-card-consumed` and `original-balatro-event-yorick` archives, including their complete recorded action/state checks, existing full-policy replays and all four dedicated search gates. Each selected search has zero unsupported attempts. The 26,380-byte archive has 4,033 unique nodes and SHA-256 `958206842532e31c890a525e084c80365562d7f221233f470dafea78f03bfe0c`; no JSON companion is tracked. Source run: `.probe-runs/full-battle-units-and-junk-20261018-085719-fd7b5b8b`.
+
+Evidence covers the unchanged owner, native directly played Consume Spells, deterministic front-Hero targeting, two deaths and negative/reset controls. Other owners, damage magnitudes, targeting modes and arbitrary interactions with other relic effects are not generalized. Inventory is 417 archives: 379 full battles and 38 component calibrations. Accepted original relic evidence is 198/224 (88.39%): 181 battle, sixteen campaign and one native no-op owner; 26 owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalConsumeDamageRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-consume-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --consume-damage-pure
+dotnet run --project src/ModelChecks -c Release -- --original-consume-damage-only tests/fixtures/full-battle-original-consume-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-consume-damage.mt2f
 ```

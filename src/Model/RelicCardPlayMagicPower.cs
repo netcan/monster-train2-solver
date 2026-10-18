@@ -86,12 +86,13 @@ namespace MonsterTrain2Poju.Model
             bool hasCorruption = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCorruptionOnCardPlayed)) == true;
             bool hasDamageStatus = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicCardDamageStatusModel.Effect)) == true;
             bool hasCardPlayDamage = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicCardPlayDamageModel.Effect)) == true;
+            bool hasConsumeDamage = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicConsumeDamageModel.Effect)) == true;
             bool hasRoomAttachmentReplication = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.FirstRoomCardOnAllFloors)) == true;
             bool hasCorruptRestrictedCardPlay = source.Relics?.Any(relic => relic.EffectTypes.Any(type =>
                 type == RelicResourceModel.EnergyOnCorruptRestrictedPlayed ||
                 type == RelicResourceModel.CorruptionOnCorruptRestrictedPlayed)) == true;
             if (!hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasMonsterSpellTargeting && !hasRoomCapacity &&
-                !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay && !hasGoldOnExhaust && !hasCorruption && !hasDamageStatus && !hasCardPlayDamage)
+                !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay && !hasGoldOnExhaust && !hasCorruption && !hasDamageStatus && !hasCardPlayDamage && !hasConsumeDamage)
                 return new RelicCardPlayMagicPowerResult(source);
             if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay || hasGoldOnExhaust || hasCorruption) && source.CardInstances == null)
                 return Fail(source, "Native card-play relic effects require the current owned-card list.");
@@ -107,6 +108,16 @@ namespace MonsterTrain2Poju.Model
                 for (int effectIndex = 0; effectIndex < context.Relics![relicIndex].EffectTypes.Count; effectIndex++)
                 {
                     CombatRelicState relic = context.Relics[relicIndex];
+                    if (relic.EffectTypes[effectIndex] == RelicConsumeDamageModel.Effect)
+                    {
+                        if (trainState == null) return Fail(context, "Consume damage requires train state.");
+                        TrainCombatResult damaged = RelicConsumeDamageModel.ApplyOne(CardSpellModel.WithContext(trainState, context),
+                            playedCardId, selectedRoomIndex ?? -1, relicIndex, effectIndex);
+                        if (!damaged.Supported) return Fail(context, damaged.UnsupportedReason!);
+                        trainState = damaged.State!; context = trainState.Context!;
+                        if (damaged.Outcome != RoomOutcome.Exchanged) outcome = damaged.Outcome;
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicCardPlayDamageModel.Effect)
                     {
                         if (trainState == null || playedCardRule == null)

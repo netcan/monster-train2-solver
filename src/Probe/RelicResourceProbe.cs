@@ -219,6 +219,12 @@ namespace MonsterTrain2Poju.Probe
                 cardPlayDamage = new RelicCardPlayDamageRule(data.GetParamCardType().ToString(), data.GetTargetMode().ToString(),
                     data.GetParamSourceTeam().ToString(), data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray());
             }
+            else if (effect is RelicEffectDamageOnExhaust)
+            {
+                amount = (int)AccessTools.Field(effect.GetType(), "_damageAmount").GetValue(effect);
+                cardPlayDamage = new RelicCardPlayDamageRule(data.GetParamCardType().ToString(), data.GetTargetMode().ToString(),
+                    data.GetParamSourceTeam().ToString(), data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray());
+            }
             else if (effect is RelicEffectModifyDragonsHoardStartOfCombat)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddEffectPerPileStartOfTurn)
