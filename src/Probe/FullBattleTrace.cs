@@ -871,6 +871,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalScaledBuffPrepared = OriginalScaledBuffScenario.Prepared,
                 OriginalPileStatusPrepared = OriginalPileStatusScenario.Prepared,
                 OriginalDrawUpgradeScalingPrepared = OriginalDrawUpgradeScalingScenario.Prepared,
+                OriginalSpellCompositionsPrepared = OriginalSpellCompositionsScenario.Prepared,
+                OriginalSpellCompositionsIds = OriginalSpellCompositionsScenario.CardIds,
                 OriginalPositiveStatusPrepared = OriginalPositiveStatusScenario.Prepared,
                 OriginalPositiveStatusIds = OriginalPositiveStatusScenario.CardIds,
                 OriginalPositiveStatusQueries = OriginalPositiveStatusScenario.Queries,

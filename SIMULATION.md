@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 506 binary archives, including 467
+Current accepted inventory (2026-10-19): 507 binary archives, including 468
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 506
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 507
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,17 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-spell-compositions.mt2f` supplies direct original-card
+witnesses for Flash Freeze, Dark Deal, Engraft, Glimmer, Focused Growth, Fae's
+Blessing and Enflame. Positive damage/healing/overheal/status combinations,
+clamping, guaranteed-chance RNG, Glimmer enemy damage/lethal cleanup, exact
+costs/discard and floor controls match. Two complete future-draw scheduling
+contexts and the eight-card next-turn draw/reset match, with a full-hand control.
+Ten plays/five EndTurns, sixteen immutable chains and 128-state serial/parallel
+search pass (fourteen roots, zero unsupported). Other target/upgrade/relic
+combinations need separate witnesses; definition projections are unchanged.
+Focused gate `model-checks-20261019-032621-464af6e4` passed two related fixtures.
 
 `full-battle-original-positive-status.mt2f` models original Symphony of the Soul.
 Friendly/enemy/empty-positive casts distinguish Positive Rage/Regeneration

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 506 archives (467 full battles and
+Current accepted inventory (2026-10-19): 507 archives (468 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,25 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-506 accepted archives. Refresh/check the index with
+507 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-spell-compositions.mt2f` retains seven unchanged spells:
+Flash Freeze, Dark Deal, Engraft, Glimmer, Focused Growth, Fae's Blessing and
+ Enflame. Positive witnesses cover friendly three/five damage and eight Frostbite,
+seven/six Rage, one/three/clamped healing, five overheal converted to armor,
+ten armor, guaranteed-chance RNG and Glimmer's live enemy damage/lethal cleanup.
+Costs, ordinary discard and outside-floor controls match. Engraft/Focused
+Growth schedule one/two draws; two complete native scheduling contexts and an
+eight-card next-turn draw/reset match, with a full-hand control. Ten plays/five
+EndTurns win with sixteen immutable chains and 128-state serial/parallel search
+(fourteen roots, zero unsupported). Other target/upgrade/relic combinations
+need separate witnesses. Binary-only: 32,140 bytes/5,037 nodes, SHA-256
+`27d105d88e6278c711b9ce528ecbb2779cf83cf22a52d6db7eac5046c9239d7e`.
+Use `-OriginalSpellCompositions` and `--original-spell-compositions-only`.
+These original-card witnesses use existing definition projections.
+Focused gate `model-checks-20261019-032621-464af6e4` passed this fixture and
+the existing bonus-draw fixture.
 
 `full-battle-original-positive-status.mt2f` retains original Symphony of the Soul.
 Three original cost-two/Corrupt-five plays target a friendly unit, an enemy and
