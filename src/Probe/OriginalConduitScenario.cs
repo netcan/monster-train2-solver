@@ -9,7 +9,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalConduitScenario
     {
         internal const string Name = "original-conduit-relics";
-        internal static bool Enabled => ConduitProbe.Enabled;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static readonly string[] Ids = { "b0972732-ea21-42d0-844d-05fb5ff028e6", "394a559b-0c45-4bac-880a-522b04f1780c", "357c7265-74d0-4567-b793-d2fbac464d82" };
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)

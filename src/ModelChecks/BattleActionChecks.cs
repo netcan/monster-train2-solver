@@ -671,9 +671,9 @@ internal static class BattleActionChecks
             return;
         }
         if (fixture.TryGetProperty("ModifierScenario", out var eatenDamagePolicy) &&
-            eatenDamagePolicy.GetString() is "original-eaten-damage" or "original-burnout-death-damage" or "original-heal-to-damage" or "original-kill-attack" or "original-chance-to-silence" or "original-freeze-reduce-cost" or "original-random-freeze" or "original-random-hand-upgrade" or "original-start-turn-propagation")
+            eatenDamagePolicy.GetString() is "original-eaten-damage" or "original-burnout-death-damage" or "original-heal-to-damage" or "original-kill-attack" or "original-chance-to-silence" or "original-freeze-reduce-cost" or "original-random-freeze" or "original-random-hand-upgrade" or "original-start-turn-propagation" or "original-mooncycle-fae")
         {
-            int scenarioActions = eatenDamagePolicy.GetString() switch { "original-eaten-damage" => 10, "original-burnout-death-damage" => 7, "original-kill-attack" or "original-chance-to-silence" or "original-random-freeze" or "original-start-turn-propagation" => 2, "original-freeze-reduce-cost" => 3, "original-random-hand-upgrade" => 6, _ => 9 };
+            int scenarioActions = eatenDamagePolicy.GetString() switch { "original-eaten-damage" => 10, "original-burnout-death-damage" => 7, "original-kill-attack" or "original-chance-to-silence" or "original-random-freeze" or "original-start-turn-propagation" => 2, "original-freeze-reduce-cost" or "original-mooncycle-fae" => 3, "original-random-hand-upgrade" => 6, _ => 9 };
             Require(allActions.Length == scenarioActions && policyActions.Length == 0,
                 "Controlled relic coverage requires its complete scenario actions and no later native card plays.");
             BattleTurnState suffixRoot = allActions[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;

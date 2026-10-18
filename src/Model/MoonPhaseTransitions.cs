@@ -125,6 +125,10 @@ namespace MonsterTrain2Poju.Model
                     state.Rooms.Any(room => room.Preview), state.Rooms.Any(room => room.Deployment));
                 if (!statuses.Supported) return new MoonPhaseTransitionResult(null, statuses.UnsupportedReason);
                 state = statuses.State!;
+                MoonPhaseTransitionResult roomEffects = RelicMooncycleRoomEffectModel.Apply(state,
+                    state.Rooms.Any(room => room.Preview), state.Rooms.Any(room => room.Deployment));
+                if (!roomEffects.Supported) return roomEffects;
+                state = roomEffects.State!;
                 foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
                 {
                     var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();

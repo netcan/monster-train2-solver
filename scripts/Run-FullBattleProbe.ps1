@@ -305,6 +305,7 @@ param(
     [switch] $OriginalRandomFreezeRelic,
     [switch] $OriginalRandomHandUpgradeRelic,
     [switch] $OriginalStartTurnPropagationRelic,
+    [switch] $OriginalMooncycleFaeRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -537,6 +538,7 @@ if ($OriginalFreezeReduceCostRelic) { $BranchCardMasks = $true; $PhysicalSpawnPo
 if ($OriginalRandomFreezeRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalRandomHandUpgradeRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalStartTurnPropagationRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalMooncycleFaeRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1012,6 +1014,7 @@ if ($OriginalFreezeReduceCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'ori
 if ($OriginalRandomFreezeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-random-freeze' }
 if ($OriginalRandomHandUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-random-hand-upgrade' }
 if ($OriginalStartTurnPropagationRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-turn-propagation' }
+if ($OriginalMooncycleFaeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mooncycle-fae' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1952,6 +1955,16 @@ if ($OriginalStartTurnPropagationRelic -and ($trace.Schema -ne 231 -or $trace.Or
     @($trace.RelicStartTurnPropagationApplications).Count -lt 2 -or
     @($trace.RelicStartTurnPropagationTests | Where-Object EmptyControl).Count -ne 1)) {
     throw 'Original StartOfTurnPropagate acceptance failed.'
+}
+if ($OriginalMooncycleFaeRelic -and ($trace.Schema -ne 232 -or $trace.OriginalMooncycleFaeSchema -ne 232 -or
+    $trace.ModifierScenario -ne 'original-mooncycle-fae' -or -not $trace.OriginalMooncycleFaePrepared -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.OriginalMooncycleFaeCaptureFailures -ne 0 -or $trace.OriginalMooncycleFaeMismatches -ne 0 -or
+    $trace.OriginalMooncycleFaeUnsupported -ne 0 -or $trace.OriginalMooncycleFaePending -ne 0 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 3 -or
+    @($trace.RelicMooncycleFaeApplications).Count -lt 2 -or
+    @($trace.RelicMooncycleFaeTests | Where-Object EmptyControl).Count -ne 1)) {
+    throw 'Original MooncycleFaeAddMagicPower acceptance failed.'
 }
 if ($OriginalRandomHandUpgradeRelic -and ($trace.Schema -ne 230 -or $trace.OriginalRandomHandUpgradeSchema -ne 230 -or
     $trace.ModifierScenario -ne 'original-random-hand-upgrade' -or -not $trace.OriginalRandomHandUpgradePrepared -or

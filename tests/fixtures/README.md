@@ -1,8 +1,18 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 428 archives (389 full battles and
-39 component calibrations), 209/224 original relic owners (93.30%): 191 battle
+Current accepted inventory (2026-10-18): 429 archives (390 full battles and
+39 component calibrations), 210/224 original relic owners (93.75%): 192 battle
 owners, seventeen campaign-interface owners and one native no-op. The latest
+`MooncycleFaeAddMagicPower` fixture covers four Full/New all-room callbacks,
+eight exact temporary +5 Attack/Conduit applications, eight spawner upgrades and
+four Persistent-spell consumers of selected-floor Conduit magic power. Thirteen
+exclusions, an empty floor, four natural Tests and one explicit empty-floor Test
+preserve the expected state/RNG. The 36-stage winning battle, three plays,
+independent four-EndTurn suffix with sixteen immutable branches, focused checks,
+128-state serial/parallel search and eight affected archives pass. Authored
+carrier triggers/abilities are cleared; intrinsic ability combinations, physical
+movement, native preview and additional moon/status callbacks need separate
+evidence. The previous
 `StartOfTurnPropagate` fixture covers four original all-room before-draw
 applications, sixteen exact +1 changes and twenty-one excluded statuses.
 Regen/Spikes propagate while Armor, Immobile and Monster-excluded Spell Weakness

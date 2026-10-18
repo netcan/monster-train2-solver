@@ -118,6 +118,7 @@ namespace MonsterTrain2Poju.Probe
             RelicStartTurnRoomEffectRule? startTurnRoomEffect = null;
             RelicCardPlayDamageRule? cardPlayDamage = null;
             RelicFriendlyTriggerDamageRule? unitDamage = null;
+            RelicMooncycleRoomEffectRule? mooncycleRoomEffect = null;
             if (effect is RelicEffectDrawOnPreOpeningDraw)
             {
                 var upgradeData = data.GetParamCardUpgradeData(); CardUpgradeModifier? upgrade = null;
@@ -252,6 +253,17 @@ namespace MonsterTrain2Poju.Probe
                     data.GetParamMaxInt(), data.GetParamBool(), action, interactions);
                 amount = data.GetParamInt();
             }
+            else if (effect is RelicEffectAddEffectOnMooncycle)
+            {
+                var interactions = new List<string>();
+                CardEffectData[] nested = data.GetParamCardEffectData().ToArray();
+                CardActionEffect[] actions = nested.Select(action => BattleActionProbe.DescribeTriggerEffect(action, interactions)).ToArray();
+                mooncycleRoomEffect = new RelicMooncycleRoomEffectRule(data.GetParamInt(), data.GetParamMaxInt(), data.GetParamFloat(),
+                    data.GetParamBool(), data.GetParamBool2(), data.GetParamBool3(), data.GetParamBool4(), actions, interactions,
+                    nested.Any(action => action.GetUseStatusEffectStackMultiplier() || action.GetUseHealthMissingStackMultiplier() ||
+                        action.GetUseMagicPowerMultiplier() || action.GetParamBool2()), data.GetTriggers().Count);
+                amount = data.GetParamInt();
+            }
             else if (effect is RelicEffectAddEffectStartOfTurn)
             {
                 CardEffectData nested = data.GetParamCardEffectData().Single();
@@ -368,7 +380,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect);
         }
 
         internal static ResourceSnapshot Capture()

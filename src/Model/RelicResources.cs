@@ -161,6 +161,7 @@ namespace MonsterTrain2Poju.Model
         public RelicStartTurnRoomEffectRule? StartTurnRoomEffect { get; }
         public RelicCardPlayDamageRule? CardPlayDamage { get; }
         public RelicFriendlyTriggerDamageRule? UnitDamage { get; }
+        public RelicMooncycleRoomEffectRule? MooncycleRoomEffect { get; }
         public RelicResourceEffect(int effectIndex, string type, int paramInt, int paramInt2, int amount,
             bool canApplyInPreviewMode, string? requiredMutatorId = null, IReadOnlyList<RelicConditionState>? conditions = null,
             float? drawValue = null, int? drawMutationOrder = null,
@@ -169,7 +170,7 @@ namespace MonsterTrain2Poju.Model
             RelicOpeningDrawRule? openingDraw = null, RelicPileStartTurnRule? pileStartTurn = null,
             RelicMoonPhaseStatusRule? moonPhaseStatus = null, RelicStartTurnHealRule? startTurnHeal = null,
             RelicStartTurnRoomEffectRule? startTurnRoomEffect = null, RelicCardPlayDamageRule? cardPlayDamage = null,
-            RelicFriendlyTriggerDamageRule? unitDamage = null)
+            RelicFriendlyTriggerDamageRule? unitDamage = null, RelicMooncycleRoomEffectRule? mooncycleRoomEffect = null)
         {
             EffectIndex = effectIndex; Type = type; ParamInt = paramInt; ParamInt2 = paramInt2; Amount = amount;
             ParamMinInt = paramMinInt;
@@ -183,6 +184,7 @@ namespace MonsterTrain2Poju.Model
             StartTurnRoomEffect = startTurnRoomEffect;
             CardPlayDamage = cardPlayDamage;
             UnitDamage = unitDamage;
+            MooncycleRoomEffect = mooncycleRoomEffect;
             CanApplyInPreviewMode = canApplyInPreviewMode; RequiredMutatorId = requiredMutatorId;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             DrawValue = drawValue; DrawMutationOrder = drawMutationOrder;
@@ -190,14 +192,14 @@ namespace MonsterTrain2Poju.Model
         }
         internal RelicResourceEffect WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage);
+                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect);
         internal RelicResourceEffect WithDrawValue(float value) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage);
+                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect);
         internal RelicResourceEffect WithCardGeneration(CardGenerationRule generation) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
                 RequiredMutatorId, Conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder,
-                ParamMinInt, ParamFloat, generation, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage);
+                ParamMinInt, ParamFloat, generation, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect);
     }
 
     public sealed class RelicResourceEvent
@@ -274,7 +276,7 @@ namespace MonsterTrain2Poju.Model
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
-            type == StartTurnRoomEffect || type == PostOpeningDiscardReplacement || type == RelicSingleFloorCapacityModel.Effect;
+            type == StartTurnRoomEffect || type == PostOpeningDiscardReplacement || type == RelicSingleFloorCapacityModel.Effect || type == RelicMooncycleRoomEffectModel.Effect;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -288,6 +290,12 @@ namespace MonsterTrain2Poju.Model
             foreach (RelicResourceEffect rule in rules)
             {
                 if (rule.Type != relic.EffectTypes[rule.EffectIndex]) return "Relic resource runtime type differs from its effect index.";
+                if (rule.Type == RelicMooncycleRoomEffectModel.Effect)
+                {
+                    string? mooncycleError = RelicMooncycleRoomEffectModel.Validate(relic, rule);
+                    if (mooncycleError != null) return mooncycleError;
+                }
+                else if (rule.MooncycleRoomEffect != null) return "Unexpected mooncycle room-effect payload on another effect.";
                 if (rule.Type == RelicSingleFloorCapacityModel.Effect)
                 {
                     string? capacityError = RelicSingleFloorCapacityModel.Validate(relic, rule);

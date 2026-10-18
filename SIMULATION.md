@@ -1,11 +1,24 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 428 binary archives, including 389
+Current accepted inventory (2026-10-18): 429 binary archives, including 390
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 209/224 catalog entries (93.30%): 191 battle owners, 17 campaign
+covers 210/224 catalog entries (93.75%): 192 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`MooncycleFaeAddMagicPower` now has schema-232 native evidence for its unchanged
+all-room mooncycle callback. Four Full/New applications give eight friendly Fae
+targets the original temporary +5 Attack upgrade and one Conduit stack, with
+eight matching spawner-card upgrades. A Persistent spell independently witnesses
+four selected-floor Conduit magic-power updates. Thirteen non-Fae/enemy/Pyre
+controls, an empty floor and five unchanged-state/RNG Tests match. The 36-stage
+winning battle, three plays, independent four-EndTurn suffix, sixteen immutable
+branches, 128-state serial/parallel search and eight affected archives pass with
+zero unsupported search attempts. Carrier triggers and abilities are cleared
+for isolation. Preview permissions have pure checks; native preview, intrinsic
+ability combinations, physical movement and additional moon/status callbacks
+require separate evidence.
 
 `StartOfTurnPropagate` now has schema-231 native evidence for its unchanged
 before-draw all-room propagation. Four applications visit the three combat

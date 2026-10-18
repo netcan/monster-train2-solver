@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **209 distinct original collectable relics / 224 catalog entries
-(93.30%)** have accepted native evidence: 191 have full-battle effect evidence,
+As of 2026-10-18, **210 distinct original collectable relics / 224 catalog entries
+(93.75%)** have accepted native evidence: 192 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2325,4 +2325,70 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-sta
 dotnet run --project src/ModelChecks -c Release -- --start-turn-propagation-pure
 dotnet run --project src/ModelChecks -c Release -- --original-start-turn-propagation-only tests/fixtures/full-battle-original-start-turn-propagation.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-start-turn-propagation.mt2f
+```
+
+## MooncycleFaeAddMagicPower
+
+| Original relic asset | Data ID | Native fixture | Accepted effect evidence |
+| --- | --- | --- | --- |
+| `MooncycleFaeAddMagicPower` | `8b20402a-100b-4f26-8cb5-47bed13cde3d` | `full-battle-original-mooncycle-fae.mt2f` | The unchanged `RelicEffectAddEffectOnMooncycle` applies both ordered effects to friendly Fae on all three combat floors. Four Full/New callbacks match eight temporary +5 Attack/Conduit applications, eight spawner upgrades, selected-floor spell magic power, excluded targets and complete native state/RNG. |
+
+The original owner allows placement and has no conditions. Its outer mode is
+ApplyToAllRooms (1), with the other captured scalar/boolean fields zero/false,
+no triggers and no nested multipliers. Native preview is disabled. The first
+nested action is CardEffectAddTempCardUpgradeToUnits, Room/Monsters, Fae subtype,
+with TemporaryUntilEndOfBattle (0). Its non-unique original upgrade
+`6922ecb5-0835-451c-8ca7-8348d2e66079` adds 5 Damage, which increases live unit
+Attack by five and also persists on the unit's spawner card until battle end.
+The second action is CardEffectAddStatusEffect with the same target filter and
+one Conduit stack. Despite the asset name, the upgrade itself adds Attack;
+Conduit supplies the selected floor's spell magic power.
+
+Apply runs both actions for each floor in ascending order, including empty
+floor 2, then performs native dead-character cleanup. Two friendly Fae on floors
+0 and 1 each receive both effects across four callbacks, covering Full and New
+Moon. Eight live-unit upgrades and eight spawner-card temporary upgrades match.
+All four callbacks also update an authored 99-cost Persistent spell in hand:
+its normalized Conduit upgrades equal the active contributors' power on the
+selected floor. Thirteen observations preserve non-Fae, enemy and Pyre targets.
+Complete state and Battle RNG match after every application and all five Tests.
+Four Tests are natural mooncycle events; the fifth explicitly invokes the
+unchanged native Test on empty combat floors. It returns true because the
+nested non-strict status action permits empty targets.
+
+The carriers are two authored Fae Meddlers and one Steward with 80 HP,
+30 Attack, size one and zero cost. Character triggers and intrinsic abilities
+are cleared, and the Fae gain BannerUnit for deployment draw while retaining
+their Fae subtype. Two Fae are deployed on separate floors; the Steward is
+played on floor 0 on the first combat turn. The Persistent spell is created
+before the first recorded action; no new carrier is inserted across turns.
+The winning native battle records 36 stages, three actions and five EndTurns.
+Independent action replay and the four-EndTurn suffix after the last play pass
+in sixteen immutable branches. Search matches three decisions and nine root
+actions with zero unsupported alternatives; serial/parallel best results agree
+(128/128 states and four replayed steps).
+
+Eight affected archives pass with two workers and terminal exit zero: this
+owner, Conduit relics, moon-phase energy/heal/status relics, moon-phase callbacks,
+unit-phase upgrades and StartOfTurnPropagate. Pure checks exercise repeated
+non-unique stacking, friendly Fae on multiple floors, an enemy Fae, non-Fae/Pyre
+and empty controls, absent-owner and preview no-ops, placement permission,
+changed-upgrade/status rejection and immutable branches. Native preview,
+disabled-floor execution, intrinsic ability combinations, physical movement,
+additional status callbacks and arbitrary combined moon-phase relics require
+separate evidence.
+
+The schema-232 binary archive is 22,620 bytes, with 2,959 unique nodes and SHA-256
+`4791797a8083c98501529e2a9185e3d46f2adae248afcbd6a934b419d4f6e841`.
+Its source length is zero and source hash is all zeroes; no JSON companion is
+tracked. Accepted inventory is 429 archives: 390 battles and 39 component
+calibrations. Original-owner evidence is 210/224 (93.75%): 192 battle, seventeen
+campaign and one native no-op owner; fourteen owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMooncycleFaeRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-mooncycle-fae.mt2f
+dotnet run --project src/ModelChecks -c Release -- --mooncycle-fae-pure
+dotnet run --project src/ModelChecks -c Release -- --original-mooncycle-fae-only tests/fixtures/full-battle-original-mooncycle-fae.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-mooncycle-fae.mt2f
 ```
