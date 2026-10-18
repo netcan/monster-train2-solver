@@ -1,7 +1,7 @@
 # Original card definition catalog
 
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
-and component fixtures. It does not increase their 452-archive acceptance count.
+and component fixtures. It does not increase their 454-archive acceptance count.
 
 The isolated `no-cards` run on 2026-10-18 inspected all 668 unique
 `AllGameData.GetAllCardData()` definitions from game module
@@ -23,12 +23,16 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261018-194938-fa3a8bd7/card-catalog.mt2f`.
-The committed archive is byte-identical: 93,095 bytes, SHA-256
-`66c05b692d3eeec58867b45448394ee143748afbb1fcb90321af3c35916fe5dc`.
-The model projection includes the forced-feeding work in revision `32e4869`.
-Only Feast and ShroudSpike have semantic projection changes from the prior
-catalog; other trait descriptors gain an optional null FeedingQuery field.
+Source: `.probe-runs/full-battle-no-cards-20261018-201422-18165a00/card-catalog.mt2f`.
+The committed archive is byte-identical: 93,416 bytes, SHA-256
+`bba66c4ea6255bd16909cefc2ed61883b24f7048ce00216e995c811a8e7e1edb`.
+The model projection includes Soldier of Fortune and Restoration Detonation in
+revision `e2c3bff`. The only semantic projection changes from the previous
+catalog are those two cards and `Meathook_Ability`, whose status-null primitive
+is now modeled. Other effect descriptors gain an optional null
+HealDamageMultiplier field. The ability has no new original-play witness;
+projection support alone does not establish direct ability coverage. All 668
+raw card definitions are unchanged from the previous catalog.
 All 668 raw upgrade-mask definitions still match the accepted native calibration. Original
 card facts and projection guards remain separate from runtime evidence.
 
