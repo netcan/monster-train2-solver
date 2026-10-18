@@ -1071,6 +1071,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalStatusCardsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalDeckSpellScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original deck-spell fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalDeckSpellScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && AdaptiveMutationScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Adaptive Mutation fixture must start on deployment turn.");
@@ -2023,6 +2029,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalRoomCardsScenario.Enabled) pendingPlay = OriginalRoomCardsScenario.Choose(decision, OriginalRoomCardsScenario.CardIds);
                 if (OriginalForgeCardsScenario.Enabled) pendingPlay = OriginalForgeCardsScenario.Choose(decision, OriginalForgeCardsScenario.CardIds);
                 if (OriginalStatusCardsScenario.Enabled) pendingPlay = OriginalStatusCardsScenario.Choose(decision, OriginalStatusCardsScenario.CardIds);
+                if (OriginalDeckSpellScenario.Enabled) pendingPlay = OriginalDeckSpellScenario.Choose(decision, OriginalDeckSpellScenario.CardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);

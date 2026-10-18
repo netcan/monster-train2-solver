@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 469 archives (430 full battles and
+Current accepted inventory (2026-10-18): 470 archives (431 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,19 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-469 accepted archives. Refresh/check the index with
+470 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-deck-spell.mt2f` keeps original The Great Decay, Masterwork
+and Railforged Spike. Original spell upgrades affect hand/draw/discard controls,
+adding cost -1, X +1 and Consume while excluding units. Masterwork costs two
+and actually exhausts; a paid unit still costs two. The remaining two energy
+drives an effective X of three, adding twelve forge points. The 36-stage win
+(six plays/five EndTurns), sixteen immutable full chains and bounded search are
+checked. Other filters and trait callbacks retain existing guards. Binary-only:
+27,274 bytes/4,063 nodes, SHA-256
+`bc300cfad0f1e656b365a2c155efbcb06cb53a3164d2a52b52244ea634233b09`.
+Use `-OriginalDeckSpell` and `--original-deck-spell-only`.
 
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation

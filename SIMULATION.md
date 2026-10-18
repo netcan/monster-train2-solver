@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 469 binary archives, including 430
+Current accepted inventory (2026-10-18): 470 binary archives, including 431
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 469
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 470
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,14 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-deck-spell.mt2f` plays unchanged The Great Decay with paid
+Masterwork and Railforged Spike controls. Hand/draw/discard spells receive the
+original cost -1, X +1 and Consume upgrade; units are excluded. Masterwork
+actually costs two and exhausts, a paid unit still costs two, and the two-energy
+X spell adds twelve forge points through its extra effective X. The 36-stage
+win (six plays/five EndTurns), sixteen immutable full chains and bounded search
+are checked. Other upgrade filters and trait callbacks retain existing guards.
 
 `full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
 Spike of the Legion. Card modifier resolution preserves the all-status filter.
