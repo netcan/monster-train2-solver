@@ -321,7 +321,7 @@ namespace MonsterTrain2Poju.Probe
                     ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss(),
                         character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless,
                         pairedBoss == null ? 0 : UnitId(pairedBoss))
-                    : null, lastFeederId: OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ?
+                    : null, lastFeederId: character.GetSourceCharacterData().GetTriggers().Any(trigger => trigger.GetTrigger() == CharacterTriggerData.Trigger.OnEaten) || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ?
                         (character.GetLastFeederCharacter() == null ? 0 : UnitId(character.GetLastFeederCharacter())) : (int?)null,
                     moonPhaseMask: EclipseChamberScenario.Enabled ? (int)character.GetMoonPhaseMask() : (int?)null);
         }
