@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 526 archives (486 full battles and
+Current accepted inventory (2026-10-19): 527 archives (487 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -16,6 +16,22 @@ definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
 520 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-hostile-statuses.mt2f` captures unchanged Pyrecask, Lava
+Flow, Superheated, Gooey Flask, Echo Snare, Soul Cripple, Fracture, Sporetouch,
+Beacon's Light, Last Stand and Forced Contamination. Selected/room/tower
+targets receive exact positive statuses; Pyregel and Rage double from nonzero
+values. Excluded units and immediate HP remain unchanged. Lava Flow/Last Stand
+retain chance=100 and consume one Battle RNG draw per target; chance=0 does not
+roll. Forced Contamination spends exactly three Corruption before its status.
+Seven Consume routes and sixteen immutable full chains pass. Use
+`--original-hostile-statuses-only`. Search matches eighteen decisions/45 roots,
+128/128 states and three replayed steps, with zero unsupported attempts and
+equal serial/parallel best. Source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-061412-4b8f42a8` won in
+71.54 seconds with eighteen plays/five EndTurns, all four counters zero and
+protected files unchanged. Binary-only: 38,401 bytes/6,610 nodes, SHA-256
+`3f1c6420d81d37fb3e97ed030a14cd33280d994a1d7f8aa487014c31741705f7`.
 
 `full-battle-original-resource-spells.mt2f` captures unchanged Alchemy, Devilish
 Details, Inequivalent Exchange, Anvil Breaker and Railforged Spike. Eight

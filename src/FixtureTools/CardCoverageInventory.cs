@@ -335,7 +335,7 @@ internal static class CardCoverageInventory
             trait.TryGetProperty("DeploymentDrawFlag", out FixtureValue drawFlag) && drawFlag.ValueKind == FixtureKind.False;
         if (type is "CardTraitUnpurgable" or "CardTraitLimitedRange" or "CardTraitPermafrost" or "CardTraitGraftedEquipment") return value == 0 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitDamageOverflow") return value == 2 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
-        if (type == "CardTraitCorruptRestricted") return value is 1 or 2 or 5 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
+        if (type == "CardTraitCorruptRestricted") return value is 1 or 2 or 3 or 5 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type is "CardTraitUnplayable" or "CardTraitPersistent" or "CardTraitRefine") return
             (type == "CardTraitUnplayable" ? value is 0 or 3 : value == 3) && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
         return type is "CardTraitStrongerMagicPower" or "CardTraitIgnoreArmor" ? value is 0 or 5 : type == "CardTraitExhaustState" && value == 0;

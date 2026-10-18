@@ -450,6 +450,12 @@ if (args.Length == 2 && args[0] == "--original-resource-spells-only")
     OriginalResourceSpellsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-hostile-statuses-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalHostileStatusesChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-pile-status-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

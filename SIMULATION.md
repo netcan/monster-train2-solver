@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 526 binary archives, including 486
+Current accepted inventory (2026-10-19): 527 binary archives, including 487
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 526
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 527
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,15 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-hostile-statuses.mt2f` adds eleven unchanged originals:
+Pyrecask, Lava Flow, Superheated, Gooey Flask, Echo Snare, Soul Cripple,
+Fracture, Sporetouch, Beacon's Light, Last Stand and Forced Contamination.
+Selected/room/tower additions, positive Pyregel/Rage doubling, excluded-unit
+controls and seven Consume routes match. Chance-100 rolls once per target;
+chance-zero skips those rolls. Forced Contamination spends three Corruption
+before applying Melee Weakness. Eighteen plays/five EndTurns and sixteen
+immutable complete chains pass using existing modeled effects.
 
 `full-battle-original-resource-spells.mt2f` adds unchanged Alchemy, Devilish
 Details, Inequivalent Exchange, Anvil Breaker and Railforged Spike. Native Hoard
