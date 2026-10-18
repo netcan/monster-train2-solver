@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 534 archives (494 full battles and
+Current accepted inventory (2026-10-19): 535 archives (495 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,35 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-534 accepted archives. Refresh/check the index with
+535 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-reactive-units.mt2f` captures ten unchanged units with
+exact paid births: Prickly Puffball, Wilting Sapwood, Knuckler Steward, Firebrand,
+Runebound Protector, Combative Siren, Enlightened Siren, Magma Cultist, Runebound
+Guardian and Healing Totem. An authored +1 attack/forced friendly attack control
+provokes positive enemy Spikes; Prickly applies five Reap to that exact last
+attacker. Four selected damage controls positively verify energy/Burst/Valor/
+Frostbite. An enemy room ascent then supplies positive targets for two Incants,
+including persistent temporary upgrades, Rage, Pyregel and exact self/room armor.
+LastAttackerCharacter follows captured relationships, ignores ordinary team/
+health/status/subtype filters, and honors IgnoreBosses. Missing relationships,
+missing world actors and unknown required boss state remain guarded. The native
+AttackWithUnit implementation hardcodes its target manager; enemy-selected
+attacks are now rejected until that separate path is calibrated.
+Use `--original-reactive-units-only` or `--last-attacker-pure`. Native source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-072433-fbd9b07f` won in
+125.69 seconds with twenty-four plays/five EndTurns, four counters zero and
+protected files unchanged. Sixteen immutable complete chains and the old original
+self-attack/Morsel-eaten checks pass. Bump metadata is enabled only for enemy
+births/live actors needed by the ascent control; friendly source definitions
+retain their frozen projection. Binary-only: 43,763 bytes/8,109 nodes, SHA-256
+`4b0f87e71ea8e5c38023d119586c9741c7bf7a90058473685d6521d9020b449b`.
+Search matches twenty-four decisions/61 root actions, 128/128 states, three
+replayed steps and equal serial/parallel best; eight off-policy attempts at
+recorded decisions and two in search remain explicitly unsupported. All 262
+previous matched identities remain; ten new ones bring the index to 272
+(494 indexed battles/7,962 actions).
 
 `full-battle-original-base-champions.mt2f` captures eighteen unchanged champion
 base definitions: both Underlegion, Railforged, Wurmkin, Lazarus League, Awoken,

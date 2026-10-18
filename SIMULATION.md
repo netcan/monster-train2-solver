@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 534 binary archives, including 494
+Current accepted inventory (2026-10-19): 535 binary archives, including 495
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 534
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 535
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,17 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-reactive-units.mt2f` adds ten unchanged units: Prickly
+Puffball, Wilting Sapwood, Knuckler Steward, Firebrand, Runebound Protector,
+Combative Siren, Enlightened Siren, Magma Cultist, Runebound Guardian and Healing
+Totem. Positive Spikes retaliation proves exact last-attacker Reap; selected
+damage proves OnHit energy, Burst, Valor and Frostbite. Two enemy-present Incants
+prove temporary +3/+3 upgrades, Rage, Pyregel and exact room/self armor. Native
+last-attacker targeting bypasses team/health/status/subtype filters, honors only
+IgnoreBosses, and requires a captured relationship/world. Twenty-four plays,
+five EndTurns and sixteen immutable full chains match. Selecting an enemy with
+AttackWithUnit remains guarded because native uses fixed manager ordering.
 
 `full-battle-original-base-champions.mt2f` adds eighteen unchanged champion
 base definitions without selected path upgrades. Exact zero-cost births,

@@ -1202,6 +1202,8 @@ namespace MonsterTrain2Poju.Model
                     {
                         CombatUnit? actor = state.Rooms.SelectMany(item => item.Units).FirstOrDefault(unit => unit.Id == actorId);
                         if (actor == null) continue;
+                        if (!selfAttack && actor.Team == CombatTeam.Enemy)
+                            return UnsupportedTrain("Enemy-selected unit attack requires native manager-order calibration.");
                         if (effect.RequireEquipment)
                         {
                             if (actor.EquipmentCards == null)

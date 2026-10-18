@@ -461,6 +461,17 @@ if (args.Length == 1 && args[0] == "--status-callback-pure")
     StatusCallbackChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--last-attacker-pure")
+{
+    LastAttackerTargetChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-reactive-units-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalReactiveUnitsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-base-champions-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

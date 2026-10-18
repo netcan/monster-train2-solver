@@ -1181,11 +1181,11 @@ namespace MonsterTrain2Poju.Model
                             }
                             if (action.Type == "Heal" && state.Units.Any(target => target.Modifiers == null))
                                 return "Triggered healing requires unit healability state.";
-                            if (!new[] { "Self", "Room", "Tower", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter", "LastSpawnedCharacter", "LastFeederCharacter", "Pyre" }.Contains(action.Target))
+                            if (!new[] { "Self", "Room", "Tower", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter", "LastAttackerCharacter", "LastSpawnedCharacter", "LastFeederCharacter", "Pyre" }.Contains(action.Target))
                                 return "Unmodeled triggered action target " + action.Target;
                             if ((action.Range != null || action.Target == "RandomInRoom") && state.Context == null)
                                 return "Triggered action randomness requires shared battle context.";
-                            string? healError = (action.Target == "LastAttackedCharacter" ? null : action.Filters?.Validate()) ?? action.Range?.Validate();
+                            string? healError = (action.Target is "LastAttackedCharacter" or "LastAttackerCharacter" ? null : action.Filters?.Validate()) ?? action.Range?.Validate();
                             if (healError != null) return healError;
                             continue;
                         }
@@ -3706,6 +3706,20 @@ namespace MonsterTrain2Poju.Model
                     var tower = new TrainCombatState(floors, Array.Empty<EnemyMovement>(), 1, context);
                     return CardTargetModel.Collect(tower, source.RoomIndex, action, Array.Empty<int>(), isTesting: testing || source.Preview,
                         ignorePyre: true);
+                }
+                if (action.Target == "LastAttackerCharacter")
+                {
+                    if (!actor.LastAttackerId.HasValue) return new CardTargets(Array.Empty<int>(), "Last-attacker targeting requires captured attacker relationships.");
+                    if (actor.LastAttackerId == 0) return new CardTargets(Array.Empty<int>());
+                    WorkingUnit? attacker = units.FirstOrDefault(unit => unit.Source.Id == actor.LastAttackerId);
+                    if (attacker == null) return new CardTargets(Array.Empty<int>(), "Last attacker is outside the captured actor world.");
+                    // Native checks only IgnoreBosses, bypassing team/health/status/subtype filters.
+                    if (action.Filters?.IgnoreBosses == true)
+                    {
+                        if (!attacker.Source.IsBoss.HasValue) return new CardTargets(Array.Empty<int>(), "Last-attacker boss filtering requires captured boss state.");
+                        if (attacker.Source.IsBoss.Value) return new CardTargets(Array.Empty<int>());
+                    }
+                    return new CardTargets(new[] { attacker.Source.Id });
                 }
                 if (action.Target == "LastFeederCharacter")
                 {
