@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 491 archives (452 full battles and
+Current accepted inventory (2026-10-19): 492 archives (453 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,28 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-491 accepted archives. Refresh/check the index with
+492 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-permafrost-cards.mt2f` retains original Preserve,
+Unnamed Tome and Ice Tornado, including automatic temporary Freeze at creation.
+Six repeated already-frozen draw callbacks leave decision/RNG/frame unchanged;
+three natural redraw callbacks restore Freeze after play. Unplayed cards stay
+in hand, played cards thaw. Preserve freezes an original unfrozen Junk, which
+then stays retained; Tome applies three enemy Silence and Consumes. Ice Tornado
+pays three for three random thirty-damage effects, twice with enemies present
+across a natural discard/redraw. Authored units/enemy health remain controls.
+Six plays/five EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (twenty-six root actions, zero unsupported).
+Binary-only: 25,331 bytes/3,377 nodes, SHA-256
+`b550e467f58a728140d5ba4b12ef5ded8b091621c47af698e2298fa3a74c8cf0`.
+Use `-OriginalPermafrostCards` and `--original-permafrost-cards-only`.
+The default source parameters and exact captured runtime provenance are required
+for original-card evidence. Missing source metadata is not inferred.
+Focused gate `.probe-runs/model-checks-20261019-014442-d478bdeb` passed this
+witness, original Preserve and the expensive-card Permafrost relic (three
+fixtures). The older Preserve witness has twenty plays and its larger search
+frontier takes longer than the isolated new witness.
 
 `full-battle-original-unplayable-cards.mt2f` queries unchanged UnplayableJunk,
 UnplayableUnpurgeable and ScrapMetal on all four floors. Twelve full-card native
