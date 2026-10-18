@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 461 archives (422 full battles and
+Current accepted inventory (2026-10-18): 462 archives (423 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,20 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-461 accepted archives. Refresh/check the index with
+462 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-small-box.mt2f` keeps unchanged empty and filled Small Boxes. The
+full-hand isolated native call passes Test and still shuffles all three saved
+templates; the real filled cast has only two slots. Permanent starting upgrades
+are copied once, including clone-excluded upgrades, together with temporary
+attack upgrades. Saved contents remain intact and have no battle-owned IDs.
+Authored boxed Stewards and Infusion fillers are setup controls. Complete effect
+contexts, the 38-stage win (11 plays/five EndTurns), sixteen immutable chains and
+bounded search are checked. Nested boxes, missing definitions and relic modifier
+ordering remain guarded. Binary-only: 29,433 bytes/4,466 nodes, SHA-256
+`ac4327aae15becbeb3f88cf5cb4a5d64c978dcfb71614d17225581a8ef583c55`.
+Use `-SmallBox` and `--small-box-only`.
 
 `full-battle-mixalot.mt2f` keeps three original Mixalots: fresh recipe, upgrade
 the existing elixir, then create another recipe after playing it. A fresh elixir

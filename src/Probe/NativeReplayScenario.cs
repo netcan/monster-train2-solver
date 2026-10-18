@@ -1023,6 +1023,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 MixalotScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && SmallBoxScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Small Box fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                SmallBoxScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && AdaptiveMutationScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Adaptive Mutation fixture must start on deployment turn.");
@@ -1967,6 +1973,7 @@ namespace MonsterTrain2Poju.Probe
                 if (PreserveScenario.Enabled) pendingPlay = PreserveScenario.Choose(decision);
                 if (AdaptiveMutationScenario.Enabled) pendingPlay = AdaptiveMutationScenario.Choose(decision, AdaptiveMutationScenario.CardIds);
                 if (MixalotScenario.Enabled) pendingPlay = MixalotScenario.Choose(decision, MixalotScenario.CardIds);
+                if (SmallBoxScenario.Enabled) pendingPlay = SmallBoxScenario.Choose(decision, SmallBoxScenario.CardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);

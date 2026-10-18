@@ -183,10 +183,14 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CardUpgradeModifier> Upgrades { get; }
         public int PersistentHealth { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
+        public IReadOnlyList<BoxedCardState>? BoxedCards { get; }
         public CardModifiers(CardStatModifier offsets, IReadOnlyList<CardUpgradeModifier> upgrades, int persistentHealth,
-            IReadOnlyList<string> externalInteractions)
+            IReadOnlyList<string> externalInteractions, IReadOnlyList<BoxedCardState>? boxedCards = null)
         { Offsets = offsets; Upgrades = Array.AsReadOnly(upgrades.ToArray()); PersistentHealth = persistentHealth;
-            ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); }
+            ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
+            BoxedCards = boxedCards == null ? null : Array.AsReadOnly(boxedCards.ToArray()); }
+        internal CardModifiers WithBoxedCards(IReadOnlyList<BoxedCardState>? contents) =>
+            new(Offsets, Upgrades, PersistentHealth, ExternalInteractions, contents);
         public static CardModifiers Empty() => new CardModifiers(new CardStatModifier(), Array.Empty<CardUpgradeModifier>(), 0, Array.Empty<string>());
         internal CardModifiers OnDiscard()
         {
@@ -198,7 +202,7 @@ namespace MonsterTrain2Poju.Model
                     int removed = upgrades[index].DataId.Length == 0 ? index : upgrades.FindIndex(upgrade => upgrade.DataId == upgrades[index].DataId);
                     upgrades.RemoveAt(removed);
                 }
-            return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions);
+            return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions, BoxedCards);
         }
         internal CardModifiers WithPermanentUpgrade(CardUpgradeModifier upgrade, bool scale)
         {
@@ -207,7 +211,7 @@ namespace MonsterTrain2Poju.Model
                 ? upgrades.FindIndex(item => item.DataId == upgrade.DataId) : -1;
             if (existing >= 0) upgrades[existing] = upgrades[existing].Accumulate(upgrade);
             else upgrades.Add(upgrade);
-            return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions);
+            return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions, BoxedCards);
         }
     }
 
@@ -289,6 +293,10 @@ namespace MonsterTrain2Poju.Model
             EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, unitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState, ForgeCountScalingTraits, RawCostOverride, CanBeCopied, TrainHealScalingTraits);
         internal CardInstanceState WithModifiers(CardModifiers permanent, CardModifiers temporary, bool refreshTraits = true)
         {
+            // Numeric/upgrade changes do not alter the separate boxed-card list.
+            // An explicit empty list is used when that list is actually cleared.
+            if (permanent.BoxedCards == null && Permanent.BoxedCards != null)
+                permanent = permanent.WithBoxedCards(Permanent.BoxedCards);
             CardMaskDescriptor? descriptor = MaskDescriptor;
             if (refreshTraits && !Permanent.Upgrades.SequenceEqual(permanent.Upgrades))
             {

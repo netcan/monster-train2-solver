@@ -106,7 +106,9 @@ namespace MonsterTrain2Poju.Probe
             try { instance.Setup(data, AllGameManagers.Instance!.GetSaveManager()); }
             finally { projectionSetupDepth--; }
             CardModifiers modifiers = new CardModifiers(new CardStatModifier(), Array.Empty<CardUpgradeModifier>(), 0,
-                graftedSpawn ? new[] { "Grafted equipment" } : Array.Empty<string>());
+                graftedSpawn ? new[] { "Grafted equipment" } : Array.Empty<string>(),
+                CardBranchMaskProbe.Enabled && data.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")
+                    ? Array.Empty<BoxedCardState>() : null);
             CardMaskDescriptor? descriptor = CardBranchMaskProbe.Creation(data, instance.CanScaleWithMagicPower());
             int multiplier = CardMagicPowerModel.Multiplier(new CardInstanceState(0, data.GetID(), modifiers, modifiers, 0, 0, 0,
                 Array.Empty<string>(), maskDescriptor: descriptor));
@@ -115,7 +117,7 @@ namespace MonsterTrain2Poju.Probe
                 CardUpgradeModifier projected = CardMagicPowerModel.Scale(Upgrade(upgrade), multiplier);
                 // SetupStartingUpgrades follows native unique-upgrade insertion order.
                 if (!projected.Unique || projected.DataId.Length == 0 || !modifiers.Upgrades.Any(item => item.DataId == projected.DataId))
-                    modifiers = new CardModifiers(modifiers.Offsets, modifiers.Upgrades.Concat(new[] { projected }).ToArray(), 0, modifiers.ExternalInteractions);
+                    modifiers = new CardModifiers(modifiers.Offsets, modifiers.Upgrades.Concat(new[] { projected }).ToArray(), 0, modifiers.ExternalInteractions, modifiers.BoxedCards);
             }
             CardEffectCounter[] counters = data.GetEffects().Select((effect, index) => new { effect, index })
                 .Where(item => item.effect.GetEffectStateName() == "CardEffectDiscardHand")

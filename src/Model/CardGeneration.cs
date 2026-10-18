@@ -182,6 +182,10 @@ namespace MonsterTrain2Poju.Model
         public static CardGenerationResult Apply(CombatContext source, CardGenerationRule rule, int sourceCardId = 0)
             => Apply(source, rule, sourceCardId, false);
 
+        internal static CardGenerationResult ApplyCachedCopy(CombatContext source, CardCreationRule creation, CardInstanceState copying)
+            => Apply(source, new CardGenerationRule("HandPile", 1, new[] { creation },
+                copyModifiers: true, deterministicPoolSelection: true), 0, false, copying);
+
         public static CardGenerationResult ApplyForTargets(CombatContext source, CardGenerationRule rule,
             IReadOnlyList<CombatUnit> targets, int sourceCardId = 0)
         {
@@ -199,7 +203,7 @@ namespace MonsterTrain2Poju.Model
             => Apply(source, rule, 0, true);
 
         private static CardGenerationResult Apply(CombatContext source, CardGenerationRule rule, int sourceCardId,
-            bool allowDeferredGraftedSpawnCard)
+            bool allowDeferredGraftedSpawnCard, CardInstanceState? cachedCopy = null)
         {
             if (rule.OnlyUnequippedTargets.HasValue) return Unsupported("Per-target generation requires captured target units.");
             if (rule.IgnoreIfEphemeral == true && source.FindCard(sourceCardId) is CardInstanceState parent &&
@@ -307,7 +311,7 @@ namespace MonsterTrain2Poju.Model
                     else temporary = UnitModifierModel.Add(temporary, rule.Upgrade.WithSharedReference(null));
                     RefreshUpgrades();
                 }
-                CardInstanceState? copying = rule.CopyModifiers ? context.FindCard(sourceCardId) : null;
+                CardInstanceState? copying = rule.CopyModifiers ? cachedCopy ?? context.FindCard(sourceCardId) : null;
                 if (copying != null)
                 {
                     error = CardModifierModel.UnsupportedReason(copying);
@@ -327,13 +331,15 @@ namespace MonsterTrain2Poju.Model
                         if (error != null) return Unsupported(error);
                     }
                     // Same-card clones retain their own starting upgrades, rather than copying a second copy.
-                    var ignored = new HashSet<string>(copying.DataId == creation.DataId ? permanent.Upgrades.Select(upgrade => upgrade.DataId) :
+                    var ignored = new HashSet<string>(cachedCopy == null && copying.DataId == creation.DataId ? permanent.Upgrades.Select(upgrade => upgrade.DataId) :
                         Array.Empty<string>(), StringComparer.Ordinal);
-                    foreach (CardUpgradeModifier upgrade in copying.Permanent.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
+                    if (cachedCopy == null)
+                        foreach (CardUpgradeModifier upgrade in copying.Permanent.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
                     permanent = Copy(permanent, copying.Permanent, ignored, forAddCardPipeline: true);
                     if (!rule.IgnoreTemporaryModifiers)
                     {
-                        foreach (CardUpgradeModifier upgrade in copying.Temporary.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
+                        if (cachedCopy == null)
+                            foreach (CardUpgradeModifier upgrade in copying.Temporary.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
                         temporary = Copy(temporary, copying.Temporary, ignored, forAddCardPipeline: true);
                     }
                     // Copying and each helper application refresh all installed
@@ -397,12 +403,14 @@ namespace MonsterTrain2Poju.Model
         private static CardModifiers Copy(CardModifiers destination, CardModifiers source, HashSet<string> ignored,
             bool forAddCardPipeline = false)
         {
-            CardModifiers result = new CardModifiers(source.Offsets, destination.Upgrades, source.PersistentHealth, source.ExternalInteractions);
+            IReadOnlyList<BoxedCardState>? boxes = source.BoxedCards == null && destination.BoxedCards == null ? null :
+                (destination.BoxedCards ?? Array.Empty<BoxedCardState>()).Concat(source.BoxedCards ?? Array.Empty<BoxedCardState>()).ToArray();
+            CardModifiers result = new CardModifiers(source.Offsets, destination.Upgrades, source.PersistentHealth, source.ExternalInteractions, boxes);
             foreach (CardUpgradeModifier upgrade in source.Upgrades.Where(upgrade => !ignored.Contains(upgrade.DataId)))
                 result = UnitModifierModel.Add(result, forAddCardPipeline ? upgrade.ForAddCardCopy() : upgrade.WithSharedReference(null));
             return result;
         }
-        private static bool HasModifiers(CardModifiers modifiers) => modifiers.Upgrades.Count > 0 || modifiers.PersistentHealth != 0 ||
+        private static bool HasModifiers(CardModifiers modifiers) => modifiers.Upgrades.Count > 0 || modifiers.PersistentHealth != 0 || modifiers.BoxedCards?.Count > 0 ||
             new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
                 .Any(stat => modifiers.Offsets.Value(stat) != 0);
         private static string? CopyabilityError(CardInstanceState card)

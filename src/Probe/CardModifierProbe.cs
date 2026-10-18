@@ -35,7 +35,8 @@ namespace MonsterTrain2Poju.Probe
                     card.IsNonPlayableEnergyCostType() != (data.GetCostType() == CardData.CostType.NonPlayable)) interactions.Add("Changed card cost type");
                 int rawCost = (int)AccessTools.Field(typeof(CardState), "cost").GetValue(card);
                 var state = new CardInstanceState(cardId(card), card.GetCardDataID(),
-                    Modifiers(card.GetCardStateModifiers()), Modifiers(card.GetTemporaryCardStateModifiers()),
+                    Modifiers(card.GetCardStateModifiers(), CardBranchMaskProbe.Enabled && data.GetEffects().Any(effect =>
+                        effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")), Modifiers(card.GetTemporaryCardStateModifiers()),
                     card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions,
                     Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card), RoomCapacityProbe.Traits(card),
                     FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card), RawPlayedRoomUnits(card),
@@ -128,21 +129,36 @@ namespace MonsterTrain2Poju.Probe
             return traits.Length == 0 ? null : traits;
         }
 
-        internal static CardModifiers Modifiers(CardStateModifiers modifiers)
+        internal static CardModifiers Modifiers(CardStateModifiers modifiers, bool captureEmptyBox = false, int boxDepth = 0)
         {
             int Field(string name) => (int)AccessTools.Field(typeof(CardStateModifiers), name).GetValue(modifiers);
             var interactions = new List<string>();
             if (modifiers.GetMergedCardStateIDs().Count > 0) interactions.Add("Merged cards");
             if (modifiers.GraftedEquipmentCardState != null || Field("graftedEquipmentCardStateId") != -1) interactions.Add("Grafted equipment");
-            if (modifiers.BoxedCardStates.Count > 0 || ((ICollection)AccessTools.Field(typeof(CardStateModifiers), "boxedCardStateIds")
-                .GetValue(modifiers)).Count > 0) interactions.Add("Boxed cards");
+            int savedBoxCount = ((ICollection)AccessTools.Field(typeof(CardStateModifiers), "boxedCardStateIds").GetValue(modifiers)).Count;
+            BoxedCardState[]? contents = null;
+            if (modifiers.BoxedCardStates.Count > 0 || savedBoxCount > 0 || captureEmptyBox)
+            {
+                if (!CardBranchMaskProbe.Enabled || boxDepth > 0 || savedBoxCount != modifiers.BoxedCardStates.Count)
+                    interactions.Add("Unresolved or nested boxed cards");
+                else
+                {
+                    AllGameData all = AllGameManagers.Instance!.GetAllGameData();
+                    if (modifiers.BoxedCardStates.Any(card => all.FindCardData(card.GetCardDataID()) == null))
+                        interactions.Add("Missing boxed card definition");
+                    else contents = modifiers.BoxedCardStates.Select(card => new BoxedCardState(
+                        CardGenerationProbe.Creation(all.FindCardData(card.GetCardDataID())!),
+                        Modifiers(card.GetCardStateModifiers(), boxDepth: boxDepth + 1),
+                        Modifiers(card.GetTemporaryCardStateModifiers(), boxDepth: boxDepth + 1))).ToArray();
+                }
+            }
             if (modifiers.GetTemporaryTraits().Any(trait => !CardBranchMaskProbe.Enabled || trait is not CardTraitFreeze) ||
                 modifiers.GetTraitReplacements().Count > 0 && !CardBranchMaskProbe.Enabled)
                 interactions.Add("Temporary/replaced card traits");
             return new CardModifiers(new CardStatModifier(Field("additionalDamage"), Field("additionalMaxHP"), Field("additionalCost"),
                 Field("additionalHeal"), Field("additionalSize"), Field("additionalXCost"), Field("additionalEquipmentLimit"),
                 Field("additionalUpgradeSlotCount")), modifiers.GetCardUpgrades().Select(upgrade => Upgrade(upgrade, false, true)).ToArray(),
-                modifiers.GetPersistentHP(), interactions);
+                modifiers.GetPersistentHP(), interactions, contents);
         }
 
         internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade) => Upgrade(upgrade, false);

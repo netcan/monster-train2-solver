@@ -361,14 +361,14 @@ namespace MonsterTrain2Poju.Model
         }
         internal static CardModifiers Add(CardModifiers modifiers, CardUpgradeModifier upgrade) =>
             upgrade.Unique && upgrade.DataId.Length > 0 && modifiers.Upgrades.Any(item => item.DataId == upgrade.DataId) ? modifiers :
-            new CardModifiers(modifiers.Offsets, modifiers.Upgrades.Concat(new[] { upgrade }).ToArray(), modifiers.PersistentHealth, modifiers.ExternalInteractions);
+            new CardModifiers(modifiers.Offsets, modifiers.Upgrades.Concat(new[] { upgrade }).ToArray(), modifiers.PersistentHealth, modifiers.ExternalInteractions, modifiers.BoxedCards);
         private static CardModifiers AccumulateExisting(CardModifiers modifiers, CardUpgradeModifier upgrade)
         {
             int index = modifiers.Upgrades.ToList().FindIndex(item => item.DataId == upgrade.DataId);
             if (index < 0) return modifiers;
             var upgrades = modifiers.Upgrades.ToArray();
             upgrades[index] = upgrades[index].Accumulate(upgrade);
-            return new CardModifiers(modifiers.Offsets, upgrades, modifiers.PersistentHealth, modifiers.ExternalInteractions);
+            return new CardModifiers(modifiers.Offsets, upgrades, modifiers.PersistentHealth, modifiers.ExternalInteractions, modifiers.BoxedCards);
         }
         private static RoomCombatResult Match(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
         private static RoomCombatResult Unsupported(string reason) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), reason);

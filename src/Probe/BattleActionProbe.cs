@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
             "CardEffectAddCardUpgradeToUnitsPerStatusEffect", "CardEffectAddTempSwapStats",
             "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand",
-            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix", "CardEffectMixRandom"
+            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix", "CardEffectMixRandom", "CardEffectUnboxSmallBoxUnitCard"
         }, StringComparer.Ordinal);
         private readonly FullBattleTrace trace;
         private readonly UnitPlayModelProbe projection;
@@ -55,6 +55,8 @@ namespace MonsterTrain2Poju.Probe
             var definitions = nativeCards.Select(card => card.GetCardDataID()).Concat(spawn.Waves.SelectMany(wave => wave.Candidates)
                 .SelectMany(group => group.Units).Concat(spawn.Treasures).SelectMany(unit => unit.Unit.Triggers)
                 .SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)).Distinct().ToArray();
+            definitions = definitions.Concat(nativeCards.SelectMany(card => card.GetCardStateModifiers().BoxedCardStates)
+                .Select(card => card.GetCardDataID())).Distinct().ToArray();
             definitions = definitions.Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
                 .Concat(spawn.Treasures).Select(unit => unit.Unit.Ability?.DataId).Where(id => !string.IsNullOrEmpty(id)).Cast<string>()).Distinct().ToArray();
             definitions = definitions.Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
@@ -321,6 +323,9 @@ namespace MonsterTrain2Poju.Probe
             if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) return AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool());
             if (effect.GetEffectStateName() == "CardEffectFeederRules" && effect.GetParamBool())
                 interactions.Add("Forced feeding with an overridden self feeder requires native calibration");
+            if (effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")
+                return new CardActionEffect("Unbox", "None", 0, false, false, Array.Empty<CombatStatus>(),
+                    tests: new CardEffectTests(true, false, false, false, false));
             if (effect.GetEffectStateName() is "CardEffectMix" or "CardEffectMixRandom")
                 return new CardActionEffect(effect.GetEffectStateName() == "CardEffectMix" ? "Mix" : "MixRandom", "None", effect.GetParamInt(), false, false,
                     Array.Empty<CombatStatus>(), tests: new CardEffectTests(true, false, false, false, true));

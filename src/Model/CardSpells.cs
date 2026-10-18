@@ -324,6 +324,14 @@ namespace MonsterTrain2Poju.Model
                     state = WithContext(state, upgraded.Context!);
                     continue;
                 }
+                if (effect.Type == "Unbox")
+                {
+                    if (selected.Preview) continue;
+                    CardGenerationResult unboxed = SmallBoxModel.Apply(state.Context!, sourceCardId);
+                    if (!unboxed.Supported) return UnsupportedTrain(unboxed.UnsupportedReason!);
+                    state = WithContext(state, unboxed.Context!); piles = state.Context!.OtherPiles?.ToArray();
+                    continue;
+                }
                 if (effect.Type == "MixRandom")
                 {
                     if (selected.Preview) continue;
@@ -1997,7 +2005,7 @@ namespace MonsterTrain2Poju.Model
                     if (recursionError != null) return recursionError;
                     continue;
                 }
-                if (effect.Type != "Mix" && effect.Type != "MixRandom" && !CardOnlyPileTarget(effect) && !CardTargetModel.Supports(effect.Target))
+                if (effect.Type != "Mix" && effect.Type != "MixRandom" && effect.Type != "Unbox" && !CardOnlyPileTarget(effect) && !CardTargetModel.Supports(effect.Target))
                     return "Unimplemented spell targeting " + effect.Target;
                 if (effect.Type == "ScheduleNextDrawUpgrade")
                 {
@@ -2097,6 +2105,12 @@ namespace MonsterTrain2Poju.Model
                     if (!effect.HealDamageMultiplier.HasValue || effect.Range != null || effect.Value < 0 ||
                         effect.Target != "DropTargetCharacter" || !effect.AllowPlayer || effect.AllowEnemy)
                         return "Heal-relative damage requires the calibrated fixed player drop target and nonnegative heal.";
+                    continue;
+                }
+                if (effect.Type == "Unbox")
+                {
+                    if (source.Context?.CardInstances == null)
+                        return "Unboxing requires captured card instances.";
                     continue;
                 }
                 if (effect.Type == "MixRandom")
@@ -2230,7 +2244,7 @@ namespace MonsterTrain2Poju.Model
                     return new CardTargets(Array.Empty<int>(), "Spawn-or-status fallback requires captured spawn points.");
                 return new CardTargets(Array.Empty<int>());
             }
-            return effect.Type is "Mix" or "MixRandom" || effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
+            return effect.Type is "Mix" or "MixRandom" or "Unbox" || effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
                 ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition,
                     index == 0 && !hasPriorTargets, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms,
                     positions, selfUnitId, lastSacrificedUnitId: lastSacrificedUnitId);
