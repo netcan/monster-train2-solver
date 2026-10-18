@@ -23,15 +23,17 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-055211-367f5133/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,915 bytes, SHA-256
-`6140c8d18b2a23103ff5c1f507eadcb8374534c29abfae8f0e458ca68e14bffb`.
-The projection reflects revision `7013e5f`. Original Surgical Strike now
-projects its source-card self-copy and original temporary Ephemeral upgrade.
-Its raw source suppression trait adds `KillTargetTeam=Monsters` and
+Source: `.probe-runs/full-battle-no-cards-20261019-060239-1f5fdca6/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,906 bytes, SHA-256
+`ae5adabed020bd862ecb3b580f3b105f6ce70365fdd6a5ed4c81385f2ddc2d8a`.
+The projection reflects revision `7a0410f`, adding the fixed card-owned resource
+kill effects of Greed, Golden Touch and Bonk. All raw fields across 668 cards
+match the preceding catalog. Native frame 14038/14038, all RNG and decision
+state remain unchanged; the baseline won in 44.37 seconds with all counters zero.
+Original Surgical Strike retains its source-card self-copy and original
+temporary Ephemeral upgrade. Its source suppression trait retains `KillTargetTeam=Monsters` and
 `KillTargetSubtype=SubtypesData_FunGuy`, read directly from native CardTraitData.
-These are the only raw definition changes; all prior fields across 668 cards
-match. Null fields are omitted on other traits for legacy evidence identity.
+Null fields are omitted on other traits for legacy evidence identity.
 Original Bloody Moon and Antumbra
 Assault retain their captured card-owned kill triggers. Original Morsels retain
 last-feeder status targets and initial zero feeder references in both native
