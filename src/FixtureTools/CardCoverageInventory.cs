@@ -296,10 +296,14 @@ internal static class CardCoverageInventory
         if (trait.GetProperty("Int2").GetInt32() != 0 || trait.GetProperty("Int3").GetInt32() != 0 ||
             Flag(trait, "Bool") || Text(trait, "Str").Length > 0) return false;
         int value = trait.GetProperty("Int").GetInt32();
-        // Ritual Tome retains unused moon-query parameters on ExhaustState.
+        // Ritual Tome and the resource spells retain unused ExhaustState parameters.
         // Native exhaustion reads play count/relics, not those source parameters.
-        if (type == "CardTraitExhaustState" && value == 4 && trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") &&
-            Text(trait, "TrackedValue") == "MoonPhase" && Text(trait, "EntryDuration") == "ThisTurn") return true;
+        if (type == "CardTraitExhaustState" && trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") && Text(trait, "EntryDuration") == "ThisTurn" &&
+            (value == 4 && Text(trait, "TrackedValue") is "MoonPhase" or "PlayedCost" || value == 1 && Text(trait, "TrackedValue") == "PlayedCost")) return true;
+        if (type == "CardTraitScalingAddForged" && value == 4 && trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") &&
+            Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn") return true;
+        if (type == "CardTraitScalingAddDamage" && trait.GetProperty("Float").GetDouble() == 1 && !Flag(trait, "Scaling") && Text(trait, "EntryDuration") == "ThisTurn" &&
+            (value == 25 && Text(trait, "TrackedValue") == "DragonsHoardAmount" || value == 35 && Text(trait, "TrackedValue") == "ForgePoints")) return true;
         if (type == "CardTraitScalingTempCardUpgradeToCard") return value == 1 && trait.GetProperty("Float").GetDouble() == 0 && Flag(trait, "Scaling") &&
             Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitScalingByConsumedTempCardUpgradeToCard") return value == 1 && trait.GetProperty("Float").GetDouble() == 0 && Flag(trait, "Scaling") &&

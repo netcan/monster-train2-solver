@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 525 archives (485 full battles and
+Current accepted inventory (2026-10-19): 526 archives (486 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -16,6 +16,24 @@ definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
 520 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-resource-spells.mt2f` captures unchanged Alchemy, Devilish
+Details, Inequivalent Exchange, Anvil Breaker and Railforged Spike. Eight
+original plays cover capped Hoard gains, the Pyre's eight-HP cost, Hoard-scaled
+damage before spending, positive/zero Forge spending, and positive/zero X-cost
+Forge gains. Damage traits replace base damage: Hoard four/three produces
+100/75 damage, before decrementing Hoard. Anvil Breaker reads two Forge Points
+before clearing them; its second zero-Forge play deals zero. Railforged Spike
+adds four Forge Points per paid energy and still consumes at X=0. Exact source
+parameters are retained, including unused ExhaustState query fields. Six native
+Consume routes, other-resource/floor controls and sixteen immutable chains pass.
+Use `--original-resource-spells-only`. Search matches thirteen decisions/41
+roots, 128/128 states and three replayed steps, with zero unsupported attempts
+and equal serial/parallel best. Source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-061100-9cd88347` won in
+63.95 seconds with thirteen plays/five EndTurns, all four counters zero and
+protected files unchanged. Binary-only: 34,347 bytes/5,356 nodes, SHA-256
+`462478175de9768b2e2d1dafccb9b61f3d75aa360b070f78bc9c3950fd9df1d1`.
 
 `full-battle-original-basic-damage.mt2f` captures unchanged Excavation Eruption,
 Icestorm, Twin Shards, Ice Spear, Torch and Flicker. An authored health buff keeps

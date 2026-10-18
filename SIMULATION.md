@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 525 binary archives, including 485
+Current accepted inventory (2026-10-19): 526 binary archives, including 486
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 525
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 526
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,14 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-resource-spells.mt2f` adds unchanged Alchemy, Devilish
+Details, Inequivalent Exchange, Anvil Breaker and Railforged Spike. Native Hoard
+gain caps at four, Devilish Details first damages the Pyre by eight, and damage
+traits use pre-spend resources to replace base effect damage. Repeated Forge
+spending reaches zero before positive/zero X-cost Forge gains. Eight original
+plays, six Consume routes and sixteen full immutable chains match in thirteen
+plays/five EndTurns, using existing calibrated resource effects.
 
 `full-battle-original-basic-damage.mt2f` adds unchanged Excavation Eruption,
 Icestorm, Twin Shards, Ice Spear, Torch and Flicker. Two live armored enemies

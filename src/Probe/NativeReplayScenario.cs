@@ -1167,6 +1167,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalUnitBuffsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalResourceSpellsScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original resource spells fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalResourceSpellsScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalBasicDamageScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original basic damage fixture must start on deployment turn.");
@@ -2386,6 +2392,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalKillResourcesScenario.Enabled) pendingPlay = OriginalKillResourcesScenario.Choose(decision, OriginalKillResourcesScenario.CardIds, OriginalKillResourcesScenario.Resource);
                 if (OriginalFriendlyStatusesScenario.Enabled) pendingPlay = OriginalFriendlyStatusesScenario.Choose(decision, OriginalFriendlyStatusesScenario.CardIds);
                 if (OriginalBasicDamageScenario.Enabled) pendingPlay = OriginalBasicDamageScenario.Choose(decision, OriginalBasicDamageScenario.CardIds);
+                if (OriginalResourceSpellsScenario.Enabled) pendingPlay = OriginalResourceSpellsScenario.Choose(decision, OriginalResourceSpellsScenario.CardIds);
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);
