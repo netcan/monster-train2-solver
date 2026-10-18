@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 487 binary archives, including 448
+Current accepted inventory (2026-10-19): 488 binary archives, including 449
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 487
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 488
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,16 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-hand-costs.mt2f` calibrates two original Titan Banes and
+their Spell/Monster/TrainRoomAttachment/Equipment filters. Live hand owners
+stack in order before numeric upgrades and room modifiers; each source leaving
+the hand restores one energy of cost. Blight/Junk and outside-hand controls do
+not receive these surcharges. A base-98 spell with reduction 98 verifies the
+per-trait upper clamp before numeric reductions. Fifteen native payments and
+272 independent cost queries match, with sixteen immutable full battle chains.
+The authored controls retain their scope; missing/unknown type filters are
+rejected. CurrentCost statistic queries with hand traits remain unsupported.
 
 `full-battle-original-unpurgable-cards.mt2f` calibrates the default Unpurgable
 marker on original Blight, Dante's Candle and Titan Curse. It has no battle

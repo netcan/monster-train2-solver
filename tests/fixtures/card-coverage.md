@@ -20,8 +20,8 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 64 | 67 | No captured projection guards; at least one successful native play has the same captured definition projection. |
-| mechanism-only | 373 | 445 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
+| direct-native-play | 65 | 68 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| mechanism-only | 372 | 444 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
 | partial | 126 | 144 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 12 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
@@ -38,9 +38,11 @@ StatusEffectCountInTargetRoom damage scaling is calibrated only for native Monst
 
 The default Unpurgable marker has native battle witnesses for fixed-cost play/discard, positive SelfPurge, and played/unplayed Pyre-damage controls. It has no native battle callback; campaign purge selection is outside these witnesses. Exact default source parameters and captured provenance are required. Other traits paired with this marker retain their own guards.
 
+Original Titan Bane hand costs have two-owner native stacking/removal witnesses for spells, monsters, room attachments and equipment, with Blight/Junk exclusions. Captured source and runtime type filters are required. Native query controls verify the hand-only scope, upper clamp before numeric reductions and restoration after each owner leaves. CurrentCost statistic queries with hand cost traits and other paired traits keep their guards.
+
 New descriptors retain the actual CardData supplied to CardState.Setup, with source trait parameters separate from runtime traits. All captured raw source fields must match the frozen catalog when present; X damage/status scaling requires this provenance and older missing metadata remains unverified. Missing provenance, changed multiplier/query/filter, and changed runtime parameters are rejected. Other trait families need separate calibration. A shared DataId alone never establishes direct coverage. Instance upgrades do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically original-card evidence.
 
-Across all classifications, 67 identities (64 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Across all classifications, 68 identities (65 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 
@@ -49,7 +51,7 @@ Across all classifications, 67 identities (64 logbook) have at least one definit
 - [Unplayed-trigger evidence](card-trigger-evidence.tsv): matched EndTurns with a positive new-copy or existing-spell-upgrade observation, source identity and zero-based `Turns` index. These supply mechanism evidence and do not count as direct card plays. Playing a card alone does not establish its unplayed trigger.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 447 full battles and 7433 native actions whose captured prediction is supported, actual state exists and difference is null. 350 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 448 full battles and 7448 native actions whose captured prediction is supported, actual state exists and difference is null. 356 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 

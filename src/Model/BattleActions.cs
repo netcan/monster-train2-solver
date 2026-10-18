@@ -430,8 +430,13 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Unmodeled card cost type " + rule.CostType);
             if (rule.Cost < 0) return Unsupported("Negative card costs are not implemented.");
             int effectiveCost = rule.Cost;
+            if (playingInstance != null && CardHandCostModel.HasModifiers(context))
+            {
+                try { effectiveCost = CardHandCostModel.Resolve(context, playingInstance, originalRule.Cost, rule.CardType); }
+                catch (InvalidOperationException error) { return Unsupported(error.Message); }
+            }
             if (rule.CardType == "Spell")
-                effectiveCost = (int)Math.Clamp((long)rule.Cost + RoomCapacityModel.SpellCostDelta(context, action.RoomIndex), 0L, 99L);
+                effectiveCost = (int)Math.Clamp((long)effectiveCost + RoomCapacityModel.SpellCostDelta(context, action.RoomIndex), 0L, 99L);
             int paidCost = rule.CostType == "ConsumeRemainingEnergy" ? source.Energy : effectiveCost;
             if (source.Energy < 0) return Unsupported("Negative decision energy.");
             RoomPlayRule? targetRule = source.PlayRules.Rooms.FirstOrDefault(item => item.RoomIndex == action.RoomIndex);

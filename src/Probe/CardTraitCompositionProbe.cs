@@ -11,7 +11,8 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static CardTraitValue Definition(CardTraitData data) => new CardTraitValue(
             TypeNameCache.GetType(data.GetTraitStateName()).FullName, data.GetTraitStateName(), data.GetParamInt(), data.GetParamInt(),
-            data.GetTraitIsRemovable(), (int)data.GetStackMode(), parameterUpgradeCastEffects: CastEffects(data), feedingQuery: FeedingQuery(data));
+            data.GetTraitIsRemovable(), (int)data.GetStackMode(), parameterUpgradeCastEffects: CastEffects(data), feedingQuery: FeedingQuery(data),
+            handCostTargetType: data.GetTraitStateName() == "CardTraitIncreaseCostOfCardsInHand" ? data.GetParamCardType().ToString() : null);
         private static CardStatisticQuery? FeedingQuery(CardTraitData data)
         {
             if (data.GetTraitStateName() != "CardTraitScalingFeederRules") return null;
@@ -36,7 +37,8 @@ namespace MonsterTrain2Poju.Probe
                 trait.GetParamInt(), trait.GetTraitIsRemovable(), (int)trait.GetStackMode(), trait.IsTemporaryReplacement(),
                 data == null ? Array.Empty<string>() : CastEffects(data), data?.GetTraitIsRemovable(),
                 trait is CardTraitScalingMagicPowerOnMoonPhase ? (float?)AccessTools.Field(typeof(CardTraitScalingMagicPowerOnMoonPhase), "MagicPowerMultiplier").GetValue(trait) : null,
-                feedingQuery: trait is CardTraitScalingFeederRules ? FeedingQuery(trait.StatValueData) : null);
+                feedingQuery: trait is CardTraitScalingFeederRules ? FeedingQuery(trait.StatValueData) : null,
+                handCostTargetType: trait is CardTraitIncreaseCostOfCardsInHand ? trait.GetParamCardType().ToString() : null);
         }
         internal static List<CardTraitState> Bases(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "traits").GetValue(card);
         internal static List<CardTraitState> Combined(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "combinedTraits").GetValue(card);

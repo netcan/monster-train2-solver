@@ -45,13 +45,23 @@ namespace MonsterTrain2Poju.Probe
                     trainHealScalingTraits: TrainHealScalingTraits(card));
                 CardPlayRule definition = BattleActionProbe.Definition(data);
                 CardPlayRule rule = CardModifierModel.Resolve(definition, state);
+                int handCost = rule.Cost;
+                if (CardBranchMaskProbe.Enabled && managers.GetCardManager()!.IsCardInHand(card) &&
+                    managers.GetCardManager()!.GetHand().SelectMany(owner => owner.GetTraitStates()).Any(trait => trait is CardTraitIncreaseCostOfCardsInHand))
+                {
+                    handCost = rawCost;
+                    foreach (CardState owner in managers.GetCardManager()!.GetHand())
+                        handCost = CardHandCostModel.Apply(handCost, rule.CardType,
+                            owner.GetTraitStates().Select(CardTraitCompositionProbe.Value));
+                    handCost = CardModifierModel.UpgradedStat(handCost, "Cost", true, state.Permanent, state.Temporary);
+                }
                 RoomManager roomManager = managers.GetRoomManager()!;
                 for (int index = 0; index < roomManager.GetNumRooms(); index++)
                 {
                     RoomState room = roomManager.GetRoom(index);
                     int expectedCost = rule.CardType == "Spell"
-                        ? (int)Math.Clamp((long)rule.Cost + RoomCapacityProbe.SpellCostDelta(room), 0L, 99L)
-                        : rule.Cost;
+                        ? (int)Math.Clamp((long)handCost + RoomCapacityProbe.SpellCostDelta(room), 0L, 99L)
+                        : handCost;
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(), room) != expectedCost)
                         interactions.Add("Unmodeled room/trait/hand card cost");
                 }
