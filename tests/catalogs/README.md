@@ -23,10 +23,16 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-012200-bcd02d3a/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,225 bytes, SHA-256
-`30be9823c4b1e72fde0b9fab6564055e68870c2d06a813c77dc6cdfd3d16d305`.
-The projection reflects revision `0c8af0c`. Titan Bane retains four ordered
+Source: `.probe-runs/full-battle-no-cards-20261019-013252-8132b709/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,458 bytes, SHA-256
+`92c99c921a630f51c2a8638bcbbd3367c89c679bdb106bfe8fa4ec8d0b86a958`.
+The projection reflects revision `d23e320`. Original Ice and Pyre retains its
+calibrated Limited Range restriction. Titan Corruption retains Monster-only
+costs and deployment marker source provenance: its false definition draw flag
+is separate from the runtime class's positive eligibility. Native queries do
+not establish initial deployment draw ordering or upgraded eligibility.
+Siren Song and Trap Chute still have their separate room payload guards.
+Titan Bane retains four ordered
 native hand cost type filters. Runtime and source descriptors require the same
 filters; missing metadata is not inferred. The original hand cost witness also
 refreshes Engine Upgrade's complete nested source provenance.
@@ -36,9 +42,9 @@ Native Battering Ram/Bramble Lash
 queries retain the Monsters armor/spikes masks and use live selected-room units
 for zero and positive two-unit sums. Source trait descriptors retain the ordered
 status IDs and query team; older missing masks stay unverified. The catalog
-operation preserved decision state, frame 13,965 and every deterministic RNG
+operation preserved decision state, frame 13,745 and every deterministic RNG
 stream. All 668 shared raw definitions match the previous snapshot, excluding
-Rule/ProjectionError and the newly captured HandCostTargetType source field.
+Rule/ProjectionError and the newly captured DeploymentDrawFlag source field.
 
 Original Horn Break, Branding Rite
 and Inferno piercing have native controls for all four protection stages,
