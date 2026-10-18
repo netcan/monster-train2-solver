@@ -181,6 +181,7 @@ namespace MonsterTrain2Poju.Probe
                 RoomModifiers = upgrade.GetRoomModifierUpgrades().Select(modifier => new
                 {
                     Type = modifier.GetRoomStateModifierClassName(),
+                    DisallowedInDeployment = modifier.DisallowedInDeploymentPhase,
                     Int = modifier.GetParamInt(),
                     Int2 = modifier.GetParamInt2(),
                     Float = modifier.GetParamFloat(),
@@ -196,6 +197,7 @@ namespace MonsterTrain2Poju.Probe
                         Target = nested.GetTargetMode().ToString(),
                         Team = nested.GetTargetTeamType().ToString(),
                         Int = nested.GetParamInt(),
+                        AdditionalInt = nested.GetAdditionalParamInt(),
                         Bool = nested.GetParamBool(),
                         Statuses = nested.GetParamStatusEffectStackData(),
                         Card = nested.GetParamCardData()?.GetID(),

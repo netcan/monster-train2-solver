@@ -23,10 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261018-233952-57bd6724/card-catalog.mt2f`.
-The committed archive is byte-identical: 94,859 bytes, SHA-256
-`6d8adb3b0155ed41786cfd670525ed3269c8802cf758e760011a1987881fa21f`.
-The projection reflects revision `bf85785`: Zone of Silence enemy status and
+Source: `.probe-runs/full-battle-no-cards-20261018-235719-d7105a30/card-catalog.mt2f`.
+The committed archive is byte-identical: 94,948 bytes, SHA-256
+`d1b59b946426d675e941653f202d752508ade6a9698598eaf31cdb71089fa335`.
+The projection reflects revision `78293d9`: original Grow Room propagatable
+status growth and Mushy Room enemy Sap callbacks have isolated full train
+comparisons, positive restoration and floor/team controls. Raw room metadata
+now retains deployment restrictions and nested effect filters: Grow Room skips
+deployment and filters propagation, while Mushy Room allows deployment.
+Zone of Silence enemy status and
 trigger suppression, Memorial of the Melted Endless death/redraw, and Planetarium
 Conduit contributors/tracker replacement have native witnesses. Room character
 synchronization retains shared context changes. Original Engine Upgrade delayed
@@ -41,9 +46,10 @@ remain runtime guards. Recall equipment/ability callbacks and stateful or
 repeated trigger history are also guarded. Saved boxed-card contents remain separate from owned
 identities, and creation descriptors retain original starting-upgrade metadata.
 Projection support alone does not establish
-direct original-card coverage or remove runtime guards. All 668 raw card
-definitions are unchanged from the previous catalog, comparing every field
-except Rule and ProjectionError.
+direct original-card coverage or remove runtime guards. All shared raw fields
+of all 668 card definitions match the previous catalog, excluding Rule and
+ProjectionError; only the new room deployment and nested filter fields are
+omitted from that comparison.
 The new room energy/filter fields make some older captures insufficient for
 exact definition matching; they remain mechanism evidence. The matcher does
 not infer absent non-null metadata from a shared DataId.
