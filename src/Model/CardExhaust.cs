@@ -160,7 +160,7 @@ namespace MonsterTrain2Poju.Model
             return context.WithCards(new CardCycleState(cards.Hand.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 cards.Draw.Where(item => item.InstanceId != card.InstanceId).ToArray(),
                 cards.Discard.Where(item => item.InstanceId != card.InstanceId).ToArray(), cards.Rng,
-                cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId))
+                cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn))
                 .WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name == "Standby" ? standby : pile.Name == "Exhausted"
                     ? CardPileModel.Add(CardPileModel.Remove(pile, card.InstanceId), card) : pile).ToArray())
                 .WithStatistics(context.Statistics?.Increment(card.InstanceId, "TimesExhausted"));
@@ -182,7 +182,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     CardCycleState cards = context.Cards;
                     context = context.WithCards(new CardCycleState(cards.Hand, cards.Draw, cards.Discard.Concat(new[] { card }).ToArray(),
-                        cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId));
+                        cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn));
                 }
                 else context = context.WithStatistics(context.Statistics?.Increment(card.InstanceId, "TimesExhausted"));
             }

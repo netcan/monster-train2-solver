@@ -56,7 +56,7 @@ namespace MonsterTrain2Poju.Model
             context = context.WithCard(CardMagicPowerModel.Refresh(card)).WithCards(new CardCycleState(
                 handSpace ? new[] { token }.Concat(piles.Hand).ToArray() : piles.Hand,
                 handSpace ? piles.Draw : piles.Draw.Concat(new[] { token }).ToArray(), piles.Discard, piles.Rng,
-                piles.DrawModifier, piles.ExternalInteractions, piles.BonusDraw, piles.NextDrawUpgrades, piles.NextUpgradeReferenceId))
+                piles.DrawModifier, piles.ExternalInteractions, piles.BonusDraw, piles.NextDrawUpgrades, piles.NextUpgradeReferenceId, piles.DeckDrawDisabledThisTurn))
                 .WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name is "Standby" or "Exhausted" or "Eaten"
                     ? CardPileModel.Remove(pile, token.InstanceId) : pile).ToArray());
             CombatUnit retained = target.WithDeathState(target.DeathState.WithLifecycle(true, true));

@@ -54,7 +54,7 @@ namespace MonsterTrain2Poju.Model
             CardCycleState cycle = source.Cards;
             CombatContext context = source.WithCards(new CardCycleState(cycle.Hand.Where(item => item.InstanceId != cardId).ToArray(),
                 cycle.Draw, cycle.Discard, cycle.Rng, cycle.DrawModifier, cycle.ExternalInteractions, cycle.BonusDraw,
-                cycle.NextDrawUpgrades, cycle.NextUpgradeReferenceId))
+                cycle.NextDrawUpgrades, cycle.NextUpgradeReferenceId, cycle.DeckDrawDisabledThisTurn))
                 .WithOtherPiles(source.OtherPiles.Select(pile => pile.Name == "Purged" ? CardPileModel.Add(pile, card) : pile).ToArray())
                 .WithStatistics(source.Statistics.RemoveDeckCard(cardId))
                 .WithResources(source.Resources.WithVisibleDeckCount(source.Resources.VisibleDeckCount - 1));

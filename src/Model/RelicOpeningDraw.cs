@@ -91,7 +91,7 @@ namespace MonsterTrain2Poju.Model
                     var cycle = context.Cards;
                     context = context.WithCards(new CardCycleState(new[] { token }.Concat(cycle.Hand).ToArray(),
                         cycle.Draw.Where(item => item.InstanceId != token.InstanceId).ToArray(), cycle.Discard, cycle.Rng, cycle.DrawModifier,
-                        cycle.ExternalInteractions, cycle.BonusDraw, cycle.NextDrawUpgrades, cycle.NextUpgradeReferenceId));
+                        cycle.ExternalInteractions, cycle.BonusDraw, cycle.NextDrawUpgrades, cycle.NextUpgradeReferenceId, cycle.DeckDrawDisabledThisTurn));
                     context = context.WithStatistics(context.Statistics?.Increment(token.InstanceId, "TimesDrawn"));
                     context = RelicExpensiveCardUpgradeModel.Drawn(context, new[] { token.InstanceId }, out failure);
                     if (failure != null) return count;
@@ -101,7 +101,7 @@ namespace MonsterTrain2Poju.Model
         }
         private static CardCycleState Cycle(CardCycleState source, UnityRng? rng = null, int? modifier = null) =>
             new CardCycleState(source.Hand, source.Draw, source.Discard, rng ?? source.Rng, modifier ?? source.DrawModifier,
-                source.ExternalInteractions, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId);
+                source.ExternalInteractions, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId, source.DeckDrawDisabledThisTurn);
         private static RelicResourceResult Fail(string error) => new RelicResourceResult(null, 0, error);
     }
 }

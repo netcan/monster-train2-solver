@@ -17,11 +17,14 @@ namespace MonsterTrain2Poju.Model
         // Allocated only when an original next-draw upgrade enters the queue.
         // Clones are private objects; surviving shared originals keep their IDs.
         public int? NextUpgradeReferenceId { get; }
+        // Null preserves legacy captures made before deck-draw blocking was observed.
+        public bool? DeckDrawDisabledThisTurn { get; }
 
         public CardCycleState(IReadOnlyList<CardToken> hand, IReadOnlyList<CardToken> draw,
             IReadOnlyList<CardToken> discard, UnityRng rng, int drawModifier,
             IReadOnlyList<string> externalInteractions, BonusDrawState? bonusDraw = null,
-            IReadOnlyList<NextDrawUpgradeRule>? nextDrawUpgrades = null, int? nextUpgradeReferenceId = null)
+            IReadOnlyList<NextDrawUpgradeRule>? nextDrawUpgrades = null, int? nextUpgradeReferenceId = null,
+            bool? deckDrawDisabledThisTurn = null)
         {
             Hand = Array.AsReadOnly(hand.ToArray()); Draw = Array.AsReadOnly(draw.ToArray());
             Discard = Array.AsReadOnly(discard.ToArray()); Rng = rng; DrawModifier = drawModifier;
@@ -29,7 +32,12 @@ namespace MonsterTrain2Poju.Model
             BonusDraw = bonusDraw;
             NextDrawUpgrades = nextDrawUpgrades == null ? null : Array.AsReadOnly(nextDrawUpgrades.ToArray());
             NextUpgradeReferenceId = nextUpgradeReferenceId;
+            DeckDrawDisabledThisTurn = deckDrawDisabledThisTurn;
         }
+        internal CardCycleState WithDrawDisabled(bool? disabled) => new CardCycleState(Hand, Draw, Discard, Rng, DrawModifier,
+            ExternalInteractions, BonusDraw, NextDrawUpgrades, NextUpgradeReferenceId, disabled);
+        internal CardCycleState WithNextDrawUpgrades(IReadOnlyList<NextDrawUpgradeRule>? upgrades) => new CardCycleState(Hand, Draw, Discard, Rng, DrawModifier,
+            ExternalInteractions, BonusDraw, upgrades, NextUpgradeReferenceId, DeckDrawDisabledThisTurn);
     }
 
     public sealed class CardCycleResult
@@ -69,13 +77,14 @@ namespace MonsterTrain2Poju.Model
                 }
                 int selected = draw.FindLastIndex(card => card.InstanceId != playedCardId);
                 if (selected < 0) break;
+                if (source.DeckDrawDisabledThisTurn == true) continue;
                 // DrawSpecificCard refuses a full hand, even when DrawCards reserved the played card's slot.
                 if (hand.Count == maxHandSize) continue;
                 CardToken card = draw[selected]; draw.RemoveAt(selected); hand.Insert(0, card);
             }
             var applications = new List<BonusUpgradeApplication>();
             BonusDrawState? bonus = BonusDrawModel.CompleteDraw(source.BonusDraw, Array.Empty<CardToken>(), source.Hand.Count, -1, applications);
-            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, source.DrawModifier, source.ExternalInteractions, bonus, source.NextDrawUpgrades, source.NextUpgradeReferenceId), upgradeApplications: applications);
+            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, source.DrawModifier, source.ExternalInteractions, bonus, source.NextDrawUpgrades, source.NextUpgradeReferenceId, source.DeckDrawDisabledThisTurn), upgradeApplications: applications);
         }
 
         public static CardCycleResult DrawHand(CardCycleState source, int handSize, int maxHandSize)
@@ -101,12 +110,13 @@ namespace MonsterTrain2Poju.Model
                     rng = shuffled.State; draw = shuffled.Items.ToList(); discard.Clear();
                 }
                 if (draw.Count == 0) break;
+                if (source.DeckDrawDisabledThisTurn == true) continue;
                 CardToken card = draw[draw.Count - 1]; draw.RemoveAt(draw.Count - 1); hand.Insert(0, card);
                 drawn.Add(card);
             }
             var applications = new List<BonusUpgradeApplication>();
             BonusDrawState? bonus = BonusDrawModel.CompleteDraw(source.BonusDraw, drawn, source.Hand.Count, handSize, applications);
-            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, 0, source.ExternalInteractions, bonus, source.NextDrawUpgrades, source.NextUpgradeReferenceId), upgradeApplications: applications);
+            return new CardCycleResult(new CardCycleState(hand, draw, discard, rng, 0, source.ExternalInteractions, bonus, source.NextDrawUpgrades, source.NextUpgradeReferenceId, source.DeckDrawDisabledThisTurn), upgradeApplications: applications);
         }
 
         public static CardCycleResult DiscardHand(CardCycleState source, IReadOnlyCollection<int>? ephemeralCardIds = null,
@@ -133,7 +143,7 @@ namespace MonsterTrain2Poju.Model
             }
             return new CardCycleResult(new CardCycleState(source.Hand.Where(card => retained.Contains(card.InstanceId)).ToArray(), source.Draw,
                 source.Discard.Concat(discard).ToArray(), source.Rng, source.DrawModifier,
-                source.ExternalInteractions, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId), purgedCards: purged);
+                source.ExternalInteractions, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId, source.DeckDrawDisabledThisTurn), purgedCards: purged);
         }
     }
 }

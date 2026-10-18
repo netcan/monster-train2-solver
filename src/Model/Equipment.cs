@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Model
                 context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState);
             // The temporary draw entry is removed by MoveToStandByPile after AddEquipment.
             context = context.WithCards(new CardCycleState(context.Cards.Hand, context.Cards.Draw.Concat(copied.AddedCards).ToArray(),
-                context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId));
+                context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn));
             return new CardGenerationResult(context, copied.AddedCards);
         }
 
@@ -58,7 +58,7 @@ namespace MonsterTrain2Poju.Model
                 piles[index] = CardPileModel.Add(piles[index], new CardToken(cardId, card.DataId));
                 context = context.WithCards(new CardCycleState(context.Cards.Hand.Where(card => card.InstanceId != cardId).ToArray(),
                     context.Cards.Draw.Where(card => card.InstanceId != cardId).ToArray(), context.Cards.Discard.Where(card => card.InstanceId != cardId).ToArray(),
-                    context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId));
+                    context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn));
             }
             piles[index] = CardPileModel.BindEquipment(piles[index], new EquipmentStandbyCondition(cardId, hostId, false));
             return context.WithOtherPiles(piles);
@@ -103,7 +103,7 @@ namespace MonsterTrain2Poju.Model
             if (condition.ReturnToHand)
                 cards = new CardCycleState(cards.Hand.Count < context.MaxHandSize ? new[] { card }.Concat(cards.Hand).ToArray() : cards.Hand,
                     cards.Hand.Count < context.MaxHandSize ? cards.Draw : cards.Draw.Concat(new[] { card }).ToArray(), cards.Discard,
-                    cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
+                    cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
             else
             {
                 piles = piles.Select(pile => pile.Name == "Exhausted" ? CardPileModel.Add(pile, card) : pile).ToArray();

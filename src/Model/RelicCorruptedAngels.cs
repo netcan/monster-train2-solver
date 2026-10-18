@@ -99,7 +99,7 @@ namespace MonsterTrain2Poju.Model
             if (!result.Supported) return result;
             CardCycleState cards = result.Context!.Cards;
             return new(result.Context.WithCards(new(cards.Hand, cards.Draw, cards.Discard, cards.Rng, 0, cards.ExternalInteractions,
-                cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId)), result.DrawnCardIds);
+                cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn)), result.DrawnCardIds);
         }
     }
 }

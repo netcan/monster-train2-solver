@@ -192,7 +192,7 @@ namespace MonsterTrain2Poju.Model
                     : pile).ToArray();
                 source = source.WithCards(new CardCycleState(source.Cards.Hand, source.Cards.Draw, discard,
                     source.Cards.Rng, source.Cards.DrawModifier, source.Cards.ExternalInteractions,
-                    source.Cards.BonusDraw, source.Cards.NextDrawUpgrades, source.Cards.NextUpgradeReferenceId))
+                    source.Cards.BonusDraw, source.Cards.NextDrawUpgrades, source.Cards.NextUpgradeReferenceId, source.Cards.DeckDrawDisabledThisTurn))
                     .WithOtherPiles(piles)
                     .WithStatistics(ids.Aggregate(source.Statistics, (statistics, id) => statistics?.RemoveDeckCard(id)));
             }

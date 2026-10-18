@@ -68,7 +68,7 @@ namespace MonsterTrain2Poju.Model
                 cards.BonusDraw.Listeners.Select(listener => new BonusDrawListener(listener.Key, Replace(listener.Upgrade))).ToArray());
             var next = cards.NextDrawUpgrades?.Select(rule => new NextDrawUpgradeRule(Replace(rule.Upgrade), rule.Filters)).ToArray();
             return new CombatContext(new CardCycleState(cards.Hand, cards.Draw, cards.Discard, cards.Rng, cards.DrawModifier,
-                cards.ExternalInteractions, bonus, next, cards.NextUpgradeReferenceId), context.BattleRng, context.Gold,
+                cards.ExternalInteractions, bonus, next, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn), context.BattleRng, context.Gold,
                 context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics,
                 context.CardInstances?.Select(ReplaceCard).ToArray(), context.CardRegistry?.Select(ReplaceCard).ToArray(),
                 context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades?.Select(Replace).ToArray(), context.OtherPiles,

@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Model
                 if (standby == null) return Unsupported("Random mixing requires the Standby pile for its previous elixir.");
                 context = context.WithCards(new CardCycleState(context.Cards.Hand.Where(card => card.InstanceId != current.InstanceId).ToArray(),
                     context.Cards.Draw, context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier,
-                    context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId));
+                    context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn));
                 context = context.WithOtherPiles(context.OtherPiles.Select(pile => pile.Name == "Standby" ? CardPileModel.Add(pile, current) : pile).ToArray());
                 generated = CardGenerationModel.Apply(context, new CardGenerationRule("HandPile", 1, new[] { recipe.Creation },
                     copyModifiers: true, deterministicPoolSelection: true), current.InstanceId);

@@ -56,7 +56,7 @@ namespace MonsterTrain2Poju.Model
                 if (amount != 0) listeners.Add(new BonusDrawListener(key, upgrade));
             }
             return new CardCycleState(cards.Hand, cards.Draw, cards.Discard, cards.Rng, unchecked(cards.DrawModifier + amount),
-                cards.ExternalInteractions, new BonusDrawState(counters.Select(pair => new BonusDrawCounter(pair.Key, pair.Value)).ToArray(), listeners), cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
+                cards.ExternalInteractions, new BonusDrawState(counters.Select(pair => new BonusDrawCounter(pair.Key, pair.Value)).ToArray(), listeners), cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
         }
         internal static BonusDrawState? CompleteDraw(BonusDrawState? source, IReadOnlyList<CardToken> drawn,
             int existingHand, int bonusStart, List<BonusUpgradeApplication> applications)

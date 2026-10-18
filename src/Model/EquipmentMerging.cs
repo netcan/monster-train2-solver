@@ -160,7 +160,7 @@ namespace MonsterTrain2Poju.Model
             context = context.WithCards(new CardCycleState(source.Cards.Hand.Where(card => !selected.Contains(card.InstanceId)).ToArray(),
                 source.Cards.Draw.Where(card => !selected.Contains(card.InstanceId)).Concat(new[] { tokenCreated }).ToArray(),
                 source.Cards.Discard.Where(card => !selected.Contains(card.InstanceId)).ToArray(), source.Cards.Rng,
-                source.Cards.DrawModifier, source.Cards.ExternalInteractions, source.Cards.BonusDraw, source.Cards.NextDrawUpgrades, source.Cards.NextUpgradeReferenceId));
+                source.Cards.DrawModifier, source.Cards.ExternalInteractions, source.Cards.BonusDraw, source.Cards.NextDrawUpgrades, source.Cards.NextUpgradeReferenceId, source.Cards.DeckDrawDisabledThisTurn));
             context = context.WithOtherPiles(source.OtherPiles.Select(pile => pile.Name == "Standby"
                 ? selected.Aggregate(pile, (current, id) => CardPileModel.Add(current, new CardToken(id, source.FindCard(id)!.DataId))) : pile).ToArray());
             if (draw)

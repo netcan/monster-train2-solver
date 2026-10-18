@@ -28,7 +28,7 @@ namespace MonsterTrain2Poju.Model
             var scheduled = new NextDrawUpgradeRule(rule.Upgrade.WithSharedReference(referenceId), rule.Filters);
             return new CardCycleState(cards.Hand, cards.Draw, cards.Discard, cards.Rng, cards.DrawModifier,
                 cards.ExternalInteractions, cards.BonusDraw, pending.Concat(new[] { scheduled }).ToArray(),
-                referenceId.HasValue ? referenceId.Value + 1 : (int?)null);
+                referenceId.HasValue ? referenceId.Value + 1 : (int?)null, cards.DeckDrawDisabledThisTurn);
         }
 
         // This is the native effect body; callers perform TestEffect first.
@@ -63,12 +63,13 @@ namespace MonsterTrain2Poju.Model
             if (source.MaxHandSize < 0 || source.Cards.Hand.Count > source.MaxHandSize)
                 return new TypedDrawResult(null, Array.Empty<int>(), "Invalid draw hand size.");
             if (source.Cards.Hand.Count == source.MaxHandSize) return new TypedDrawResult(source, Array.Empty<int>());
+            if (source.Cards.DeckDrawDisabledThisTurn == true) return new TypedDrawResult(source, Array.Empty<int>());
             CardCycleState cards = source.Cards;
             CardToken? token = cards.Draw.Concat(cards.Discard).FirstOrDefault(card => card.InstanceId == cardId);
             if (token == null) return new TypedDrawResult(null, Array.Empty<int>(), "The specific drawn card is not in the deck or discard pile.");
             var moved = new CardCycleState(new[] { token }.Concat(cards.Hand).ToArray(),
                 cards.Draw.Where(card => card.InstanceId != cardId).ToArray(), cards.Discard.Where(card => card.InstanceId != cardId).ToArray(),
-                cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
+                cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
             CombatContext context = source.WithCards(moved).WithStatistics(source.Statistics?.Increment(cardId, "TimesDrawn"));
             context = Apply(context, new[] { cardId }, playedCardId, definitions, out string? error);
             if (error == null && RelicCorruptedAngelsModel.Enabled(context))
@@ -101,7 +102,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     ShuffleResult<CardToken> shuffled = cards.Rng.Shuffle(cards.Discard);
                     cards = new CardCycleState(cards.Hand, shuffled.Items, Array.Empty<CardToken>(), shuffled.State,
-                        cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
+                        cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
                     context = context.WithCards(cards);
                 }
                 CardToken? token = cards.Draw.LastOrDefault(card => card.InstanceId != playedCardId);
@@ -114,7 +115,7 @@ namespace MonsterTrain2Poju.Model
             BonusDrawState? bonus = BonusDrawModel.CompleteDraw(final.BonusDraw, Array.Empty<CardToken>(),
                 source.Cards.Hand.Count, -1, new List<BonusUpgradeApplication>());
             context = context.WithCards(new CardCycleState(final.Hand, final.Draw, final.Discard, final.Rng,
-                final.DrawModifier, final.ExternalInteractions, bonus, final.NextDrawUpgrades, final.NextUpgradeReferenceId));
+                final.DrawModifier, final.ExternalInteractions, bonus, final.NextDrawUpgrades, final.NextUpgradeReferenceId, final.DeckDrawDisabledThisTurn));
             return new TypedDrawResult(context, drawn);
         }
 
@@ -140,7 +141,7 @@ namespace MonsterTrain2Poju.Model
                 pending = new[] { new NextDrawUpgradeRule(scaled.Upgrade!, pending[0].Filters) };
                 context = scaled.Context!.WithCards(new CardCycleState(context.Cards.Hand, context.Cards.Draw, context.Cards.Discard,
                     context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw,
-                    pending, context.Cards.NextUpgradeReferenceId));
+                    pending, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn));
             }
             foreach (int id in drawnCardIds)
             {
@@ -193,7 +194,7 @@ namespace MonsterTrain2Poju.Model
 
         private static CardCycleState WithPending(CardCycleState cards, IReadOnlyList<NextDrawUpgradeRule> pending) =>
             new CardCycleState(cards.Hand, cards.Draw, cards.Discard, cards.Rng, cards.DrawModifier,
-                cards.ExternalInteractions, cards.BonusDraw, pending, cards.NextUpgradeReferenceId);
+                cards.ExternalInteractions, cards.BonusDraw, pending, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
 
         private static CardModifiers RemoveFirst(CardModifiers source, CardUpgradeModifier upgrade)
         {

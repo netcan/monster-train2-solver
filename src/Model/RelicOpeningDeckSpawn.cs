@@ -92,7 +92,7 @@ namespace MonsterTrain2Poju.Model
             CardSpellModel.WithContext(source, source.Context!.WithRelics(source.Context.Relics!.Select(item => item.DataId == owner.DataId ?
                 item.WithResourceEffects(item.ResourceEffects!.Select(rule => rule.EffectIndex == effect.EffectIndex ? effect : rule).ToArray()) : item).ToArray()));
         private static CardCycleState Cycle(CardCycleState source, IReadOnlyList<CardToken> draw, IReadOnlyList<CardToken> discard, UnityRng rng) =>
-            new(source.Hand, draw, discard, rng, source.DrawModifier, source.ExternalInteractions, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId);
+            new(source.Hand, draw, discard, rng, source.DrawModifier, source.ExternalInteractions, source.BonusDraw, source.NextDrawUpgrades, source.NextUpgradeReferenceId, source.DeckDrawDisabledThisTurn);
         private static TrainCombatResult Match(TrainCombatState state) => new(state, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
         private static TrainCombatResult Fail(string error) => new(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), error);
     }

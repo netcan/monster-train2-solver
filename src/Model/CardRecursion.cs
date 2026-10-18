@@ -195,7 +195,7 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             var updatedCards = new CardCycleState(hand, draw, discard, cards.Rng, cards.DrawModifier,
-                cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
+                cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
             return new CardRecursionResult(updatedCards, piles, nextBattleRng, restoredCardIds: restoredCardIds,
                 changedCards: changedCards);
         }

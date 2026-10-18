@@ -52,7 +52,7 @@ namespace MonsterTrain2Poju.Model
                 context.Cards.Hand,
                 context.Cards.Draw.Concat(new[] { card }).ToArray(),
                 context.Cards.Discard, context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions,
-                context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId);
+                context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn);
             var piles = context.OtherPiles.Select(pile => pile.Name is "Standby" or "Exhausted" or "Eaten"
                 ? CardPileModel.Remove(pile, cardId) : pile).ToArray();
             return context.WithCards(cards).WithOtherPiles(piles);
