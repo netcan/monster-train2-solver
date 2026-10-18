@@ -66,6 +66,7 @@ namespace MonsterTrain2Poju.Model
         public string? UnitTriggerKind { get; }
         public int? HealDamageMultiplier { get; }
         public UnitReturnRule? UnitReturn { get; }
+        public EquipmentMergeRule? EquipmentMerge { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
@@ -81,7 +82,7 @@ namespace MonsterTrain2Poju.Model
             bool? removeHalfStatusEffects = null, OverhealRule? overheal = null, bool? corruptionAdd = null,
             bool nullTargetless = false, bool nullForwardSelf = false, CardChooseDiscardRule? chooseDiscard = null,
             int transferAttackMultiplier = 0, StatusTransferRule? statusTransfer = null, string? unitTriggerKind = null,
-            int? healDamageMultiplier = null, UnitReturnRule? unitReturn = null)
+            int? healDamageMultiplier = null, UnitReturnRule? unitReturn = null, EquipmentMergeRule? equipmentMerge = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -97,7 +98,7 @@ namespace MonsterTrain2Poju.Model
             Overheal = overheal; CorruptionAdd = corruptionAdd;
             NullTargetless = nullTargetless; NullForwardSelf = nullForwardSelf; ChooseDiscard = chooseDiscard;
             TransferAttackMultiplier = transferAttackMultiplier; StatusTransfer = statusTransfer; UnitTriggerKind = unitTriggerKind;
-            HealDamageMultiplier = healDamageMultiplier; UnitReturn = unitReturn; }
+            HealDamageMultiplier = healDamageMultiplier; UnitReturn = unitReturn; EquipmentMerge = equipmentMerge; }
     }
 
     public sealed class StatusTransferRule
@@ -1026,6 +1027,8 @@ namespace MonsterTrain2Poju.Model
                         "Missing captured card play definition; the action target space is unknown."));
                     continue;
                 }
+                CardInstanceState? targetInstance = source.Spawn.Train.Context.FindCard(card.InstanceId);
+                if (targetInstance?.Permanent.MergedEquipment != null) rule = targetInstance.Permanent.MergedEquipment.Resolve(rule);
             if (CardSpellModel.RequiresUnitTarget(rule.Effects.Concat(rule.OnCastEffects).ToArray()))
                 {
                 RoomCombatState targetRoom = source.Spawn.Train.Rooms.First(item => item.RoomIndex == room.RoomIndex);
@@ -1068,7 +1071,7 @@ namespace MonsterTrain2Poju.Model
             PlayCardAction action, CardPlayRule rule)
         {
             var choiceEffects = rule.Effects.Concat(rule.OnCastEffects).Select((effect, index) => (effect, index))
-                .Where(item => item.effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" || item.effect.Type == "Recursion" &&
+                .Where(item => item.effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" or "MergeEquipment" || item.effect.Type == "Recursion" &&
                     item.effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck").ToArray();
             if (choiceEffects.Length == 0)
             {
@@ -1092,6 +1095,18 @@ namespace MonsterTrain2Poju.Model
 
                 (CardActionEffect effect, int effectIndex) = choiceEffects[choiceIndex];
                 CombatContext context = source.Spawn.Train.Context!;
+                if (effect.Type == "MergeEquipment")
+                {
+                    IReadOnlyList<IReadOnlyList<int>> mergeChoices = EquipmentMergeModel.Choices(context, effect.EquipmentMerge!, out string? mergeError);
+                    if (mergeError != null) yield break;
+                    foreach (IReadOnlyList<int> choice in mergeChoices)
+                    {
+                        selections.Add(new CardRecursionSelection(effectIndex, choice));
+                        foreach (PlayCardAction branch in Expand(choiceIndex + 1)) yield return branch;
+                        selections.RemoveAt(selections.Count - 1);
+                    }
+                    yield break;
+                }
                 string? error;
                 IReadOnlyList<int> eligible = effect.Type == "ChooseDiscard"
                     ? CardChooseDiscardModel.EligibleCards(context, effect, action.CardInstanceId, out error)

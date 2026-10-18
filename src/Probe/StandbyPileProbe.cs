@@ -40,7 +40,9 @@ namespace MonsterTrain2Poju.Probe
             foreach (var pair in native.Where(item => item.Key.GetCardType() == CardType.Equipment &&
                 exhaustConditions?.Any(condition => condition.CardId == FullBattleTrace.Active!.CardId(item.Key)) != true))
             {
-                if (pair.Value == null) throw new InvalidOperationException("Equipment has no native standby condition.");
+                // Merged source equipment is deliberately retained without a host
+                // or return predicate. It stays in Standby for the whole battle.
+                if (pair.Value == null) continue;
                 var callback = (Delegate)AccessTools.Field(typeof(RemoveFromStandByCondition), "conditionFunction").GetValue(pair.Value);
                 object closure = callback.Target;
                 CharacterState? host = Host(closure);

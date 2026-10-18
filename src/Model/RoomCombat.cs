@@ -1648,7 +1648,7 @@ namespace MonsterTrain2Poju.Model
             {
                 card = context?.FindCard(cardId); upgrades = Array.Empty<CardUpgradeModifier>();
                 string? dataId = card?.DataId;
-                EquipmentDefinition? definition = definitions.Cards.FirstOrDefault(rule => rule.DataId == dataId)?.Equipment;
+                EquipmentDefinition? definition = EquipmentMergeModel.Definition(context, definitions, cardId);
                 if (card?.EquippedUnitId == null || definition == null)
                 { unsupportedReason = "Missing equipment definition or card relationship."; return false; }
                 upgrades = definition.Upgrades.Concat(card.Permanent.Upgrades.Select((upgrade, index) => upgrade.WithEquipmentSource(cardId, index)))
@@ -1686,8 +1686,8 @@ namespace MonsterTrain2Poju.Model
                     unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities,
                     unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules, lastFeederId: unit.LastFeederId));
             }
-            private string EquipmentUpgradeKey(int cardId, BattlePlayRules definitions) => definitions.Cards
-                .First(rule => rule.DataId == context!.FindCard(cardId)!.DataId).Equipment!.UpgradeId ?? EquipmentModel.UpgradeKey(cardId);
+            private string EquipmentUpgradeKey(int cardId, BattlePlayRules definitions) =>
+                EquipmentMergeModel.Definition(context, definitions, cardId)!.UpgradeId ?? EquipmentModel.UpgradeKey(cardId);
 
             internal RoomCombatResult CardHeal(int targetId, int amount)
             {

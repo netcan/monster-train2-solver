@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
             "CardEffectAddCardUpgradeToUnitsPerStatusEffect", "CardEffectAddTempSwapStats",
             "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand",
-            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix", "CardEffectMixRandom", "CardEffectUnboxSmallBoxUnitCard", "CardEffectReturnUnitToHand", "CardEffectReplayTrigger"
+            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix", "CardEffectMixRandom", "CardEffectUnboxSmallBoxUnitCard", "CardEffectReturnUnitToHand", "CardEffectReplayTrigger", "CardEffectMergeEquipment"
         }, StringComparer.Ordinal);
         private readonly FullBattleTrace trace;
         private readonly UnitPlayModelProbe projection;
@@ -125,6 +125,7 @@ namespace MonsterTrain2Poju.Probe
                     .Where(unit => unit != null).Cast<CombatUnit>()
                     .Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>()).ToArray();
                 foreach (string child in rule.Effects.Where(effect => effect.Generation != null).SelectMany(effect => effect.Generation!.Pool).Select(card => card.DataId)
+                    .Concat(rule.Effects.Where(effect => effect.EquipmentMerge != null).Select(effect => effect.EquipmentMerge!.Output.DataId))
                     .Concat(spawned.SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)))
                     pending.Enqueue(child);
                 foreach (string child in rule.Effects.Select(effect => effect.AbilityChange?.Definition?.DataId)
@@ -372,6 +373,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectDuplicateCardInHand" ? "DuplicateCard" :
                 effect.GetEffectStateName() == "CardEffectReturnUnitToHand" ? "ReturnUnit" :
                 effect.GetEffectStateName() == "CardEffectReplayTrigger" ? "ReplayTrigger" :
+                effect.GetEffectStateName() == "CardEffectMergeEquipment" ? "MergeEquipment" :
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
                 effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
@@ -466,7 +468,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" ||
                 effect.GetEffectStateName() == "CardEffectBuffEquipment") && effect.GetParamBool();
             if (type == "UnitUpgrade" || type == "UnitUpgradePerStatus" || type == "RemoveUnitUpgrade" ||
-                type == "AttachEquipment" || type == "BuffEquipment" || type == "DuplicateCard" && effect.GetParamCardUpgradeData() != null || handUpgrade || deckSpellUpgrade)
+                type == "AttachEquipment" || type == "BuffEquipment" || (type == "DuplicateCard" || type == "MergeEquipment") && effect.GetParamCardUpgradeData() != null || handUpgrade || deckSpellUpgrade)
             {
                 if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing unit upgrade data");
                 else
@@ -474,7 +476,7 @@ namespace MonsterTrain2Poju.Probe
                     CardUpgradeData upgradeData = effect.GetParamCardUpgradeData();
                     var upgradeState = new CardUpgradeState(); upgradeState.Setup(upgradeData);
                     bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" ||
-                        effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" || deckSpellUpgrade || type == "DuplicateCard";
+                        effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" || deckSpellUpgrade || type == "DuplicateCard" || type == "MergeEquipment";
                     upgrade = CardModifierProbe.Upgrade(upgradeState, false, filtersAlreadyApplied: filtersIgnoredByEffect);
                     interactions.AddRange(upgrade.ExternalInteractions);
                     if (deckSpellUpgrade || type == "DuplicateCard") upgradeFilters = upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
@@ -558,7 +560,18 @@ namespace MonsterTrain2Poju.Probe
                 transferAttackMultiplier: type == "TransferAttackFromUnit" ? effect.GetAdditionalParamInt() : 0,
                 unitTriggerKind: type == "PlayUnitTrigger" || type == "ReplayTrigger" ? effect.GetParamTrigger().ToString() : null,
                 healDamageMultiplier: type == "HealRelative" ? (int?)effect.GetAdditionalParamInt() : null,
-                unitReturn: type == "ReturnUnit" ? new UnitReturnRule(effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamBool3()) : null);
+                unitReturn: type == "ReturnUnit" ? new UnitReturnRule(effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamBool3()) : null,
+                equipmentMerge: type == "MergeEquipment" ? EquipmentMerge(effect, interactions) : null);
+        }
+
+        private static EquipmentMergeRule? EquipmentMerge(CardEffectData effect, List<string> interactions)
+        {
+            if (!(effect.GetParamRewardData() is EquipmentMergeRewardData reward))
+            { interactions.Add("Missing equipment merge reward definition"); return null; }
+            var data = (EquipmentMergeRewardData.MergeCardData)HarmonyLib.AccessTools.Field(typeof(EquipmentMergeRewardData), "equipmentMergeCardData").GetValue(reward);
+            var pairs = (List<EquipmentMergeRewardData.DisallowedPairs>)HarmonyLib.AccessTools.Field(typeof(EquipmentMergeRewardData), "disallowedPairs").GetValue(reward);
+            return new EquipmentMergeRule(CardGenerationProbe.Creation(data.cardData), CardUpgradeMaskProbe.Rule(data.selectionMaskFilter),
+                pairs.Select(pair => (IReadOnlyList<string>)new[] { pair.card1.GetID(), pair.card2.GetID() }).ToArray());
         }
 
         private static RoomCapacityAttachmentState? CapacityAttachment(CardData card, CardEffectData effect,

@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 464 binary archives, including 425
+Current accepted inventory (2026-10-18): 465 binary archives, including 426
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 464
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 465
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,19 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-fused-weaponry.mt2f` adds three unchanged Fused Weaponries: UI
+cancellation, ordered hand/discard merging with immediate draw, and draw/discard
+merging with output left at draw top. Distinct source identities sharing one
+definition pass native Test but cannot be paired. Both generated equipment
+cards are equipped; both source base payloads and permanent upgrades apply once,
+temporary source upgrades are discarded, and the original discount composes
+with current source costs and inherited permanent costs. Source cards remain
+in Standby without equipment conditions. Complete effect contexts, the 32-stage
+win (seven plays/five EndTurns), sixteen immutable chains and bounded search
+are checked. Nested/trait-bearing/ability equipment, permanent numeric offsets,
+copy flag changes, merged-card cloning and creation relic callbacks remain
+explicit calibration boundaries.
 
 `full-battle-transcend-imp.mt2f` adds three unchanged Transcend Imps. Empty
 OnSpawn history is a no-op; successful trigger batches replay in order using

@@ -151,6 +151,7 @@ namespace MonsterTrain2Poju.Model
             if (source.NextCardId <= 0 || source.NextCardId == int.MaxValue || source.CardRegistry.Any(card => card.InstanceId >= source.NextCardId))
                 return Unsupported("Invalid detached card identity allocation.");
             if (copying.DataId != creation.DataId) return Unsupported("Detached clone definition differs from its source.");
+            if (copying.Permanent.MergedEquipment != null) return Unsupported("Merged equipment cloning requires separate native calibration.");
             string? error = CardModifierModel.UnsupportedReason(copying);
             if (error != null) return Unsupported(error);
             // CopyCardState does not pass an exclusion list. Clone-exclusion flags
@@ -312,6 +313,7 @@ namespace MonsterTrain2Poju.Model
                     RefreshUpgrades();
                 }
                 CardInstanceState? copying = rule.CopyModifiers ? cachedCopy ?? context.FindCard(sourceCardId) : null;
+                if (copying?.Permanent.MergedEquipment != null) return Unsupported("Merged equipment copying requires separate native calibration.");
                 if (copying != null)
                 {
                     error = CardModifierModel.UnsupportedReason(copying);
@@ -405,7 +407,7 @@ namespace MonsterTrain2Poju.Model
         {
             IReadOnlyList<BoxedCardState>? boxes = source.BoxedCards == null && destination.BoxedCards == null ? null :
                 (destination.BoxedCards ?? Array.Empty<BoxedCardState>()).Concat(source.BoxedCards ?? Array.Empty<BoxedCardState>()).ToArray();
-            CardModifiers result = new CardModifiers(source.Offsets, destination.Upgrades, source.PersistentHealth, source.ExternalInteractions, boxes);
+            CardModifiers result = new CardModifiers(source.Offsets, destination.Upgrades, source.PersistentHealth, source.ExternalInteractions, boxes, source.MergedEquipment ?? destination.MergedEquipment);
             foreach (CardUpgradeModifier upgrade in source.Upgrades.Where(upgrade => !ignored.Contains(upgrade.DataId)))
                 result = UnitModifierModel.Add(result, forAddCardPipeline ? upgrade.ForAddCardCopy() : upgrade.WithSharedReference(null));
             return result;

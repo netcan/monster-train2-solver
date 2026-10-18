@@ -133,7 +133,21 @@ namespace MonsterTrain2Poju.Probe
         {
             int Field(string name) => (int)AccessTools.Field(typeof(CardStateModifiers), name).GetValue(modifiers);
             var interactions = new List<string>();
-            if (modifiers.GetMergedCardStateIDs().Count > 0) interactions.Add("Merged cards");
+            MergedEquipmentState? merged = null;
+            if (modifiers.GetMergedCardStateIDs().Count > 0)
+            {
+                if (!CardBranchMaskProbe.Enabled || boxDepth > 0) interactions.Add("Unresolved or nested merged cards");
+                else
+                {
+                    SaveManager save = AllGameManagers.Instance!.GetSaveManager();
+                    merged = new MergedEquipmentState(modifiers.GetMergedCardStateIDs().Select(id =>
+                    {
+                        CardState source = save.GetMergedCardState(id);
+                        if (source.GetCardStateModifiers().HasMergedCards()) interactions.Add("Nested merged equipment");
+                        return new MergedEquipmentSource(FullBattleTrace.Active!.CardId(source), BattleActionProbe.Definition(save.GetAllGameData().FindCardData(source.GetCardDataID())!));
+                    }).ToArray());
+                }
+            }
             if (modifiers.GraftedEquipmentCardState != null || Field("graftedEquipmentCardStateId") != -1) interactions.Add("Grafted equipment");
             int savedBoxCount = ((ICollection)AccessTools.Field(typeof(CardStateModifiers), "boxedCardStateIds").GetValue(modifiers)).Count;
             BoxedCardState[]? contents = null;
@@ -158,7 +172,7 @@ namespace MonsterTrain2Poju.Probe
             return new CardModifiers(new CardStatModifier(Field("additionalDamage"), Field("additionalMaxHP"), Field("additionalCost"),
                 Field("additionalHeal"), Field("additionalSize"), Field("additionalXCost"), Field("additionalEquipmentLimit"),
                 Field("additionalUpgradeSlotCount")), modifiers.GetCardUpgrades().Select(upgrade => Upgrade(upgrade, false, true)).ToArray(),
-                modifiers.GetPersistentHP(), interactions, contents);
+                modifiers.GetPersistentHP(), interactions, contents, merged);
         }
 
         internal static CardUpgradeModifier Upgrade(CardUpgradeState upgrade) => Upgrade(upgrade, false);

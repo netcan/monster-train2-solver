@@ -143,6 +143,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-small-box.mt2f',
     'full-battle-magnetic-relay.mt2f',
     'full-battle-transcend-imp.mt2f',
+    'full-battle-fused-weaponry.mt2f',
     'full-battle-shroud-spike-feeding.mt2f',
     'full-battle-original-opening-deck-spawn.mt2f',
     'full-battle-original-perkeo.mt2f',
@@ -1675,6 +1676,13 @@ foreach ($fixturePath in $magneticRelayFixtures) {
     foreach ($mode in @('--magnetic-relay-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Magnetic Relay checks failed ($mode): $fixturePath" }
+    }
+}
+$equipmentMergeFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-fused-weaponry.mt2f' })
+foreach ($fixturePath in $equipmentMergeFixtures) {
+    foreach ($mode in @('--fused-weaponry-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Fused Weaponry checks failed ($mode): $fixturePath" }
     }
 }
 $smallBoxFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-small-box.mt2f' })

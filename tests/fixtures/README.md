@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 464 archives (425 full battles and
+Current accepted inventory (2026-10-18): 465 archives (426 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,23 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-464 accepted archives. Refresh/check the index with
+465 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-fused-weaponry.mt2f` keeps three original Fused Weaponries: cancel,
+ordered hand/discard merge and draw/discard merge. Test accepts two identities
+of the same definition while selection requires different definitions. Authored
+equipment controls carry distinct permanent/temporary upgrades and positive
+base attack/health payloads; both outputs are actually equipped. Permanent
+upgrades transfer, temporary source upgrades do not, and the original temporary
+discount produces costs three and two. Source identities remain in unconditional
+Standby; only a merge with a hand source draws its result immediately. Full
+contexts/RNG, the 32-stage win (seven plays/five EndTurns), sixteen immutable
+chains and bounded search are checked. Permanent offsets, trait/ability/nested
+sources, changed copy flags, merged cloning and creation relic ordering remain
+guarded. Binary-only: 30,021 bytes/4,487 nodes, SHA-256
+`a399256aa36dd64ae38f914651056bda6ceb190277dfc0ab00d73ee74dffb3b3`.
+Use `-FusedWeaponry` and `--fused-weaponry-only`.
 
 `full-battle-transcend-imp.mt2f` keeps three original Transcend Imps: empty
 OnSpawn history, two ordered successful batches, and retained history after an

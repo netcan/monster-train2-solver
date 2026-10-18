@@ -184,13 +184,17 @@ namespace MonsterTrain2Poju.Model
         public int PersistentHealth { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
         public IReadOnlyList<BoxedCardState>? BoxedCards { get; }
+        public MergedEquipmentState? MergedEquipment { get; }
         public CardModifiers(CardStatModifier offsets, IReadOnlyList<CardUpgradeModifier> upgrades, int persistentHealth,
-            IReadOnlyList<string> externalInteractions, IReadOnlyList<BoxedCardState>? boxedCards = null)
+            IReadOnlyList<string> externalInteractions, IReadOnlyList<BoxedCardState>? boxedCards = null,
+            MergedEquipmentState? mergedEquipment = null)
         { Offsets = offsets; Upgrades = Array.AsReadOnly(upgrades.ToArray()); PersistentHealth = persistentHealth;
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
-            BoxedCards = boxedCards == null ? null : Array.AsReadOnly(boxedCards.ToArray()); }
+            BoxedCards = boxedCards == null ? null : Array.AsReadOnly(boxedCards.ToArray()); MergedEquipment = mergedEquipment; }
         internal CardModifiers WithBoxedCards(IReadOnlyList<BoxedCardState>? contents) =>
-            new(Offsets, Upgrades, PersistentHealth, ExternalInteractions, contents);
+            new(Offsets, Upgrades, PersistentHealth, ExternalInteractions, contents, MergedEquipment);
+        internal CardModifiers WithMergedEquipment(MergedEquipmentState merged) =>
+            new(Offsets, Upgrades, PersistentHealth, ExternalInteractions, BoxedCards, merged);
         public static CardModifiers Empty() => new CardModifiers(new CardStatModifier(), Array.Empty<CardUpgradeModifier>(), 0, Array.Empty<string>());
         internal CardModifiers OnDiscard()
         {
@@ -202,7 +206,7 @@ namespace MonsterTrain2Poju.Model
                     int removed = upgrades[index].DataId.Length == 0 ? index : upgrades.FindIndex(upgrade => upgrade.DataId == upgrades[index].DataId);
                     upgrades.RemoveAt(removed);
                 }
-            return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions, BoxedCards);
+            return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions, BoxedCards, MergedEquipment);
         }
         internal CardModifiers WithPermanentUpgrade(CardUpgradeModifier upgrade, bool scale)
         {
@@ -211,7 +215,7 @@ namespace MonsterTrain2Poju.Model
                 ? upgrades.FindIndex(item => item.DataId == upgrade.DataId) : -1;
             if (existing >= 0) upgrades[existing] = upgrades[existing].Accumulate(upgrade);
             else upgrades.Add(upgrade);
-            return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions, BoxedCards);
+            return new CardModifiers(Offsets, upgrades, PersistentHealth, ExternalInteractions, BoxedCards, MergedEquipment);
         }
     }
 
@@ -297,6 +301,8 @@ namespace MonsterTrain2Poju.Model
             // An explicit empty list is used when that list is actually cleared.
             if (permanent.BoxedCards == null && Permanent.BoxedCards != null)
                 permanent = permanent.WithBoxedCards(Permanent.BoxedCards);
+            if (permanent.MergedEquipment == null && Permanent.MergedEquipment != null)
+                permanent = permanent.WithMergedEquipment(Permanent.MergedEquipment);
             CardMaskDescriptor? descriptor = MaskDescriptor;
             if (refreshTraits && !Permanent.Upgrades.SequenceEqual(permanent.Upgrades))
             {
@@ -363,6 +369,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? UnsupportedReason(CardInstanceState instance)
         {
+            if (instance.Permanent.MergedEquipment?.Validate() is string mergeError) return mergeError;
             string? exhaustError = CardExhaustModel.Validate(instance);
             if (exhaustError != null) return exhaustError;
             if (instance.MaskDescriptor != null && (instance.MaskDescriptor.Definition.DataId != instance.DataId ||
@@ -397,6 +404,7 @@ namespace MonsterTrain2Poju.Model
 
         public static CardPlayRule Resolve(CardPlayRule rule, CardInstanceState instance)
         {
+            if (instance.Permanent.MergedEquipment != null) rule = instance.Permanent.MergedEquipment.Resolve(rule);
             var interactions = rule.ExternalInteractions.Concat(instance.ExternalInteractions)
                 .Concat(instance.Permanent.ExternalInteractions).Concat(instance.Temporary.ExternalInteractions)
                 .Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades).SelectMany(UpgradeInteractions)).ToList();
@@ -499,7 +507,7 @@ namespace MonsterTrain2Poju.Model
                 corruptionAdd: effect.CorruptionAdd, nullTargetless: effect.NullTargetless,
                 nullForwardSelf: effect.NullForwardSelf, chooseDiscard: effect.ChooseDiscard,
                 transferAttackMultiplier: effect.TransferAttackMultiplier, statusTransfer: effect.StatusTransfer,
-                unitTriggerKind: effect.UnitTriggerKind, healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn);
+                unitTriggerKind: effect.UnitTriggerKind, healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge);
 
             int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal" || effect.Type == "HealOverheal" || effect.Type == "HealRelative"
                 ? UpgradedStat(UpgradedStat(value, effect.Type == "HealOverheal" || effect.Type == "HealRelative" ? "Heal" : effect.Type, true, instance.Permanent),

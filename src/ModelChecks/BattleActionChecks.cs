@@ -600,6 +600,9 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("TranscendImpPrepared", out var transcendImpPrepared) && transcendImpPrepared.GetBoolean())
             chooser = source => TranscendImpChecks.Choose(source, fixture.GetProperty("TranscendImpCardIds").Deserialize<int[]>()!,
                 fixture.GetProperty("TranscendImpSourceCardIds").Deserialize<int[]>()!, fixture.GetProperty("TranscendImpRecallCardId").GetInt32());
+        if (fixture.TryGetProperty("EquipmentMergePrepared", out var equipmentMergePrepared) && equipmentMergePrepared.GetBoolean())
+            chooser = source => EquipmentMergeChecks.Choose(source, fixture.GetProperty("EquipmentMergeCardIds").Deserialize<int[]>()!,
+                fixture.GetProperty("EquipmentMergeSourceIds").Deserialize<int[]>()!, fixture.GetProperty("EquipmentMergeUnitIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
             chooser = BattleActionModel.ChooseEmptySpellThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var originalUnitRelicPolicy) && originalUnitRelicPolicy.GetString() == "original-unit-relic-batch")

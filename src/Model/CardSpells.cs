@@ -342,6 +342,16 @@ namespace MonsterTrain2Poju.Model
                     state = WithContext(state, upgraded.Context!);
                     continue;
                 }
+                if (effect.Type == "MergeEquipment")
+                {
+                    if (selected.Preview) continue;
+                    CardRecursionSelection? choice = recursionSelections?.FirstOrDefault(selection => selection.EffectIndex == index);
+                    CardGenerationResult merged = EquipmentMergeModel.Apply(state.Context!, effect.EquipmentMerge!, choice?.CardInstanceIds,
+                        definitions, effect.Upgrade);
+                    if (!merged.Supported) return UnsupportedTrain(merged.UnsupportedReason!);
+                    state = WithContext(state, merged.Context!); piles = state.Context!.OtherPiles?.ToArray();
+                    continue;
+                }
                 if (effect.Type == "Unbox")
                 {
                     if (selected.Preview) continue;
@@ -520,7 +530,7 @@ namespace MonsterTrain2Poju.Model
                         effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
                         chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
-                        healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn);
+                        healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -2146,6 +2156,14 @@ namespace MonsterTrain2Poju.Model
                         return "Unboxing requires captured card instances.";
                     continue;
                 }
+                if (effect.Type == "MergeEquipment")
+                {
+                    if (effect.EquipmentMerge == null || source.Context?.CardInstances == null)
+                        return "Equipment merging requires output, filters and source instances.";
+                    EquipmentMergeModel.Eligible(source.Context, effect.EquipmentMerge, out string? mergeError);
+                    if (mergeError != null) return mergeError;
+                    continue;
+                }
                 if (effect.Type == "MixRandom")
                 {
                     if (source.Context.MixState == null || effect.Range != null || effect.Value < 0)
@@ -2341,6 +2359,8 @@ namespace MonsterTrain2Poju.Model
                 case "DamageByUnitsKilled": return count > 0;
                 case "TransferAttackFromUnit": return count > 0;
                 case "ReturnUnit": return count > 0;
+                case "MergeEquipment": return context != null && effect.EquipmentMerge != null &&
+                    EquipmentMergeModel.Eligible(context, effect.EquipmentMerge, out _).Count >= 2;
                 case "TransferAllStatusesFromUnit": return count > 0;
                 case "TransferAllStatuses": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
@@ -2469,7 +2489,7 @@ namespace MonsterTrain2Poju.Model
                 effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
                 chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
-                healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn);
+                healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
