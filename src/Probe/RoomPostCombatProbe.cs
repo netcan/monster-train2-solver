@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(RoomState room, ref IEnumerator __result)
             {
-                if (GrowRoomScenario.Enabled && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                if ((GrowRoomScenario.Enabled || MushyRoomScenario.Enabled) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Observe(__result, room);
             }
         }

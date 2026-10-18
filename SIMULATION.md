@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 477 binary archives, including 438
+Current accepted inventory (2026-10-18): 478 binary archives, including 439
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 477
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 478
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,15 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-mushy-room.mt2f` keeps original enemy Sap-three callbacks.
+Unlike Grow Room, its native modifier permits deployment and makes an empty
+callback then. Turns one and three positively affect surviving same-floor
+enemies, with friendly and outside enemy controls; the replacement turn does
+not pulse and previously applied Sap survives replacement. Authored character
+health/movement keeps those controls alive without changing original room
+definitions or Mage triggers. Each full train callback and sixteen immutable
+five-play/five-EndTurn native-winning chains match, with bounded search checked.
 
 `full-battle-grow-room.mt2f` retains two original Grow Rooms and a Fight Club
 replacement. Native post-combat pulses on turns one and three grow existing
