@@ -1,7 +1,7 @@
 # Original card definition catalog
 
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
-and component fixtures. It does not increase their 466-archive acceptance count.
+and component fixtures. It does not increase their 470-archive acceptance count.
 
 The isolated `no-cards` run on 2026-10-18 inspected all 668 unique
 `AllGameData.GetAllCardData()` definitions from game module
@@ -23,12 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261018-224537-f9dff065/card-catalog.mt2f`.
-The committed archive is byte-identical: 94,402 bytes, SHA-256
-`e32f5a735705fd2ae3c517d16657c7da9949ec7d4167b19f75142287d2ab5d99`.
-The projection reflects revision `396abde`: Fused Weaponry ordered equipment
-merging and Eclipse Chamber room phase understanding/post-combat growth join
-the calibrated primitives. Nested/trait-bearing merge sources, permanent
+Source: `.probe-runs/full-battle-no-cards-20261018-230727-2ba206ea/card-catalog.mt2f`.
+The committed archive is byte-identical: 94,604 bytes, SHA-256
+`60b40352d0fe733047a6bce2f5c302388ad7f21f425a1ba16562a041fdb922cf`.
+The projection reflects revision `7efe5c6`: original Fight Club attack and Spell
+Sanctum cost attachments join the calibrated room payloads. Native witnesses
+also cover five original forge spells, three propagation spells and Great Decay
+across card piles. Card modifier resolution preserves propagation filters.
+Fused Weaponry ordered equipment merging and Eclipse Chamber room phase
+understanding/post-combat growth remain supported. Nested/trait-bearing merge sources, permanent
 offsets, changed copy flags, room phase callbacks and friendly floor movement
 remain runtime guards. Recall equipment/ability callbacks and stateful or
 repeated trigger history are also guarded. Saved boxed-card contents remain separate from owned

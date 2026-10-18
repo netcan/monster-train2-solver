@@ -1,0 +1,6 @@
+"DataId"	"AssetKey"	"Archive"	"TurnIndex"	"SourceCardId"	"Effect"	"PositiveObservation"
+"4d1f27af-3122-4a08-87e3-5ef5a14ced94"	"Scourge_SoulSavior"	"full-battle-unplayed-card-effects.mt2f"	"0"	"17"	"GenerateUpgradedCopy"	"one-new-copy-in-registry"
+"17fef621-2bb7-4847-b41d-52a89795c784"	"TitanCurse"	"full-battle-unplayed-card-effects.mt2f"	"0"	"16"	"UpgradeDeckSpells"	"temporary-upgrade-added-to-existing-spell"
+"17fef621-2bb7-4847-b41d-52a89795c784"	"TitanCurse"	"full-battle-unplayed-card-effects.mt2f"	"3"	"16"	"UpgradeDeckSpells"	"temporary-upgrade-added-to-existing-spell"
+"4d1f27af-3122-4a08-87e3-5ef5a14ced94"	"Scourge_SoulSavior"	"full-battle-unplayed-card-effects.mt2f"	"5"	"18"	"GenerateUpgradedCopy"	"one-new-copy-in-registry"
+"4d1f27af-3122-4a08-87e3-5ef5a14ced94"	"Scourge_SoulSavior"	"full-battle-unplayed-card-effects.mt2f"	"6"	"19"	"GenerateUpgradedCopy"	"one-new-copy-in-registry"

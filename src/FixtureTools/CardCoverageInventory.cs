@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "e32f5a735705fd2ae3c517d16657c7da9949ec7d4167b19f75142287d2ab5d99";
+    private const string CatalogHash = "60b40352d0fe733047a6bce2f5c302388ad7f21f425a1ba16562a041fdb922cf";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -28,6 +28,7 @@ internal static class CardCoverageInventory
         internal readonly List<int> Direct = [];
         internal readonly List<int> Other = [];
     }
+    private sealed record TurnWitness(string DataId, string Archive, int TurnIndex, int SourceCardId, string Effect, string Observation);
 
     internal static void Run(string workspace, bool check)
     {
@@ -58,6 +59,7 @@ internal static class CardCoverageInventory
         var mechanisms = new SortedDictionary<string, string>(StringComparer.Ordinal);
         var excluded = new SortedDictionary<string, string>(StringComparer.Ordinal);
         int indexed = 0, actionCount = 0, nonCatalogActions = 0, unresolvedActions = 0;
+        var triggerWitnesses = new List<TurnWitness>();
         foreach (string line in manifest.Skip(1).Order(StringComparer.Ordinal))
         {
             string[] row = line.Split('\t');
@@ -94,7 +96,7 @@ internal static class CardCoverageInventory
                 if (!before.TryGetProperty("PlayRules", out FixtureValue rules) || rules.ValueKind != FixtureKind.Object) { unresolvedActions++; continue; }
                 FixtureValue rule = rules.GetProperty("Cards").EnumerateArray().FirstOrDefault(value => Text(value, "DataId") == id);
                 if (rule.ValueKind != FixtureKind.Object) { unresolvedActions++; continue; }
-                foreach (string primitive in Primitives(rule)) mechanisms.TryAdd(primitive, archive);
+                foreach (string primitive in Primitives(rule, includeUnplayed: false)) mechanisms.TryAdd(primitive, archive);
                 if (!byId.TryGetValue(id, out Card? card)) { nonCatalogActions++; continue; }
                 if (!card.Evidence.TryGetValue(archive, out Plays? plays)) card.Evidence.Add(archive, plays = new());
                 FixtureValue original = card.Definition.GetProperty("Rule");
@@ -102,6 +104,7 @@ internal static class CardCoverageInventory
                     MatchesSourceMetadata(card.Definition, context, action.GetProperty("CardInstanceId").GetInt32());
                 (matches ? plays.Direct : plays.Other).Add(index);
             }
+            CollectUnplayedWitnesses(battle, archive, mechanisms, triggerWitnesses);
         }
         foreach (Card card in cards)
         {
@@ -128,9 +131,9 @@ internal static class CardCoverageInventory
             foreach (string primitive in Primitives(rule))
             {
                 if (mechanisms.TryGetValue(primitive, out string? archive)) card.Mechanisms.Add(primitive + "=" + archive);
-                else { missingEvidence = true; card.Gaps.Add("no-indexed-play-chain:" + primitive); }
+                else { missingEvidence = true; card.Gaps.Add("no-indexed-transition-witness:" + primitive); }
             }
-            card.Coverage = unsupported ? "unsupported" : card.Gaps.Any(gap => !gap.StartsWith("no-indexed-play-chain:", StringComparison.Ordinal)) ? "partial" :
+            card.Coverage = unsupported ? "unsupported" : card.Gaps.Any(gap => !gap.StartsWith("no-indexed-transition-witness:", StringComparison.Ordinal)) ? "partial" :
                 card.DirectPlays > 0 ? "direct-native-play" : missingEvidence ? "unreviewed" : "mechanism-only";
         }
 
@@ -151,8 +154,14 @@ internal static class CardCoverageInventory
         foreach ((string archive, Plays plays) in card.Evidence)
             Row(evidence, card.Id, card.Name, archive, plays.Direct.Count.ToString(CultureInfo.InvariantCulture), plays.Other.Count.ToString(CultureInfo.InvariantCulture),
                 string.Join(",", plays.Direct), string.Join(",", plays.Other));
+        var triggers = new StringBuilder();
+        Row(triggers, "DataId", "AssetKey", "Archive", "TurnIndex", "SourceCardId", "Effect", "PositiveObservation");
+        foreach (TurnWitness witness in triggerWitnesses.Where(witness => byId.ContainsKey(witness.DataId)))
+            Row(triggers, witness.DataId, byId[witness.DataId].Name, witness.Archive, witness.TurnIndex.ToString(CultureInfo.InvariantCulture),
+                witness.SourceCardId.ToString(CultureInfo.InvariantCulture), witness.Effect, witness.Observation);
         string report = Report(cards, indexed, excluded, actionCount, nonCatalogActions, unresolvedActions);
-        foreach ((string name, string content) in new[] { ("card-inventory.tsv", inventory.ToString()), ("card-play-evidence.tsv", evidence.ToString()), ("card-coverage.md", report) })
+        foreach ((string name, string content) in new[] { ("card-inventory.tsv", inventory.ToString()), ("card-play-evidence.tsv", evidence.ToString()),
+            ("card-trigger-evidence.tsv", triggers.ToString()), ("card-coverage.md", report) })
         {
             string path = Path.Combine(fixtureDirectory, name);
             if (check) Require(File.Exists(path) && File.ReadAllText(path) == content, "Card inventory is stale: " + name);
@@ -198,11 +207,66 @@ internal static class CardCoverageInventory
         return false; // Legacy schemas without base-trait evidence stay unverified.
     }
 
-    private static IEnumerable<string> Primitives(FixtureValue rule)
+    private static IEnumerable<string> Primitives(FixtureValue rule, bool includeUnplayed = true)
     {
         yield return "pipeline:" + Text(rule, "Effect");
-        foreach (string name in new[] { "Effects", "OnCastEffects", "OnUnplayedNegativeEffects" })
+        foreach (string name in includeUnplayed ? new[] { "Effects", "OnCastEffects", "OnUnplayedNegativeEffects" } : new[] { "Effects", "OnCastEffects" })
         foreach (FixtureValue effect in Array(rule, name)) yield return "effect:" + Text(effect, "Type");
+    }
+
+    private static void CollectUnplayedWitnesses(FixtureValue battle, string archive, IDictionary<string, string> mechanisms, List<TurnWitness> witnesses)
+    {
+        int turnIndex = -1;
+        foreach (FixtureValue turn in Array(battle, "Turns"))
+        {
+            turnIndex++;
+            if (!turn.TryGetProperty("Predicted", out FixtureValue prediction) || !Flag(prediction, "Supported") ||
+                !turn.TryGetProperty("Difference", out FixtureValue difference) || difference.ValueKind != FixtureKind.Null ||
+                !turn.TryGetProperty("Actual", out FixtureValue actual) || actual.ValueKind != FixtureKind.Object) continue;
+            FixtureValue before = turn.GetProperty("Before");
+            FixtureValue context = before.GetProperty("Spawn").GetProperty("Train").GetProperty("Context");
+            FixtureValue after = actual.GetProperty("Spawn").GetProperty("Train").GetProperty("Context");
+            FixtureValue[] registry = Array(context, "CardRegistry"), updated = Array(after, "CardRegistry");
+            if (registry.Length == 0 || updated.Length == 0) continue;
+            FixtureValue[] hand = Array(context.GetProperty("Cards"), "Hand");
+            FixtureValue[] rules = Array(before.GetProperty("PlayRules"), "Cards");
+            foreach (FixtureValue token in hand)
+            {
+                string id = Text(token, "DataId"); int instanceId = token.GetProperty("InstanceId").GetInt32();
+                FixtureValue rule = rules.FirstOrDefault(item => Text(item, "DataId") == id);
+                if (rule.ValueKind != FixtureKind.Object || Flag(rule, "HasUnsupportedUnplayedTriggers")) continue;
+                foreach (FixtureValue effect in Array(rule, "OnUnplayedNegativeEffects"))
+                {
+                    string type = Text(effect, "Type"), observation = "";
+                    if (type == "GenerateUpgradedCopy" && hand.Count(card => Text(card, "DataId") == id) == 1)
+                    {
+                        FixtureValue source = registry.FirstOrDefault(card => card.GetProperty("InstanceId").GetInt32() == instanceId);
+                        int copies = updated.Count(card => Text(card, "DataId") == id &&
+                            !registry.Any(previous => previous.GetProperty("InstanceId").ContentEquals(card.GetProperty("InstanceId"))));
+                        if (source.ValueKind == FixtureKind.Object && Flag(source, "CanBeCopied") && copies == 1)
+                            observation = "one-new-copy-in-registry";
+                    }
+                    if (type == "UpgradeDeckSpells" && effect.TryGetProperty("Upgrade", out FixtureValue upgrade) && upgrade.ValueKind == FixtureKind.Object)
+                    {
+                        string upgradeId = Text(upgrade, "DataId");
+                        int possibleSources = hand.Count(candidate => rules.Any(definition => Text(definition, "DataId") == Text(candidate, "DataId") &&
+                            Array(definition, "OnUnplayedNegativeEffects").Any(action => Text(action, "Type") == type &&
+                                action.TryGetProperty("Upgrade", out FixtureValue payload) && payload.ValueKind == FixtureKind.Object && Text(payload, "DataId") == upgradeId)));
+                        if (upgradeId.Length > 0 && possibleSources == 1 && registry.Any(card =>
+                        {
+                            if (!rules.Any(definition => Text(definition, "DataId") == Text(card, "DataId") && Text(definition, "CardType") == "Spell")) return false;
+                            FixtureValue changed = updated.FirstOrDefault(item => item.GetProperty("InstanceId").ContentEquals(card.GetProperty("InstanceId")));
+                            return changed.ValueKind == FixtureKind.Object &&
+                                Array(changed.GetProperty("Temporary"), "Upgrades").Count(item => Text(item, "DataId") == upgradeId) >
+                                Array(card.GetProperty("Temporary"), "Upgrades").Count(item => Text(item, "DataId") == upgradeId);
+                        })) observation = "temporary-upgrade-added-to-existing-spell";
+                    }
+                    if (observation.Length == 0) continue;
+                    mechanisms.TryAdd("effect:" + type, archive + "#Turns[" + turnIndex + "]");
+                    witnesses.Add(new(id, archive, turnIndex, instanceId, type, observation));
+                }
+            }
+        }
     }
 
     private static void CollectGuards(FixtureValue value, string path, SortedSet<string> guards)
@@ -250,7 +314,7 @@ internal static class CardCoverageInventory
         var text = new StringBuilder();
         text.Append("# Original card coverage inventory\n\n");
         text.Append("Generated by `scripts/Get-CardCoverageInventory.ps1`; inputs are the frozen native catalog and manifest-verified battle archives. This indexes existing evidence and does not replay battles or run regression.\n\n");
-        text.Append("The catalog/model projection is from 2026-10-18 (model revision `396abde`). See [catalog provenance](../catalogs/README.md). Keep the snapshot date in mind after model changes; regenerate the native catalog when projections change.\n\n");
+        text.Append("The catalog/model projection is from 2026-10-18 (model revision `7efe5c6`). See [catalog provenance](../catalogs/README.md). Keep the snapshot date in mind after model changes; regenerate the native catalog when projections change.\n\n");
         text.Append("## Scope\n\n| Native role | Definitions |\n| --- | ---: |\n");
         foreach (var group in cards.GroupBy(card => card.Role).OrderBy(group => group.Key, StringComparer.Ordinal)) text.Append($"| {group.Key} | {group.Count()} |\n");
         text.Append($"| **All definitions** | **{cards.Length}** |\n\n");
@@ -258,18 +322,18 @@ internal static class CardCoverageInventory
         text.Append("## Evidence levels\n\n| Classification | Logbook | All definitions | Meaning |\n| --- | ---: | ---: | --- |\n");
         foreach ((string level, string meaning) in new[] {
             ("direct-native-play", "No captured projection guards; at least one successful native play has the same captured definition projection."),
-            ("mechanism-only", "No captured projection guards; its main pipeline/effect types occur in indexed native played chains. The original card itself is not directly accepted."),
+            ("mechanism-only", "No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted."),
             ("partial", "Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row."),
             ("unsupported", "The current definition/activation pipeline is explicitly unimplemented."),
-            ("unreviewed", "Projection failed or a required primitive has no indexed played-chain witness; support is unknown.") })
+            ("unreviewed", "Projection failed or a required primitive has no indexed transition witness; support is unknown.") })
             text.Append($"| {level} | {cards.Count(card => card.Logbook && card.Coverage == level)} | {cards.Count(card => card.Coverage == level)} | {meaning} |\n");
         text.Append("\nThese are evidence labels, not whole-card completion claims. A directly matched play proves that captured path; it does not prove every target, upgrade, relic combination, trigger or future branch. Indirect witnesses may execute an effect with no target; presence in a played chain is not a positive test of every parameter. The definition projection is conservative but is not a full raw-asset checksum.\n\n");
         text.Append("Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This initial matcher accepts only trait-free definitions or SelfPurge with matching native definition parameters; other trait parameters need separate original-card calibration and are not promoted from rule equality alone. A shared DataId alone never establishes direct coverage. Upgrades on an instance do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically classified as original-card evidence.\n\n");
         text.Append($"Across all classifications, {cards.Count(card => card.DirectPlays > 0)} identities ({cards.Count(card => card.Logbook && card.DirectPlays > 0)} logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.\n\n");
-        text.Append("## Reproducible files\n\n- [Per-card inventory](card-inventory.tsv): identity, type/role, native effects/traits, evidence level, direct/other plays, primitive witnesses and exact projection guard paths.\n- [Played-card evidence](card-play-evidence.tsv): one row per original identity/archive, with zero-based indices into that archive's `Actions` array.\n- [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.\n\n");
+        text.Append("## Reproducible files\n\n- [Per-card inventory](card-inventory.tsv): identity, type/role, native effects/traits, evidence level, direct/other plays, primitive witnesses and exact projection guard paths.\n- [Played-card evidence](card-play-evidence.tsv): one row per original identity/archive, with zero-based indices into that archive's `Actions` array.\n- [Unplayed-trigger evidence](card-trigger-evidence.tsv): matched EndTurns with a positive new-copy or existing-spell-upgrade observation, source identity and zero-based `Turns` index. These supply mechanism evidence and do not count as direct card plays. Playing a card alone does not establish its unplayed trigger.\n- [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.\n\n");
         text.Append($"Indexed {indexed} full battles and {actions} native actions whose captured prediction is supported, actual state exists and difference is null. {nonCatalog} actions use scenario-only identities; {unresolved} actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: {excluded.Count}. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.\n\n");
         text.Append("## Largest recorded guard groups\n\nCounts are per logbook identity and can overlap. Conditional upgrade/discard guards do not imply every normal play fails.\n\n| Guard | Logbook identities |\n| --- | ---: |\n");
-        foreach (var group in cards.Where(card => card.Logbook).SelectMany(card => card.Gaps.Where(gap => !gap.StartsWith("no-indexed-play-chain:", StringComparison.Ordinal)).Select(gap => (card.Id, Gap: gap.Contains(':') ? gap[(gap.IndexOf(':') + 1)..] : gap)))
+        foreach (var group in cards.Where(card => card.Logbook).SelectMany(card => card.Gaps.Where(gap => !gap.StartsWith("no-indexed-transition-witness:", StringComparison.Ordinal)).Select(gap => (card.Id, Gap: gap.Contains(':') ? gap[(gap.IndexOf(':') + 1)..] : gap)))
             .Distinct().GroupBy(pair => pair.Gap).OrderByDescending(group => group.Count()).ThenBy(group => group.Key, StringComparer.Ordinal).Take(15))
             text.Append($"| {Escape(group.Key)} | {group.Count()} |\n");
         text.Append("\n## Explicitly unsupported logbook entries\n\n| Asset key | Main effects |\n| --- | --- |\n");

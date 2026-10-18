@@ -22,6 +22,9 @@ in a modified scenario does not establish original-card coverage. Exact archive
 and action indices remain in `card-play-evidence.tsv`; source traits without
 enough captured parameters and older missing metadata are not promoted. These
 labels describe evidence boundaries rather than whole-card completion.
+Positive unplayed-trigger observations are listed separately in
+`card-trigger-evidence.tsv`, including source identity and exact EndTurn index.
+They contribute mechanism evidence while keeping direct play counts separate.
 
 `scripts/Get-CardCoverageInventory.ps1 -Check` verifies frozen catalog facts,
 manifest hashes and deterministic reports without running model regression.
