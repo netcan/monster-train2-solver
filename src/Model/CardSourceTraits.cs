@@ -28,18 +28,20 @@ namespace MonsterTrain2Poju.Model
         public CardUpgradeModifier? MoonPhaseUpgrade { get; }
         public string? KillTargetTeam { get; }
         public string? KillTargetSubtype { get; }
+        public string? QueryCardType { get; }
         public bool ShouldSerializeKillTargetTeam() => KillTargetTeam != null;
         public bool ShouldSerializeKillTargetSubtype() => KillTargetSubtype != null;
+        public bool ShouldSerializeQueryCardType() => QueryCardType != null;
         public CardSourceTrait(string type, int @int, int int2, int int3, bool @bool, string str, float @float,
             bool scaling, string trackedValue, string entryDuration, string? statusQueryTeam = null,
             IReadOnlyList<string>? statusQueryStatuses = null, string? handCostTargetType = null, bool? deploymentDrawFlag = null,
             string? specificCardDataId = null, IReadOnlyList<string>? statusEffectIds = null,
-            CardUpgradeModifier? moonPhaseUpgrade = null, string? killTargetTeam = null, string? killTargetSubtype = null)
+            CardUpgradeModifier? moonPhaseUpgrade = null, string? killTargetTeam = null, string? killTargetSubtype = null, string? queryCardType = null)
         { Type = type; Int = @int; Int2 = int2; Int3 = int3; Bool = @bool; Str = str; Float = @float;
             Scaling = scaling; TrackedValue = trackedValue; EntryDuration = entryDuration; StatusQueryTeam = statusQueryTeam;
             StatusQueryStatuses = statusQueryStatuses == null ? null : Array.AsReadOnly(statusQueryStatuses.ToArray());
             HandCostTargetType = handCostTargetType; DeploymentDrawFlag = deploymentDrawFlag; SpecificCardDataId = specificCardDataId;
             StatusEffectIds = statusEffectIds == null ? null : Array.AsReadOnly(statusEffectIds.ToArray()); MoonPhaseUpgrade = moonPhaseUpgrade;
-            KillTargetTeam = killTargetTeam; KillTargetSubtype = killTargetSubtype; }
+            KillTargetTeam = killTargetTeam; KillTargetSubtype = killTargetSubtype; QueryCardType = queryCardType; }
     }
 }

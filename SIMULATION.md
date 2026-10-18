@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 527 binary archives, including 487
+Current accepted inventory (2026-10-19): 528 binary archives, including 488
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 527
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 528
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,16 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-scaled-damage.mt2f` adds unchanged Deadly Plunge, Cleave,
+Ancient Resonance, Ancient Synergy and DamageExtinguish. Exact positive damage
+uses HP plus armor (255), the front caster's attack (60 per enemy), three
+Corruption (24 per enemy), and nine resolving Spell deck members (18 per hit).
+Ancient Synergy's own source is outside the native deck query during its three
+hits. Zero/two allied deaths give zero/six damage per enemy, replacing base
+damage. A captured `QueryCardType` source field records Ancient Synergy's Spell
+filter while omitting nulls on other definitions. Six original plays, sixteen
+total plays/five EndTurns and sixteen complete immutable chains match.
 
 `full-battle-original-hostile-statuses.mt2f` adds eleven unchanged originals:
 Pyrecask, Lava Flow, Superheated, Gooey Flask, Echo Snare, Soul Cripple,

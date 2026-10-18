@@ -27,7 +27,9 @@ namespace MonsterTrain2Poju.Probe
                 trait.GetParamStatusEffects().Select(status => status.statusId).ToArray() : null,
             trait.GetTraitStateName() == CardMoonUpgradeModel.Trait ? MoonPhaseCardUpgradeCalibration.Definition(trait) : null,
             trait.GetTraitStateName() == CardKillTriggerModel.SuppressTrait ? trait.GetParamTeamType().ToString() : null,
-            trait.GetTraitStateName() == CardKillTriggerModel.SuppressTrait ? trait.GetParamSubtype().IsNone ? "" : trait.GetParamSubtype().Key : null);
+            trait.GetTraitStateName() == CardKillTriggerModel.SuppressTrait ? trait.GetParamSubtype().IsNone ? "" : trait.GetParamSubtype().Key : null,
+            trait.GetTraitStateName() == "CardTraitScalingAddDamage" && trait.GetParamTrackedValue() == CardStatistics.TrackedValueType.TypeInDeck ?
+                trait.GetParamCardType().ToString() : null);
         [HarmonyPatch(typeof(CardState), nameof(CardState.Setup))]
         private static class SetupPatch
         {

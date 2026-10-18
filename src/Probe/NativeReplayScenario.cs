@@ -1167,6 +1167,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalUnitBuffsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalScaledDamageScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original scaled damage fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalScaledDamageScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalHostileStatusesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original hostile statuses fixture must start on deployment turn.");
@@ -2400,6 +2406,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalBasicDamageScenario.Enabled) pendingPlay = OriginalBasicDamageScenario.Choose(decision, OriginalBasicDamageScenario.CardIds);
                 if (OriginalResourceSpellsScenario.Enabled) pendingPlay = OriginalResourceSpellsScenario.Choose(decision, OriginalResourceSpellsScenario.CardIds);
                 if (OriginalHostileStatusesScenario.Enabled) pendingPlay = OriginalHostileStatusesScenario.Choose(decision, OriginalHostileStatusesScenario.CardIds);
+                if (OriginalScaledDamageScenario.Enabled) pendingPlay = OriginalScaledDamageScenario.Choose(decision, OriginalScaledDamageScenario.CardIds);
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);

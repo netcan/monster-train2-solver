@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 527 archives (487 full battles and
+Current accepted inventory (2026-10-19): 528 archives (488 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -16,6 +16,26 @@ definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
 520 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-scaled-damage.mt2f` captures unchanged Deadly Plunge,
+Cleave, Ancient Resonance, Ancient Synergy and DamageExtinguish. An authored
+80-HP/five-armor support and two one-HP victims isolate exact scaling. Deadly
+Plunge deals 255 damage including armor; Cleave uses the front ally's 60 attack
+for both enemies; three Corruption produces 24 damage per enemy. Ancient
+Synergy uses nine Spell deck members while its source is resolving, for three
+18-damage hits. Ten spells exist before play, but the resolving source leaves
+the native deck membership query. A raw `QueryCardType=Spell` field preserves
+that original filter, omitted for unrelated source traits. DamageExtinguish
+replaces its base damage with zero/six per enemy before/after two allied deaths.
+Original costs, Deadly Plunge's Consume, fixed RNG and friendly/neighbor-floor
+controls match. Use `--original-scaled-damage-only`; sixteen full immutable
+chains and the existing resource-spell checks pass. Search matches sixteen
+decisions/50 roots, 128/128 states and three replayed steps, with zero
+unsupported attempts and equal serial/parallel best. Source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-061913-3a8fab60` won in
+71.21 seconds with sixteen plays/five EndTurns, all four counters zero and
+protected files unchanged. Binary-only: 44,953 bytes/6,366 nodes, SHA-256
+`5b07bdfe7eb45c3ab379afffcf1289073264193785f628f7cac69c446d44a668`.
 
 `full-battle-original-hostile-statuses.mt2f` captures unchanged Pyrecask, Lava
 Flow, Superheated, Gooey Flask, Echo Snare, Soul Cripple, Fracture, Sporetouch,
