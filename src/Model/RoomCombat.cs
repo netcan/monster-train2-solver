@@ -2409,6 +2409,17 @@ namespace MonsterTrain2Poju.Model
                     if (!drained.Supported) { unsupportedReason = drained.UnsupportedReason; return; }
                     MergeSummon(drained);
                 }
+                if (!target.Alive && !target.DeathFinished && sourceCardId > 0 &&
+                    context?.FindCard(sourceCardId)?.MaskDescriptor?.KillTriggers?.Count > 0)
+                {
+                    // Native observes the lethal hit even when Undying restores HP.
+                    TryRevive(actor, target, sourceCardId);
+                    if (unsupportedReason != null) return;
+                    CardInstanceState killSource = context.FindCard(sourceCardId)!;
+                    context = CardKillTriggerModel.Apply(context, killSource, source.Preview, source.Deployment,
+                        actor?.Source.Id ?? 0, out string? killError);
+                    if (killError != null) { unsupportedReason = killError; return; }
+                }
                 if (!target.Alive && !target.DeathFinished)
                 {
                     if (!TryRevive(actor, target, sourceCardId))

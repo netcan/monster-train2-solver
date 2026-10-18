@@ -372,6 +372,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? UnsupportedReason(CardInstanceState instance)
         {
+            string? killError = CardKillTriggerModel.Validate(instance);
+            if (killError != null) return killError;
             string? moonError = CardMoonUpgradeModel.Validate(instance);
             if (moonError != null) return moonError;
             string? graftError = CardGraftedEquipmentModel.Validate(instance);
@@ -421,6 +423,10 @@ namespace MonsterTrain2Poju.Model
             if (moonError != null) interactions.Add(moonError);
             string? graftError = CardGraftedEquipmentModel.Validate(instance);
             if (graftError != null) interactions.Add(graftError);
+            string? killError = CardKillTriggerModel.Validate(instance);
+            if (killError != null) interactions.Add(killError);
+            if (rule.HasKillTriggers && instance.MaskDescriptor?.KillTriggers?.Count > 0 != true)
+                interactions.Add("Card OnKill requires captured branch-owned trigger payloads.");
             if (CardExhaustModel.HasConsume(instance) && instance.ExhaustState == null) interactions.Add("Consume requires captured private trait state.");
             if (rule.DataId != instance.DataId) interactions.Add("Card instance definition differs.");
             if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");
@@ -486,7 +492,7 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect[] effects = rule.Effects.Select(ResolveEffect).ToArray();
             CardActionEffect[] onCastEffects = rule.OnCastEffects.Concat(triggerEffects).Select(ResolveEffect).ToArray();
             string destination = rule.Destination;
-            IReadOnlyList<string> effectiveTraits = instance.MaskDescriptor == null
+            IReadOnlyList<string> effectiveTraits = instance.MaskDescriptor == null || killError != null
                 ? Array.Empty<string>() : CardBranchMaskModel.Resolve(instance).Traits;
             if (destination == "Discard" && effectiveTraits.Any(trait => trait is "CardTraitSelfPurge" or "CardTraitEphemeral"))
                 destination = "Purged";
@@ -500,7 +506,7 @@ namespace MonsterTrain2Poju.Model
                 destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions,
                 rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType, rule.Equipment, rule.Ability, rule.Summon, rule.CardType,
                 rule.IsAnyAbility, rule.CanPlayInEngineRoom, onCastEffects, onUnplayedNegativeEffects,
-                rule.UnplayedNegativeOrder, unsupportedUnplayedTriggers, rule.ForgeEligible);
+                rule.UnplayedNegativeOrder, unsupportedUnplayedTriggers, rule.ForgeEligible, rule.HasKillTriggers);
 
             CardActionEffect ResolveEffect(CardActionEffect effect) => new CardActionEffect(effect.Type, effect.Target,
                 ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,

@@ -191,6 +191,11 @@ namespace MonsterTrain2Poju.Probe
                     foreach (CardEffectData effect in trigger.GetCardEffects())
                         onCastEffects.Add(DescribeTriggerEffect(effect, interactions, data));
                 }
+                else if (triggerType == "OnKill" && data.GetCardType() == CardType.Spell && !data.IsUnitAbility() && !data.IsRoomAbility() &&
+                    CardKillTriggerModel.Supported(CardUpgradeLifecycleProbe.TriggerDefinition(trigger)))
+                {
+                    // Resolved inside native damage/death, rather than at OnCast.
+                }
                 else if (triggerType == "OnUnplayedNegative")
                 {
                     int priorInteractions = interactions.Count;
@@ -302,7 +307,8 @@ namespace MonsterTrain2Poju.Probe
                 effects.All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly
                     .GetType(effect.GetEffectStateName())!)!).CanPlayInEngineRoom), onCastEffects: onCastEffects,
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, unplayedNegativeOrder: unplayedNegativeOrder,
-                hasUnsupportedUnplayedTriggers: hasUnsupportedUnplayedTriggers, forgeEligible: forgeEligible);
+                hasUnsupportedUnplayedTriggers: hasUnsupportedUnplayedTriggers, forgeEligible: forgeEligible,
+                hasKillTriggers: data.GetCardTriggers().Any(trigger => trigger.GetTrigger() == CardTriggerType.OnKill));
         }
 
         private static bool SupportedSpellEffect(CardEffectData effect) =>
@@ -662,7 +668,7 @@ namespace MonsterTrain2Poju.Probe
                 rule.UpgradeInteractions, rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType,
                 rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility, rule.CanPlayInEngineRoom, rule.OnCastEffects,
                 rule.OnUnplayedNegativeEffects, rule.UnplayedNegativeOrder, rule.HasUnsupportedUnplayedTriggers,
-                rule.ForgeEligible);
+                rule.ForgeEligible, rule.HasKillTriggers);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

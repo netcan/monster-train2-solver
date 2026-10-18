@@ -79,7 +79,7 @@ namespace MonsterTrain2Poju.Model
             CardMaskDescriptor descriptor = card.MaskDescriptor!;
             return card.WithMaskDescriptor(new CardMaskDescriptor(descriptor.Definition, descriptor.BaseCost, descriptor.BaseTraits,
                 descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft,
-                descriptor.TemporaryTraits.Concat(new[] { new CardTraitValue("CardTraitFreeze", "CardTraitFreeze", 0, 0, true, 0) }).ToArray(), descriptor.PermanentReplacements, descriptor.SourceTraits));
+                descriptor.TemporaryTraits.Concat(new[] { new CardTraitValue("CardTraitFreeze", "CardTraitFreeze", 0, 0, true, 0) }).ToArray(), descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers));
         }
         internal static RelicFirstCardCostResult Added(CombatContext source, int cardId)
         {

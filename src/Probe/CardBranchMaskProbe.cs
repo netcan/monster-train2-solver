@@ -16,7 +16,8 @@ namespace MonsterTrain2Poju.Probe
             return new CardMaskDescriptor(state.Definition, state.BaseCost, state.Traits.Composition.BaseTraits,
                 state.InstalledCastEffects, state.Purified, state.PermanentGraft,
                 state.Traits.Composition.TemporaryTraits, state.Traits.Composition.PermanentReplacements,
-                CardSourceTraitProbe.Capture(card));
+                CardSourceTraitProbe.Capture(card), KillTriggers(card.GetTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnKill)
+                    .Select(trigger => CardUpgradeLifecycleProbe.TriggerDefinition(trigger.GetCardTriggerEffectData())).ToArray()));
         }
         internal static CardUpgradeMaskMetadata? Upgrade(CardUpgradeState upgrade) => !Enabled ? null :
             new CardUpgradeMaskMetadata(upgrade.GetStatusEffectUpgrades().Select(status =>
@@ -39,8 +40,11 @@ namespace MonsterTrain2Poju.Probe
                 Array.Empty<CardTraitValue>(), Array.Empty<IReadOnlyList<CardTraitValue>>(), Array.Empty<string>(), Array.Empty<CardTraitReplacement>())).BaseTraits;
             return new CardMaskDescriptor(definition, data.GetCost(), traits, data.GetCardTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnCast)
                 .SelectMany(trigger => trigger.GetCardEffects()).Select(effect => effect.GetEffectStateName()).ToArray(),
-                sourceTraits: data.GetTraits().Select(CardSourceTraitProbe.Capture).ToArray());
+                sourceTraits: data.GetTraits().Select(CardSourceTraitProbe.Capture).ToArray(),
+                killTriggers: KillTriggers(data.GetCardTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnKill)
+                    .Select(CardUpgradeLifecycleProbe.TriggerDefinition).ToArray()));
         }
+        private static CardLifecycleTrigger[]? KillTriggers(CardLifecycleTrigger[] triggers) => triggers.Length == 0 ? null : triggers;
         internal static void Observe(FullBattleTrace trace, CombatContext context)
         {
             if (!Enabled || !trace.CanonicalDecisionCapture) return;

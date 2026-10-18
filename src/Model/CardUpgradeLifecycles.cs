@@ -12,12 +12,14 @@ namespace MonsterTrain2Poju.Model
         public string Id { get; }
         public IReadOnlyList<CardActionEffect> Actions { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
+        public bool? DeploymentAllowed { get; }
         public CardLifecycleTrigger(string type, string? descriptionKey, IReadOnlyList<string> effects, string id = "",
-            IReadOnlyList<CardActionEffect>? actions = null, IReadOnlyList<string>? externalInteractions = null)
+            IReadOnlyList<CardActionEffect>? actions = null, IReadOnlyList<string>? externalInteractions = null, bool? deploymentAllowed = null)
         { Type = type; DescriptionKey = descriptionKey; Effects = Array.AsReadOnly(effects.ToArray()); Id = id;
             Actions = Array.AsReadOnly((actions ?? Array.Empty<CardActionEffect>()).ToArray());
-            ExternalInteractions = Array.AsReadOnly((externalInteractions ?? Array.Empty<string>()).ToArray()); }
-        internal CardLifecycleTrigger WithId(string? id) => new CardLifecycleTrigger(Type, DescriptionKey, Effects, id ?? "", Actions, ExternalInteractions);
+            ExternalInteractions = Array.AsReadOnly((externalInteractions ?? Array.Empty<string>()).ToArray()); DeploymentAllowed = deploymentAllowed; }
+        public bool ShouldSerializeDeploymentAllowed() => DeploymentAllowed.HasValue;
+        internal CardLifecycleTrigger WithId(string? id) => new CardLifecycleTrigger(Type, DescriptionKey, Effects, id ?? "", Actions, ExternalInteractions, DeploymentAllowed);
     }
     public sealed class CardLifecycleUpgrade
     {

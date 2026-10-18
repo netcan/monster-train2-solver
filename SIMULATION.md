@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 515 binary archives, including 475
+Current accepted inventory (2026-10-19): 516 binary archives, including 476
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 515
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 516
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,18 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-on-kill.mt2f` adds unchanged Bloody Moon's fixed energy
+reward inside damage/death. Overkill, exact kills, a lethal Undying revival and
+its next death refund two energy; nonlethal/shield controls do not. Trigger
+metadata remains branch-owned and missing/unknown payloads reject explicitly.
+Thirteen plays/five EndTurns and sixteen independent full chains pass. Other
+card-trigger effects, character fire-count modifiers and upgrade triggers remain
+guarded. The captured native balance permits OnKill during deployment and a
+positive deployment kill refunds two energy. Missing deployment rules reject
+explicitly. Bounded search matches all thirteen decisions with zero unsupported
+attempts and equal serial/parallel results; this witness does not close all
+card-trigger coverage.
 
 `full-battle-original-healing-cleanse.mt2f` adds ten unchanged healing/cleanse/
 transfer spells. Positive native paths cover both Witchweave teams, Regen and

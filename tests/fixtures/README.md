@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 515 archives (475 full battles and
+Current accepted inventory (2026-10-19): 516 archives (476 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,31 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-515 accepted archives. Refresh/check the index with
+516 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-on-kill.mt2f` captures seven unchanged Bloody Moon plays.
+Its original 25 damage/two cost refunds two energy on overkill, exact lethal
+damage, a lethal Undying hit that revives to one HP, and the revived unit's next
+death. A positive nonlethal hit and a consumed Damage Shield give no refund.
+Authored zero-cost targets, an anchor, battery and temporary Freeze isolate
+these paths. Card OnKill metadata stays branch-owned across descriptor updates;
+the callback resolves inside damage/death before final removal, separately from
+character Slay. Missing/unknown payloads reject explicitly. Character-attributed
+fire counts, other payloads and trigger upgrades remain guarded. The captured
+balance allows OnKill during deployment; a positive deployment kill refunds two
+energy before the first EndTurn. Missing deployment rules reject explicitly.
+Thirteen plays/five EndTurns and sixteen complete replay chains pass.
+Source `.probe-runs/full-battle-units-spells-and-junk-20261019-051225-bd09e383`
+won with all four counters zero and protected original profiles unchanged.
+Binary-only: 36,338 bytes/5,980 nodes, SHA-256
+`588898826837c3e47abc178dce06c6f08bb4b39ea5ebfd0890079248b83f3919`.
+Use `--original-on-kill-only`. This is a fixed targetless spell-energy trigger
+witness; other trigger/relic/target combinations require separate evidence.
+The dedicated checker, the existing revival battle's seven native turns and
+bounded search pass. Search matches thirteen decisions/nineteen root actions,
+visits 128/128 states and replays three steps with zero unsupported attempts and
+equal serial/parallel best results; broad fixture regression was not repeated.
 
 `full-battle-original-healing-cleanse.mt2f` captures ten unchanged original
 spells: Starter Heal, Purifying Cleanse, Witchweave on both teams, Frost

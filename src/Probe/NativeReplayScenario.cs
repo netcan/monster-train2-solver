@@ -1143,6 +1143,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalHealingCleanseScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalOnKillScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original OnKill fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalOnKillScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPileStatusScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original pile status fixture must start on deployment turn.");
@@ -2330,6 +2336,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalGraftedEquipmentScenario.Enabled) pendingPlay = OriginalGraftedEquipmentScenario.Choose(decision, OriginalGraftedEquipmentScenario.CardIds);
                 if (OriginalSelfAttackScenario.Enabled) pendingPlay = OriginalSelfAttackScenario.Choose(decision, OriginalSelfAttackScenario.CardIds);
                 if (OriginalHealingCleanseScenario.Enabled) pendingPlay = OriginalHealingCleanseScenario.Choose(decision, OriginalHealingCleanseScenario.CardIds);
+                if (OriginalOnKillScenario.Enabled) pendingPlay = OriginalOnKillScenario.Choose(decision, OriginalOnKillScenario.CardIds);
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);

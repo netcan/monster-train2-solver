@@ -396,6 +396,12 @@ if (args.Length == 2 && args[0] == "--original-healing-cleanse-only")
     OriginalHealingCleanseChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-on-kill-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalOnKillChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-pile-status-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

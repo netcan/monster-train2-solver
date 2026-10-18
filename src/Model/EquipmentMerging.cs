@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Model
                 cardType: original.CardType, isAnyAbility: original.IsAnyAbility, canPlayInEngineRoom: original.CanPlayInEngineRoom,
                 onCastEffects: original.OnCastEffects, onUnplayedNegativeEffects: original.OnUnplayedNegativeEffects,
                 unplayedNegativeOrder: original.UnplayedNegativeOrder, hasUnsupportedUnplayedTriggers: original.HasUnsupportedUnplayedTriggers,
-                forgeEligible: original.ForgeEligible);
+                forgeEligible: original.ForgeEligible, hasKillTriggers: original.HasKillTriggers);
         }
         internal CardMaskDescriptor Mask(CardMaskDescriptor descriptor)
         {
@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Model
                 d.AuthoredUnitAbility, d.EquipmentUnitAbility, d.AuthoredGraft, d.CanScaleWithMagicPower, d.IsChampionCard,
                 d.UnmodifiedSpawnAttack, d.HasStartingUpgrades);
             return new CardMaskDescriptor(definition, descriptor.BaseCost, descriptor.BaseTraits, descriptor.AuthoredCastEffects,
-                descriptor.Purified, descriptor.PermanentGraft, descriptor.TemporaryTraits, descriptor.PermanentReplacements, descriptor.SourceTraits);
+                descriptor.Purified, descriptor.PermanentGraft, descriptor.TemporaryTraits, descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers);
         }
     }
 
