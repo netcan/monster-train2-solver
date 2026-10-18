@@ -167,7 +167,9 @@ namespace MonsterTrain2Poju.Model
             foreach (var move in moved)
             {
                 CombatUnit actor = Get(move.Id) ?? retained.GetValueOrDefault(move.Id)!;
-                if (actor.Status("relentless") != null && state.Context?.QueryFrame is StatisticQueryFrame queryFrame)
+                // Older captures did not observe room selection; retain that unknown field.
+                if (actor.Status("relentless") != null && state.Context?.QueryFrame is StatisticQueryFrame queryFrame &&
+                    queryFrame.SelectedRoomIndex != null)
                     state = CardSpellModel.WithContext(state, state.Context.WithQueryFrame(queryFrame.With(selectedRoomIndex: move.NewRoom)));
                 if (move.ForcedBossMove) continue;
                 if (HordeMergeModel.Select(state.Rooms[move.NewRoom], actor) == 0)
