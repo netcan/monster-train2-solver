@@ -1442,7 +1442,9 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 // Keep this effect's collection fixed; triggers may kill a later target.
-                for (int targetIndex = 0; targetIndex < targets.UnitIds.Count; targetIndex++)
+                // Native FloorRearrange.GetDropTarget uses only the first collected actor.
+                int appliedTargetCount = effect.Type == "FloorRearrange" ? Math.Min(1, targets.UnitIds.Count) : targets.UnitIds.Count;
+                for (int targetIndex = 0; targetIndex < appliedTargetCount; targetIndex++)
                 {
                     if (effect.Type == "AttachEquipment" && targetIndex > 0) break;
                     // Native status application runs backwards; damage/healing/upgrades run forwards.
@@ -2260,7 +2262,7 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
                 if (effect.Type == "FloorRearrange" && effect.Target != "DropTargetCharacter" &&
-                    effect.Target != "FrontInRoom" && effect.Target != "StrongestLastTargetedCharactersRoom")
+                    effect.Target != "FrontInRoom" && effect.Target != "StrongestLastTargetedCharactersRoom" && effect.Target != "LastTargetedCharacters")
                     return "Uncalibrated floor rearrangement target selector.";
                 if (effect.Type == "AdjustAllStatusEffects" && (!effect.StatusAdjustmentFilter.HasValue || effect.StatusAdjustmentFilter < 0 || effect.StatusAdjustmentFilter > 1))
                     return "Unmodeled all-status adjustment filter.";

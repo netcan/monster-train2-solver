@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 529 archives (489 full battles and
+Current accepted inventory (2026-10-19): 530 archives (490 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,27 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-529 accepted archives. Refresh/check the index with
+530 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-rearrange-spells.mt2f` captures unchanged Horrify, Vine
+Grasp, Hosting Kin, March of Shields, Soulcrushing Guilt, Selfless Sacrifice,
+It's Alive, Eagleheart, Rising Rage, Heroic Dive and Wyngh's Radiance. Twelve
+original plays exercise damage before last-target movement, chance-100 armor
+with one RNG draw, three-Corruption spending, shield/Lifesteal/attack upgrades,
+five-Valor immediate attack, ascend/pull and descend/pull/1,000 HP-based damage.
+Wyngh's Radiance spends thirteen/zero energy for thirteen/zero Melee Weakness.
+Four original Consume routes, allied HP and fixed RNG controls match. Native
+FloorRearrange uses only its first collected target; a both-team front control
+pushes the enemy while retaining the collected friendly's position. Use
+`--original-rearrange-spells-only`; sixteen full immutable chains, the pure
+spell checks and the previous movement fixture pass. Search matches nineteen
+decisions/21 roots, 128/128 states and three replayed steps with zero unsupported
+attempts and equal serial/parallel best. Source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-063304-e0b91120` won in
+77.82 seconds with nineteen plays/five EndTurns, four counters zero and
+protected files unchanged. Binary-only: 40,674 bytes/6,926 nodes, SHA-256
+`1e03db2559f7d705cf77011c84ecfa2f357dbab97df369063f6fe6fb813fe2e3`.
 
 `full-battle-original-movement-spells.mt2f` captures unchanged Begone, Challenge,
 Hidden Passage, Tiresome Climb, Dripfall, Hexcalation, Demonize, Cave In and

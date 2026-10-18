@@ -1167,6 +1167,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalUnitBuffsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalRearrangeSpellsScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original rearrange fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalRearrangeSpellsScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMovementSpellsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original movement fixture must start on deployment turn.");
@@ -2412,6 +2418,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalBasicDamageScenario.Enabled) pendingPlay = OriginalBasicDamageScenario.Choose(decision, OriginalBasicDamageScenario.CardIds);
                 if (OriginalResourceSpellsScenario.Enabled) pendingPlay = OriginalResourceSpellsScenario.Choose(decision, OriginalResourceSpellsScenario.CardIds);
                 if (OriginalHostileStatusesScenario.Enabled) pendingPlay = OriginalHostileStatusesScenario.Choose(decision, OriginalHostileStatusesScenario.CardIds);
+                if (OriginalRearrangeSpellsScenario.Enabled) pendingPlay = OriginalRearrangeSpellsScenario.Choose(decision, OriginalRearrangeSpellsScenario.CardIds);
                 if (OriginalMovementSpellsScenario.Enabled) pendingPlay = OriginalMovementSpellsScenario.Choose(decision, OriginalMovementSpellsScenario.CardIds);
                 if (OriginalScaledDamageScenario.Enabled) pendingPlay = OriginalScaledDamageScenario.Choose(decision, OriginalScaledDamageScenario.CardIds);
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
