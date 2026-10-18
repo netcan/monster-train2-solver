@@ -270,6 +270,12 @@ if (args.Length == 2 && args[0] == "--armament-drive-only")
     ArmamentDriveChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--preserve-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PreserveChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--soldier-of-fortune-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

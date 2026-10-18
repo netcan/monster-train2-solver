@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 456 binary archives, including 417
+Current accepted inventory (2026-10-18): 457 binary archives, including 418
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 456
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 457
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,16 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-preserve.mt2f` adds unchanged Preserve and chosen hand-card Freeze.
+Two native selections freeze an authored Junk and spell; a third original cast
+with no eligible cards is a legal no-op. Self and already frozen cards are
+excluded, Junk is allowed, playing the selected spell clears Freeze, and the
+frozen Junk remains in hand across EndTurn. Complete states/RNG, the 37-stage
+win (20 plays/five EndTurns), sixteen independent chains and bounded search
+match with zero errors. Use `-Preserve` and `--preserve-only`. Recipients and
+training stats are authored controls; sequential multi-choice effects and
+arbitrary card/relic combinations remain outside the witness.
 
 `full-battle-armament-drive.mt2f` adds unchanged Armament Drive and
 `CardEffectAddBattleCardPerTarget`. Four original casts generate zero, two,

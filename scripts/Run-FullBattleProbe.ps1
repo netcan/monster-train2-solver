@@ -27,6 +27,7 @@ param(
     [switch] $RestorationDetonation,
     [switch] $RunCardGeneration,
     [switch] $ArmamentDrive,
+    [switch] $Preserve,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -449,6 +450,7 @@ if (($OriginalEggCard -or $OriginalEggCardDelayed) -and
 if ($RestorationDetonation) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($RunCardGeneration) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($ArmamentDrive) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($Preserve) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -921,6 +923,7 @@ if ($SoldierOfFortune) { $environment['MT2_PROBE_MODIFIERS'] = 'soldier-of-fortu
 if ($RestorationDetonation) { $environment['MT2_PROBE_MODIFIERS'] = 'restoration-detonation' }
 if ($RunCardGeneration) { $environment['MT2_PROBE_MODIFIERS'] = 'run-card-generation' }
 if ($ArmamentDrive) { $environment['MT2_PROBE_MODIFIERS'] = 'armament-drive' }
+if ($Preserve) { $environment['MT2_PROBE_MODIFIERS'] = 'preserve' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2085,6 +2088,10 @@ if ($OriginalOpeningDeckSpawnRelic -and ($trace.Schema -ne 244 -or -not $trace.O
     @($trace.RelicOpeningDeckSpawnApplications).Count -ne 3 -or
     @($trace.RelicOpeningDeckSpawnTests | Where-Object { $_.Isolated -and -not $_.Returned -and $_.CacheBefore.Count -gt 0 }).Count -eq 0)) {
     throw 'Original opening deck-spawn native evidence is incomplete or divergent.'
+}
+if ($Preserve -and (-not $trace.PreservePrepared -or -not $trace.NativeWon -or @($trace.PreserveRecords).Count -ne 3 -or
+    @($trace.PreserveRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
+    throw 'Preserve native evidence is incomplete.'
 }
 if ($ArmamentDrive -and (-not $trace.ArmamentDrivePrepared -or -not $trace.NativeWon -or
     @($trace.CardGenerations).Count -ne 4 -or @($trace.CardGenerations | Where-Object Difference -NE $null).Count -ne 0)) {

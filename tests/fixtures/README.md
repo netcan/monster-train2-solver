@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 456 archives (417 full battles and
+Current accepted inventory (2026-10-18): 457 archives (418 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,20 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-456 accepted archives. Refresh/check the index with
+457 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-preserve.mt2f` keeps three original Preserves. Two select an
+authored Junk and a spell; the third has no eligible hand cards and remains a
+legal no-op. Native filters reject self and already frozen cards, permit Junk,
+and the selected spell thaws on play. The frozen Junk survives EndTurn.
+Complete states/RNG, the 37-stage win (20 plays/five EndTurns), sixteen
+independent chains and bounded search match with zero errors. The recipients
+and strengthened training units are setup controls. Multiple sequential choice
+effects and arbitrary trait/relic combinations are outside this witness.
+Binary-only: 31,714 bytes/4,983 nodes, SHA-256
+`9ede2336a8969e288df2d0d876903a80793f88e09b0a5501d36004efa69bd4f8`.
+Use `-Preserve` and `--preserve-only`.
 
 `full-battle-armament-drive.mt2f` preserves four original Armament Drives.
 Empty, two unequipped, one equipped and all equipped targets generate 0/2/1/0

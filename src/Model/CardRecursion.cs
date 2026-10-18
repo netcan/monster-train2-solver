@@ -214,7 +214,7 @@ namespace MonsterTrain2Poju.Model
                 if (selection.EffectIndex < 0 || selection.EffectIndex >= effects.Count ||
                     !(effects[selection.EffectIndex].Type == "Recursion" &&
                         IsChoiceMode(effects[selection.EffectIndex].Recursion?.SelectionMode ?? string.Empty) ||
-                        effects[selection.EffectIndex].Type == "ChooseDiscard") ||
+                        effects[selection.EffectIndex].Type is "ChooseDiscard" or "FreezeCard") ||
                     selection.CardInstanceIds.Count != 1)
                     return "Card selection does not match a single-card choose-mode effect.";
             }
