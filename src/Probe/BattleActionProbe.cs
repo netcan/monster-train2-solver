@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
             "CardEffectAddCardUpgradeToUnitsPerStatusEffect", "CardEffectAddTempSwapStats",
             "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand",
-            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix", "CardEffectMixRandom", "CardEffectUnboxSmallBoxUnitCard", "CardEffectReturnUnitToHand"
+            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix", "CardEffectMixRandom", "CardEffectUnboxSmallBoxUnitCard", "CardEffectReturnUnitToHand", "CardEffectReplayTrigger"
         }, StringComparer.Ordinal);
         private readonly FullBattleTrace trace;
         private readonly UnitPlayModelProbe projection;
@@ -217,7 +217,8 @@ namespace MonsterTrain2Poju.Probe
             UnitSummonRule? summon = null;
             var spellEffects = new List<CardActionEffect>();
             string destination = selfPurge ? "Purged" : "Discard";
-            if (kind == "CardEffectSpawnMonster")
+            if (kind == "CardEffectSpawnMonster" || effects.Length == 2 && effects[0].GetEffectStateName() == "CardEffectSpawnMonster" &&
+                effects[1].GetEffectStateName() == "CardEffectReplayTrigger")
             {
                 CardEffectData effect = effects[0];
                 CharacterData? unit = effect.GetParamCharacterData();
@@ -230,6 +231,7 @@ namespace MonsterTrain2Poju.Probe
                 if (unit != null)
                     template = SpawnTemplate(unit, primarySource?.GetSpawnCharacterData() == null || primarySource.GetSpawnCharacterData() == unit, interactions);
                 kind = "SpawnMonster";
+                foreach (CardEffectData afterSpawn in effects.Skip(1)) spellEffects.Add(DescribeSpellEffect(data, afterSpawn, interactions));
                 destination = selfPurge ? "Purged" : data.GetCardType() == CardType.Monster ? "Standby" : "Discard";
                 if (effect.GetParamInt() > 1 || effect.GetParamCardUpgradeData() != null || effect.GetParamBool() || effect.GetParamAdditionalCharacterData() != null || pool.Length > 0)
                 {
@@ -369,6 +371,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectFreezeCard" ? "FreezeCard" :
                 effect.GetEffectStateName() == "CardEffectDuplicateCardInHand" ? "DuplicateCard" :
                 effect.GetEffectStateName() == "CardEffectReturnUnitToHand" ? "ReturnUnit" :
+                effect.GetEffectStateName() == "CardEffectReplayTrigger" ? "ReplayTrigger" :
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
                 effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
@@ -553,7 +556,7 @@ namespace MonsterTrain2Poju.Probe
                 chooseDiscard: type == "ChooseDiscard" ? new CardChooseDiscardRule(effect.GetAdditionalParamInt(),
                     effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamCardPool() != null) : null,
                 transferAttackMultiplier: type == "TransferAttackFromUnit" ? effect.GetAdditionalParamInt() : 0,
-                unitTriggerKind: type == "PlayUnitTrigger" ? effect.GetParamTrigger().ToString() : null,
+                unitTriggerKind: type == "PlayUnitTrigger" || type == "ReplayTrigger" ? effect.GetParamTrigger().ToString() : null,
                 healDamageMultiplier: type == "HealRelative" ? (int?)effect.GetAdditionalParamInt() : null,
                 unitReturn: type == "ReturnUnit" ? new UnitReturnRule(effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamBool3()) : null);
         }

@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 463 binary archives, including 424
+Current accepted inventory (2026-10-18): 464 binary archives, including 425
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 463
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 464
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,16 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-transcend-imp.mt2f` adds three unchanged Transcend Imps. Empty
+OnSpawn history is a no-op; successful trigger batches replay in order using
+their original source cards while Self upgrades target the new Imp. An original
+Magnetic Relay removes a source between replays, preserving its recorded history.
+The immutable history travels with the trigger runtime cache. Exact effect
+contexts, the 36-stage win (seven plays/five EndTurns), sixteen independent chains
+and bounded search are checked. Single-fire stateless gold and temporary Self
+upgrades are calibrated; other trigger kinds, payloads, count modifiers and shared
+mutable effect aliases require further native evidence.
 
 `full-battle-magnetic-relay.mt2f` adds two unchanged Magnetic Relays and replays
 the same recalled source. Native recall precedes Kill and suppresses the death

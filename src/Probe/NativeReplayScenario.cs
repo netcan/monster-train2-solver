@@ -1035,6 +1035,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 MagneticRelayScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && TranscendImpScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Transcend Imp fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                TranscendImpScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && AdaptiveMutationScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Adaptive Mutation fixture must start on deployment turn.");
@@ -1981,6 +1987,7 @@ namespace MonsterTrain2Poju.Probe
                 if (MixalotScenario.Enabled) pendingPlay = MixalotScenario.Choose(decision, MixalotScenario.CardIds);
                 if (SmallBoxScenario.Enabled) pendingPlay = SmallBoxScenario.Choose(decision, SmallBoxScenario.CardIds);
                 if (MagneticRelayScenario.Enabled) pendingPlay = MagneticRelayScenario.Choose(decision, MagneticRelayScenario.CardIds, MagneticRelayScenario.UnitCardIds);
+                if (TranscendImpScenario.Enabled) pendingPlay = TranscendImpScenario.Choose(decision, TranscendImpScenario.CardIds, TranscendImpScenario.SourceCardIds, TranscendImpScenario.RecallCardId);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);

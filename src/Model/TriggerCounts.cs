@@ -29,14 +29,19 @@ namespace MonsterTrain2Poju.Model
         // Only the original AttachEquipment parameter's character triggers grant
         // enemy eligibility; permanent/temporary card upgrades do not grant it.
         public IReadOnlyList<EquipmentTriggerDefinition> EquipmentDefinitions { get; }
+        public BattleTriggerHistory? ReplayHistory { get; }
         public TriggerCountState(IReadOnlyList<TriggerCountModifier> modifiers, IReadOnlyList<string> enemyAllowedKinds,
-            IReadOnlyList<string> excludedCardTriggers, IReadOnlyList<EquipmentTriggerDefinition> equipmentDefinitions)
+            IReadOnlyList<string> excludedCardTriggers, IReadOnlyList<EquipmentTriggerDefinition> equipmentDefinitions,
+            BattleTriggerHistory? replayHistory = null)
         {
             Modifiers = Array.AsReadOnly(modifiers.ToArray());
             EnemyAllowedKinds = Array.AsReadOnly(enemyAllowedKinds.ToArray());
             ExcludedCardTriggers = Array.AsReadOnly(excludedCardTriggers.ToArray());
             EquipmentDefinitions = Array.AsReadOnly(equipmentDefinitions.ToArray());
+            ReplayHistory = replayHistory;
         }
+        internal TriggerCountState WithReplayHistory(BattleTriggerHistory history) =>
+            new TriggerCountState(Modifiers, EnemyAllowedKinds, ExcludedCardTriggers, EquipmentDefinitions, history);
     }
 
     internal static class TriggerCountModel
@@ -44,6 +49,11 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(TriggerCountState? state)
         {
             if (state == null) return null;
+            if (state.ReplayHistory is BattleTriggerHistory history &&
+                (history.CapturedKinds.Distinct().Count() != history.CapturedKinds.Count ||
+                 history.CapturedKinds.Any(kind => kind != "OnSpawn") ||
+                 history.Batches.Any(batch => !history.CapturedKinds.Contains(batch.Kind) || batch.SpawnerCardId < 0 || batch.Effects.Count == 0)))
+                return "Invalid or uncalibrated battle trigger history.";
             if (state.Modifiers.Any(item => string.IsNullOrEmpty(item.Kind)) ||
                 state.Modifiers.Select(item => item.Kind).Distinct(StringComparer.Ordinal).Count() != state.Modifiers.Count ||
                 state.EnemyAllowedKinds.Any(string.IsNullOrEmpty) || state.EnemyAllowedKinds.Distinct().Count() != state.EnemyAllowedKinds.Count ||

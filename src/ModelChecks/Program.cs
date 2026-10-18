@@ -294,6 +294,12 @@ if (args.Length == 2 && args[0] == "--magnetic-relay-only")
     MagneticRelayChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--transcend-imp-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TranscendImpChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--adaptive-mutation-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

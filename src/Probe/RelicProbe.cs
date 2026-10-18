@@ -9,8 +9,12 @@ namespace MonsterTrain2Poju.Probe
     internal static class RelicProbe
     {
         private static EquipmentTriggerDefinition[]? equipmentDefinitions;
+        private static bool replayHistoryObserved;
+        internal static bool HasReplayHistory(AllGameManagers managers) => replayHistoryObserved |= TranscendImpScenario.Enabled ||
+            managers.GetCardManager()?.GetAllCards(new List<CardState>()).Any(card =>
+                card.GetEffectStates().Any(effect => effect.GetCardEffect() is CardEffectReplayTrigger)) == true;
         internal static bool HasTriggerCounts(AllGameManagers managers) =>
-            Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount || effect is RelicEffectAddTrigger));
+            HasReplayHistory(managers) || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount || effect is RelicEffectAddTrigger));
         internal static bool HasStatusAttackHistory(AllGameManagers managers) =>
             PyreResourceRefreshScenario.Enabled || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude ||
                 effect is IRebalanceValorRelicEffect ||
@@ -660,7 +664,8 @@ namespace MonsterTrain2Poju.Probe
             return new TriggerCountState(modifiers.Select(item => new TriggerCountModifier(item.Key.ToString(), item.Value)).ToArray(),
                 Enum.GetValues(typeof(CharacterTriggerData.Trigger)).Cast<CharacterTriggerData.Trigger>()
                     .Where(kind => manager.HasTriggerCountModifierRelicEffect(kind, Team.Type.Heroes)).Select(kind => kind.ToString()).ToArray(),
-                excluded.Select(kind => kind.ToString()).ToArray(), equipmentDefinitions);
+                excluded.Select(kind => kind.ToString()).ToArray(), equipmentDefinitions,
+                HasReplayHistory(managers) ? TranscendImpScenario.CaptureHistory(managers) : null);
         }
     }
 }

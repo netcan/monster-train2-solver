@@ -34,6 +34,7 @@ param(
     [switch] $Mixalot,
     [switch] $SmallBox,
     [switch] $MagneticRelay,
+    [switch] $TranscendImp,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -463,6 +464,7 @@ if ($AdaptiveMutation) { $BranchCardMasks = $true; $Policy = 'units-spells-and-j
 if ($Mixalot) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($SmallBox) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MagneticRelay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($TranscendImp) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -942,6 +944,7 @@ if ($AdaptiveMutation) { $environment['MT2_PROBE_MODIFIERS'] = 'adaptive-mutatio
 if ($Mixalot) { $environment['MT2_PROBE_MODIFIERS'] = 'mixalot' }
 if ($SmallBox) { $environment['MT2_PROBE_MODIFIERS'] = 'small-box' }
 if ($MagneticRelay) { $environment['MT2_PROBE_MODIFIERS'] = 'magnetic-relay' }
+if ($TranscendImp) { $environment['MT2_PROBE_MODIFIERS'] = 'transcend-imp' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2110,6 +2113,10 @@ if ($OriginalOpeningDeckSpawnRelic -and ($trace.Schema -ne 244 -or -not $trace.O
 if ($MagneticRelay -and (-not $trace.MagneticRelayPrepared -or -not $trace.NativeWon -or @($trace.MagneticRelayRecords).Count -ne 4 -or
     @($trace.MagneticRelayRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Magnetic Relay native evidence is incomplete.'
+}
+if ($TranscendImp -and (-not $trace.TranscendImpPrepared -or -not $trace.NativeWon -or @($trace.TranscendImpRecords).Count -ne 3 -or
+    @($trace.TranscendImpRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
+    throw 'Transcend Imp native evidence is incomplete.'
 }
 if ($SmallBox -and (-not $trace.SmallBoxPrepared -or -not $trace.NativeWon -or @($trace.SmallBoxRecords).Count -ne 3 -or
     @($trace.SmallBoxRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {

@@ -666,6 +666,16 @@ namespace MonsterTrain2Poju.Model
                 TrainCombatResult spawnOrder = EnchantmentWorldModel.UpdateAll(train);
                 if (!spawnOrder.Supported) return Unsupported(spawnOrder.UnsupportedReason!);
                 train = spawnOrder.State!; context = train.Context!;
+                if (rule.Effects.Count > 0)
+                {
+                    if (rule.Effects.Any(effect => effect.Type != "ReplayTrigger") || !spawnedId.HasValue)
+                        return Unsupported("Uncalibrated post-spawn effect sequence.");
+                    TrainSpellResult replay = CardSpellModel.ApplyAfterSpawn(train, action.RoomIndex, rule.Effects,
+                        card.InstanceId, spawnedId.Value, outputPlayRules);
+                    if (!replay.Supported) return Unsupported(replay.UnsupportedReason!);
+                    train = replay.State!; context = train.Context!; piles = replay.OtherPiles?.ToArray() ?? piles;
+                    outcome = replay.Outcome; pendingSpellCallbacks = replay.PendingCallbacks; retainedSpellUnits = replay.RetainedUnits;
+                }
                 effectsApplied = true;
             }
             else if (rule.Effect == "Spell" || rule.Effect == "Equipment")

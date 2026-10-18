@@ -341,6 +341,7 @@ namespace MonsterTrain2Poju.Probe
             uint[] draw = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
             uint[] battle = RngCalibration.Words(RandomManager.GetState(RngId.Battle));
             CardInstanceState[] instances = CardModifierProbe.Capture(cards, CardId);
+            if (RelicProbe.HasReplayHistory(managers)) TranscendImpScenario.CaptureHistory(managers);
             CharacterState lastSpawned = managers.GetMonsterManager()!.GetLastSpawnedCharacterThisTurn();
             int lastSpawnedId = lastSpawned == null || normalizeDestroyedAttacker && (lastSpawned.IsDestroyed || !lastSpawned.IsAlive)
                 ? 0 : UnitId(lastSpawned);
@@ -762,6 +763,11 @@ namespace MonsterTrain2Poju.Probe
                 MagneticRelayCardIds = MagneticRelayScenario.CardIds,
                 MagneticRelayUnitCardIds = MagneticRelayScenario.UnitCardIds,
                 MagneticRelayRecords = MagneticRelayScenario.Records,
+                TranscendImpPrepared = TranscendImpScenario.Prepared,
+                TranscendImpCardIds = TranscendImpScenario.CardIds,
+                TranscendImpSourceCardIds = TranscendImpScenario.SourceCardIds,
+                TranscendImpRecallCardId = TranscendImpScenario.RecallCardId,
+                TranscendImpRecords = TranscendImpScenario.Records,
                 RunCardGenerationPrepared = RunCardGenerationScenario.Prepared,
                 ArmamentDrivePrepared = ArmamentDriveScenario.Prepared,
                 ArmamentDriveCardIds = ArmamentDriveScenario.CardIds,

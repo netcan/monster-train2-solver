@@ -138,6 +138,16 @@ namespace MonsterTrain2Poju.Model
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections,
                 priorTargets: priorTargets, playerActionPhase: true);
 
+        internal static TrainSpellResult ApplyCachedEffects(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
+            int sourceCardId, int selfUnitId, BattlePlayRules? definitions) =>
+            ApplyCore(source, roomIndex, effects, 0, sourceCardId, null, null, definitions, true,
+                selfUnitId: selfUnitId, resolveLiveEffects: false);
+
+        internal static TrainSpellResult ApplyAfterSpawn(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
+            int sourceCardId, int selfUnitId, BattlePlayRules definitions) =>
+            ApplyCore(source, roomIndex, effects, 0, sourceCardId, null, null, definitions, true,
+                selfUnitId: selfUnitId, deferFinalCallbacks: true, playerActionPhase: true, resolveLiveEffects: false);
+
         internal static TrainSpellResult ApplyNativeDamageStep(TrainCombatState source, int roomIndex, int targetId, int damage,
             int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0,
             Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCharacterTrigger = null,
@@ -246,7 +256,7 @@ namespace MonsterTrain2Poju.Model
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, int targetSpawnPointIndex = -1,
             IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
-            IReadOnlyList<int>? priorTargets = null, bool playerActionPhase = false)
+            IReadOnlyList<int>? priorTargets = null, bool playerActionPhase = false, bool resolveLiveEffects = true)
         {
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
@@ -301,7 +311,7 @@ namespace MonsterTrain2Poju.Model
             {
                 CardActionEffect effect = effects[index];
                 // Each effect reads the card's live modifiers, including earlier hand upgrades.
-                if (definitions != null && sourceCardId > 0 && state.Context!.CardInstances != null)
+                if (resolveLiveEffects && definitions != null && sourceCardId > 0 && state.Context!.CardInstances != null)
                 {
                     CardInstanceState? card = state.Context.FindCard(sourceCardId) ?? resolvingCard;
                     CardPlayRule? rule = definitions.Cards.FirstOrDefault(item => item.DataId == card?.DataId);
@@ -316,6 +326,14 @@ namespace MonsterTrain2Poju.Model
                     effect = index < sourceEffects.Count && (effect.Type == "DamagePerSourceAttack" || effect.Type == "DamagePerHp")
                         ? sourceEffects[index] : resolvedEffects[index];
                     resolvingCard = card;
+                }
+                if (effect.Type == "ReplayTrigger")
+                {
+                    TrainSpellResult replay = BattleTriggerReplayModel.Apply(state, roomIndex, effect.UnitTriggerKind!, selfUnitId, definitions);
+                    if (!replay.Supported) return replay;
+                    state = replay.State!; events.AddRange(replay.Events); piles = state.Context!.OtherPiles?.ToArray();
+                    if (replay.Outcome != RoomOutcome.Exchanged) { outcome = replay.Outcome; break; }
+                    continue;
                 }
                 if (effect.Type == "UpgradeDeckSpells")
                 {
@@ -2138,6 +2156,12 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (effect.UnitReturn == null || source.Context?.OtherPiles == null || source.Context.CardInstances == null)
                         return "Unit recall requires captured options, piles and spawners.";
+                    continue;
+                }
+                if (effect.Type == "ReplayTrigger")
+                {
+                    if (effect.UnitTriggerKind != "OnSpawn" || source.Context.TriggerCounts?.ReplayHistory == null)
+                        return "Replay requires captured OnSpawn history and a self target.";
                     continue;
                 }
                 if (effect.Type == "SwapStats" || effect.Type == "StatusNull") continue;

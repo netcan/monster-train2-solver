@@ -3072,6 +3072,9 @@ namespace MonsterTrain2Poju.Model
                     int currentCount = TriggerCountModel.Query(context, unit.Freeze(), trigger, out string? countError);
                     if (countError != null) { unsupportedReason = countError; return; }
                     int fireCount = unchecked(currentCount * triggerCount);
+                    bool captureReplay = context?.TriggerCounts?.ReplayHistory?.CapturedKinds.Contains(kind) == true;
+                    if (captureReplay && (fireCount != 1 || effects.Any(effect => !BattleTriggerReplayModel.Calibrated(effect))))
+                    { unsupportedReason = "Captured replay history requires calibrated stateless single-fire trigger payloads."; return; }
                     for (int fire = 0; fire < fireCount; fire++)
                     {
                         if (!unit.Alive && kind != "OnDeath" && kind != "OnHit" && kind != "OnKill") return;
@@ -3153,6 +3156,9 @@ namespace MonsterTrain2Poju.Model
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
                                 (effect.Generation?.RequireHandSpace != true || context.Cards.Hand.Count < context.MaxHandSize)) AddCards(unit, effect);
                         }
+                        if (effects.Length > 0 && context?.TriggerCounts?.ReplayHistory is BattleTriggerHistory history && history.CapturedKinds.Contains(kind))
+                            context = context.WithTriggerCounts(context.TriggerCounts.WithReplayHistory(history.Append(
+                                new BattleTriggerBatch(unit.Source.Team, kind, unit.Source.SpawnerCardId, effects))));
                         context = context?.AfterCardEffects();
                     }
                     // The native local trigger object keeps resolving after list removal.

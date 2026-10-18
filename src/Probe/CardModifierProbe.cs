@@ -82,7 +82,7 @@ namespace MonsterTrain2Poju.Probe
 
         private static int[]? PlayedRoomUnits(CardState card)
         {
-            if (!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !HordeMergeScenario.Enabled && !BumpScenario.Enabled &&
+            if (!TranscendImpScenario.Enabled && !MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !HordeMergeScenario.Enabled && !BumpScenario.Enabled &&
                 !SpawnEnchantScenario.Prepared && !OriginalTribouletScenario.Prepared &&
                 !(OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)) return null;
             var cached = (IEnumerable<WeakRef<CharacterState>>)AccessTools.Field(typeof(CardState), "charactersInRoomAtTimeOfCardPlay").GetValue(card);
@@ -92,7 +92,7 @@ namespace MonsterTrain2Poju.Probe
 
         private static int[]? RawPlayedRoomUnits(CardState card)
         {
-            if (!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !HordeMergeScenario.Enabled && !BumpScenario.Enabled &&
+            if (!TranscendImpScenario.Enabled && !MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !HordeMergeScenario.Enabled && !BumpScenario.Enabled &&
                 !SpawnEnchantScenario.Prepared && !OriginalTribouletScenario.Prepared &&
                 !(OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)) return null;
             FullBattleTrace trace = FullBattleTrace.Active!;

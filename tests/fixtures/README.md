@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 463 archives (424 full battles and
+Current accepted inventory (2026-10-18): 464 archives (425 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,21 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-463 accepted archives. Refresh/check the index with
+464 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-transcend-imp.mt2f` keeps three original Transcend Imps: empty
+OnSpawn history, two ordered successful batches, and retained history after an
+original Magnetic Relay returns one source to hand. Authored Stewards contribute
+gold and temporary Self attack/health upgrades; replay retargets those upgrades
+to the newly spawned Imp and does not append history. Source room snapshots,
+resources, RNG, complete effect contexts, the 36-stage win (seven plays/five
+EndTurns), sixteen immutable chains and bounded search are checked. Single-fire
+stateless gold and temporary Self upgrades are calibrated; other trigger kinds,
+payloads, count modifiers and mutable effect aliases remain guarded.
+Binary-only: 43,363 bytes/5,615 nodes, SHA-256
+`cec28d1ec507a971eef1bde114b791417d9804c4e0a0fff611a0bf28acd2a311`.
+Use `-TranscendImp` and `--transcend-imp-only`.
 
 `full-battle-magnetic-relay.mt2f` keeps two original Magnetic Relays. Recall
 removes the unit before Kill, returns the same source card and retains temporary

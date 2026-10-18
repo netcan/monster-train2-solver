@@ -75,7 +75,7 @@ namespace MonsterTrain2Poju.Probe
             dragonHoardResourceObserved |= dragonHoardCards;
             trainHealResourceObserved |= trainHealCards;
             grosMichelResourceObserved |= Current(managers).Any(owner => owner.GetRelicDataID() == RelicEndCombatModel.GrosMichelId);
-            if (!OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled && !OriginalFloorCapacityRelicScenario.Enabled &&
+            if (!RelicProbe.HasReplayHistory(managers) && !OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled && !OriginalFloorCapacityRelicScenario.Enabled &&
                 !OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
                 !OriginalStartCombatHoardScenario.Enabled && !OriginalStartCombatHoardScenario.Acquired &&
                 !OriginalFirstCardCostScenario.Enabled &&
