@@ -28,7 +28,8 @@ namespace MonsterTrain2Poju.Model
         // The trait owner is the responsible spawner/sacrifice card. Only an explicit damage
         // source contributes numeric damage upgrades (ordinary unit attacks pass no card).
         public static DamageScalingResult Apply(CombatContext? context, int responsibleCardId, int damageSourceCardId,
-            int damage, StatisticQueryFrame? frame = null, RoomCombatState? selectedRoom = null)
+            int damage, StatisticQueryFrame? frame = null, RoomCombatState? selectedRoom = null,
+            IEnumerable<CombatStatus>? targetStatuses = null)
         {
             if (responsibleCardId <= 0) return new DamageScalingResult(context, damage);
             CardInstanceState? responsible = context?.FindCard(responsibleCardId);
@@ -45,7 +46,8 @@ namespace MonsterTrain2Poju.Model
                 if (!applied.Supported) return applied;
                 context = applied.Context; damage = applied.Damage;
             }
-            return new DamageScalingResult(context, damage);
+            string? statusDamageError = CardStatusDamageModel.Apply(responsible, damage, targetStatuses, out int statusDamage);
+            return statusDamageError == null ? new DamageScalingResult(context, statusDamage) : Unsupported(statusDamageError);
         }
 
         public static DamageScalingResult ApplyTrait(CombatContext? context, ScalingDamageTrait trait, int ownerCardId,

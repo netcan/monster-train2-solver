@@ -34,6 +34,15 @@ manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
 
+`full-battle-original-status-stack-damage.mt2f` models original Wracking Pain's
+three damage per visible target debuff stack. Native zero/positive/increased
+controls produce `0/27/33`; positive statuses and the outside floor remain
+controls. Three native damage callbacks independently match before armor and
+leave shared context/frame unchanged. Seven plays/five EndTurns match sixteen
+immutable chains and bounded serial/parallel search. Unchanged base source
+parameters and live target visibility/category are required; attacker/list/buff
+modes, mixed scaling order and added/replaced traits keep explicit guards.
+
 `full-battle-original-corrupt-restricted.mt2f` models positive Corrupt Restricted
 on direct hand spells. Original Echo Infusion/Transfer and Proclamation check
 selected-room corruption, then subtract one/two before their health, attack and

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 494 archives (455 full battles and
+Current accepted inventory (2026-10-19): 495 archives (456 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,26 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-494 accepted archives. Refresh/check the index with
+495 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-status-stack-damage.mt2f` retains original Wracking Pain
+with its zero base damage, one ember cost and native three-damage-per-target
+debuff stack trait. A positive-status-only friendly control takes zero damage;
+another friendly target with Sap/Frostbite takes 27, then 33 after adding two
+Sap stacks. Positive stacks do not count. Three native trait observations leave
+shared context/frame unchanged and independently match the model before armor.
+The outside floor is unchanged. Captured source parameters and live target
+visibility/category metadata are required. Attacker/list/buff counting modes,
+mixed scaling order and added/replaced traits retain guards.
+Seven plays/five EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (nine root actions, zero unsupported).
+Binary-only: 27,620 bytes/3,792 nodes, SHA-256
+`ea783d73c7b3db31015178bf3816cc6f020f96f047dcd9004810819e4bd386cf`.
+Use `-OriginalStatusStackDamage` and `--original-status-stack-damage-only`.
+Focused regression `model-checks-20261019-020212-bc8ca202` passed this fixture,
+original Battering Ram/Bramble Lash and original Pyreball/Pyreclasm, with all
+three terminal exit codes zero.
 
 `full-battle-original-corrupt-restricted.mt2f` retains original Echo Infusion,
 Echo Transfer and Proclamation with requirements one/two. Twelve restored
