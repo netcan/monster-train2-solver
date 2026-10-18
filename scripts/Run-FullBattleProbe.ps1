@@ -49,6 +49,7 @@ param(
     [switch] $Planetarium,
     [switch] $GrowRoom,
     [switch] $MushyRoom,
+    [switch] $OriginalPiercingCards,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -493,6 +494,7 @@ if ($Memorial) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Planetarium) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($GrowRoom) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MushyRoom) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalPiercingCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -987,6 +989,7 @@ if ($Memorial) { $environment['MT2_PROBE_MODIFIERS'] = 'memorial' }
 if ($Planetarium) { $environment['MT2_PROBE_MODIFIERS'] = 'planetarium' }
 if ($GrowRoom) { $environment['MT2_PROBE_MODIFIERS'] = 'grow-room' }
 if ($MushyRoom) { $environment['MT2_PROBE_MODIFIERS'] = 'mushy-room' }
+if ($OriginalPiercingCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-piercing-cards' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2172,6 +2175,9 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
     @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 -or
     @($trace.EclipseChamberRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Eclipse Chamber native evidence is incomplete.'
+}
+if ($OriginalPiercingCards -and (-not $trace.OriginalPiercingCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
+    throw 'Original piercing cards require the unchanged three spells, ordinary shield control and six actual plays in a native win.'
 }
 if ($MushyRoom -and (-not $trace.MushyRoomPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or @($trace.RoomPostCombatRecords).Count -lt 2)) {
     throw 'Mushy Room requires original enemy status pulses, replacement/restoration and five actual plays in a native win.'

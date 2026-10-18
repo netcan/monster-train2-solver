@@ -804,6 +804,8 @@ namespace MonsterTrain2Poju.Probe
                 GrowRoomStatusFilter = GrowRoomScenario.StatusFilter,
                 MushyRoomPrepared = MushyRoomScenario.Prepared,
                 MushyRoomCardIds = MushyRoomScenario.CardIds,
+                OriginalPiercingCardsPrepared = OriginalPiercingCardsScenario.Prepared,
+                OriginalPiercingCardsIds = OriginalPiercingCardsScenario.CardIds,
                 RoomPostCombatRecords = RoomPostCombatProbe.Records,
                 RunCardGenerationPrepared = RunCardGenerationScenario.Prepared,
                 ArmamentDrivePrepared = ArmamentDriveScenario.Prepared,

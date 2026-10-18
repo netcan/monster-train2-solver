@@ -2237,14 +2237,8 @@ namespace MonsterTrain2Poju.Model
                         if (damage != beforeWeakness) Trigger(target, "spell weakness", stacks);
                     }
                 }
-                // The native shield stage checks card/relic piercing without an attacker argument.
-                // Unit piercing bypasses armor, but does not bypass this shield stage.
-                if (damage > 0 && target.Has("damage shield") && !cardPiercing)
-                {
-                    blocked += damage;
-                    Trigger(target, "damage shield", 1);
-                    damage = 0;
-                }
+                // Native resolves Spell Shield before Damage Shield. Both stages
+                // check card/relic piercing without the character attacker.
                 if (damage > 0 && kind == "Spell" && sourceCardId > 0 && target.Has("spell shield") && !cardPiercing)
                 {
                     CardInstanceState? sourceCard = context?.FindCard(sourceCardId);
@@ -2258,6 +2252,12 @@ namespace MonsterTrain2Poju.Model
                         Trigger(target, "spell shield", 1);
                         damage = 0;
                     }
+                }
+                if (damage > 0 && target.Has("damage shield") && !cardPiercing)
+                {
+                    blocked += damage;
+                    Trigger(target, "damage shield", 1);
+                    damage = 0;
                 }
                 if (damage > 0 && target.Has("titanskin") && !cardPiercing && !unitPiercing)
                 {

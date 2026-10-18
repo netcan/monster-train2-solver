@@ -106,7 +106,7 @@ internal static class CardSpellChecks
         var descriptor = new CardMaskDescriptor(mask, 0, [], []);
         var piercingCard = new CardInstanceState(7, mask.DataId, CardModifiers.Empty(),
             new CardModifiers(new CardStatModifier(), [piercingUpgrade], 0, []), 0, 0, 0, [], maskDescriptor: descriptor);
-        var ordinaryCard = CardInstanceState.Empty(8, "ordinary-source");
+        var ordinaryCard = new CardInstanceState(8, mask.DataId, CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [], maskDescriptor: descriptor);
         CombatContext CardContext(CardInstanceState card) => new CombatContext(new CardCycleState([], [], [], rng, 0, []), rng,
             0, 9, 10, [armorRule, shieldRule], cardInstances: [card], cardRegistry: [card]);
         RoomCombatState DamageRoom(CardInstanceState card, params CombatStatus[] statuses) => new RoomCombatState(0, false,
@@ -122,6 +122,11 @@ internal static class CardSpellChecks
         RoomCombatResult ordinaryArmor = RoomCombatModel.ApplyCardDamage(DamageRoom(ordinaryCard, new CombatStatus("armor", 5, 1)), 9, 4, 8);
         Require(ordinaryArmor.Supported && ordinaryArmor.State!.Units[0].Health == 20,
             "A card without IgnoreArmor bypassed armor.");
+        RoomCombatResult bothShields = RoomCombatModel.ApplyCardDamage(DamageRoom(ordinaryCard,
+            new CombatStatus("damage shield", 2, removeWhenTriggered: true), new CombatStatus("spell shield", 2, removeWhenTriggered: true)), 9, 4, 8);
+        Require(bothShields.Supported && bothShields.State!.Units[0].Health == 20 &&
+            bothShields.State.Units[0].Status("damage shield")?.Stacks == 2 && bothShields.State.Units[0].Status("spell shield")?.Stacks == 1,
+            "Native Spell Shield must resolve before Damage Shield, retaining the unused shield.");
         RoomCombatResult lethal = CardSpellModel.Apply(new RoomCombatState(0, false,
             [Make(1, CombatTeam.Enemy, 1), Make(4, CombatTeam.Enemy, 5), front], [], context), damage, 1);
         Require(lethal.Supported && lethal.State!.Units[0].Id == 4 && lethal.State.Units[0].Statuses.Count == 0,

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 478 archives (439 full battles and
+Current accepted inventory (2026-10-19): 479 archives (440 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,22 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-478 accepted archives. Refresh/check the index with
+479 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-piercing-cards.mt2f` retains original Horn Break,
+Branding Rite and Inferno, at costs one/two/three. Native health damage is
+sixteen/three/120 despite retained Armor, Damage Shield, Spell Shield and
+Titan Skin. Branding Rite subsequently adds twenty armor. An ordinary spell
+control consumes Spell Shield before Damage Shield, fixing the prior model
+order; a targeted pure check keeps both shield stacks observable. Outside-floor
+units are unchanged. The six-play/five-EndTurn win, sixteen immutable full
+chains and bounded search are checked. Authored protectors/control damage do
+not alter the three original spells. Binary-only: 24,199 bytes/3,172 nodes,
+SHA-256 `a5afda27ff33745b3b00d37a0dbc8a9a482b15acba7d145ab1b54bc213285df4`.
+Use `-OriginalPiercingCards` and `--original-piercing-cards-only`.
+Focused shield/trait gate:
+`.probe-runs/model-checks-20261019-000336-d94840db/summary.json` (three passed).
 
 `full-battle-mushy-room.mt2f` retains two original Mushy Room cards and an
 original Fight Club replacement. Its modifier allows a deployment callback

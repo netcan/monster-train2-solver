@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 478 binary archives, including 439
+Current accepted inventory (2026-10-19): 479 binary archives, including 440
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 478
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 479
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,17 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-piercing-cards.mt2f` retains original Horn Break's two
+eight-damage hits, Branding Rite's three damage/twenty armor and Inferno's
+120 room damage. All bypass armor, Damage Shield, Spell Shield and Titan Skin
+without consuming them; an ordinary damage control consumes Spell Shield
+first and preserves Damage Shield. This exposed and corrected the simulator's
+shield precedence. Native source confirms the separate shield stages.
+Costs one/two/three, outside-floor controls, six plays/five EndTurns, sixteen
+immutable full chains and bounded search are checked. Source metadata matching
+now admits the calibrated stateless IgnoreArmor marker with exact default
+parameters; other uncalibrated traits remain excluded.
 
 `full-battle-mushy-room.mt2f` keeps original enemy Sap-three callbacks.
 Unlike Grow Room, its native modifier permits deployment and makes an empty
