@@ -23,17 +23,17 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-031256-6d0171d8/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,084 bytes, SHA-256
-`73b800cbd896a98a27649198f2d416d582726442fcc137bd55071255567272eb`.
-The projection reflects revision `e2ddb66`. The 668 raw definitions match
+Source: `.probe-runs/full-battle-no-cards-20261019-034749-b4670325/card-catalog.mt2f`.
+The committed archive is byte-identical: 94,998 bytes, SHA-256
+`f0a80a96fd845725d4ef48bc85e6a6c5ed120859109b63f82f4108d9c31dacda`.
+The projection reflects revision `110149c`. The 668 raw definitions match
 the previous snapshot exactly, including all ordered status lists and Dig Deep's
 pile-status `horde` mask.
 This field captures native removal and List-filter status traits; Pyreborne
 Brainspike retains `cooldown` removal and `avarice` addition separately.
 Only Dante's Inferno's specific-card damage trait has this non-null field:
 `913694e9-bace-4480-8691-24f699ae583e` (Dante's Candle). This identity is captured
-from the actual native trait data. Frame 11,345/11,345, decision and RNG are unchanged.
+from the actual native trait data. Frame 12,429/12,429, decision and RNG are unchanged.
 The surrounding native battle won with all four capture counters zero and
 the protected original files unchanged. Positive Corrupt Restricted hand
 spells now retain their calibrated selected-room cost; source-room abilities
@@ -66,6 +66,9 @@ Changed payloads and multiple/filtered queued upgrades remain guarded.
 Original Lunacy retains X-scaled moon advances before Conduit addition,
 phase parity, ordinary discard and exact Float-one/PlayedCost/List metadata.
 Uncalibrated moon card-upgrade/relic callbacks retain guards.
+Original Awoken's Rail Spike retains X-scaled played-discard draw, deck draw
+blocking and next-turn reset with exact source metadata. Missing draw-block
+state, changed source traits, OnCast and active relic combinations retain guards.
 Original Symphony of the Soul adds direct battle evidence for Corrupt five,
 Positive-category multiplication and friendly-only armor multiplication,
 including the zero-armor chance draw. These witnesses use the existing
