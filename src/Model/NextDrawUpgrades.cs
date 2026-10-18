@@ -71,6 +71,14 @@ namespace MonsterTrain2Poju.Model
                 cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId);
             CombatContext context = source.WithCards(moved).WithStatistics(source.Statistics?.Increment(cardId, "TimesDrawn"));
             context = Apply(context, new[] { cardId }, playedCardId, definitions, out string? error);
+            if (error == null && RelicCorruptedAngelsModel.Enabled(context))
+            {
+                var added = RelicFirstCardCostModel.ApplyOnCardAdded(context, cardId, definitions);
+                if (!added.Supported) return new(null, Array.Empty<int>(), added.UnsupportedReason);
+                context = added.Context;
+                var existing = new HashSet<int>(source.Cards.Hand.Select(card => card.InstanceId));
+                return new(context, context.Cards.Hand.Reverse().Where(card => !existing.Contains(card.InstanceId)).Select(card => card.InstanceId).ToArray());
+            }
             return error == null ? new TypedDrawResult(context, new[] { cardId }) : new TypedDrawResult(null, Array.Empty<int>(), error);
         }
 
@@ -118,7 +126,7 @@ namespace MonsterTrain2Poju.Model
             error = null;
             var pending = source.Cards.NextDrawUpgrades;
             if (pending == null || pending.Count == 0 || drawnCardIds.Count == 0)
-                return RelicExpensiveCardUpgradeModel.Drawn(source, drawnCardIds, out error);
+                return RelicExpensiveCardUpgradeModel.Drawn(source, drawnCardIds, out error, definitions);
             if (!source.Cards.NextUpgradeReferenceId.HasValue || pending.Any(rule => !rule.Upgrade.SharedReferenceId.HasValue))
             { error = "Missing captured next-draw upgrade reference identity."; return source; }
             CombatContext context = source;
@@ -172,7 +180,7 @@ namespace MonsterTrain2Poju.Model
                     }
                 context = context.WithCard(card);
             }
-            return RelicExpensiveCardUpgradeModel.Drawn(context, drawnCardIds, out error);
+            return RelicExpensiveCardUpgradeModel.Drawn(context, drawnCardIds, out error, definitions);
         }
 
         private static CardCycleState WithPending(CardCycleState cards, IReadOnlyList<NextDrawUpgradeRule> pending) =>

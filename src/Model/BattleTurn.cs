@@ -530,26 +530,35 @@ namespace MonsterTrain2Poju.Model
                 context = count.Context!; drawPerTurn = count.Value;
             }
             if (context.OtherPiles != null) otherPiles = context.OtherPiles.ToArray();
-            CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, drawPerTurn, context.MaxHandSize);
-            if (!drawn.Supported) return Unsupported(drawn.UnsupportedReason!);
-            var existingHand = new HashSet<int>(context.Cards.Hand.Select(card => card.InstanceId));
-            statistics = context.Statistics;
-            foreach (CardToken card in drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)))
-                statistics = statistics?.Increment(card.InstanceId, "TimesDrawn");
-            context = context.WithStatistics(statistics);
-            context = WithCards(context, drawn.State!);
-            // Draw upgrades precede ICardDrawnRelicEffect and the subsequent
-            // card-added-to-hand notification in CardManager.DrawSpecificCard.
-            context = BonusDrawModel.ApplyUpgrades(context, drawn, source.PlayRules, out string? bonusError);
-            if (bonusError != null) return Unsupported(bonusError);
-            foreach (CardToken card in drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)))
+            if (RelicCorruptedAngelsModel.Enabled(context))
             {
-                context = RelicExpensiveCardUpgradeModel.Drawn(context, new[] { card.InstanceId }, out string? drawCallbackError);
-                if (drawCallbackError != null) return Unsupported(drawCallbackError);
-                RelicFirstCardCostResult cardAdded = RelicFirstCardCostModel.ApplyOnCardAdded(context, card.InstanceId,
-                    source.PlayRules);
-                if (!cardAdded.Supported) return Unsupported(cardAdded.UnsupportedReason!);
-                context = cardAdded.Context;
+                TypedDrawResult interleaved = RelicCorruptedAngelsModel.DrawHand(context, drawPerTurn, source.PlayRules);
+                if (!interleaved.Supported) return Unsupported(interleaved.UnsupportedReason!);
+                context = interleaved.Context!;
+            }
+            else
+            {
+                CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, drawPerTurn, context.MaxHandSize);
+                if (!drawn.Supported) return Unsupported(drawn.UnsupportedReason!);
+                var existingHand = new HashSet<int>(context.Cards.Hand.Select(card => card.InstanceId));
+                statistics = context.Statistics;
+                foreach (CardToken card in drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)))
+                    statistics = statistics?.Increment(card.InstanceId, "TimesDrawn");
+                context = context.WithStatistics(statistics);
+                context = WithCards(context, drawn.State!);
+                // Draw upgrades precede ICardDrawnRelicEffect and the subsequent
+                // card-added-to-hand notification in CardManager.DrawSpecificCard.
+                context = BonusDrawModel.ApplyUpgrades(context, drawn, source.PlayRules, out string? bonusError);
+                if (bonusError != null) return Unsupported(bonusError);
+                foreach (CardToken card in drawn.State!.Hand.Reverse().Where(card => !existingHand.Contains(card.InstanceId)))
+                {
+                    context = RelicExpensiveCardUpgradeModel.Drawn(context, new[] { card.InstanceId }, out string? drawCallbackError);
+                    if (drawCallbackError != null) return Unsupported(drawCallbackError);
+                    RelicFirstCardCostResult cardAdded = RelicFirstCardCostModel.ApplyOnCardAdded(context, card.InstanceId,
+                        source.PlayRules);
+                    if (!cardAdded.Supported) return Unsupported(cardAdded.UnsupportedReason!);
+                    context = cardAdded.Context;
+                }
             }
             train = WithContext(train, context, false);
             if (turn == 1 && context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicTurnDrawModel.Opening)) == true)

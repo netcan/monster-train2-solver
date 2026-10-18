@@ -377,6 +377,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalOpeningDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPerkeoScenario.Enabled && !OriginalPerkeoScenario.Acquired)
                         OriginalPerkeoScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalCorruptedAngelsScenario.Enabled && !OriginalCorruptedAngelsScenario.Acquired)
+                        OriginalCorruptedAngelsScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPartFactoryScenario.Enabled && !OriginalPartFactoryScenario.Acquired)
                         OriginalPartFactoryScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalBigDamageScenario.Enabled && !OriginalBigDamageScenario.Acquired)
@@ -1260,6 +1262,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalPerkeoScenario.PrepareDeployment(managers);
             }
+            if (fullBattle && OriginalCorruptedAngelsScenario.Enabled && !OriginalCorruptedAngelsScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalCorruptedAngelsScenario.PrepareDeployment(managers);
+            }
             if (fullBattle && OriginalOpeningDeckSpawnScenario.Enabled && !OriginalOpeningDeckSpawnScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -1715,7 +1722,7 @@ namespace MonsterTrain2Poju.Probe
                 else NumericUpgradeScenario.Prepare(managers, log);
                 return;
             }
-            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalPerkeoScenario.Enabled && !OriginalOpeningDeckSpawnScenario.Enabled && !OriginalOpeningMorselsScenario.Enabled && !OriginalGrosMichelScenario.Enabled && !OriginalRelicBatchScenario.Enabled && !OriginalHealingPowerScenario.Enabled &&
+            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalCorruptedAngelsScenario.Enabled && !OriginalPerkeoScenario.Enabled && !OriginalOpeningDeckSpawnScenario.Enabled && !OriginalOpeningMorselsScenario.Enabled && !OriginalGrosMichelScenario.Enabled && !OriginalRelicBatchScenario.Enabled && !OriginalHealingPowerScenario.Enabled &&
                 !OriginalCardAttackRelicScenario.Enabled && !OriginalCardTypeCostScenario.Enabled && !OriginalUpgradeCountRelicsScenario.Enabled &&
                 !OriginalPurgeToExhaustScenario.Enabled && !OriginalExpensiveCardUpgradeScenario.Enabled && !OriginalWolosBloodletterScenario.Enabled &&
                 !RelicCardModifierScenario.Prepared)

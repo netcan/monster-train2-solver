@@ -111,14 +111,19 @@ namespace MonsterTrain2Poju.Probe
                     CardCycleState prepared = standbyContext == null ? before : EquipmentModel.ReturnStandby(standbyContext, livingIds!).Cards;
                     prepared = new CardCycleState(prepared.Hand, prepared.Draw, prepared.Discard, prepared.Rng, prepared.DrawModifier,
                         before.ExternalInteractions, prepared.BonusDraw, prepared.NextDrawUpgrades, prepared.NextUpgradeReferenceId);
+                    BattlePlayRules? definitions = standbyContext != null && RelicCorruptedAngelsModel.Enabled(standbyContext)
+                        ? trace.CaptureDecision().PlayRules : null;
+                    TypedDrawResult? interleaved = definitions == null ? null :
+                        RelicCorruptedAngelsModel.DrawHand(standbyContext!.WithCards(prepared), handSize, definitions);
                     record = new Record
                     {
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = kind,
                         HandSize = handSize, MaxHandSize = cards.GetMaxHandSize(), Before = before,
-                        StandbyContext = standbyContext, LivingUnitIds = livingIds,
+                        StandbyContext = standbyContext, LivingUnitIds = livingIds, Definitions = definitions,
                         EphemeralCardIds = ephemeralCardIds, PersistentCardIds = persistentCardIds,
                         InfusionCardIds = infusionCardIds, PurgedBefore = purgedBefore,
-                        Predicted = kind == "Draw" ? CardCycleModel.DrawHand(prepared, handSize, cards.GetMaxHandSize())
+                        Predicted = interleaved != null ? new CardCycleResult(interleaved.Context?.Cards, interleaved.UnsupportedReason)
+                            : kind == "Draw" ? CardCycleModel.DrawHand(prepared, handSize, cards.GetMaxHandSize())
                             : CardCycleModel.DiscardHand(before, ephemeralCardIds, persistentCardIds, infusionCardIds)
                     };
                     records.Add(record);
@@ -163,6 +168,14 @@ namespace MonsterTrain2Poju.Probe
             var record = new Record { Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = "SpellDraw",
                 HandSize = count, MaxHandSize = cards.GetMaxHandSize(), PlayedCardId = id, Before = before,
                 Predicted = CardCycleModel.DrawCards(before, count, cards.GetMaxHandSize(), id) };
+            CombatContext context = FullBattleTrace.Active.CaptureContext();
+            if (RelicCorruptedAngelsModel.Enabled(context))
+            {
+                record.StandbyContext = context.WithCards(before);
+                record.Definitions = FullBattleTrace.Active.CaptureDecision().PlayRules;
+                TypedDrawResult draw = NextDrawUpgradeModel.DrawCards(record.StandbyContext, count, id, record.Definitions);
+                record.Predicted = new(draw.Context?.Cards, draw.UnsupportedReason);
+            }
             records.Add(record); return record;
         }
 
@@ -189,6 +202,7 @@ namespace MonsterTrain2Poju.Probe
             public int PlayedCardId { get; set; }
             public CardCycleState Before { get; set; } = null!;
             public CombatContext? StandbyContext { get; set; }
+            public BattlePlayRules? Definitions { get; set; }
             public int[]? LivingUnitIds { get; set; }
             public int[] EphemeralCardIds { get; set; } = Array.Empty<int>();
             public int[] PersistentCardIds { get; set; } = Array.Empty<int>();

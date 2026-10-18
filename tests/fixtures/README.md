@@ -1,10 +1,32 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 442 archives (403 full battles and
-39 component calibrations), 223/224 original relic owners (99.55%): 205 battle
+Current accepted inventory (2026-10-18): 443 archives (404 full battles and
+39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
-The latest `full-battle-original-perkeo.mt2f` retains unchanged Perkeo, its
+The latest `full-battle-original-corrupted-angels.mt2f` retains unchanged
+CorruptedAngelsArtifact and both original filters, including the thirteen-card
+exclusion pool. Native callbacks prove reverse draw-pile priority, discard
+fallback, no eligible candidate, non-primary cards, full-hand refusal, energy
+cap, null-filter acceptance and depth-three recursion through pool-external Junk.
+Energy follows the nested draw even on refusal; a rejected attempt counts toward
+the one-card limit and does not retry the discard pile. Specific draws preserve
+RNG, identities and permanent deck membership. Ordinary draws interleave callbacks
+without charging nested draws to the primary-loop count.
+Forty-six complete callbacks include fourteen natural positives and 22 native
+draw requests. The 32-stage Pyre62 win has 33 ordinary plays/five EndTurns, nine
+card cycles, nine train phases, seven spawns and eight zero error counters.
+Focused checks, full independent policy/mid-battle replay, sixteen immutable
+branches, 128-state serial/parallel search and all 22 affected archives pass;
+both workers terminate with zero exits and unchanged tested binaries:
+`.probe-runs/model-checks-20261018-171015-d5f9aac5/summary.json`.
+The 46,559-byte archive has 8,481 unique nodes, zero source length/hash, no JSON
+companion and SHA-256
+`66d53f653b7bb12bd64ddc63d84b51313e2c38347fac5073dfbafcfb280b387c`.
+Pending draw-upgrade queues, random-cost co-owner ordering, disabled deck draws,
+other callback combinations and metagame consumers need separate evidence.
+
+The preceding `full-battle-original-perkeo.mt2f` retains unchanged Perkeo, its
 one-card pool and permanent CalcifiedEmberConvert upgrade. Natural generation
 inserts into the draw pile; natural positive unplayed dispatch purges the source
 from the permanent deck and creates a fresh permanent Consume card in hand.
@@ -21,7 +43,7 @@ SetupRun pool choice is captured external input. Out-of-hand conversions, other
 positive unplayed upgrades, combined callbacks and metagame purge consumers
 require separate evidence.
 
-The latest `full-battle-original-opening-deck-spawn.mt2f` retains unchanged
+The earlier `full-battle-original-opening-deck-spawn.mt2f` retains unchanged
 `RandomUnitEveryFloor` and its ordered Null plus three spawn effects. Native
 Tests cache Monster-only draw-pile pools of 4/3/2; Apply shuffles with CardDraw
 RNG, creates card-backed non-clone units on floors 0/1/2, discards each source

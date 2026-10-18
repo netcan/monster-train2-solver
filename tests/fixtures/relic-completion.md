@@ -1,4 +1,4 @@
-# Remaining original relic coverage
+# Original relic coverage completion
 
 User objective: finish original collectible relic coverage, with small commits
 after each independently validated batch. The accepted owner table remains
@@ -18,9 +18,9 @@ coverage inventory checks.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 223 original owners accepted (205 native battle owners,
+Current checkpoint: 224 original owners accepted (206 native battle owners,
 seventeen actual campaign-interface owners and one explicit native no-op owner);
-1 remains pending. The latest accepted owner is `BalatroEventPerkeo`.
+none remain pending. The latest accepted owner is `CorruptedAngelsArtifact`.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
@@ -30,7 +30,44 @@ and affected-fixture regression. Merchant/reward/draft effects need their actual
 campaign lifecycle evidence; enumeration and inert battle presence do not
 validate effects. Pure no-op definitions require explicit identification.
 
-The schema-245 `full-battle-original-perkeo.mt2f` witness retains the unchanged
+The schema-246 `full-battle-original-corrupted-angels.mt2f` witness retains its
+unchanged owner and both original filters, including all thirteen exclusion IDs.
+It proves reverse draw-pile priority and discard fallback, matches even failed
+specific draws, and adds energy after all nested callbacks. Eight isolated
+control roles include no-candidate, non-primary, full-hand, energy-cap, null-input
+and depth-three recursion paths. Forty-six complete callback comparisons include
+fourteen natural original Blight/Junk positives and 22 directly observed draw
+requests. Extra draws preserve RNG, identity allocation and permanent deck count;
+the fixed primary draw loop continues after them until its count or hand cap.
+The 32-stage native win has 33 ordinary plays/five EndTurns, nine card cycles,
+nine train phases, seven spawns, final Pyre62 and all eight error counters zero.
+Focused checks, full independent policy/mid-battle replay, sixteen immutable
+branches and 128/128-state serial/parallel search pass. Search matches 33 recorded
+decisions/37 root actions and replays three steps to the node/turn boundary with
+equal best results and zero unsupported attempts. All 22 affected archives pass;
+both workers terminate with zero exits and three tested assembly hashes unchanged:
+`.probe-runs/model-checks-20261018-171015-d5f9aac5/summary.json`.
+The 46,559-byte archive has 8,481 unique nodes, zero source length/hash, no JSON
+companion and SHA-256
+`66d53f653b7bb12bd64ddc63d84b51313e2c38347fac5073dfbafcfb280b387c`.
+Current inventory is 443 archives: 404 battles and 39 components. Pending
+draw-upgrade queues, random-cost co-owner ordering, disabled deck draws, other
+callback combinations and metagame consumers require separate evidence.
+
+The completion audit regenerates the exact 224-owner checklist against catalog
+schema 9/build MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, checks every owner's
+ID in its cited binary evidence, verifies the cited winning battles' common
+error counters, and checks all 443 archive hashes, lengths, decoded payloads,
+unique-node counts and source metadata. All 224 owner IDs are found across their
+148 cited evidence archives; the 152 total referenced archives include 144
+winning battle archives with zero common error counters. All effect source files
+are present.
+Commit `a6104f3` corrects only the historical CarriageJack source-provenance
+metadata exposed by this audit; its binary archive remains unchanged. Each
+owner's accepted paths and additional evidence boundaries remain documented in
+the owner table. Whole-battle and optimal-solver completion are separate work.
+
+The preceding schema-245 `full-battle-original-perkeo.mt2f` witness retains the unchanged
 owner, original one-card pool and permanent conversion upgrade. Start-of-battle
 generation creates a permanent upgraded Blight at a Battle-RNG random draw-pile
 position. Natural positive unplayed dispatch purges its saved-deck membership
@@ -129,7 +166,7 @@ was 439 archives: 400 battles and 39 component calibrations. Other transfer
 definitions, preview-only lifecycles and additional combined death/status
 callbacks require separate native evidence.
 
-Pending owner: `CorruptedAngelsArtifact`.
+Pending owners: none.
 
 The preceding schema-241 `full-battle-original-bone-dog.mt2f` witness exercises the
 unchanged 25% once-per-run resurrection through actual lethal Pyre damage.

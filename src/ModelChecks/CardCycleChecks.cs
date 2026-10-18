@@ -60,13 +60,16 @@ internal static class CardCycleChecks
         foreach (FixtureValue cycle in cycles.EnumerateArray())
         {
             CardCycleState before = Read(cycle.GetProperty("Before"));
+            CombatContext? drawContext = null;
             if (cycle.TryGetProperty("StandbyContext", out var standby) && standby.ValueKind != FixtureKind.Null)
             {
                 var context = standby.Deserialize<CombatContext>()!;
                 Require(Comparable(context.Cards) == Comparable(before), "Pre-draw standby context differs from the actual draw input.");
-                var prepared = EquipmentModel.ReturnStandby(context, cycle.GetProperty("LivingUnitIds").Deserialize<int[]>()!).Cards;
+                var prepared = cycle.GetProperty("Kind").GetString() == "Draw"
+                    ? EquipmentModel.ReturnStandby(context, cycle.GetProperty("LivingUnitIds").Deserialize<int[]>()!).Cards : context.Cards;
                 before = new CardCycleState(prepared.Hand, prepared.Draw, prepared.Discard, prepared.Rng, prepared.DrawModifier,
                     before.ExternalInteractions, prepared.BonusDraw, prepared.NextDrawUpgrades, prepared.NextUpgradeReferenceId);
+                drawContext = context.WithCards(before);
             }
             CardCycleResult result = cycle.GetProperty("Kind").GetString() == "Draw"
                 ? CardCycleModel.DrawHand(before, cycle.GetProperty("HandSize").GetInt32(),
@@ -76,6 +79,15 @@ internal static class CardCycleChecks
                         cycle.TryGetProperty("EphemeralCardIds", out var ephemeralIds) ? ephemeralIds.Deserialize<int[]>() : null,
                         cycle.TryGetProperty("PersistentCardIds", out var persistentIds) ? persistentIds.Deserialize<int[]>() : null,
                         cycle.TryGetProperty("InfusionCardIds", out var infusionIds) ? infusionIds.Deserialize<int[]>() : null);
+            if (drawContext != null && RelicCorruptedAngelsModel.Enabled(drawContext))
+            {
+                BattlePlayRules definitions = cycle.GetProperty("Definitions").Deserialize<BattlePlayRules>()!;
+                TypedDrawResult draw = cycle.GetProperty("Kind").GetString() == "Draw"
+                    ? RelicCorruptedAngelsModel.DrawHand(drawContext, cycle.GetProperty("HandSize").GetInt32(), definitions)
+                    : NextDrawUpgradeModel.DrawCards(drawContext, cycle.GetProperty("HandSize").GetInt32(),
+                        cycle.GetProperty("PlayedCardId").GetInt32(), definitions);
+                result = new(draw.Context?.Cards, draw.UnsupportedReason);
+            }
             if (!result.Supported) { unsupported++; continue; }
             CardCycleState actual = Read(cycle.GetProperty("Actual"));
             Require(Comparable(result.State!) == Comparable(actual),

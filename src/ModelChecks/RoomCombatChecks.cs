@@ -399,6 +399,8 @@ internal static class RoomCombatChecks
             OriginalOpeningDeckSpawnChecks.Native(fixture);
         else if (fixture.TryGetProperty("ModifierScenario", out var perkeoScenario) && perkeoScenario.GetString() == "original-perkeo")
             OriginalPerkeoChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out var angelsScenario) && angelsScenario.GetString() == "original-corrupted-angels")
+            OriginalCorruptedAngelsChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage: true);
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);

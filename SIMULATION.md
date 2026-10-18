@@ -1,11 +1,37 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 442 binary archives, including 403
+Current accepted inventory (2026-10-18): 443 binary archives, including 404
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 223/224 catalog entries (99.55%): 205 battle owners, 17 campaign
+covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`CorruptedAngelsArtifact` completes original-owner coverage with schema-246
+evidence for its unchanged Blight/Junk trigger and original 13-card exclusion
+pool. Each eligible draw attempts the last matching draw-pile card, then a
+discard-pile fallback only when no draw-pile match exists. A matched card counts
+even if the hand is full; energy is added after nested callbacks, including
+refused draws and no-candidate cases. Specific draws consume no RNG. Ordinary
+hand draws now interleave these callbacks with each primary draw; nested draws
+do not reduce the fixed primary-loop count. Pool-external Junk cards exercise
+depth-three recursion without changing the original filters.
+The 32-stage Pyre62 win has 33 ordinary plays, five EndTurns, nine card cycles,
+nine train phases, seven spawns and all eight error counters zero. Forty-six
+complete callbacks include fourteen natural Blight/Junk positives, 22 observed
+draw requests and eight isolated control roles. Focused checks, full independent
+policy/mid-battle replay, sixteen immutable branches and 128-state serial/parallel
+search pass. All 22 affected archives pass with terminal zero worker exits and
+unchanged tested binaries:
+`.probe-runs/model-checks-20261018-171015-d5f9aac5/summary.json`.
+Pending draw-upgrade queues, random-cost co-owner ordering, disabled deck draws,
+additional callback combinations and metagame consumers require separate evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCorruptedAngelsRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-corrupted-angels.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-corrupted-angels-only tests/fixtures/full-battle-original-corrupted-angels.mt2f
+```
 
 `BalatroEventPerkeo` has schema-245 evidence for original permanent random-pile
 generation of SelfPurgeBlight with CalcifiedEmberConvert. Its natural positive

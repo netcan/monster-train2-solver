@@ -240,6 +240,12 @@ if (args.Length == 2 && args[0] == "--original-perkeo-only")
     OriginalPerkeoChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-corrupted-angels-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalCorruptedAngelsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-opening-morsels-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

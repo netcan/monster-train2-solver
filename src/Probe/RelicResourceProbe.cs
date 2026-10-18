@@ -130,6 +130,7 @@ namespace MonsterTrain2Poju.Probe
             RelicDeathEffectRule? deathEffect = null;
             RelicOpeningSpawnRule? openingSpawn = null;
             RelicOpeningDeckSpawnRule? deckSpawn = null;
+            RelicDrawAndEnergyRule? drawAndEnergy = null;
             if (effect is RelicEffectSpawnUnitFromDeck)
             {
                 var cached = (List<CardState>)AccessTools.Field(effect.GetType(), "toProcessCards").GetValue(effect);
@@ -192,6 +193,17 @@ namespace MonsterTrain2Poju.Probe
                 object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
                 suppressExhaust = new RelicSuppressExhaustRule((int)Field("percentageChance"), Field("cardType").ToString()!, (bool)Field("testPassed"), interactions);
                 amount = (int)Field("percentageChance");
+            }
+            else if (effect is RelicEffectDrawCardAndGainEmberOnDrawType)
+            {
+                var interactions = new List<string>();
+                if (data.GetParamInt3() != 0 || data.GetParamMaxInt() != 1 || data.GetParamFloat() != 0 ||
+                    data.GetParamBool() || data.GetParamBool2() || data.GetParamBool3() || data.GetParamBool4() ||
+                    data.GetParamCardEffectData().Count != 0 || data.GetTriggers().Count != 0 || data.GetParamCardUpgradeData() != null)
+                    interactions.Add("Additional draw/energy payload");
+                drawAndEnergy = new(data.GetParamCardFilter() == null ? null : CardUpgradeMaskProbe.Rule(data.GetParamCardFilter()),
+                    data.GetParamCardFilterSecondary() == null ? null : CardUpgradeMaskProbe.Rule(data.GetParamCardFilterSecondary()), interactions);
+                amount = data.GetParamInt();
             }
             else if (effect is RelicEffectRandomCardCostOnDraw)
             {
@@ -467,7 +479,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy);
         }
 
         internal static ResourceSnapshot Capture()

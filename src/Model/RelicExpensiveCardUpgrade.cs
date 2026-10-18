@@ -97,7 +97,7 @@ namespace MonsterTrain2Poju.Model
             }
             return new(context);
         }
-        internal static CombatContext Drawn(CombatContext source, IReadOnlyList<int> ids, out string? error)
+        internal static CombatContext Drawn(CombatContext source, IReadOnlyList<int> ids, out string? error, BattlePlayRules? definitions = null)
         {
             error = null; CombatContext context = source;
             foreach (int id in ids)
@@ -106,6 +106,12 @@ namespace MonsterTrain2Poju.Model
                 if (card?.MaskDescriptor != null && CardBranchMaskModel.Resolve(card).Traits.Contains(Trait)) context = context.WithCard(Freeze(card));
                 context = RelicRandomDrawCostModel.Drawn(ConduitModel.Drawn(context, new[] { id }), new[] { id }, out error);
                 if (error != null) return source;
+                if (RelicCorruptedAngelsModel.Enabled(context))
+                {
+                    var angels = RelicCorruptedAngelsModel.Apply(context, id, out _, definitions);
+                    if (!angels.Supported) { error = angels.UnsupportedReason; return source; }
+                    context = angels.Context;
+                }
                 var added = Added(context, id); if (!added.Supported) { error = added.UnsupportedReason; return source; }
                 context = added.Context;
             }

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **223 distinct original collectable relics / 224 catalog entries
-(99.55%)** have accepted native evidence: 205 have full-battle effect evidence,
+As of 2026-10-18, **224 distinct original collectable relics / 224 catalog entries
+(100%)** have accepted native evidence: 206 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -15,7 +15,7 @@ all eight now have accepted original-owner evidence. Both catalog owners of
 `RelicEffectPreventStatusEffectDecay` have accepted evidence for their original
 Rage and Frostbite consumers. All four catalog owners of
 `RelicEffectModifyStatusMagnitude` now have accepted evidence. Unknown status
-families and other effects on the remaining owners still require modeling and
+families and additional uncalibrated interactions still require modeling and
 native proof.
 The original `ChanceForSpellWeakness` owner now has native 50% AfterSpawnEnchant
 evidence for its unchanged enemy-Hero Spell Weakness effect, including eligible
@@ -3083,4 +3083,43 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalPerkeoRelic -Bina
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-perkeo.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-perkeo-only tests/fixtures/full-battle-original-perkeo.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-perkeo.mt2f
+```
+
+## Corrupted Angels filtered extra draws and energy
+
+| Original owner | Data ID | Native evidence | Covered behavior |
+| --- | --- | --- | --- |
+| `CorruptedAngelsArtifact` | `3b0913dd-03e9-46d3-a3ff-b86cfc12d224` | `full-battle-original-corrupted-angels.mt2f` | Unchanged Blight/Junk trigger and original thirteen-card exclusion pool. Reverse draw-pile priority precedes discard fallback; a matched but refused draw counts toward the one-card limit. Energy follows nested callbacks, including no-candidate/full-hand cases. Eight control roles include depth-three recursion through pool-external Junk. |
+
+The schema-246 native win has 32 stages, 33 ordinary plays, five EndTurns, nine
+card cycles, nine train phases, seven spawns and final Pyre62. Forty-six complete
+callbacks include fourteen natural original Blight/Junk positives and 22 native
+draw requests. Native requests prove a full-hand refusal stops after one matched
+candidate without trying the eligible discard fallback. Non-primary and null
+inputs, no-candidate energy, energy clamping and depth-three recursive ordering
+are separately captured. Specific draws preserve both gameplay RNG streams,
+card allocation and permanent deck membership. Ordinary hand draws interleave
+callbacks with each primary draw; nested draws do not consume primary-loop count.
+All eight capture/difference/unsupported/pending counters are zero and original
+files remain unchanged. Focused checks, complete independent policy/mid-battle
+replay, sixteen immutable branches and all 22 affected archives pass. Search
+matches 33 recorded decisions/37 root actions, visits 128/128 states and replays
+three steps to the node/turn boundary, with zero unsupported attempts and equal
+serial/parallel best results. Both regression workers terminate with zero exits
+and unchanged tested assembly hashes:
+`.probe-runs/model-checks-20261018-171015-d5f9aac5/summary.json`.
+
+The 46,559-byte archive has 8,481 unique nodes and SHA-256
+`66d53f653b7bb12bd64ddc63d84b51313e2c38347fac5073dfbafcfb280b387c`.
+Source length/hash are zero, with no JSON companion. Inventory is 443 archives:
+404 battles and 39 components. Accepted coverage is 224/224 (100%): 206 battle
+owners, seventeen campaign owners and one native no-op; none pending. Pending
+draw-upgrade queues, random-cost co-owner ordering, disabled deck draws, additional
+callback combinations and metagame consumers require separate native evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCorruptedAngelsRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-corrupted-angels.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-corrupted-angels-only tests/fixtures/full-battle-original-corrupted-angels.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-corrupted-angels.mt2f
 ```
