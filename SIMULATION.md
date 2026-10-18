@@ -34,6 +34,16 @@ manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
 
+`full-battle-original-status-removal-scaling.mt2f` models original Pyreborne
+Brainspike at X three/zero/ten: partial/zero/clamped cooldown removal, followed
+by twice-X Avarice on the same target. Removal statistics attribute actual
+removed stacks. Twelve unchanged native queries cover matching/unmatched IDs
+and zero/nine incoming stacks; three live callbacks independently match.
+Source descriptors retain ordered removal/list-filtered addition status IDs.
+Six plays/five EndTurns match sixteen immutable chains and bounded search.
+Relic removal callbacks precede trait scaling; remove-all and disallowed stack
+modifiers bypass it. Added/replaced traits remain guarded.
+
 `full-battle-original-scaled-energy.mt2f` models GainXEnergy's played-discard
 callback before the paid-cost statistic clears. Paying X=3 returns six current
 ember; X=0 returns zero. Unplayed originals discard/redraw without ember, and

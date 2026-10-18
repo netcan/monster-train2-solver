@@ -27,7 +27,7 @@ namespace MonsterTrain2Poju.Model
         // This is the raw CharacterState API. Setting HP to zero does not dispatch a
         // death signal, exhaust the spawner or increment another physical death.
         internal static RoomCombatResult Remove(RoomCombatState source, int targetId, string id, int amount, int sourceCardId = 0,
-            string? fromEffectType = null)
+            string? fromEffectType = null, bool allowStackModifiers = true)
         {
             id = id.ToLowerInvariant();
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
@@ -37,6 +37,13 @@ namespace MonsterTrain2Poju.Model
             source = relicAdded.State!;
             target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null) return Unsupported("Status removal relic lost its target.");
+            if (allowStackModifiers)
+            {
+                StatusScalingResult scaled = CardStatusRemovalScalingModel.Apply(source.Context, sourceCardId, id, amount);
+                if (!scaled.Supported) return Unsupported(scaled.UnsupportedReason!);
+                source = source.WithContext(scaled.Context);
+                amount = scaled.Stacks;
+            }
             CombatStatus? status = target.RegisteredStatus(id);
             if (status == null) return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>(),
                 pendingCallbacks: relicAdded.PendingCallbacks);
@@ -91,7 +98,7 @@ namespace MonsterTrain2Poju.Model
             int count = target.RegisteredStatus(id)?.Stacks ?? 0;
             if (count == 0) return Match(source);
             RoomCombatResult raw = Remove(source, targetId, id, Math.Min(effect.Statuses[0].Stacks, count), sourceCardId,
-                "CardEffectRemoveStatusEffect");
+                "CardEffectRemoveStatusEffect", allowStackModifiers: !effect.DisallowStatusStackModifiers);
             if (!raw.Supported || id != "horde") return raw;
             CombatUnit changed = raw.State!.Units.FirstOrDefault(unit => unit.Id == targetId) ??
                 raw.PendingCallbacks.LastOrDefault(item => item.Unit.Id == targetId)?.Unit ?? target;

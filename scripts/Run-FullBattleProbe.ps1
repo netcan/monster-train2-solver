@@ -65,6 +65,7 @@ param(
     [switch] $OriginalStatusStackDamage,
     [switch] $OriginalSpecificCardDamage,
     [switch] $OriginalScaledEnergy,
+    [switch] $OriginalStatusRemovalScaling,
     [switch] $OriginalRoomStatusDamage,
     [switch] $OriginalCorruptionDamage,
     [switch] $OriginalXStatusCards,
@@ -528,6 +529,7 @@ if ($OriginalCorruptRestricted) { $BranchCardMasks = $true; $Policy = 'units-spe
 if ($OriginalStatusStackDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpecificCardDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledEnergy) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalStatusRemovalScaling) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomStatusDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptionDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1041,6 +1043,7 @@ if ($OriginalCorruptRestricted) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalStatusStackDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-stack-damage' }
 if ($OriginalSpecificCardDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-specific-card-damage' }
 if ($OriginalScaledEnergy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-energy' }
+if ($OriginalStatusRemovalScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-removal-scaling' }
 if ($OriginalRoomStatusDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-status-damage' }
 if ($OriginalCorruptionDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corruption-damage' }
 if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
@@ -2233,6 +2236,11 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
 if ($OriginalMonsterHandCosts -and (-not $trace.OriginalMonsterHandCostsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalMonsterHandCostsSamples).Count -ne 7 -or @($trace.OriginalMonsterHandCostsDeploymentQueries).Count -ne 8 -or -not $trace.OriginalMonsterHandCostsQueriesUnchanged)) {
     throw 'Original Monster hand cost fixture lacks cost/filter controls or restored deployment eligibility queries.'
+}
+if ($OriginalStatusRemovalScaling -and (-not $trace.OriginalStatusRemovalScalingPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
+    @($trace.OriginalStatusRemovalScalingSamples).Count -ne 3 -or @($trace.OriginalStatusRemovalScalingQueries).Count -ne 12 -or
+    @($trace.OriginalStatusRemovalScalingQueries | Where-Object { -not $_.StateUnchanged }).Count -ne 0)) {
+    throw 'Original status-removal scaling witness is incomplete or native queries changed shared context.'
 }
 if ($OriginalScaledEnergy -and (-not $trace.OriginalScaledEnergyPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or
     @($trace.OriginalScaledEnergySamples | Where-Object WasPlayed).Count -ne 2 -or

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 497 archives (458 full battles and
+Current accepted inventory (2026-10-19): 498 archives (459 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,27 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-497 accepted archives. Refresh/check the index with
+498 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-status-removal-scaling.mt2f` retains original Pyreborne
+Brainspike. Paying X three/zero/ten gives partial/zero/clamped cooldown removal
+and adds twice X Avarice to the same target. Removal attribution counts actual
+removed stacks, including the final request exceeding the remaining count.
+Twelve unchanged native trait queries cover matching cooldown/unmatched armor
+and incoming stacks zero/nine; three observed live callbacks independently
+match. Armor, health and the outside floor remain controls. Both removal and
+list-filtered addition descriptors retain their ordered native status IDs.
+Relic removal callbacks precede trait scaling; remove-all and disallowed stack
+modifiers bypass scaling. Added/replaced traits remain guarded.
+Six plays/five EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (ten root actions, zero unsupported).
+Binary-only: 27,472 bytes/3,748 nodes, SHA-256
+`abcbe221546200ef35d971ec8389be57eed470db47b8a5cd589fa97dc7f38a42`.
+Use `-OriginalStatusRemovalScaling` and `--original-status-removal-scaling-only`.
+Focused regression `model-checks-20261019-021946-07aef36c` passed this fixture,
+Horde removal and original Spike of the Legion, with all three terminal exit
+codes zero.
 
 `full-battle-original-scaled-energy.mt2f` retains original GainXEnergy with
 Consume and its played-discard scaling callback. Paying X=3 yields six current
