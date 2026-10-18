@@ -1,11 +1,24 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 422 binary archives, including 384
+Current accepted inventory (2026-10-18): 423 binary archives, including 385
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 203/224 catalog entries (90.63%): 186 battle owners, 16 campaign
+covers 204/224 catalog entries (91.07%): 187 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`ChanceToSilence` now has schema-227 native evidence for six natural enemy
+OnSpawn applications of the unchanged muted effect. All 244 Tests (six positive,
+238 gated) preserve complete state and Battle RNG. The original TreasureCollector
+exclusion is retained; the older definition catalog omitted that field. The
+outer 100% Test skips RNG, while the nested 100% status effect consumes one draw.
+The 35-stage winning battle, two deployment actions, independent five-EndTurn
+suffix with sixteen immutable branches, focused checks, serial/parallel search
+and eight-archive affected regression pass with zero differential counters.
+Pure controls cover subtype/untouchable/destroyed/team/trigger gates, repeated
+stacking, immunity/purify ordering, isolated preview and strict payload rejection.
+Dead-self application, standalone preview and arbitrary combined spawn/status
+effects require separate native evidence.
 
 `AddAttackOnKill` now has schema-226 native evidence for five natural OnKill
 callbacks on two controlled Stewards. Each applies the original non-unique +3

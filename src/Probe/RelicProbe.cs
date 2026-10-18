@@ -48,7 +48,7 @@ namespace MonsterTrain2Poju.Probe
                     .Select(item => item.Effect is RelicEffectAddStatusEffectOnEnterRoomIndex
                         ? RoomEntryStatus(item.Effect, item.Index) : MovementStatus(item.Effect, item.Index)).ToArray();
                 var afterSpawnChanceRules = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectChanceAddEffectAfterSpawn)
+                    .Where(item => item.Effect is RelicEffectChanceAddEffectAfterSpawn || item.Effect is RelicEffectChanceAddEffectOnSpawn)
                     .Select(item => AfterSpawnChance(item.Effect, item.Index)).ToArray();
                 var corruptionStatuses = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnCorruptionAdded)

@@ -171,7 +171,7 @@
 "Frenzystesia"	"56316fc2-b41a-41ae-aba8-e83fb668e8e1"	"accepted-native-battle"	"RelicEffectEmberOnUnitTrigger"	""
 "MorselsGetDamageShield"	"d1daea7e-3346-47df-a756-c839b044e5f3"	"accepted-native-battle"	"RelicEffectAddTempUpgrade,RelicEffectAddStatusEffectOnSpawn"	""
 "BalatroEventGrosMichel"	"75abded0-b922-4413-84ca-f0095642c600"	"pending"	"RelicEffectModifyCardAttack,GrosMichelRelicEffectChanceToDestroySelf,RelicEffectBalatroBananaShake"	""
-"ChanceToSilence"	"be9b4dd1-c0ba-41bd-a276-108ca7dad0fa"	"pending"	"RelicEffectChanceAddEffectOnSpawn"	""
+"ChanceToSilence"	"be9b4dd1-c0ba-41bd-a276-108ca7dad0fa"	"accepted-native-battle"	"RelicEffectChanceAddEffectOnSpawn"	""
 "ExtraFeedTrigger"	"b6613fe4-13c6-4462-8a0b-9af42850a851"	"accepted-native-battle"	"RelicEffectModifyTriggerCount"	""
 "MooncycleFaeAddMagicPower"	"8b20402a-100b-4f26-8cb5-47bed13cde3d"	"pending"	"RelicEffectAddEffectOnMooncycle"	""
 "ApplyDazedOnAscendOrDescend"	"4df794d8-3dd3-4ca0-8690-727a85414968"	"pending"	"RelicEffectAddCardUpgradeToExpensiveCards"	""

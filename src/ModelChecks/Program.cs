@@ -167,6 +167,17 @@ if (args.Length == 1 && args[0] == "--kill-attack-pure")
     OriginalKillAttackChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--spawn-silence-pure")
+{
+    OriginalSpawnSilenceChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-spawn-silence-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalSpawnSilenceChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-kill-attack-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1835,6 +1846,7 @@ OriginalMoreCapacityChecks.Run();
 RelicBurnoutDamageChecks.Run();
 RelicHealDamageChecks.Run();
 OriginalKillAttackChecks.Run();
+OriginalSpawnSilenceChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

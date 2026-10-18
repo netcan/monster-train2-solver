@@ -1,8 +1,17 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 422 archives (384 full battles and
-38 component calibrations), 203/224 original relic owners (90.63%): 186 battle
+Current accepted inventory (2026-10-18): 423 archives (385 full battles and
+38 component calibrations), 204/224 original relic owners (91.07%): 187 battle
 owners, sixteen campaign-interface owners and one native no-op. The latest
+`ChanceToSilence` fixture covers six natural enemy OnSpawn applications, 238
+gated Tests and the unchanged TreasureCollector exclusion. Every application
+adds muted and consumes exactly one inner status-chance RNG draw; the outer
+100% Test consumes none. The 35-stage winning replay, two deployment actions,
+independent five-EndTurn suffix with sixteen immutable branches, focused checks,
+serial/parallel search and eight-archive affected regression pass with zero
+differential counters. Pure checks cover filtering, repeated stacking, immunity,
+purify and isolated preview; dead-self application and standalone preview remain
+explicit boundaries. The previous
 `AddAttackOnKill` fixture covers five natural kills, cumulative +3 upgrades on
 both units and their source cards, 221 gated Tests and a 35-stage winning battle.
 Two deployment actions and an independent five-EndTurn suffix match in sixteen

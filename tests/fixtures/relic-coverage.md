@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **203 distinct original collectable relics / 224 catalog entries
-(90.63%)** have accepted native evidence: 186 have full-battle effect evidence,
+As of 2026-10-18, **204 distinct original collectable relics / 224 catalog entries
+(91.07%)** have accepted native evidence: 187 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1990,4 +1990,52 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-kil
 dotnet run --project src/ModelChecks -c Release -- --kill-attack-pure
 dotnet run --project src/ModelChecks -c Release -- --original-kill-attack-only tests/fixtures/full-battle-original-kill-attack.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-kill-attack.mt2f
+```
+
+## ChanceToSilence
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `ChanceToSilence` | `be9b4dd1-c0ba-41bd-a276-108ca7dad0fa` | `full-battle-original-chance-to-silence.mt2f` | The unchanged `RelicEffectChanceAddEffectOnSpawn` applies one muted stack to six naturally spawned enemy Heroes. Its original 100% chance, unrestricted rooms, None subtype, TreasureCollector exclusion and nested 100% self-target status effect are retained. Two friendly deployment spawns and other trigger/team callbacks are gated. |
+
+The schema-227 native winning battle matches all 35 stages, two deployment
+actions and five EndTurns. All 244 Tests (six positive, 238 gated) preserve the
+complete train state and Battle RNG; all four unrestricted room flags remain
+false. Each application matches complete unit/status registry, callback, room,
+pile and global context state with sixteen immutable parallel replays. The
+outer 100% Test skips RNG, but `CardEffectAddStatusEffect` consumes exactly one
+Battle RNG draw for its nonzero inner chance value of 100. Muted's original
+stackable, negative, end-turn decay and post-combat removal metadata are retained.
+
+Independent policy replay checks both deployments and the complete five-EndTurn
+suffix to native victory with sixteen immutable branches. Search matches both
+recorded decisions and all six root actions with zero unsupported alternatives;
+serial/parallel best results agree (116/103 visited states, three replayed steps).
+Eight affected archives pass with two workers and terminal exit zero: this owner,
+ChanceForSpellWeakness, ChanceToCleanse, enchantment world/combat calibrations,
+AddAttackOnKill, HealToDamage and DamageOnBurnoutDeath.
+
+The older schema-9 definition catalog omitted excluded subtypes for this effect.
+Runtime definition capture and native acquisition establish the original
+`SubtypesData_TreasureCollector` exclusion; it is not an empty filter. Pure
+checks exercise that exclusion, untouchable/destroyed/team/trigger gates,
+repeated same-room stacking, immunity/purify after the inner RNG draw, and
+isolated preview RNG. Native Test has no HP gate; dead-self application and
+standalone preview remain unsupported pending separate evidence. The witness
+uses authored 80-HP/30-attack Stewards without character triggers. Arbitrary
+combined spawn, status, aura and death interactions require further witnesses.
+
+The binary archive is 24,769 bytes, with 3,602 unique nodes and SHA-256
+`14395a4b270e3ce9dc976bf547bd1147abcd4621c4af42329cb70bc9fbc7861d`.
+Its source length is zero and source hash is all zeroes; no JSON companion is
+tracked. Accepted inventory is 423 archives: 385 battles and 38 component
+calibrations. Original-owner evidence is 204/224 (91.07%): 187 battle, sixteen
+campaign and one native no-op owner; 20 owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalChanceToSilenceRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-chance-to-silence.mt2f
+dotnet run --project src/ModelChecks -c Release -- --spawn-silence-pure
+dotnet run --project src/ModelChecks -c Release -- --original-spawn-silence-only tests/fixtures/full-battle-original-chance-to-silence.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-chance-to-silence.mt2f
 ```

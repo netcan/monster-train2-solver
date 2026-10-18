@@ -3052,6 +3052,15 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatRelicState relic in context.Relics)
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
+                    if (relic.EffectTypes[effectIndex] == RelicSpawnSilenceModel.Effect)
+                    {
+                        if (!RelicSpawnSilenceModel.Eligible(unit.Freeze(), kind)) continue;
+                        RoomCombatResult silenced = RelicSpawnSilenceModel.ApplyOne(CurrentRoom(), unit.Source.Id, relic);
+                        if (!silenced.Supported) { unsupportedReason = silenced.UnsupportedReason; return false; }
+                        MergeSummon(silenced);
+                        foreach (QueuedCharacterTrigger callback in silenced.PendingCallbacks) QueueCallback(callback);
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicFriendlyTriggerDamageModel.Effect ||
                         relic.EffectTypes[effectIndex] == RelicHealDamageModel.Effect)
                     {

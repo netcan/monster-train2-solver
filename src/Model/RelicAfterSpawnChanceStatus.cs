@@ -91,10 +91,11 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => new { type, index })
-                .Where(item => item.type == Effect).Select(item => item.index).ToArray();
+                .Where(item => item.type == Effect || item.type == RelicSpawnSilenceModel.Effect).Select(item => item.index).ToArray();
             if (!indices.SequenceEqual((relic.AfterSpawnChanceRules ?? Array.Empty<RelicAfterSpawnChanceRule>())
                 .Select(rule => rule.EffectIndex))) return "Missing or unordered native after-spawn chance payload.";
             if (indices.Length == 0) return null;
+            if (relic.EffectTypes.Contains(RelicSpawnSilenceModel.Effect)) return RelicSpawnSilenceModel.Validate(relic);
             bool spellWeaknessOwner = relic.DataId == DataId && relic.AssetKey == AssetKey;
             bool cleanseOwner = relic.DataId == CleanseDataId && relic.AssetKey == CleanseAssetKey;
             if ((!spellWeaknessOwner && !cleanseOwner) || relic.EffectTypes.Count != 1 ||
