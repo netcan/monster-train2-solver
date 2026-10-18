@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 454 binary archives, including 415
+Current accepted inventory (2026-10-18): 455 binary archives, including 416
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 454
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 455
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,19 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-run-card-generation.mt2f` covers unchanged Annihilate Room Damage
+stages one and two, permanent `CardEffectAddRunCard` generation, and its
+Ephemeral early exit. Authored controls exercise all five destinations, empty
+pools, permanent/temporary source-upgrade copying and full-hand overflow into
+standby plus exhausted membership. A preceding temporary addition fills the
+vacancy left by the played source, so the overflow control is actually full.
+Permanent Ephemeral play and unplayed discard both remove deck ownership and
+decrement the visible deck count once. Use `-RunCardGeneration` and
+`--run-card-generation-only`. Original spell definitions remain unchanged;
+the controller, Ephemeral variants and strengthened recipients are setup
+controls. This proves the captured battle transitions, not campaign persistence
+after saving/reloading or every generated-card/relic combination.
 
 `full-battle-restoration-detonation.mt2f` adds unchanged Restoration Detonation.
 Healing callbacks settle before actual restored HP is multiplied and the

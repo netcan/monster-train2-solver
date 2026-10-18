@@ -29,7 +29,10 @@ namespace MonsterTrain2Poju.Probe
         internal static CardExhaustStandbyCondition? Condition(CardState card, RemoveFromStandByCondition condition,
             Func<CardState, int> cardId)
         {
-            if (condition == null) return null;
+            // Permanent additions overflow a full hand with a null condition:
+            // they stay in standby and are also recorded as exhausted.
+            if (condition == null) return AllGameManagers.Instance!.GetCardManager()!.IsCardInExhaustPile(card)
+                ? new CardExhaustStandbyCondition(cardId(card), null, keepInStandBy: true) : null;
             var callback = (Delegate)AccessTools.Field(typeof(RemoveFromStandByCondition), "conditionFunction").GetValue(condition);
             if (!(callback.Target is CardTraitExhaustState trait))
             {

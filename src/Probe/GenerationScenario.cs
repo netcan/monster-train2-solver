@@ -182,5 +182,13 @@ namespace MonsterTrain2Poju.Probe
                     __result = Wrap(__result, cardEffectState, cardEffectParams);
             }
         }
+        [HarmonyPatch(typeof(CardEffectAddRunCard), nameof(CardEffectAddRunCard.ApplyEffect))]
+        private static class RunGenerationPatch
+        {
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+            {
+                if (RunCardGenerationScenario.Enabled) __result = Wrap(__result, cardEffectState, cardEffectParams);
+            }
+        }
     }
 }

@@ -335,7 +335,12 @@ namespace MonsterTrain2Poju.Model
             train = WithContext(train, context, spawn.Turn == 0);
             foreach (CardToken card in context.Cards.Hand.Reverse().Where(card => !retainedIds.Contains(card.InstanceId)))
                 statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
-            foreach (CardToken card in discard.PurgedCards) statistics = statistics?.RemoveDeckCard(card.InstanceId);
+            foreach (CardToken card in discard.PurgedCards)
+            {
+                if (statistics?.DeckCards?.Contains(card.InstanceId) == true && context.Resources != null)
+                    context = context.WithResources(context.Resources.WithVisibleDeckCount(context.Resources.VisibleDeckCount - 1));
+                statistics = statistics?.RemoveDeckCard(card.InstanceId);
+            }
             bool conserveEnergy = context.Relics?.Any(relic => relic.EffectTypes.Contains(RelicResourceModel.ConserveEnergyEndOfTurn)) == true;
             context = context.WithStatistics(conserveEnergy ? statistics :
                 statistics?.WithEndTurnEnergy(context.EnergyState == null ? source.Energy : context.QueryFrame!.Energy!.Value));

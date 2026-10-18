@@ -66,6 +66,7 @@ namespace MonsterTrain2Poju.Model
         public bool RequireCopyableSource { get; }
         public bool UpgradeIsPermanent { get; }
         public bool? Permanent { get; }
+        public bool? IgnoreIfEphemeral { get; }
         public int? SelectedPoolIndex { get; }
         public IReadOnlyList<bool>? PoolEligibility { get; }
         public IReadOnlyList<string>? ChampionCardDataIds { get; }
@@ -75,23 +76,23 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<DiscardGenerationUpgrade>? discardCopyUpgrades = null, IReadOnlyList<string>? externalInteractions = null,
             bool deterministicPoolSelection = false, bool requireCopyableSource = false, bool upgradeIsPermanent = false,
             bool? permanent = null, int? selectedPoolIndex = null, IReadOnlyList<bool>? poolEligibility = null,
-            IReadOnlyList<string>? championCardDataIds = null)
+            IReadOnlyList<string>? championCardDataIds = null, bool? ignoreIfEphemeral = null)
         { Destination = destination; Count = count; Pool = Array.AsReadOnly(pool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
             RequireHandSpace = requireHandSpace; CopyModifiers = copyModifiers; IgnoreTemporaryModifiers = ignoreTemporaryModifiers; Upgrade = upgrade;
             DiscardCopyUpgrades = Array.AsReadOnly((discardCopyUpgrades ?? Array.Empty<DiscardGenerationUpgrade>()).ToArray());
             ExternalInteractions = Array.AsReadOnly((externalInteractions ?? Array.Empty<string>()).ToArray());
             DeterministicPoolSelection = deterministicPoolSelection; RequireCopyableSource = requireCopyableSource;
-            UpgradeIsPermanent = upgradeIsPermanent; Permanent = permanent; SelectedPoolIndex = selectedPoolIndex;
+            UpgradeIsPermanent = upgradeIsPermanent; Permanent = permanent; IgnoreIfEphemeral = ignoreIfEphemeral; SelectedPoolIndex = selectedPoolIndex;
             PoolEligibility = poolEligibility == null ? null : Array.AsReadOnly(poolEligibility.ToArray());
             ChampionCardDataIds = championCardDataIds == null ? null : Array.AsReadOnly(championCardDataIds.Distinct(StringComparer.Ordinal).ToArray()); }
         public bool ShouldSerializePoolEligibility() => PoolEligibility != null;
         internal CardGenerationRule WithSelectedPoolIndex(int index) => new(Destination, Count, Pool, SkipDuplicateInHand,
             RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades, ExternalInteractions,
-            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index, PoolEligibility, ChampionCardDataIds);
+            DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent, index, PoolEligibility, ChampionCardDataIds, IgnoreIfEphemeral);
         internal CardGenerationRule WithPoolEligibility(IReadOnlyList<bool> eligibility) => new(Destination, Count, Pool,
             SkipDuplicateInHand, RequireHandSpace, CopyModifiers, IgnoreTemporaryModifiers, Upgrade, DiscardCopyUpgrades,
             ExternalInteractions, DeterministicPoolSelection, RequireCopyableSource, UpgradeIsPermanent, Permanent,
-            SelectedPoolIndex, eligibility, ChampionCardDataIds);
+            SelectedPoolIndex, eligibility, ChampionCardDataIds, IgnoreIfEphemeral);
     }
 
     public sealed class CardGenerationResult
@@ -178,6 +179,9 @@ namespace MonsterTrain2Poju.Model
         private static CardGenerationResult Apply(CombatContext source, CardGenerationRule rule, int sourceCardId,
             bool allowDeferredGraftedSpawnCard)
         {
+            if (rule.IgnoreIfEphemeral == true && source.FindCard(sourceCardId) is CardInstanceState parent &&
+                CardBranchMaskModel.Resolve(parent).Traits.Contains("CardTraitEphemeral"))
+                return new CardGenerationResult(source, Array.Empty<CardToken>());
             if (source.Cards.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.Cards.ExternalInteractions));
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
             if (!new[] { "HandPile", "DiscardPile", "DeckPile", "DeckPileTop", "DeckPileRandom" }.Contains(rule.Destination))
@@ -209,7 +213,11 @@ namespace MonsterTrain2Poju.Model
                     poolIndex = selected.Value;
                 }
                 CardCreationRule creation = rule.Pool[poolIndex];
-                if (rule.Destination == "HandPile" && (context.Cards.Hand.Count >= context.MaxHandSize ||
+                bool overflow = rule.Permanent == true && rule.Destination == "HandPile" && context.Cards.Hand.Count >= context.MaxHandSize;
+                if (overflow && (context.OtherPiles?.Any(pile => pile.Name == "Standby") != true ||
+                    context.OtherPiles?.Any(pile => pile.Name == "Exhausted") != true))
+                    return Unsupported("Permanent hand overflow requires standby and exhausted piles.");
+                if (rule.Destination == "HandPile" && (rule.Permanent != true && context.Cards.Hand.Count >= context.MaxHandSize ||
                     rule.SkipDuplicateInHand && context.Cards.Hand.Any(card => card.DataId == creation.DataId))) continue;
                 string? descriptorError = CardBranchMaskModel.ValidateCreation(context, creation);
                 if (descriptorError != null) return Unsupported(descriptorError);
@@ -313,7 +321,7 @@ namespace MonsterTrain2Poju.Model
                 UnityRng rng = context.BattleRng;
                 switch (rule.Destination)
                 {
-                    case "HandPile": hand.Insert(0, card); break;
+                    case "HandPile": if (!overflow) hand.Insert(0, card); break;
                     case "DiscardPile": discard.Insert(0, card); break;
                     case "DeckPileTop": draw.Add(card); break;
                     case "DeckPileRandom":
@@ -342,6 +350,11 @@ namespace MonsterTrain2Poju.Model
                         creation.MaskDescriptor?.BaseTraits.Any(trait => trait.RuntimeType == "CardTraitShowCardTargets") == true &&
                         creation.MaskDescriptor.Definition.MainEffectNames.Contains("CardEffectDrawType")))
                     context = context.WithStatistics(context.Statistics.RefreshOwnedCards(context.CardInstances!.Select(card => card.InstanceId)));
+                if (overflow)
+                    context = context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name == "Standby"
+                        ? CardPileModel.BindExhaust(CardPileModel.Add(pile, card), new CardExhaustStandbyCondition(card.InstanceId, null, keepInStandBy: true))
+                        : pile.Name == "Exhausted" ? CardPileModel.Add(pile, card) : pile).ToArray())
+                        .WithStatistics(context.Statistics?.Increment(card.InstanceId, "TimesExhausted"));
                 added.Add(card);
             }
             if (rule.Permanent == true && added.Count > 0 && context.Resources != null)

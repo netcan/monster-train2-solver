@@ -48,6 +48,7 @@ namespace MonsterTrain2Poju.Probe
         private static Operation? energyOperation;
         private static Operation? hoardOperation;
         private static bool dragonHoardResourceObserved;
+        private static bool runCardResourceObserved;
         private static bool trainHealResourceObserved;
         private static bool grosMichelResourceObserved;
 
@@ -70,6 +71,7 @@ namespace MonsterTrain2Poju.Probe
                 .Any(effect => effect.GetCardEffect() is IDragonsHoardCardEffect ||
                     effect.GetCardEffect() is CardEffectRewardGoldPerDragonHoard);
             bool trainHealCards = cardEffects.Any(effect => effect.GetCardEffect() is CardEffectHealTrain);
+            runCardResourceObserved |= cardEffects.Any(effect => effect.GetCardEffect() is CardEffectAddRunCard);
             dragonHoardResourceObserved |= dragonHoardCards;
             trainHealResourceObserved |= trainHealCards;
             grosMichelResourceObserved |= Current(managers).Any(owner => owner.GetRelicDataID() == RelicEndCombatModel.GrosMichelId);
@@ -79,7 +81,7 @@ namespace MonsterTrain2Poju.Probe
                 !OriginalFirstCardCostScenario.Enabled &&
                 !grosMichelResourceObserved &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect => RelicResourceModel.IsEffect(effect.GetType().Name))) &&
-                !dragonHoardResourceObserved && !trainHealResourceObserved)
+                !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved)
                 return null;
             SaveManager save = managers.GetSaveManager();
             BalanceData balance = save.GetBalanceData();

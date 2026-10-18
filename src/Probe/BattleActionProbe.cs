@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase",
-            "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard",
+            "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard",
             "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectSetHealth", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
@@ -392,7 +392,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectDiscardHand" ? "DiscardHand" :
                 effect.GetEffectStateName() == "CardEffectRandomDiscard" ? "RandomDiscard" :
                 effect.GetEffectStateName() == "CardEffectChooseDiscard" ? "ChooseDiscard" :
-                effect.GetEffectStateName() == "CardEffectAddBattleCard" ? "Generate" :
+                effect.GetEffectStateName() is "CardEffectAddBattleCard" or "CardEffectAddRunCard" ? "Generate" :
                 deckSpellUpgrade ? "UpgradeDeckSpells" : upgradedCopy ? "GenerateUpgradedCopy" :
                 effect.GetEffectStateName() == "CardEffectBuffDamage" ? "BuffAttack" :
                 effect.GetEffectStateName() == "CardEffectDebuffDamage" ? "DebuffAttack" :

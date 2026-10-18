@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 454 archives (415 full battles and
+Current accepted inventory (2026-10-18): 455 archives (416 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,23 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-454 accepted archives. Refresh/check the index with
+455 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-run-card-generation.mt2f` exercises original Annihilate Room Damage
+stages one and two and permanent generation to all five piles. Authored
+controls cover an empty pool, permanent and temporary source upgrades, an
+Ephemeral no-op, and permanent full-hand overflow into standby and exhausted
+membership. A temporary prefill consumes the played card's hand vacancy before
+the overflow check. Played and unplayed permanent Ephemeral controls both
+remove ownership and reduce the visible deck count once. The training units and
+controller are authored; the ordinary original spell definitions are intact.
+Use `-RunCardGeneration` and `--run-card-generation-only`. Campaign save/reload
+persistence and arbitrary card/relic interactions are outside this witness.
+The 43-stage win (fourteen plays/five EndTurns), ten native generation effects,
+sixteen independent full chains and bounded search match with zero errors.
+Binary-only: 35,551 bytes/5,796 nodes, SHA-256
+`82aadda112e4018155a38abbf02c9d4567065528c753c4a65c9407af96dabe44`.
 
 `full-battle-restoration-detonation.mt2f` retains four unchanged Restoration
 Detonations. Full-health and heal-immunity targets cause no damage; 15/30 actual

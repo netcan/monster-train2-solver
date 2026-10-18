@@ -895,6 +895,7 @@ namespace MonsterTrain2Poju.Model
                     CardGenerationResult generated = CardGenerationModel.Apply(state.Context!, effect.Generation!, sourceCardId);
                     if (!generated.Supported) return UnsupportedTrain(generated.UnsupportedReason!);
                     state = WithContext(state, generated.Context!);
+                    if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                     continue;
                 }
                 if (effect.Type == "RandomDiscard")

@@ -258,6 +258,12 @@ if (args.Length == 2 && args[0] == "--restoration-detonation-only")
     RestorationDetonationChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--run-card-generation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RunCardGenerationChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--soldier-of-fortune-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

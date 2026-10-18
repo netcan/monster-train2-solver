@@ -45,6 +45,10 @@ namespace MonsterTrain2Poju.Probe
         private static CardGenerationRule Definition(CardEffectData data, List<CardData> pool)
         {
             var interactions = new List<string>();
+            if (data.GetEffectStateName() == "CardEffectAddRunCard")
+                return new CardGenerationRule(((CardPile)data.GetParamInt()).ToString(), 1,
+                    pool.Select(Creation).ToArray(), copyModifiers: data.GetCopyModifiersFromSource(),
+                    permanent: true, ignoreIfEphemeral: data.GetParamBool());
             // The class filter is applied deterministically at the root; no random choice is made here.
             if (data.GetFilterBasedOnMainSubClass() && pool.Count > 0)
             {
