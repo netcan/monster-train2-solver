@@ -41,6 +41,7 @@ param(
     [switch] $OriginalForgeCards,
     [switch] $OriginalStatusCards,
     [switch] $OriginalDeckSpell,
+    [switch] $Goldmance,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -477,6 +478,7 @@ if ($OriginalRoomCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-
 if ($OriginalForgeCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeckSpell) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -963,6 +965,7 @@ if ($OriginalRoomCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-c
 if ($OriginalForgeCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-cards' }
 if ($OriginalStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-cards' }
 if ($OriginalDeckSpell) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deck-spell' }
+if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2148,6 +2151,9 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
     @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 -or
     @($trace.EclipseChamberRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Eclipse Chamber native evidence is incomplete.'
+}
+if ($Goldmance -and (-not $trace.GoldmancePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 7)) {
+    throw 'Goldmance requires all four units, two original ability activations and Hoard adjustment in a native win.'
 }
 if ($OriginalDeckSpell -and (-not $trace.OriginalDeckSpellPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original Great Decay requires all six unit/spell plays and a native win.'

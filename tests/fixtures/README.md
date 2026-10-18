@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 470 archives (431 full battles and
+Current accepted inventory (2026-10-18): 471 archives (432 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,20 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-470 accepted archives. Refresh/check the index with
+471 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-goldmance.mt2f` keeps two original Goldy Whelps and their original
+shared Goldmance ability. Zero Hoard permits activation and grants no gold;
+three Hoard grants fifteen gold without consuming Hoard. Each Whelp receives
+its own two-stack cooldown. The native win (seven plays/five EndTurns),
+sixteen immutable full chains and bounded search are checked. Authored
+protectors and a Hoard adjustment isolate the controls. Binary-only: 27,788
+bytes/3,927 nodes, SHA-256
+`58f42fa894ea2ac28a1aa2f5213417c64985c00f58264fad3496b866b8046713`.
+Use `-Goldmance` and `--goldmance-only`.
+Focused Goldmance/ability-activation gate:
+`.probe-runs/model-checks-20261018-231357-40a527a4/summary.json` (two passed).
 
 `full-battle-original-deck-spell.mt2f` keeps original The Great Decay, Masterwork
 and Railforged Spike. Original spell upgrades affect hand/draw/discard controls,

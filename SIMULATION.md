@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 470 binary archives, including 431
+Current accepted inventory (2026-10-18): 471 binary archives, including 432
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 470
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 471
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,17 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-goldmance.mt2f` activates the unchanged original ability on two
+original Goldy Whelps. Zero Hoard is legal and grants no gold; three Hoard
+grants fifteen gold without consuming Hoard. The actors share one cache card
+and receive separate two-stack cooldowns. The native win (seven plays/five
+EndTurns), sixteen immutable full chains and bounded search are checked.
+Ordinary card statistics do not track the detached ability cache card;
+the independent policy uses each actor's actual activation trigger state.
+Focused gate `model-checks-20261018-231357-40a527a4` passed both the new fixture
+and the existing ability-activation fixture. The inventory now has no unreviewed
+primitive gaps, including internal definitions; partial interactions still remain.
 
 `full-battle-original-deck-spell.mt2f` plays unchanged The Great Decay with paid
 Masterwork and Railforged Spike controls. Hand/draw/discard spells receive the

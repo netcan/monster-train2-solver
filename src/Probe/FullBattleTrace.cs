@@ -787,6 +787,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalDeckSpellPrepared = OriginalDeckSpellScenario.Prepared,
                 OriginalDeckSpellIds = OriginalDeckSpellScenario.CardIds,
                 OriginalDeckSpellPileControlIds = OriginalDeckSpellScenario.PileControlIds,
+                GoldmancePrepared = GoldmanceScenario.Prepared,
+                GoldmanceCardIds = GoldmanceScenario.CardIds,
                 RunCardGenerationPrepared = RunCardGenerationScenario.Prepared,
                 ArmamentDrivePrepared = ArmamentDriveScenario.Prepared,
                 ArmamentDriveCardIds = ArmamentDriveScenario.CardIds,
