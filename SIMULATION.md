@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 489 binary archives, including 450
+Current accepted inventory (2026-10-19): 490 binary archives, including 451
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 489
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 490
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,15 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-monster-hand-costs.mt2f` retains original Titan Corruption,
+including its Monster-only hand cost and deployment marker. Two owners produce
+two/one/zero unit payments as they leave hand; Spell, room and Blight controls
+stay unaffected. Fifty-six native costs and eight deployment eligibility queries
+match, with restored state/RNG/frame and sixteen immutable full battle chains.
+The native runtime deployment marker grants eligibility while its raw definition
+flag is false. This witness covers battle play and unupgraded eligibility;
+initial deployment draw ordering and upgraded eligibility remain separate.
 
 `full-battle-original-limited-range.mt2f` calibrates the native Limited Range
 restriction on original Ice and Pyre, Siren Song and Trap Chute. Both hand and

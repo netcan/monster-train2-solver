@@ -12,7 +12,7 @@ namespace MonsterTrain2Poju.Probe
             name == "CardTraitScalingAddForged" || name == "CardTraitScalingHealTrain" || name == "CardTraitFreeze" ||
             (name == "CardTraitScalingFeederRules" || name == "CardTraitDistinct") && CardBranchMaskProbe.Enabled ||
             (name == "CardTraitDamageOverflow" || name == "CardTraitPermafrost" || name == "CardTraitEphemeral") && CardBranchMaskProbe.Enabled ||
-            (name == "CardTraitStrongerMagicPower" || name == "CardTraitExhaustState" || name == "CardTraitIgnoreArmor" || name == "CardTraitUnpurgable" || name == CardHandCostModel.Trait || name == CardPlayRangeModel.Trait) && CardBranchMaskProbe.Enabled || UnitUpgradeScalingProbe.Known(name);
+            (name == "CardTraitStrongerMagicPower" || name == "CardTraitExhaustState" || name == "CardTraitIgnoreArmor" || name == "CardTraitUnpurgable" || name == CardHandCostModel.Trait || name == CardPlayRangeModel.Trait || name == "CardTraitDrawInDeploymentPhase") && CardBranchMaskProbe.Enabled || UnitUpgradeScalingProbe.Known(name);
         internal static ScalingDamageTrait[]? Capture(CardState card)
         {
             ScalingDamageTrait[] traits = card.GetTraitStates().OfType<CardTraitScalingAddDamage>().Select(trait =>

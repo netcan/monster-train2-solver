@@ -324,6 +324,12 @@ if (args.Length == 2 && args[0] == "--original-status-cards-only")
     OriginalStatusCardsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-monster-hand-costs-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalMonsterHandCostsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-limited-range-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

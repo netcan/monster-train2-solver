@@ -20,7 +20,8 @@ namespace MonsterTrain2Poju.Probe
             trait.GetParamTrackedValue() == CardStatistics.TrackedValueType.StatusEffectCountInTargetRoom ? trait.GetParamTeamType().ToString() : null,
             trait.GetParamTrackedValue() == CardStatistics.TrackedValueType.StatusEffectCountInTargetRoom ?
                 trait.GetParamStatusEffects().Select(status => status.statusId).ToArray() : null,
-            trait.GetTraitStateName() == "CardTraitIncreaseCostOfCardsInHand" ? trait.GetParamCardType().ToString() : null);
+            trait.GetTraitStateName() == "CardTraitIncreaseCostOfCardsInHand" ? trait.GetParamCardType().ToString() : null,
+            trait.GetTraitStateName() == "CardTraitDrawInDeploymentPhase" ? trait.GetDrawInDeploymentPhase() : (bool?)null);
         [HarmonyPatch(typeof(CardState), nameof(CardState.Setup))]
         private static class SetupPatch
         {

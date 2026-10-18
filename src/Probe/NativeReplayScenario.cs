@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalMonsterHandCostsScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Monster hand cost fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalMonsterHandCostsScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalLimitedRangeScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Limited Range fixture must start on deployment turn.");
@@ -2160,6 +2166,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalUnpurgableCardsScenario.Enabled) pendingPlay = OriginalUnpurgableCardsScenario.Choose(decision, OriginalUnpurgableCardsScenario.CardIds);
                 if (OriginalHandCostsScenario.Enabled) pendingPlay = OriginalHandCostsScenario.Choose(decision, OriginalHandCostsScenario.CardIds);
                 if (OriginalLimitedRangeScenario.Enabled) pendingPlay = OriginalLimitedRangeScenario.Choose(decision, OriginalLimitedRangeScenario.CardIds);
+                if (OriginalMonsterHandCostsScenario.Enabled) pendingPlay = OriginalMonsterHandCostsScenario.Choose(decision, OriginalMonsterHandCostsScenario.CardIds);
                 if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);
                 if (OriginalCorruptionDamageScenario.Enabled) pendingPlay = OriginalCorruptionDamageScenario.Choose(decision, OriginalCorruptionDamageScenario.CardIds);
                 if (OriginalXStatusCardsScenario.Enabled) pendingPlay = OriginalXStatusCardsScenario.Choose(decision, OriginalXStatusCardsScenario.CardIds);

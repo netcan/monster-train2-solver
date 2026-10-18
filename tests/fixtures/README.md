@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 489 archives (450 full battles and
+Current accepted inventory (2026-10-19): 490 archives (451 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,26 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-489 accepted archives. Refresh/check the index with
+490 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-monster-hand-costs.mt2f` retains two original Titan
+Corruptions. The Monster-only surcharge makes three authored units pay two,
+one and zero as each source leaves hand; Blight and both sources pay one.
+Original Cosmic Bolt and Engine Upgrade are unaffected Spell/room controls.
+Seven samples compare 56 native hand/outside-hand costs. Eight native deployment
+eligibility queries accept both original Corruptions and reject the other six
+unupgraded controls, with unchanged decision state/RNG/frame. The runtime
+DrawInDeploymentPhase class grants eligibility even though its source definition
+flag is false. Initial deployment draw ordering and upgraded eligibility are
+outside this witness. Six plays/five EndTurns win with sixteen immutable full
+chains. Binary-only: 24,344 bytes/3,249 nodes, SHA-256
+`697f58482edd58506f2beb5727d24add3728b35164b7dd261702c831df7cbbb1`.
+Use `-OriginalMonsterHandCosts` and `--original-monster-hand-costs-only`.
+Focused gate `.probe-runs/model-checks-20261019-013128-6e72f58e` passed this
+witness and original Titan Bane hand costs. Bounded search matched all six
+decisions, with twenty-four root actions, zero unsupported attempts and equal
+serial/parallel best branches over 128 states.
 
 `full-battle-original-limited-range.mt2f` retains original Ice and Pyre. It pays
 one energy for ninety front-enemy damage on the top floor and one for a valid
