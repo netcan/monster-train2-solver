@@ -161,8 +161,10 @@ namespace MonsterTrain2Poju.Probe
                     .Select(item => item.Effect is RelicEffectAddTrigger
                         ? AddedTriggers(item.Effect, item.Index) : StatusAddedTrigger(item.Effect, item.Index)).ToArray();
                 var unitUpgradeTriggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
-                    .Where(item => item.Effect is RelicEffectAddRemoveTempUpgradeOnUnitTrigger)
-                    .Select(item => UnitUpgradeTrigger(item.Effect, item.Index)).ToArray();
+                    .Where(item => item.Effect is RelicEffectAddRemoveTempUpgradeOnUnitTrigger ||
+                        item.Effect is RelicEffectModifyCharacterAttackDamage && relic.GetRelicDataID() == RelicKillAttackModel.DataId)
+                    .Select(item => item.Effect is RelicEffectModifyCharacterAttackDamage
+                        ? KillAttackUpgrade(item.Effect, item.Index) : UnitUpgradeTrigger(item.Effect, item.Index)).ToArray();
                 var soloUnitUpgrades = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect.GetType().Name == RelicSoloUnitUpgradeModel.Effect ||
                         item.Effect.GetType().Name == RelicSoloUnitUpgradeModel.FrontRoomEffect)
@@ -342,6 +344,22 @@ namespace MonsterTrain2Poju.Probe
             return Current(managers).Select(owner => new RelicCountRole(owner.GetRelicDataID(), collected.Contains(owner), owner.IsBossGivenRelic(), owner.IsSoulSaviorScalingRelic(),
                 (save.GetMainClass()?.IsStarterRelic(owner.GetRelicDataID()) ?? false) || (save.GetSubClass()?.IsStarterRelic(owner.GetRelicDataID()) ?? false))).ToArray();
         }
+        private static RelicUnitUpgradeTrigger KillAttackUpgrade(IRelicEffect effect, int index)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            if (!(bool)Field("useUpgradeData") || (int)Field("damageAmount") != 3 ||
+                (CardType)Field("cardType") != CardType.Invalid || (MutatorData?)Field("requiredMutator") != null ||
+                ((SubtypeData[])Field("excludeCharacterSubtypes")).Length != 0)
+                throw new InvalidOperationException("Original kill-attack runtime definition changed.");
+            var state = new CardUpgradeState(); state.Setup((CardUpgradeData)Field("attackBuffUpgrade"));
+            Team.Type team = (Team.Type)Field("sourceTeam");
+            var subtype = (SubtypeData)Field("characterSubtype");
+            return new(index, ((CharacterTriggerData.Trigger)Field("trigger")).ToString(),
+                team.HasFlag(Team.Type.Monsters), team.HasFlag(Team.Type.Heroes), subtype?.Key,
+                subtype == null || subtype.IsNone, false, RelicUnitUpgradeTriggerModel.UntilEndOfBattle,
+                CardModifierProbe.Upgrade(state, false, filtersAlreadyApplied: true));
+        }
+
         private static RelicUnitUpgradeTrigger UnitUpgradeTrigger(IRelicEffect effect, int index)
         {
             object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);

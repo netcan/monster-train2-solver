@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **202 distinct original collectable relics / 224 catalog entries
-(90.18%)** have accepted native evidence: 185 have full-battle effect evidence,
+As of 2026-10-18, **203 distinct original collectable relics / 224 catalog entries
+(90.63%)** have accepted native evidence: 186 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1943,4 +1943,51 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-hea
 dotnet run --project src/ModelChecks -c Release -- --heal-damage-pure
 dotnet run --project src/ModelChecks -c Release -- --original-heal-damage-only tests/fixtures/full-battle-original-heal-damage.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-heal-damage.mt2f
+```
+
+## AddAttackOnKill
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `AddAttackOnKill` | `4190af4b-a32f-42ab-acda-8f0d4f50c3a5` | `full-battle-original-kill-attack.mt2f` | The unchanged `RelicEffectModifyCharacterAttackDamage` applies its original non-unique `AddAttackOnKillTriggerUpgrade` (+3 attack) after each eligible natural kill. Five callbacks on two Stewards accumulate +9/+6 on the live units and corresponding source cards' temporary modifiers. The units' successive pre-callback attacks are 30/33/36 and 30/33. No scripted trigger cards are used. |
+
+The schema-226 winning battle matches all 35 stages, two deployment actions
+and five EndTurns. All 226 native Test calls include five positives and 221
+gated callbacks, preserving complete train/context state and Battle RNG. Every
+application matches the full live-unit upgrade list, anonymous upgrade identity,
+source-card temporary modifiers and complete physical/pile/context state, with
+sixteen immutable parallel replays.
+
+Independent policy replay checks both deployment actions separately, then runs
+the five-EndTurn suffix to native victory in sixteen immutable branches. Search
+matches both recorded decisions, reports zero unsupported alternatives and
+agrees between serial/parallel best results (116/103 visited states, three
+replayed steps). Eight affected archives pass: the new owner, Funguy's original
+troop-upgrade relic, card-cast-trigger upgrades, direct unit upgrades, attack buffs,
+heal damage, Eaten damage and Burnout damage. Parallel regression uses two
+workers; all eight fixtures and both workers have terminal exit code zero.
+
+The original OnKill trigger, Monsters team, no subtype/exclusion/mutator filter,
+use-upgrade flag, invalid card-type sentinel, +3 payload, placement permission and
+empty conditions remain unchanged. This effect applies once per callback and
+does not query character trigger-count modifiers. Pure checks cover cumulative
+upgrades, clones, zero-HP/destroyed actors, wrong team/trigger, Pyre eligibility,
+and preview/mismatched-spawner unit-only application. The witness uses authored
+80-HP/30-attack Stewards without character triggers. Native clone, transformed
+spawner, resummon, end-of-battle cleanup and arbitrary combined kill-effect paths
+require separate evidence.
+
+The binary archive is 24,297 bytes, with 3,571 unique nodes and SHA-256
+`5db86bcf76df75da28fb709470acdaf555c6c0d1cfbcfc8bd82536b76011afd5`.
+Its source length is zero and source hash is all zeroes; no JSON companion is
+tracked. Accepted inventory is 422 archives: 384 battles and 38 component
+calibrations. Original-owner evidence is 203/224 (90.63%): 186 battle, sixteen
+campaign and one native no-op owner; 21 owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalKillAttackRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-kill-attack.mt2f
+dotnet run --project src/ModelChecks -c Release -- --kill-attack-pure
+dotnet run --project src/ModelChecks -c Release -- --original-kill-attack-only tests/fixtures/full-battle-original-kill-attack.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-kill-attack.mt2f
 ```

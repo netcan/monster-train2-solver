@@ -1,11 +1,24 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 421 binary archives, including 383
+Current accepted inventory (2026-10-18): 422 binary archives, including 384
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 202/224 catalog entries (90.18%): 185 battle owners, 16 campaign
+covers 203/224 catalog entries (90.63%): 186 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`AddAttackOnKill` now has schema-226 native evidence for five natural OnKill
+callbacks on two controlled Stewards. Each applies the original non-unique +3
+attack upgrade to the live unit and its matching source card's temporary
+modifiers. The two units gain +9/+6 cumulatively. All 226 native Tests (five
+positive, 221 gated), the 35-stage winning battle, two deployment actions,
+independent five-EndTurn suffix with sixteen immutable branches, focused checks,
+serial/parallel search and eight-archive affected regression pass with zero
+differential counters. Unlike the troop-upgrade relic, this effect applies once
+per callback without querying character trigger-count modifiers. Pure checks
+cover clone/dead/destroyed/team/trigger gates, preview and mismatched-spawner
+unit-only application, Pyre eligibility and changed payload rejection. Resummon,
+end-of-battle cleanup and arbitrary combined kill effects need separate proof.
 
 `HealToDamage` now has schema-225 native evidence for its unchanged OnHeal
 front-enemy damage effect. Damage uses actual restored HP: 0/4/8/6, rather than

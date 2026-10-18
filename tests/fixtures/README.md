@@ -1,8 +1,14 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 421 archives (383 full battles and
-38 component calibrations), 202/224 original relic owners (90.18%): 185 battle
+Current accepted inventory (2026-10-18): 422 archives (384 full battles and
+38 component calibrations), 203/224 original relic owners (90.63%): 186 battle
 owners, sixteen campaign-interface owners and one native no-op. The latest
+`AddAttackOnKill` fixture covers five natural kills, cumulative +3 upgrades on
+both units and their source cards, 221 gated Tests and a 35-stage winning battle.
+Two deployment actions and an independent five-EndTurn suffix match in sixteen
+immutable branches. Focused checks, serial/parallel search and eight affected
+archives pass with zero differential counters. Clone, death, preview, spawner
+and trigger-count behavior have pure checks. The previous
 `HealToDamage` fixture covers four OnHeal front-enemy applications using actual
 restoration 0/4/8/6, including one zero-damage callback, one nonlethal hit and two
 kills. All 351 native Tests, nine actions and 51 stages match. Enemy healing,

@@ -220,6 +220,6 @@
 "PressurizedBoiler"	"fda361aa-fecc-4adf-b19c-f92af04e0e19"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
 "OnDecayDeathApplyStatusEffects"	"d916bcc3-85ff-49ee-937d-32d7253a4e4d"	"pending"	"RelicEffectAddEffectOnUnitDeath"	""
 "CorruptedAngelsArtifact"	"3b0913dd-03e9-46d3-a3ff-b86cfc12d224"	"pending"	"RelicEffectDrawCardAndGainEmberOnDrawType"	""
-"AddAttackOnKill"	"4190af4b-a32f-42ab-acda-8f0d4f50c3a5"	"pending"	"RelicEffectModifyCharacterAttackDamage"	""
+"AddAttackOnKill"	"4190af4b-a32f-42ab-acda-8f0d4f50c3a5"	"accepted-native-battle"	"RelicEffectModifyCharacterAttackDamage"	""
 "MothersRemnant2Relic"	"202a7153-bfe9-4da9-be3e-ddcf8c195354"	"accepted-native-campaign"	"RelicEffectAddPostBattleReward"	""
 "StingBuffPiercing"	"2d367bde-7616-4804-a6c9-910060ae5fd7"	"accepted-native-battle"	"RelicEffectAddTempUpgrade,RelicEffectAddCardsNull"	""

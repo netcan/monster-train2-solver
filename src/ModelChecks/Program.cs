@@ -162,6 +162,17 @@ if (args.Length == 1 && args[0] == "--heal-damage-pure")
     RelicHealDamageChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--kill-attack-pure")
+{
+    OriginalKillAttackChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-kill-attack-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalKillAttackChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-heal-damage-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1823,6 +1834,7 @@ RelicEatenDamageChecks.Run();
 OriginalMoreCapacityChecks.Run();
 RelicBurnoutDamageChecks.Run();
 RelicHealDamageChecks.Run();
+OriginalKillAttackChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

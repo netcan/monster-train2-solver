@@ -298,6 +298,7 @@ param(
     [switch] $OriginalMoreCapacityRelic,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
+    [switch] $OriginalKillAttackRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -524,6 +525,7 @@ if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints 
 if ($OriginalMoreCapacityRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalBurnoutDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalHealDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalKillAttackRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -992,6 +994,7 @@ if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalMoreCapacityRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-capacity' }
 if ($OriginalBurnoutDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-burnout-death-damage' }
 if ($OriginalHealDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-heal-to-damage' }
+if ($OriginalKillAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-kill-attack' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1909,6 +1912,15 @@ if ($OriginalTribouletRelic -and ($trace.Schema -ne 217 -or $trace.OriginalTribo
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-TRIBOULET-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 1)) {
     throw 'Triboulet lacks its unchanged owner, Rare deck seed, or cardless Monster-spawn witness.'
+}
+if ($OriginalKillAttackRelic -and ($trace.Schema -ne 226 -or $trace.OriginalKillAttackSchema -ne 226 -or
+    $trace.ModifierScenario -ne 'original-kill-attack' -or -not $trace.OriginalKillAttackPrepared -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.OriginalKillAttackCaptureFailures -ne 0 -or $trace.OriginalKillAttackMismatches -ne 0 -or
+    $trace.OriginalKillAttackUnsupported -ne 0 -or $trace.OriginalKillAttackPending -ne 0 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 2 -or
+    @($trace.RelicKillAttackApplications).Count -lt 2)) {
+    throw 'Original kill-attack acceptance failed.'
 }
 if ($OriginalHealDamageRelic -and ($trace.Schema -ne 225 -or $trace.OriginalHealDamageSchema -ne 225 -or
     $trace.ModifierScenario -ne 'original-heal-to-damage' -or -not $trace.OriginalHealDamagePrepared -or

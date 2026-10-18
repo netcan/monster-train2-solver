@@ -32,6 +32,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Validate(CombatRelicState relic)
         {
+            if (RelicKillAttackModel.IsOwner(relic) || relic.AssetKey == RelicKillAttackModel.AssetKey)
+                return RelicKillAttackModel.Validate(relic);
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
                 .Where(item => item.type == RelicModel.AddRemoveTempUpgradeOnUnitTrigger)
                 .Select(item => item.index).ToArray();

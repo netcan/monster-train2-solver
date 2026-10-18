@@ -671,11 +671,11 @@ internal static class BattleActionChecks
             return;
         }
         if (fixture.TryGetProperty("ModifierScenario", out var eatenDamagePolicy) &&
-            eatenDamagePolicy.GetString() is "original-eaten-damage" or "original-burnout-death-damage" or "original-heal-to-damage")
+            eatenDamagePolicy.GetString() is "original-eaten-damage" or "original-burnout-death-damage" or "original-heal-to-damage" or "original-kill-attack")
         {
-            int scenarioActions = eatenDamagePolicy.GetString() switch { "original-eaten-damage" => 10, "original-burnout-death-damage" => 7, _ => 9 };
+            int scenarioActions = eatenDamagePolicy.GetString() switch { "original-eaten-damage" => 10, "original-burnout-death-damage" => 7, "original-kill-attack" => 2, _ => 9 };
             Require(allActions.Length == scenarioActions && policyActions.Length == 0,
-                "Friendly-trigger damage requires its complete scenario actions and no later native card plays.");
+                "Controlled relic coverage requires its complete scenario actions and no later native card plays.");
             BattleTurnState suffixRoot = allActions[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             FixtureValue[] suffixTurns = turns.EnumerateArray().Where(entry => entry.GetProperty("Before")
                 .GetProperty("Spawn").GetProperty("Turn").GetInt32() >= suffixRoot.Spawn.Turn).ToArray();
@@ -684,9 +684,9 @@ internal static class BattleActionChecks
             string expectedTerminal = BattleTurnChecks.Comparable(suffixTerminal, compareRoomEnabled: compareRoomEnabled);
             Parallel.For(0, 16, _ => Require(BattleTurnChecks.Comparable(
                 RunPolicy(suffixRoot, [], suffixTurns, chooser, compareRoomEnabled), compareRoomEnabled: compareRoomEnabled) == expectedTerminal,
-                "Friendly-trigger damage post-scenario policy branches diverged."));
-            Require(JsonSerializer.Serialize(suffixRoot) == parentState, "Friendly-trigger damage post-scenario policy mutated its root.");
-            Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {scenarioActions} controlled friendly-trigger damage actions checked individually, independent {suffixTurns.Length}-EndTurn suffix to native victory, and 16 immutable parallel branches.");
+                "Controlled relic post-scenario policy branches diverged."));
+            Require(JsonSerializer.Serialize(suffixRoot) == parentState, "Controlled relic post-scenario policy mutated its root.");
+            Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {scenarioActions} controlled relic actions checked individually, independent {suffixTurns.Length}-EndTurn suffix to native victory, and 16 immutable parallel branches.");
             return;
         }
         Require(policyActions.Length > 0, "The fixture has no subsequent native policy actions.");
