@@ -23,10 +23,16 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-014023-925e8475/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,103 bytes, SHA-256
-`adcd05b179767e1c73fbf951864d4659977802e4cc2eb828ebd81c6f231880bf`.
-The projection reflects revision `579e3c9`. Original Unplayable markers retain
+Source: `.probe-runs/full-battle-no-cards-20261019-015731-483fa334/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,284 bytes, SHA-256
+`1028e4369c54277cb25b371f594eda5eafcc9274c9c75f87b41d39a1bc6fca9f`.
+The projection reflects revision `720c147`. The 668 raw definitions match the
+previous snapshot exactly; frame 13,602/13,602, decision and RNG are unchanged.
+The surrounding native battle won with all four capture counters zero and
+the protected original files unchanged. Positive Corrupt Restricted hand
+spells now retain their calibrated selected-room cost; source-room abilities
+and unit/room ability activation keep explicit guards.
+Original Unplayable markers retain
 their native rejection behavior. Scrap Metal retains Persistent discard guards
 and its calibrated single-base Refine 3 smelt path. A separate native legality
 index records original rejected attempts without increasing direct-play counts.
