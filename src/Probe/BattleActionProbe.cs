@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
             "CardEffectAddCardUpgradeToUnitsPerStatusEffect", "CardEffectAddTempSwapStats",
             "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand",
-            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix"
+            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix", "CardEffectMixRandom"
         }, StringComparer.Ordinal);
         private readonly FullBattleTrace trace;
         private readonly UnitPlayModelProbe projection;
@@ -321,8 +321,8 @@ namespace MonsterTrain2Poju.Probe
             if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) return AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool());
             if (effect.GetEffectStateName() == "CardEffectFeederRules" && effect.GetParamBool())
                 interactions.Add("Forced feeding with an overridden self feeder requires native calibration");
-            if (effect.GetEffectStateName() == "CardEffectMix")
-                return new CardActionEffect("Mix", "None", effect.GetParamInt(), false, false,
+            if (effect.GetEffectStateName() is "CardEffectMix" or "CardEffectMixRandom")
+                return new CardActionEffect(effect.GetEffectStateName() == "CardEffectMix" ? "Mix" : "MixRandom", "None", effect.GetParamInt(), false, false,
                     Array.Empty<CombatStatus>(), tests: new CardEffectTests(true, false, false, false, true));
             bool handUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToCardsInHand" ||
                 effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";

@@ -324,6 +324,14 @@ namespace MonsterTrain2Poju.Model
                     state = WithContext(state, upgraded.Context!);
                     continue;
                 }
+                if (effect.Type == "MixRandom")
+                {
+                    if (selected.Preview) continue;
+                    CardGenerationResult mixed = ElixirRandomMixModel.Apply(state.Context!, definitions?.Elixirs, effect.Value);
+                    if (!mixed.Supported) return UnsupportedTrain(mixed.UnsupportedReason!);
+                    state = WithContext(state, mixed.Context!); piles = state.Context!.OtherPiles?.ToArray();
+                    continue;
+                }
                 if (effect.Type == "Mix")
                 {
                     if (selected.Preview) continue;
@@ -1989,7 +1997,7 @@ namespace MonsterTrain2Poju.Model
                     if (recursionError != null) return recursionError;
                     continue;
                 }
-                if (effect.Type != "Mix" && !CardOnlyPileTarget(effect) && !CardTargetModel.Supports(effect.Target))
+                if (effect.Type != "Mix" && effect.Type != "MixRandom" && !CardOnlyPileTarget(effect) && !CardTargetModel.Supports(effect.Target))
                     return "Unimplemented spell targeting " + effect.Target;
                 if (effect.Type == "ScheduleNextDrawUpgrade")
                 {
@@ -2089,6 +2097,12 @@ namespace MonsterTrain2Poju.Model
                     if (!effect.HealDamageMultiplier.HasValue || effect.Range != null || effect.Value < 0 ||
                         effect.Target != "DropTargetCharacter" || !effect.AllowPlayer || effect.AllowEnemy)
                         return "Heal-relative damage requires the calibrated fixed player drop target and nonnegative heal.";
+                    continue;
+                }
+                if (effect.Type == "MixRandom")
+                {
+                    if (source.Context.MixState == null || effect.Range != null || effect.Value < 0)
+                        return "Random mixing requires captured selection state and a nonnegative fixed count.";
                     continue;
                 }
                 if (effect.Type == "SwapStats" || effect.Type == "StatusNull") continue;
@@ -2216,7 +2230,7 @@ namespace MonsterTrain2Poju.Model
                     return new CardTargets(Array.Empty<int>(), "Spawn-or-status fallback requires captured spawn points.");
                 return new CardTargets(Array.Empty<int>());
             }
-            return effect.Type == "Mix" || effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
+            return effect.Type is "Mix" or "MixRandom" || effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
                 ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition,
                     index == 0 && !hasPriorTargets, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms,
                     positions, selfUnitId, lastSacrificedUnitId: lastSacrificedUnitId);

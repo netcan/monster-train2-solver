@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 460 archives (421 full battles and
+Current accepted inventory (2026-10-18): 461 archives (422 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,22 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-460 accepted archives. Refresh/check the index with
+461 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-mixalot.mt2f` keeps three original Mixalots: fresh recipe, upgrade
+the existing elixir, then create another recipe after playing it. A fresh elixir
+receives its base upgrade plus four random upgrades; an existing one gains five
+random upgrades with replacement. The next fresh recipe excludes the previous
+type. A native isolated full-hand call passes TestEffect and preserves every
+state/RNG field without allocating a card. Temporary freeze on the third spell,
+Infusion fillers and strengthened Stewards are setup controls. Complete effect
+contexts, the 37-stage win (21 plays/five EndTurns), sixteen immutable chains and
+bounded search are checked. Intermediate-card relic modifiers, extra relic
+drafts, pending final-generation upgrades and upgrade copy flags/trait callbacks
+remain guarded. Binary-only: 36,333 bytes/5,764 nodes, SHA-256
+`d9b5959e34d85800397d63125d181b5f82a926f31ecc054270b47af1a33611e8`.
+Use `-Mixalot` and `--mixalot-only`.
 
 `full-battle-adaptive-mutation.mt2f` keeps three original Adaptive Mutations.
 The injured control needs another 501 HP after the original 999-point heal;

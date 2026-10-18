@@ -31,6 +31,7 @@ param(
     [switch] $CardDuplicate,
     [switch] $StardustInvocation,
     [switch] $AdaptiveMutation,
+    [switch] $Mixalot,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -457,6 +458,7 @@ if ($Preserve) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardDuplicate) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StardustInvocation) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($AdaptiveMutation) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($Mixalot) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -933,6 +935,7 @@ if ($Preserve) { $environment['MT2_PROBE_MODIFIERS'] = 'preserve' }
 if ($CardDuplicate) { $environment['MT2_PROBE_MODIFIERS'] = 'card-duplicate' }
 if ($StardustInvocation) { $environment['MT2_PROBE_MODIFIERS'] = 'stardust-invocation' }
 if ($AdaptiveMutation) { $environment['MT2_PROBE_MODIFIERS'] = 'adaptive-mutation' }
+if ($Mixalot) { $environment['MT2_PROBE_MODIFIERS'] = 'mixalot' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2097,6 +2100,10 @@ if ($OriginalOpeningDeckSpawnRelic -and ($trace.Schema -ne 244 -or -not $trace.O
     @($trace.RelicOpeningDeckSpawnApplications).Count -ne 3 -or
     @($trace.RelicOpeningDeckSpawnTests | Where-Object { $_.Isolated -and -not $_.Returned -and $_.CacheBefore.Count -gt 0 }).Count -eq 0)) {
     throw 'Original opening deck-spawn native evidence is incomplete or divergent.'
+}
+if ($Mixalot -and (-not $trace.MixalotPrepared -or -not $trace.NativeWon -or @($trace.MixalotRecords).Count -ne 4 -or
+    @($trace.MixalotRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
+    throw 'Mixalot native evidence is incomplete.'
 }
 if ($AdaptiveMutation -and (-not $trace.AdaptiveMutationPrepared -or -not $trace.NativeWon -or @($trace.AdaptiveMutationRecords).Count -ne 3 -or
     @($trace.AdaptiveMutationRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
