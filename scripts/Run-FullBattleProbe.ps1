@@ -66,6 +66,7 @@ param(
     [switch] $OriginalSpecificCardDamage,
     [switch] $OriginalScaledEnergy,
     [switch] $OriginalStatusRemovalScaling,
+    [switch] $OriginalEffectApplications,
     [switch] $OriginalRoomStatusDamage,
     [switch] $OriginalCorruptionDamage,
     [switch] $OriginalXStatusCards,
@@ -530,6 +531,7 @@ if ($OriginalStatusStackDamage) { $BranchCardMasks = $true; $Policy = 'units-spe
 if ($OriginalSpecificCardDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledEnergy) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusRemovalScaling) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalEffectApplications) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomStatusDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptionDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1044,6 +1046,7 @@ if ($OriginalStatusStackDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalSpecificCardDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-specific-card-damage' }
 if ($OriginalScaledEnergy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-energy' }
 if ($OriginalStatusRemovalScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-removal-scaling' }
+if ($OriginalEffectApplications) { $environment['MT2_PROBE_MODIFIERS'] = 'original-effect-applications' }
 if ($OriginalRoomStatusDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-status-damage' }
 if ($OriginalCorruptionDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corruption-damage' }
 if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
@@ -2236,6 +2239,12 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
 if ($OriginalMonsterHandCosts -and (-not $trace.OriginalMonsterHandCostsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalMonsterHandCostsSamples).Count -ne 7 -or @($trace.OriginalMonsterHandCostsDeploymentQueries).Count -ne 8 -or -not $trace.OriginalMonsterHandCostsQueriesUnchanged)) {
     throw 'Original Monster hand cost fixture lacks cost/filter controls or restored deployment eligibility queries.'
+}
+if ($OriginalEffectApplications -and (-not $trace.OriginalEffectApplicationsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 8 -or
+    @($trace.OriginalEffectApplicationsCounts).Count -ne 3 -or @($trace.OriginalEffectApplicationsSamples).Count -ne 4 -or
+    @($trace.OriginalEffectApplicationsCounts | Where-Object { -not $_.StateUnchanged -or $_.ActualCount -ne $_.DirectCount }).Count -ne 0 -or
+    @($trace.OriginalEffectApplicationsSamples | Where-Object { -not $_.Completed }).Count -ne 0)) {
+    throw 'Original effect applications witness lacks zero/one/three X, restored queries or completed damage applications.'
 }
 if ($OriginalStatusRemovalScaling -and (-not $trace.OriginalStatusRemovalScalingPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalStatusRemovalScalingSamples).Count -ne 3 -or @($trace.OriginalStatusRemovalScalingQueries).Count -ne 12 -or

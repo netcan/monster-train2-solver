@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalEffectApplicationsScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original effect applications fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalEffectApplicationsScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalStatusRemovalScalingScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original status-removal scaling fixture must start on deployment turn.");
@@ -2223,6 +2229,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalSpecificCardDamageScenario.Enabled) pendingPlay = OriginalSpecificCardDamageScenario.Choose(decision, OriginalSpecificCardDamageScenario.CardIds);
                 if (OriginalScaledEnergyScenario.Enabled) pendingPlay = OriginalScaledEnergyScenario.Choose(decision, OriginalScaledEnergyScenario.CardIds);
                 if (OriginalStatusRemovalScalingScenario.Enabled) pendingPlay = OriginalStatusRemovalScalingScenario.Choose(decision, OriginalStatusRemovalScalingScenario.CardIds);
+                if (OriginalEffectApplicationsScenario.Enabled) pendingPlay = OriginalEffectApplicationsScenario.Choose(decision, OriginalEffectApplicationsScenario.CardIds);
                 if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);
                 if (OriginalCorruptionDamageScenario.Enabled) pendingPlay = OriginalCorruptionDamageScenario.Choose(decision, OriginalCorruptionDamageScenario.CardIds);
                 if (OriginalXStatusCardsScenario.Enabled) pendingPlay = OriginalXStatusCardsScenario.Choose(decision, OriginalXStatusCardsScenario.CardIds);

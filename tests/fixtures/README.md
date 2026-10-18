@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 498 archives (459 full battles and
+Current accepted inventory (2026-10-19): 499 archives (460 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,25 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-498 accepted archives. Refresh/check the index with
+499 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-effect-applications.mt2f` retains original Moonbeam.
+Paying X zero/one/three produces exactly zero/one/three damage applications,
+with enemies present for the zero control. One hit removes twenty armor;
+the next cast kills the front guard, retargets the mage, then applies to an
+empty floor. Four observed native damage coroutines preserve their target
+sequence; three pure count queries match without changing context or frame.
+Friendly units and other floors remain unchanged. Native fixed front-enemy
+parameters and unchanged base source traits are required; other target modes,
+damage ranges and added/replaced traits retain explicit guards.
+Eight plays/five EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (30 root actions, zero unsupported).
+Binary-only: 25,587 bytes/3,491 nodes, SHA-256
+`fd804c0bc68d12b024ae0f5c8b3042127da59a13b50bad8fa0220538d49c0e03`.
+Use `-OriginalEffectApplications` and `--original-effect-applications-only`.
+Focused regression `model-checks-20261019-022832-88a24c5b` passed this fixture,
+original X-damage and random-spell fixtures, all three terminal exit codes zero.
 
 `full-battle-original-status-removal-scaling.mt2f` retains original Pyreborne
 Brainspike. Paying X three/zero/ten gives partial/zero/clamped cooldown removal

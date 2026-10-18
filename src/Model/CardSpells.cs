@@ -307,8 +307,12 @@ namespace MonsterTrain2Poju.Model
                 state = changed.State!;
                 return new RelicPyreAttackRefreshResult(state.Context, state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.IsPyre));
             }
-            for (int index = 0; index < effects.Count; index++)
+            int applicationsLeft = 1, initializedEffect = -1;
+            // Keep the source effect index while native damage applications repeat. Existing
+            // continue paths finish one application; the next pass recollects the live front.
+            for (int index = 0; index < effects.Count; index += --applicationsLeft <= 0 ? 1 : 0)
             {
+                if (initializedEffect != index) applicationsLeft = 1;
                 CardActionEffect effect = effects[index];
                 // Each effect reads the card's live modifiers, including earlier hand upgrades.
                 if (resolveLiveEffects && definitions != null && sourceCardId > 0 && state.Context!.CardInstances != null)
@@ -443,6 +447,15 @@ namespace MonsterTrain2Poju.Model
                 Remember(effect, index, targets, ref last);
                 if (targets.BattleRng.HasValue)
                     state = WithContext(state, state.Context!.WithBattleRng(targets.BattleRng.Value));
+                if (initializedEffect != index)
+                {
+                    initializedEffect = index;
+                    StatisticQueryResult applications = CardEffectApplicationsModel.Count(state.Context!, sourceCardId, effect);
+                    if (!applications.Supported) return UnsupportedTrain(applications.UnsupportedReason!);
+                    state = WithContext(state, applications.Context!);
+                    applicationsLeft = applications.Value;
+                    if (applicationsLeft <= 0) continue;
+                }
                 if (effect.Type == "Null" || effect.Type == "StatusNull")
                 {
                     if (effect.Type == "Null" && effect.NullForwardSelf)
