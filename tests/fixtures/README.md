@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 466 archives (427 full battles and
+Current accepted inventory (2026-10-18): 467 archives (428 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,20 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-466 accepted archives. Refresh/check the index with
+467 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-room-cards.mt2f` keeps two original Fight Clubs and Spell
+Sanctum. Existing and later-born friendly units prove same-floor +15 attack,
+removal on replacement and restoration; an outside unit stays unchanged.
+Paid spells prove cost one on the Sanctum floor, two outside it and two after
+replacement, while a paid unit still costs two. Each authored spell executes
+its gold reward with captured native resource rules. The 35-stage win (ten
+plays/five EndTurns), sixteen immutable chains and bounded search are checked.
+Other room modifiers, filtered upgrades, attachment types and callbacks stay
+guarded. Binary-only: 28,365 bytes/4,470 nodes, SHA-256
+`c4a20f73a3dee6e761c3b68e0f7fa24a1dbe674aad8572d99c5ebc61b914b14a`.
+Use `-OriginalRoomCards` and `--original-room-cards-only`.
 
 `full-battle-eclipse-chamber.mt2f` keeps two original Eclipse Chambers, original
 Moonrise and an original capacity-room replacement. Authored Silent and ordinary

@@ -588,8 +588,10 @@ namespace MonsterTrain2Poju.Probe
             upgrade.Setup(definition);
             RoomModifierData[] modifiers = definition.GetRoomModifierUpgrades().ToArray();
             RoomMoonPhaseRule? moon = RoomMoonPhaseProbe.Rule(definition, interactions);
-            bool supported = (moon != null || modifiers.Length == 1 && modifiers[0].GetRoomStateModifierClassName() == "RoomStateCapacityModifier") &&
-                upgrade.GetAttackDamage() == 0 && upgrade.GetAttackDamageBuff() == 0 && upgrade.GetAdditionalHP() == 0 &&
+            RoomModifierData[] capacities = modifiers.Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateCapacityModifier").ToArray();
+            RoomModifierData[] spellCosts = modifiers.Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateSpellCostModifier").ToArray();
+            bool supported = (moon != null || modifiers.Length == capacities.Length + spellCosts.Length && capacities.Length <= 1 && spellCosts.Length <= 1) &&
+                upgrade.GetAttackDamageBuff() == 0 && upgrade.GetAdditionalHP() == 0 &&
                 upgrade.GetAdditionalUnhealedHP() == 0 && upgrade.GetCostReduction() == 0 && upgrade.GetAdditionalSize() == 0 &&
                 upgrade.GetAdditionalEquipmentLimit() == 0 && upgrade.GetStatusEffectUpgrades().Count == 0 &&
                 upgrade.GetTraitDataUpgrades().Count == 0 && upgrade.GetRemoveTraitUpgrades().Count == 0 &&
@@ -602,11 +604,11 @@ namespace MonsterTrain2Poju.Probe
                 return null;
             }
             return new RoomCapacityAttachmentState(card.GetID(), card.name, effect.GetAdditionalParamInt(),
-                moon == null ? modifiers[0].GetParamInt() : 0, [CardModifierProbe.Upgrade(upgrade, rejectFilters: false,
+                capacities.Sum(modifier => modifier.GetParamInt()), [CardModifierProbe.Upgrade(upgrade, rejectFilters: false,
                     filtersAlreadyApplied: true, roomAttachmentUnitUpgrade: true)],
                 affectsHeroes: effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
                 affectsMonsters: effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
-                ignoreBosses: effect.GetTargetIgnoreBosses(), moonPhase: moon);
+                ignoreBosses: effect.GetTargetIgnoreBosses(), moonPhase: moon, spellCostDelta: spellCosts.Sum(modifier => modifier.GetParamInt()));
         }
 
         private static CardData? Fallback(CharacterData unit) => AllGameManagers.Instance!.GetSaveManager().GetAllGameData()

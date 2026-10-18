@@ -778,6 +778,8 @@ namespace MonsterTrain2Poju.Probe
                 EclipseChamberPrepared = EclipseChamberScenario.Prepared,
                 EclipseChamberCardIds = EclipseChamberScenario.CardIds,
                 EclipseChamberRecords = EclipseChamberScenario.Records,
+                OriginalRoomCardsPrepared = OriginalRoomCardsScenario.Prepared,
+                OriginalRoomCardsIds = OriginalRoomCardsScenario.CardIds,
                 RunCardGenerationPrepared = RunCardGenerationScenario.Prepared,
                 ArmamentDrivePrepared = ArmamentDriveScenario.Prepared,
                 ArmamentDriveCardIds = ArmamentDriveScenario.CardIds,

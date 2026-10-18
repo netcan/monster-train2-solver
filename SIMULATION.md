@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 466 binary archives, including 427
+Current accepted inventory (2026-10-18): 467 binary archives, including 428
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 466
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 467
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,17 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-room-cards.mt2f` adds two unchanged Fight Clubs and Spell
+Sanctum. Existing and later-born friendly units gain +15 attack on the selected
+floor; replacing the room removes it and restoring Fight Club reapplies it.
+Spell Sanctum reduces a paid spell from two energy to one on its floor, leaves
+a paid unit and other-floor spell at two, and loses its discount on replacement.
+All three authored spell controls actually execute their native gold reward;
+gold-resource rules are captured when a gold-reward card is observed. The
+35-stage win (ten plays/five EndTurns), sixteen immutable complete action chains
+and bounded search are checked. Other room modifiers, filtered character
+upgrades, attachment types and callbacks retain their existing guards.
 
 `full-battle-eclipse-chamber.mt2f` adds two unchanged Eclipse Chambers, original
 Moonrise and a capacity-room replacement. Room phase understanding is distinct
