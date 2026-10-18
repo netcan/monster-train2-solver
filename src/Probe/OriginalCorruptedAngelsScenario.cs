@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "original-corrupted-angels";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static string? CostOrder => Environment.GetEnvironmentVariable("MT2_PROBE_ANGELS_COST_ORDER");
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
         internal static readonly List<Record> Records = new();
@@ -66,7 +67,9 @@ namespace MonsterTrain2Poju.Probe
                 data.FindCardData(RelicPerkeoModel.SourceCardId), data.FindCardData(RelicPerkeoModel.SourceCardId),
                 data.FindCardData("2785cc8e-d0e8-46c0-84ab-9c1d602525d4"), data.FindCardData("2785cc8e-d0e8-46c0-84ab-9c1d602525d4") })
                 save.AddCardToDeck(card, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
+            if (CostOrder == "cost-first") save.AddRelic(data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicRandomDrawCostModel.DataId));
             save.AddRelic(data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicCorruptedAngelsModel.DataId));
+            if (CostOrder == "cost-last") save.AddRelic(data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicRandomDrawCostModel.DataId));
             string? error = RelicModel.Validate(RelicProbe.Capture(managers)); if (error != null) throw new InvalidOperationException(error);
             Acquired = true; log.LogInfo("ORIGINAL-CORRUPTED-ANGELS-ACQUIRED unchanged original masks, energy and extra-draw definition.");
         }
@@ -98,6 +101,13 @@ namespace MonsterTrain2Poju.Probe
                     bin.Clear(); bin.AddRange(savedDiscard.Where(item => !hand.Contains(item)));
                 }
             }
+            if (CostOrder != null)
+            {
+                CardUpgradeData upgrade = DynamicUpgradeScenario.Upgrade("PojuAngelsPending", "ca224000-0000-4000-8000-000000000003", 0, 0, -1, 0, "armor", 0);
+                upgrade.GetStatusEffectUpgrades().Clear();
+                var state = new CardUpgradeState(); state.Setup(upgrade);
+                cards.AddTempCardUpgradeToNextDrawnCard(state);
+            }
             Control("draw-priority", new[] { junk, normal[0] }, new[] { normal[1] }, source);
             Control("discard-fallback", new[] { junk }, new[] { normal[1] }, junk);
             Control("no-eligible", new[] { source }, new[] { junk }, source);
@@ -114,6 +124,7 @@ namespace MonsterTrain2Poju.Probe
             managers.GetPlayerManager().AddEnergy(100);
             Control("energy-cap", new[] { normal[3] }, new[] { normal[4] }, junk);
             Control("null-filter", new[] { normal[3] }, Array.Empty<CardState>(), null);
+            if (CostOrder != null) ((List<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextDrawnTempCardUpgrades").GetValue(cards)).Clear();
             FullBattleTrace.Active.InvalidateCardRules();
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
         }

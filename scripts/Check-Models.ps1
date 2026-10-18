@@ -133,6 +133,8 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-opening-deck-spawn.mt2f',
     'full-battle-original-perkeo.mt2f',
     'full-battle-original-corrupted-angels.mt2f',
+    'full-battle-corrupted-angels-cost-first.mt2f',
+    'full-battle-corrupted-angels-cost-last.mt2f',
     'full-battle-original-propagate-on-status-effect-applied.mt2f',
     'full-battle-original-pyre-health-card-cost.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
@@ -1578,7 +1580,7 @@ foreach ($fixturePath in $originalSpawnRetreatFixtures) {
     }
 }
 $originalPerkeoFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-perkeo.mt2f' })
-$originalCorruptedAngelsFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-corrupted-angels.mt2f' })
+$originalCorruptedAngelsFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-corrupted-angels.mt2f', 'full-battle-corrupted-angels-cost-first.mt2f', 'full-battle-corrupted-angels-cost-last.mt2f') })
 foreach ($fixturePath in $originalCorruptedAngelsFixtures) {
     foreach ($mode in @('--original-corrupted-angels-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

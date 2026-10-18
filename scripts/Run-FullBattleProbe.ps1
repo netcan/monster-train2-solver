@@ -282,6 +282,8 @@ param(
     [switch] $OriginalPartFactory,
     [switch] $OriginalPerkeoRelic,
     [switch] $OriginalCorruptedAngelsRelic,
+    [ValidateSet('cost-first', 'cost-last')]
+    [string] $CorruptedAngelsCostOrder,
     [switch] $OriginalBigDamageFromManyMorsels,
     [switch] $OriginalEarlyDiscardEnergy,
     [switch] $OriginalCheaperSpellCost,
@@ -533,6 +535,7 @@ if ($OriginalGarfieldBoxRandomCard) {
 }
 if ($OriginalPartFactory) { $Policy = 'units-spells-and-junk' }
 if ($OriginalPerkeoRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($CorruptedAngelsCostOrder) { $OriginalCorruptedAngelsRelic = $true }
 if ($OriginalCorruptedAngelsRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalBigDamageFromManyMorsels) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
@@ -1063,6 +1066,7 @@ if ($CardBackedFeeding) { $environment['MT2_PROBE_FOOD_CARDS'] = '1' }
 if ($OriginalOpeningDeckSpawnRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-deck-spawn' }
 if ($OriginalPerkeoRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perkeo' }
 if ($OriginalCorruptedAngelsRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupted-angels' }
+if ($CorruptedAngelsCostOrder) { $environment['MT2_PROBE_ANGELS_COST_ORDER'] = $CorruptedAngelsCostOrder }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }

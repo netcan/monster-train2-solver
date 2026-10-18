@@ -39,13 +39,14 @@ namespace MonsterTrain2Poju.Model
 
         // RelicManager does not consult CanApplyInPreviewMode for ICardDrawnRelicEffect.
         // Champion/null exits precede the random draw; full reduction follows it.
-        internal static RelicFirstCardCostResult Apply(CombatContext source, int cardId, out bool applied, bool placement = false)
+        internal static RelicFirstCardCostResult Apply(CombatContext source, int cardId, out bool applied, bool placement = false,
+            CombatRelicState? selectedOwner = null)
         {
             applied = false; CombatContext context = source;
             foreach (CombatRelicState owner in source.Relics ?? Array.Empty<CombatRelicState>())
             foreach (RelicResourceEffect resource in owner.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
             {
-                if (resource.Type != Effect) continue;
+                if (resource.Type != Effect || selectedOwner != null && !ReferenceEquals(owner, selectedOwner)) continue;
                 string? error = Validate(owner, resource); if (error != null) return new(source, error);
                 if (placement && owner.DisallowedInPlacementPhase == true || cardId == 0) continue;
                 CardInstanceState? card = context.FindCard(cardId);

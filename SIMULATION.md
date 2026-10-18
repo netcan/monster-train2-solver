@@ -1,11 +1,31 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 445 binary archives, including 406
+Current accepted inventory (2026-10-18): 447 binary archives, including 408
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Corrupted Angels with random draw cost and pending upgrades
+
+`full-battle-corrupted-angels-cost-first.mt2f` and `...-cost-last.mt2f` retain
+both unchanged owners in opposite acquisition orders. Draw callbacks now walk
+owners in that order, fully resolving nested draws before continuing the parent.
+Both native wins contain 53 exact callbacks, seventeen natural positives,
+25 draw requests, eight controls and depth-three recursion. Pending temporary
+upgrades preserve native reference identity through nested specific draws before
+the random-cost consumer. These 32-stage battles have 34/32 plays and five
+EndTurns; all eight error counters are zero. Independent policy replay and
+128-state serial/parallel search match both orders. Bonus-draw listeners and
+pending upgrades on ordinary DrawHand remain separately guarded boundaries.
+Three affected older archives pass with terminal worker exits zero:
+`.probe-runs/model-checks-20261018-185354-aca8cf4c/summary.json`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CorruptedAngelsCostOrder cost-first -BinaryCapture -SkipBuild
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CorruptedAngelsCostOrder cost-last -NativeWorker 2 -BinaryCapture -SkipBuild
+```
 
 ### Moon-phase healing and OnHeal
 
@@ -66,7 +86,7 @@ policy/mid-battle replay, sixteen immutable branches and 128-state serial/parall
 search pass. All 22 affected archives pass with terminal zero worker exits and
 unchanged tested binaries:
 `.probe-runs/model-checks-20261018-171015-d5f9aac5/summary.json`.
-Pending draw-upgrade queues, random-cost co-owner ordering, disabled deck draws,
+Ordinary pending-upgrade hand draws, bonus-draw listeners, disabled deck draws,
 additional callback combinations and metagame consumers require separate evidence.
 
 ```powershell

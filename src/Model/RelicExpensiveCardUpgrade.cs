@@ -104,13 +104,23 @@ namespace MonsterTrain2Poju.Model
             {
                 CardInstanceState? card = context.FindCard(id);
                 if (card?.MaskDescriptor != null && CardBranchMaskModel.Resolve(card).Traits.Contains(Trait)) context = context.WithCard(Freeze(card));
-                context = RelicRandomDrawCostModel.Drawn(ConduitModel.Drawn(context, new[] { id }), new[] { id }, out error);
-                if (error != null) return source;
-                if (RelicCorruptedAngelsModel.Enabled(context))
+                context = ConduitModel.Drawn(context, new[] { id });
+                // Native dispatch walks owners in acquisition order; recursive draws
+                // finish their own complete owner walk before the parent resumes.
+                foreach (CombatRelicState owner in source.Relics ?? Array.Empty<CombatRelicState>())
                 {
-                    var angels = RelicCorruptedAngelsModel.Apply(context, id, out _, definitions);
-                    if (!angels.Supported) { error = angels.UnsupportedReason; return source; }
-                    context = angels.Context;
+                    if (owner.EffectTypes.Contains(RelicRandomDrawCostModel.Effect))
+                    {
+                        var cost = RelicRandomDrawCostModel.Apply(context, id, out _, selectedOwner: owner);
+                        if (!cost.Supported) { error = cost.UnsupportedReason; return source; }
+                        context = cost.Context;
+                    }
+                    if (owner.EffectTypes.Contains(RelicCorruptedAngelsModel.Effect))
+                    {
+                        var angels = RelicCorruptedAngelsModel.Apply(context, id, out _, definitions, selectedOwner: owner);
+                        if (!angels.Supported) { error = angels.UnsupportedReason; return source; }
+                        context = angels.Context;
+                    }
                 }
                 var added = Added(context, id); if (!added.Supported) { error = added.UnsupportedReason; return source; }
                 context = added.Context;

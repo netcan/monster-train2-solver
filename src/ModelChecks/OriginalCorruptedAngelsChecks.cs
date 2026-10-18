@@ -13,7 +13,8 @@ internal static class OriginalCorruptedAngelsChecks
             "OriginalCorruptedAngelsMismatches", "OriginalCorruptedAngelsUnsupported", "OriginalCorruptedAngelsPending" })
             Require(root.GetProperty(field).GetInt32() == 0, "Nonzero " + field);
         var controls = new HashSet<string>(); var primaryTypes = new HashSet<string>();
-        int total = 0, naturalPositive = 0, recursiveDepth = 0, attempts = 0;
+        bool combined = root.TryGetProperty("CorruptedAngelsCostOrder", out FixtureValue order) && order.ValueKind == FixtureKind.String;
+        int total = 0, naturalPositive = 0, recursiveDepth = 0, attempts = 0, pending = 0;
         foreach (FixtureValue row in root.GetProperty("RelicCorruptedAngelsRecords").EnumerateArray())
         {
             total++;
@@ -40,11 +41,27 @@ internal static class OriginalCorruptedAngelsChecks
                 Parallel.For(0, 16, _ => Check());
                 Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Callback mutated its parent branch.");
             }
-            Require(source.Cards.Rng.Equals(target.Cards.Rng) && source.BattleRng.Equals(target.BattleRng) &&
+            Require(source.Cards.Rng.Equals(target.Cards.Rng) && (combined || source.BattleRng.Equals(target.BattleRng)) &&
                 source.NextCardId == target.NextCardId && source.Resources!.VisibleDeckCount == target.Resources!.VisibleDeckCount,
                 "Specific extra draws consumed RNG, allocated cards or changed permanent deck count.");
             Equal(source.Statistics!.DeckCards, target.Statistics!.DeckCards, "permanent deck membership");
             var calls = row.GetProperty("Attempts").EnumerateArray().ToArray(); attempts += calls.Length;
+            if (combined)
+            {
+                int costIndex = source.Relics!.ToList().FindIndex(item => item.DataId == RelicRandomDrawCostModel.DataId);
+                int angelsIndex = source.Relics!.ToList().FindIndex(item => item.DataId == RelicCorruptedAngelsModel.DataId);
+                Require(costIndex >= 0 && (costIndex < angelsIndex) == (order.GetString() == "cost-first"), "Native acquisition order differs.");
+                foreach (FixtureValue call in calls.Where(call => call.GetProperty("Returned").GetBoolean()))
+                {
+                    int drawnId = call.GetProperty("CardId").GetInt32();
+                    if (source.Cards.NextDrawUpgrades?.Count > 0)
+                    {
+                        Require(target.FindCard(drawnId)!.Temporary.Upgrades.Any(upgrade => upgrade.DataId == "ca224000-0000-4000-8000-000000000003"),
+                            "Nested specific draw lost its pending upgrade.");
+                        pending++;
+                    }
+                }
+            }
             Require(calls.All(call => call.GetProperty("Completed").GetBoolean()) && calls.Length <= 1,
                 "Native one-card match count retried a rejected draw or left an attempt pending.");
             if (role == "natural" && returned)
@@ -97,6 +114,7 @@ internal static class OriginalCorruptedAngelsChecks
             "null-filter", "recursive-candidate" }) && naturalPositive > 0 && primaryTypes.SetEquals(new[] { "Blight", "Junk" }) && recursiveDepth == 3,
             "Missing natural original Blight/Junk, nested filter overlap or isolated control roles.");
         CardCycleChecks.Native(root);
+        Require(!combined || pending >= 3, "Missing pending-upgrade nested draw positives.");
         Console.WriteLine($"ORIGINAL-CORRUPTED-ANGELS-NATIVE PASS: unchanged owner/two original masks, {total} complete callbacks/{naturalPositive} natural positives, {attempts} native draw attempts, eight controls, depth-three recursion, exact piles/statistics/energy/RNG and 16 immutable branches.");
     }
     private static void Equal<T>(T predicted, T actual, string label)

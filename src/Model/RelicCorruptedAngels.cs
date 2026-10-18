@@ -51,24 +51,22 @@ namespace MonsterTrain2Poju.Model
         // Native ICardDrawnRelicEffect ignores CanApplyInPreviewMode. The original
         // filters even accept null; match count advances when DrawSpecific refuses.
         internal static RelicFirstCardCostResult Apply(CombatContext source, int cardId, out bool applied,
-            BattlePlayRules? definitions = null, bool placement = false)
+            BattlePlayRules? definitions = null, bool placement = false, CombatRelicState? selectedOwner = null)
         {
             applied = false; CombatContext context = source;
             foreach (CombatRelicState owner in source.Relics ?? Array.Empty<CombatRelicState>())
             foreach (RelicResourceEffect effect in owner.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
             {
-                if (effect.Type != Effect) continue;
+                if (effect.Type != Effect || selectedOwner != null && !ReferenceEquals(owner, selectedOwner)) continue;
                 string? error = Validate(owner, effect); if (error != null) return new(source, error);
                 if (placement && owner.DisallowedInPlacementPhase == true) continue;
-                if (source.Relics!.Any(item => item.EffectTypes.Contains(RelicRandomDrawCostModel.Effect)))
-                    return new(source, "Combined random-cost and Corrupted Angels draw callback ordering needs native evidence.");
                 CardInstanceState? card = cardId == 0 ? null : context.FindCard(cardId);
                 if (cardId != 0 && card?.MaskDescriptor == null) return new(source, "Corrupted Angels requires captured source-card masks.");
                 RelicDrawAndEnergyRule rule = effect.DrawAndEnergy!;
                 if (!CardUpgradeMaskModel.FilterCard(rule.TriggerFilter!, card == null ? null : CardBranchMaskModel.Resolve(card))) continue;
                 if (context.Cards.ExternalInteractions.Count > 0) return new(source, string.Join("; ", context.Cards.ExternalInteractions));
-                if (context.Cards.BonusDraw?.Listeners.Count > 0 || context.Cards.NextDrawUpgrades?.Count > 0)
-                    return new(source, "Corrupted Angels with pending draw upgrades requires separate native evidence.");
+                if (context.Cards.BonusDraw?.Listeners.Count > 0)
+                    return new(source, "Corrupted Angels with bonus-draw listeners requires separate native evidence.");
                 // Both candidate copies are taken before the first nested draw.
                 CardToken[] candidates = context.Cards.Draw.Reverse().Concat(context.Cards.Discard.Reverse()).ToArray();
                 foreach (CardToken candidate in candidates)

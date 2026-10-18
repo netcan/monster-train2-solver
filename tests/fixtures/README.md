@@ -1,8 +1,23 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 445 archives (406 full battles and
+Current accepted inventory (2026-10-18): 447 archives (408 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-corrupted-angels-cost-first.mt2f` and `...-cost-last.mt2f` cover
+opposite acquisition orders of unchanged Corrupted Angels and random draw-cost
+owners. Each has 53 exact callbacks, seventeen natural positives, 25 requests,
+eight controls and depth-three recursion. Nested specific draws receive queued
+temporary upgrades with shared reference identity. Both 32-stage native wins
+have five EndTurns, zero errors, complete policy replay, sixteen immutable
+branches and matching 128-state serial/parallel search. Binary-only captures:
+51,454 bytes/9,210 nodes, SHA-256
+`235c8472a0e3521794e1577fcb792db64d13f334c6faa7ee8eb36ed6991b46a6`;
+51,335 bytes/9,173 nodes, SHA-256
+`117d95d21ee082fbbfcd2da1cb84ce0f6159507bd032e3a74899d242f4821d3e`.
+Source lengths/hashes are zero. Use `-CorruptedAngelsCostOrder cost-first` or
+`cost-last`, then `--original-corrupted-angels-only`. Ordinary pending-upgrade
+DrawHand and bonus-draw listeners remain guarded.
 
 `full-battle-moon-heal-on-heal.mt2f` covers the original moon-healing relic with
 repeating and once-only OnHeal Gold callbacks. Seven exact moon callbacks and

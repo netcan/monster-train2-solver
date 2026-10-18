@@ -1058,6 +1058,7 @@ namespace MonsterTrain2Poju.Probe
                 RelicCardPlayGoldOnExhaust = OriginalBalatroEventYorickProbe.Records,
                 OriginalPerkeoPrepared = OriginalPerkeoScenario.Prepared,
                 OriginalCorruptedAngelsPrepared = OriginalCorruptedAngelsScenario.Prepared,
+                CorruptedAngelsCostOrder = OriginalCorruptedAngelsScenario.CostOrder,
                 OriginalCorruptedAngelsCaptureFailures = OriginalCorruptedAngelsScenario.Records.Count(row => row.Error != null),
                 OriginalCorruptedAngelsMismatches = OriginalCorruptedAngelsScenario.Records.Count(row => row.Difference != null),
                 OriginalCorruptedAngelsUnsupported = OriginalCorruptedAngelsScenario.Records.Count(row => row.UnsupportedReason != null),

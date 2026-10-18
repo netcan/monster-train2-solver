@@ -17,8 +17,9 @@ namespace MonsterTrain2Poju.Probe
         private static Record? current;
         private static readonly Dictionary<CardUpgradeState, int> sharedReferences = new Dictionary<CardUpgradeState, int>();
         private static int nextUpgradeReferenceId = 1;
-        internal static int? NextUpgradeReferenceId => Enabled ? nextUpgradeReferenceId : (int?)null;
-        internal static int? SharedReferenceId(CardUpgradeState upgrade) => Enabled && sharedReferences.TryGetValue(upgrade, out int id) ? id : (int?)null;
+        private static bool TrackReferences => Enabled || OriginalCorruptedAngelsScenario.CostOrder != null;
+        internal static int? NextUpgradeReferenceId => TrackReferences ? nextUpgradeReferenceId : (int?)null;
+        internal static int? SharedReferenceId(CardUpgradeState upgrade) => TrackReferences && sharedReferences.TryGetValue(upgrade, out int id) ? id : (int?)null;
         private static bool Recording => Enabled && TypedDrawScenario.Prepared && FullBattleTrace.Active != null &&
             !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
 
@@ -89,7 +90,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CardManager __instance, CardUpgradeState upgradeState)
             {
-                if (!Enabled || AllGameManagers.Instance!.GetSaveManager().PreviewMode || sharedReferences.ContainsKey(upgradeState)) return;
+                if (!TrackReferences || AllGameManagers.Instance!.GetSaveManager().PreviewMode || sharedReferences.ContainsKey(upgradeState)) return;
                 var queue = (IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextDrawnTempCardUpgrades").GetValue(__instance);
                 // Allocation follows successful manager operations, never the
                 // order in which a snapshot happens to visit cards or upgrades.
