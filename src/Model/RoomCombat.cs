@@ -117,7 +117,7 @@ namespace MonsterTrain2Poju.Model
         internal int AttackBeforeStatuses => Modifiers == null ? BaseAttack : unchecked(Modifiers.AttackDamage + Modifiers.DamageBuff);
         internal int AttackFromStatuses => Modifiers?.DamageBuffFromStatusEffects ??
             unchecked(StatusAmount("buff") + StatusAmount("valor") - StatusAmount("debuff"));
-        public int Attack => Math.Max(0, unchecked(AttackBeforeStatuses + AttackFromStatuses +
+        public int Attack => UnitAttackOverrideModel.Resolve(Statuses, MaxHealth) ?? Math.Max(0, unchecked(AttackBeforeStatuses + AttackFromStatuses +
             RelicStatusAttackModel.AdditionalAttack(Modifiers?.StatusAttackModifiers, Team, Statuses)));
         public int Health { get; }
         public int MaxHealth { get; }
@@ -455,7 +455,8 @@ namespace MonsterTrain2Poju.Model
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "decay", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality", "conduit",
-            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard"
+            "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
+            "fixedattack", "armorattack", "equalizer"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -1255,6 +1256,8 @@ namespace MonsterTrain2Poju.Model
             {
                 get
                 {
+                    int? replacement = UnitAttackOverrideModel.Resolve(Statuses.Values, Source.MaxHealth);
+                    if (replacement.HasValue) return replacement.Value;
                     int mageblade = 0;
                     if (Source.Modifiers?.MagebladeDamagePerMagicPower is int coefficient)
                     {

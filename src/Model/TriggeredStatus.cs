@@ -124,7 +124,7 @@ namespace MonsterTrain2Poju.Model
                     mageblade = unchecked(coefficient * (power?.Value ?? 0));
                 }
                 int pyre = actor.IsPyre ? context.Resources?.PyreModifiedBaseAttack ?? 0 : 0;
-                int attack = Math.Max(0, unchecked(actor.AttackBeforeStatuses + actor.AttackFromStatuses +
+                int attack = UnitAttackOverrideModel.Resolve(actor.Statuses, actor.MaxHealth) ?? Math.Max(0, unchecked(actor.AttackBeforeStatuses + actor.AttackFromStatuses +
                     RelicStatusAttackModel.AdditionalAttack(actor.Modifiers?.StatusAttackModifiers, actor.Team, actor.Statuses) + mageblade + pyre));
                 status = status.WithStacks(attack / divisor);
             }

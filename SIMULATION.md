@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 535 binary archives, including 495
+Current accepted inventory (2026-10-19): 536 binary archives, including 496
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 535
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 536
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,17 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-attack-overrides.mt2f` adds unchanged Irontongue and
+Equalizer. Nine positive/zero native damage controls establish fixed attack >
+armor stacks > maximum HP priority. Wounded current HP, maximum-HP growth,
+zero armor and removing each override preserve and restore hidden ordinary attack
+and Rage buffs. Capture retains primary AttackDamage/DamageBuff instead of
+masked getters and normalizes BaseAttack to those raw fields while overrides
+are active. Independent victim HP/armor loss proves the actual native attacks.
+Twenty-nine plays/five EndTurns and sixteen immutable full chains match.
+Stat swaps, source-card relic projection and ordinary targeted nonstackable
+status legality retain their separate guards.
 
 `full-battle-original-reactive-units.mt2f` adds ten unchanged units: Prickly
 Puffball, Wilting Sapwood, Knuckler Steward, Firebrand, Runebound Protector,

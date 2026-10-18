@@ -461,6 +461,17 @@ if (args.Length == 1 && args[0] == "--status-callback-pure")
     StatusCallbackChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--attack-override-pure")
+{
+    AttackOverrideChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-attack-overrides-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalAttackOverridesChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--last-attacker-pure")
 {
     LastAttackerTargetChecks.Run();

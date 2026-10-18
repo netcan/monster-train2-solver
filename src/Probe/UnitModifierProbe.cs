@@ -21,7 +21,10 @@ namespace MonsterTrain2Poju.Probe
             var roomAttachmentUpgrades = new HashSet<string>(room == null ? Array.Empty<string>() :
                 room.Attachments.Where(attachment => attachment.IsActive && attachment.CurrentlyImpactsCharacter(unit))
                     .SelectMany(attachment => attachment.UpgradeStates.Select(item => item.Item1.GetCardUpgradeDataId())));
-            return new UnitModifiers(unit.GetUnbuffedAttackDamage(), unit.GetAttackDamageAddedFromUpgrades(), unit.GetDamageBuff(),
+            // Replacement statuses mask both public getters; retain primary fields for later removal.
+            int rawAttack = (int)AccessTools.Property(state.GetType(), "AttackDamage").GetValue(state);
+            int rawBuff = (int)AccessTools.Property(state.GetType(), "DamageBuff").GetValue(state);
+            return new UnitModifiers(rawAttack, unit.GetAttackDamageAddedFromUpgrades(), rawBuff,
                 rawSize, unit.GetEquipmentLimit(), unit.GetCanBeHealed(), unit.GetIsClone(),
                 upgrades.Select(upgrade =>
                 {

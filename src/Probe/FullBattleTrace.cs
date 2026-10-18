@@ -300,8 +300,9 @@ namespace MonsterTrain2Poju.Probe
                 pairedBoss == null;
             StatusRegistryCalibration.Capture(character, id, statuses);
             UnitModifiers modifiers = UnitModifierProbe.Capture(character);
-            int baseAttack = character.GetAttackDamageWithoutStatusEffectBuffs();
-            if (modifiers.MagebladeDamagePerMagicPower is int magebladeCoefficient && character.GetCurrentRoom() is RoomState currentRoom)
+            bool attackOverride = character.HasStatusEffect("fixedattack") || character.HasStatusEffect("armorattack") || character.HasStatusEffect("equalizer");
+            int baseAttack = attackOverride ? Math.Max(0, unchecked(modifiers.AttackDamage + modifiers.DamageBuff)) : character.GetAttackDamageWithoutStatusEffectBuffs();
+            if (!attackOverride && modifiers.MagebladeDamagePerMagicPower is int magebladeCoefficient && character.GetCurrentRoom() is RoomState currentRoom)
             {
                 AllGameManagers managers = AllGameManagers.Instance!;
                 int roomMagicPower = currentRoom.GetRoomStateModifiedMagicPower(character.GetTeamType(), managers.GetCoreManagers()) +
@@ -907,6 +908,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalResourceSpellsIds = OriginalResourceSpellsScenario.CardIds,
                 OriginalHostileStatusesPrepared = OriginalHostileStatusesScenario.Prepared,
                 OriginalHostileStatusesIds = OriginalHostileStatusesScenario.CardIds,
+                OriginalAttackOverridesPrepared = OriginalAttackOverridesScenario.Prepared,
+                OriginalAttackOverridesIds = OriginalAttackOverridesScenario.CardIds,
                 OriginalReactiveUnitsPrepared = OriginalReactiveUnitsScenario.Prepared,
                 OriginalReactiveUnitsIds = OriginalReactiveUnitsScenario.CardIds,
                 OriginalBaseChampionsPrepared = OriginalBaseChampionsScenario.Prepared,

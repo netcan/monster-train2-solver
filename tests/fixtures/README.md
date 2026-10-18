@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 535 archives (495 full battles and
+Current accepted inventory (2026-10-19): 536 archives (496 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,32 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-535 accepted archives. Refresh/check the index with
+536 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-attack-overrides.mt2f` captures unchanged Irontongue and
+Equalizer on three authored hosts. Native victim HP/armor proves nine exact
+damage values: 30, 100, 25, 0, 30, 0, 110, 121 and 120. Fixed attack precedes
+armor stacks, which precede maximum HP; current wounded HP and ordinary attack,
+Rage, room and relic adjustments do not replace this priority. Three status
+removals expose zero armor, then maximum HP, then retained raw attack/buffs.
+Primary AttackDamage/DamageBuff are captured directly because native public
+getters hide them while an override is active. BaseAttack is normalized to
+their nonnegative sum in those states. The damage assertions use independent
+native victim fields, not serialized derived Attack. Stat swaps, source-card
+relic projection and ordinary targeted nonstackable status legality remain
+guarded. The authored armor-attack control selects the native back actor.
+Use `--original-attack-overrides-only` or `--attack-override-pure`. Eight pure
+damage controls/32 branches each, sixteen complete immutable chains, old original
+equipment/self-attack fixtures and Mageblade checks pass. Native source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-073228-21e25958` won in
+122.62 seconds with twenty-nine plays/five EndTurns, four counters zero and
+protected files unchanged. Binary-only: 43,847 bytes/9,018 nodes, SHA-256
+`13807dc82e3d567e5a5416fdb1d28c193d601c179142893cea65dff7c90531eb`.
+Search matches twenty-nine decisions/24 root actions, 128/128 states, three
+replayed steps and equal serial/parallel best with zero unsupported attempts.
+All 272 previous matched identities remain; two new ones bring the index to
+274 (495 indexed battles/7,991 actions).
 
 `full-battle-original-reactive-units.mt2f` captures ten unchanged units with
 exact paid births: Prickly Puffball, Wilting Sapwood, Knuckler Steward, Firebrand,

@@ -158,7 +158,7 @@ namespace MonsterTrain2Poju.Model
             if (!actor.Modifiers.DamageBuffFromStatusEffects.HasValue && source.Context?.Relics?.Any(relic => relic.StatusAttackModifiers?.Count > 0) == true)
                 return Fail("Cardless relic attack requires captured native status-derived attack damage.");
             int currentAttack = actor.Attack;
-            int unmodifiedAttack = unchecked(actor.Modifiers.AttackDamage + actor.Modifiers.DamageBuff +
+            int unmodifiedAttack = UnitAttackOverrideModel.Resolve(actor.Statuses, actor.MaxHealth) ?? unchecked(actor.Modifiers.AttackDamage + actor.Modifiers.DamageBuff +
                 (actor.Modifiers.DamageBuffFromStatusEffects ?? 0));
             if (actor.Status("horde") != null && actor.HordeDefinition != null)
                 currentAttack = unmodifiedAttack = actor.HordeDefinition.Attack;
