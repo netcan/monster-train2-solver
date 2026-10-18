@@ -1,7 +1,7 @@
 # Original card definition catalog
 
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
-and component fixtures. It does not increase their 473-archive acceptance count.
+and component fixtures. It does not increase their 476-archive acceptance count.
 
 The isolated `no-cards` run on 2026-10-18 inspected all 668 unique
 `AllGameData.GetAllCardData()` definitions from game module
@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261018-232342-def96a1b/card-catalog.mt2f`.
-The committed archive is byte-identical: 94,901 bytes, SHA-256
-`e6ed4d5cbb95a3fc8240f08c2280f13ce0901345c21adf6d48cc75f4eea431e4`.
-The projection reflects revision `bc5499d`: original Engine Upgrade delayed
+Source: `.probe-runs/full-battle-no-cards-20261018-233952-57bd6724/card-catalog.mt2f`.
+The committed archive is byte-identical: 94,859 bytes, SHA-256
+`6d8adb3b0155ed41786cfd670525ed3269c8802cf758e760011a1987881fa21f`.
+The projection reflects revision `bf85785`: Zone of Silence enemy status and
+trigger suppression, Memorial of the Melted Endless death/redraw, and Planetarium
+Conduit contributors/tracker replacement have native witnesses. Room character
+synchronization retains shared context changes. Original Engine Upgrade delayed
 energy and Stewards Quarters subtype/Multistrike upgrades join Fight Club attack
 and Spell Sanctum cost attachments. Native witnesses
 also cover five original forge spells, three propagation spells and Great Decay

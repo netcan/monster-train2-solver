@@ -80,7 +80,7 @@ search are checked. Both ordinary and relic resource start-turn paths include
 the room contribution; other room modifier classes remain guarded.
 Focused gate `model-checks-20261018-231851-9da8f1e4` passed the new fixture,
 original room cards and original resource relics. The frozen catalog now reflects
-revision `bc5499d`; 138 logbook cards retain partial interaction guards.
+revision `bf85785`; 135 logbook cards retain partial interaction guards.
 
 `full-battle-goldmance.mt2f` activates the unchanged original ability on two
 original Goldy Whelps. Zero Hoard is legal and grants no gold; three Hoard
