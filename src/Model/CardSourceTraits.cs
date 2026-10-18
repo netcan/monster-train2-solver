@@ -23,12 +23,14 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string>? StatusQueryStatuses { get; }
         public string? HandCostTargetType { get; }
         public bool? DeploymentDrawFlag { get; }
+        public string? SpecificCardDataId { get; }
         public CardSourceTrait(string type, int @int, int int2, int int3, bool @bool, string str, float @float,
             bool scaling, string trackedValue, string entryDuration, string? statusQueryTeam = null,
-            IReadOnlyList<string>? statusQueryStatuses = null, string? handCostTargetType = null, bool? deploymentDrawFlag = null)
+            IReadOnlyList<string>? statusQueryStatuses = null, string? handCostTargetType = null, bool? deploymentDrawFlag = null,
+            string? specificCardDataId = null)
         { Type = type; Int = @int; Int2 = int2; Int3 = int3; Bool = @bool; Str = str; Float = @float;
             Scaling = scaling; TrackedValue = trackedValue; EntryDuration = entryDuration; StatusQueryTeam = statusQueryTeam;
             StatusQueryStatuses = statusQueryStatuses == null ? null : Array.AsReadOnly(statusQueryStatuses.ToArray());
-            HandCostTargetType = handCostTargetType; DeploymentDrawFlag = deploymentDrawFlag; }
+            HandCostTargetType = handCostTargetType; DeploymentDrawFlag = deploymentDrawFlag; SpecificCardDataId = specificCardDataId; }
     }
 }

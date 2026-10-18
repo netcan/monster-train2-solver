@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Model
         // source contributes numeric damage upgrades (ordinary unit attacks pass no card).
         public static DamageScalingResult Apply(CombatContext? context, int responsibleCardId, int damageSourceCardId,
             int damage, StatisticQueryFrame? frame = null, RoomCombatState? selectedRoom = null,
-            IEnumerable<CombatStatus>? targetStatuses = null)
+            IEnumerable<CombatStatus>? targetStatuses = null, int attackerUnitId = 0)
         {
             if (responsibleCardId <= 0) return new DamageScalingResult(context, damage);
             CardInstanceState? responsible = context?.FindCard(responsibleCardId);
@@ -47,7 +47,8 @@ namespace MonsterTrain2Poju.Model
                 context = applied.Context; damage = applied.Damage;
             }
             string? statusDamageError = CardStatusDamageModel.Apply(responsible, damage, targetStatuses, out int statusDamage);
-            return statusDamageError == null ? new DamageScalingResult(context, statusDamage) : Unsupported(statusDamageError);
+            return statusDamageError == null ? CardSpecificDamageModel.Apply(context, responsible, damageSourceCardId, statusDamage,
+                frame, selectedRoom, attackerUnitId) : Unsupported(statusDamageError);
         }
 
         public static DamageScalingResult ApplyTrait(CombatContext? context, ScalingDamageTrait trait, int ownerCardId,

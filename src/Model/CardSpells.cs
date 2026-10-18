@@ -1507,7 +1507,7 @@ namespace MonsterTrain2Poju.Model
                     if (IsDamage(effect))
                     {
                         DamageScalingResult scaled = DamageScalingModel.Apply(state.Context, damageOwnerCardId, sourceCardId,
-                            Math.Max(0, damageValue), selectedRoom: state.Rooms.FirstOrDefault(room => room.RoomIndex == state.Context?.QueryFrame?.SelectedRoomIndex), targetStatuses: target.Statuses);
+                            Math.Max(0, damageValue), selectedRoom: state.Rooms.FirstOrDefault(room => room.RoomIndex == state.Context?.QueryFrame?.SelectedRoomIndex), targetStatuses: target.Statuses, attackerUnitId: damageAttackerId);
                         if (!scaled.Supported) return UnsupportedTrain(scaled.UnsupportedReason!);
                         state = WithContext(state, scaled.Context!);
                         scaledDamage = Math.Max(0, scaled.Damage);

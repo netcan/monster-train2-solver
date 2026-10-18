@@ -34,6 +34,16 @@ manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
 
+`full-battle-original-specific-card-damage.mt2f` models original Dante's
+Inferno's ten damage per permanent Dante's Candle, overriding incoming damage.
+Twelve restored native queries cover zero/one/three counted cards, input zero/99
+and +5 source damage upgrades. Two tower casts deal 30/35 through armor and
+consume both copies; four native damage callbacks independently match. Five
+plays/five EndTurns match sixteen immutable chains and bounded serial/parallel
+search. Source descriptors preserve the actual specific CardData identity.
+Attacker attack mutation, mixed scaling order and added/replaced traits remain
+explicit guards.
+
 `full-battle-original-status-stack-damage.mt2f` models original Wracking Pain's
 three damage per visible target debuff stack. Native zero/positive/increased
 controls produce `0/27/33`; positive statuses and the outside floor remain

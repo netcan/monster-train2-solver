@@ -2192,7 +2192,7 @@ namespace MonsterTrain2Poju.Model
                     bool retainedLegacy = context?.CardRegistry == null && legacyDetachedCards != null;
                     CombatContext? scalingContext = retainedLegacy ? context!.WithCardRegistry(legacyDetachedCards) : context;
                     DamageScalingResult scaled = DamageScalingModel.Apply(scalingContext, actor?.Source.SpawnerCardId ?? sourceCardId, sourceCardId, damage,
-                        selectedRoom: CurrentRoom(), targetStatuses: target.Statuses.Values);
+                        selectedRoom: CurrentRoom(), targetStatuses: target.Statuses.Values, attackerUnitId: actor?.Source.Id ?? 0);
                     if (!scaled.Supported) { unsupportedReason = scaled.UnsupportedReason; return; }
                     context = retainedLegacy ? scaled.Context!.WithCardRegistry(null) : scaled.Context; damage = scaled.Damage;
                 }

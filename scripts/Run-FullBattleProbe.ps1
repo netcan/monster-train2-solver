@@ -63,6 +63,7 @@ param(
     [switch] $OriginalOverflowCards,
     [switch] $OriginalCorruptRestricted,
     [switch] $OriginalStatusStackDamage,
+    [switch] $OriginalSpecificCardDamage,
     [switch] $OriginalRoomStatusDamage,
     [switch] $OriginalCorruptionDamage,
     [switch] $OriginalXStatusCards,
@@ -524,6 +525,7 @@ if ($OriginalPermafrostCards) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalOverflowCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptRestricted) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusStackDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSpecificCardDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomStatusDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptionDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1035,6 +1037,7 @@ if ($OriginalPermafrostCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalOverflowCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-overflow-cards' }
 if ($OriginalCorruptRestricted) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupt-restricted' }
 if ($OriginalStatusStackDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-stack-damage' }
+if ($OriginalSpecificCardDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-specific-card-damage' }
 if ($OriginalRoomStatusDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-status-damage' }
 if ($OriginalCorruptionDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corruption-damage' }
 if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
@@ -2227,6 +2230,11 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
 if ($OriginalMonsterHandCosts -and (-not $trace.OriginalMonsterHandCostsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalMonsterHandCostsSamples).Count -ne 7 -or @($trace.OriginalMonsterHandCostsDeploymentQueries).Count -ne 8 -or -not $trace.OriginalMonsterHandCostsQueriesUnchanged)) {
     throw 'Original Monster hand cost fixture lacks cost/filter controls or restored deployment eligibility queries.'
+}
+if ($OriginalSpecificCardDamage -and (-not $trace.OriginalSpecificCardDamagePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or
+    @($trace.OriginalSpecificCardDamageQueries).Count -ne 12 -or -not $trace.OriginalSpecificCardDamageQueriesUnchanged -or
+    @($trace.OriginalSpecificCardDamageSamples).Count -lt 2 -or @($trace.OriginalSpecificCardDamageQueries | Where-Object { -not $_.StateUnchanged }).Count -ne 0)) {
+    throw 'Original specific-card damage witness is incomplete or native queries changed shared state.'
 }
 if ($OriginalStatusStackDamage -and (-not $trace.OriginalStatusStackDamagePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 7 -or
     @($trace.OriginalStatusStackDamageSamples).Count -ne 3 -or @($trace.OriginalStatusStackDamageSamples | Where-Object { -not $_.StateUnchanged }).Count -ne 0)) {

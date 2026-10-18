@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 495 archives (456 full battles and
+Current accepted inventory (2026-10-19): 496 archives (457 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,27 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-495 accepted archives. Refresh/check the index with
+496 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-specific-card-damage.mt2f` retains original Dante's
+Inferno and a numeric +5 damage upgrade on another copy. Twelve native trait
+queries cover zero/one/three permanent Dante's Candles, both copies and incoming
+damage zero/99; counted-card damage overrides incoming damage and adds only the
+source card's numeric upgrade. The permanent deck, decision, deterministic RNG
+and frame are restored. Two tower casts deal 30/35 to every live enemy through
+armor, leave friendly units unchanged and exhaust both cards. Four observed
+native damage callbacks independently match. Source descriptors capture the
+actual specific CardData identity. Attacker attack mutation, mixed scaling and
+added/replaced traits remain guarded.
+Five plays/five EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (eighteen root actions, zero unsupported).
+Binary-only: 26,193 bytes/3,557 nodes, SHA-256
+`33d4aa60ed363eb1d1f825aa71a16ea125f4af6396eea883093cc91a04b820e5`.
+Use `-OriginalSpecificCardDamage` and `--original-specific-card-damage-only`.
+Focused regression `model-checks-20261019-020921-7d17d21e` passed this fixture,
+Wracking Pain and the seven original Consume card witnesses, with all three
+terminal exit codes zero.
 
 `full-battle-original-status-stack-damage.mt2f` retains original Wracking Pain
 with its zero base damage, one ember cost and native three-damage-per-target
