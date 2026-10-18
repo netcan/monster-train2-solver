@@ -545,11 +545,9 @@ namespace MonsterTrain2Poju.Model
                 if (!opening.Supported) return Unsupported(opening.UnsupportedReason!);
                 train = opening.State!;
             }
-            if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Contains(RelicCardGenerationModel.AfterDraw) ||
-                relic.EffectTypes.Contains(RelicCardGenerationModel.PrecachedPlayerClan) ||
-                relic.EffectTypes.Contains(RelicCardGenerationModel.ChampionCardAfterDraw)) == true)
+            if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(RelicDeckTurnDrawModel.IsAfterDraw)) == true)
             {
-                var generated = RelicCardGenerationModel.Apply(train.Context);
+                var generated = RelicDeckTurnDrawModel.ApplyAfterDraw(train.Context, outputPlayRules);
                 if (!generated.Supported) return Unsupported(generated.UnsupportedReason!);
                 train = WithContext(train, generated.Context!, false);
             }

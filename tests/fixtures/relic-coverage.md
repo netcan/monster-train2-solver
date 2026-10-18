@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **195 distinct original collectable relics / 224 catalog entries
-(87.05%)** have accepted native evidence: 178 have full-battle effect evidence,
+As of 2026-10-18, **196 distinct original collectable relics / 224 catalog entries
+(87.50%)** have accepted native evidence: 179 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1677,4 +1677,23 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-coo
 dotnet run --project src/ModelChecks -c Release -- --original-cooldown-on-damage-only tests/fixtures/full-battle-original-cooldown-on-damage-dh.mt2f
 dotnet run --project src/ModelChecks -c Release -- --cooldown-on-damage-pure
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-cooldown-on-damage-dh.mt2f
+```
+
+## DrawCardPerDeckSize
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `DrawCardPerDeckSize` | `ef08bc24-6016-4d30-8ba7-c42534e3e1f7` | `full-battle-original-deck-turn-draw.mt2f` | The unchanged owner runs `RelicEffectCardDrawPerPileStartOfTurn` after ordinary player-turn draws. Native private-count and Test observations at 0/24/25/49/50/24/50 visible save-deck cards produce 0/0/1/1/2/0/2; the exact 50-card save deck is restored before four natural +2 draw callbacks. |
+
+The source counts the visible save deck, not the remaining draw pile, using integer division by 25. The focused checker independently compares each native Test and the full callback context, including hand/deck/discard order, statistics and RNG; sixteen parallel branches preserve their parents. Pure controls cover additional thresholds, hand capacity, discard reshuffling, deployment/preview gates and removed owners. After-draw effects are dispatched in native owner/effect order so extra draws and generated cards share the current hand capacity.
+
+The 40-stage winning battle contains 20 actions, five EndTurns, nine train phases and seven spawns, with zero capture failures, mismatches, unsupported transitions or pending records. Independent replay/search matches all 20 recorded decisions and explores 128/128 states with serial/parallel best equality, three replayed steps, and zero unsupported attempts. The integrated checker and affected `original-turn-draw-relics`, `original-opening-draw-relics` and `original-after-draw-generation-relics` regressions all exit zero, including independent full-policy replay and search. The 38,663-byte archive has 7,691 unique nodes and SHA-256 `7a522b92129d98429100f0978b04423e8ee6b863ae13f10647e41df1263b959c`. Inventory is 415 archives: 377 full battles and 38 component calibrations. Original relic evidence is 196/224 (87.50%): 179 battle, sixteen campaign and one native no-op owner.
+
+Evidence covers the unchanged owner, native threshold/reset Tests and repeated natural draws at visible deck count 50, with strengthened Steward carriers used only to keep the battle isolated. Other pile selections and owner payloads remain rejected. Full-hand/reshuffle behavior has pure-model evidence; mixed after-draw relic combinations and native positive applications at other deck sizes are not separately calibrated.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-deck-turn-draw.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-deck-turn-draw-only tests/fixtures/full-battle-original-deck-turn-draw.mt2f
+dotnet run --project src/ModelChecks -c Release -- --deck-turn-draw-pure
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-deck-turn-draw.mt2f
 ```

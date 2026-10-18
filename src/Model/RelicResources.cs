@@ -264,7 +264,7 @@ namespace MonsterTrain2Poju.Model
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
             type == RelicCardGenerationModel.PrecachedPlayerClan ||
             type == RelicCardGenerationModel.ChampionCardAfterDraw ||
-            type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening ||
+            type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening || type == RelicDeckTurnDrawModel.Effect ||
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
@@ -282,6 +282,11 @@ namespace MonsterTrain2Poju.Model
             foreach (RelicResourceEffect rule in rules)
             {
                 if (rule.Type != relic.EffectTypes[rule.EffectIndex]) return "Relic resource runtime type differs from its effect index.";
+                if (rule.Type == RelicDeckTurnDrawModel.Effect)
+                {
+                    string? drawError = RelicDeckTurnDrawModel.Validate(relic, rule);
+                    if (drawError != null) return drawError;
+                }
                 if (rule.Type == StartTurnHeal)
                 {
                     string? healingError = RelicStartTurnHealModel.Validate(relic);

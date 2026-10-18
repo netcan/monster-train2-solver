@@ -127,6 +127,17 @@ if (args.Length == 1 && args[0] == "--cooldown-on-damage-pure")
     RelicCardDamageStatusChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--deck-turn-draw-pure")
+{
+    RelicDeckTurnDrawChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-deck-turn-draw-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RelicDeckTurnDrawChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-triboulet-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1739,6 +1750,7 @@ OriginalCopyConsumedCardChecks.Run();
 OriginalMothersRemnant3Checks.Run();
 OriginalTribouletChecks.Run();
 RelicCardDamageStatusChecks.Run();
+RelicDeckTurnDrawChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

@@ -210,6 +210,8 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (effect is RelicEffectDrawToMaxStartOfCombat)
                 amount = data.GetParamInt();
+            else if (effect is RelicEffectCardDrawPerPileStartOfTurn)
+                amount = (int)AccessTools.Field(effect.GetType(), "_statCountPerCardEffect").GetValue(effect);
             else if (effect is RelicEffectModifyDragonsHoardStartOfCombat)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddEffectPerPileStartOfTurn)

@@ -305,6 +305,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalTribouletScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCooldownOnDamageScenario.Enabled && !OriginalCooldownOnDamageScenario.Acquired)
                         OriginalCooldownOnDamageScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalDeckTurnDrawScenario.Enabled && !OriginalDeckTurnDrawScenario.Acquired)
+                        OriginalDeckTurnDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -845,6 +847,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && !numericModifiersPrepared && OriginalTurnDrawScenario.Enabled)
             {
                 OriginalTurnDrawScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+            if (fullBattle && !numericModifiersPrepared && OriginalDeckTurnDrawScenario.Enabled)
+            {
+                OriginalDeckTurnDrawScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalFunguyDeckScalingScenario.Enabled)

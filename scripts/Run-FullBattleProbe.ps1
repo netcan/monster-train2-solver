@@ -291,6 +291,7 @@ param(
     [switch] $OriginalMothersRemnant3Relic,
     [switch] $OriginalTribouletRelic,
     [switch] $OriginalCooldownOnDamageRelic,
+    [switch] $OriginalDeckTurnDrawRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -510,6 +511,7 @@ if ($OriginalEarlyDiscardEnergy) { $BranchCardMasks = $true; $HandRemoval = $tru
 if ($OriginalUnitResourceRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOpeningDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTurnDrawRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalDeckTurnDrawRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -971,6 +973,7 @@ if ($OriginalEarlyDiscardEnergy) { $environment['MT2_PROBE_MODIFIERS'] = 'hand-r
 if ($OriginalUnitResourceRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-resource-relics' }
 if ($OriginalOpeningDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-draw-relics' }
 if ($OriginalTurnDrawRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-draw-relics' }
+if ($OriginalDeckTurnDrawRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deck-turn-draw' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1888,6 +1891,16 @@ if ($OriginalTribouletRelic -and ($trace.Schema -ne 217 -or $trace.OriginalTribo
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-TRIBOULET-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 1)) {
     throw 'Triboulet lacks its unchanged owner, Rare deck seed, or cardless Monster-spawn witness.'
+}
+if ($OriginalDeckTurnDrawRelic -and ($trace.Schema -ne 219 -or $trace.OriginalDeckTurnDrawSchema -ne 219 -or
+    $trace.ModifierScenario -ne 'original-deck-turn-draw' -or -not $trace.OriginalDeckTurnDrawPrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-DECK-TURN-DRAW-PREPARED' -Quiet) -or
+    $trace.OriginalDeckTurnDrawCaptureFailures -ne 0 -or $trace.OriginalDeckTurnDrawMismatches -ne 0 -or
+    $trace.OriginalDeckTurnDrawUnsupported -ne 0 -or $trace.OriginalDeckTurnDrawPending -ne 0 -or
+    @($trace.RelicDeckTurnDrawTests | Where-Object Phase -eq 'threshold-control').Count -ne 7 -or
+    @($trace.RelicDeckTurnDrawApplications).Count -lt 2 -or
+    @($trace.RelicDeckTurnDrawApplications | Where-Object { $_.NativeCount -ne 2 -or $_.Placement }).Count -ne 0)) {
+    throw 'DrawCardPerDeckSize lacks native threshold controls, restored deck, or repeated natural +2 after-draw callbacks.'
 }
 if ($OriginalCooldownOnDamageRelic -and ($trace.Schema -ne 218 -or $trace.OriginalCooldownOnDamageSchema -ne 218 -or
     $trace.ModifierScenario -ne 'original-cooldown-on-damage-dh' -or

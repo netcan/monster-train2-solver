@@ -138,7 +138,7 @@
 "VoidPortal"	"5cad6ad0-769b-46d3-9464-514b8e74190a"	"accepted-native-campaign"	"RelicEffectAddPostBattleReward"	""
 "AvariceOnSummon"	"644749c2-6ee3-4ce6-91ed-420077ee0193"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
 "DantesCandelabra"	"a3dde0d6-0aa3-44e5-a6a4-0e993a5d9a15"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
-"DrawCardPerDeckSize"	"ef08bc24-6016-4d30-8ba7-c42534e3e1f7"	"pending"	"RelicEffectCardDrawPerPileStartOfTurn"	""
+"DrawCardPerDeckSize"	"ef08bc24-6016-4d30-8ba7-c42534e3e1f7"	"accepted-native-battle"	"RelicEffectCardDrawPerPileStartOfTurn"	""
 "StealthWaxers"	"22f5ff29-69be-4043-9fe1-245392ea3c95"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
 "AddImpToHand"	"91211832-747e-4995-b4cb-7ca23c000f10"	"accepted-native-battle"	"RelicEffectAddBattleCardToHand"	""
 "RandomEquipmentCardFirstTurn"	"7a1d5b5d-cd08-4935-b629-d3d441905100"	"accepted-native-battle"	"RelicEffectDrawOnPreOpeningDrawCascade"	""

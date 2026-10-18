@@ -103,6 +103,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-mothers-remnant3.mt2f',
     'full-battle-original-balatro-event-triboulet.mt2f',
     'full-battle-original-cooldown-on-damage-dh.mt2f',
+    'full-battle-original-deck-turn-draw.mt2f',
     'full-battle-original-propagate-on-status-effect-applied.mt2f',
     'full-battle-original-pyre-health-card-cost.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
@@ -1355,5 +1356,14 @@ foreach ($fixturePath in $originalCooldownOnDamageFixtures) {
     foreach ($mode in @('--original-cooldown-on-damage-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original CooldownOnDamage checks failed ($mode): $fixturePath" }
+    }
+}
+$originalDeckTurnDrawFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-original-deck-turn-draw.mt2f'
+})
+foreach ($fixturePath in $originalDeckTurnDrawFixtures) {
+    foreach ($mode in @('--original-deck-turn-draw-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original DrawCardPerDeckSize checks failed ($mode): $fixturePath" }
     }
 }
