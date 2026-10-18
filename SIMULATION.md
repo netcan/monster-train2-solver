@@ -1,11 +1,27 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 434 binary archives, including 395
+Current accepted inventory (2026-10-18): 435 binary archives, including 396
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 215/224 catalog entries (95.98%): 197 battle owners, 17 campaign
+covers 216/224 catalog entries (96.43%): 198 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`IncantTriggeredByUnitAbilities` now has schema-238 evidence for its actual
+first-Whelp-per-turn Tower cooldown effect. Two natural Whelp spawns apply -2
+cooldown to friendly non-Pyre units across floors; repeat Whelps are gated and
+the next turn restores eligibility. All 285 Tests, two applications and 383
+manager calls match complete state and RNG. The raw effect notifies once and
+the manager notifies again, advancing the condition count by two. A real ability
+carrier reaches zero from one without an ability-ready callback, gold reward or
+availability-marker change: native signed status addition uses a different
+callback path from status removal. Trigger, team, subtype and null controls
+match; the unused Room trigger remains metadata. The 43-stage winning battle,
+six actions, independent four-EndTurn suffix in sixteen immutable branches,
+128-state serial/parallel search and twelve affected archives pass. Search has
+zero unsupported attempts. Native preview execution, eligible cardless or
+triggered Whelp births, retained dead targets, actual ability activation and
+additional combined callbacks require separate evidence.
 
 `GainBonusOnThreeCardsPlayed` now has schema-237 native evidence for its unchanged
 three-distinct-card-type sequence. Fifteen Tests, nine applications and six

@@ -123,7 +123,25 @@ namespace MonsterTrain2Poju.Probe
             RelicSuppressExhaustRule? suppressExhaust = null;
             RelicEndTurnHealthRule? endTurnHealth = null;
             RelicCardTypeSequenceRule? cardTypeSequence = null;
-            if (effect is RelicEffectEnergyAndCardDrawOnCardPlaySequence)
+            RelicUnitSpawnEffectRule? unitSpawnEffect = null;
+            if (effect is RelicEffectAddEffectOnUnitSpawn)
+            {
+                var interactions = new List<string>();
+                CardEffectData nested = data.GetParamCardEffectData().Single();
+                CardActionEffect action = BattleActionProbe.DescribeTriggerEffect(nested, interactions);
+                var metadata = data.GetTriggers().Select(trigger => new RelicStartTurnEffectTriggerMetadata(
+                    trigger.GetTrigger().ToString(), trigger.GetTriggerOnce(), trigger.GetHideVisualAndIgnoreSilence(),
+                    trigger.GetOnlyTriggerIfEquipped(), trigger.GetEffects()
+                        .Select(value => BattleActionProbe.DescribeTriggerEffect(value, interactions)).ToArray())).ToArray();
+                if (nested.GetUseStatusEffectStackMultiplier() || nested.GetUseHealthMissingStackMultiplier() ||
+                    nested.GetUseMagicPowerMultiplier() || nested.GetParamBool2()) interactions.Add("Nested spawn multipliers");
+                unitSpawnEffect = new RelicUnitSpawnEffectRule(
+                    AccessTools.Field(effect.GetType(), "sourceTeam").GetValue(effect).ToString()!,
+                    ((SubtypeData)AccessTools.Field(effect.GetType(), "subtypeData").GetValue(effect)).Key,
+                    action, interactions, metadata);
+                amount = data.GetParamInt();
+            }
+            else if (effect is RelicEffectEnergyAndCardDrawOnCardPlaySequence)
             {
                 var types = (List<CardType>)AccessTools.Field(effect.GetType(), "typePlayedList").GetValue(effect);
                 cardTypeSequence = new RelicCardTypeSequenceRule(types.Select(type => type.ToString()).ToArray());
@@ -414,7 +432,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect);
         }
 
         internal static ResourceSnapshot Capture()

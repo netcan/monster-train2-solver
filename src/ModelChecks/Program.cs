@@ -212,6 +212,17 @@ if (args.Length == 1 && args[0] == "--card-type-sequence-pure")
     OriginalCardTypeSequenceChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--whelp-cooldown-pure")
+{
+    OriginalWhelpCooldownChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-whelp-cooldown-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalWhelpCooldownChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-card-type-sequence-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1972,6 +1983,7 @@ OriginalSuppressExhaustChecks.Run();
 OriginalExpensiveCardUpgradeChecks.Run();
 OriginalWolosBloodletterChecks.Run();
 OriginalCardTypeSequenceChecks.Run();
+OriginalWhelpCooldownChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

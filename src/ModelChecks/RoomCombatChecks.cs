@@ -376,6 +376,9 @@ internal static class RoomCombatChecks
         else if (fixture.TryGetProperty("ModifierScenario", out var sequenceScenario) &&
             sequenceScenario.GetString() == "original-card-type-sequence")
             OriginalCardTypeSequenceChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out var whelpScenario) &&
+            whelpScenario.GetString() == "original-whelp-spawn-cooldown")
+            OriginalWhelpCooldownChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage: true);
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);

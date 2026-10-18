@@ -1317,7 +1317,7 @@ namespace MonsterTrain2Poju.Model
                     CombatUnit? damageActor = damageActorRoom?.Units.FirstOrDefault(unit => unit.Id == damageAttackerId);
                     if (damageAttackerId > 0 && damageActor == null)
                         return UnsupportedTrain("Spell damage source left the captured train before damage resolution.");
-                    CombatUnit? externalDamageActor = damageActorRoom?.RoomIndex != targetRoom!.RoomIndex ? damageActor : null;
+                    CombatUnit? externalDamageActor = scaledDamage.HasValue && damageActorRoom?.RoomIndex != targetRoom!.RoomIndex ? damageActor : null;
                     var priorDeaths = nativeDamagePhase ? callbacks.ToArray() : Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();
                     if (nativeDamagePhase) callbacks.Clear();
                     TrainSpellResult? nativeApplied = nativeDamagePhase ? ApplyNativeDamageStep(state, targetRoom!.RoomIndex, id,

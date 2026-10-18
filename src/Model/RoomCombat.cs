@@ -714,18 +714,20 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
             IReadOnlyList<CombatStatus>? startingApplications = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null,
-            Func<RoomCombatState, int, RoomCombatResult>? relicBirthEffect = null)
+            Func<RoomCombatState, int, RoomCombatResult>? relicBirthEffect = null,
+            Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null)
         {
             Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? completeTrainBirth =
                 relicBirthEffect == null ? null : (frame, addedUnitId, _) => relicBirthEffect(frame, addedUnitId);
             return ApplySpawnTriggers(state, unitId, fromCard, startingApplications, null, refreshPyre,
-                moonPhase: moonPhase, relicBirthEffect: completeTrainBirth);
+                moonPhase: moonPhase, relicBirthEffect: completeTrainBirth, relicCharacterEffect: relicCharacterEffect);
         }
         internal static RoomCombatResult ApplySpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
             IReadOnlyList<CombatStatus>? startingApplications, Action<QueuedCharacterTrigger>? enqueue,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, SpawnStatusApplication? additionalStatus = null,
             Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null,
-            Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null)
+            Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null,
+            Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null)
         {
             string? error = Validate(state);
             CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
@@ -740,7 +742,7 @@ namespace MonsterTrain2Poju.Model
             unit = state.Units.First(item => item.Id == unitId);
             return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0,
                 enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre, moonPhase: moonPhase,
-                relicBirthEffect: relicBirthEffect).Spawn(unitId, fromCard, startingApplications,
+                relicBirthEffect: relicBirthEffect, relicCharacterEffect: relicCharacterEffect).Spawn(unitId, fromCard, startingApplications,
                     additionalStatus: additionalStatus);
         }
 
@@ -1310,6 +1312,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre;
             private readonly Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase;
             private readonly Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect;
+            private readonly Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect;
             private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId, int? ExclusiveTriggerStateId)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int, int?)>();
             private bool runningTriggerQueue;
             private bool stopAfterBossRemoval;
@@ -1333,7 +1336,8 @@ namespace MonsterTrain2Poju.Model
                 Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null,
                 CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
                 Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null,
-                IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
+                IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
+                Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1345,6 +1349,7 @@ namespace MonsterTrain2Poju.Model
                 this.refreshPyre = refreshPyre;
                 this.moonPhase = moonPhase;
                 this.relicBirthEffect = relicBirthEffect;
+                this.relicCharacterEffect = relicCharacterEffect;
                 context = source.Context;
                 activeCompanionBossIds = new HashSet<int>(source.ActiveCompanionBossIds ?? Array.Empty<int>());
                 units = source.Units.Select(unit => NewUnit(unit)).ToList();
@@ -3085,6 +3090,20 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatRelicState relic in context.Relics)
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
+                    if (relic.EffectTypes[effectIndex] == RelicUnitSpawnEffectModel.Effect)
+                    {
+                        RelicConditionEvaluation checkedEffect = RelicUnitSpawnEffectModel.Check(context, unit.Freeze(), kind, source.Preview);
+                        if (!checkedEffect.Supported) { unsupportedReason = checkedEffect.UnsupportedReason; return false; }
+                        context = checkedEffect.Context;
+                        if (!checkedEffect.Passed) continue;
+                        if (relicCharacterEffect == null)
+                        { unsupportedReason = "Whelp spawn effects require a complete-train character callback."; return false; }
+                        RoomCombatResult applied = relicCharacterEffect(CurrentRoom(), unit.Source.Id, kind);
+                        if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
+                        MergeSummon(applied);
+                        foreach (QueuedCharacterTrigger callback in applied.PendingCallbacks) QueueCallback(callback);
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicSpawnSilenceModel.Effect)
                     {
                         if (!RelicSpawnSilenceModel.Eligible(unit.Freeze(), kind)) continue;

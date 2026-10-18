@@ -122,6 +122,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-expensive-card-upgrade.mt2f',
     'full-battle-original-wolos-bloodletter.mt2f',
     'full-battle-original-card-type-sequence.mt2f',
+    'full-battle-original-whelp-cooldown.mt2f',
     'full-battle-original-propagate-on-status-effect-applied.mt2f',
     'full-battle-original-pyre-health-card-cost.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
@@ -1546,5 +1547,14 @@ foreach ($fixturePath in $originalCardTypeSequenceFixtures) {
     foreach ($mode in @('--original-card-type-sequence-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original three-card-type sequence checks failed ($mode): $fixturePath" }
+    }
+}
+$originalWhelpCooldownFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-original-whelp-cooldown.mt2f'
+})
+foreach ($fixturePath in $originalWhelpCooldownFixtures) {
+    foreach ($mode in @('--original-whelp-cooldown-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Whelp cooldown checks failed ($mode): $fixturePath" }
     }
 }

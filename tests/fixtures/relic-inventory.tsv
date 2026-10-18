@@ -182,7 +182,7 @@
 "RandomTrainRoomCardFirstTurn"	"d245f9d5-e966-4a8e-a125-4aa5b48f1e7c"	"accepted-native-battle"	"RelicEffectDrawOnPreOpeningDrawCascade"	""
 "GainBonusOnThreeCardsPlayed"	"a67438aa-e1d7-45d6-bf62-fceddd2a723f"	"accepted-native-battle"	"RelicEffectEnergyAndCardDrawOnCardPlaySequence"	""
 "IncreaseFrostbiteStacks"	"9cb2b9b2-0308-4f71-92e8-e96a30b87416"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied,RelicEffectPreventStatusEffectDecay"	""
-"IncantTriggeredByUnitAbilities"	"17ee5d9c-4b87-4250-ad3b-dbe49d118e01"	"pending"	"RelicEffectAddEffectOnUnitSpawn"	""
+"IncantTriggeredByUnitAbilities"	"17ee5d9c-4b87-4250-ad3b-dbe49d118e01"	"accepted-native-battle"	"RelicEffectAddEffectOnUnitSpawn"	""
 "IncreasePyregelStacks"	"f4c76f11-37d9-4bb5-867a-4d99b7cfa270"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied"	""
 "ChanceToNotConsume"	"51d95691-d59e-42f1-84ba-8c530743df69"	"accepted-native-battle"	"RelicEffectSuppressExhaust"	""
 "RebalanceValor"	"76511782-d2c1-43d1-9878-e465758017d8"	"accepted-native-battle"	"RelicEffectRebalanceValor"	""

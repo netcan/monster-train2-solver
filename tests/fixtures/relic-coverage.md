@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **215 distinct original collectable relics / 224 catalog entries
-(95.98%)** have accepted native evidence: 197 have full-battle effect evidence,
+As of 2026-10-18, **216 distinct original collectable relics / 224 catalog entries
+(96.43%)** have accepted native evidence: 198 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -9,7 +9,7 @@ conditions. Test cards, unit triggers and carrier subtypes may be authored to
 exercise those effects; the claim covers the recorded paths, not every possible
 combination. Catalog enumeration and other owners of a supported effect class
 do not count as validated relics. `RelicEffectAddTrigger` appears on 26 catalog
-entries; 25 now have accepted original-owner effect evidence.
+entries; all 26 now have accepted original-owner effect evidence.
 `RelicEffectAddStatusEffectOnStatusApplied` appears on eight catalog entries;
 all eight now have accepted original-owner evidence. Both catalog owners of
 `RelicEffectPreventStatusEffectDecay` have accepted evidence for their original
@@ -2707,4 +2707,56 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-car
 dotnet run --project src/ModelChecks -c Release -- --card-type-sequence-pure
 dotnet run --project src/ModelChecks -c Release -- --original-card-type-sequence-only tests/fixtures/full-battle-original-card-type-sequence.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-type-sequence.mt2f
+```
+
+## Original first-Whelp Tower cooldown effect
+
+| Original owner | Data ID | Native archive | Accepted effect evidence |
+| --- | --- | --- | --- |
+| `IncantTriggeredByUnitAbilities` | `17ee5d9c-4b87-4250-ad3b-dbe49d118e01` | `full-battle-original-whelp-cooldown.mt2f` | The unchanged owner applies -2 cooldown across friendly non-Pyre Tower targets on the first Whelp spawn each turn. All 285 Tests, two applications and 383 manager calls match full state and RNG. Natural deployment and next-turn positives, repeated-Whelp rejection, cross-floor targets, zero clamping, a real ability consumer and independent trigger/team/subtype/null controls pass. All eight capture/differential counters are zero. |
+
+The schema-238 archive retains the original effect and condition definitions,
+including the unused Room trigger. Raw Test checks only OnSpawn, the source team
+and Whelp subtype; the manager separately checks placement, preview and the
+per-turn condition. Raw Apply notifies once after the effect sequence, and the
+manager notifies once more. Each natural application therefore advances the
+condition count by two. Two repeat Whelps are rejected, and the next natural
+turn restores eligibility. Eight friendly target visits demonstrate Tower
+scope, signed -2 application and a 1-to-0 clamp. Enemy and Pyre targets are
+excluded. A real ability carrier with gold-producing availability listeners
+reaches zero without an ability-ready callback, gold reward or change to its
+availability marker. Native signed addition does not use the status-removal
+callback path. Cross-floor status replay also fixes a generic damage-source
+retention check that incorrectly treated non-damage self-target effects as
+remote damage.
+
+The winning capture has 43 battle stages, six actions and five EndTurns.
+Independent policy replay includes a four-EndTurn suffix in sixteen immutable
+branches. Search matches six recorded decisions and eighteen root actions,
+with zero unsupported attempts across recorded decisions and search, equal
+serial/parallel results, 128/128 states and three replayed steps. Twelve related
+archives pass with two workers and both terminal exit codes zero: this owner,
+original cooldown-on-damage, ability cooldown, three ability-activation variants,
+unit-ability teleport, both cross-room spell/target fixtures, first-Imp bonus,
+team spawn status and card-type sequence. Regression summary:
+`.probe-runs/model-checks-20261018-141829-bf8b1e80/summary.json`.
+
+Native preview execution, eligible cardless or triggered Whelp births, retained
+dead targets, actual ability activation and additional combined callbacks are
+outside this witness. Unsupported eligible birth entry points require a
+complete-train callback rather than silently applying a room-only effect.
+
+The archive is 34,003 bytes with 5,392 unique nodes and SHA-256
+`96f0707e1114f1f1efc4199abc22df4d1ebffadc63e1218345dc9dc4714a6dbd`.
+Source length/hash are zero and no JSON companion is tracked. Inventory is 435
+archives: 396 battles and 39 component calibrations. Accepted original-owner
+coverage is 216/224 (96.43%): 198 battle, seventeen campaign and one native no-op;
+eight owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalWhelpCooldownRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-whelp-cooldown.mt2f
+dotnet run --project src/ModelChecks -c Release -- --whelp-cooldown-pure
+dotnet run --project src/ModelChecks -c Release -- --original-whelp-cooldown-only tests/fixtures/full-battle-original-whelp-cooldown.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-whelp-cooldown.mt2f
 ```

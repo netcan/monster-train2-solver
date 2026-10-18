@@ -1,8 +1,21 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 434 archives (395 full battles and
-39 component calibrations), 215/224 original relic owners (95.98%): 197 battle
-owners, seventeen campaign-interface owners and one native no-op. The latest
+Current accepted inventory (2026-10-18): 435 archives (396 full battles and
+39 component calibrations), 216/224 original relic owners (96.43%): 198 battle
+owners, seventeen campaign-interface owners and one native no-op.
+
+The latest `IncantTriggeredByUnitAbilities` fixture covers the unchanged
+first-Whelp-per-turn Tower -2 cooldown effect. All 285 Tests, two applications
+and 383 manager calls match full state and RNG, including cross-floor targets,
+zero clamping, repeat gates, next-turn reset and trigger/team/subtype/null
+controls. A real ability reaches zero without an ability-ready callback, gold
+reward or availability-marker change. Raw Apply and the manager each notify
+once; unused Room trigger metadata does not execute. The 43-stage winning
+battle, six actions, independent four-EndTurn suffix in sixteen immutable
+branches, 128-state serial/parallel search and twelve affected archives pass.
+Search has zero unsupported attempts. Native preview execution, eligible
+cardless or triggered Whelp births, retained dead targets, actual ability
+activation and additional combined callbacks remain uncalibrated. The preceding
 `GainBonusOnThreeCardsPlayed` fixture covers its unchanged three-distinct-type
 sequence. Fifteen Tests, nine applications and six start callbacks match full
 state and RNG, with independent ability/duplicate/cap controls and Spell/Junk/

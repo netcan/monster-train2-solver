@@ -618,8 +618,22 @@ namespace MonsterTrain2Poju.Model
                             damaged.Outcome, 0, damaged.Events.ToList(), pendingCallbacks: damaged.PendingCallbacks,
                             dispatches: damaged.Dispatches);
                     }
+                    RoomCombatResult ApplyCharacterRelics(RoomCombatState frame, int actorId, string kind)
+                    {
+                        RoomCombatState[] effectRooms = train.Rooms.Select(room => room.RoomIndex == frame.RoomIndex ? frame :
+                            new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
+                                frame.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
+                        TrainCombatResult applied = RelicUnitSpawnEffectModel.Apply(new TrainCombatState(effectRooms,
+                            train.Movement, train.EnemySlotsPerRoom, frame.Context), actorId, kind, managed: true);
+                        if (!applied.Supported)
+                            return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), applied.UnsupportedReason);
+                        train = applied.State!; context = train.Context!;
+                        return new RoomCombatResult(train.Rooms.Single(room => room.RoomIndex == frame.RoomIndex), applied.Outcome, 0,
+                            applied.RoomResults.SelectMany(result => result.Events).ToList());
+                    }
                     spawnTriggers = RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, fromCard: true,
-                        startingApplications: initialStatuses, enqueue: null, moonPhase: AdvanceFromSpawn, relicBirthEffect: ApplySummonDamage);
+                        startingApplications: initialStatuses, enqueue: null, moonPhase: AdvanceFromSpawn, relicBirthEffect: ApplySummonDamage,
+                        relicCharacterEffect: ApplyCharacterRelics);
                     if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
                     // Ordinary paid births have the same player-wide enchant phase
                     // as repeated and cloned births, before the post-play Rally.
