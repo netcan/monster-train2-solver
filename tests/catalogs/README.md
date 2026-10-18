@@ -23,14 +23,14 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-021031-42e34081/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,060 bytes, SHA-256
-`acd29e450537ca02618d7bfb74e5fbcd5e04fc1e862886ea33c0dbee30636930`.
-The projection reflects revision `2ad8fed`. The 668 shared raw definitions match
-the previous snapshot after excluding the newly captured `SpecificCardDataId`.
+Source: `.probe-runs/full-battle-no-cards-20261019-021546-195292db/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,009 bytes, SHA-256
+`9febfdc0a85512eef1b39f9a440d7ee6e27f8764be25924b410c79783b26c73c`.
+The projection reflects revision `cb00bd0`. The 668 raw definitions match
+the previous snapshot exactly, including `SpecificCardDataId`.
 Only Dante's Inferno's specific-card damage trait has this non-null field:
 `913694e9-bace-4480-8691-24f699ae583e` (Dante's Candle). This identity is captured
-from the actual native trait data. Frame 13,546/13,546, decision and RNG are unchanged.
+from the actual native trait data. Frame 14,092/14,092, decision and RNG are unchanged.
 The surrounding native battle won with all four capture counters zero and
 the protected original files unchanged. Positive Corrupt Restricted hand
 spells now retain their calibrated selected-room cost; source-room abilities
@@ -39,6 +39,8 @@ Original Wracking Pain now retains its calibrated target-debuff stack damage;
 attacker/list/buff modes and added/replaced source traits remain uncalibrated.
 Original Dante's Inferno retains its calibrated permanent-card count damage,
 source damage upgrades, piercing and Consume. Attacker mutation remains guarded.
+Original GainXEnergy retains its calibrated current-turn played-discard gain
+and unplayed no-op; next-turn routes and added/replaced traits retain guards.
 Original Unplayable markers retain
 their native rejection behavior. Scrap Metal retains Persistent discard guards
 and its calibrated single-base Refine 3 smelt path. A separate native legality
