@@ -336,11 +336,14 @@ namespace MonsterTrain2Poju.Model
             EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState, ForgeCountScalingTraits, RawCostOverride, CanBeCopied, TrainHealScalingTraits);
         public CardInstanceState OnDiscard(bool played, int? cost = null, bool suppressConsume = false)
         {
-            CardInstanceState callback = played && !suppressConsume ? CardExhaustModel.MarkPlayedDiscard(this) : this;
-            CardModifiers temporary = Temporary.OnDiscard();
-            var result = new CardInstanceState(InstanceId, DataId, Permanent, temporary, played ? cost ?? LastPlayedCost : LastPlayedCost, LastForgedAmount,
-                unchecked(PlayCount + (played ? 1 : 0)), ExternalInteractions, EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, callback.ExhaustState, ForgeCountScalingTraits, RawCostOverride, CanBeCopied, TrainHealScalingTraits);
-            return Temporary.Upgrades.SequenceEqual(temporary.Upgrades) ? result : CardExhaustModel.RefreshUpgradeTrait(result);
+            CardMoonUpgradeResult moon = CardMoonUpgradeModel.Update(this, 1, reset: true);
+            if (!moon.Supported) throw new InvalidOperationException(moon.UnsupportedReason);
+            CardInstanceState source = moon.Card!;
+            CardInstanceState callback = played && !suppressConsume ? CardExhaustModel.MarkPlayedDiscard(source) : source;
+            CardModifiers temporary = source.Temporary.OnDiscard();
+            var result = new CardInstanceState(InstanceId, DataId, source.Permanent, temporary, played ? cost ?? LastPlayedCost : LastPlayedCost, LastForgedAmount,
+                unchecked(PlayCount + (played ? 1 : 0)), ExternalInteractions, EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, source.MaskDescriptor, callback.ExhaustState, ForgeCountScalingTraits, RawCostOverride, CanBeCopied, TrainHealScalingTraits);
+            return source.Temporary.Upgrades.SequenceEqual(temporary.Upgrades) ? result : CardExhaustModel.RefreshUpgradeTrait(result);
         }
         internal CardInstanceState WithExhaustState(CardExhaustState? state) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions, EffectCounters, DamageScalingTraits,
@@ -369,6 +372,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? UnsupportedReason(CardInstanceState instance)
         {
+            string? moonError = CardMoonUpgradeModel.Validate(instance);
+            if (moonError != null) return moonError;
             if (instance.Permanent.MergedEquipment?.Validate() is string mergeError) return mergeError;
             string? exhaustError = CardExhaustModel.Validate(instance);
             if (exhaustError != null) return exhaustError;
@@ -410,6 +415,8 @@ namespace MonsterTrain2Poju.Model
                 .Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades).SelectMany(UpgradeInteractions)).ToList();
             string? exhaustError = CardExhaustModel.Validate(instance);
             if (exhaustError != null) interactions.Add(exhaustError);
+            string? moonError = CardMoonUpgradeModel.Validate(instance);
+            if (moonError != null) interactions.Add(moonError);
             if (CardExhaustModel.HasConsume(instance) && instance.ExhaustState == null) interactions.Add("Consume requires captured private trait state.");
             if (rule.DataId != instance.DataId) interactions.Add("Card instance definition differs.");
             if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");

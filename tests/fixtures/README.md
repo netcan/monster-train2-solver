@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 509 archives (469 full battles and
+Current accepted inventory (2026-10-19): 510 archives (470 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,7 +14,7 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-509 accepted archives. Refresh/check the index with
+510 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
 `moon-card-upgrade-calibration.mt2f` retains 135 complete native card states
@@ -24,10 +24,25 @@ rescaling and existing-trait protection match sixteen immutable branches.
 All operations run on detached cards; live decision, frame and every
 deterministic RNG remain unchanged. Binary-only: 6,287 bytes/809 nodes, SHA-256
 `e9005da046c42103f909f13fb54430b871439884754bc67fbe06cb1f0e8d9d78`.
-Use `--moon-card-upgrade-only`. Whole-battle callbacks remain guarded; this
-component does not count as successful original-card plays. Focused gate
+Use `--moon-card-upgrade-only`. This component does not count as successful
+original-card plays. Focused gate
 `model-checks-20261019-035838-afe1271b` passed this component and the existing
 card-upgrade lifecycle component.
+
+`full-battle-original-moon-card-upgrades.mt2f` adds ten unchanged original
+spell plays at New/Full for Celestial Storm, Gravity, Heavenfall, Silver Strike
+and Starstruck. Six complete hand callback contexts, original cached upgrades,
+played/unplayed discard reset, redraw, positive magic-power rescaling, physical
+descend/ascend, Dazed and other upgraded OnCast effects match. Fifteen plays/
+five EndTurns win with all four counters zero and sixteen immutable replay
+chains. Durable authored targets and a thirty-card hand limit keep each effect
+observable. Room overrides, living-unit traits, recast copies and active relic
+combinations need separate witnesses. Binary-only: 38,697 bytes/6,405 nodes,
+SHA-256 `6750bffb1df7e6009188f4dc09ff91d731b025fa54b7035948433ac0239b3396`.
+Use `-OriginalMoonCardUpgrades` and `--original-moon-card-upgrades-only`.
+The 128-state serial/parallel search matches (46 roots, zero unsupported,
+three replayed steps). Focused gate `model-checks-20261019-040704-2ce7f172`
+passed this battle, the moon upgrade component and the original Lunacy battle.
 
 `full-battle-original-discard-draw.mt2f` retains original Awoken's Rail Spike.
 Paid X three/zero/ten draws three/zero/ten on played discard, then blocks further

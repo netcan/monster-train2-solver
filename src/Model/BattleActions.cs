@@ -381,6 +381,9 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithQueryFrame(context.QueryFrame.With(
                     moonPhaseTrackingActive: source.MoonPhaseTrackingActive));
             train = CardSpellModel.WithContext(train, context);
+            context = CardMoonUpgradeModel.RefreshHand(context, out string? moonHandError);
+            if (moonHandError != null) return Unsupported(moonHandError);
+            train = CardSpellModel.WithContext(train, context);
             CardToken? card = context.Cards.Hand.FirstOrDefault(item => item.InstanceId == action.CardInstanceId);
             if (card == null) return Illegal("The selected card instance is not in hand.");
             CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);

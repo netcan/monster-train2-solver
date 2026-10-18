@@ -38,10 +38,13 @@ namespace MonsterTrain2Poju.Model
             if (source.Rooms.Any(room => room.Preview))
                 return new MoonPhaseTransitionResult(null, "Room moon-phase refresh previews require separate native calibration.");
             if (context.CardInstances?.Any(card => (card.MaskDescriptor?.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits)
-                    .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal)) == true) ||
+                    .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal) && trait.RuntimeType != CardMoonUpgradeModel.Trait) == true) ||
                     card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits
                         .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal)) == true)) == true)
                 return new MoonPhaseTransitionResult(null, "Moon resource refresh trait callbacks require native calibration.");
+            context = CardMoonUpgradeModel.RefreshHand(context, out string? cardError);
+            if (cardError != null) return new MoonPhaseTransitionResult(null, cardError);
+            source = CardSpellModel.WithContext(source, context);
             // Refresh only changes player-resource traits and character phase understanding;
             // it does not shift the global phase or fire phase-shift relic callbacks.
             if (!characters) return new MoonPhaseTransitionResult(source);

@@ -84,13 +84,8 @@ namespace MonsterTrain2Poju.Model
                 source.Context.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddStatusOnApplied) ||
                     relic.StatusStackAdditions?.Count > 0 || relic.StatusMagnitudes?.Count > 0) == true)
                 return "Moon-phase status application with relic modifiers is not modeled.";
-            if (source.Context.CardInstances?.Any(card =>
-                    (card.MaskDescriptor?.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait =>
-                        trait.RuntimeType == "CardTraitAddCardUpgradeOnMoonPhase") == true) ||
-                    card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
-                        upgrade.Lifecycle?.AddedTraits.Any(trait =>
-                            trait.RuntimeType == "CardTraitAddCardUpgradeOnMoonPhase") == true)) == true)
-                return "Moon-phase card-upgrade trait callbacks are not modeled.";
+            foreach (CardInstanceState card in source.Context.CardInstances ?? Array.Empty<CardInstanceState>())
+                if (CardMoonUpgradeModel.Validate(card) is string moonError) return moonError;
             if (source.Context.Relics?.Any(relic => relic.EffectTypes.Contains(RelicResourceModel.MoonPhaseEnergy)) == true &&
                 source.Context.Resources == null)
                 return "Moon-phase relic energy requires captured resource limits.";
@@ -117,6 +112,9 @@ namespace MonsterTrain2Poju.Model
                     state.Context.QueryFrame!.With(moonPhase: phase)));
                 if (state.Context!.QueryFrame!.MoonPhaseTrackingActive != true) continue;
                 state = MoonPhaseStatusModel.WithPhase(state, phase);
+                CombatContext hand = CardMoonUpgradeModel.RefreshHand(state.Context!, out string? cardUpgradeError);
+                if (cardUpgradeError != null) return new MoonPhaseTransitionResult(null, cardUpgradeError);
+                state = CardSpellModel.WithContext(state, hand);
                 if (state.Context!.Relics?.Any(relic => relic.EffectTypes.Contains(RelicResourceModel.MoonPhaseEnergy)) == true)
                 {
                     RelicResourceResult energy = RelicResourceModel.ApplyMoonPhaseEnergy(state.Context,

@@ -102,6 +102,8 @@ namespace MonsterTrain2Poju.Model
             error = null; CombatContext context = source;
             foreach (int id in ids)
             {
+                context = CardMoonUpgradeModel.RefreshHand(context, out error, new[] { id });
+                if (error != null) return source;
                 CardInstanceState? card = context.FindCard(id);
                 if (card?.MaskDescriptor != null && CardBranchMaskModel.Resolve(card).Traits.Contains(Trait)) context = context.WithCard(Freeze(card));
                 context = ConduitModel.Drawn(context, new[] { id });

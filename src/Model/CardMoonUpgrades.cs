@@ -22,14 +22,35 @@ namespace MonsterTrain2Poju.Model
     public static class CardMoonUpgradeModel
     {
         public const string Trait = "CardTraitAddCardUpgradeOnMoonPhase";
+        internal static bool Present(CardInstanceState card) => card.MaskDescriptor?.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits)
+            .Any(trait => trait.RuntimeType == Trait) == true || card.MaskDescriptor?.PermanentReplacements.Any(rule => rule.OldName == Trait || rule.NewRuntimeType == Trait) == true ||
+            card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true);
+        internal static string? Validate(CardInstanceState card) => Present(card) ? Update(card, 1, preview: true).UnsupportedReason : null;
+        internal static CombatContext RefreshHand(CombatContext source, out string? error, IReadOnlyList<int>? drawn = null)
+        {
+            error = null; CombatContext context = source;
+            foreach (CardToken token in source.Cards.Hand.Where(token => drawn == null || drawn.Contains(token.InstanceId)))
+            {
+                CardInstanceState? card = context.FindCard(token.InstanceId);
+                if (card == null || !Present(card)) continue;
+                if (context.QueryFrame?.MoonPhase is not (1 or 2) || context.QueryFrame.SelectedRoomIndex == null ||
+                    context.RoomCapacities?.Any(room => room.Attachments?.Any(attachment => attachment.MoonPhase != null) == true) == true ||
+                    context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true)
+                { error = "Moon spell upgrades require captured phase/selection; room overrides and active relic combinations need separate witnesses."; return source; }
+                CardMoonUpgradeResult result = Update(card, context.QueryFrame.MoonPhase.Value, preview: context.IsolatedBattlePreview == true && drawn == null);
+                if (!result.Supported) { error = result.UnsupportedReason; return source; }
+                context = context.WithCard(result.Card!);
+            }
+            return context;
+        }
         // This boundary covers spell-owned upgrades; living unit callbacks are separate.
         public static CardMoonUpgradeResult Update(CardInstanceState source, int phase, bool reset = false, bool preview = false)
         {
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
-            if (descriptor == null || !descriptor.BaseTraits.Any(trait => trait.RuntimeType == Trait))
+            if (!Present(source))
                 return new CardMoonUpgradeResult(source);
             CardMoonUpgradeResult Reject(string reason) => new CardMoonUpgradeResult(null, reason);
-            if (descriptor.Definition.CardType != "Spell" || descriptor.SourceTraits == null || phase is not (1 or 2 or 3) ||
+            if (descriptor == null || descriptor.Definition.CardType != "Spell" || descriptor.SourceTraits == null || phase is not (1 or 2) ||
                 descriptor.TemporaryTraits.Any(trait => trait.RuntimeType == Trait) || descriptor.PermanentReplacements.Any(rule => rule.OldName == Trait || rule.NewRuntimeType == Trait) ||
                 source.Permanent.Upgrades.Concat(source.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true))
                 return Reject("Moon card upgrades require unchanged spell base traits and captured source parameters.");

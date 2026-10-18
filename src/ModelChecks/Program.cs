@@ -324,6 +324,12 @@ if (args.Length == 2 && args[0] == "--original-status-cards-only")
     OriginalStatusCardsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-moon-card-upgrades-only")
+{
+    using var moonCardBattleDocument = ModelJson.ReadFixture(args[1]);
+    OriginalMoonCardUpgradesChecks.Native(moonCardBattleDocument.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--moon-card-upgrade-only")
 {
     using var moonUpgradeDocument = ModelJson.ReadFixture(args[1]);

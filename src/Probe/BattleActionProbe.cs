@@ -679,7 +679,8 @@ namespace MonsterTrain2Poju.Probe
                     if (type == typeof(CardTraitGraftedEquipment)) interactions.Add("Grafted equipment standby trait state");
                 }
                 else if (type == typeof(CardTraitEphemeral) || type == typeof(CardTraitInfusion) || type == typeof(CardTraitPersistent) || type == typeof(CardTraitTreasure) ||
-                    type != typeof(CardTraitSelfPurge) && type != typeof(CardTraitExhaustState) && type != typeof(CardTraitScalingAddEnergy) && type.GetMethod("OnCardDiscarded")?.DeclaringType != typeof(CardTraitState))
+                    type != typeof(CardTraitSelfPurge) && type != typeof(CardTraitExhaustState) && type != typeof(CardTraitScalingAddEnergy) &&
+                    !(CardBranchMaskProbe.Enabled && type == typeof(CardTraitAddCardUpgradeOnMoonPhase)) && type.GetMethod("OnCardDiscarded")?.DeclaringType != typeof(CardTraitState))
                     interactions.Add(type.Name + " hand discard callback/routing");
             }
             return interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray();

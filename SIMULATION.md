@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 509 binary archives, including 469
+Current accepted inventory (2026-10-19): 510 binary archives, including 470
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 509
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 510
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -40,7 +40,20 @@ Seven original upgrade definitions and 135 complete native card states cover
 phase reversal/repeat, draw/discard reset, preview no-op, positive magic-power
 refresh and protection of an existing Stronger Magic Power trait. Sixteen
 independent immutable branches match. This component does not increase direct
-card-play evidence; whole-battle callback integration remains guarded.
+card-play evidence. The separate battle witness below covers integration.
+
+`full-battle-original-moon-card-upgrades.mt2f` supplies ten unchanged original
+spell plays at New/Full for Celestial Storm, Gravity, Heavenfall, Silver Strike
+and Starstruck. Six complete hand-resource callback contexts, played/unplayed
+upgrade reset, redraw, positive magic-power refresh, native physical descend/
+ascend and upgraded OnCast effects match. Fifteen plays/five EndTurns win with
+all four counters zero and sixteen complete immutable replay chains. Durable
+authored targets and a thirty-card hand limit isolate the offensive effects.
+Room overrides, living-unit traits, recast copies and active relic combinations
+retain explicit guards or need separate witnesses.
+The 128-state serial/parallel search matches (46 roots, zero unsupported,
+three replayed steps); focused gate `model-checks-20261019-040704-2ce7f172`
+passed three related fixtures.
 
 `full-battle-original-discard-draw.mt2f` models original Awoken's Rail Spike at
 paid X three/zero/ten. Played-discard drawing precedes blocking further deck

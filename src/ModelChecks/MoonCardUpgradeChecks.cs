@@ -37,6 +37,17 @@ internal static class MoonCardUpgradeChecks
             descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft, descriptor.TemporaryTraits, descriptor.PermanentReplacements));
         Require(!CardMoonUpgradeModel.Update(missing, 2).Supported, "Missing moon source metadata must remain unsupported.");
         Require(!CardMoonUpgradeModel.Update(guard, 0).Supported, "Unknown moon phase must remain unsupported.");
+        CardTraitValue[] withoutState = descriptor.BaseTraits.Select(trait => new CardTraitValue(trait.RuntimeType, trait.DeclaredName,
+            trait.DefinitionParamInt, trait.ParamInt, trait.Removable, trait.StackMode, trait.TemporaryReplacement,
+            trait.ParameterUpgradeCastEffects, trait.DefinitionRemovable, trait.MagicPowerScale, trait.FeedingQuery, trait.HandCostTargetType)).ToArray();
+        Require(!CardMoonUpgradeModel.Update(guard.WithMaskDescriptor(descriptor.WithBaseTraits(withoutState)), 2).Supported,
+            "Unknown native moon upgrade cache/active state must remain unsupported.");
+        CardSourceTrait sourceTrait = descriptor.SourceTraits!.Single(trait => trait.Type == CardMoonUpgradeModel.Trait);
+        CardSourceTrait changed = new(sourceTrait.Type, sourceTrait.Int, sourceTrait.Int2, 1, sourceTrait.Bool, sourceTrait.Str, sourceTrait.Float,
+            sourceTrait.Scaling, sourceTrait.TrackedValue, sourceTrait.EntryDuration, moonPhaseUpgrade: sourceTrait.MoonPhaseUpgrade);
+        CardMaskDescriptor changedDescriptor = new(descriptor.Definition, descriptor.BaseCost, descriptor.BaseTraits, descriptor.AuthoredCastEffects,
+            descriptor.Purified, descriptor.PermanentGraft, descriptor.TemporaryTraits, descriptor.PermanentReplacements, [changed]);
+        Require(!CardMoonUpgradeModel.Update(guard.WithMaskDescriptor(changedDescriptor), 2).Supported, "Changed source moon parameters must remain unsupported.");
         Console.WriteLine("MOON-CARD-UPGRADE PASS: five original spells, seven upgrade definitions, 135 complete native card states, phase reversal/repeat, preview no-op, draw/discard reset, magic-power rescaling, existing-trait protection and 16 immutable branches. Whole-battle callbacks require separate integration witnesses.");
     }
     private static string Json(object? value) => JsonSerializer.Serialize(value, ModelJson.Options);

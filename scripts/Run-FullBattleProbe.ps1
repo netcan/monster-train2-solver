@@ -76,6 +76,7 @@ param(
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
     [switch] $OriginalDiscardDraw,
+    [switch] $OriginalMoonCardUpgrades,
     [switch] $OriginalRoomStatusDamage,
     [switch] $OriginalCorruptionDamage,
     [switch] $OriginalXStatusCards,
@@ -550,6 +551,7 @@ if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDiscardDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalMoonCardUpgrades) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomStatusDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptionDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1074,6 +1076,7 @@ if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
 if ($OriginalDiscardDraw) { $environment['MT2_PROBE_MODIFIERS'] = 'original-discard-draw' }
+if ($OriginalMoonCardUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-card-upgrades' }
 if ($OriginalRoomStatusDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-status-damage' }
 if ($OriginalCorruptionDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corruption-damage' }
 if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
@@ -2266,6 +2269,10 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
 if ($OriginalMonsterHandCosts -and (-not $trace.OriginalMonsterHandCostsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalMonsterHandCostsSamples).Count -ne 7 -or @($trace.OriginalMonsterHandCostsDeploymentQueries).Count -ne 8 -or -not $trace.OriginalMonsterHandCostsQueriesUnchanged)) {
     throw 'Original Monster hand cost fixture lacks cost/filter controls or restored deployment eligibility queries.'
+}
+if ($OriginalMoonCardUpgrades -and (-not $trace.OriginalMoonCardUpgradesPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 15 -or
+    @($trace.OriginalMoonCardUpgradesHands).Count -lt 2 -or @($trace.OriginalMoonCardUpgradesHands | Where-Object { -not $_.Completed }).Count -ne 0)) {
+    throw 'Original moon card upgrades require ten original casts, complete hand callbacks and a native win.'
 }
 if ($OriginalDiscardDraw -and (-not $trace.OriginalDiscardDrawPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 11 -or
     @($trace.OriginalDiscardDrawCounts).Count -ne 3 -or @($trace.OriginalDiscardDrawDiscards | Where-Object WasPlayed).Count -ne 3)) {

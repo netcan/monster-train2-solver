@@ -39,7 +39,7 @@ namespace MonsterTrain2Poju.Probe
                 trait is CardTraitScalingMagicPowerOnMoonPhase ? (float?)AccessTools.Field(typeof(CardTraitScalingMagicPowerOnMoonPhase), "MagicPowerMultiplier").GetValue(trait) : null,
                 feedingQuery: trait is CardTraitScalingFeederRules ? FeedingQuery(trait.StatValueData) : null,
                 handCostTargetType: trait is CardTraitIncreaseCostOfCardsInHand ? trait.GetParamCardType().ToString() : null,
-                moonPhaseUpgradeState: MoonPhaseCardUpgradeCalibration.Capturing && trait is CardTraitAddCardUpgradeOnMoonPhase
+                moonPhaseUpgradeState: (CardBranchMaskProbe.Enabled || MoonPhaseCardUpgradeCalibration.Capturing) && trait is CardTraitAddCardUpgradeOnMoonPhase
                     ? MoonPhaseCardUpgradeCalibration.State(trait) : null);
         }
         internal static List<CardTraitState> Bases(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "traits").GetValue(card);
