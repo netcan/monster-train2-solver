@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 533 archives (493 full battles and
+Current accepted inventory (2026-10-19): 534 archives (494 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,31 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-533 accepted archives. Refresh/check the index with
+534 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-base-champions.mt2f` captures eighteen unchanged champion
+base definitions: both Underlegion, Railforged, Wurmkin, Lazarus League, Awoken,
+Hellhorned, Melting Remnant and Stygian champions, plus Penumbra and Pyreborne's
+second champion. Three zero-attack tanks and capacity controls allow exactly
+six base champions per floor without selected path upgrades. Exact zero costs,
+attack/current/max HP, size and champion classification match. Solgard retains
+his intrinsic starting Incant upgrade. Rector/Flicker keep the original
+zero-stack Rooted authored metadata without installing a live registry or
+dictionary slot. The model now writes back the rebuilt birth dictionary even
+when card-upgrade merging has already removed all nonpositive applications.
+Use `--original-base-champions-only` or `--status-callback-pure`. Sixteen immutable
+complete chains, zero/negative authored status controls and the old original
+status-unit fixture pass. Search matches twenty-four decisions/72 root actions,
+128/128 states and three replayed steps with zero unsupported attempts and
+equal serial/parallel best. All 244 previous matched identities remain; eighteen
+new ones bring the index to 262 (493 indexed battles/7,938 actions). Native source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-070754-64f0b0b1` won in
+119.20 seconds with twenty-four plays/five EndTurns, four counters zero and
+protected files unchanged. Binary-only: 41,622 bytes/7,854 nodes, SHA-256
+`a0b57811fe5f79ede4a4b759a87fbdd6949fd7ab5c3ddf5ffbd0c3593c44e1ae`.
+These witnesses cover base definitions; selected champion path upgrades need
+their own evidence.
 
 `full-battle-original-status-units.mt2f` captures eleven unchanged units:
 Spikedriver Spider, Horned Warrior, Animus of Will, Steel Steward, Test Subject

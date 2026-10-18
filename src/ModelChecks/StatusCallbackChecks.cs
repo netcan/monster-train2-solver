@@ -80,6 +80,22 @@ internal static class StatusCallbackChecks
         var afterTemporary = StatusCallbackModel.MergeStartingStatuses(afterPermanent, [armor.WithStacks(-3), armor.WithStacks(1)]);
         Require(afterPermanent.Single().Stacks == 2 && afterTemporary.Single().Stacks == 1,
             "Starting-status merging lost per-entry nonnegative clamps or modifier-group boundaries.");
+        foreach (int ignoredStacks in new[] { 0, -1 })
+        {
+            var ignored = new CombatStatus("rooted", ignoredStacks, hidden: false, displayCategory: "Negative");
+            var zeroTemplate = new CombatUnit(9, "zero-starting-status", CombatTeam.Player, 1, 20, 20, true, false, false, [],
+                [Gold("OnNewStatusEffectAdded", 1)], modifiers: new(1, 0, 0, 1, 1, true, false, []), isBoss: false,
+                statusRegistry: [ignored.WithStacks(0)], statusDictionary: new(["rooted"], []));
+            RoomCombatState zeroRoot = Room(zeroTemplate, startingContext);
+            string zeroParent = JsonSerializer.Serialize(zeroRoot);
+            // The card modifier merge removes nonpositive entries before birth.
+            var zeroApplications = StatusCallbackModel.MergeStartingStatuses([ignored], []);
+            var zeroBirth = RoomCombatModel.ApplySpawnTriggers(zeroRoot, 9, fromCard: false, startingApplications: zeroApplications);
+            Require(zeroBirth.Supported && zeroBirth.State!.Units.Single().StatusRegistry!.Count == 0 &&
+                zeroBirth.State.Units.Single().StatusDictionary!.Slots.Count == 0 && zeroBirth.State.Context!.Gold == startingContext.Gold &&
+                JsonSerializer.Serialize(zeroRoot) == zeroParent,
+                "A nonpositive authored starting status registered a live dictionary entry, fired a new-status callback or mutated its parent.");
+        }
         var missing = new RoomCombatState(0, false, [new CombatUnit(5, "legacy", CombatTeam.Player, 0, 20, 20, false, false, false, [],
             [Gold("OnNewStatusEffectAdded", 1)])], [], context);
         Require(!StatusApplicationModel.Apply(missing, 5, zeroArmor).Supported, "Uncaptured native status-presence thresholds were guessed.");

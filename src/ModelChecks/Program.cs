@@ -456,6 +456,17 @@ if (args.Length == 2 && args[0] == "--original-hostile-statuses-only")
     OriginalHostileStatusesChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 1 && args[0] == "--status-callback-pure")
+{
+    StatusCallbackChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-base-champions-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalBaseChampionsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-status-units-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

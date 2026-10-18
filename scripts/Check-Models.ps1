@@ -203,6 +203,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-support-spells.mt2f',
     'full-battle-original-equipment-cards.mt2f',
     'full-battle-original-status-units.mt2f',
+    'full-battle-original-base-champions.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
@@ -1785,6 +1786,13 @@ foreach ($fixturePath in $originalStatusCompositionFixtures) {
     foreach ($mode in @('--original-status-compositions-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original status composition checks failed ($mode): $fixturePath" }
+    }
+}
+$originalBaseChampionFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-base-champions.mt2f' })
+foreach ($fixturePath in $originalBaseChampionFixtures) {
+    foreach ($mode in @('--original-base-champions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original base champion checks failed ($mode): $fixturePath" }
     }
 }
 $originalStatusUnitFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-status-units.mt2f' })

@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 533 binary archives, including 493
+Current accepted inventory (2026-10-19): 534 binary archives, including 494
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 533
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 534
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,15 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-base-champions.mt2f` adds eighteen unchanged champion
+base definitions without selected path upgrades. Exact zero-cost births,
+attack/HP/size, champion classification and three seven-unit floors match.
+Solgard retains his intrinsic starting Incant upgrade. Rector/Flicker retain
+their original zero-stack Rooted definition metadata but receive no live status
+dictionary entry; nonpositive starting statuses now correctly discard template
+slots after card-upgrade merging. Twenty-four plays/five EndTurns and sixteen
+immutable full chains match. Champion path upgrades remain separate coverage.
 
 `full-battle-original-status-units.mt2f` adds eleven unchanged units:
 Spikedriver Spider, Horned Warrior, Animus of Will, Steel Steward, Test Subject

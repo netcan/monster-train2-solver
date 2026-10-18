@@ -129,14 +129,18 @@ namespace MonsterTrain2Poju.Model
             bool relicStacks = initializing.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0 || relic.StatusMagnitudes?.Count > 0) == true;
             bool statusDamage = template.Modifiers?.DamageBuffFromStatusEffects.HasValue == true;
             bool magebladeDamage = template.Modifiers?.MagebladeDamagePerMagicPower.HasValue == true;
-            if (horde || purify || relicStacks || statusDamage || magebladeDamage || initializing.Context?.Enchantments != null || cardStatus != null)
+            // Authored zero/negative entries are not installed by AddStatusEffectStacks.
+            // Keep their definition metadata, but discard the template's registry slots.
+            bool skippedStartingStatus = applications.Any(status => status.Stacks <= 0) ||
+                template.StatusRegistry?.Any(status => status.Stacks <= 0) == true;
+            if (horde || purify || relicStacks || statusDamage || magebladeDamage || skippedStartingStatus || initializing.Context?.Enchantments != null || cardStatus != null)
             {
                 CombatUnit value = current;
                 var initialized = new CombatUnit(value.Id, value.AssetKey, value.Team, value.BaseAttack, value.Health, value.MaxHealth,
                     value.CanAttack, value.IsPyre, value.EndsBattleOnDeath, value.Statuses, value.Triggers, value.SpawnerCardId, value.Size,
                     template.StatusImmunities, value.Subtypes, value.Modifiers, value.IsBoss, value.LastAttackerId, value.StatusRegistry,
                     value.EquipmentCards, value.NextTriggerId, value.Ability, value.StatusDictionary, value.AbilityRules, value.HordeDefinition, value.IsSpawning, value.SacrificeCardId, value.DeathState, bumpRules: value.BumpRules, lastFeederId: value.LastFeederId, moonPhaseMask: value.MoonPhaseMask);
-                if (horde || purify || relicStacks || statusDamage || magebladeDamage || cardStatus != null) update?.Invoke(initialized);
+                if (horde || purify || relicStacks || statusDamage || magebladeDamage || skippedStartingStatus || cardStatus != null) update?.Invoke(initialized);
                 if (relicStacks || statusDamage || magebladeDamage || initializing.Context?.Enchantments != null)
                 {
                     initializing = EnchantmentWorldModel.Sync(new RoomCombatState(source.RoomIndex, source.Deployment,
