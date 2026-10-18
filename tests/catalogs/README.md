@@ -23,17 +23,22 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-053844-591738ee/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,890 bytes, SHA-256
-`79ad3a4577f4196729097140b3dd70df261970e9cb9b75678f59bc4cc2ebf491`.
-The projection reflects revision `7114fef`. Original Bloody Moon and Antumbra
+Source: `.probe-runs/full-battle-no-cards-20261019-055211-367f5133/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,915 bytes, SHA-256
+`6140c8d18b2a23103ff5c1f507eadcb8374534c29abfae8f0e458ca68e14bffb`.
+The projection reflects revision `7013e5f`. Original Surgical Strike now
+projects its source-card self-copy and original temporary Ephemeral upgrade.
+Its raw source suppression trait adds `KillTargetTeam=Monsters` and
+`KillTargetSubtype=SubtypesData_FunGuy`, read directly from native CardTraitData.
+These are the only raw definition changes; all prior fields across 668 cards
+match. Null fields are omitted on other traits for legacy evidence identity.
+Original Bloody Moon and Antumbra
 Assault retain their captured card-owned kill triggers. Original Morsels retain
 last-feeder status targets and initial zero feeder references in both native
 definition templates and living food units; Void Excavator's status effect keeps its unused
 upgrade field without imposing another effect type's modifier guard. Kill-trigger
 metadata remains branch-owned; missing payloads and unsupported trigger routes
-still reject. All 668 existing raw definitions
-match the previous snapshot, including ordered status lists and Dig Deep's
+still reject. Existing raw fields retain ordered status lists and Dig Deep's
 pile-status `horde` mask. Animus of Speed's original ability now projects the
 calibrated selected-target self attack with normal prevention and cooldown;
 targeted unit ability activation and enumeration retain their explicit legality
@@ -42,7 +47,7 @@ This field captures native removal and List-filter status traits; Pyreborne
 Brainspike retains `cooldown` removal and `avarice` addition separately.
 Only Dante's Inferno's specific-card damage trait has this non-null field:
 `913694e9-bace-4480-8691-24f699ae583e` (Dante's Candle). This identity is captured
-from the actual native trait data. Frame 14,143/14,143, decision and RNG are unchanged.
+from the actual native trait data. Frame 14,165/14,165, decision and RNG are unchanged.
 The surrounding native battle won with all four capture counters zero and
 the protected original files unchanged. Five original grafted equipment cards
 retain their calibrated costs, upgrades and private Severed state. Automatic
