@@ -44,6 +44,7 @@ param(
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
+    [switch] $ZoneOfSilence,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -483,6 +484,7 @@ if ($OriginalDeckSpell) { $BranchCardMasks = $true; $Policy = 'units-spells-and-
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($ZoneOfSilence) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -972,6 +974,7 @@ if ($OriginalDeckSpell) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deck-s
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
+if ($ZoneOfSilence) { $environment['MT2_PROBE_MODIFIERS'] = 'zone-of-silence' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2157,6 +2160,9 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
     @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 -or
     @($trace.EclipseChamberRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Eclipse Chamber native evidence is incomplete.'
+}
+if ($ZoneOfSilence -and (-not $trace.ZoneOfSilencePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5)) {
+    throw 'Zone of Silence requires enemy birth, original room replacement/reactivation and five actual actions in a native win.'
 }
 if ($StewardsQuarters -and (-not $trace.StewardsQuartersPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 7)) {
     throw 'Stewards Quarters requires original room, replacement/restoration and subtype/floor/birth controls in a native win.'

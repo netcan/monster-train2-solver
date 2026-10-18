@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 473 archives (434 full battles and
+Current accepted inventory (2026-10-18): 474 archives (435 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,21 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-473 accepted archives. Refresh/check the index with
+474 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-zone-of-silence.mt2f` keeps two original Zone of Silence cards and
+an original Fight Club replacement. Enemy birth inherits Silence; replacing
+the room restores the original Mage PostCombat trigger. Reattaching Silence
+suppresses the next Mage's trigger, and floor exit clears only the room status.
+Friendly units and an outside Mage are unaffected. Authored Mage health/attack
+keep its original trigger alive for both observations. The five-play/five-
+EndTurn win, sixteen immutable full chains and bounded search are checked.
+Other room status payloads remain guarded. Binary-only: 24,828 bytes/3,329 nodes,
+SHA-256 `cf1f0e4ccdfbc3ad10b8ae261b54ff3cc6b8e063abe02e4428bb8007f0839eb7`.
+Use `-ZoneOfSilence` and `--zone-of-silence-only`.
+Focused room-status gate:
+`.probe-runs/model-checks-20261018-232815-ea45c619/summary.json` (two passed).
 
 `full-battle-stewards-quarters.mt2f` keeps two original Stewards Quarters, with
 same-floor ordinary, outside-floor Steward and later-born Steward controls.

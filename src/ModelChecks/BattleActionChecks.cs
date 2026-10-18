@@ -619,6 +619,8 @@ internal static class BattleActionChecks
             chooser = source => EngineUpgradeChecks.Choose(source, fixture.GetProperty("EngineUpgradeCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("StewardsQuartersPrepared", out var stewardsQuartersPrepared) && stewardsQuartersPrepared.GetBoolean())
             chooser = source => StewardsQuartersChecks.Choose(source, fixture.GetProperty("StewardsQuartersCardIds").Deserialize<int[]>()!);
+        if (fixture.TryGetProperty("ZoneOfSilencePrepared", out var zoneOfSilencePrepared) && zoneOfSilencePrepared.GetBoolean())
+            chooser = source => ZoneOfSilenceChecks.Choose(source, fixture.GetProperty("ZoneOfSilenceCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")
             chooser = BattleActionModel.ChooseEmptySpellThenCards;
         if (fixture.TryGetProperty("ModifierScenario", out var originalUnitRelicPolicy) && originalUnitRelicPolicy.GetString() == "original-unit-relic-batch")
