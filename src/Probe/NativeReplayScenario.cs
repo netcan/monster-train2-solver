@@ -1113,6 +1113,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDrawUpgradeScalingScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalConsumedUpgradeScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original consumed upgrade fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalConsumedUpgradeScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPileStatusScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original pile status fixture must start on deployment turn.");
@@ -2295,6 +2301,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalScaledBuffScenario.Enabled) pendingPlay = OriginalScaledBuffScenario.Choose(decision, OriginalScaledBuffScenario.CardIds);
                 if (OriginalPileStatusScenario.Enabled) pendingPlay = OriginalPileStatusScenario.Choose(decision, OriginalPileStatusScenario.CardIds);
                 if (OriginalDrawUpgradeScalingScenario.Enabled) pendingPlay = OriginalDrawUpgradeScalingScenario.Choose(decision, OriginalDrawUpgradeScalingScenario.CardIds);
+                if (OriginalConsumedUpgradeScenario.Enabled) pendingPlay = OriginalConsumedUpgradeScenario.Choose(decision, OriginalConsumedUpgradeScenario.CardIds);
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 510 archives (470 full battles and
+Current accepted inventory (2026-10-19): 511 archives (471 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,28 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-510 accepted archives. Refresh/check the index with
+511 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-consumed-upgrade.mt2f` plays unchanged Sacrificial
+Ressurection twice: three cards consumed then zero, generating one original
+Draff with +30 then +0 temporary attack. A played Draff and the battle's injected
+Scourge leave the second hand empty. The same source's private effect counter
+resets from three to zero. Five restored native queries cover zero/one/three/seven
+and null source; each uses a fresh original +10 upgrade without changing frame
+or captured state/RNG. Original source/payload guards reject missing metadata,
+altered parameters and negative counters. Six plays, five EndTurns and sixteen
+independent full chains pass. The native battle won with all four failure
+counters zero and protected original profiles unchanged. Source:
+`.probe-runs/full-battle-units-spells-and-junk-20261019-041537-14e258a0`.
+Binary-only: 26,875 bytes/3,542 nodes, SHA-256
+`d2a7572a8a49b69512fc4f89bdccb1e9e163699ecfb83c616906e396d840f1c7`.
+Use `--original-consumed-upgrade-only`. Nonoriginal status/other-stat payloads
+and different upgrading sources remain guarded.
+Bounded search matches all six decisions, nineteen root actions, 128 states and
+three replayed steps, with no unsupported attempts and equal serial/parallel
+best results. Focused gate `model-checks-20261019-041649-c286b061` passed this
+fixture plus existing hand-removal and card-generation battles.
 
 `moon-card-upgrade-calibration.mt2f` retains 135 complete native card states
 from five original spells and seven moon-phase upgrade definitions. Reversal,

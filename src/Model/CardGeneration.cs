@@ -303,13 +303,17 @@ namespace MonsterTrain2Poju.Model
                 if (applyOptionalUpgrade)
                 {
                     if (rule.Upgrade!.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.Upgrade.ExternalInteractions));
+                    UnitUpgradeScalingResult scaled = CardConsumedUpgradeModel.Apply(context, sourceCardId, sourceCardId, rule.Upgrade);
+                    if (!scaled.Supported) return Unsupported(scaled.UnsupportedReason!);
+                    context = scaled.Context!;
+                    CardUpgradeModifier optionalUpgrade = scaled.Upgrade!;
                     if (rule.UpgradeIsPermanent)
                     {
-                        error = CardExhaustModel.PermanentUpgradeError(candidate, rule.Upgrade);
+                        error = CardExhaustModel.PermanentUpgradeError(candidate, optionalUpgrade);
                         if (error != null) return Unsupported(error);
-                        permanent = UnitModifierModel.Add(permanent, rule.Upgrade.WithSharedReference(null));
+                        permanent = UnitModifierModel.Add(permanent, optionalUpgrade.WithSharedReference(null));
                     }
-                    else temporary = UnitModifierModel.Add(temporary, rule.Upgrade.WithSharedReference(null));
+                    else temporary = UnitModifierModel.Add(temporary, optionalUpgrade.WithSharedReference(null));
                     RefreshUpgrades();
                 }
                 CardInstanceState? copying = rule.CopyModifiers ? cachedCopy ?? context.FindCard(sourceCardId) : null;
