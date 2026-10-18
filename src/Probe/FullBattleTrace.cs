@@ -754,6 +754,7 @@ namespace MonsterTrain2Poju.Probe
                 ArmamentDriveCardIds = ArmamentDriveScenario.CardIds,
                 PreservePrepared = PreserveScenario.Prepared,
                 CardDuplicatePrepared = CardDuplicateScenario.Prepared,
+                CardDuplicateOriginalDataId = CardDuplicateScenario.OriginalId,
                 CardDuplicateCardIds = CardDuplicateScenario.CardIds,
                 CardDuplicateRecipientCardId = CardDuplicateScenario.RecipientCardId,
                 CardDuplicateTests = CardDuplicateScenario.Tests,

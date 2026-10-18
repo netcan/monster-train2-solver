@@ -29,6 +29,7 @@ param(
     [switch] $ArmamentDrive,
     [switch] $Preserve,
     [switch] $CardDuplicate,
+    [switch] $StardustInvocation,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -453,6 +454,7 @@ if ($RunCardGeneration) { $BranchCardMasks = $true; $Policy = 'units-spells-and-
 if ($ArmamentDrive) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Preserve) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardDuplicate) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($StardustInvocation) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -927,6 +929,7 @@ if ($RunCardGeneration) { $environment['MT2_PROBE_MODIFIERS'] = 'run-card-genera
 if ($ArmamentDrive) { $environment['MT2_PROBE_MODIFIERS'] = 'armament-drive' }
 if ($Preserve) { $environment['MT2_PROBE_MODIFIERS'] = 'preserve' }
 if ($CardDuplicate) { $environment['MT2_PROBE_MODIFIERS'] = 'card-duplicate' }
+if ($StardustInvocation) { $environment['MT2_PROBE_MODIFIERS'] = 'stardust-invocation' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2096,7 +2099,7 @@ if ($Preserve -and (-not $trace.PreservePrepared -or -not $trace.NativeWon -or @
     @($trace.PreserveRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Preserve native evidence is incomplete.'
 }
-if ($CardDuplicate -and (-not $trace.CardDuplicatePrepared -or -not $trace.NativeWon -or @($trace.CardDuplicateRecords).Count -ne 2 -or
+if (($CardDuplicate -or $StardustInvocation) -and (-not $trace.CardDuplicatePrepared -or -not $trace.NativeWon -or @($trace.CardDuplicateRecords).Count -ne 2 -or
     @($trace.CardDuplicateRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Card duplication native evidence is incomplete.'
 }

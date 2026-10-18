@@ -585,7 +585,7 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var preserveScenario) && preserveScenario.GetString() == "preserve")
             chooser = source => PreserveChecks.Choose(source, fixture.GetProperty("PreserveCardIds").Deserialize<int[]>()!,
                 fixture.GetProperty("PreserveJunkCardId").GetInt32(), fixture.GetProperty("PreserveSpellCardId").GetInt32());
-        if (fixture.TryGetProperty("ModifierScenario", out var cardDuplicateScenario) && cardDuplicateScenario.GetString() == "card-duplicate")
+        if (fixture.TryGetProperty("ModifierScenario", out var cardDuplicateScenario) && cardDuplicateScenario.GetString() is "card-duplicate" or "stardust-invocation")
             chooser = source => CardDuplicateChecks.Choose(source, fixture.GetProperty("CardDuplicateCardIds").Deserialize<int[]>()!,
                 fixture.GetProperty("CardDuplicateRecipientCardId").GetInt32());
         if (fixture.TryGetProperty("ModifierScenario", out var incantPolicy) && incantPolicy.GetString() is "incant" or "incant-thresholds" or "incant-relic" or "incant-relic-combined")

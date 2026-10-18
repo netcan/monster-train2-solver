@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 458 archives (419 full battles and
+Current accepted inventory (2026-10-18): 459 archives (420 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,23 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-458 accepted archives. Refresh/check the index with
+459 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-stardust-invocation.mt2f` keeps two original Stardust Invocations.
+Each advances the tracked moon phase before choosing one hand copy. Native
+self-only/eligible Tests and the copy filter after adding Ephemeral agree with
+the independent model. The optional Ephemeral upgrade installs a permanent
+base trait before the chosen spell's permanent/temporary modifiers are copied;
+the generated card remains temporary. Complete contexts/RNG, the 37-stage win
+(24 plays/five EndTurns), sixteen immutable chains and bounded search are
+checked. The targetless recipient and strengthened units are setup controls.
+Starting-upgrade definitions remain guarded. Combining Ephemeral with SelfPurge
+is explicitly unsupported: a separate native counterexample produced repeated
+Purged-pile entries and is not accepted as this fixture. Binary-only: 36,073
+bytes/6,016 nodes, SHA-256
+`c4d50f696d58ba54479a31c0ea032e31f8e14f1acc3fade1fece354c4af1e66d`.
+Use `-StardustInvocation` and `--card-duplicate-only`.
 
 `full-battle-mass-production.mt2f` keeps two original Mass Productions. Each
 starts with a full hand, leaves one vacancy on play and creates exactly one

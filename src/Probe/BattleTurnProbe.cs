@@ -58,7 +58,7 @@ namespace MonsterTrain2Poju.Probe
             bool moonPhaseTrackingActive = (bool)AccessTools.Field(typeof(PlayerManager), "isMoonPhaseTrackingActive").GetValue(player);
             if (player.GetHasMoonPhaseCardEffect() && !OriginalMooncycleFaeScenario.Prepared && !OriginalMoonPhaseEnergyRelicScenario.IsolatedTrackingEnabled &&
                 !OriginalUnitPhaseUpgradeScenario.Prepared &&
-                !MoonPhaseCardScenario.Enabled && !MoonPhaseAdvanceScenario.Enabled && !MoonPhaseCallbackScenario.Enabled &&
+                !MoonPhaseCardScenario.Enabled && !MoonPhaseAdvanceScenario.Enabled && !MoonPhaseCallbackScenario.Enabled && !CardDuplicateScenario.Stardust &&
                 !OriginalMoonPhaseHealRelicScenario.Prepared && !OriginalMoonPhaseStatusRelicScenario.Prepared &&
                 !OriginalChampionStartTurnHealScenario.Prepared)
                 interactions.Add("Moon phase unit/card effects");

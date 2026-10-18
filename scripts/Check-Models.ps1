@@ -137,6 +137,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-armament-drive.mt2f',
     'full-battle-preserve.mt2f',
     'full-battle-mass-production.mt2f',
+    'full-battle-stardust-invocation.mt2f',
     'full-battle-shroud-spike-feeding.mt2f',
     'full-battle-original-opening-deck-spawn.mt2f',
     'full-battle-original-perkeo.mt2f',
@@ -1657,7 +1658,7 @@ foreach ($fixturePath in $soldierFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Soldier of Fortune checks failed ($mode): $fixturePath" }
     }
 }
-$duplicateFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-mass-production.mt2f' })
+$duplicateFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-mass-production.mt2f', 'full-battle-stardust-invocation.mt2f') })
 foreach ($fixturePath in $duplicateFixtures) {
     foreach ($mode in @('--card-duplicate-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

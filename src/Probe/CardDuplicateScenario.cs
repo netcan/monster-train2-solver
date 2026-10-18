@@ -13,10 +13,13 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "card-duplicate";
         internal const string DataId = "98d0f24b-0249-463e-a4b5-5c3e3a178f49";
+        internal const string StardustId = "135cf22d-6d1b-47ee-b48e-e8f7b47e5750";
         internal const string RecipientId = "f15d0004-0000-4000-8000-000000000001";
         internal const string FillerId = "f15d0004-0000-4000-8000-000000000002";
         internal const string StewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Stardust => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "stardust-invocation";
+        internal static bool Enabled => Stardust || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static string OriginalId => Stardust ? StardustId : DataId;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static int RecipientCardId { get; private set; }
@@ -38,6 +41,7 @@ namespace MonsterTrain2Poju.Probe
             public CombatContext Before { get; set; } = null!;
             public CombatContext? After { get; set; }
             public bool Completed { get; set; }
+            public bool? CopyRejected { get; set; }
         }
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -47,14 +51,15 @@ namespace MonsterTrain2Poju.Probe
             Set(steward.GetSpawnCharacterData(), "size", 1); Set(steward, "cost", 0);
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == StewardId)) card.Setup(steward, save);
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
-            CardData original = all.FindCardData(DataId)!;
+            CardData original = all.FindCardData(OriginalId)!;
             CardState first = cards.AddNewCard(original, CardPile.HandPile, false, false, animate: false);
-            CardActionEffect effect = BattleActionProbe.Definition(original).Effects.Single();
+            CardActionEffect effect = BattleActionProbe.Definition(original).Effects.Single(item => item.Type == "DuplicateCard");
+            int effectIndex = Stardust ? 1 : 0;
             void Test()
             {
                 Tests.Add(new Test { SourceId = FullBattleTrace.Active!.CardId(first), Effect = effect,
                     Context = FullBattleTrace.Active.CaptureContext(), Returned = new CardEffectDuplicateCardInHand().TestEffect(
-                        first.GetEffectStates()[0], new CardEffectParams { playedCard = first }, managers.GetCoreManagers()) });
+                        first.GetEffectStates()[effectIndex], new CardEffectParams { playedCard = first }, managers.GetCoreManagers()) });
             }
             Test(); // Only the played card is present, so even a matching mask cannot pass.
             CardData template = all.FindCardData("b776421c-915c-4c3d-87dc-0fe1a9e8584c")!;
@@ -62,8 +67,14 @@ namespace MonsterTrain2Poju.Probe
             Set(recipient, "id", RecipientId); Set(recipient, "cost", 0); Set(recipient, "startingUpgrades", new List<CardUpgradeData>());
             Set(recipient, "traits", new List<CardTraitData>()); Set(recipient, "triggers", new List<CardTriggerEffectData>());
             Set(recipient, "effectTriggers", new List<CharacterTriggerData>());
-            if (original.GetEffects()[0].GetParamCardFilter()?.FilterCard(recipient, managers.GetRelicManager()) == false)
-                throw new InvalidOperationException("Original Mass Production filter rejected the authored equipment recipient.");
+            if (Stardust)
+            {
+                Set(recipient, "cardType", CardType.Spell); Set(recipient, "targetless", false); Set(recipient, "targetsRoom", true);
+                var recipientNoop = new CardEffectData("CardEffectNULL", null!, Team.Type.None); recipientNoop.Cheat_SetTargetMode(TargetMode.Room); Set(recipientNoop, "paramBool2", true);
+                Set(recipient, "effects", new List<CardEffectData> { recipientNoop });
+            }
+            if (original.GetEffects()[effectIndex].GetParamCardFilter()?.FilterCard(recipient, managers.GetRelicManager()) == false)
+                throw new InvalidOperationException("Original duplication filter rejected the authored recipient.");
             var definitions = (List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(all); definitions.Add(recipient);
             CardState target = cards.AddNewCard(recipient, CardPile.HandPile, false, false, animate: false);
             RecipientCardId = FullBattleTrace.Active!.CardId(target);
@@ -84,15 +95,16 @@ namespace MonsterTrain2Poju.Probe
             while (cards.GetHand().Count < cards.GetMaxHandSize()) cards.AddNewCard(filler, CardPile.HandPile, false, false, animate: false);
             managers.GetPlayerManager().AddEnergy(10);
             Prepared = true;
-            log.LogInfo("CARD-DUPLICATE-PREPARED two unchanged Mass Productions at full hand, original mask/optional upgrade, permanent+temporary source upgrades and isolated self-only/positive Tests.");
+            log.LogInfo("CARD-DUPLICATE-PREPARED two unchanged " + original.name + " spells at full hand, original mask/optional upgrade, permanent+temporary source upgrades and isolated self-only/positive Tests.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] cards, int recipient)
         {
             CombatContext context = source.Spawn.Train.Context!; var plays = BattleActionModel.EnumerateSupportedPlays(source);
+            int effectIndex = context.FindCard(cards[0])!.DataId == StardustId ? 1 : 0;
             foreach (int id in cards)
                 if (context.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0)
                     return plays.FirstOrDefault(play => play.CardInstanceId == id && play.RoomIndex == 0 &&
-                        play.RecursionSelections.Any(choice => choice.EffectIndex == 0 && choice.CardInstanceIds.SequenceEqual(new[] { recipient })));
+                        play.RecursionSelections.Any(choice => choice.EffectIndex == effectIndex && choice.CardInstanceIds.SequenceEqual(new[] { recipient })));
             return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
         }
         [HarmonyPatch(typeof(CardEffectDuplicateCardInHand), nameof(CardEffectDuplicateCardInHand.ApplyEffect))]
@@ -112,6 +124,10 @@ namespace MonsterTrain2Poju.Probe
             Records.Add(row); current = row;
             try { while (native.MoveNext()) yield return native.Current; }
             finally { current = null; }
+            CardState? copy = AllGameManagers.Instance!.GetCardManager()!.GetHand().FirstOrDefault(card => trace.CardId(card) == row.Before.NextCardId);
+            if (copy != null)
+                row.CopyRejected = (bool)AccessTools.Method(typeof(CardEffectDuplicateCardInHand), "CardFilterFunc").Invoke(
+                    new CardEffectDuplicateCardInHand(), new object[] { copy, state.GetParamCardFilter(), AllGameManagers.Instance.GetRelicManager() });
             row.After = trace.CaptureContext(); row.Completed = true;
         }
         [HarmonyPatch(typeof(CardManager), nameof(CardManager.SelectCardFromHand))]

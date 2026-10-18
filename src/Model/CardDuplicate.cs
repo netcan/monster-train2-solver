@@ -37,6 +37,9 @@ namespace MonsterTrain2Poju.Model
             CardInstanceState card = source.FindCard(selectedCardId.Value)!;
             if (card.MaskDescriptor!.Definition.HasStartingUpgrades != false)
                 return Unsupported("Hand duplication of cards with authored starting upgrades requires a definition creation template.");
+            if (effect.Upgrade?.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == "CardTraitEphemeral") == true &&
+                CardBranchMaskModel.Resolve(card).Traits.Contains("CardTraitSelfPurge"))
+                return Unsupported("Ephemeral copies of SelfPurge cards require native repeated-purge pile calibration.");
             var creation = new CardCreationRule(card.DataId, CardModifiers.Empty(), card.EffectCounters,
                 card.ExternalInteractions, card.DamageScalingTraits, card.StatusScalingTraits,
                 card.UnitUpgradeScalingTraits, card.CapacityScalingTraits, card.EquippedUnitId,

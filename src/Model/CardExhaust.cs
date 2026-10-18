@@ -48,6 +48,9 @@ namespace MonsterTrain2Poju.Model
         public static bool HasConsume(CardInstanceState card) => RefreshTraits(card).CombinedTraits?.Any(trait => trait.RuntimeType == Trait) == true;
         internal static string? PermanentUpgradeError(CardInstanceState card, CardUpgradeModifier upgrade)
         {
+            CardTraitValue[] markers = upgrade.Lifecycle?.AddedTraits.Where(trait => trait.RuntimeType is "CardTraitDistinct" or "CardTraitEphemeral").ToArray() ?? Array.Empty<CardTraitValue>();
+            if (markers.Length > 0 && (card.MaskDescriptor == null || markers.Any(trait => trait.StackMode != 0)))
+                return "Permanent Distinct/Ephemeral installation requires captured traits and a non-stacking definition.";
             CardTraitValue[] additions = upgrade.Lifecycle?.AddedTraits.Where(trait => trait.RuntimeType == Trait).ToArray() ?? Array.Empty<CardTraitValue>();
             if (additions.Length == 0) return null;
             if (card.MaskDescriptor == null || card.ExhaustState == null)
@@ -56,15 +59,21 @@ namespace MonsterTrain2Poju.Model
                 return "Permanent Consume stack modes other than non-stacking installation are not modeled.";
             return null;
         }
-        internal static CardMaskDescriptor? InstallPermanentConsumeTraits(CardInstanceState source,
+        internal static CardMaskDescriptor? InstallPermanentTraits(CardInstanceState source,
             IReadOnlyList<CardUpgradeModifier> addedUpgrades)
         {
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
             CardTraitValue[] added = addedUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())
                 .Where(trait => trait.RuntimeType == Trait).ToArray();
-            if (descriptor == null || added.Length == 0 || HasConsume(source)) return descriptor;
-            return
-                descriptor.WithBaseTraits(descriptor.BaseTraits.Concat(added).ToArray());
+            if (descriptor == null) return null;
+            if (added.Length > 0 && !HasConsume(source)) descriptor = descriptor.WithBaseTraits(descriptor.BaseTraits.Concat(added).ToArray());
+            // These have no OnTraitAdded callback. Native permanent upgrades
+            // install them into the base list, unless a combined trait exists.
+            var installed = new HashSet<string>((RefreshTraits(source).CombinedTraits ?? Array.Empty<CardTraitValue>()).Select(trait => trait.RuntimeType));
+            foreach (CardTraitValue marker in addedUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())
+                .Where(trait => trait.RuntimeType is "CardTraitDistinct" or "CardTraitEphemeral" && trait.StackMode == 0))
+                if (installed.Add(marker.RuntimeType)) descriptor = descriptor.WithBaseTraits(descriptor.BaseTraits.Concat(new[] { marker }).ToArray());
+            return descriptor;
         }
         internal static string? CreationError(CardCreationRule creation) =>
             creation.StartingModifiers.Upgrades.Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true) &&

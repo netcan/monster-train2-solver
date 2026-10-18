@@ -5,14 +5,16 @@ using MonsterTrain2Poju.Model;
 internal static class CardDuplicateChecks
 {
     private const string DataId = "98d0f24b-0249-463e-a4b5-5c3e3a178f49";
+    private const string StardustId = "135cf22d-6d1b-47ee-b48e-e8f7b47e5750";
     private const string RecipientId = "f15d0004-0000-4000-8000-000000000001";
     internal static PlayCardAction? Choose(BattleTurnState source, int[] cards, int recipient)
     {
         CombatContext context = source.Spawn.Train.Context!; var plays = BattleActionModel.EnumerateSupportedPlays(source);
+        int effectIndex = context.FindCard(cards[0])!.DataId == StardustId ? 1 : 0;
         foreach (int id in cards)
             if (context.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0)
                 return plays.FirstOrDefault(play => play.CardInstanceId == id && play.RoomIndex == 0 &&
-                    play.RecursionSelections.Any(choice => choice.EffectIndex == 0 && choice.CardInstanceIds.SequenceEqual(new[] { recipient })));
+                    play.RecursionSelections.Any(choice => choice.EffectIndex == effectIndex && choice.CardInstanceIds.SequenceEqual(new[] { recipient })));
         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
     }
     internal static void Native(FixtureValue root)
@@ -21,6 +23,9 @@ internal static class CardDuplicateChecks
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed hand-copy witness.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
+        string originalId = root.TryGetProperty("CardDuplicateOriginalDataId", out var original) ? original.GetString()! : DataId;
+        bool stardust = originalId == StardustId;
+        Require(originalId == DataId || stardust, "Unknown original copy spell.");
         var tests = new List<bool>();
         foreach (FixtureValue row in root.GetProperty("CardDuplicateTests").EnumerateArray())
         {
@@ -34,7 +39,7 @@ internal static class CardDuplicateChecks
         }
         Require(tests.SequenceEqual([false, true]), "Missing self-only negative and eligible-card positive native Tests.");
         CardPlayRule originalRule = root.GetProperty("Actions")[0].GetProperty("Before").Deserialize<BattleTurnState>()!
-            .PlayRules!.Cards.Single(rule => rule.DataId == DataId);
+            .PlayRules!.Cards.Single(rule => rule.DataId == originalId);
         int copies = 0;
         foreach (FixtureValue row in root.GetProperty("CardDuplicateRecords").EnumerateArray())
         {
@@ -43,8 +48,8 @@ internal static class CardDuplicateChecks
             var after = row.GetProperty("After").Deserialize<CombatContext>()!;
             var effect = row.GetProperty("Effect").Deserialize<CardActionEffect>()!;
             int source = row.GetProperty("SourceId").GetInt32(), selected = row.GetProperty("SelectedId").GetInt32();
-            Require(before.FindCard(source)!.DataId == DataId && before.FindCard(selected)!.DataId == RecipientId &&
-                effect.Value == 3 && effect.CardFilter != null && effect.Upgrade != null, "Original Mass Production parameters changed.");
+            Require(before.FindCard(source)!.DataId == originalId && before.FindCard(selected)!.DataId == RecipientId &&
+                effect.Value == (stardust ? 0 : 3) && effect.CardFilter != null && effect.Upgrade != null, "Original duplication parameters changed.");
             CardActionEffect resolved = CardModifierModel.Resolve(originalRule, before.FindCard(source)!).Effects.Single(item => item.Type == "DuplicateCard");
             Equal(resolved.CardFilter, effect.CardFilter, "Resolved play rule lost the native copy filter");
             Equal(resolved.UpgradeFilters, effect.UpgradeFilters, "Resolved play rule lost native optional-upgrade filters");
@@ -73,11 +78,28 @@ internal static class CardDuplicateChecks
             var eligible = CardDuplicateModel.EligibleCards(before, effect, source, out string? error);
             Require(error == null && before.Cards.Hand.Where(token => token.DataId == "f15d0004-0000-4000-8000-000000000002")
                 .All(token => !eligible.Contains(token.InstanceId)), "Uncopyable Infusion filler became selectable.");
+            if (row.TryGetProperty("CopyRejected", out var copyRejected) && copyRejected.ValueKind != FixtureKind.Null)
+            {
+                var nextEligible = CardDuplicateModel.EligibleCards(after, effect, source, out error);
+                Require(error == null && !nextEligible.Contains(copied.InstanceId) == copyRejected.GetBoolean(),
+                    "Native copy filter after the optional trait upgrade differs.");
+            }
+            if (stardust)
+            {
+                FixtureValue action = root.GetProperty("Actions").EnumerateArray().Single(item =>
+                    item.GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == source);
+                var beforeAction = action.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
+                var afterAction = action.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
+                Require(beforeAction.QueryFrame!.MoonPhaseTrackingActive == true && beforeAction.QueryFrame.MoonPhase != afterAction.QueryFrame!.MoonPhase &&
+                    before.QueryFrame!.MoonPhase == afterAction.QueryFrame.MoonPhase, "Stardust did not advance the tracked phase before hand duplication.");
+                Require(before.FindCard(source)!.MaskDescriptor!.BaseTraits.Any(trait => trait.RuntimeType == "CardTraitDistinct"),
+                    "Original Stardust lost its Distinct marker.");
+            }
             copies++;
         }
-        Require(copies == 2, "Missing two unchanged Mass Production casts.");
+        Require(copies == 2, "Missing two unchanged original copy-spell casts.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("CARD-DUPLICATE PASS: two original full-hand casts, one copy despite ParamInt=3, native mask/optional upgrade, permanent+temporary inheritance, self-only negative Test and 16 immutable full-context branches.");
+        Console.WriteLine("CARD-DUPLICATE PASS: two original " + (stardust ? "Stardust Invocation" : "Mass Production") + " full-hand casts, one copy per cast, native mask/optional upgrade, permanent+temporary inheritance, self-only negative Test and 16 immutable full-context branches.");
     }
     private static void Equal<T>(T predicted, T actual, string label)
     {
