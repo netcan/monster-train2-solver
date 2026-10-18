@@ -2602,7 +2602,16 @@ namespace MonsterTrain2Poju.Model
                     externalActorRoomIndex: externalActorRoomIndex, enqueueCharacterTrigger: enqueueCharacterTrigger)
                 : RoomCombatModel.ApplyCardDamage(state, target.Id, Math.Max(0, effect.Value), sourceCardId, deferSpawnerExhaustion, selfUnitId, refreshPyre: refreshPyre);
             if (effect.Type == "Heal" || effect.Type == "HealOverheal") return effect.Value < 0 ? Unchanged(state) : RoomCombatModel.ApplyCardHeal(state, target.Id, effect.Value, refreshPyre: refreshPyre);
-            if (AttackChange(effect)) return UnitAttackModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffAttack");
+            if (AttackChange(effect))
+            {
+                DamageScalingResult buff = effect.Type == "BuffAttack"
+                    ? CardBuffDamageModel.Apply(state.Context, sourceCardId, effect.Value, target.IsPyre)
+                    : new DamageScalingResult(state.Context, effect.Value);
+                if (!buff.Supported) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), buff.UnsupportedReason);
+                var frame = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions, buff.Context,
+                    state.Preview, state.ActiveCompanionBossIds);
+                return UnitAttackModel.Apply(frame, target.Id, buff.Damage, effect.Type == "DebuffAttack");
+            }
             if (effect.Type == "BuffHealth" || effect.Type == "DebuffHealth")
                 return UnitHealthModel.Apply(state, target.Id, effect.Value, effect.Type == "DebuffHealth", effect.Lifetime, refreshPyre: refreshPyre);
             if (effect.Type == "UnitUpgrade" || effect.Type == "BuffEquipment" || effect.Type == "RemoveUnitUpgrade")

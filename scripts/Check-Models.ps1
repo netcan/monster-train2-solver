@@ -177,6 +177,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-effect-applications.mt2f',
     'full-battle-original-pile-draw.mt2f',
     'full-battle-original-pile-recursion.mt2f',
+    'full-battle-original-scaled-buff.mt2f',
     'full-battle-original-room-status-damage.mt2f',
     'full-battle-original-corruption-damage.mt2f',
     'full-battle-original-x-status-cards.mt2f',
@@ -1698,6 +1699,13 @@ foreach ($fixturePath in $soldierFixtures) {
     foreach ($mode in @('--soldier-of-fortune-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Soldier of Fortune checks failed ($mode): $fixturePath" }
+    }
+}
+$originalScaledBuffFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-scaled-buff.mt2f' })
+foreach ($fixturePath in $originalScaledBuffFixtures) {
+    foreach ($mode in @('--original-scaled-buff-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original scaled buff checks failed ($mode): $fixturePath" }
     }
 }
 $originalPileRecursionFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-pile-recursion.mt2f' })

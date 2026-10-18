@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 501 archives (462 full battles and
+Current accepted inventory (2026-10-19): 502 archives (463 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,23 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-501 accepted archives. Refresh/check the index with
+502 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-scaled-buff.mt2f` retains original Pyre Plating.
+Paying X three/zero/ten adds twelve/zero/forty Pyre attack and six/zero/twenty
+armor. Three actual attack-buff callbacks and six pure zero/99 incoming-value
+queries prove that this trait replaces the incoming buff amount. Armor uses
+the ordered native List filter and overrides Pyre immunity as the effect does.
+The immune marker, Pyre health and every other unit remain unchanged. All
+three cards consume. Missing/changed source parameters, added/replaced traits
+and non-Pyre buff targets remain guarded.
+Six plays/five EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (22 root actions, zero unsupported). The
+three-fixture focused gate `model-checks-20261019-024646-b8618daf` passed.
+Binary-only: 27,011 bytes/3,637 nodes, SHA-256
+`013dbf5cad1488925ebaaea606d828069fbc66871464030428716e63c8d12a25`.
+Use `-OriginalScaledBuff` and `--original-scaled-buff-only`.
 
 `full-battle-original-pile-recursion.mt2f` retains original Unearth Treasure.
 Four restored native queries at zero/four/five/ten exhausted cards give a
