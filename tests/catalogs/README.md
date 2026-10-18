@@ -23,16 +23,18 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-005647-830e848b/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,346 bytes, SHA-256
-`ac65867b27e0185c163c9c8331dce8c7a352d48c6c359df0f3ffe91e1aaccbf5`.
-The projection reflects revision `f8025fa`. Native Battering Ram/Bramble Lash
+Source: `.probe-runs/full-battle-no-cards-20261019-011246-2af6ed2e/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,448 bytes, SHA-256
+`949c8a3e76531507aa71e48c144b3f2cb20524622c684aff5950f3e787c311fa`.
+The projection reflects revision `6e749ac`. Original Unpurgable cards now retain
+their calibrated battle marker, including the positive temporary SelfPurge route.
+Native Battering Ram/Bramble Lash
 queries retain the Monsters armor/spikes masks and use live selected-room units
 for zero and positive two-unit sums. Source trait descriptors retain the ordered
 status IDs and query team; older missing masks stay unverified. The catalog
-operation preserved decision state, frame 13,983 and every deterministic RNG
+operation preserved decision state, frame 13,943 and every deterministic RNG
 stream. All 668 shared raw definitions match the previous snapshot, excluding
-Rule/ProjectionError and the two newly captured source-query fields.
+only Rule/ProjectionError.
 
 Original Horn Break, Branding Rite
 and Inferno piercing have native controls for all four protection stages,
