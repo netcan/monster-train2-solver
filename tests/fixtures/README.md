@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 511 archives (471 full battles and
+Current accepted inventory (2026-10-19): 512 archives (472 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,29 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-511 accepted archives. Refresh/check the index with
+512 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-status-compositions.mt2f` adds seven unchanged original
+spells: Benediction, Divinity, Full Throttle, Ensnare, Energy Siphon, Acid Shower
+and Dragon's Breath. Positive native snapshots prove two Valor plus one Damage
+Shield, ten targeted Valor, Burst's extra attack, enemy Rooted plus future draw,
+and Spell Weakness consumed by Acid Shower. Acid Shower adds ten Unstable before
+damage: the one-health enemy dies, its explosion plus doubled spell damage
+removes twelve armor from its surviving ally. Dragon's Breath's own Pyregel
+increases its damage to twenty. Neighbor-floor and untargeted-team controls stay
+unchanged. The next native draw takes six cards and resets the one-turn bonus.
+Ten plays/five EndTurns and sixteen independent full chains match. Native source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-041928-70e47dda` won with
+all four failure counters zero and protected original profiles unchanged.
+Bounded search matches ten decisions/twenty-six root actions, visits 128 states,
+replays three steps and returns equal serial/parallel best results, with no
+unsupported attempts. Binary-only: 31,483 bytes/4,891 nodes, SHA-256
+`15537b642fab3f79facd68c6690fd40b29ed9ac7ea5c6e2e86e501660d4af907`.
+Use `--original-status-compositions-only`; other target/relic/upgrade combinations
+need separate witnesses.
+Focused gate `model-checks-20261019-042146-7eebbf35` passed this fixture and the
+existing seven-spell damage/healing/overheal composition battle.
 
 `full-battle-original-consumed-upgrade.mt2f` plays unchanged Sacrificial
 Ressurection twice: three cards consumed then zero, generating one original

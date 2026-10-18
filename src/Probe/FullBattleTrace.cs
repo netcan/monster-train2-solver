@@ -873,6 +873,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalPileStatusPrepared = OriginalPileStatusScenario.Prepared,
                 OriginalDrawUpgradeScalingPrepared = OriginalDrawUpgradeScalingScenario.Prepared,
                 OriginalConsumedUpgradePrepared = OriginalConsumedUpgradeScenario.Prepared,
+                OriginalStatusCompositionsPrepared = OriginalStatusCompositionsScenario.Prepared,
+                OriginalStatusCompositionsIds = OriginalStatusCompositionsScenario.CardIds,
                 OriginalConsumedUpgradeIds = OriginalConsumedUpgradeScenario.CardIds,
                 OriginalConsumedUpgradeSamples = OriginalConsumedUpgradeScenario.Samples,
                 OriginalConsumedUpgradeQueries = OriginalConsumedUpgradeScenario.Queries,

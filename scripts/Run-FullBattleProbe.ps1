@@ -73,6 +73,7 @@ param(
     [switch] $OriginalPileStatus,
     [switch] $OriginalDrawUpgradeScaling,
     [switch] $OriginalConsumedUpgrade,
+    [switch] $OriginalStatusCompositions,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -549,6 +550,7 @@ if ($OriginalScaledBuff) { $BranchCardMasks = $true; $Policy = 'units-spells-and
 if ($OriginalPileStatus) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDrawUpgradeScaling) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalConsumedUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalStatusCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1075,6 +1077,7 @@ if ($OriginalScaledBuff) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scale
 if ($OriginalPileStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-status' }
 if ($OriginalDrawUpgradeScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-draw-upgrade-scaling' }
 if ($OriginalConsumedUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consumed-upgrade' }
+if ($OriginalStatusCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-compositions' }
 if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
@@ -2305,6 +2308,9 @@ if ($OriginalConsumedUpgrade -and (-not $trace.OriginalConsumedUpgradePrepared -
     @($trace.OriginalConsumedUpgradeSamples).Count -ne 2 -or @($trace.OriginalConsumedUpgradeQueries).Count -ne 5 -or
     @($trace.OriginalConsumedUpgradeQueries | Where-Object { -not $_.StateUnchanged -or -not $_.Returned }).Count -ne 0)) {
     throw 'Original Sacrificial Ressurection witness lacks three/zero consumed hands, fresh per-recipient upgrades or restored native controls.'
+}
+if ($OriginalStatusCompositions -and (-not $trace.OriginalStatusCompositionsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
+    throw 'Original status-composition witness lacks all seven original spell plays and a completed native battle.'
 }
 if ($OriginalPileStatus -and (-not $trace.OriginalPileStatusPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or
     @($trace.OriginalPileStatusQueries).Count -ne 24 -or -not $trace.OriginalPileStatusQueriesUnchanged -or

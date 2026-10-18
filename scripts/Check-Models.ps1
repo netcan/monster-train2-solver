@@ -181,6 +181,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-pile-status.mt2f',
     'full-battle-original-draw-upgrade-scaling.mt2f',
     'full-battle-original-consumed-upgrade.mt2f',
+    'full-battle-original-status-compositions.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
@@ -1756,6 +1757,13 @@ foreach ($fixturePath in $originalConsumedUpgradeFixtures) {
     foreach ($mode in @('--original-consumed-upgrade-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original consumed upgrade checks failed ($mode): $fixturePath" }
+    }
+}
+$originalStatusCompositionFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-status-compositions.mt2f' })
+foreach ($fixturePath in $originalStatusCompositionFixtures) {
+    foreach ($mode in @('--original-status-compositions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original status composition checks failed ($mode): $fixturePath" }
     }
 }
 $originalPileStatusFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-pile-status.mt2f' })
