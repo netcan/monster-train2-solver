@@ -23,17 +23,17 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-025644-56ed744f/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,057 bytes, SHA-256
-`0a0034cebc27380f3b7de30d38043cb05791b2592074d90d26d2c81e9b54cbd7`.
-The projection reflects revision `3714f82`. The 668 raw definitions match
-the previous snapshot apart from newly captured `StatusEffectIds` on Dig Deep's
-pile-status trait (`horde`). Existing ordered status lists remain identical.
+Source: `.probe-runs/full-battle-no-cards-20261019-030626-f20d578c/card-catalog.mt2f`.
+The committed archive is byte-identical: 94,886 bytes, SHA-256
+`b9b864cf1275d35f8ead187f5864c09837c7f05fd249f3119b3704f1811182e0`.
+The projection reflects revision `9597cc1`. The 668 raw definitions match
+the previous snapshot exactly, including all ordered status lists and Dig Deep's
+pile-status `horde` mask.
 This field captures native removal and List-filter status traits; Pyreborne
 Brainspike retains `cooldown` removal and `avarice` addition separately.
 Only Dante's Inferno's specific-card damage trait has this non-null field:
 `913694e9-bace-4480-8691-24f699ae583e` (Dante's Candle). This identity is captured
-from the actual native trait data. Frame 11,798/11,798, decision and RNG are unchanged.
+from the actual native trait data. Frame 11,429/11,429, decision and RNG are unchanged.
 The surrounding native battle won with all four capture counters zero and
 the protected original files unchanged. Positive Corrupt Restricted hand
 spells now retain their calibrated selected-room cost; source-room abilities
@@ -60,6 +60,9 @@ remain guarded.
 Original Dig Deep retains its visible permanent-deck Horde scaling and
 new/existing-unit routes. Missing pile-status lists and relic stack-modifier
 combinations remain guarded.
+Original Prism Retrieval retains X-scaled next-draw attack/cost upgrades,
+typed Monster draws, queue clearing, Consume and its display-only target marker.
+Changed payloads and multiple/filtered queued upgrades remain guarded.
 Original Unplayable markers retain
 their native rejection behavior. Scrap Metal retains Persistent discard guards
 and its calibrated single-base Refine 3 smelt path. A separate native legality
