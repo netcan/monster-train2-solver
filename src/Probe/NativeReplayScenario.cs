@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalRoomStatusDamageScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original room-status damage fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalRoomStatusDamageScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalCorruptionDamageScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original corruption-damage fixture must start on deployment turn.");
@@ -2133,6 +2139,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalConsumeCardsScenario.Enabled) pendingPlay = OriginalConsumeCardsScenario.Choose(decision, OriginalConsumeCardsScenario.CardIds);
                 if (OriginalStrongMagicCardsScenario.Enabled) pendingPlay = OriginalStrongMagicCardsScenario.Choose(decision, OriginalStrongMagicCardsScenario.CardIds);
                 if (OriginalXDamageCardsScenario.Enabled) pendingPlay = OriginalXDamageCardsScenario.Choose(decision, OriginalXDamageCardsScenario.CardIds);
+                if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);
                 if (OriginalCorruptionDamageScenario.Enabled) pendingPlay = OriginalCorruptionDamageScenario.Choose(decision, OriginalCorruptionDamageScenario.CardIds);
                 if (OriginalXStatusCardsScenario.Enabled) pendingPlay = OriginalXStatusCardsScenario.Choose(decision, OriginalXStatusCardsScenario.CardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);

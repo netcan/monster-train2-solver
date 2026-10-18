@@ -28,7 +28,7 @@ namespace MonsterTrain2Poju.Model
         // The trait owner is the responsible spawner/sacrifice card. Only an explicit damage
         // source contributes numeric damage upgrades (ordinary unit attacks pass no card).
         public static DamageScalingResult Apply(CombatContext? context, int responsibleCardId, int damageSourceCardId,
-            int damage, StatisticQueryFrame? frame = null)
+            int damage, StatisticQueryFrame? frame = null, RoomCombatState? selectedRoom = null)
         {
             if (responsibleCardId <= 0) return new DamageScalingResult(context, damage);
             CardInstanceState? responsible = context?.FindCard(responsibleCardId);
@@ -41,7 +41,7 @@ namespace MonsterTrain2Poju.Model
             }
             foreach (ScalingDamageTrait trait in responsible.DamageScalingTraits ?? Array.Empty<ScalingDamageTrait>())
             {
-                DamageScalingResult applied = ApplyTrait(context, trait, responsibleCardId, damageSourceCardId, damage, frame);
+                DamageScalingResult applied = ApplyTrait(context, trait, responsibleCardId, damageSourceCardId, damage, frame, selectedRoom);
                 if (!applied.Supported) return applied;
                 context = applied.Context; damage = applied.Damage;
             }
@@ -49,7 +49,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static DamageScalingResult ApplyTrait(CombatContext? context, ScalingDamageTrait trait, int ownerCardId,
-            int damageSourceCardId, int damage, StatisticQueryFrame? frame = null)
+            int damageSourceCardId, int damage, StatisticQueryFrame? frame = null, RoomCombatState? selectedRoom = null)
         {
             if (context == null) return Unsupported("Scaling damage requires shared combat context.");
             int scaled = 0;
@@ -58,7 +58,7 @@ namespace MonsterTrain2Poju.Model
             {
                 if (trait.Query.Type == "AnyStatusEffectStacksAdded" || trait.Query.Type == "AnyStatusEffectStacksRemoved")
                     return Unsupported("Scaling from status counters requires the native status-counter update paths.");
-                StatisticQueryResult statistic = StatisticQueryModel.Evaluate(context, trait.Query, ownerCardId, frame);
+                StatisticQueryResult statistic = StatisticQueryModel.Evaluate(context, trait.Query, ownerCardId, frame, selectedRoom);
                 if (!statistic.Supported) return Unsupported(statistic.UnsupportedReason!);
                 context = statistic.Context!;
                 float product = (float)unchecked(trait.DamagePerStat * statistic.Value) * trait.Multiplier;

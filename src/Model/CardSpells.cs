@@ -1391,7 +1391,8 @@ namespace MonsterTrain2Poju.Model
                         if (victims.UnitIds.Count == 0) continue;
                         int victimId = victims.UnitIds[0];
                         CombatUnit victim = state.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == victimId);
-                        DamageScalingResult scaled = DamageScalingModel.Apply(state.Context, sourceCardId, sourceCardId, relativeDamage);
+                        DamageScalingResult scaled = DamageScalingModel.Apply(state.Context, sourceCardId, sourceCardId, relativeDamage,
+                            selectedRoom: state.Rooms.FirstOrDefault(room => room.RoomIndex == state.Context?.QueryFrame?.SelectedRoomIndex));
                         if (!scaled.Supported) return UnsupportedTrain(scaled.UnsupportedReason!);
                         state = WithContext(state, scaled.Context!);
                         FocusDamageStatuses(victim, healingRoom, Math.Max(0, scaled.Damage));
@@ -1506,7 +1507,7 @@ namespace MonsterTrain2Poju.Model
                     if (IsDamage(effect))
                     {
                         DamageScalingResult scaled = DamageScalingModel.Apply(state.Context, damageOwnerCardId, sourceCardId,
-                            Math.Max(0, damageValue));
+                            Math.Max(0, damageValue), selectedRoom: state.Rooms.FirstOrDefault(room => room.RoomIndex == state.Context?.QueryFrame?.SelectedRoomIndex));
                         if (!scaled.Supported) return UnsupportedTrain(scaled.UnsupportedReason!);
                         state = WithContext(state, scaled.Context!);
                         scaledDamage = Math.Max(0, scaled.Damage);

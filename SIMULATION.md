@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 485 binary archives, including 446
+Current accepted inventory (2026-10-19): 486 binary archives, including 447
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 485
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 486
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,19 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-room-status-damage.mt2f` calibrates original Battering Ram
+and Bramble Lash against live friendly armor/spikes on the selected floor.
+Both deal zero with positive enemy/outside-floor controls. Original Branding
+Rite and Spike Potion then supply two friendly contributors: forty armor gives
+160 damage, and twenty spikes give 200. Armor absorption and unchanged friend/
+outside-floor state are checked. Queries require explicit status IDs and live
+selected-room units; absent older filters remain unsupported. Source descriptors
+retain query team and ordered status IDs separately from runtime traits.
+The authored setup uses a fourteen-card hand cap, frozen waiting cards, a
+twenty-energy battery and durable nonascending enemies. Fourteen plays/five
+EndTurns win with sixteen immutable complete-chain comparisons. Other status
+query masks and non-damage query consumers still need separate native evidence.
 
 `full-battle-original-corruption-damage.mt2f` calibrates original Echo Break
 against selected-floor corruption zero/two/zero/six. Two unchanged Unearthed

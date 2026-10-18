@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace MonsterTrain2Poju.Model
 {
     // Original CardData parameters, independent of mutable runtime trait state.
@@ -14,9 +18,14 @@ namespace MonsterTrain2Poju.Model
         public bool Scaling { get; }
         public string TrackedValue { get; }
         public string EntryDuration { get; }
+        // Captured only for room-status queries; null means unknown/not applicable.
+        public string? StatusQueryTeam { get; }
+        public IReadOnlyList<string>? StatusQueryStatuses { get; }
         public CardSourceTrait(string type, int @int, int int2, int int3, bool @bool, string str, float @float,
-            bool scaling, string trackedValue, string entryDuration)
+            bool scaling, string trackedValue, string entryDuration, string? statusQueryTeam = null,
+            IReadOnlyList<string>? statusQueryStatuses = null)
         { Type = type; Int = @int; Int2 = int2; Int3 = int3; Bool = @bool; Str = str; Float = @float;
-            Scaling = scaling; TrackedValue = trackedValue; EntryDuration = entryDuration; }
+            Scaling = scaling; TrackedValue = trackedValue; EntryDuration = entryDuration; StatusQueryTeam = statusQueryTeam;
+            StatusQueryStatuses = statusQueryStatuses == null ? null : Array.AsReadOnly(statusQueryStatuses.ToArray()); }
     }
 }

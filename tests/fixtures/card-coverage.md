@@ -34,6 +34,8 @@ PlayedCost status scaling is calibrated only at multiplier two/filter one with e
 
 CorruptionInTargetRoom damage scaling is calibrated at multiplier one, using original Echo Break at corruption zero/two/six. Original Unearthed Remains and Soul Siphon supply accumulation/fill-to-max; neighbor and selected-floor controls distinguish live selected-room state from cached/global values. Soul Siphon's negative amount with add mode fills the current maximum and also applies room-only Scorch. This witness targets friendly units; enemy-target paths need separate evidence.
 
+StatusEffectCountInTargetRoom damage scaling is calibrated only for native Monsters armor/spikes filters with scalars four/ten. Battering Ram and Bramble Lash cover zero and positive two-unit sums, enemy and outside-floor controls. These queries require current selected-room units and captured status IDs; old missing filters remain unsupported. Source descriptors retain the query team and ordered status mask separately from runtime traits.
+
 New descriptors retain the actual CardData supplied to CardState.Setup, with source trait parameters separate from runtime traits. All captured raw source fields must match the frozen catalog when present; X damage/status scaling requires this provenance and older missing metadata remains unverified. Missing provenance, changed multiplier/query/filter, and changed runtime parameters are rejected. Other trait families need separate calibration. A shared DataId alone never establishes direct coverage. Instance upgrades do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically original-card evidence.
 
 Across all classifications, 62 identities (59 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
@@ -45,7 +47,7 @@ Across all classifications, 62 identities (59 logbook) have at least one definit
 - [Unplayed-trigger evidence](card-trigger-evidence.tsv): matched EndTurns with a positive new-copy or existing-spell-upgrade observation, source identity and zero-based `Turns` index. These supply mechanism evidence and do not count as direct card plays. Playing a card alone does not establish its unplayed trigger.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 445 full battles and 7412 native actions whose captured prediction is supported, actual state exists and difference is null. 349 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 446 full battles and 7426 native actions whose captured prediction is supported, actual state exists and difference is null. 350 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 

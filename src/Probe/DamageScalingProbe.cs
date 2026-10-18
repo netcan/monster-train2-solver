@@ -42,7 +42,9 @@ namespace MonsterTrain2Poju.Probe
             return new CardStatisticQuery(data.trackedValue.ToString(), data.entryDuration.ToString(), typeMask, subtypeMask,
                 data.paramSubtype == null || data.paramSubtype.IsNone, data.paramSubtype?.Key, data.paramCardData?.GetID(), rawCost, variable,
                 data.paramTeamType.ToString(), CurrentCostModifiersOnly(data.cardState),
-                data.cardState?.GetCardType() == CardType.Spell);
+                data.cardState?.GetCardType() == CardType.Spell,
+                data.trackedValue == CardStatistics.TrackedValueType.StatusEffectCountInTargetRoom ?
+                    data.paramStatusEffects.Select(status => status.statusId).ToArray() : null);
         }
 
         internal static bool CurrentCostModifiersOnly(CardState? card)

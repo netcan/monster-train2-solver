@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 485 archives (446 full battles and
+Current accepted inventory (2026-10-19): 486 archives (447 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,27 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-485 accepted archives. Refresh/check the index with
+486 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-room-status-damage.mt2f` retains original Battering Ram
+and Bramble Lash at zero and positive friendly status totals. Original Branding
+Rite/Spike Potion provide two contributors: armor forty scales to 160 damage,
+spikes twenty to 200. Enemy armor/spikes and outside-floor friendly armor twenty/
+spikes ten are excluded. The front guard loses armor twenty-five and health
+135 to Battering Ram, then health 200 to Bramble Lash. Friendly contributors
+and the outside-floor unit keep their complete state during all four damage
+plays. Exact source/query masks and missing-live-unit/filter rejection are
+checked. The authored hand cap is fourteen, with temporary Freeze, an energy
+battery and durable nonascending enemy controls. Fourteen plays/five EndTurns
+win with sixteen immutable full chains. Binary-only: 30,608 bytes/4,644 nodes,
+SHA-256 `e6d5f294c7c767f3308b2bee7cc8e68fdad871ebcd97a5dbddc71efd6f91f33f`.
+Use `-OriginalRoomStatusDamage` and `--original-room-status-damage-only`.
+Focused room-status/damage-scaling/corruption gate:
+`.probe-runs/model-checks-20261019-005402-d0ed44d7/summary.json` (three passed).
+After source review, live membership preserves all native room-group characters;
+the room-status and damage-scaling dedicated checks were repeated. Wrong-floor
+live input is also rejected. Engine-room combinations need native witnesses.
 
 `full-battle-original-corruption-damage.mt2f` retains four original Echo Breaks
 at selected-floor corruption zero/two/zero/six. Two original Unearthed Remains

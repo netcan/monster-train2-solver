@@ -19,14 +19,17 @@ namespace MonsterTrain2Poju.Model
         public string TargetTeam { get; }
         public bool CurrentCostCardModifiersOnly { get; }
         public bool CurrentCostSourceIsSpell { get; }
+        public IReadOnlyList<string>? StatusIds { get; }
         public CardStatisticQuery(string type, string duration = "ThisTurn", IReadOnlyList<string>? typeMatchDataIds = null,
             IReadOnlyList<string>? subtypeMatchDataIds = null, bool subtypeIsNone = true, string? subtype = null,
             string? specificCardDataId = null, int? sourceRawCost = null, bool variableCost = false, string targetTeam = "None",
-            bool currentCostCardModifiersOnly = false, bool currentCostSourceIsSpell = false)
+            bool currentCostCardModifiersOnly = false, bool currentCostSourceIsSpell = false,
+            IReadOnlyList<string>? statusIds = null)
         { Type = type; Duration = duration; TypeMatchDataIds = Freeze(typeMatchDataIds); SubtypeMatchDataIds = Freeze(subtypeMatchDataIds);
             SubtypeIsNone = subtypeIsNone; Subtype = subtype; SpecificCardDataId = specificCardDataId;
             SourceRawCost = sourceRawCost; VariableCost = variableCost; TargetTeam = targetTeam;
-            CurrentCostCardModifiersOnly = currentCostCardModifiersOnly; CurrentCostSourceIsSpell = currentCostSourceIsSpell; }
+            CurrentCostCardModifiersOnly = currentCostCardModifiersOnly; CurrentCostSourceIsSpell = currentCostSourceIsSpell;
+            StatusIds = statusIds == null ? null : Array.AsReadOnly(statusIds.ToArray()); }
         private static IReadOnlyList<string>? Freeze(IReadOnlyList<string>? source) => source == null ? null :
             Array.AsReadOnly(source.Distinct().OrderBy(id => id, StringComparer.Ordinal).ToArray());
     }
@@ -105,7 +108,7 @@ namespace MonsterTrain2Poju.Model
     public static class StatisticQueryModel
     {
         public static StatisticQueryResult Evaluate(CombatContext source, CardStatisticQuery query, int sourceCardId = 0,
-            StatisticQueryFrame? frame = null)
+            StatisticQueryFrame? frame = null, RoomCombatState? selectedRoom = null)
         {
             frame = frame ?? source.QueryFrame;
             if (source.Statistics == null || source.OtherPiles == null)
@@ -227,12 +230,23 @@ namespace MonsterTrain2Poju.Model
                     RoomCapacityState? corrupted = context.RoomCapacities.FirstOrDefault(item => item.RoomIndex == corruptionRoom);
                     return corrupted?.Corruption is int corruption ? Finish(corruption) :
                         Unsupported("Corruption queries require the selected room's current corruption.");
+                case "StatusEffectCountInTargetRoom":
+                    if (query.StatusIds == null || query.StatusIds.Count == 0)
+                        return Unsupported("Room-status queries require the captured native status filter.");
+                    if (frame?.SelectedRoomIndex == null || selectedRoom == null || selectedRoom.RoomIndex != frame.SelectedRoomIndex)
+                        return Unsupported("Room-status queries require live units from the current selected room.");
+                    if (query.TargetTeam != "None" && query.TargetTeam != "Heroes" && query.TargetTeam != "Monsters" && query.TargetTeam != "Heroes, Monsters")
+                        return Unsupported("Unmodeled room-status query team.");
+                    bool heroes = query.TargetTeam == "Heroes" || query.TargetTeam == "Heroes, Monsters";
+                    bool monsters = query.TargetTeam == "Monsters" || query.TargetTeam == "Heroes, Monsters";
+                    return Finish(Sum(selectedRoom.Units.Where(unit => unit.Health > 0 &&
+                        (unit.Team == CombatTeam.Enemy ? heroes : monsters)).SelectMany(unit => query.StatusIds.Select(id => Math.Max(0, unit.Status(id)?.Stacks ?? 0)))));
                 case "CapacityOfTargetRoom":
-                    if (frame?.SelectedRoomIndex is not int selectedRoom)
+                    if (frame?.SelectedRoomIndex is not int capacityRoomIndex)
                         return Unsupported("Capacity queries require the current selected room.");
                     if (context.RoomCapacities == null)
                         return Unsupported("Capacity queries require captured room capacities.");
-                    RoomCapacityState? room = context.RoomCapacities.FirstOrDefault(item => item.RoomIndex == selectedRoom);
+                    RoomCapacityState? room = context.RoomCapacities.FirstOrDefault(item => item.RoomIndex == capacityRoomIndex);
                     if (room == null) return Finish(0);
                     // Native RoomState selects the enemy group only for the exact Heroes flag.
                     return Finish(query.TargetTeam == "Heroes" ? room.EnemyMaximum : room.PlayerMaximum);

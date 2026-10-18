@@ -54,6 +54,7 @@ param(
     [switch] $OriginalConsumeCards,
     [switch] $OriginalStrongMagicCards,
     [switch] $OriginalXDamageCards,
+    [switch] $OriginalRoomStatusDamage,
     [switch] $OriginalCorruptionDamage,
     [switch] $OriginalXStatusCards,
     [switch] $DamageByUnitsKilled,
@@ -505,6 +506,7 @@ if ($InfernoRoom) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' 
 if ($OriginalConsumeCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStrongMagicCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXDamageCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalRoomStatusDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptionDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
@@ -1006,6 +1008,7 @@ if ($InfernoRoom) { $environment['MT2_PROBE_MODIFIERS'] = 'inferno-room' }
 if ($OriginalConsumeCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-cards' }
 if ($OriginalStrongMagicCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-strong-magic-cards' }
 if ($OriginalXDamageCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-damage-cards' }
+if ($OriginalRoomStatusDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-status-damage' }
 if ($OriginalCorruptionDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corruption-damage' }
 if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
@@ -2193,6 +2196,9 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
     @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 -or
     @($trace.EclipseChamberRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Eclipse Chamber native evidence is incomplete.'
+}
+if ($OriginalRoomStatusDamage -and (-not $trace.OriginalRoomStatusDamagePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 14)) {
+    throw 'Original room-status damage fixture did not finish its zero/positive and team/floor controls.'
 }
 if ($OriginalCorruptionDamage -and (-not $trace.OriginalCorruptionDamagePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
     throw 'Original corruption-damage fixture did not finish its accumulation/fill-to-max and selected-floor controls.'
