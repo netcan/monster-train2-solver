@@ -23,13 +23,14 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261018-214714-d7ae0aab/card-catalog.mt2f`.
-The committed archive is byte-identical: 94,001 bytes, SHA-256
-`50ac7c740ca2099e3a2aff957445d7a5d895c948f3b6da45f163a617faca5c8c`.
-The projection reflects revision `b5819ae`: Adaptive Mutation, Mixalot and Small
-Box now join the calibrated generation/duplication primitives. Saved boxed-card
-contents are captured separately from battle-owned identities. Creation
-descriptors also capture whether the original definition has starting upgrades.
+Source: `.probe-runs/full-battle-no-cards-20261018-221102-267cfd71/card-catalog.mt2f`.
+The committed archive is byte-identical: 94,121 bytes, SHA-256
+`aaa0c701ef64516eef3ba53ba508e4623f5042520f969550d7e217fd1f3d80e4`.
+The projection reflects revision `d31771a`: Magnetic Relay unit recall and
+Transcend Imp post-spawn trigger replay now join the calibrated primitives.
+Recall equipment/ability callbacks and stateful or repeated trigger history
+remain runtime guards. Saved boxed-card contents remain separate from owned
+identities, and creation descriptors retain original starting-upgrade metadata.
 Projection support alone does not establish
 direct original-card coverage or remove runtime guards. All 668 raw card
 definitions are unchanged from the previous catalog, comparing every field
