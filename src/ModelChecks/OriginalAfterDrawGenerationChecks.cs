@@ -90,6 +90,22 @@ internal static class OriginalAfterDrawGenerationChecks
         }
         Require(positive.Values.All(value => value > 0) && count >= 8 && upgraded > 0 && definitions.Count == 4,
             "Missing positive original generation owners or temporary upgrade witness.");
+        int rejectedFoodPlays = 0;
+        foreach (var action in root.GetProperty("Actions").EnumerateArray())
+        {
+            BattleTurnState decision = action.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            CombatContext context = decision.Spawn.Train.Context!;
+            CardToken? food = context.Cards.Hand.FirstOrDefault(card => decision.PlayRules!.Cards.Any(rule => rule.DataId == card.DataId &&
+                rule.SpawnUnit?.Triggers.Any(trigger => trigger.Kind == "OnEaten") == true));
+            if (food == null) continue;
+            BattleActionResult unsupported = BattleActionModel.PlayCard(decision, new(food.InstanceId, decision.SelectedRoom, 0));
+            Require(unsupported.Rejection == ActionRejection.Unsupported && unsupported.Reason ==
+                "Playing food cards requires separate native card-backed feeding/removal evidence.",
+                "Generated food became playable despite the explicit card-backed feeding boundary.");
+            rejectedFoodPlays++;
+            break;
+        }
+        Require(rejectedFoodPlays > 0, "Missing native generated-food hand for unsupported-play guard.");
         BattleActionChecks.Native(root);
         Console.WriteLine($"ORIGINAL-AFTER-DRAW-GENERATION-NATIVE PASS: four unchanged owners, {count} exact Test/Apply consumers, positive hand cards {string.Join('/', positive.Values)}, {full} native full hands and {upgraded} temporary Ephemeral upgrades; exact Battle RNG, deployment/preview/full-hand controls and independent policy replay.");
     }

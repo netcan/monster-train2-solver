@@ -48,6 +48,10 @@ workers exit zero with unchanged tested binaries; summary:
 `.probe-runs/model-checks-20261018-160603-bf7a4709/summary.json`.
 Card-backed/equipped/repeatedly edible food, card-effect forced feeding,
 additional combined callbacks and metagame unlock consumers need separate evidence.
+Ordinary food-card plays are rejected at the action boundary until their
+card-backed feeding/removal lifecycle is calibrated. This also preserves the
+independent policy of older after-draw generation witnesses after OnEaten
+became supported for the original cardless Morsels.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalOpeningMorselsRelic -BinaryCapture -GameSpeed Instant

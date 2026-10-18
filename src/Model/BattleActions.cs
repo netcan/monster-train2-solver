@@ -405,6 +405,8 @@ namespace MonsterTrain2Poju.Model
                 if (playingInstance == null) return Unsupported("Missing card instance modifiers.");
                 rule = CardModifierModel.Resolve(rule, playingInstance);
             }
+            if (rule.SpawnUnit?.Triggers.Any(trigger => trigger.Kind == "OnEaten") == true)
+                return Unsupported("Playing food cards requires separate native card-backed feeding/removal evidence.");
             bool supportsCorruptRestrictedTrait = false;
             if (rule.ExternalInteractions.Contains("Card traits") && playingInstance?.MaskDescriptor != null)
             {
