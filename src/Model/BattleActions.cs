@@ -460,6 +460,15 @@ namespace MonsterTrain2Poju.Model
                 context.IsolatedBattlePreview == true || target.Preview);
             if (!pyreCost.Supported) return Unsupported(pyreCost.UnsupportedReason!);
             if (!pyreCost.CanPay) return Illegal("Insufficient energy.");
+            if (playingInstance != null)
+            {
+                string? corruptionError = CardCorruptRestrictedModel.Test(context, playingInstance, action.RoomIndex, out bool corruptionAllowed);
+                if (corruptionError != null) return Unsupported(corruptionError);
+                if (!corruptionAllowed) return Illegal("Insufficient corruption for Corrupt Restricted.");
+                CardCorruptRestrictedModel.Requirement(playingInstance, out int requiredCorruption);
+                if (requiredCorruption > 0 && (rule.Effect != "Spell" || rule.IsAnyAbility != false))
+                    return Unsupported("Positive Corrupt Restricted is calibrated only for direct spell plays.");
+            }
             bool paidWithPyre = pyreCost.PaidWithPyre;
             int energyPaidCost = paidWithPyre ? 0 : paidCost;
             int? nativePlayedCost = paidWithPyre ? null : paidCost;
@@ -709,6 +718,12 @@ namespace MonsterTrain2Poju.Model
                 string? callbackError = DrainPyrePaymentCallbacks();
                 if (callbackError != null) return Unsupported(callbackError);
                 TrainCombatState spellInput = CardSpellModel.WithContext(train, context);
+                if (playingInstance != null)
+                {
+                    RoomCorruptionResult consumed = CardCorruptRestrictedModel.BeforeEffects(spellInput, playingInstance, action.RoomIndex);
+                    if (!consumed.Supported) return Unsupported(consumed.UnsupportedReason!);
+                    spellInput = CardSpellModel.WithContext(spellInput, consumed.Context!);
+                }
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
                     card.InstanceId, source.PlayRules, piles, recursionSelections: action.RecursionSelections
                         .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),

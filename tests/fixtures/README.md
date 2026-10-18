@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 493 archives (454 full battles and
+Current accepted inventory (2026-10-19): 494 archives (455 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,28 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-493 accepted archives. Refresh/check the index with
+494 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-corrupt-restricted.mt2f` retains original Echo Infusion,
+Echo Transfer and Proclamation with requirements one/two. Twelve restored
+hand/play trait queries cover zero, below, exact and above threshold; a different
+source floor stays at zero, proving selected-room eligibility. Successful casts
+subtract corruption before effects. Original Soul Siphon supplies the native
+fill/refill sequence `4 -> 3 -> 1 -> 4 -> 2`. The three originals add fifteen
+health, fifteen attack and eighty front-enemy damage, all at zero ember cost.
+Three observed pre-effect callbacks independently match complete train state.
+Source-room abilities, Corrupt State and upgrade-added/replaced requirements
+remain guarded; legacy zero-requirement relic witnesses retain their path.
+Seven plays/five EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (fourteen root actions, zero unsupported).
+Binary-only: 27,387 bytes/3,760 nodes, SHA-256
+`d729ef0d51d59e3d687e886afd3dfe5660ba81eeeb96223321e2645465782718`.
+Use `-OriginalCorruptRestricted` and `--original-corrupt-restricted-only`.
+These trait queries are separate from the full-card Unplayable legality index.
+Focused regression `model-checks-20261019-015454-11b97bea` passed this fixture,
+the zero-requirement Extract for Ember/Echos relic witness and corruption damage
+with all three terminal exit codes zero.
 
 `full-battle-original-overflow-cards.mt2f` retains original Pyreball and Pyreclasm.
 Their native Hero-team overflow targets enemies even when the primary is

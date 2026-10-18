@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 493 binary archives, including 454
+Current accepted inventory (2026-10-19): 494 binary archives, including 455
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 493
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 494
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,18 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-corrupt-restricted.mt2f` models positive Corrupt Restricted
+on direct hand spells. Original Echo Infusion/Transfer and Proclamation check
+selected-room corruption, then subtract one/two before their health, attack and
+damage effects. Twelve restored native hand/play trait queries cover threshold
+boundaries and a distinct source floor; three pre-effect callbacks independently
+match full train state. Soul Siphon supplies fill/refill, producing
+`4 -> 3 -> 1 -> 4 -> 2`. Seven plays/five EndTurns match sixteen immutable
+chains and 128-state serial/parallel search with zero unsupported attempts.
+Exact base source parameters are required; source-room abilities, Corrupt State,
+upgrade-added/replaced requirements and positive-requirement relic combinations
+keep their guards. Existing zero-requirement relic paths remain accepted.
 
 `full-battle-original-overflow-cards.mt2f` retains original Pyreball/Pyreclasm
 with Hero-team overflow (source Int two). A nonlethal friendly target produces

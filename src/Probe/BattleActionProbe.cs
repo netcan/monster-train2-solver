@@ -211,6 +211,9 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             if (data.GetTraits().Any(trait => !DamageScalingProbe.Known(trait.GetTraitStateName()))) interactions.Add("Card traits");
+            if (data.GetTraits().Any(trait => trait.GetTraitStateName() == CardCorruptRestrictedModel.Trait &&
+                trait.GetParamInt() != 0 && (trait.GetParamBool() || data.IsUnitAbility() || data.IsRoomAbility())))
+                interactions.Add("Positive Corrupt Restricted source-room/unit abilities are not calibrated.");
             bool selfPurge = data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitSelfPurge");
             CardEffectData[] effects = data.GetEffects().ToArray();
             string kind = effects.Length == 0 ? "CardEffectNULL" : effects.Length == 1 ? effects[0].GetEffectStateName() : "MultipleEffects";
