@@ -1,8 +1,15 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 420 archives (382 full battles and
-38 component calibrations), 201/224 original relic owners (89.73%): 184 battle
+Current accepted inventory (2026-10-18): 421 archives (383 full battles and
+38 component calibrations), 202/224 original relic owners (90.18%): 185 battle
 owners, sixteen campaign-interface owners and one native no-op. The latest
+`HealToDamage` fixture covers four OnHeal front-enemy applications using actual
+restoration 0/4/8/6, including one zero-damage callback, one nonlethal hit and two
+kills. All 351 native Tests, nine actions and 51 stages match. Enemy healing,
+wrong triggers, empty floors and post-kill resets are controlled. Focused checks,
+an independent five-EndTurn suffix with sixteen immutable branches,
+serial/parallel search and eight affected archives pass with zero differential
+counters. The previous
 `DamageOnBurnoutDeath` fixture covers both ordered room-damage callbacks:
 Ephemeral death and natural zero-stack burnout. Three nonlethal hits, two kills,
 status/team/trigger gates and no duplicate damage on the subsequent death match

@@ -2390,7 +2390,7 @@ namespace MonsterTrain2Poju.Model
                 Emit("Revive", actor, target, 1);
             }
 
-            private readonly List<(WorkingUnit Unit, bool Return)> deferredDamageDeaths = new List<(WorkingUnit, bool)>();
+            private readonly List<(WorkingUnit Unit, bool Return, bool RelicDamage)> deferredDamageDeaths = new List<(WorkingUnit, bool, bool)>();
 
             private void Death(WorkingUnit? actor, WorkingUnit target, int sourceCardId, bool deferRemoval = false, bool sacrifice = false,
                 bool immediateHarvest = false, bool doNotFullyRemove = false, bool returnSpawnerAfterQueue = false)
@@ -2449,7 +2449,7 @@ namespace MonsterTrain2Poju.Model
                     preservePhysicalPoint: doNotFullyRemove, captureAllDispatches: traceAllDispatches));
                 else
                 {
-                    if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn));
+                    if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn, false));
                     else
                     {
                         FireTriggers(target, "OnDeath");
@@ -2827,7 +2827,10 @@ namespace MonsterTrain2Poju.Model
                     dead.Unit.Removed = true;
                     RemovePhysicalPoint(dead.Unit);
                     // Centering also observes the next, zero-HP victim before CheckForDeath.
-                    if (nativeCardDamage && ownedPoint && dead.Equals(removing[removing.Length - 1])) CenterAfterSummon();
+                    // Relic damage can enter this local queue from a heal. Native
+                    // RemoveDeadCharacters centers after its complete removal batch.
+                    if ((nativeCardDamage || removing.Any(item => item.RelicDamage)) && ownedPoint &&
+                        dead.Equals(removing[removing.Length - 1])) CenterAfterSummon();
                     // HeroManager removal starts GameScreen.EndCombat, which cancels
                     // the combat coroutine after this boss's death callbacks. Later
                     // members of the already-marked batch never fire OnDeath. A played
@@ -3049,14 +3052,18 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatRelicState relic in context.Relics)
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
-                    if (relic.EffectTypes[effectIndex] == RelicFriendlyTriggerDamageModel.Effect)
+                    if (relic.EffectTypes[effectIndex] == RelicFriendlyTriggerDamageModel.Effect ||
+                        relic.EffectTypes[effectIndex] == RelicHealDamageModel.Effect)
                     {
+                        bool healDamage = relic.EffectTypes[effectIndex] == RelicHealDamageModel.Effect;
+                        int damage = healDamage ? paramInt : 5;
                         RoomCombatState frame = CurrentRoom();
                         var train = new TrainCombatState([frame], [], 0, context);
                         int ownerIndex = context.Relics!.Select((owner, index) => (owner, index))
                             .Single(item => item.owner.DataId == relic.DataId).index;
-                        RelicCardPlayDamageSelection selected = RelicFriendlyTriggerDamageModel.Select(train, unit.Freeze(), kind,
-                            source.RoomIndex, ownerIndex, effectIndex, paramInt);
+                        RelicCardPlayDamageSelection selected = healDamage
+                            ? RelicHealDamageModel.Select(train, unit.Freeze(), kind, ownerIndex, effectIndex)
+                            : RelicFriendlyTriggerDamageModel.Select(train, unit.Freeze(), kind, source.RoomIndex, ownerIndex, effectIndex, paramInt);
                         if (!selected.Supported) { unsupportedReason = selected.UnsupportedReason; return false; }
                         foreach (int id in selected.Targets)
                         {
@@ -3064,11 +3071,11 @@ namespace MonsterTrain2Poju.Model
                             {
                                 // Preview damage belongs to this engine's retained
                                 // units and death queue, without physical removal.
-                                Damage(null, units.Single(target => target.Source.Id == id), 5, "Spell", applyTraits: false);
+                                Damage(null, units.Single(target => target.Source.Id == id), damage, "Spell", applyTraits: false);
                                 if (unsupportedReason != null) return false;
                                 continue;
                             }
-                            RoomCombatResult damaged = ApplyRelicDamage(CurrentRoom(), id, 5,
+                            RoomCombatResult damaged = ApplyRelicDamage(CurrentRoom(), id, damage,
                                 QueueRelicDamageCallback);
                             if (!damaged.Supported) { unsupportedReason = damaged.UnsupportedReason; return false; }
                             MergeSummon(damaged);
@@ -3187,7 +3194,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     WorkingUnit dead = units.Single(target => target.Source.Id == callback.Unit.Id);
                     dead.Apply(callback.Unit); dead.DeathFinished = true;
-                    deferredDamageDeaths.Add((dead, callback.ReturnSpawnerAfterQueue));
+                    deferredDamageDeaths.Add((dead, callback.ReturnSpawnerAfterQueue, true));
                 }
                 else QueueCallback(callback.WithRelicDamageRemoval());
             }

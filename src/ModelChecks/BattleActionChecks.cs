@@ -671,9 +671,9 @@ internal static class BattleActionChecks
             return;
         }
         if (fixture.TryGetProperty("ModifierScenario", out var eatenDamagePolicy) &&
-            eatenDamagePolicy.GetString() is "original-eaten-damage" or "original-burnout-death-damage")
+            eatenDamagePolicy.GetString() is "original-eaten-damage" or "original-burnout-death-damage" or "original-heal-to-damage")
         {
-            int scenarioActions = eatenDamagePolicy.GetString() == "original-eaten-damage" ? 10 : 7;
+            int scenarioActions = eatenDamagePolicy.GetString() switch { "original-eaten-damage" => 10, "original-burnout-death-damage" => 7, _ => 9 };
             Require(allActions.Length == scenarioActions && policyActions.Length == 0,
                 "Friendly-trigger damage requires its complete scenario actions and no later native card plays.");
             BattleTurnState suffixRoot = allActions[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;

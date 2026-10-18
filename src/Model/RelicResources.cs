@@ -270,7 +270,7 @@ namespace MonsterTrain2Poju.Model
             type == RelicCardGenerationModel.PrecachedPlayerClan ||
             type == RelicCardGenerationModel.ChampionCardAfterDraw ||
             type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening || type == RelicDeckTurnDrawModel.Effect ||
-            type == RelicCardPlayDamageModel.Effect || type == RelicConsumeDamageModel.Effect || type == RelicFriendlyTriggerDamageModel.Effect ||
+            type == RelicCardPlayDamageModel.Effect || type == RelicConsumeDamageModel.Effect || type == RelicFriendlyTriggerDamageModel.Effect || type == RelicHealDamageModel.Effect ||
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
@@ -296,6 +296,11 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Type == RelicFriendlyTriggerDamageModel.Effect)
                 {
                     string? damageError = RelicFriendlyTriggerDamageModel.Validate(relic, rule);
+                    if (damageError != null) return damageError;
+                }
+                else if (rule.Type == RelicHealDamageModel.Effect)
+                {
+                    string? damageError = RelicHealDamageModel.Validate(relic, rule);
                     if (damageError != null) return damageError;
                 }
                 else if (rule.UnitDamage != null) return "Unexpected unit-trigger damage payload on another effect.";
@@ -358,7 +363,7 @@ namespace MonsterTrain2Poju.Model
                     string? generationError = RelicUnitTriggerCardGenerationModel.Validate(relic, rule);
                     if (generationError != null) return generationError;
                 }
-                else if (rule.UnitTrigger != null && rule.Type != RelicFriendlyTriggerDamageModel.Effect)
+                else if (rule.UnitTrigger != null && rule.Type != RelicFriendlyTriggerDamageModel.Effect && rule.Type != RelicHealDamageModel.Effect)
                     return "Unexpected unit resource callback on another effect.";
                 if (rule.Type == RelicCardGenerationModel.AfterDraw)
                 {

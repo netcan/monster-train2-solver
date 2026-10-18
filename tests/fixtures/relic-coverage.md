@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **201 distinct original collectable relics / 224 catalog entries
-(89.73%)** have accepted native evidence: 184 have full-battle effect evidence,
+As of 2026-10-18, **202 distinct original collectable relics / 224 catalog entries
+(90.18%)** have accepted native evidence: 185 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1899,4 +1899,48 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-bur
 dotnet run --project src/ModelChecks -c Release -- --burnout-damage-pure
 dotnet run --project src/ModelChecks -c Release -- --original-burnout-damage-only tests/fixtures/full-battle-original-burnout-death-damage.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-burnout-death-damage.mt2f
+```
+
+## HealToDamage
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `HealToDamage` | `ae618996-fea4-431e-8911-f9715f96c898` | `full-battle-original-heal-damage.mt2f` | The unchanged `RelicEffectDamageEnemyOnHeal` deals damage equal to actual HP restored to a friendly Monster, selecting the living front enemy Hero on that Monster's current floor. Actual heals 0/4/8/6 produce zero damage, one nonlethal hit and two kills against the 12/6-HP enemy sequence. Requested heals 6/9/8/9 are clipped before the relic callback. Enemy healing, wrong triggers, empty floors and post-kill target resets do nothing. |
+
+The schema-225 winning battle matches all 51 stages, nine controlled actions
+and six EndTurns. Its 351 native Tests include four positives and 347 gated
+callbacks. Complete Test state, cached positive targets and Battle RNG match.
+All four native applications match complete train/context/pile/physical-point
+state and sixteen immutable parallel branches. Raw damage coroutines preserve
+the victim's physical point until the stable decision boundary; the local heal
+trigger queue centers survivors after its entire death-removal batch.
+
+Independent policy replay checks every controlled action separately, then runs
+the five-EndTurn suffix to native victory in sixteen immutable branches. Search
+matches all nine recorded decisions, reports zero unsupported alternatives and
+agrees between serial/parallel best results (116/103 visited states, three
+replayed steps). The new archive plus Eaten, Burnout, card-draw-on-heal, healing,
+triggered healing, Consume damage and card-play damage pass affected regression.
+
+The original Monsters source team, OnHeal trigger, multiplier one, placement and
+preview permissions, empty conditions and front targeting are unchanged. Pure
+controls verify current-point-only actor eligibility (last-known points are
+insufficient), Pyre eligibility, retained dead-enemy filtering and changed-owner,
+multiplier and target rejection. Native calibration uses authored healing cards
+and controlled units; standalone preview APIs, other owner payloads and arbitrary
+combined heal/death effects remain outside this witness.
+
+The binary archive is 33,958 bytes, with 5,428 unique nodes and SHA-256
+`7a62ee6900d94531f612f0a6956e759d58be06160f922f3a38346baa5253bba5`.
+Its source length is zero and source hash is all zeroes; no JSON companion is
+tracked. Accepted inventory is 421 archives: 383 battles and 38 component
+calibrations. Original-owner evidence is 202/224 (90.18%): 185 battle, sixteen
+campaign and one native no-op owner; 22 owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalHealDamageRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-heal-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --heal-damage-pure
+dotnet run --project src/ModelChecks -c Release -- --original-heal-damage-only tests/fixtures/full-battle-original-heal-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-heal-damage.mt2f
 ```

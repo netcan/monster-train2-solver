@@ -220,6 +220,13 @@ namespace MonsterTrain2Poju.Probe
                 cardPlayDamage = new RelicCardPlayDamageRule(data.GetParamCardType().ToString(), data.GetTargetMode().ToString(),
                     data.GetParamSourceTeam().ToString(), data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray());
             }
+            else if (effect is RelicEffectDamageEnemyOnHeal)
+            {
+                amount = (int)AccessTools.Field(effect.GetType(), "_healToDamageMultiplier").GetValue(effect);
+                unitTrigger = new RelicUnitResourceRule(data.GetParamTrigger().ToString(), data.GetParamSourceTeam().ToString(),
+                    null, Array.Empty<string>());
+                unitDamage = new RelicFriendlyTriggerDamageRule("FrontInRoom");
+            }
             else if (effect is RelicEffectDamageEnemyOnFriendlyTrigger)
             {
                 amount = (int)AccessTools.Field(effect.GetType(), "damageAmount").GetValue(effect);

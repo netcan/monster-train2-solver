@@ -1,11 +1,25 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 420 binary archives, including 382
+Current accepted inventory (2026-10-18): 421 binary archives, including 383
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 201/224 catalog entries (89.73%): 184 battle owners, 16 campaign
+covers 202/224 catalog entries (90.18%): 185 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`HealToDamage` now has schema-225 native evidence for its unchanged OnHeal
+front-enemy damage effect. Damage uses actual restored HP: 0/4/8/6, rather than
+the requested 6/9/8/9 healing. Four applications include zero damage, one
+nonlethal hit and two kills. Enemy healing, wrong triggers, empty floors and
+post-kill target reset do nothing. All 351 native Tests preserve complete state
+and Battle RNG. The 51-stage winning battle, nine controlled actions, independent
+five-EndTurn policy suffix with sixteen immutable branches, focused checks,
+serial/parallel search and eight-archive regression pass with zero differential
+counters. Local trigger queues center surviving units after the complete relic
+death-removal batch; raw damage coroutines retain their earlier physical points.
+Current-point-only actor eligibility, dead-enemy filtering and Pyre eligibility
+also have pure checks. Standalone preview APIs and arbitrary combined heal/death
+effects remain outside this witness.
 
 `DamageOnBurnoutDeath` now has schema-224 native evidence for both ordered
 5-damage effects: death while still holding Ephemeral, and natural burnout after

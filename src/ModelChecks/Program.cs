@@ -157,6 +157,17 @@ if (args.Length == 1 && args[0] == "--burnout-damage-pure")
     RelicBurnoutDamageChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--heal-damage-pure")
+{
+    RelicHealDamageChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-heal-damage-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RelicHealDamageChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-burnout-damage-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1811,6 +1822,7 @@ RelicConsumeDamageChecks.Run();
 RelicEatenDamageChecks.Run();
 OriginalMoreCapacityChecks.Run();
 RelicBurnoutDamageChecks.Run();
+RelicHealDamageChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

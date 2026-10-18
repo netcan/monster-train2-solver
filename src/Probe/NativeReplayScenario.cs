@@ -317,6 +317,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalMoreCapacityScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalBurnoutDamageScenario.Enabled && !OriginalBurnoutDamageScenario.Acquired)
                         OriginalBurnoutDamageScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalHealDamageScenario.Enabled && !OriginalHealDamageScenario.Acquired)
+                        OriginalHealDamageScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -1143,6 +1145,19 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (fullBattle && OriginalHealDamageScenario.Enabled && (!OriginalHealDamageScenario.Prepared ||
+                combat!.GetTurnCount() > 0 && !OriginalHealDamageScenario.CombatPrepared))
+            {
+                if (OriginalHealDamageScenario.Error != null) throw new InvalidOperationException(OriginalHealDamageScenario.Error);
+                numericModifiersPrepared = true;
+                if (!OriginalHealDamageScenario.Prepared) OriginalHealDamageScenario.PrepareDeployment(managers);
+                else if (!OriginalHealDamageScenario.Started)
+                {
+                    FullBattleTrace.Active!.CompleteEndTurn(RoomOutcome.Exchanged);
+                    OriginalHealDamageScenario.Start(managers, log);
+                }
+                return;
+            }
             if (fullBattle && OriginalBurnoutDamageScenario.Enabled && (!OriginalBurnoutDamageScenario.Prepared ||
                 combat!.GetTurnCount() > 0 && !OriginalBurnoutDamageScenario.CombatPrepared))
             {
@@ -1797,6 +1812,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalMoreCapacityScenario.Choose(decision, pendingPlay);
                 if (OriginalBurnoutDamageScenario.Enabled)
                     pendingPlay = OriginalBurnoutDamageScenario.Choose(decision, pendingPlay);
+                if (OriginalHealDamageScenario.Enabled)
+                    pendingPlay = OriginalHealDamageScenario.Choose(decision, pendingPlay);
                 if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
@@ -2004,6 +2021,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
                 (OriginalMoreCapacityScenario.Enabled && OriginalMoreCapacityScenario.IsScenarioAction(action)) ||
                 (OriginalBurnoutDamageScenario.Enabled && OriginalBurnoutDamageScenario.IsScenarioAction(action)) ||
+                (OriginalHealDamageScenario.Enabled && OriginalHealDamageScenario.IsScenarioAction(action)) ||
                 (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
                 (OriginalPurgeToExhaustScenario.Enabled && OriginalPurgeToExhaustScenario.IsScenarioPrelude(action)) ||
                 (OriginalUpgradeCountRelicsScenario.Enabled && OriginalUpgradeCountRelicsScenario.IsScenarioPrelude(action)) ||

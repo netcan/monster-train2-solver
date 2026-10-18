@@ -161,7 +161,7 @@
 "RandomUnitEveryFloor"	"297c5b7b-efb1-4834-96e0-de4a7e42ccbc"	"pending"	"RelicEffectNull,RelicEffectSpawnUnitFromDeck,RelicEffectSpawnUnitFromDeck,RelicEffectSpawnUnitFromDeck"	""
 "IncreaseBurnoutStacks"	"dc32326b-0952-4b3b-8bc8-cec909476c5f"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied"	""
 "IncreaseArmorStacks_DH"	"c9b18f6f-20d1-4228-bfab-b740609db8dc"	"accepted-native-battle"	"RelicEffectAddTrigger"	""
-"HealToDamage"	"ae618996-fea4-431e-8911-f9715f96c898"	"pending"	"RelicEffectDamageEnemyOnHeal"	""
+"HealToDamage"	"ae618996-fea4-431e-8911-f9715f96c898"	"accepted-native-battle"	"RelicEffectDamageEnemyOnHeal"	""
 "NonBannerUnitsHaveDeployable"	"fb6332bb-3e1c-44ba-951b-39fbc8d43601"	"accepted-native-battle"	"RelicEffectAddTempUpgrade"	""
 "AlliedClassRelic"	"656861c9-a96d-4c99-988c-390b75e5d8d4"	"accepted-native-campaign"	"RelicEffectOverrideCardDraftClassType"	""
 "SpawnWithRage"	"55ca34e9-047b-4b93-b390-d8d228a43261"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnSpawn"	""
