@@ -34,6 +34,7 @@ namespace MonsterTrain2Poju.Probe
                 int delta = 0;
                 RoomMoonPhaseRule? moon = null;
                 RoomPostCombatRule? postCombat = null;
+                RoomPreCombatRule? preCombat = null;
                 var characterUpgrades = new List<CardUpgradeModifier>();
                 var characterFilters = new List<CardUpgradeMaskRule>();
                 foreach (var (state, definition) in attachment.UpgradeStates)
@@ -53,7 +54,9 @@ namespace MonsterTrain2Poju.Probe
                     if (phase != null) { if (moon != null) return null; moon = phase; }
                     RoomPostCombatRule? post = RoomPostCombatProbe.Rule(definition, interactions);
                     if (post != null) { if (postCombat != null || attachment.UpgradeStates.Count != 1) return null; postCombat = post; }
-                    bool supported = interactions.Count == 0 && (phase != null || post != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length + energyModifiers.Length) &&
+                    RoomPreCombatRule? pre = RoomPreCombatProbe.Rule(definition, interactions);
+                    if (pre != null) { if (preCombat != null || attachment.UpgradeStates.Count != 1) return null; preCombat = pre; }
+                    bool supported = interactions.Count == 0 && (phase != null || post != null || pre != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length + energyModifiers.Length) &&
                         capacityModifiers.Length <= 1 && spellCostModifiers.Length <= 1 && energyModifiers.Length <= 1 && energyModifiers.All(modifier => modifier.GetParamInt() == 1) &&
                         state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
                         state.GetAdditionalUnhealedHP() == 0 && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
@@ -79,7 +82,7 @@ namespace MonsterTrain2Poju.Probe
                     attachment.TrainSide.HasFlag(Team.Type.Monsters), ignoreBosses,
                     attachment.CardState == null ? attachment.Guid : "", spellCostDelta, moon,
                     attachment.UpgradeStates.SelectMany(item => item.Item2.GetRoomModifierUpgrades())
-                        .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").Sum(modifier => modifier.GetParamInt()), characterFilters, postCombat));
+                        .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").Sum(modifier => modifier.GetParamInt()), characterFilters, postCombat, preCombat));
             }
             return result.ToArray();
         }

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 479 archives (440 full battles and
+Current accepted inventory (2026-10-19): 480 archives (441 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,23 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-479 accepted archives. Refresh/check the index with
+480 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-inferno-room.mt2f` retains two original Inferno Rooms and an
+original Fight Club replacement. Pre-combat damage fifty kills ordinary
+enemies and damages the friendly unit, preserving outside-floor health.
+Three callbacks occur on turns one/three/four: deployment and replacement skip
+it, restoration resumes it, and relentless combat invokes it once. Independent
+complete train comparisons include native VFX room focus and dead-unit cleanup.
+Native previews apply the nested damage despite the modifier's preview flag;
+they restore live health while retaining attack-statistic writes. Sixteen
+immutable five-play/five-EndTurn winning chains and bounded search are checked.
+Other pre-combat payloads and mixed room compositions remain guarded.
+Binary-only: 23,316 bytes/3,011 nodes, SHA-256
+`bf28b7a4b063c763f51aeefde5fdf7d4d2803c0ca989dda6df8495ababbbf5ec`.
+Use `-InfernoRoom` and `--inferno-room-only`. Focused room/damage gate:
+`.probe-runs/model-checks-20261019-001152-888ec77c/summary.json` (three passed).
 
 `full-battle-original-piercing-cards.mt2f` retains original Horn Break,
 Branding Rite and Inferno, at costs one/two/three. Native health damage is

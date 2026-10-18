@@ -20,11 +20,12 @@ namespace MonsterTrain2Poju.Model
         public int EnergyPerTurnDelta { get; }
         public IReadOnlyList<CardUpgradeMaskRule>? CharacterFilters { get; }
         public RoomPostCombatRule? PostCombat { get; }
+        public RoomPreCombatRule? PreCombat { get; }
         public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
             IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
             bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "", int spellCostDelta = 0,
             RoomMoonPhaseRule? moonPhase = null, int energyPerTurnDelta = 0, IReadOnlyList<CardUpgradeMaskRule>? characterFilters = null,
-            RoomPostCombatRule? postCombat = null)
+            RoomPostCombatRule? postCombat = null, RoomPreCombatRule? preCombat = null)
         {
             DataId = dataId; AssetKey = assetKey; AttachmentId = attachmentId; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
             CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
@@ -32,6 +33,7 @@ namespace MonsterTrain2Poju.Model
             EnergyPerTurnDelta = energyPerTurnDelta;
             CharacterFilters = characterFilters == null ? null : Array.AsReadOnly(characterFilters.ToArray());
             PostCombat = postCombat;
+            PreCombat = preCombat;
         }
     }
 
@@ -100,6 +102,7 @@ namespace MonsterTrain2Poju.Model
                     ValidateCharacterFilters(attachment.CharacterFilters) != null ||
                     attachment.MoonPhase != null && RoomMoonPhaseModel.Validate(attachment.MoonPhase) != null ||
                     attachment.PostCombat != null && (attachment.MoonPhase != null || RoomPostCombatModel.Validate(attachment.PostCombat) != null) ||
+                    attachment.PreCombat != null && (attachment.MoonPhase != null || attachment.PostCombat != null || RoomPreCombatModel.Validate(attachment.PreCombat) != null) ||
                     attachment.AttachmentId.Length > 0 && (!Guid.TryParse(attachment.AttachmentId, out Guid attachmentGuid) || attachmentGuid == Guid.Empty) ||
                     attachment.CharacterUpgrades?.Any(upgrade => upgrade.ExternalInteractions.Count > 0 ||
                         upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||

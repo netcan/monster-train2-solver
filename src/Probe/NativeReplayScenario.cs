@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && InfernoRoomScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Inferno Room fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                InfernoRoomScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPiercingCardsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original piercing cards fixture must start on deployment turn.");
@@ -2093,6 +2099,7 @@ namespace MonsterTrain2Poju.Probe
                 if (GrowRoomScenario.Enabled) pendingPlay = GrowRoomScenario.Choose(decision, GrowRoomScenario.CardIds);
                 if (MushyRoomScenario.Enabled) pendingPlay = MushyRoomScenario.Choose(decision, MushyRoomScenario.CardIds);
                 if (OriginalPiercingCardsScenario.Enabled) pendingPlay = OriginalPiercingCardsScenario.Choose(decision, OriginalPiercingCardsScenario.CardIds);
+                if (InfernoRoomScenario.Enabled) pendingPlay = InfernoRoomScenario.Choose(decision, InfernoRoomScenario.CardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);

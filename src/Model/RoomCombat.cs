@@ -466,8 +466,16 @@ namespace MonsterTrain2Poju.Model
             bool updateSelectedRoom = true, CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
         {
-            RoomCombatResult result = Run(state, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom,
-                externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
+            // Native room modifiers run once before the first exchange, including
+            // deaths and queued callbacks; unit PreCombat is a separate phase.
+            RoomCombatResult pre = RoomPreCombatModel.Apply(state, refreshPyre);
+            if (!pre.Supported) return pre;
+            RoomCombatResult result = pre.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated ? pre :
+                Run(pre.State!, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom,
+                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
+            if (!ReferenceEquals(result, pre) && pre.Events.Count > 0)
+                result = new RoomCombatResult(result.State, result.Outcome, result.Rounds, pre.Events.Concat(result.Events).ToList(),
+                    result.UnsupportedReason, result.PendingCallbacks, result.RetainedUnits, result.Dispatches);
             if (!result.Supported || result.State!.Context == null) return result;
             RelicFirstCardCostResult endOfTurn = RelicFirstCardCostModel.EndRoomCombat(result.State.Context);
             if (!endOfTurn.Supported)
