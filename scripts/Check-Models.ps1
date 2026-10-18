@@ -68,6 +68,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-room-entry-status-relics.mt2f',
     'full-battle-original-moon-phase-energy-relic.mt2f',
     'full-battle-original-moon-phase-heal-relic.mt2f',
+    'full-battle-moon-heal-on-heal.mt2f',
     'full-battle-original-moon-phase-status-relic.mt2f',
     'full-battle-original-card-attack-relic.mt2f',
     'full-battle-original-upgrade-count-relics.mt2f',
@@ -1336,7 +1337,7 @@ foreach ($fixturePath in $originalPyregelFixtures) {
 }
 
 $originalMoonPhaseHealFixtures = @($fixtures | Where-Object {
-    (Split-Path -Leaf $_) -eq 'full-battle-original-moon-phase-heal-relic.mt2f'
+    (Split-Path -Leaf $_) -in @('full-battle-original-moon-phase-heal-relic.mt2f', 'full-battle-moon-heal-on-heal.mt2f')
 })
 foreach ($fixturePath in $originalMoonPhaseHealFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --battle-search-only $fixturePath

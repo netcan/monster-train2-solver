@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
         private static int step;
 
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool OnHealMode => Environment.GetEnvironmentVariable("MT2_PROBE_MOON_HEAL_CALLBACKS") == "1";
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
         internal static int AcolyteCardId { get; private set; }
@@ -65,6 +66,13 @@ namespace MonsterTrain2Poju.Probe
                 ?? throw new InvalidOperationException("No unowned spell definition is available for the friendly damage control.");
 
             Set(acolyteCharacter, "health", 40);
+            if (OnHealMode)
+            {
+                var triggers = acolyteCharacter.GetTriggers().ToList();
+                triggers.Add(HealingScenario.HealGold(2, once: false, ignoreSilence: false));
+                triggers.Add(HealingScenario.HealGold(3, once: true, ignoreSilence: false));
+                Set(acolyteCharacter, "triggers", triggers);
+            }
             Set(acolyte, "cost", 0);
             Set(fae, "cost", 0);
             var damage = new CardEffectData("CardEffectDamage", null!, Team.Type.Monsters);

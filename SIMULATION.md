@@ -1,11 +1,30 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 444 binary archives, including 405
+Current accepted inventory (2026-10-18): 445 binary archives, including 406
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Moon-phase healing and OnHeal
+
+`full-battle-moon-heal-on-heal.mt2f` retains the original moon-healing relic and
+adds repeating and once-only Gold OnHeal callbacks to its damaged Acolyte.
+Healing now uses the normal room healing queue, so modifier application and
+callback ordering follow card healing. The first two controlled moon advances
+produce native rounded Gold deltas of +10/+5. Seven moon callbacks, six selected
+heals, cross-room weakest selection and a no-target control match independently.
+The 52-stage Pyre80 win has 24 plays and six EndTurns, with zero native errors;
+complete policy replay, sixteen immutable branches and 128-state serial/parallel
+search pass. Three affected old fixtures pass in
+`.probe-runs/model-checks-20261018-184128-89866ec9/summary.json`.
+Terminal or cross-room OnHeal chains need separate evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -MoonHealCallbacks -BinaryCapture -SkipBuild
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-moon-heal-on-heal.mt2f
+```
 
 ### Card-backed feeding lifecycle
 

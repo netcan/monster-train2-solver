@@ -1,8 +1,21 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 444 archives (405 full battles and
+Current accepted inventory (2026-10-18): 445 archives (406 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-moon-heal-on-heal.mt2f` covers the original moon-healing relic with
+repeating and once-only OnHeal Gold callbacks. Seven exact moon callbacks and
+six heals match, including cross-room selection and a no-target control. Native
+Gold rounding produces +10/+5 on the first two controlled advances. The 52-stage
+Pyre80 win has 24 plays, six EndTurns and zero native errors. Policy replay,
+sixteen immutable branches and 128-state serial/parallel search pass, along with
+three affected older captures. Binary-only: 39,547 bytes, 6,271 nodes, zero source
+length/hash; SHA-256
+`d3a808bae2b25a6a0da74e9e25958b0029e3691bad6ef75c51baf61c93ac4cce`.
+Use `Run-FullBattleProbe.ps1 -MoonHealCallbacks` and the existing
+`--original-moon-phase-heal-only` check. Terminal or cross-room callback chains
+remain separate evidence boundaries.
 
 `full-battle-card-backed-feeding.mt2f` adds ordinary food plays, a source-backed
 equipped Miner and a two-stack Eatmany Miner. Its 41-stage Pyre79 native win has

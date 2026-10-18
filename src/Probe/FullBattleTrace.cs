@@ -739,6 +739,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalSpawnRetreatPrepared = OriginalSpawnRetreatScenario.Prepared,
                 OriginalOpeningMorselsPrepared = OriginalOpeningMorselsScenario.Prepared,
                 CardBackedFeeding = OriginalOpeningMorselsScenario.FoodCardsMode,
+                MoonHealCallbacks = OriginalMoonPhaseHealRelicScenario.OnHealMode,
                 OriginalOpeningDeckSpawnPrepared = OriginalOpeningDeckSpawnScenario.Prepared,
                 RelicOpeningDeckSpawnTests = OriginalOpeningDeckSpawnScenario.Tests,
                 RelicOpeningDeckSpawnApplications = OriginalOpeningDeckSpawnScenario.Applications,

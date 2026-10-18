@@ -51,6 +51,21 @@ internal static class OriginalMoonPhaseHealRelicChecks
         int acolyte = controls.GetProperty("AcolyteCardId").GetInt32();
         int[] wounds = controls.GetProperty("WoundCardIds").Deserialize<int[]>()!;
         int[] faes = controls.GetProperty("FaeCardIds").Deserialize<int[]>()!;
+        if (root.TryGetProperty("MoonHealCallbacks", out var healCallbacks) && healCallbacks.GetBoolean())
+        {
+            var phaseActions = root.GetProperty("Actions").EnumerateArray().Where(row =>
+                faes.Contains(row.GetProperty("Action").GetProperty("CardInstanceId").GetInt32())).ToArray();
+            Require(phaseActions.Length == 2, "Missing paired native moon/OnHeal actions.");
+            for (int index = 0; index < phaseActions.Length; index++)
+            {
+                BattleTurnState before = phaseActions[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState after = phaseActions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                int repeatGold = GoldRewardModel.Adjust(2), onceGold = GoldRewardModel.Adjust(3);
+                Require(after.Spawn.Train.Context!.Gold - before.Spawn.Train.Context!.Gold == repeatGold + (index == 0 ? onceGold : 0),
+                    "Native moon heal did not preserve repeating/once OnHeal callbacks.");
+            }
+            Console.WriteLine("MOON-HEAL-CALLBACKS PASS: native +10/+5 rounded Gold confirms ordered repeating/once OnHeal dispatch.");
+        }
         Require(wounds.Length == 2 && faes.Length == 2, "Moon-phase healing fixture lost one or more control cards.");
         PlayCardAction[] actions = root.GetProperty("Actions").EnumerateArray()
             .Select(action => action.GetProperty("Action").Deserialize<PlayCardAction>()!).ToArray();

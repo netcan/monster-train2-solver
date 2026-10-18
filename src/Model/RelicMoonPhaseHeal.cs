@@ -61,13 +61,6 @@ namespace MonsterTrain2Poju.Model
             {
                 string? error = Validate(relic);
                 if (error != null) return error;
-                foreach (RelicMoonPhaseHealRule rule in relic.MoonPhaseHealRules ?? Array.Empty<RelicMoonPhaseHealRule>())
-                {
-                    if (!Applies(rule, phase)) continue;
-                    CombatUnit? target = Weakest(source, rule);
-                    if (target?.Triggers.Any(trigger => trigger.Kind == "OnHeal") == true)
-                        return "Moon-phase relic healing OnHeal callbacks are not modeled.";
-                }
             }
             return null;
         }
@@ -85,17 +78,13 @@ namespace MonsterTrain2Poju.Model
                     if (!Applies(rule, phase)) continue;
                     CombatUnit? target = Weakest(state, rule);
                     if (target == null) continue;
-                    if (target.Triggers.Any(trigger => trigger.Kind == "OnHeal"))
-                        return Fail("Moon-phase relic healing OnHeal callbacks are not modeled.");
-                    if (target.Modifiers?.CanBeHealed == false) continue;
-                    int modified = HealingModel.ModifiedAmount(rule.HealthAmount, target.Statuses);
-                    if (modified < 0) continue;
-                    int health = target.Health + Math.Min(modified, target.MaxHealth - target.Health);
-                    if (health == target.Health) continue;
-                    RoomCombatState[] rooms = state.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                        room.Units.Select(unit => unit.Id == target.Id ? unit.WithHealth(health) : unit).ToArray(),
-                        room.ExternalInteractions, room.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
-                    state = new TrainCombatState(rooms, state.Movement, state.EnemySlotsPerRoom, state.Context);
+                    RoomCombatState room = state.Rooms.Single(item => item.Units.Any(unit => unit.Id == target.Id));
+                    RoomCombatResult healed = RoomCombatModel.ApplyCardHeal(room, target.Id, rule.HealthAmount);
+                    if (!healed.Supported) return Fail(healed.UnsupportedReason!);
+                    if (healed.Outcome == RoomOutcome.BattleWon || healed.Outcome == RoomOutcome.PlayerDefeated)
+                        return Fail("Terminal moon-healing callbacks require native evidence.");
+                    state = CardSpellModel.WithContext(new TrainCombatState(state.Rooms.Select(item => item.RoomIndex == room.RoomIndex
+                        ? healed.State! : item).ToArray(), state.Movement, state.EnemySlotsPerRoom, healed.State!.Context), healed.State.Context!);
                 }
             }
             return new MoonPhaseHealResult(state);

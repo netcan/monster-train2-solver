@@ -34,9 +34,11 @@ internal static class MoonPhaseTransitionChecks
                 queryFrame: new StatisticQueryFrame(energy: 3, runningCombat: true, turn: 1,
                     moonPhase: 1, moonPhaseTrackingActive: true),
                 energyState: new BattleEnergyState(10, 0, 0, "MonsterTurn", true), relics: [relic]);
-            CombatTrigger[] triggers = onHeal ? [new CombatTrigger("OnHeal", false, false, false, 1, [])] : [];
-            var first = new CombatUnit(1, "first", CombatTeam.Player, 8, firstHealth, 40, true, false, false, [], triggers);
-            var second = new CombatUnit(2, "second", CombatTeam.Player, 8, secondHealth, 40, true, false, false, [], []);
+            CombatTrigger[] triggers = onHeal ? [new CombatTrigger("OnHeal", false, false, false, 1, [], skipDuringDeployment: false)] : [];
+            var first = new CombatUnit(1, "first", CombatTeam.Player, 8, firstHealth, 40, true, false, false, [], triggers,
+                modifiers: new(8, 0, 0, 1, 1, true, false, []));
+            var second = new CombatUnit(2, "second", CombatTeam.Player, 8, secondHealth, 40, true, false, false, [], [],
+                modifiers: new(8, 0, 0, 1, 1, true, false, []));
             var enemy = new CombatUnit(3, "enemy", CombatTeam.Enemy, 8, 1, 40, true, false, false, [], []);
             return new TrainCombatState([
                 new RoomCombatState(0, false, [first], [], context),
@@ -84,9 +86,9 @@ internal static class MoonPhaseTransitionChecks
             Effect("SetMoonPhase", 2));
         MoonPhaseTransitionResult modeControl = MoonPhaseTransitionModel.Apply(HealingTrain(15, 20, targetMode: "Room"),
             Effect("SetMoonPhase", 2));
-        Require(!onHealControl.Supported && onHealControl.UnsupportedReason?.Contains("OnHeal") == true &&
+        Require(onHealControl.Supported && onHealControl.State!.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == 1).Health == 25 &&
             !modeControl.Supported && modeControl.UnsupportedReason?.Contains("Unmodeled native relic moon-phase healing") == true,
-            "Moon-phase healing silently accepted an unmodeled OnHeal or target-selection path.");
+            "Moon-phase healing lost supported OnHeal callbacks or accepted an unknown target-selection path: " + onHealControl.UnsupportedReason);
         string expected = JsonSerializer.Serialize(full.State);
         Parallel.For(0, 16, _ => Require(JsonSerializer.Serialize(
             MoonPhaseTransitionModel.Apply(source, Effect("SetMoonPhase", 2)).State) == expected,
