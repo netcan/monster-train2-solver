@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 499 binary archives, including 460
+Current accepted inventory (2026-10-19): 500 binary archives, including 461
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 499
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 500
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,15 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-pile-draw.mt2f` models original Mulch's future-draw bonus
+from the native visible permanent-deck count. Restored zero/14/15/29/30-card
+queries distinguish its fifteen-card thresholds from the eight-card runtime
+draw pile. Base one becomes three at thirty permanent cards; the next turn
+draws eight and resets the modifier. The observed API complete context,
+Consume, zero cost, unchanged units, three plays/five EndTurns, sixteen full
+immutable chains and bounded search match. Resource capture persists after
+seeing this trait. Other piles and added/replaced traits remain guarded.
 
 `full-battle-original-effect-applications.mt2f` models original Moonbeam at
 X zero/one/three. Its single front-enemy damage effect applies X times rather

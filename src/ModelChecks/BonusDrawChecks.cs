@@ -94,7 +94,11 @@ internal static class BonusDrawChecks
             var effect = record.GetProperty("Effect").Deserialize<CardActionEffect>()!;
             RngDraw? sampled = effect.Range?.Sample(before.BattleRng); int amount = sampled?.Value ?? effect.Value;
             Require(amount == record.GetProperty("Amount").GetInt32(), "Native future-draw range differs.");
-            var cards = BonusDrawModel.Schedule(before.Cards, record.GetProperty("Key").GetString()!, amount, effect.Upgrade);
+            string key = record.GetProperty("Key").GetString()!;
+            int sourceCardId = key.StartsWith("card:") ? int.Parse(key.Split(':')[1]) : 0;
+            StatisticQueryResult adjusted = CardPileDrawModel.Adjust(before, sourceCardId, amount);
+            Require(adjusted.Supported, "Native future-draw source scaling unsupported: " + adjusted.UnsupportedReason);
+            var cards = BonusDrawModel.Schedule(before.Cards, key, adjusted.Value, effect.Upgrade);
             CombatContext predicted = before.WithCards(cards).WithBattleRng(sampled?.State ?? before.BattleRng);
             string? difference = ModelJson.Difference(JsonSerializer.Serialize(predicted), JsonSerializer.Serialize(after));
             Require(difference == null, "Native future-draw context differs: " + difference);

@@ -52,6 +52,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool goldRewardResourceObserved;
         private static bool trainHealResourceObserved;
         private static bool grosMichelResourceObserved;
+        private static bool pileDrawResourceObserved;
 
         private static RelicState[] Current(AllGameManagers managers)
         {
@@ -77,11 +78,12 @@ namespace MonsterTrain2Poju.Probe
             dragonHoardResourceObserved |= dragonHoardCards;
             trainHealResourceObserved |= trainHealCards;
             grosMichelResourceObserved |= Current(managers).Any(owner => owner.GetRelicDataID() == RelicEndCombatModel.GrosMichelId);
+            pileDrawResourceObserved |= cards?.GetAllCards(new List<CardState>()).Any(card => card.GetTraitStates().Any(trait => trait is CardTraitScalingCardDrawCountPerPile)) == true;
             if (!RelicProbe.HasReplayHistory(managers) && !OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled && !OriginalFloorCapacityRelicScenario.Enabled &&
                 !OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
                 !OriginalStartCombatHoardScenario.Enabled && !OriginalStartCombatHoardScenario.Acquired &&
                 !OriginalFirstCardCostScenario.Enabled &&
-                !grosMichelResourceObserved &&
+                !grosMichelResourceObserved && !pileDrawResourceObserved &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect => RelicResourceModel.IsEffect(effect.GetType().Name))) &&
                 !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved && !goldRewardResourceObserved)
                 return null;

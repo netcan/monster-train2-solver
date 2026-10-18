@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 499 archives (460 full battles and
+Current accepted inventory (2026-10-19): 500 archives (461 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,28 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-499 accepted archives. Refresh/check the index with
+500 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-pile-draw.mt2f` retains original Mulch and Consume.
+Five native queries at zero/fourteen/fifteen/twenty-nine/thirty visible permanent
+cards give zero/zero/one/one/two additional draw. The runtime draw pile has eight
+cards throughout those queries, proving a different count source. Deck order,
+decision, frame and every deterministic RNG stream restore exactly afterward.
+At thirty permanent cards, the native future-draw API changes base one to three;
+its complete before/after context matches independently. The next turn draws
+eight cards and resets the one-turn modifier. Zero cost, units, permanent deck
+count and Consume remain controls. Resource capture stays active after seeing
+this trait, including after the card leaves hand. Other pile routes and
+added/replaced traits remain guarded.
+Three plays/five EndTurns win with sixteen immutable full chains and matching
+128-state serial/parallel search (ten root actions, zero unsupported).
+Binary-only: 25,895 bytes/3,460 nodes, SHA-256
+`a3a112f2344354c54ef6424073310b3ed743d411a58d54db0a1caefc51481862`.
+Use `-OriginalPileDraw` and `--original-pile-draw-only`.
+Focused regression `model-checks-20261019-023538-050ca187` passed this fixture,
+the signed/ranged bonus-draw fixture and original deck-size turn-draw relic,
+all three terminal exit codes zero.
 
 `full-battle-original-effect-applications.mt2f` retains original Moonbeam.
 Paying X zero/one/three produces exactly zero/one/three damage applications,

@@ -843,8 +843,10 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "DrawNextTurn")
                 {
-                    state = WithContext(state, state.Context!.WithCards(BonusDrawModel.Schedule(state.Context.Cards,
-                        BonusDrawState.CardKey(sourceCardId, index), effect.Value, effect.Upgrade)));
+                    StatisticQueryResult drawCount = CardPileDrawModel.Adjust(state.Context!, sourceCardId, effect.Value);
+                    if (!drawCount.Supported) return UnsupportedTrain(drawCount.UnsupportedReason!);
+                    state = WithContext(state, drawCount.Context!.WithCards(BonusDrawModel.Schedule(drawCount.Context.Cards,
+                        BonusDrawState.CardKey(sourceCardId, index), drawCount.Value, effect.Upgrade)));
                     continue;
                 }
                 if (effect.Type == "ScheduleNextDrawUpgrade")
