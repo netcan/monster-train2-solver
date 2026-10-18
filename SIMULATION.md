@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 480 binary archives, including 441
+Current accepted inventory (2026-10-19): 481 binary archives, including 442
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 480
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 481
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,15 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-consume-cards.mt2f` calibrates original Consume source
+metadata with seven unchanged definitions and eight actual spell plays. Played
+cards enter Exhausted; unplayed cards discard and redraw without consuming.
+One play produces two native exhaustion statistics (Standby and Exhausted),
+matching the existing model. Costs, targeted compound status effects, positive
+enemy-room status applications, capacity and floor/team controls are checked,
+along with sixteen immutable ten-play/five-EndTurn chains. The inventory now
+accepts exact default ExhaustState traits while retaining other trait guards.
 
 `full-battle-inferno-room.mt2f` retains original pre-combat fifty damage.
 Its callback runs once before the first exchange, settling lethal enemy

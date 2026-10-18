@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 480 archives (441 full battles and
+Current accepted inventory (2026-10-19): 481 archives (442 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,25 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-480 accepted archives. Refresh/check the index with
+481 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-consume-cards.mt2f` retains unchanged Rage Serum,
+Liquid Courage, Quenching Oil, Spike Potion, Space Prism, Magic Juice and
+Jar of Frost. Eight potion/prism plays each enter Exhausted, with one play
+and two native exhaustion statistic notifications (Standby and Exhausted).
+Three cards first remain unplayed, discard and redraw with zero play/exhaust
+counts. Positive effects include Rage five, Damage Shield one/Valor four,
+two weakness statuses, Spikes ten, capacity one, and enemy-room Spell Weakness
+two/Frostbite eight. Costs and outside-floor/friendly controls are checked.
+The ten-play/five-EndTurn win has sixteen immutable complete-chain comparisons.
+This calibrates exact default `CardTraitExhaustState` source metadata; other
+trait families stay guarded by the evidence matcher. Binary-only: 26,100
+bytes/3,768 nodes, SHA-256
+`4db80b7b136e5de5763ea6f260464daea7583a16691eec3a2cd184d8d781c99d`.
+Use `-OriginalConsumeCards` and `--original-consume-cards-only`.
+Focused Consume/status/suppression gate:
+`.probe-runs/model-checks-20261019-001931-d69bb532/summary.json` (three passed).
 
 `full-battle-inferno-room.mt2f` retains two original Inferno Rooms and an
 original Fight Club replacement. Pre-combat damage fifty kills ordinary
