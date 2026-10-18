@@ -192,6 +192,7 @@ param(
     [switch] $CharacterRemoval,
     [switch] $PreviewReferences,
     [switch] $RelicCatalog,
+    [switch] $CardCatalog,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
@@ -792,6 +793,7 @@ $environment = @{
     MT2_PROBE_ENCHANTER_REMOVAL_TRACE = $(if ($TraceEnchanterRemoval) { '1' } else { '0' })
     MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
+    MT2_PROBE_CARD_CATALOG = $(if ($CardCatalog) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
@@ -2569,6 +2571,25 @@ if ($OriginalUnitUpgradeTriggerRelic -and ($trace.Schema -ne 133 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-UNIT-UPGRADE-TRIGGER-RELIC-PREPARED' -Quiet) -or
     @($trace.Actions).Count -eq 0)) {
     throw 'Original unit-upgrade trigger relic was not exercised in the expected full-battle capture.'
+}
+if ($CardCatalog) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $cardCatalogDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'card-catalog.mt2f'))
+    try {
+        $cardCatalogRoot = $cardCatalogDocument.RootElement
+        $cardCatalogEntries = @($cardCatalogRoot.GetProperty('Cards').EnumerateArray())
+        if ($cardCatalogRoot.GetProperty('Schema').GetInt32() -ne 1 -or
+            $cardCatalogRoot.GetProperty('Scope').GetString() -ne 'AllGameData' -or
+            $cardCatalogRoot.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            -not $cardCatalogRoot.GetProperty('DecisionUnchanged').GetBoolean() -or
+            $cardCatalogRoot.GetProperty('FrameBefore').GetInt32() -ne $cardCatalogRoot.GetProperty('FrameAfter').GetInt32() -or
+            -not $cardCatalogRoot.GetProperty('RngBefore').ContentEquals($cardCatalogRoot.GetProperty('RngAfter')) -or
+            $cardCatalogEntries.Count -ne 668 -or
+            @($cardCatalogEntries | ForEach-Object { $_.GetProperty('Id').GetString() } | Sort-Object -Unique).Count -ne 668) {
+            throw 'Original card catalog is incomplete or changed native decision/RNG/frame.'
+        }
+        Write-Output "NATIVE-CARD-CATALOG PASS: 668 unique definitions with native logbook/ability roles and model projections; unchanged decision/RNG/frame."
+    } finally { $cardCatalogDocument.Dispose() }
 }
 if ($RelicCatalog) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

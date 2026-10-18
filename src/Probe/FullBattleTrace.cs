@@ -147,6 +147,7 @@ namespace MonsterTrain2Poju.Probe
             if (save == null || combat == null || cards == null || save.PreviewMode) return;
             if (!calibrated)
             {
+                CardCatalogProbe.Capture(this, managers);
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
                 CampaignRelicCalibration.Capture(managers);
