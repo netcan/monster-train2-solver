@@ -196,6 +196,7 @@ param(
     [switch] $CampaignBattleResourceCalibration,
     [switch] $CampaignPurgeGoldCalibration,
     [switch] $CampaignDeckCopyCalibration,
+    [switch] $CampaignDraftEnhancerCountCalibration,
     [switch] $FullRuleCatalog,
     [switch] $UpgradeMasks,
     [switch] $ModifierOverflow,
@@ -748,6 +749,7 @@ $environment = @{
     MT2_PROBE_CAMPAIGN_BATTLE_RESOURCES = $(if ($CampaignBattleResourceCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_PURGE_GOLD = $(if ($CampaignPurgeGoldCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_DECK_COPY = $(if ($CampaignDeckCopyCalibration) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_DRAFT_ENHANCER_COUNT = $(if ($CampaignDraftEnhancerCountCalibration) { '1' } else { '0' })
     MT2_PROBE_FULL_RULE_CATALOG = $(if ($FullRuleCatalog) { '1' } else { '0' })
     MT2_PROBE_UPGRADE_MASKS = $(if ($UpgradeMasks) { '1' } else { '0' })
     MT2_PROBE_MODIFIER_OVERFLOW = $(if ($ModifierOverflow) { '1' } else { '0' })
@@ -1781,6 +1783,19 @@ if ($CampaignRelicCalibration) {
             throw 'Campaign original-owner matrix or recorded state restoration is incomplete.'
         }
     } finally { $campaignDocument.Dispose() }
+}
+if ($CampaignDraftEnhancerCountCalibration) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $countDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'campaign-draft-enhancer-count-calibration.mt2f'))
+    try {
+        $countRoot = $countDocument.RootElement
+        if ($countRoot.GetProperty('Schema').GetInt32() -ne 1 -or
+            $countRoot.GetProperty('Consumers').GetArrayLength() -ne 5 -or
+            $countRoot.GetProperty('RuleMatrix').GetArrayLength() -ne 30 -or
+            -not $countRoot.GetProperty('Before').ContentEquals($countRoot.GetProperty('After'))) {
+            throw 'Original draft-enhancer-count consumer/reset evidence or recorded restoration is incomplete.'
+        }
+    } finally { $countDocument.Dispose() }
 }
 if ($CampaignDeckCopyCalibration) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

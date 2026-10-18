@@ -4,10 +4,17 @@ using System.Collections.Generic;
 namespace MonsterTrain2Poju.Model
 {
     // Campaign consumers are separate from battle-turn resolution. These APIs
-    // model the unchanged unrestricted slot/all-cost owners, not subtype/reward
+    // model the unchanged slot, all-cost and draft-count owners, not subtype/reward
     // filters belonging to other, unvalidated effect classes.
     public static class CampaignRelicModel
     {
+        public static int RandomDraftEnhancedCardCount(IReadOnlyList<int> additions, int baseCount = 1)
+        {
+            int value = baseCount;
+            foreach (int addition in additions) value = unchecked(value + addition);
+            return Math.Max(1, value);
+        }
+
         public static int UpgradeSlots(string cardType, int baseSlots, int maximum, int cardModifier,
             IReadOnlyList<string> bonusCardTypes)
         {

@@ -1,11 +1,23 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 424 binary archives, including 386
-full battles and 38 component calibrations. Unchanged original relic evidence
-covers 205/224 catalog entries (91.52%): 188 battle owners, 16 campaign
+Current accepted inventory (2026-10-18): 425 binary archives, including 386
+full battles and 39 component calibrations. Unchanged original relic evidence
+covers 206/224 catalog entries (91.96%): 188 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`DrawOnCorruption` now has an unchanged-owner campaign interface witness for
+`RelicEffectChangeNumCardsToApplyRandomDraftEnhancerTo`: its original +1 additive
+mutation changes `SaveManager.GetNumCardsToApplyRandomDraftEnhancerTo` from one
+to two. Five acquisition/removal/reacquisition consumers return 1/2/1/2/1;
+thirty native rule queries cover lower clamping and integer overflow. Registered
+effect identity, complete recorded state/frame/RNG restoration and sixteen
+immutable branches match. Four affected archives pass regression. The restored
+baseline battle also passes five actions, seven EndTurns, independent policy
+replay and 128-state serial/parallel search with zero differential counters.
+This accepts the campaign count interface; draft UI selection, candidate-count
+clamping, enhancer application and chosen-card grants require separate proof.
 
 `FreezeReduceCost` now has schema-228 native evidence for the original frozen-hand
 filter and non-unique -99 cost upgrade at the end of floor-zero combat. Fifteen

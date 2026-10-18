@@ -1,8 +1,16 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 424 archives (386 full battles and
-38 component calibrations), 205/224 original relic owners (91.52%): 188 battle
-owners, sixteen campaign-interface owners and one native no-op. The latest
+Current accepted inventory (2026-10-18): 425 archives (386 full battles and
+39 component calibrations), 206/224 original relic owners (91.96%): 188 battle
+owners, seventeen campaign-interface owners and one native no-op. The latest
+`DrawOnCorruption` component calibration exercises the original +1 draft-enhancer
+count mutation: five actual SaveManager queries return 1/2/1/2/1 through native
+acquisition/removal/reacquisition, and thirty native rule queries match lower
+clamping and integer overflow. Recorded state/frame/RNG are restored, sixteen
+immutable branches and four affected archives pass. A separate restored baseline
+battle matches five actions, seven EndTurns and 128-state serial/parallel search.
+The claim covers the campaign count interface; draft UI, actual enhancer
+application and chosen-card grants need independent witnesses. The previous
 `FreezeReduceCost` fixture covers three active floor-zero applications and twelve
 gated floors, four original -99 upgrades, repeated non-unique accumulation and
 unfrozen hand/discard controls. A discounted card is played at zero cost, loses

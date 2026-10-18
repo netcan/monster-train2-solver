@@ -1,8 +1,8 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **205 distinct original collectable relics / 224 catalog entries
-(91.52%)** have accepted native evidence: 188 have full-battle effect evidence,
-sixteen have campaign consumer interfaces validated, and one is an explicit
+As of 2026-10-18, **206 distinct original collectable relics / 224 catalog entries
+(91.96%)** have accepted native evidence: 188 have full-battle effect evidence,
+seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
 conditions. Test cards, unit triggers and carrier subtypes may be authored to
@@ -428,9 +428,9 @@ owner count.
 
 ## Campaign interface evidence
 
-These sixteen unchanged original owners are validated by their actual native
+These seventeen unchanged original owners are validated by their actual native
 campaign consumers, with baseline and removed-owner controls. This table is
-separate from the 163 battle owners. It does not claim whole-battle integration
+separate from the 188 battle owners. It does not claim whole-battle integration
 for these effect classes. The first capture's recorded relic IDs, gold, hoard cap and
 amount, deck IDs, frame and RNG match before/after; reward grants still execute
 their native run-stat side effects in the isolated save. Catalog enumeration
@@ -450,6 +450,7 @@ not claim natural incoming-damage integration into battle branches.
 
 | Original owner | Data ID | Native evidence | Accepted path |
 | --- | --- | --- | --- |
+| `DrawOnCorruption` | `9427e610-0c7b-4430-ab1f-c84049097168` | [draft count calibration](campaign-draft-enhancer-count-calibration.mt2f) | Original +1 additive `NumCardsToApplyRandomDraftEnhancerTo` mutation. Five actual `SaveManager.GetNumCardsToApplyRandomDraftEnhancerTo` calls return 1/2/1/2/1 across acquisition, removal and reacquisition; thirty direct native balance queries prove lower clamping, unchecked integer overflow and reset. Recorded state/frame/RNG match before/after. Draft UI, enhancer application and final grants remain outside this interface witness. |
 | `ExtraSpellUpgrades` | `60a7f580-0788-42f2-8896-cb8d22e849a5` | [campaign calibration][campaign] | +1 Spell upgrade slot through `BalanceData.GetUpgradeSlots`, type controls, lower/upper clamps and spell-only/both/removed phases. |
 | `ExtraUnitUpgrades` | `3203c2d3-58f3-4f38-888e-886d8faae758` | [campaign calibration][campaign] | +1 Monster slot with original None subtype; unit-only/both/removed phases. The combined 80-query matrix includes Spell, Monster, Equipment and Blight with four card modifiers. |
 | `CheaperMerchants` | `ffcb6931-e45e-4e27-bacf-4c649779c2be` | [campaign calibration][campaign] | Original -0.25 additional cost multiplier; 108 actual `MerchantGoodState.GetCost` queries cover purchase indices, rounding, merchant discounts, Purge discount exclusion, baseline and removal. |
@@ -466,6 +467,49 @@ not claim natural incoming-damage integration into battle branches.
 | `ModifyDragonsHoardBattleEnd` | `26c9bc93-f5a6-439d-8239-14c22cbeb02e` | [battle-resource calibration][battleResources] | Actual +3 hoard capped at capacity, 144 increases, 54 positive-Pyre-OnHit damage gates and 24 recoveries after native start-battle reset. Zero/negative/wrong-trigger/null-character controls do not mark damage. |
 | `BalatroEventCanio` | `d8d1e069-938e-4141-b6ac-e20f4578163a` | [purge gold calibration][purgeGold] | Actual campaign purge callback grants +75 adjusted reward gold and one notification for each of six card types. All 144 manager calls match, including 24 positive rewards, combat no-op and removed-owner controls, completion and unchanged RNG. Deck removal/payment UI is outside this interface claim. |
 | `MothersRemnant1Relic` | `8ee399d2-4ee4-409d-af95-319bcd6accc4` | [permanent copy calibration][deckCopy] | Seventy-two actual end-battle manager calls prove 16 fresh permanent copies with original champion-excluding mask, ordered candidate selection and Rewards RNG. Four modified/purified/event-cached witnesses retain permanent offsets/upgrades and drop temporary upgrades. Native cached-duplicate setter updates the cached flag; its duplicate getter remains false. Presentation bookkeeping is suppressed after deck mutation. |
+
+### DrawOnCorruption draft-enhancer-count consumer
+
+The original single-effect definition, +1 integer parameter, empty conditions,
+placement permission and initialized `Additive` / `NumCardsToApplyRandomDraftEnhancerTo`
+interface remain unchanged. Native acquisition registers exactly one original
+effect; removal unregisters it, and reacquisition registers one fresh effect
+without duplication. The five actual SaveManager consumers return 1/2/1/2/1.
+Each query preserves its complete recorded snapshot. Thirty additional native
+`MutableRules.GetRule` queries cover starts -2/0/1/2/5/Int32.MaxValue across all
+five phases, including clamping to one after unchecked integer overflow.
+The independent model matches every value in sixteen immutable branches.
+
+The isolated probe restores recorded relic order, permanent deck definitions
+and modifiers, gold, Pyre health, hoard/cap, preview flag, frame and deterministic
+RNG streams. The subsequent native baseline battle wins with zero capture,
+mismatch, unsupported or pending counters. Independent replay matches all five
+card plays, seven EndTurns, final Pyre 60 and sixteen policy branches. Bounded
+search matches all five decisions and nine root actions, reports no unsupported
+alternatives, agrees between serial/parallel best results and visits 128/128
+states with four replayed steps. Four affected curated archives pass with two
+workers: this component, campaign relic interfaces, campaign drafts and the
+baseline Steward battle.
+
+The accepted boundary is the campaign count consumer. `CardDraftScreen.Setup`
+later clamps against the candidate count and selects/enhances draft cards; that
+UI, candidate selection, enhancer application and eventual chosen-card grant are
+not executed by this calibration. Other balance-editing effects remain subject
+to their own evidence. The restored baseline battle is validation evidence and
+does not add another curated battle or battle-owner count.
+
+The schema-1 binary component archive is 2,053 bytes, with 230 unique nodes and
+SHA-256 `b059885ccc62f3dd436c389800934f0fd755c60a4d10a469a7171b0261586686`.
+Its source length is zero and source hash is all zeroes; no JSON companion is
+tracked. Inventory is 425 archives: 386 battles and 39 component calibrations.
+Original-owner evidence is 206/224 (91.96%): 188 battle, seventeen campaign and
+one native no-op; eighteen owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy units-and-junk -BranchCardMasks -PhysicalSpawnPoints -CampaignDraftEnhancerCountCalibration -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture campaign-draft-enhancer-count-calibration.mt2f
+dotnet run --project src/ModelChecks -c Release -- --campaign-draft-enhancer-count-only tests/fixtures/campaign-draft-enhancer-count-calibration.mt2f
+```
 
 ## Native no-op evidence
 

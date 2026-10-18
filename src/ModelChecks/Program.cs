@@ -1165,6 +1165,11 @@ if (args.Length == 2 && args[0] == "--campaign-purge-gold-only")
     CampaignPurgeGoldChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--campaign-draft-enhancer-count-only")
+{
+    CampaignDraftEnhancerCountChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--campaign-deck-copy-only")
 {
     CampaignDeckCopyChecks.Native(args[1]);
@@ -2037,6 +2042,8 @@ foreach (string path in args.Where(path => path.Contains("campaign-purge-gold-ca
     CampaignPurgeGoldChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("campaign-deck-copy-calibration", StringComparison.OrdinalIgnoreCase)))
     CampaignDeckCopyChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("campaign-draft-enhancer-count-calibration", StringComparison.OrdinalIgnoreCase)))
+    CampaignDraftEnhancerCountChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("null-relic-equivalence-calibration", StringComparison.OrdinalIgnoreCase)))
     OriginalNullRelicChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("standby-routing-calibration", StringComparison.OrdinalIgnoreCase)))
