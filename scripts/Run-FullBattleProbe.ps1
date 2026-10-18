@@ -279,6 +279,7 @@ param(
     [switch] $OriginalBalatroEventCavendish,
     [switch] $OriginalGarfieldBoxRandomCard,
     [switch] $OriginalPartFactory,
+    [switch] $OriginalPerkeoRelic,
     [switch] $OriginalBigDamageFromManyMorsels,
     [switch] $OriginalEarlyDiscardEnergy,
     [switch] $OriginalCheaperSpellCost,
@@ -527,6 +528,7 @@ if ($OriginalGarfieldBoxRandomCard) {
     if ($Policy -eq 'steward-once') { $Policy = 'units-and-junk' }
 }
 if ($OriginalPartFactory) { $Policy = 'units-spells-and-junk' }
+if ($OriginalPerkeoRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalBigDamageFromManyMorsels) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
     $Policy = 'units-spells-and-junk'
@@ -1051,6 +1053,7 @@ if ($OriginalBoneDogRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-bon
 if ($OriginalDecayDeathRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-decay-death' }
 if ($OriginalOpeningMorselsRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-morsels' }
 if ($OriginalOpeningDeckSpawnRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-deck-spawn' }
+if ($OriginalPerkeoRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perkeo' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -2006,6 +2009,14 @@ if ($OriginalWolosBloodletterRelic -and ($trace.Schema -ne 236 -or -not $trace.O
     $trace.OriginalWolosBloodletterUnsupported -ne 0 -or $trace.OriginalWolosBloodletterPending -ne 0 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 5 -or @($trace.RelicWolosBloodletterRecords).Count -lt 12)) {
     throw 'Original Wolos Bloodletter acceptance failed.'
+}
+if ($OriginalPerkeoRelic -and ($trace.Schema -ne 245 -or -not $trace.OriginalPerkeoPrepared -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.OriginalPerkeoCaptureFailures -ne 0 -or $trace.OriginalPerkeoMismatches -ne 0 -or
+    $trace.OriginalPerkeoUnsupported -ne 0 -or $trace.OriginalPerkeoPending -ne 0 -or
+    @($trace.RelicStartBattleGeneration).Count -ne 1 -or @($trace.RelicPerkeoConversions).Count -ne 1 -or
+    @($trace.RelicPerkeoUnplayed | Where-Object { @($_.UnupgradedControls).Count -gt 0 }).Count -eq 0)) {
+    throw 'Original Perkeo native generation/conversion/control evidence is incomplete or divergent.'
 }
 if ($OriginalOpeningDeckSpawnRelic -and ($trace.Schema -ne 244 -or -not $trace.OriginalOpeningDeckSpawnPrepared -or
     -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or

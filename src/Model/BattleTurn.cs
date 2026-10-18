@@ -286,6 +286,12 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             context = train.Context!;
+            CardGenerationResult unplayedConversion = RelicPerkeoModel.ApplyUnplayed(context);
+            if (!unplayedConversion.Supported) return Unsupported(unplayedConversion.UnsupportedReason!);
+            context = unplayedConversion.Context!;
+            otherPiles = context.OtherPiles?.ToArray() ?? otherPiles;
+            train = WithContext(train, context, spawn.Turn == 0);
+            spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
             var ephemeralCardIds = new List<int>();
             var persistentCardIds = new List<int>();
             var infusionCardIds = new List<int>();

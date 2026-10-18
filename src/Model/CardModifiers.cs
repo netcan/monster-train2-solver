@@ -348,7 +348,8 @@ namespace MonsterTrain2Poju.Model
                 ? upgrade.ExternalInteractions.Where(interaction => interaction != "Upgrade replacements")
                 : upgrade.ExternalInteractions)
             .Concat((upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>()).SelectMany(trigger =>
-                trigger.Type != "OnCast" ? new[] { "Unsupported card upgrade trigger " + trigger.Type } :
+                trigger.Type != "OnCast" && !(RelicPerkeoModel.IsConversionUpgrade(upgrade) && RelicPerkeoModel.IsConversionTrigger(trigger))
+                    ? new[] { "Unsupported card upgrade trigger " + trigger.Type } :
                 trigger.Effects.Count != trigger.Actions.Count ? new[] { "Card upgrade trigger effects are not fully captured" } :
                 trigger.ExternalInteractions));
 
@@ -454,7 +455,7 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect[] onUnplayedNegativeEffects = rule.OnUnplayedNegativeEffects
                 .Concat(unplayedTriggers.Where(trigger => trigger.Type == "OnUnplayedNegative").SelectMany(trigger => trigger.Actions))
                 .Select(ResolveEffect).ToArray();
-            bool unsupportedUnplayedTriggers = rule.HasUnsupportedUnplayedTriggers || unplayedTriggers.Length > 0;
+            bool unsupportedUnplayedTriggers = rule.HasUnsupportedUnplayedTriggers || unplayedTriggers.Any(trigger => !RelicPerkeoModel.IsConversionTrigger(trigger));
             CardActionEffect[] effects = rule.Effects.Select(ResolveEffect).ToArray();
             CardActionEffect[] onCastEffects = rule.OnCastEffects.Concat(triggerEffects).Select(ResolveEffect).ToArray();
             string destination = rule.Destination;

@@ -18,9 +18,9 @@ coverage inventory checks.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 222 original owners accepted (204 native battle owners,
+Current checkpoint: 223 original owners accepted (205 native battle owners,
 seventeen actual campaign-interface owners and one explicit native no-op owner);
-2 remain pending. The latest accepted owner is `RandomUnitEveryFloor`.
+1 remains pending. The latest accepted owner is `BalatroEventPerkeo`.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
@@ -30,7 +30,32 @@ and affected-fixture regression. Merchant/reward/draft effects need their actual
 campaign lifecycle evidence; enumeration and inert battle presence do not
 validate effects. Pure no-op definitions require explicit identification.
 
-The schema-244 `full-battle-original-opening-deck-spawn.mt2f` witness retains
+The schema-245 `full-battle-original-perkeo.mt2f` witness retains the unchanged
+owner, original one-card pool and permanent conversion upgrade. Start-of-battle
+generation creates a permanent upgraded Blight at a Battle-RNG random draw-pile
+position. Natural positive unplayed dispatch purges its saved-deck membership
+and creates a fresh permanent Consume card in hand without the conversion
+upgrade. Visible deck count is unchanged; full contexts, identities, piles,
+statistics and RNG match. Seven actual phases include one conversion and two
+unupgraded original-card controls. The 60-stage Pyre61 win records five ordinary
+plays/seven EndTurns, thirteen card cycles, fourteen train phases, eleven spawns
+and all eight error counters zero. Focused checks, complete independent policy
+and mid-battle replay, sixteen immutable branches and 128/128-state serial/parallel
+search pass. Search matches five decisions/nine root actions, replays four steps
+to the node/turn boundary and has zero unsupported attempts with equal best results.
+All 21 affected archives pass with both terminal exits zero and all three tested
+assembly hashes unchanged:
+`.probe-runs/model-checks-20261018-165035-46c1076d/summary.json`.
+The 37,082-byte archive has 5,573 unique nodes, zero source length/hash, no JSON
+companion and SHA-256
+`7022d3569f7a3d6d732012c961fef65f58319a7c0ae4e480ff90987ca911885d`.
+Current inventory is 442 archives: 403 battles and 39 components. The one-card
+SetupRun choice is captured external input; out-of-hand conversions, other
+positive unplayed upgrades, combined callbacks and metagame purge consumers need
+separate evidence. Commit `e62ed92` independently restores the explicit ordinary
+food-card play boundary exposed by the affected older generation witness.
+
+The preceding schema-244 `full-battle-original-opening-deck-spawn.mt2f` witness retains
 unchanged `RandomUnitEveryFloor`, its Null effect and three ordered spawn effects.
 Native Tests cache only Monster cards in draw-pile order, giving 4/3/2 pools
 with a non-Monster exclusion control. Apply shuffles the cache with CardDraw
@@ -104,7 +129,7 @@ was 439 archives: 400 battles and 39 component calibrations. Other transfer
 definitions, preview-only lifecycles and additional combined death/status
 callbacks require separate native evidence.
 
-Pending owners: `BalatroEventPerkeo` and `CorruptedAngelsArtifact`.
+Pending owner: `CorruptedAngelsArtifact`.
 
 The preceding schema-241 `full-battle-original-bone-dog.mt2f` witness exercises the
 unchanged 25% once-per-run resurrection through actual lethal Pyre damage.

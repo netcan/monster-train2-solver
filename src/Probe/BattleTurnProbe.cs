@@ -91,6 +91,8 @@ namespace MonsterTrain2Poju.Probe
                     continue;
                 }
                 CardPlayRule resolved = CardModifierModel.Resolve(definition, instance);
+                if (RelicPerkeoModel.HasConversion(instance) && !resolved.HasUnsupportedUnplayedTriggers && resolved.OnUnplayedNegativeEffects.Count == 0)
+                    continue;
                 if (resolved.HasUnsupportedUnplayedTriggers || resolved.OnUnplayedNegativeEffects.Count == 0 ||
                     resolved.OnUnplayedNegativeEffects.Any(effect =>
                         !(effect.Type == "Damage" && effect.Target == "Pyre" && effect.Range == null) &&

@@ -211,7 +211,7 @@
 "BossEmber2"	"6eef1e2d-3bd5-4f04-bd88-d0c24d5eb691"	"accepted-native-battle"	"RelicEffectModifyEnergy,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack,RelicEffectModifyEnergyDuringDeployment"	""
 "ModifyDragonsHoardBattleStart"	"3b6780ab-a1e8-443d-9ddb-5caedbd87775"	"accepted-native-battle"	"RelicEffectModifyDragonsHoardStartOfCombat"	""
 "DrawOnSnackPlayed"	"8b00c46d-374e-4afb-aa27-526873e242d1"	"accepted-native-battle"	"RelicEffectCardDrawOnCardPlay"	""
-"BalatroEventPerkeo"	"94f7f915-2a2d-4b56-afe6-76ce875ba54d"	"pending"	"RelicEffectAddCardsStartOfBattle"	""
+"BalatroEventPerkeo"	"94f7f915-2a2d-4b56-afe6-76ce875ba54d"	"accepted-native-battle"	"RelicEffectAddCardsStartOfBattle"	""
 "ModifyDragonsHoardBattleEnd"	"26c9bc93-f5a6-439d-8239-14c22cbeb02e"	"accepted-native-campaign"	"RelicEffectModifyDragonsHoardEndOfBattle"	""
 "DrawSpellOnDeployment"	"69d88251-cfed-4fd0-a355-cba2e10e09d4"	"accepted-native-battle"	"RelicEffectDrawOnPreOpeningDraw"	""
 "BossEmber"	"780f977e-4007-45ae-900f-c8929b2bf000"	"accepted-native-battle"	"RelicEffectModifyEnergy,RelicEffectIncreasePyreHealth,RelicEffectIncreasePyreAttack,RelicEffectModifyEnergyDuringDeployment"	""

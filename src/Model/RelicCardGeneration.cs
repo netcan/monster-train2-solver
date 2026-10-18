@@ -29,6 +29,7 @@ namespace MonsterTrain2Poju.Model
         }
         internal static string? ValidateStartOfBattle(CombatRelicState owner, RelicResourceEffect effect)
         {
+            if (owner.DataId == RelicPerkeoModel.DataId) return RelicPerkeoModel.Validate(owner, effect);
             var rule = effect.CardGeneration;
             if (owner.DataId != "623ce968-aae5-4b07-b0c8-071f315031b7" || owner.AssetKey != "PartFactory" ||
                 owner.IsCovenant != false || owner.DisallowedInPlacementPhase != false || effect.EffectIndex != 0 ||
@@ -193,7 +194,9 @@ namespace MonsterTrain2Poju.Model
             if (effects?.Length != 1) return Fail("Missing original start-of-battle generation effect index.");
             var effect = effects[0]; string? error = ValidateStartOfBattle(owner, effect);
             if (error != null) return Fail(error);
-            return CardGenerationModel.ApplyPartFactory(source, effect.CardGeneration!.WithSelectedPoolIndex(selectedPoolIndex));
+            return owner.DataId == RelicPerkeoModel.DataId
+                ? CardGenerationModel.Apply(source, effect.CardGeneration!.WithSelectedPoolIndex(selectedPoolIndex))
+                : CardGenerationModel.ApplyPartFactory(source, effect.CardGeneration!.WithSelectedPoolIndex(selectedPoolIndex));
         }
 
         internal static bool IsPartFactoryGraftedCard(CardCreationRule creation) =>

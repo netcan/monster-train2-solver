@@ -4,6 +4,7 @@ using System.Collections;
 using System.Linq;
 using HarmonyLib;
 using MonsterTrain2Poju.Model;
+using Newtonsoft.Json.Linq;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -16,6 +17,9 @@ namespace MonsterTrain2Poju.Probe
             public int EffectIndex { get; set; }
             public CombatContext Before { get; set; } = null!;
             public CombatContext? Actual { get; set; }
+            public CombatContext? Predicted { get; set; }
+            public string? Difference { get; set; }
+            public string? UnsupportedReason { get; set; }
             public CardToken[] GeneratedCards { get; set; } = Array.Empty<CardToken>();
             public bool Completed { get; set; }
         }
@@ -25,9 +29,10 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(RelicEffectAddCardsStartOfBattle __instance, ref IEnumerator __result)
             {
-                if (!OriginalPartFactoryScenario.Acquired || FullBattleTrace.Active == null ||
+                if (!(OriginalPartFactoryScenario.Acquired || OriginalPerkeoScenario.Acquired) || FullBattleTrace.Active == null ||
                     AllGameManagers.Instance!.GetSaveManager().PreviewMode ||
-                    __instance.SourceRelicState.GetRelicDataID() != OriginalPartFactoryScenario.DataId) return;
+                    (__instance.SourceRelicState.GetRelicDataID() != OriginalPartFactoryScenario.DataId &&
+                     __instance.SourceRelicState.GetRelicDataID() != OriginalPerkeoScenario.DataId)) return;
                 try
                 {
                     var owner = __instance.SourceRelicState;
@@ -60,6 +65,13 @@ namespace MonsterTrain2Poju.Probe
                         .Select(card => card.InstanceId).ToHashSet();
                     record.GeneratedCards = (record.Actual.CardRegistry ?? record.Actual.CardInstances ?? Array.Empty<CardInstanceState>())
                         .Where(card => !prior.Contains(card.InstanceId)).Select(card => new CardToken(card.InstanceId, card.DataId)).ToArray();
+                    if (record.OwnerId == OriginalPerkeoScenario.DataId)
+                    {
+                        CardGenerationResult result = RelicCardGenerationModel.ApplyStartOfBattle(record.Before, record.OwnerId, record.EffectIndex, 0);
+                        record.Predicted = result.Context; record.UnsupportedReason = result.UnsupportedReason;
+                        if (result.Context != null && !JToken.DeepEquals(JToken.FromObject(result.Context), JToken.FromObject(record.Actual)))
+                            record.Difference = "Native Perkeo generation context differs.";
+                    }
                 }
                 catch (Exception error) { FullBattleTrace.Active!.CaptureFailure(error); }
             }

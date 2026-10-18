@@ -251,7 +251,7 @@ namespace MonsterTrain2Poju.Probe
                 bool partFactory = ((RelicEffectBase)effect).SourceRelicState.GetRelicDataID() == OriginalPartFactoryScenario.DataId;
                 generation = new CardGenerationRule(data.GetParamBool3() ? "HandPile" : "DeckPileRandom",
                     allCards ? pool.Count : 1, pool.Select(card => partFactory ? CardGenerationProbe.PartFactoryCreation(card) : CardGenerationProbe.Creation(card)).ToArray(), upgrade: upgrade,
-                    deterministicPoolSelection: allCards, permanent: data.GetParamBool2());
+                    deterministicPoolSelection: allCards, permanent: data.GetParamBool2(), upgradeIsPermanent: upgradeData != null);
                 amount = allCards ? pool.Count : 1;
             }
             else if (effect is RelicEffectAddBattleCardToHand)

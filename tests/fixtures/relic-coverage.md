@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **222 distinct original collectable relics / 224 catalog entries
-(99.11%)** have accepted native evidence: 204 have full-battle effect evidence,
+As of 2026-10-18, **223 distinct original collectable relics / 224 catalog entries
+(99.55%)** have accepted native evidence: 205 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -3049,4 +3049,38 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalOpeningDeckSpawnR
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-opening-deck-spawn.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-opening-deck-spawn-only tests/fixtures/full-battle-original-opening-deck-spawn.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-opening-deck-spawn.mt2f
+```
+
+## Permanent Perkeo generation and positive unplayed conversion
+
+| Original owner | Data ID | Native evidence | Covered behavior |
+| --- | --- | --- | --- |
+| `BalatroEventPerkeo` | `94f7f915-2a2d-4b56-afe6-76ce875ba54d` | `full-battle-original-perkeo.mt2f` | Unchanged original pool generates permanent SelfPurgeBlight with permanent CalcifiedEmberConvert. Natural positive unplayed dispatch purges it from the saved deck and creates fresh permanent SelfPurgeEnergyGain in hand without inheriting the conversion upgrade. Seven phases include one conversion and two unupgraded original-card controls. |
+
+The schema-245 native win has 60 stages, five ordinary plays, seven EndTurns,
+thirteen card cycles, fourteen train phases, eleven spawns and final Pyre61.
+All eight capture/difference/unsupported/pending counters are zero and original
+files are unchanged. Complete context checks cover permanent deck membership,
+visible deck count, card identity allocation, Purged/Hand piles and unchanged
+conversion RNG. Focused checks, independent full policy/mid-battle replay,
+sixteen immutable branches and 21 affected archives pass. Bounded search matches
+five recorded decisions/nine root actions, visits 128/128 states and replays four
+steps to the node/turn boundary, with zero unsupported attempts and equal best
+results. Both workers terminate with zero exits and unchanged tested binaries:
+`.probe-runs/model-checks-20261018-165035-46c1076d/summary.json`.
+
+The 37,082-byte archive has 5,573 unique nodes and SHA-256
+`7022d3569f7a3d6d732012c961fef65f58319a7c0ae4e480ff90987ca911885d`.
+Source length/hash are zero, with no JSON companion. Inventory is 442 archives:
+403 battles and 39 components. Accepted coverage is 223/224 (99.55%): 205 battle
+owners, seventeen campaign owners and one native no-op; one pending. The one-card
+SetupRun pool choice is captured external input; random insertion uses modeled
+Battle RNG. Out-of-hand conversions, other positive unplayed upgrades, combined
+callbacks and metagame purge consumers require separate native evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalPerkeoRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-perkeo.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-perkeo-only tests/fixtures/full-battle-original-perkeo.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-perkeo.mt2f
 ```

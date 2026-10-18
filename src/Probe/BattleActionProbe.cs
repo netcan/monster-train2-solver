@@ -81,6 +81,12 @@ namespace MonsterTrain2Poju.Probe
                 .OfType<RelicEffectAddChampionCardToHand>().SelectMany(effect =>
                     effect.SourceRelicEffectData.GetParamRandomChampionPool()?.GetAllChampions() ?? new List<RandomChampionPool.GrantedChampionInfo>())
                 .Select(champion => champion.championCard.GetID())).Distinct().ToArray();
+            if (OriginalPerkeoScenario.Enabled)
+                definitions = definitions.Concat(save.GetAllRelics().Where(relic => relic.GetRelicDataID() == OriginalPerkeoScenario.DataId)
+                    .SelectMany(relic => relic.GetEffects()).OfType<RelicEffectAddCardsStartOfBattle>()
+                    .SelectMany(effect => effect.SourceRelicEffectData.GetParamCardUpgradeData().GetCardTriggerUpgrades())
+                    .SelectMany(trigger => trigger.GetCardEffects()).Select(effect => effect.GetParamCardData().GetID()))
+                    .Distinct().ToArray();
             var unplayedOrder = new Dictionary<string, int>(StringComparer.Ordinal);
             IReadOnlyList<CardData> simultaneousUnplayed = save.GetAllGameData().GetBalanceData()
                 .GetCardsThatResolveSimultaneouslyOnUnplayed();
@@ -290,6 +296,17 @@ namespace MonsterTrain2Poju.Probe
 
         internal static CardActionEffect DescribeTriggerEffect(CardEffectData effect, List<string> interactions, CardData? source = null)
         {
+            if (effect.GetEffectStateName() == "CardEffectBalatroConvertCard")
+            {
+                if (effect.GetParamCardData() == null)
+                {
+                    interactions.Add("Missing conversion destination card");
+                    return new CardActionEffect("Unsupported", "None", 0, false, false, Array.Empty<CombatStatus>());
+                }
+                return new CardActionEffect("BalatroConvert", "None", effect.GetParamInt(), false, false, Array.Empty<CombatStatus>(),
+                    generation: new CardGenerationRule("HandPile", effect.GetParamInt(), new[] { CardGenerationProbe.Creation(effect.GetParamCardData()) },
+                        deterministicPoolSelection: true, permanent: true));
+            }
             if (!SupportedSpellEffect(effect))
             {
                 interactions.Add("Unimplemented card-trigger effect " + effect.GetEffectStateName());

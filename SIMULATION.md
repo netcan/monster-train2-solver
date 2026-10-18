@@ -1,11 +1,33 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 441 binary archives, including 402
+Current accepted inventory (2026-10-18): 442 binary archives, including 403
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 222/224 catalog entries (99.11%): 204 battle owners, 17 campaign
+covers 223/224 catalog entries (99.55%): 205 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`BalatroEventPerkeo` has schema-245 evidence for original permanent random-pile
+generation of SelfPurgeBlight with CalcifiedEmberConvert. Its natural positive
+unplayed callback purges the source from the saved deck and creates a fresh,
+permanent SelfPurgeEnergyGain in the same hand, without inheriting the upgrade.
+Complete piles, deck membership, visible count, card identities and RNG match.
+Seven actual unplayed phases include one conversion and two unupgraded original
+card controls. The 60-stage Pyre61 win has five ordinary plays, seven EndTurns,
+thirteen card cycles, fourteen train phases, eleven spawns and eight zero error
+counters. Focused checks, independent policy/mid-battle replay, sixteen immutable
+branches, 128-state serial/parallel search and 21 affected archives pass; both
+workers exit zero and tested binaries are unchanged:
+`.probe-runs/model-checks-20261018-165035-46c1076d/summary.json`.
+The one-card SetupRun pool choice is captured external input; random insertion
+uses modeled Battle RNG. Out-of-hand conversion, other positive unplayed upgrades,
+combined unplayed callbacks and metagame purge consumers need separate evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalPerkeoRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-perkeo.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-perkeo-only tests/fixtures/full-battle-original-perkeo.mt2f
+```
 
 `RandomUnitEveryFloor` has schema-244 evidence for its unchanged Null plus three
 ordered start-of-battle effects. Native Test caches only Monster cards from the

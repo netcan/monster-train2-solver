@@ -39,7 +39,9 @@ namespace MonsterTrain2Poju.Probe
             var interactions = new List<string>();
             CardEffectData[] effects = data.GetCardEffects().ToArray();
             CardActionEffect[] actions = effects.Select(effect => BattleActionProbe.DescribeTriggerEffect(effect, interactions)).ToArray();
-            if (data.GetTrigger().ToString() != "OnCast") interactions.Add("Unsupported card upgrade trigger " + data.GetTrigger());
+            bool conversion = data.GetTrigger().ToString() == "OnUnplayedPositive" && effects.Length == 1 &&
+                effects[0].GetEffectStateName() == "CardEffectBalatroConvertCard" && effects[0].GetParamInt() == 1;
+            if (data.GetTrigger().ToString() != "OnCast" && !conversion) interactions.Add("Unsupported card upgrade trigger " + data.GetTrigger());
             return new CardLifecycleTrigger(data.GetTrigger().ToString(), data.GetDescriptionKey(),
                 effects.Select(effect => effect.GetEffectStateName()).ToArray(), id, actions, interactions.Distinct().ToArray());
         }

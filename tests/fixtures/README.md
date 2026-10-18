@@ -1,8 +1,25 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 441 archives (402 full battles and
-39 component calibrations), 222/224 original relic owners (99.11%): 204 battle
+Current accepted inventory (2026-10-18): 442 archives (403 full battles and
+39 component calibrations), 223/224 original relic owners (99.55%): 205 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+The latest `full-battle-original-perkeo.mt2f` retains unchanged Perkeo, its
+one-card pool and permanent CalcifiedEmberConvert upgrade. Natural generation
+inserts into the draw pile; natural positive unplayed dispatch purges the source
+from the permanent deck and creates a fresh permanent Consume card in hand.
+Seven unplayed phases include one conversion and two unupgraded original-card
+controls. Complete context, deck membership, identities, piles and RNG match.
+The 60-stage Pyre61 win has five ordinary plays/seven EndTurns, eight zero error
+counters, complete independent policy/mid-battle replay, sixteen immutable
+branches, 128-state serial/parallel search and 21 passing affected archives:
+`.probe-runs/model-checks-20261018-165035-46c1076d/summary.json`.
+Both workers terminate with zero exits and unchanged tested binaries. The archive
+has 37,082 bytes/5,573 unique nodes, zero source length/hash, no JSON companion
+and SHA-256 `7022d3569f7a3d6d732012c961fef65f58319a7c0ae4e480ff90987ca911885d`.
+SetupRun pool choice is captured external input. Out-of-hand conversions, other
+positive unplayed upgrades, combined callbacks and metagame purge consumers
+require separate evidence.
 
 The latest `full-battle-original-opening-deck-spawn.mt2f` retains unchanged
 `RandomUnitEveryFloor` and its ordered Null plus three spawn effects. Native

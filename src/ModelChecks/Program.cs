@@ -234,6 +234,12 @@ if (args.Length == 2 && args[0] == "--original-opening-deck-spawn-only")
     OriginalOpeningDeckSpawnChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-perkeo-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalPerkeoChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-opening-morsels-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

@@ -129,6 +129,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-decay-death.mt2f',
     'full-battle-original-opening-morsels.mt2f',
     'full-battle-original-opening-deck-spawn.mt2f',
+    'full-battle-original-perkeo.mt2f',
     'full-battle-original-propagate-on-status-effect-applied.mt2f',
     'full-battle-original-pyre-health-card-cost.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
@@ -1571,6 +1572,13 @@ foreach ($fixturePath in $originalSpawnRetreatFixtures) {
     foreach ($mode in @('--original-spawn-retreat-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original spawn retreat checks failed ($mode): $fixturePath" }
+    }
+}
+$originalPerkeoFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-perkeo.mt2f' })
+foreach ($fixturePath in $originalPerkeoFixtures) {
+    foreach ($mode in @('--original-perkeo-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Perkeo checks failed ($mode): $fixturePath" }
     }
 }
 $originalOpeningDeckSpawnFixtures = @($fixtures | Where-Object {
