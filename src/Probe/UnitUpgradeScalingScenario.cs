@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static readonly List<Sample> Samples = new List<Sample>();
         private static bool calibrating;
+        internal static bool RemovalMode => Environment.GetEnvironmentVariable("MT2_PROBE_REMOVAL_SCALING") == "1";
         internal static bool CalibrationContextUnchanged { get; private set; }
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -28,6 +29,18 @@ namespace MonsterTrain2Poju.Probe
             data.GetTraits().Add(Trait("Damage", "MoonPhase", 1, 1));
             data.GetTraits().Add(Trait("Health", "TurnCount", 1, 0));
             data.GetTraits().Add(Trait("Damage", "ForgePoints", -1, 99));
+            if (RemovalMode)
+            {
+                data.GetTraits().Add(Trait("Damage", "AnyStatusEffectStacksRemoved", 2, 0, "ThisBattle"));
+                data.GetTraits().Add(Trait("Health", "AnyStatusEffectStacksRemoved", 3, 0, "ThisTurn"));
+                // Keep the future enemy-generated Scourge definition visible from
+                // the root, including native instance-based forge eligibility.
+                CardManager manager = managers.GetCardManager()!;
+                CardState reference = manager.AddNewCard(save.GetAllGameData().FindCardData("62cc5532-5fa0-4e66-9fec-85be573af359"),
+                    CardPile.DeckPile, false, false, animate: false) ?? throw new InvalidOperationException("Could not create reference Scourge.");
+                if (!manager.GetDrawPile().Remove(reference)) throw new InvalidOperationException("Reference Scourge was not created in draw.");
+                manager.GetExhaustedPile().Add(reference);
+            }
             CardUpgradeData temporary = Upgrade("PojuScalingTemporary", "cdf091ee-b111-4db1-b5e1-b69f15a50301", 2, 3);
             CardUpgradeData permanent = Upgrade("PojuScalingPermanent", "cdf091ee-b111-4db1-b5e1-b69f15a50302", 1, 1);
             CardUpgradeData unique = Upgrade("PojuScalingUnique", "cdf091ee-b111-4db1-b5e1-b69f15a50303", 2, 2); Set(unique, "isUnique", true);
@@ -35,6 +48,16 @@ namespace MonsterTrain2Poju.Probe
             CardUpgradeData blocked = Upgrade("PojuScalingBlocked", "cdf091ee-b111-4db1-b5e1-b69f15a50305", 1, 1);
             Set(blocked, "bonusSize", 99); Set(blocked, "restrictSizeToRoomCapacity", true);
             data.GetEffects().Clear();
+            if (RemovalMode)
+            {
+                var add = new CardEffectData("CardEffectAddStatusEffect", null!, Team.Type.Monsters);
+                add.Cheat_SetTargetMode(TargetMode.DropTargetCharacter);
+                Set(add, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "armor", count = 3 } });
+                var remove = new CardEffectData("CardEffectRemoveStatusEffect", null!, Team.Type.Monsters);
+                remove.Cheat_SetTargetMode(TargetMode.DropTargetCharacter);
+                Set(remove, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "armor", count = 1 } });
+                data.GetEffects().Add(add); data.GetEffects().Add(remove);
+            }
             data.GetEffects().Add(Effect("CardEffectAddTempCardUpgradeToUnits", temporary, UnitUpgradeLifetime.TemporaryUntilEndOfBattle, true));
             data.GetEffects().Add(Effect("CardEffectAddCardUpgradeToUnits", permanent, UnitUpgradeLifetime.Permanent));
             data.GetEffects().Add(Effect("CardEffectAddTempCardUpgradeToUnits", unique, UnitUpgradeLifetime.TemporaryUntilEndOfBattle));
@@ -50,6 +73,13 @@ namespace MonsterTrain2Poju.Probe
             steward.GetTraits().Add(Trait("Health", "AnyCharacter", 2, 0));
             foreach (CardState card in stewards) card.Setup(steward, save);
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
+            if (RemovalMode)
+            {
+                FullBattleTrace.Active!.InvalidateCardRules();
+                if (FullBattleTrace.Active.CaptureDecision().PlayRules!.Cards.Single(rule => rule.DataId == "62cc5532-5fa0-4e66-9fec-85be573af359").ForgeEligible != false)
+                    throw new InvalidOperationException("Reference Scourge lacks stable native forge metadata.");
+                log.LogInfo("REMOVAL-SCALING-REFERENCE-READY exhausted reference retains stable native forge metadata.");
+            }
             log.LogInfo("UNIT-UPGRADE-SCALING-PREPARED ordered attack/health traits, signed bonuses, turn/moon/local history, base-valued removal, unique/capacity no-ops and magic-only gates; natural boss/waves retained.");
         }
         internal static CardTraitData Trait(string stat, string type, int amount, int restriction, string duration = "ThisTurn")

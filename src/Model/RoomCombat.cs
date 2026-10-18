@@ -3051,6 +3051,9 @@ namespace MonsterTrain2Poju.Model
                     // Removed native characters have no spawn point and skip trigger
                     // preflight, though their once flag can still be marked before abort.
                     if (unit.InRoom && !unit.Removed && !ActionTriggerPassesTest(unit, trigger, lastSpawnedOverrideUnitId)) continue;
+                    if (kind == "CorruptionAdded" && trigger.SuppressTriggerNotification == false && !source.Preview &&
+                        context?.QueryFrame?.SelectedRoomIndex != null)
+                        context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
                     var effects = trigger.Effects.ToArray();
                     // Native marks the trigger before its effects; nested death effects observe it.
                     CombatTrigger retained = trigger.Fired(effects);

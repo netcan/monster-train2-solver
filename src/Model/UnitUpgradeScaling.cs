@@ -49,7 +49,6 @@ namespace MonsterTrain2Poju.Model
                 return new UnitUpgradeScalingResult(context, upgrade);
             if (context == null) return Unsupported("Unit-upgrade scaling requires shared combat context.");
             if (trait.Stat != "Damage" && trait.Stat != "Health") return Unsupported("Unknown unit-upgrade scaling stat.");
-            if (trait.Query.Type == "AnyStatusEffectStacksRemoved") return Unsupported("Removed-status scaling attribution is not modeled.");
             StatisticQueryResult query = StatisticQueryModel.Evaluate(context, trait.Query, ownerCardId);
             if (!query.Supported) return Unsupported(query.UnsupportedReason!);
             int bonus = unchecked(trait.AmountPerStat * query.Value);

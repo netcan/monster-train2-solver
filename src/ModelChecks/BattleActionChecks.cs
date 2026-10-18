@@ -698,7 +698,9 @@ internal static class BattleActionChecks
             Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {scenarioActions} controlled relic actions checked individually, independent {suffixTurns.Length}-EndTurn suffix to native victory, and 16 immutable parallel branches.");
             return;
         }
-        if (fixture.TryGetProperty("CardBackedFeeding", out var feeding) && feeding.GetBoolean())
+        if (fixture.TryGetProperty("CardBackedFeeding", out var feeding) && feeding.GetBoolean() ||
+            fixture.TryGetProperty("TowerCorruptionCallbacks", out var tower) && tower.GetBoolean() ||
+            fixture.TryGetProperty("RemovedStatusScaling", out var removal) && removal.GetBoolean())
         {
             RecordedBattleChecks.Native(fixture);
             return;

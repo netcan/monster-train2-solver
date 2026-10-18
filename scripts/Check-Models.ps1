@@ -195,6 +195,9 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-dynamic-statistics.mt2f',
     'full-battle-status-scaling.mt2f',
     'full-battle-unit-upgrade-scaling.mt2f',
+    'full-battle-tower-corruption-callbacks.mt2f',
+    'full-battle-null-unit-ability.mt2f',
+    'full-battle-removed-status-upgrade-scaling.mt2f',
     'full-battle-unit-trigger-upgrades.mt2f',
     'full-battle-spawn-triggers.mt2f', 'full-battle-spawn-triggers-lethal.mt2f',
     'full-battle-unit-turn-begin.mt2f',
@@ -1585,6 +1588,20 @@ foreach ($fixturePath in $originalCorruptedAngelsFixtures) {
     foreach ($mode in @('--original-corrupted-angels-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Corrupted Angels checks failed ($mode): $fixturePath" }
+    }
+}
+$extendedMechanicFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -in @('full-battle-tower-corruption-callbacks.mt2f', 'full-battle-null-unit-ability.mt2f', 'full-battle-removed-status-upgrade-scaling.mt2f')
+})
+foreach ($fixturePath in $extendedMechanicFixtures) {
+    $mechanicMode = switch (Split-Path -Leaf $fixturePath) {
+        'full-battle-tower-corruption-callbacks.mt2f' { '--corruption-keeper-trigger-only' }
+        'full-battle-null-unit-ability.mt2f' { '--unit-ability-native-only' }
+        'full-battle-removed-status-upgrade-scaling.mt2f' { '--unit-upgrade-scaling-only' }
+    }
+    foreach ($mode in @($mechanicMode, '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Extended mechanic checks failed ($mode): $fixturePath" }
     }
 }
 foreach ($fixturePath in $originalPerkeoFixtures) {

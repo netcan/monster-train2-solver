@@ -257,6 +257,8 @@ internal static class RoomCorruptionChecks
 
     internal static void NativeKeeper(FixtureValue fixture)
     {
+        if (fixture.TryGetProperty("TowerCorruptionCallbacks", out FixtureValue tower) && tower.GetBoolean())
+        { NativeTower(fixture); return; }
         Require(fixture.GetProperty("Schema").GetInt32() == 103 &&
             fixture.GetProperty("ModifierScenario").GetString() == "corruption-keeper-trigger" &&
             fixture.GetProperty("NativeWon").GetBoolean() &&
@@ -317,6 +319,35 @@ internal static class RoomCorruptionChecks
         BattleTurnChecks.Native(fixture);
         BattleSearchChecks.Native(fixture);
         Console.WriteLine("NATIVE-CORRUPTION-KEEPER-TRIGGER PASS: two original units received the same temporary room upgrade.");
+    }
+
+    private static void NativeTower(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("NativeWon").GetBoolean() &&
+            new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(name => fixture.GetProperty(name).GetInt32() == 0),
+            "Incomplete tower corruption witness.");
+        FixtureValue row = fixture.GetProperty("Actions").EnumerateArray().First(entry => entry.GetProperty("ScenarioAction").GetBoolean());
+        BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CardPlayRule rule = before.PlayRules!.Cards.Single(card => card.DataId == before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId);
+        Require(rule.Effects.Any(effect => effect.Type == "AdjustCorruption" && effect.Target == "Tower"), "Missing native Tower target.");
+        foreach (int index in new[] { 0, 1 })
+        {
+            CombatUnit old = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == index).Units.Single(unit => unit.AssetKey == "MonsterKeeperOfEchoes");
+            CombatUnit next = actual.Spawn.Train.Rooms.Single(room => room.RoomIndex == index).Units.Single(unit => unit.Id == old.Id);
+            CardUpgradeModifier upgrade = old.Triggers.Single(trigger => trigger.Kind == "CorruptionAdded").Effects.Single().UnitUpgrade!.Upgrade!;
+            Require(next.BaseAttack == old.BaseAttack + upgrade.Stats.Damage &&
+                next.MaxHealth == old.MaxHealth + upgrade.Stats.Health,
+                $"Floor {index} callback did not observe sequential commits: hp={old.MaxHealth}->{next.MaxHealth}.");
+        }
+        Require(before.Spawn.Train.Context!.RoomCapacities!.All(room => room.Corruption == 0) &&
+            actual.Spawn.Train.Context!.RoomCapacities!.All(room => room.Corruption == 1), "Tower did not add corruption on every floor.");
+        BattleActionResult replay = BattleActionModel.PlayCard(before, action);
+        Require(replay.Supported && ModelJson.Difference(BattleTurnChecks.Comparable(replay.State!), BattleTurnChecks.Comparable(actual)) == null,
+            replay.Reason ?? "Independent tower action differs.");
+        Require(actual.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 1, "Corruption notification did not focus the second floor.");
+        Console.WriteLine("NATIVE-TOWER-CORRUPTION PASS: two floor callbacks, notification focus and current-floor scaling, exact complete action.");
     }
 
     internal static void NativeRelicTrigger(FixtureValue fixture)

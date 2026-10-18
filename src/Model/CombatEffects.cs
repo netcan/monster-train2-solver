@@ -271,13 +271,15 @@ namespace MonsterTrain2Poju.Model
         public CombatTriggerConditions? Conditions { get; }
         public bool RemoveOnRelentlessChange { get; }
         public bool? NoCountModifiersAllowed { get; }
+        public bool? SuppressTriggerNotification { get; }
         // Immutable copies retain the native trigger object's identity inside an engine.
         // This token is local to an in-memory branch and is never serialized.
         internal object Identity { get; }
         public CombatTrigger(string kind, bool once, bool hasTriggered, bool ignoreSilence,
             int fireCount, IReadOnlyList<CombatEffect> effects, bool? skipDuringDeployment = null, int? triggerAtThreshold = null,
             CombatTriggerOrigin? origin = null, int? stateId = null, CombatTriggerConditions? conditions = null,
-            bool removeOnRelentlessChange = false, bool? noCountModifiersAllowed = null, bool? deathwishActive = null)
+            bool removeOnRelentlessChange = false, bool? noCountModifiersAllowed = null, bool? deathwishActive = null,
+            bool? suppressTriggerNotification = null)
         {
             Kind = kind; Once = once; HasTriggered = hasTriggered; IgnoreSilence = ignoreSilence;
             FireCount = fireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = skipDuringDeployment;
@@ -288,6 +290,7 @@ namespace MonsterTrain2Poju.Model
             Conditions = conditions;
             RemoveOnRelentlessChange = removeOnRelentlessChange;
             NoCountModifiersAllowed = noCountModifiersAllowed;
+            SuppressTriggerNotification = suppressTriggerNotification;
             Identity = new object();
         }
         private CombatTrigger(CombatTrigger source, bool hasTriggered, IReadOnlyList<CombatEffect> effects, int? stateId,
@@ -299,6 +302,7 @@ namespace MonsterTrain2Poju.Model
             DeathwishActive = deathwishActive ?? source.DeathwishActive; Conditions = source.Conditions;
             RemoveOnRelentlessChange = source.RemoveOnRelentlessChange;
             NoCountModifiersAllowed = source.NoCountModifiersAllowed;
+            SuppressTriggerNotification = source.SuppressTriggerNotification;
         }
         internal CombatTrigger Fired(IReadOnlyList<CombatEffect> effects) => new CombatTrigger(this, true, effects, StateId);
         internal CombatTrigger ForPreview() => new CombatTrigger(this, false, Effects, StateId);
@@ -309,6 +313,7 @@ namespace MonsterTrain2Poju.Model
         internal CombatTrigger WithFireCount(int fireCount) => new CombatTrigger(this, HasTriggered, Effects, StateId, fireCount);
         internal CombatTrigger WithOrigin(string upgradeId, int equipmentCardId, int? stateId = null) => new CombatTrigger(Kind, Once, false,
             IgnoreSilence, FireCount, Effects, SkipDuringDeployment, TriggerAtThreshold,
-            new CombatTriggerOrigin(upgradeId, equipmentCardId, equipmentCardId > 0, Origin?.OnlyIfEquipped == true), stateId, Conditions, RemoveOnRelentlessChange, NoCountModifiersAllowed);
+            new CombatTriggerOrigin(upgradeId, equipmentCardId, equipmentCardId > 0, Origin?.OnlyIfEquipped == true), stateId, Conditions, RemoveOnRelentlessChange, NoCountModifiersAllowed,
+            suppressTriggerNotification: SuppressTriggerNotification);
     }
 }

@@ -482,7 +482,9 @@ namespace MonsterTrain2Poju.Probe
                         trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()), Active!.TriggerStateId(unit, trigger), EnemySpawningProbe.TriggerConditions(data), data.GetRemoveOnRelentlessChange(),
                     RelicProbe.HasTriggerCounts(AllGameManagers.Instance!) ? trigger.isNoCountModifiersAllowed : (bool?)null,
                     trigger.GetTrigger() == CharacterTriggerData.Trigger.OnDeathwish || trigger.GetTrigger() == CharacterTriggerData.Trigger.OnDeathwishLost
-                        ? deathWishSources.Contains(trigger) : (bool?)null);
+                        ? deathWishSources.Contains(trigger) : (bool?)null,
+                    trigger.GetTrigger() == CharacterTriggerData.Trigger.CorruptionAdded
+                        ? data.IsSuppressTriggerNotification() || trigger.isSuppressTriggerNotificationOverride : (bool?)null);
             }).ToArray();
         }
 
@@ -1192,6 +1194,9 @@ namespace MonsterTrain2Poju.Probe
                     CardAnimationSettlement.PendingMovements },
                 UnitPostCombats = PostCombatHealingProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,
+                RemovedStatusScaling = UnitUpgradeScalingScenario.RemovalMode,
+                TowerCorruptionCallbacks = CorruptionScenario.TowerMode,
+                NullAbility = AbilityActivationScenario.NullMode,
                 UiRngIsolation = UiRngIsolation.Records,
                 Checkpoints = checkpoints
             };

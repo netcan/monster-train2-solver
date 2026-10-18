@@ -37,6 +37,12 @@ internal static class UnitAbilityChecks
             $"Payment/self/damage attribution differs: energy={after.Energy}, selfHP={actor.Health}, enemyHP={enemy.Health}, attacker={enemy.LastAttackerId}.");
         Require(actor.Ability!.Resolving == false && actor.Statuses.Single(status => status.Id == "cooldown").Stacks == 3 &&
             actor.Statuses.All(status => status.Id != "unit_ability_available"), "Own activation did not settle cooldown/availability callbacks.");
+        BattleActionResult empty = UnitAbilityModel.Activate(Root(nullAbility: true), action);
+        Require(empty.Supported && empty.State!.Energy == 3 &&
+            empty.State.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 10).Health == 18 &&
+            empty.State.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 10).Status("cooldown")?.Stacks == 3 &&
+            empty.State.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 11).Health == 40,
+            empty.Reason ?? "Empty skill skipped own callbacks or applied spell effects.");
         Require(context.LastAbilityActivatorUnitId == 10 && context.CardInstances!.Select(card => card.InstanceId).SequenceEqual([1, 3]) &&
             context.Cards.Hand.Select(card => card.InstanceId).SequenceEqual([3]) &&
             context.CardRegistry!.Single(card => card.InstanceId == 2) is { LastPlayedCost: 1, PlayCount: 0 } &&
@@ -115,7 +121,7 @@ internal static class UnitAbilityChecks
         bool handFull = false, bool allowFull = true, bool xCost = false, bool emptyCache = false, bool otherFloors = false,
         bool terminalEnemy = false, bool typed = true, int actorAttack = 1, bool sourceAttackDamage = false, int damageMultiplier = 4,
         bool useCardTraits = false, int actorArmor = 0, int enemyHealth = 40,
-        int? actorLastAttackerId = null, int? enemyLastAttackerId = 0, bool damagePerHpLastAttacker = false)
+        int? actorLastAttackerId = null, int? enemyLastAttackerId = 0, bool damagePerHpLastAttacker = false, bool nullAbility = false)
     {
         var rng = UnityRng.Seed(84);
         CombatStatus cooldown = new("cooldown", 1, removeStackAtEnd: true, preventRemovalDuringRelentless: true, stackable: true);
@@ -151,8 +157,8 @@ internal static class UnitAbilityChecks
             [], 0, false, 0, 0, deployment ? 0 : 1, []);
         var rules = new BattlePlayRules([new(0, 5, 7, true, false, false), new(1, 5, 7, true, false, false),
             new(2, 0, 7, true, true, true), new(9, 5, 7, true, false, false)],
-            [new("skill", "skill", 1, "Spell", "Discard", null, [],
-                [new(sourceAttackDamage ? "DamagePerSourceAttack" : damagePerHpLastAttacker ? "DamagePerHp" : "Damage", "FrontInRoom",
+            [new("skill", "skill", 1, nullAbility ? "Null" : "Spell", "Discard", null, [],
+                nullAbility ? [] : [new(sourceAttackDamage ? "DamagePerSourceAttack" : damagePerHpLastAttacker ? "DamagePerHp" : "Damage", "FrontInRoom",
                     sourceAttackDamage ? damageMultiplier : damagePerHpLastAttacker ? 1 : 4, true, false, [],
                     useCardTraits: useCardTraits, damagePerHpLastAttacker: damagePerHpLastAttacker),
                     new("Heal", "Self", 1, true, false, [])],
@@ -169,10 +175,11 @@ internal static class UnitAbilityChecks
         var samples = fixture.GetProperty("Actions").EnumerateArray().Where(entry =>
             entry.GetProperty("Action").Deserialize<PlayCardAction>()!.ActivatorUnitId > 0).ToArray();
         bool damagePerHpAbility = modifier.GetString() == "damage-per-hp-ability";
+        bool nullAbility = fixture.TryGetProperty("NullAbility", out FixtureValue nullMode) && nullMode.GetBoolean();
         Require(samples.Length >= 2 && samples.Select(entry => entry.GetProperty("Action").Deserialize<PlayCardAction>()!.ActivatorUnitId)
             .Distinct().Count() >= 2 && samples.Select(entry => entry.GetProperty("Action").Deserialize<PlayCardAction>()!.CardInstanceId)
             .Distinct().Count() == 1, "Native policy did not activate the expected units through one shared skill card.");
-        if (modifier.GetString() == "ability-activation")
+        if (modifier.GetString() == "ability-activation" && !nullAbility)
         {
             BattleTurnState before = samples[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
             CombatUnit actor = before.Spawn.Train.Rooms.SelectMany(room => room.Units)
@@ -220,8 +227,26 @@ internal static class UnitAbilityChecks
             Verify(before, after, action);
             Parallel.For(0, 32, _ => Verify(before, after, action));
         }
-        Require((damagePerHpAbility || selfHeals > 0) && positive > 0,
+        Require((nullAbility || damagePerHpAbility || selfHeals > 0) && positive > 0,
             "Native self healing after pre-own damage or paid skill coverage is missing.");
+        if (nullAbility)
+        {
+            foreach (FixtureValue sample in samples)
+            {
+                BattleTurnState before = sample.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState after = sample.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                PlayCardAction action = sample.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                CombatUnit actor = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.ActivatorUnitId);
+                CardPlayRule rule = before.PlayRules!.Cards.Single(card => card.DataId == actor.Ability!.DataId);
+                CombatUnit actualActor = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == actor.Id);
+                Require(rule.Effect == "Null" && rule.Effects.Count == 0 && after.Energy == before.Energy - 1 &&
+                    after.Spawn.Train.Context!.Gold > before.Spawn.Train.Context!.Gold &&
+                    actualActor.Triggers.Any(trigger => trigger.Kind == "OnPreOwnAbilityActivated" && trigger.HasTriggered) &&
+                    actualActor.Triggers.Any(trigger => trigger.Kind == "OnOwnAbilityActivated" && trigger.HasTriggered),
+                    "Empty ability skipped its payment or own callback pipeline.");
+            }
+            Console.WriteLine("NATIVE-NULL-ABILITY PASS: empty effects retain paid activation, shared cache, cooldown and own callbacks.");
+        }
         if (modifier.GetString() == "ability-activation-x") Require(zero > 0, "Native X skill never paid zero energy.");
         if (modifier.GetString() == "ability-activation-lethal") Require(kills > 0 && terminal == 1, "Native lethal skill did not win by killing the Boss.");
         Console.WriteLine($"NATIVE-UNIT-ABILITY-CHECKS PASS: {samples.Length} complete activations, {selfHeals} self heals, {positive} paid/{zero} zero, {terminal} terminal; shared identity and 32 branches.");
@@ -262,8 +287,8 @@ internal static class UnitAbilityChecks
                 room.Units.Select(unit => $"room={room.RoomIndex}:id={unit.Id}:asset={unit.AssetKey}:team={unit.Team}:hp={unit.Health}:atk={unit.Attack}:statuses=[{string.Join(',', unit.Statuses.Select(status => status.Id + ':' + status.Stacks))}]")));
             CombatUnit caster = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.ActivatorUnitId);
             CardPlayRule skill = before.PlayRules!.Cards.Single(rule => rule.DataId == caster.Ability!.DataId);
-            CardActionEffect effect = CardModifierModel.Resolve(skill, before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!).Effects[0];
-            throw new InvalidOperationException($"Native skill state differs: {difference}; action={action}; caster={caster.Id}/{caster.AssetKey} attack={caster.Attack} base={caster.BaseAttack}; effect={effect.Type}:{effect.Value}; before=[{Units(before)}]; predicted=[{Units(result.State!)}]; actual=[{Units(actual)}]");
+            CardActionEffect? effect = CardModifierModel.Resolve(skill, before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!).Effects.FirstOrDefault();
+            throw new InvalidOperationException($"Native skill state differs: {difference}; action={action}; caster={caster.Id}/{caster.AssetKey} attack={caster.Attack} base={caster.BaseAttack}; effect={effect?.Type}:{effect?.Value}; before=[{Units(before)}]; predicted=[{Units(result.State!)}]; actual=[{Units(actual)}]");
         }
         Require(JsonSerializer.Serialize(before) == parent, "Native skill comparison mutated its input.");
     }

@@ -38,7 +38,8 @@ namespace MonsterTrain2Poju.Model
             RoomPlayRule? selectedRule = source.PlayRules.Rooms.FirstOrDefault(room => room.RoomIndex == action.RoomIndex);
             if (selectedRule == null || !selectedRule.Enabled || train.Rooms.All(room => room.RoomIndex != action.RoomIndex))
                 return Illegal("The selected ability room does not exist or is disabled.");
-            if (rule.Effect != "Spell") return Unsupported("Unit ability effect pipeline " + rule.Effect + " is not modeled.");
+            if (rule.Effect != "Spell" && !(rule.Effect == "Null" && rule.Effects.Count == 0))
+                return Unsupported("Unit ability effect pipeline " + rule.Effect + " is not modeled.");
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
             if (RelicModel.AbilitiesTriggerIncant(context) && (rule.CardType != "Spell" || rule.IsAnyAbility != true))
                 return Unsupported("Unit ability Incant requires captured Spell/ability classification.");
@@ -61,8 +62,8 @@ namespace MonsterTrain2Poju.Model
             error = CardSpellModel.UnisolatedUiRangeReason(source) ?? CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId);
             if (error != null) return Unsupported(error);
             train = CardSpellModel.WithContext(train, context);
-            SpellCastCheck cast = CardSpellModel.TestPlay(train, action.RoomIndex, rule.Effects, 0, source.PlayRules,
-                actor.Id, action.TargetSpawnPointIndex);
+            SpellCastCheck cast = rule.Effect == "Null" ? new SpellCastCheck(true, battleRngAfterTests: context.BattleRng) :
+                CardSpellModel.TestPlay(train, action.RoomIndex, rule.Effects, 0, source.PlayRules, actor.Id, action.TargetSpawnPointIndex);
             if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
             if (!cast.CanPlay) return Illegal("The ability failed its casting test.");
             RoomCombatState? selectedRoomState = train.Rooms.FirstOrDefault(room => room.RoomIndex == action.RoomIndex);
@@ -103,8 +104,9 @@ namespace MonsterTrain2Poju.Model
             if (train.Context!.FindCard(cache.Card.InstanceId)?.PlayedRoomUnitIds != null)
                 train = CardSpellModel.WithContext(train, train.Context.WithCard(
                     train.Context.FindCard(cache.Card.InstanceId)!.WithPlayedRoomUnits(cachedUnits)));
-            TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.Effects, 0, cache.Card.InstanceId,
-                source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actor.Id, action.TargetSpawnPointIndex);
+            TrainSpellResult applied = rule.Effect == "Null" ? new TrainSpellResult(train, RoomOutcome.Exchanged, Array.Empty<CombatEvent>()) :
+                CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.Effects, 0, cache.Card.InstanceId,
+                    source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actor.Id, action.TargetSpawnPointIndex);
             if (!applied.Supported) return Unsupported(applied.UnsupportedReason!);
             train = applied.State!; if (Terminal(applied.Outcome)) outcome = applied.Outcome;
             context = train.Context!;

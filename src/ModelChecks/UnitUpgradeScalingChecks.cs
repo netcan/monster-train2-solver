@@ -73,8 +73,8 @@ internal static class UnitUpgradeScalingChecks
         Require(excludedClone.Supported && JsonSerializer.Serialize(excludedClone.State) == JsonSerializer.Serialize(cloneRoom),
             "Clone exclusion queried a trait before the native early return.");
         Require(!UnitUpgradeScalingModel.Apply(context, 999, upgrade).Supported &&
-            !UnitUpgradeScalingModel.ApplyTrait(context, new(new("AnyStatusEffectStacksRemoved"), "Damage", 1), 1, upgrade).Supported,
-            "Missing ownership or incomplete removal attribution returned a usable upgrade.");
+            UnitUpgradeScalingModel.ApplyTrait(context, new(new("AnyStatusEffectStacksRemoved"), "Damage", 1), 1, upgrade).Upgrade!.Stats.Damage == 4,
+            "Missing ownership was accepted or an empty removal history changed the upgrade.");
         var generated = CardGenerationModel.Apply(context, new("HandPile", 1,
             [new("generated", CardModifiers.Empty(), null, [], unitUpgradeScalingTraits: traits)]));
         Require(generated.Supported && UnitUpgradeScalingModel.Apply(generated.Context, 3, upgrade).Upgrade!.Stats.Damage == 9 &&
@@ -100,8 +100,10 @@ internal static class UnitUpgradeScalingChecks
     {
         if (!fixture.TryGetProperty("ModifierScenario", out FixtureValue scenario) || scenario.GetString() != "unit-upgrade-scaling") return;
         Require(fixture.GetProperty("UnitUpgradeScalingCalibrationContextUnchanged").GetBoolean(), "Native callback calibration changed live state.");
-        int calibration = 0, live = 0, signed = 0, grew = 0, magic = 0, skippedTrigger = 0, distinctOwner = 0;
+        bool removalMode = fixture.TryGetProperty("RemovedStatusScaling", out FixtureValue removal) && removal.GetBoolean();
+        int calibration = 0, live = 0, signed = 0, grew = 0, magic = 0, skippedTrigger = 0, distinctOwner = 0, removalPositive = 0;
         var stats = new HashSet<string>(); var queries = new HashSet<string>(); var moons = new HashSet<int>(); var turns = new HashSet<int>();
+        var removalDurations = new HashSet<string>();
         foreach (FixtureValue sample in fixture.GetProperty("UnitUpgradeScaling").EnumerateArray())
         {
             Require(sample.GetProperty("CaptureError").ValueKind == FixtureKind.Null && sample.GetProperty("Difference").ValueKind == FixtureKind.Null,
@@ -118,6 +120,9 @@ internal static class UnitUpgradeScalingChecks
             bool calibrating = sample.GetProperty("Origin").GetString() == "Calibration";
             if (calibrating) { calibration++; Require(sample.GetProperty("OwnerCardId").GetInt32() != sample.GetProperty("ThisCardId").GetInt32(),
                 "Calibration failed to distinguish callback argument from trait owner."); } else live++;
+            if (!calibrating && trait.Query.Type == "AnyStatusEffectStacksRemoved" && !original.MagicPowerTraitScalingOnly &&
+                (actual.Stats.Damage > original.Stats.Damage || actual.Stats.Health > original.Stats.Health))
+            { removalPositive++; removalDurations.Add(trait.Query.Duration); }
             if (calibrating && trait.Query.Type == "TimesPlayed" && !original.MagicPowerTraitScalingOnly &&
                 before.Statistics!.Value(sample.GetProperty("OwnerCardId").GetInt32(), "TimesPlayed", "ThisBattle") !=
                 before.Statistics.Value(sample.GetProperty("ThisCardId").GetInt32(), "TimesPlayed", "ThisBattle")) distinctOwner++;
@@ -126,8 +131,11 @@ internal static class UnitUpgradeScalingChecks
             magic += original.MagicPowerTraitScalingOnly ? 1 : 0;
             skippedTrigger += trait.Restriction == 1 && kind == "OnHeal" && JsonSerializer.Serialize(original) == JsonSerializer.Serialize(actual) ? 1 : 0;
         }
-        Require(calibration == 30 && live >= 35 && stats.Count == 2 && queries.Count == 5 && moons.Count == 2 && turns.Count >= 2 &&
+        Require(calibration == (removalMode ? 42 : 30) && live >= 35 && stats.Count == 2 && queries.Count == (removalMode ? 6 : 5) && moons.Count == 2 && turns.Count >= 2 &&
             signed > 0 && grew > 0 && magic > 0 && skippedTrigger > 0 && distinctOwner == 3, "Native upgrade scaling lacks meaningful owner, gate, signed or dynamic coverage.");
+        Require(!removalMode || removalPositive >= 4, "Missing real status-removal attribution before scaled upgrades.");
+        Require(!removalMode || removalDurations.SetEquals(["ThisBattle", "ThisTurn"]), "Missing per-battle/per-turn removed-stack consumers.");
+        if (removalMode) Console.WriteLine($"NATIVE-REMOVED-STATUS-SCALING PASS: {removalPositive} real attributed attack/health bonuses, ThisBattle/ThisTurn consumers and empty-history controls.");
         Console.WriteLine($"NATIVE-UNIT-UPGRADE-SCALING-CHECKS PASS: {live} live and {calibration} isolated callbacks, {signed} negative attack bonuses, {grew} health increases, {magic} magic gates and {skippedTrigger} non-spawn skips; complete upgrades and contexts.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

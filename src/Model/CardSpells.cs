@@ -791,63 +791,77 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "AdjustMaxCorruption" || effect.Type == "AdjustCorruption" ||
                     effect.Type == "AddPermanentCorruption")
                 {
-                    CombatContext beforeCorruption = state.Context!;
-                    RoomCorruptionResult changed = RoomCorruptionModel.Apply(state, collectionRoom, effect,
-                        runUnitCallbacks: true);
-                    if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
-                    foreach (RoomCorruptionAddition addition in changed.Additions)
+                    string? corruptionError = RoomCorruptionModel.Validate(state.Context, effect);
+                    if (corruptionError != null) return UnsupportedTrain(corruptionError);
+                    if (effect.Target == "Tower" && state.Rooms.SelectMany(room => room.Units).SelectMany(unit => unit.Triggers)
+                        .Any(trigger => trigger.Kind == "CorruptionAdded" && trigger.SuppressTriggerNotification == null))
+                        return UnsupportedTrain("Tower corruption callbacks require captured notification/floor focus metadata.");
+                    int[] corruptionRooms = effect.Target == "Tower"
+                        ? state.Rooms.OrderBy(room => room.RoomIndex).Select(room => room.RoomIndex).ToArray()
+                        : new[] { collectionRoom };
+                    foreach (int corruptionRoom in corruptionRooms)
                     {
-                        RoomCombatState triggerRoom = state.Rooms.Single(room => room.RoomIndex == addition.RoomIndex);
-                        int[] actorIds = triggerRoom.Units.Where(unit => unit.Health > 0 &&
-                            unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded")).Select(unit => unit.Id).ToArray();
-                        foreach (int actorId in actorIds)
-                            for (int stack = 0; stack < addition.Count; stack++)
-                            {
-                                RoomCombatState currentRoom = state.Rooms.Single(room => room.RoomIndex == addition.RoomIndex);
-                                CombatUnit? actor = currentRoom.Units.FirstOrDefault(unit => unit.Id == actorId && unit.Health > 0);
-                                if (actor == null) break;
-                                callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(addition.RoomIndex, actor,
-                                    "CorruptionAdded"));
-                                DrainDeaths();
-                                if (routingError != null) return UnsupportedTrain(routingError);
-                            }
-                        if (state.Context!.Relics != null)
-                            foreach (CombatRelicState relic in state.Context.Relics)
-                                foreach (RelicCorruptionStatus rule in relic.CorruptionStatuses ?? Array.Empty<RelicCorruptionStatus>())
+                        // Native commits each floor after that floor's callback queue.
+                        // Later floors must observe the already committed earlier floors.
+                        CardActionEffect localEffect = effect.Target == "Tower" ? new CardActionEffect(effect.Type, "Room", effect.Value,
+                            effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, corruptionAdd: effect.CorruptionAdd) : effect;
+                        CombatContext beforeCorruption = state.Context!;
+                        RoomCorruptionResult changed = RoomCorruptionModel.Apply(state, corruptionRoom, localEffect,
+                            runUnitCallbacks: true);
+                        if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
+                        foreach (RoomCorruptionAddition addition in changed.Additions)
+                        {
+                            RoomCombatState triggerRoom = state.Rooms.Single(room => room.RoomIndex == addition.RoomIndex);
+                            int[] actorIds = triggerRoom.Units.Where(unit => unit.Health > 0 &&
+                                unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded")).Select(unit => unit.Id).ToArray();
+                            foreach (int actorId in actorIds)
+                                for (int stack = 0; stack < addition.Count; stack++)
                                 {
-                                    RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == addition.RoomIndex);
-                                    if (rule.OnlyDuringMonsterTurn && (!playerActionPhase || room.Deployment) ||
-                                        room.Preview && !rule.CanApplyInPreview) continue;
-                                    CardTargets relicTargets = RelicCorruptionStatusModel.Collect(room, rule);
-                                    if (!relicTargets.Supported) return UnsupportedTrain(relicTargets.UnsupportedReason!);
-                                    if (relicTargets.BattleRng.HasValue)
-                                        state = WithContext(state, state.Context!.WithBattleRng(relicTargets.BattleRng.Value));
-                                    foreach (int id in relicTargets.UnitIds)
-                                        foreach (CombatStatus status in rule.Statuses)
-                                        {
-                                            room = state.Rooms.Single(item => item.RoomIndex == addition.RoomIndex);
-                                            if (!room.Units.Any(unit => unit.Id == id && unit.Health > 0)) continue;
-                                            RoomCombatResult applied = StatusApplicationModel.ApplyRetained(room, id,
-                                                status.WithStacks(Math.Max(1, status.Stacks)), 0);
-                                            if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
-                                            state = ReplaceRoom(state, applied.State!);
-                                            callbacks.AddRange(applied.PendingCallbacks);
-                                            events.AddRange(applied.Events);
-                                        }
+                                    RoomCombatState currentRoom = state.Rooms.Single(room => room.RoomIndex == addition.RoomIndex);
+                                    CombatUnit? actor = currentRoom.Units.FirstOrDefault(unit => unit.Id == actorId && unit.Health > 0);
+                                    if (actor == null) break;
+                                    callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(addition.RoomIndex, actor,
+                                        "CorruptionAdded"));
                                     DrainDeaths();
                                     if (routingError != null) return UnsupportedTrain(routingError);
                                 }
+                            if (state.Context!.Relics != null)
+                                foreach (CombatRelicState relic in state.Context.Relics)
+                                    foreach (RelicCorruptionStatus rule in relic.CorruptionStatuses ?? Array.Empty<RelicCorruptionStatus>())
+                                    {
+                                        RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == addition.RoomIndex);
+                                        if (rule.OnlyDuringMonsterTurn && (!playerActionPhase || room.Deployment) ||
+                                            room.Preview && !rule.CanApplyInPreview) continue;
+                                        CardTargets relicTargets = RelicCorruptionStatusModel.Collect(room, rule);
+                                        if (!relicTargets.Supported) return UnsupportedTrain(relicTargets.UnsupportedReason!);
+                                        if (relicTargets.BattleRng.HasValue)
+                                            state = WithContext(state, state.Context!.WithBattleRng(relicTargets.BattleRng.Value));
+                                        foreach (int id in relicTargets.UnitIds)
+                                            foreach (CombatStatus status in rule.Statuses)
+                                            {
+                                                room = state.Rooms.Single(item => item.RoomIndex == addition.RoomIndex);
+                                                if (!room.Units.Any(unit => unit.Id == id && unit.Health > 0)) continue;
+                                                RoomCombatResult applied = StatusApplicationModel.ApplyRetained(room, id,
+                                                    status.WithStacks(Math.Max(1, status.Stacks)), 0);
+                                                if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
+                                                state = ReplaceRoom(state, applied.State!);
+                                                callbacks.AddRange(applied.PendingCallbacks);
+                                                events.AddRange(applied.Events);
+                                            }
+                                        DrainDeaths();
+                                        if (routingError != null) return UnsupportedTrain(routingError);
+                                    }
+                        }
+                        if (changed.Additions.Count > 0 && state.Context!.RoomCapacities!.Any(room =>
+                            (room.Corruption != beforeCorruption.RoomCapacities!.Single(before =>
+                                before.RoomIndex == room.RoomIndex).Corruption ||
+                             room.MaxCorruption != beforeCorruption.RoomCapacities!.Single(before =>
+                                before.RoomIndex == room.RoomIndex).MaxCorruption ||
+                             room.PermanentCorruption != beforeCorruption.RoomCapacities!.Single(before =>
+                                before.RoomIndex == room.RoomIndex).PermanentCorruption)))
+                            return UnsupportedTrain("Nested corruption callbacks require a fresh native ordering calibration.");
+                        state = WithContext(state, state.Context!.WithRoomCapacities(changed.Context!.RoomCapacities!));
                     }
-                    if (changed.Additions.Any(addition => state.Context!.RoomCapacities!.Any(room =>
-                        room.RoomIndex == addition.RoomIndex &&
-                        (room.Corruption != beforeCorruption.RoomCapacities!.Single(before =>
-                            before.RoomIndex == addition.RoomIndex).Corruption ||
-                         room.MaxCorruption != beforeCorruption.RoomCapacities!.Single(before =>
-                            before.RoomIndex == addition.RoomIndex).MaxCorruption ||
-                         room.PermanentCorruption != beforeCorruption.RoomCapacities!.Single(before =>
-                            before.RoomIndex == addition.RoomIndex).PermanentCorruption))))
-                        return UnsupportedTrain("Nested corruption callbacks require a fresh native ordering calibration.");
-                    state = WithContext(state, state.Context!.WithRoomCapacities(changed.Context!.RoomCapacities!));
                     continue;
                 }
                 if (effect.Type == "Generate")

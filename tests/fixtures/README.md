@@ -1,8 +1,41 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 447 archives (408 full battles and
+Current accepted inventory (2026-10-18): 450 archives (411 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-tower-corruption-callbacks.mt2f` covers two Keepers on different
+floors, sequential corruption commits and notification-driven room focus before
+current-room upgrade scaling. Its 42-stage win has nineteen plays/five EndTurns
+and zero errors. Binary-only: 31,752 bytes/4,939 nodes, SHA-256
+`d1558d0f9ba0a0456493ed98bcd1183529acac46ab426f5810ff5941f92f3f9b`.
+Use `-TowerCorruptionCallbacks` and `--corruption-keeper-trigger-only`.
+
+`full-battle-null-unit-ability.mt2f` covers paid empty-effect skills, two
+activators sharing one cached card, own callbacks, cooldown and detached history.
+Its 45-stage Pyre80 win has seventeen plays/five EndTurns and zero errors.
+Binary-only: 37,766 bytes/5,742 nodes, SHA-256
+`8629861480202cf8efce5c4ddf541dbb4c5d031a34f987463da3142807a34e73`.
+Use `-NullAbility` and `--unit-ability-native-only`. Both archives have zero source
+length/hash and pass complete decision replay, sixteen immutable branches and
+128-state serial/parallel search. Five related older fixtures pass. Tower
+callbacks without focus metadata, nested corruption writes and SpawnMonster
+ability pipelines retain explicit unsupported boundaries.
+
+`full-battle-removed-status-upgrade-scaling.mt2f` removes real armor before
+unit upgrades, producing sixty native attack/health scaling positives from
+ThisBattle/ThisTurn removal history. All 245 live and 42 isolated callbacks
+match, including owner attribution, negative bonuses, magic and trigger gates.
+The 44-stage win has fifteen plays/five EndTurns and zero errors. A reference
+Scourge remains unplayed in Exhausted to make future generated-card forge
+metadata visible from the root; preparation validates native creation and routing.
+Binary-only: 34,951 bytes/5,408 nodes, zero source length/hash; SHA-256
+`af887178e05c1acb692b9e9518ae6375e21586cb78ea49e7a782843da35f0db9`.
+Use `-RemovedStatusScaling` and `--unit-upgrade-scaling-only`. This accepts the
+unit-upgrade consumer; removed-stack damage/status scaling remains separate.
+All three new mechanic archives pass integrated acceptance, full recorded replay,
+sixteen immutable branches and 128-state serial/parallel search; both workers
+exit zero in `.probe-runs/model-checks-20261018-191056-b4dcdabe/summary.json`.
 
 `full-battle-corrupted-angels-cost-first.mt2f` and `...-cost-last.mt2f` cover
 opposite acquisition orders of unchanged Corrupted Angels and random draw-cost

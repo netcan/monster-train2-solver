@@ -28,6 +28,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool UnitTrigger => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption-unit-trigger";
         internal static bool CarverTrigger => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption-carver-trigger";
         internal static bool KeeperTrigger => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption-keeper-trigger";
+        internal static bool TowerMode => Environment.GetEnvironmentVariable("MT2_PROBE_TOWER_CORRUPTION_CALLBACKS") == "1";
         internal static bool Enabled => UnitTrigger || CarverTrigger || KeeperTrigger || RelicTrigger ||
             Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "corruption";
         internal static void AcquireRelicBeforeBattle(AllGameManagers managers, ManualLogSource log)
@@ -130,11 +131,20 @@ namespace MonsterTrain2Poju.Probe
                 echoes.GetEffects()[1].GetParamInt() != -1 || echoes.GetEffects()[1].GetParamBool())
                 throw new InvalidOperationException("Original remove-corruption definition changed.");
             CardManager cards = managers.GetCardManager()!;
+            if (TowerMode)
+            {
+                definition.GetEffects()[1].Cheat_SetTargetMode(TargetMode.Tower);
+                CharacterData keeper = steward.GetSpawnCharacterData()!;
+                AccessTools.Field(typeof(CharacterData), "health").SetValue(keeper, 100);
+                AccessTools.Field(typeof(CharacterData), "attackDamage").SetValue(keeper, 50);
+                steward.GetTraits().Add(UnitUpgradeScalingScenario.Trait("Health", "CorruptionInTargetRoom", 2, 0));
+            }
             if (cards.GetHand().Count > (KeeperTrigger ? 6 : 7))
                 throw new InvalidOperationException("Corruption fixture requires free hand slots.");
             CardState unit = cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false);
-            CardState? teammate = KeeperTrigger ? cards.AddNewCard(data.FindCardData(StewardId)!,
+            CardState? teammate = KeeperTrigger ? cards.AddNewCard(TowerMode ? steward : data.FindCardData(StewardId)!,
                 CardPile.HandPile, false, false, animate: false) : null;
+            if (TowerMode && teammate != null) AccessTools.Field(typeof(CardState), "cost").SetValue(teammate, 0);
             CardState? added = RelicTrigger ? null : cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false);
             CardState? remove = RelicTrigger ? null : cards.AddNewCard(echoes, CardPile.HandPile, false, false, animate: false);
             if (unit == null || (!RelicTrigger && (added == null || remove == null)) ||
@@ -182,7 +192,7 @@ namespace MonsterTrain2Poju.Probe
                 ?? BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
             if (KeeperTrigger && source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .All(unit => unit.SpawnerCardId != teammateCardId))
-                return plays.FirstOrDefault(item => item.CardInstanceId == teammateCardId && item.RoomIndex == 0)
+                return plays.FirstOrDefault(item => item.CardInstanceId == teammateCardId && item.RoomIndex == (TowerMode ? 1 : 0))
                     ?? BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
             if (UnitTrigger && nextSpell == 0 && steward.Health == steward.MaxHealth) return null;
             if (RelicTrigger && unearthedCardId == 0) return null;

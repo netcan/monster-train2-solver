@@ -8,6 +8,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class AbilityActivationScenario
     {
+        internal static bool NullMode => Environment.GetEnvironmentVariable("MT2_PROBE_NULL_ABILITY") == "1";
         internal static void Prepare(AllGameManagers managers, ManualLogSource log, bool xCost, bool lethal,
             bool sourceAttack = false, bool attackWithUnit = false, bool spawnOrStatus = false, bool teleport = false,
             bool damagePerHp = false, bool transferAttack = false)
@@ -87,6 +88,7 @@ namespace MonsterTrain2Poju.Probe
                 effects.Add(seedShield);
                 effects.Add(armorPerShield);
             }
+            if (NullMode) { effects.Clear(); Set(ability, "targetless", true); }
             Set(ability, "effects", effects);
             var triggers = unit.GetTriggers().ToList();
             foreach (var phase in spawnOrStatus || damagePerHp || transferAttack ? Array.Empty<CharacterTriggerData.Trigger>() :

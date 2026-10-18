@@ -51,6 +51,7 @@ param(
     [switch] $CorruptionUnitTrigger,
     [switch] $CorruptionCarverTrigger,
     [switch] $CorruptionKeeperTrigger,
+    [switch] $TowerCorruptionCallbacks,
     [switch] $CorruptionRelicTrigger,
     [switch] $PermanentCorruption,
     [switch] $MoonPhaseCard,
@@ -119,6 +120,7 @@ param(
     [switch] $DynamicStatistics,
     [switch] $StatusScaling,
     [switch] $UnitUpgradeScaling,
+    [switch] $RemovedStatusScaling,
     [switch] $UnitTriggerUpgrades,
     [switch] $SpawnTriggers,
     [switch] $SpawnTriggersLethal,
@@ -398,6 +400,7 @@ param(
     [switch] $AbilityCooldown,
     [switch] $AbilityCache,
     [switch] $AbilityActivation,
+    [switch] $NullAbility,
     [switch] $AbilityActivationX,
     [switch] $AbilityActivationLethal,
     [switch] $AbilityTeleport,
@@ -484,6 +487,9 @@ if ($UnplayedCardEffects) { $BranchCardMasks = $true; $Policy = 'units-spells-an
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseEnergyRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MoonHealCallbacks) { $OriginalMoonPhaseHealRelic = $true }
+if ($RemovedStatusScaling) { $UnitUpgradeScaling = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($TowerCorruptionCallbacks) { $CorruptionKeeperTrigger = $true }
+if ($NullAbility) { $AbilityActivation = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseHealRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonPhaseStatusRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardAttackRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -938,6 +944,7 @@ if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
 if ($CorruptionUnitTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-unit-trigger' }
 if ($CorruptionCarverTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-carver-trigger' }
 if ($CorruptionKeeperTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-keeper-trigger' }
+if ($TowerCorruptionCallbacks) { $environment['MT2_PROBE_TOWER_CORRUPTION_CALLBACKS'] = '1' }
 if ($CorruptionRelicTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-relic-trigger' }
 if ($PermanentCorruption) { $environment['MT2_PROBE_MODIFIERS'] = 'permanent-corruption' }
 if ($MoonPhaseCard) { $environment['MT2_PROBE_MODIFIERS'] = 'moon-phase-card' }
@@ -1012,6 +1019,8 @@ if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'ori
 if ($OriginalMoonPhaseEnergyRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-energy-relic' }
 if ($OriginalMoonPhaseHealRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-heal-relic' }
 if ($MoonHealCallbacks) { $environment['MT2_PROBE_MOON_HEAL_CALLBACKS'] = '1' }
+if ($RemovedStatusScaling) { $environment['MT2_PROBE_REMOVAL_SCALING'] = '1' }
+if ($NullAbility) { $environment['MT2_PROBE_NULL_ABILITY'] = '1' }
 if ($OriginalMoonPhaseStatusRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-status-relic' }
 if ($OriginalCardAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-attack-relic' }
 if ($OriginalUpgradeCountRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-upgrade-count-relics' }
@@ -1394,7 +1403,7 @@ if ($CorruptionCarverTrigger) {
     }
     Write-Output 'NATIVE-CORRUPTION-CARVER-TRIGGER PASS: original Carver gained temporary +3 attack and +3 Armor.'
 }
-if ($CorruptionKeeperTrigger) {
+if ($CorruptionKeeperTrigger -and -not $TowerCorruptionCallbacks) {
     $keeperActions = @($trace.Actions | Where-Object { $_.ScenarioAction })
     $roomUpgrade = @($keeperActions | Where-Object {
         $entry = $_
@@ -3417,7 +3426,7 @@ $unitUpgradeScalingCoverage = -not $UnitUpgradeScaling
 if ($UnitUpgradeScaling) {
     $upgradeSamples = @($trace.UnitUpgradeScaling)
     $unitUpgradeScalingCoverage = $trace.UnitUpgradeScalingCalibrationContextUnchanged -and
-        @($upgradeSamples | Where-Object Origin -EQ 'Calibration').Count -eq 30 -and
+        @($upgradeSamples | Where-Object Origin -EQ 'Calibration').Count -eq $(if ($RemovedStatusScaling) { 42 } else { 30 }) -and
         @($upgradeSamples | Where-Object Origin -EQ 'Live').Count -ge 35 -and
         @($upgradeSamples | ForEach-Object { $_.Trait.Stat } | Sort-Object -Unique).Count -eq 2 -and
         @($upgradeSamples | Where-Object TriggerKind -EQ 'OnSpawn').Count -gt 0 -and
@@ -3751,7 +3760,7 @@ if (-not $activationCoverage) {
             @($actualActor.Triggers | Where-Object { $_.Kind -eq 'OnPreOwnAbilityActivated' -and $_.HasTriggered }).Count -gt 0 -and
             @($actualActor.Triggers | Where-Object { $_.Kind -eq 'OnOwnAbilityActivated' -and $_.HasTriggered }).Count -gt 0
     })
-    $activationCoverage = $activationCoverage -and ($DamagePerHpAbility -or $selfHeals.Count -gt 0)
+    $activationCoverage = $activationCoverage -and ($NullAbility -or $DamagePerHpAbility -or $selfHeals.Count -gt 0)
     if ($AbilityActivationX) {
         $activationCoverage = $activationCoverage -and
             @($activations | Where-Object { $_.Before.Energy -eq 0 }).Count -gt 0 -and

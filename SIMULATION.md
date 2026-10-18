@@ -1,11 +1,54 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 447 binary archives, including 408
+Current accepted inventory (2026-10-18): 450 binary archives, including 411
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-tower-corruption-callbacks.mt2f` places Keeper of Echoes on two
+floors, with a current-room corruption health-scaling trait. Tower corruption
+now finishes and commits each floor before moving to the next. Native trigger
+notifications focus their floor before scaling; captured suppression metadata
+preserves that distinction. Both Keepers receive the base upgrade while their
+own floor still has zero corruption. The 42-stage win has nineteen plays/five
+EndTurns and zero errors. Every decision, sixteen full immutable branches and
+128-state serial/parallel search match. Missing focus metadata and nested
+corruption writes remain guarded.
+
+`full-battle-null-unit-ability.mt2f` proves that empty effects still activate a
+paid skill. Empty skills bypass spell-only effect validation while preserving
+the shared cached card, payment, pre/own callbacks, cooldown and detached play
+history. Two native activators use one cached card. Its 45-stage Pyre80 win has
+seventeen plays/five EndTurns and zero errors; focused checks, full replay,
+sixteen branches and 128-state serial/parallel search pass. SpawnMonster ability
+pipelines still require their own evidence.
+
+`full-battle-removed-status-upgrade-scaling.mt2f` adds armor then removes a real
+stack before applying unit upgrades. Native source-card attribution now feeds
+attack scaling for ThisBattle and health scaling for ThisTurn. Sixty real
+positive bonuses, 245 live callbacks and 42 isolated callbacks match full
+upgrades and contexts, including owner identity, signed bonuses, magic-only
+and trigger restrictions. The 44-stage winning battle has fifteen plays/five
+EndTurns and zero errors. An unplayed reference Scourge is parked in Exhausted
+so future generated-card forge eligibility is defined from the root; native
+creation, routing and metadata are preflighted. Other removed-stack consumers
+such as damage/status scaling retain their separate evidence boundaries.
+All three new archives pass integrated acceptance, full recorded replay, sixteen
+immutable branches and 128-state serial/parallel search. Both workers exit zero:
+`.probe-runs/model-checks-20261018-191056-b4dcdabe/summary.json`.
+
+Five affected older captures pass with terminal zero worker exits:
+`.probe-runs/model-checks-20261018-190304-9fc829dc/summary.json`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -TowerCorruptionCallbacks -BinaryCapture -SkipBuild
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NullAbility -BinaryCapture -SkipBuild
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -RemovedStatusScaling -BinaryCapture -SkipBuild
+```
 
 ### Corrupted Angels with random draw cost and pending upgrades
 

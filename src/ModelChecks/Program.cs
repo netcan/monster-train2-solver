@@ -570,6 +570,17 @@ if (args.Length == 2 && args[0] == "--native-turn-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--unit-upgrade-scaling-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (fixture.RootElement.GetProperty("ModifierScenario").GetString() != "unit-upgrade-scaling" ||
+        !fixture.RootElement.GetProperty("NativeWon").GetBoolean() ||
+        new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.Any(name => fixture.RootElement.GetProperty(name).GetInt32() != 0))
+        throw new InvalidDataException("The requested fixture has no complete native unit-upgrade scaling battle.");
+    UnitUpgradeScalingChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--conditional-pyre-damage-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
