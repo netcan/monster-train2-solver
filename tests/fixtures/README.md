@@ -1,10 +1,28 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 435 archives (396 full battles and
-39 component calibrations), 216/224 original relic owners (96.43%): 198 battle
+Current accepted inventory (2026-10-18): 436 archives (397 full battles and
+39 component calibrations), 217/224 original relic owners (96.88%): 199 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
-The latest `IncantTriggeredByUnitAbilities` fixture covers the unchanged
+The latest `ChanceRetreatEnemiesOnSpawn` fixture covers the unchanged 100%
+AfterSpawnEnchant BackInRoom-to-front effect. All 248 Tests, four applications,
+four formation changes and four combat resets match complete state without
+Battle RNG draws. Flags reset after each turn's four-room combat resolution;
+the terminal victory skips the following reset. Independent trigger, team,
+repeated-room and excluded-actor controls match. Original subtype exclusions
+restrict the actor; an authored excluded ordinary enemy remains a valid moved
+target. Pure checks cover all four exclusions. The 42-stage winning battle,
+two actions, independent five-EndTurn suffix in sixteen immutable branches,
+bounded serial/parallel search and fourteen affected archives pass. Search has
+six root actions, zero unsupported attempts and the same serial/parallel best
+result across 116/103 visited states. Native preview, the other three native
+exclusion carriers, retained-dead cleanup and additional combined movement or
+card/relic callbacks remain uncalibrated. The archive is 25,296 bytes, has 3,638
+unique nodes and SHA-256
+`d10919d1a0d081c9c540580e6cd6aec47e81ab7e28cea921cfab025b47d97f81`.
+It has no text source or tracked JSON companion.
+
+The preceding `IncantTriggeredByUnitAbilities` fixture covers the unchanged
 first-Whelp-per-turn Tower -2 cooldown effect. All 285 Tests, two applications
 and 383 manager calls match full state and RNG, including cross-floor targets,
 zero clamping, repeat gates, next-turn reset and trigger/team/subtype/null

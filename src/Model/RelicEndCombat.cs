@@ -57,6 +57,7 @@ namespace MonsterTrain2Poju.Model
         internal static CombatContext Apply(CombatContext context, out string? error,
             IReadOnlyCollection<int>? removedFromDeck = null)
         {
+            context = RelicSpawnRetreatModel.Reset(context);
             error = Validate(context);
             if (error != null || context.IsolatedBattlePreview == true || context.Relics == null) return context;
             int ownerIndex = -1;

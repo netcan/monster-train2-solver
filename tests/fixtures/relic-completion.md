@@ -18,17 +18,17 @@ coverage inventory checks.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 216 original owners accepted (198 native battle owners,
+Current checkpoint: 217 original owners accepted (199 native battle owners,
 seventeen actual campaign-interface owners and one explicit native no-op owner);
-8 remain pending. The latest accepted owner is `IncantTriggeredByUnitAbilities`:
-its actual effect applies -2 cooldown across friendly non-Pyre Tower targets on
-the first Whelp spawn each turn. Deployment and next-turn positives, repeat
-gates, cross-floor targets, zero clamping and trigger/team/subtype/null controls
-match native evidence. A real ability carrier reaches zero without a ready
-callback, gold reward or availability-marker change. Raw Apply and the manager
-each notify once. The unused Room trigger remains metadata. Native preview,
-eligible cardless or triggered Whelp births, retained dead targets, actual
-ability activation and additional combined callbacks remain uncalibrated.
+7 remain pending. The latest accepted owner is `ChanceRetreatEnemiesOnSpawn`:
+its unchanged 100% enemy AfterSpawnEnchant effect moves the active back enemy
+to the front once per room. Four room flags reset after each turn's four-room
+combat resolution, while terminal victory skips the later reset. Original
+Boss subtype exclusions restrict the actor, not the moved target. Independent
+trigger/team/repeated-room/excluded-actor controls and pure controls for all
+four exclusions match. Native preview, the other three native exclusion
+carriers, retained-dead cleanup and additional combined movement, Sentry,
+enchantment, card or relic callbacks remain uncalibrated.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
@@ -39,20 +39,23 @@ need their actual campaign lifecycle evidence; definition enumeration and
 inert battle presence do not validate those effects. Pure no-op definitions
 must be explicitly identified without inventing activation evidence.
 
-The latest fixture, `full-battle-original-whelp-cooldown.mt2f`, captures 285 Tests,
-two applications and 383 manager calls. Full state, return values, RNG, raw and
-managed notifications, per-turn reset and actual ability cooldown semantics
-match independently in sixteen immutable branches.
+The latest fixture, `full-battle-original-spawn-retreat.mt2f`, captures 248 Tests,
+four applications, four formation changes and four resets. Full state, return
+values, the four private room flags and unchanged Battle RNG match independently
+in sixteen immutable branches. An authored ordinary enemy carrying the first
+original Boss exclusion is rejected as an actor but can still be moved.
 
-The 43-stage winning battle records six actions and five EndTurns, with all
-eight differential counters zero. Focused checks, an independent four-EndTurn
-suffix, 128-state serial/parallel search and twelve affected archives pass.
+The 42-stage winning battle records two actions and five EndTurns, with all
+eight differential counters zero. Focused checks, an independent five-EndTurn
+suffix, bounded serial/parallel search and fourteen affected archives pass.
 The new fixture has zero unsupported search attempts. Both regression workers
 finish with exit zero and all three tested assembly hashes remain unchanged.
-Regression summary: `.probe-runs/model-checks-20261018-141829-bf8b1e80/summary.json`.
-The 34,003-byte archive has 5,392
+Search matches both recorded decisions and six root actions; serial/parallel
+modes visit 116/103 states and return the same best result.
+Regression summary: `.probe-runs/model-checks-20261018-144235-a9f39a86/summary.json`.
+The 25,296-byte archive has 3,638
 unique nodes and SHA-256
-`96f0707e1114f1f1efc4199abc22df4d1ebffadc63e1218345dc9dc4714a6dbd`; no JSON
-companion is tracked. Inventory is 435 archives: 396 battles and 39 component
-calibrations. Original relic coverage is 216/224 (96.43%): 198 battle owners,
+`d10919d1a0d081c9c540580e6cd6aec47e81ab7e28cea921cfab025b47d97f81`; no JSON
+companion is tracked. Inventory is 436 archives: 397 battles and 39 component
+calibrations. Original relic coverage is 217/224 (96.88%): 199 battle owners,
 seventeen campaign owners and one native no-op owner.

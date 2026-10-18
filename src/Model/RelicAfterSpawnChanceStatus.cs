@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Model
         public bool CardEffectParamBool { get; }
         public bool CardEffectParamBool2 { get; }
         public IReadOnlyList<CombatStatus> StatusEffects { get; }
+        public IReadOnlyList<bool>? TriggeredInRooms { get; }
 
         public RelicAfterSpawnChanceRule(int effectIndex, int chancePercent, int roomRestriction,
             string targetTeam, bool hasRequiredSubtype, bool requiredSubtypeIsNone, string? requiredSubtype,
@@ -38,7 +39,7 @@ namespace MonsterTrain2Poju.Model
             string cardEffect, string cardEffectTarget, string cardEffectTeam, string cardEffectTargetCardType,
             float cardEffectParamMultiplier, int cardEffectParamInt,
             int cardEffectAdditionalParamInt, bool cardEffectUsesRange, bool cardEffectParamBool, bool cardEffectParamBool2,
-            IReadOnlyList<CombatStatus> statusEffects)
+            IReadOnlyList<CombatStatus> statusEffects, IReadOnlyList<bool>? triggeredInRooms = null)
         {
             EffectIndex = effectIndex; ChancePercent = chancePercent; RoomRestriction = roomRestriction;
             TargetTeam = targetTeam; HasRequiredSubtype = hasRequiredSubtype;
@@ -53,7 +54,14 @@ namespace MonsterTrain2Poju.Model
             CardEffectAdditionalParamInt = cardEffectAdditionalParamInt; CardEffectUsesRange = cardEffectUsesRange;
             CardEffectParamBool = cardEffectParamBool; CardEffectParamBool2 = cardEffectParamBool2;
             StatusEffects = Array.AsReadOnly(statusEffects.ToArray());
+            TriggeredInRooms = triggeredInRooms == null ? null : Array.AsReadOnly(triggeredInRooms.ToArray());
         }
+        internal RelicAfterSpawnChanceRule WithTriggeredInRooms(IReadOnlyList<bool> rooms) => new(
+            EffectIndex, ChancePercent, RoomRestriction, TargetTeam, HasRequiredSubtype, RequiredSubtypeIsNone, RequiredSubtype,
+            ExcludedSubtypes, ConditionCount, CanApplyInPreviewMode, CardEffectCount, CardEffectHasOnlyCapturedPayload,
+            CardEffectPayloadIssues, CardEffect, CardEffectTarget, CardEffectTeam, CardEffectTargetCardType,
+            CardEffectParamMultiplier, CardEffectParamInt, CardEffectAdditionalParamInt, CardEffectUsesRange,
+            CardEffectParamBool, CardEffectParamBool2, StatusEffects, rooms);
     }
 
     internal static class RelicAfterSpawnChanceStatusModel
@@ -95,6 +103,7 @@ namespace MonsterTrain2Poju.Model
             if (!indices.SequenceEqual((relic.AfterSpawnChanceRules ?? Array.Empty<RelicAfterSpawnChanceRule>())
                 .Select(rule => rule.EffectIndex))) return "Missing or unordered native after-spawn chance payload.";
             if (indices.Length == 0) return null;
+            if (relic.DataId == RelicSpawnRetreatModel.DataId) return RelicSpawnRetreatModel.Validate(relic);
             if (relic.EffectTypes.Contains(RelicSpawnSilenceModel.Effect)) return RelicSpawnSilenceModel.Validate(relic);
             bool spellWeaknessOwner = relic.DataId == DataId && relic.AssetKey == AssetKey;
             bool cleanseOwner = relic.DataId == CleanseDataId && relic.AssetKey == CleanseAssetKey;
@@ -127,7 +136,7 @@ namespace MonsterTrain2Poju.Model
             CombatContext? context = state.Context;
             CombatRelicState[] owners = context?.Relics?.Where(relic => relic.EffectTypes.Contains(Effect)).ToArray()
                 ?? Array.Empty<CombatRelicState>();
-            if (owners.Length == 0 || state.Preview || queued.Kind != "AfterSpawnEnchant" || state.RoomIndex != queued.RoomIndex)
+            if (owners.Length == 0 || queued.Kind != "AfterSpawnEnchant" || state.RoomIndex != queued.RoomIndex)
                 return triggered;
             foreach (CombatRelicState owner in owners)
             {
@@ -144,6 +153,15 @@ namespace MonsterTrain2Poju.Model
             foreach (CombatRelicState owner in owners)
             {
                 RelicAfterSpawnChanceRule rule = owner.AfterSpawnChanceRules!.Single();
+                if (owner.DataId == RelicSpawnRetreatModel.DataId)
+                {
+                    RoomCombatResult moved = RelicSpawnRetreatModel.Apply(state, actor.Id, queued.Kind, managed: true);
+                    if (!moved.Supported) return moved;
+                    state = moved.State!; events.AddRange(moved.Events);
+                    foreach (RoomCombatModel.QueuedCharacterTrigger callback in moved.PendingCallbacks) enqueue(callback);
+                    continue;
+                }
+                if (state.Preview) continue;
                 RngDraw draw = state.Context!.BattleRng.Range(0, 100);
                 state = WithContext(state, state.Context.WithBattleRng(draw.State));
                 if (draw.Value >= rule.ChancePercent) continue;

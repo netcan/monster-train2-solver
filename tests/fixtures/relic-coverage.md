@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **216 distinct original collectable relics / 224 catalog entries
-(96.43%)** have accepted native evidence: 198 have full-battle effect evidence,
+As of 2026-10-18, **217 distinct original collectable relics / 224 catalog entries
+(96.88%)** have accepted native evidence: 199 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2759,4 +2759,61 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-whe
 dotnet run --project src/ModelChecks -c Release -- --whelp-cooldown-pure
 dotnet run --project src/ModelChecks -c Release -- --original-whelp-cooldown-only tests/fixtures/full-battle-original-whelp-cooldown.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-whelp-cooldown.mt2f
+```
+
+## Original retreat-on-spawn evidence
+
+| Original owner | Data ID | Native effect | Accepted witness |
+| --- | --- | --- | --- |
+| `ChanceRetreatEnemiesOnSpawn` | `f7b3141b-e803-4128-86cd-d1bf4827d943` | `RelicEffectChanceAddEffectAfterSpawn` | `full-battle-original-spawn-retreat.mt2f`: unchanged 100% enemy AfterSpawnEnchant, BackInRoom to FrontSlot, one application per room until the next combat-end reset, original four Boss subtype exclusions, full native state/RNG and independent replay/search. |
+
+The schema-239 witness acquires the unchanged original owner before battle and
+plays two authored ordinary Stewards on floors zero and one. Natural enemy
+waves exercise 248 Tests, four applications, four real formation changes and
+four resets. All full-train states and the four private room flags match in
+sixteen immutable branches. The 100% branch never draws Battle RNG.
+
+Wrong-trigger and excluded-actor controls run before the room gate is set;
+wrong-team and repeat controls exercise their own gates. The original first
+Boss subtype is added to an ordinary native enemy as an isolated carrier.
+That actor cannot activate the effect, but another eligible actor can still
+move it when it is the active back enemy. The outer actor exclusion is not a
+filter on the nested target. Pure controls cover all four original exclusions.
+The flags reset after each turn's four-room combat resolution, not only at
+whole-battle end. The terminal victory returns before the following reset.
+
+The winning battle has 42 stages, two actions, five EndTurns, nine card cycles,
+nine train phases and seven spawn observations. Native capture reaches
+DEPTH-PASS with all eight differential counters zero. Independent policy replay checks the two
+recorded actions and replays the five-EndTurn suffix in sixteen branches.
+Bounded search matches both decisions, exposes six root actions, visits
+116/103 states in serial/parallel modes and returns the same best result;
+both recorded decisions and search have zero unsupported attempts.
+
+Fourteen affected archives pass in two workers, both terminal exit zero;
+the three tested assembly hashes remain unchanged. Regression summary:
+`.probe-runs/model-checks-20261018-144235-a9f39a86/summary.json`. This includes
+the legacy Bump room-selection compatibility repair in commit `519e0b1`,
+ordinary/companion/Outer Boss Bump, floor-transition damage and Pyregel,
+physical spawn points, spawn status/weakness/cleanse/silence, Whelp cooldown,
+ability teleport and Cavendish.
+
+Native preview, native carriers for the other three excluded Boss subtypes,
+retained-dead cleanup and extra Shift/Sentry/enchantment/card/relic callbacks
+are outside this witness. Known retained-dead cleanup is rejected explicitly.
+This does not claim every formation/callback combination.
+
+The archive is 25,296 bytes with 3,638 unique nodes and SHA-256
+`d10919d1a0d081c9c540580e6cd6aec47e81ab7e28cea921cfab025b47d97f81`.
+Source length/hash are zero and no JSON companion is tracked. Inventory is 436
+archives: 397 battles and 39 component calibrations. Accepted original-owner
+coverage is 217/224 (96.88%): 199 battle, seventeen campaign and one native no-op;
+seven owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalSpawnRetreatRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-spawn-retreat.mt2f
+dotnet run --project src/ModelChecks -c Release -- --spawn-retreat-pure
+dotnet run --project src/ModelChecks -c Release -- --original-spawn-retreat-only tests/fixtures/full-battle-original-spawn-retreat.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-spawn-retreat.mt2f
 ```

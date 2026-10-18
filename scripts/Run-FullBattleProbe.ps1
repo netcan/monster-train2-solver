@@ -312,6 +312,7 @@ param(
     [switch] $OriginalWolosBloodletterRelic,
     [switch] $OriginalCardTypeSequenceRelic,
     [switch] $OriginalWhelpCooldownRelic,
+    [switch] $OriginalSpawnRetreatRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -551,6 +552,7 @@ if ($OriginalExpensiveCardUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'u
 if ($OriginalWolosBloodletterRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardTypeSequenceRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalWhelpCooldownRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalSpawnRetreatRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1033,6 +1035,7 @@ if ($OriginalExpensiveCardUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 
 if ($OriginalWolosBloodletterRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wolos-bloodletter' }
 if ($OriginalCardTypeSequenceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-type-sequence' }
 if ($OriginalWhelpCooldownRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-whelp-spawn-cooldown' }
+if ($OriginalSpawnRetreatRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spawn-retreat' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1988,6 +1991,13 @@ if ($OriginalWolosBloodletterRelic -and ($trace.Schema -ne 236 -or -not $trace.O
     $trace.OriginalWolosBloodletterUnsupported -ne 0 -or $trace.OriginalWolosBloodletterPending -ne 0 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 5 -or @($trace.RelicWolosBloodletterRecords).Count -lt 12)) {
     throw 'Original Wolos Bloodletter acceptance failed.'
+}
+if ($OriginalSpawnRetreatRelic -and ($trace.Schema -ne 239 -or -not $trace.OriginalSpawnRetreatPrepared -or
+    $trace.ModifierScenario -ne 'original-spawn-retreat' -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.OriginalSpawnRetreatCaptureFailures -ne 0 -or $trace.OriginalSpawnRetreatMismatches -ne 0 -or
+    $trace.OriginalSpawnRetreatUnsupported -ne 0 -or $trace.OriginalSpawnRetreatPending -ne 0 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 2 -or @($trace.RelicSpawnRetreatRecords).Count -lt 20)) {
+    throw 'Original spawn retreat acceptance failed.'
 }
 if ($OriginalWhelpCooldownRelic -and ($trace.Schema -ne 238 -or -not $trace.OriginalWhelpCooldownPrepared -or
     $trace.ModifierScenario -ne 'original-whelp-spawn-cooldown' -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or

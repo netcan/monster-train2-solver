@@ -379,6 +379,9 @@ internal static class RoomCombatChecks
         else if (fixture.TryGetProperty("ModifierScenario", out var whelpScenario) &&
             whelpScenario.GetString() == "original-whelp-spawn-cooldown")
             OriginalWhelpCooldownChecks.Native(fixture);
+        else if (fixture.TryGetProperty("ModifierScenario", out var retreatScenario) &&
+            retreatScenario.GetString() == "original-spawn-retreat")
+            OriginalSpawnRetreatChecks.Native(fixture);
         else RelicCardModifierChecks.Native(fixture, requireScenarioCoverage: true);
         UnitIdentityChecks.Native(fixture);
         SpawnPointChecks.Native(fixture);

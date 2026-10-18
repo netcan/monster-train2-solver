@@ -1,11 +1,30 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 435 binary archives, including 396
+Current accepted inventory (2026-10-18): 436 binary archives, including 397
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 216/224 catalog entries (96.43%): 198 battle owners, 17 campaign
+covers 217/224 catalog entries (96.88%): 199 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`ChanceRetreatEnemiesOnSpawn` now has schema-239 evidence for its unchanged
+100% AfterSpawnEnchant effect. An eligible enemy moves the active back enemy
+to the front once per room; all four room flags reset after each turn's
+four-room combat resolution. The terminal victory skips that later reset.
+All 248 Tests, four applications, four actual formation changes and four resets
+match full state without consuming Battle RNG. Independent wrong-trigger,
+wrong-team, repeated-room and excluded-actor controls match. The exclusion
+applies to the triggering actor, not to the moved target: an authored ordinary
+enemy carrying the original first Boss exclusion cannot trigger the effect but
+can still be moved by another eligible actor. Pure controls cover all four
+original excluded subtypes. The 42-stage winning battle, two actions,
+independent five-EndTurn suffix in sixteen immutable branches, bounded
+serial/parallel search and fourteen affected archives pass. Search matches
+both recorded decisions, has six root actions and zero unsupported attempts;
+serial/parallel searches visit 116/103 states with the same best result.
+Native preview, native carriers for the other three excluded subtypes,
+retained-dead cleanup and additional movement/Sentry/enchantment/card/relic
+callbacks remain outside this witness. Known retained-dead cleanup is rejected.
 
 `IncantTriggeredByUnitAbilities` now has schema-238 evidence for its actual
 first-Whelp-per-turn Tower cooldown effect. Two natural Whelp spawns apply -2

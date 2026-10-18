@@ -575,7 +575,9 @@ namespace MonsterTrain2Poju.Probe
                 cardEffect?.GetParamMultiplier() ?? 0f, cardEffect?.GetParamInt() ?? 0,
                 cardEffect?.GetAdditionalParamInt() ?? 0,
                 cardEffect?.GetUseIntRange() ?? false, cardEffect?.GetParamBool() ?? false,
-                cardEffect?.GetParamBool2() ?? false, statuses);
+                cardEffect?.GetParamBool2() ?? false, statuses,
+                effect is RelicEffectChanceAddEffectAfterSpawn ?
+                    (bool[])AccessTools.Field(effect.GetType(), "_triggeredInRoom").GetValue(effect) : null);
         }
 
         private static RelicCharacterTriggers AddedTriggers(IRelicEffect effect, int index)

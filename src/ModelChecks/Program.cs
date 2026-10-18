@@ -217,6 +217,17 @@ if (args.Length == 1 && args[0] == "--whelp-cooldown-pure")
     OriginalWhelpCooldownChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--spawn-retreat-pure")
+{
+    OriginalSpawnRetreatChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-spawn-retreat-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalSpawnRetreatChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-whelp-cooldown-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1984,6 +1995,7 @@ OriginalExpensiveCardUpgradeChecks.Run();
 OriginalWolosBloodletterChecks.Run();
 OriginalCardTypeSequenceChecks.Run();
 OriginalWhelpCooldownChecks.Run();
+OriginalSpawnRetreatChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

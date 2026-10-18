@@ -345,6 +345,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalCardTypeSequenceScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalWhelpCooldownScenario.Enabled && !OriginalWhelpCooldownScenario.Acquired)
                         OriginalWhelpCooldownScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalSpawnRetreatScenario.Enabled && !OriginalSpawnRetreatScenario.Acquired)
+                        OriginalSpawnRetreatScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -1231,6 +1233,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalWhelpCooldownScenario.PrepareDeployment(managers);
             }
+            if (fullBattle && OriginalSpawnRetreatScenario.Enabled && !OriginalSpawnRetreatScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalSpawnRetreatScenario.PrepareDeployment(managers);
+            }
             if (fullBattle && OriginalExpensiveCardUpgradeScenario.Enabled && !OriginalExpensiveCardUpgradeScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -1931,6 +1938,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalCardTypeSequenceScenario.Choose(decision);
                 if (OriginalWhelpCooldownScenario.Enabled)
                     pendingPlay = OriginalWhelpCooldownScenario.Choose(decision);
+                if (OriginalSpawnRetreatScenario.Enabled)
+                    pendingPlay = OriginalSpawnRetreatScenario.Choose(decision);
                 if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
@@ -2152,6 +2161,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalWolosBloodletterScenario.Enabled && OriginalWolosBloodletterScenario.IsScenarioAction(action)) ||
                 (OriginalCardTypeSequenceScenario.Enabled && OriginalCardTypeSequenceScenario.IsScenarioAction(action)) ||
                 (OriginalWhelpCooldownScenario.Enabled && OriginalWhelpCooldownScenario.IsScenarioAction(action)) ||
+                (OriginalSpawnRetreatScenario.Enabled && OriginalSpawnRetreatScenario.IsScenarioAction(action)) ||
                 (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
                 (OriginalPurgeToExhaustScenario.Enabled && OriginalPurgeToExhaustScenario.IsScenarioPrelude(action)) ||
                 (OriginalUpgradeCountRelicsScenario.Enabled && OriginalUpgradeCountRelicsScenario.IsScenarioPrelude(action)) ||

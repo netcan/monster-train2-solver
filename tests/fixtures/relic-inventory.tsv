@@ -132,7 +132,7 @@
 "GiveSpellStatsForUpgrades_DH"	"4200307a-616d-4cbb-a54e-527c5dc0f492"	"accepted-native-battle"	"RelicEffectModifyCardAttack"	""
 "BalatroEventTriboulet"	"dfe0d28c-ff6a-4a8b-8290-aefb32d0c1d6"	"accepted-native-battle"	"RelicEffectModifyCardHealthPerRarityType,RelicEffectModifyCharacterMaxHealthPerRarityType,RelicEffectModifyCharacterMaxHealthPerRarityTypeTrigger"	""
 "CooldownOnDamage_DH"	"7cf3a2a3-afae-48fc-8721-365a5b056b8b"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnDamage"	""
-"ChanceRetreatEnemiesOnSpawn"	"f7b3141b-e803-4128-86cd-d1bf4827d943"	"pending"	"RelicEffectChanceAddEffectAfterSpawn"	""
+"ChanceRetreatEnemiesOnSpawn"	"f7b3141b-e803-4128-86cd-d1bf4827d943"	"accepted-native-battle"	"RelicEffectChanceAddEffectAfterSpawn"	""
 "StrongerSpikes"	"aa94ad34-ee09-464e-89ff-2a2c2867c097"	"accepted-native-battle"	"RelicEffectModifyStatusMagnitude"	""
 "HymnistsApplyValorOnSummon"	"55cf29f3-bc0d-4b5f-929e-07d4629141b3"	"accepted-native-battle"	"RelicEffectAddStatusEffectToTeamOnSpawn"	""
 "VoidPortal"	"5cad6ad0-769b-46d3-9464-514b8e74190a"	"accepted-native-campaign"	"RelicEffectAddPostBattleReward"	""
