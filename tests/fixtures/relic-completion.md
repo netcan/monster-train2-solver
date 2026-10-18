@@ -18,15 +18,15 @@ coverage inventory checks.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 196 original owners accepted (179 native battle owners,
-sixteen actual campaign-interface owners and one explicit native no-op owner);
-28 remain pending. The latest accepted owner is `DrawCardPerDeckSize`: its
-unchanged `RelicEffectCardDrawPerPileStartOfTurn` payload draws one extra card
-per 25 visible save-deck cards after the ordinary player-turn draw. Seven native
-threshold/reset Tests distinguish 0/24/25/49/50/24/50 cards, then the exact
-50-card deck is restored for four natural callbacks that each draw two cards.
-Other pile/owner payloads remain rejected; mixed after-draw relic combinations
-and native positive applications at other deck sizes are not calibrated.
+Current checkpoint: 212 original owners accepted (194 native battle owners,
+seventeen actual campaign-interface owners and one explicit native no-op owner);
+12 remain pending. The latest accepted owner is `ChanceToNotConsume`: its
+unchanged 50% Spell Consume suppression produces two natural hits into Discard
+and two misses into Exhausted. Full state, private trait state, play count,
+output suppression and Battle RNG match. Explicit controls cover unplayed cards,
+wrong type, missing Consume, Persistent and Infusion, cached Tests and Apply
+reset. Infusion and Monster carriers are controls only; arbitrary additional
+card/trait callbacks, native preview and combined relic effects are uncalibrated.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
@@ -37,17 +37,20 @@ need their actual campaign lifecycle evidence; definition enumeration and
 inert battle presence do not validate those effects. Pure no-op definitions
 must be explicitly identified without inventing activation evidence.
 
-The latest fixture, `full-battle-original-deck-turn-draw.mt2f`, captures the
-unchanged owner, threshold/control/reset Tests and repeated natural after-draw
-callbacks. Full native/model context agrees, including hand/deck/discard order,
-statistics and RNG. Pure checks cover hand limits, discard reshuffling and
-deployment/preview/removed-owner gates; sixteen parallel branches remain immutable.
+The latest fixture, `full-battle-original-suppress-exhaust.mt2f`, captures the
+unchanged owner and 47 native callback records (sixteen Pre, twenty-eight Test,
+three Apply). Full native/model context and output suppression agree. Pure checks
+cover the exact 49/50 boundary, unconditional Apply versus gated manager, prior
+output, exclusions, absent owner and normal discard cleanup. Sixteen parallel
+branches remain immutable.
 
-The 40-stage winning battle records 20 actions and five EndTurns, with zero
-differential counters. Focused native checks and 128-state serial/parallel
-search pass, with zero unsupported attempts. The 38,663-byte archive has 7,691
+The 35-stage winning battle records eight actions and five EndTurns, with zero
+differential counters. Focused native checks, independent four-EndTurn suffix,
+128-state serial/parallel search and eight affected archives pass, with zero
+unsupported search attempts. Both regression workers finish with exit zero.
+The 27,045-byte archive has 3,952
 unique nodes and SHA-256
-`7a522b92129d98429100f0978b04423e8ee6b863ae13f10647e41df1263b959c`; no JSON
-companion is tracked. Inventory is 415 archives: 377 battles and 38 component
-calibrations. Original relic coverage is 196/224 (87.50%): 179 battle owners,
-sixteen campaign owners and one native no-op owner.
+`260ccbe91230ed80a2e752cdebfc7d29365a3ed9f7b7aff7f7aa97727bfc24da`; no JSON
+companion is tracked. Inventory is 431 archives: 392 battles and 39 component
+calibrations. Original relic coverage is 212/224 (94.64%): 194 battle owners,
+seventeen campaign owners and one native no-op owner.

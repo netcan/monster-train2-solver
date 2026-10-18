@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **211 distinct original collectable relics / 224 catalog entries
-(94.20%)** have accepted native evidence: 193 have full-battle effect evidence,
+As of 2026-10-18, **212 distinct original collectable relics / 224 catalog entries
+(94.64%)** have accepted native evidence: 194 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2454,4 +2454,71 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-ran
 dotnet run --project src/ModelChecks -c Release -- --random-draw-cost-pure
 dotnet run --project src/ModelChecks -c Release -- --original-random-draw-cost-only tests/fixtures/full-battle-original-random-draw-cost.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-random-draw-cost.mt2f
+```
+
+## ChanceToNotConsume
+
+| Original relic asset | Data ID | Native fixture | Accepted effect evidence |
+| --- | --- | --- | --- |
+| `ChanceToNotConsume` | `51d95691-d59e-42f1-84ba-8c530743df69` | `full-battle-original-suppress-exhaust.mt2f` | The unchanged 50% Spell effect runs on four natural Consume plays: two hits retain normal Discard routing, two misses reach Exhausted. Exact private Consume state, play counts, cached Tests, Apply resets, complete native state/RNG and independent replay/search match. |
+
+The unchanged owner allows deployment and contains one RelicEffectSuppressExhaust,
+with chance 50 and card type Spell. Pre-discard clears its cached result first.
+Unplayed cards, missing Consume, other card types, Persistent and Infusion
+return false without RNG. Every eligible card consumes one Range(0,100,Battle)
+draw; only rolls below 50 set the output suppression trait. A miss or exclusion
+preserves any previous output suppression. TestEffectOnCardDiscarded only reads
+the cache. The manager gates Apply by Test and preview permission, while the
+Apply body unconditionally writes the suppression trait and clears the cache.
+
+The isolated battle uses two authored Stewards with triggers/abilities cleared
+and eight card carriers: four effect-free Consume spells, a plain spell, a
+Persistent Consume spell, an Infusion Consume control and a Monster Consume
+control. The last two are authored off-hand before recording and are explicit
+controls only. Eight recorded actions deploy the Stewards and play the first
+six spells. All four ordinary Consume spells have natural pre-discard calls:
+two hits finish in Discard with private IsExhausted false, two misses finish in
+Exhausted with IsExhausted true; every play count is one. Plain and Persistent
+cards also have natural plays. No Infusion or Monster Consume play is claimed.
+
+Explicit native controls cover all five pre-discard exclusions, previous-output
+preservation, sticky cached true Tests and a direct Apply/reset. Eligible setup
+controls consume the original RNG and are marked separately from natural plays;
+private state and RNG are not overwritten to force results. The 47 callback
+records comprise sixteen Pre, twenty-eight Test and three Apply records. Five
+Tests read true without changing state, and all three Apply calls reset the
+cache. Each record is replayed independently in sixteen immutable branches.
+
+The schema-234 winning battle records 35 stages, eight actions and five EndTurns.
+Native DEPTH-PASS, settled terminal effects and all eight general/specialized
+capture, mismatch, unsupported and pending counters pass with zero errors.
+Independent action replay matches all eight plays and the four-EndTurn suffix.
+Search matches eight decisions and thirty root actions, with zero unsupported
+attempts, serial/parallel best equality, 128/128 states and three replayed steps.
+All eight affected archives pass with two workers and terminal exit zero:
+this owner, random-hand upgrade, hand removal, permanent Consume over temporary,
+relic Exhaust upgrades, purge to Exhaust, Smelt Ember and random draw cost.
+Regression summary: `.probe-runs/model-checks-20261018-124622-e505535f/summary.json`.
+
+Pure checks exercise exact rolls 49 and 50, sticky Tests, the unconditional
+Apply body with a false cache, manager/preview gates, previous-output preservation,
+all exclusions, absent owner, ordinary play-count cleanup and private Consume
+routing. Native preview, arbitrary additional card/trait callbacks and combined
+relic effects require separate evidence. The original 50% Spell definition is
+strictly validated; other chances, owner identities or effect payloads are not
+generalized from this witness.
+
+The binary archive is 27,045 bytes, with 3,952 unique nodes and SHA-256
+`260ccbe91230ed80a2e752cdebfc7d29365a3ed9f7b7aff7f7aa97727bfc24da`.
+Source length/hash are zero and no JSON companion is tracked. Accepted inventory
+is 431 archives: 392 battles and 39 component calibrations. Original-owner
+coverage is 212/224 (94.64%): 194 battle, seventeen campaign and one native no-op
+owner; twelve owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalSuppressExhaustRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-suppress-exhaust.mt2f
+dotnet run --project src/ModelChecks -c Release -- --suppress-exhaust-pure
+dotnet run --project src/ModelChecks -c Release -- --original-suppress-exhaust-only tests/fixtures/full-battle-original-suppress-exhaust.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-suppress-exhaust.mt2f
 ```

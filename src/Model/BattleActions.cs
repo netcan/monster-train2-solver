@@ -472,6 +472,9 @@ namespace MonsterTrain2Poju.Model
             context = context.WithQueryFrame(context.QueryFrame?.With(energy: source.Energy - energyPaidCost));
             // Native records the payment on the card before any queued effect runs.
             if (playingInstance != null && !paidWithPyre) context = context.WithCard(playingInstance.WithPlayedCost(paidCost));
+            var suppressionTest = RelicSuppressExhaustModel.PreDiscard(context, card.InstanceId, true, out _, out string? consumeSuppression);
+            if (!suppressionTest.Supported) return Unsupported(suppressionTest.UnsupportedReason!);
+            context = suppressionTest.Context;
             CardPileState[] piles = source.OtherPiles.ToArray();
             // A naturally played card remains owned in the discard buffer during queued effects.
             // Scaling queries refresh membership here, before the final destination is assigned.
@@ -827,7 +830,7 @@ namespace MonsterTrain2Poju.Model
             bool skipNaturalDiscard = discardInstance?.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(discardInstance).Traits.Any(trait =>
                     trait is "CardTraitInfusion" or "CardTraitPersistent");
-            bool consumedOnPlay = !skipNaturalDiscard && discardInstance != null && CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
+            bool consumedOnPlay = !skipNaturalDiscard && consumeSuppression != RelicSuppressExhaustModel.Trait && discardInstance != null && CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
             bool ephemeralPurgeCallbacks = !skipNaturalDiscard && rule.Destination == "Purged" && discardInstance?.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(discardInstance).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal);
             if (consumedOnPlay && rule.HandConsumeInteractions?.Count > 0)
@@ -889,6 +892,9 @@ namespace MonsterTrain2Poju.Model
                 RelicCheaperSpellUpgradeResult randomDiscarded = RelicRandomHandUpgradeModel.Discarded(context, card.InstanceId);
                 if (!randomDiscarded.Supported) return Unsupported(randomDiscarded.UnsupportedReason!);
                 context = randomDiscarded.Context;
+                var suppressionApplied = RelicSuppressExhaustModel.Discarded(context, out _, consumeSuppression, preview: context.IsolatedBattlePreview == true);
+                if (!suppressionApplied.Supported) return Unsupported(suppressionApplied.UnsupportedReason!);
+                context = suppressionApplied.Context;
             }
             BattleStatistics? statistics = context.Statistics;
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
@@ -903,9 +909,9 @@ namespace MonsterTrain2Poju.Model
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
                 terminal ? playingInstance == null ? context.CardInstances : new[] { skipNaturalDiscard
-                    ? context.FindCard(card.InstanceId) ?? playingInstance : (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, nativePlayedCost) } :
+                    ? context.FindCard(card.InstanceId) ?? playingInstance : (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, nativePlayedCost, consumeSuppression == RelicSuppressExhaustModel.Trait) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
-                    ? skipNaturalDiscard ? instance : instance.OnDiscard(true, nativePlayedCost) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
+                    ? skipNaturalDiscard ? instance : instance.OnDiscard(true, nativePlayedCost, consumeSuppression == RelicSuppressExhaustModel.Trait) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
                 context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState);
             if (!skipNaturalDiscard) context = ConduitModel.Discarded(context, card.InstanceId);
             if (summonedEndless && !terminal && !consumedOnPlay)

@@ -184,7 +184,7 @@
 "IncreaseFrostbiteStacks"	"9cb2b9b2-0308-4f71-92e8-e96a30b87416"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied,RelicEffectPreventStatusEffectDecay"	""
 "IncantTriggeredByUnitAbilities"	"17ee5d9c-4b87-4250-ad3b-dbe49d118e01"	"pending"	"RelicEffectAddEffectOnUnitSpawn"	""
 "IncreasePyregelStacks"	"f4c76f11-37d9-4bb5-867a-4d99b7cfa270"	"accepted-native-battle"	"RelicEffectAddStatusEffectOnStatusApplied"	""
-"ChanceToNotConsume"	"51d95691-d59e-42f1-84ba-8c530743df69"	"pending"	"RelicEffectSuppressExhaust"	""
+"ChanceToNotConsume"	"51d95691-d59e-42f1-84ba-8c530743df69"	"accepted-native-battle"	"RelicEffectSuppressExhaust"	""
 "RebalanceValor"	"76511782-d2c1-43d1-9878-e465758017d8"	"accepted-native-battle"	"RelicEffectRebalanceValor"	""
 "UpgradeMaxHpFrontUnit"	"cb2c9d18-9a05-4523-acdc-6e4af73152aa"	"accepted-native-battle"	"RelicEffectModifyFrontInRoomCharacterMaxHealthEachTurn"	""
 "ChampsHealBeginningOfTurn"	"dbd5aec6-5046-4df2-ae61-4b646b8d1702"	"accepted-native-battle"	"RelicEffectHealStartOfTurn"	""

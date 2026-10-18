@@ -1,8 +1,19 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 430 archives (391 full battles and
-39 component calibrations), 211/224 original relic owners (94.20%): 193 battle
+Current accepted inventory (2026-10-18): 431 archives (392 full battles and
+39 component calibrations), 212/224 original relic owners (94.64%): 194 battle
 owners, seventeen campaign-interface owners and one native no-op. The latest
+`ChanceToNotConsume` fixture covers the unchanged 50% Spell Consume effect.
+Four natural Consume plays give two Discard hits and two Exhausted misses,
+with exact private trait state, play counts and Battle RNG. Explicit controls
+cover unplayed cards, wrong type, missing Consume, Persistent and Infusion;
+cached Tests and Apply resets match across all 47 callback records. The
+35-stage winning battle, eight actions, independent four-EndTurn suffix,
+sixteen immutable branches, 128-state search and eight affected archives pass.
+Pure checks cover the exact 49/50 boundary, prior-output preservation and
+unconditional Apply versus manager gating. Additional card/trait callbacks,
+native preview and arbitrary relic combinations require separate evidence.
+The preceding
 `RandomCardCostOnDraw` fixture covers its unchanged biased random-cost callback
 and original +2 draw consumer. Twenty-six draws cover all six raw RNG outcomes,
 zero/high/X costs, existing positive/negative deltas and both temporary/permanent

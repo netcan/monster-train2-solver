@@ -1,11 +1,25 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 430 binary archives, including 391
+Current accepted inventory (2026-10-18): 431 binary archives, including 392
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 211/224 catalog entries (94.20%): 193 battle owners, 17 campaign
+covers 212/224 catalog entries (94.64%): 194 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`ChanceToNotConsume` now has schema-234 native evidence for its unchanged 50%
+Spell Consume suppression. Four natural Consume plays produce two hits into
+Discard and two misses into Exhausted, with exact private trait state, play
+counts and Battle RNG. Explicit native controls cover unplayed cards, wrong
+card type, missing Consume, Persistent and Infusion; repeated Tests retain the
+cached result and Apply clears it. All 47 callback records match complete state
+and output suppression. The 35-stage winning battle, eight controlled actions,
+independent four-EndTurn suffix with sixteen immutable branches, 128-state
+serial/parallel search and eight affected archives pass. Pure checks distinguish
+the exact 49/50 boundary and unconditional Apply body from its gated manager.
+Native preview, arbitrary additional card/trait callbacks and combined relic
+effects need separate evidence. Infusion and Monster carriers are explicit
+controls only; the unchanged original owner supports Spell cards.
 
 `RandomCardCostOnDraw` now has schema-233 native evidence for both unchanged
 effects. Twenty-six draws cover all six biased RNG outcomes: 0/1/2/3/4/5 map to

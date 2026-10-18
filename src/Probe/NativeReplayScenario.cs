@@ -335,6 +335,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalMooncycleFaeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRandomDrawCostScenario.Enabled && !OriginalRandomDrawCostScenario.Acquired)
                         OriginalRandomDrawCostScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalSuppressExhaustScenario.Enabled && !OriginalSuppressExhaustScenario.Acquired)
+                        OriginalSuppressExhaustScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -1201,6 +1203,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalRandomDrawCostScenario.PrepareDeployment(managers);
             }
+            if (fullBattle && OriginalSuppressExhaustScenario.Enabled && !OriginalSuppressExhaustScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalSuppressExhaustScenario.PrepareDeployment(managers);
+            }
             if (fullBattle && OriginalHealDamageScenario.Enabled && (!OriginalHealDamageScenario.Prepared ||
                 combat!.GetTurnCount() > 0 && !OriginalHealDamageScenario.CombatPrepared))
             {
@@ -1886,6 +1893,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalMooncycleFaeScenario.Choose(decision);
                 if (OriginalRandomDrawCostScenario.Enabled)
                     pendingPlay = OriginalRandomDrawCostScenario.Choose(decision);
+                if (OriginalSuppressExhaustScenario.Enabled)
+                    pendingPlay = OriginalSuppressExhaustScenario.Choose(decision);
                 if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
@@ -2102,6 +2111,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalStartTurnPropagationScenario.Enabled && OriginalStartTurnPropagationScenario.IsScenarioAction(action)) ||
                 (OriginalMooncycleFaeScenario.Enabled && OriginalMooncycleFaeScenario.IsScenarioAction(action)) ||
                 (OriginalRandomDrawCostScenario.Enabled && OriginalRandomDrawCostScenario.IsScenarioAction(action)) ||
+                (OriginalSuppressExhaustScenario.Enabled && OriginalSuppressExhaustScenario.IsScenarioAction(action)) ||
                 (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
                 (OriginalPurgeToExhaustScenario.Enabled && OriginalPurgeToExhaustScenario.IsScenarioPrelude(action)) ||
                 (OriginalUpgradeCountRelicsScenario.Enabled && OriginalUpgradeCountRelicsScenario.IsScenarioPrelude(action)) ||

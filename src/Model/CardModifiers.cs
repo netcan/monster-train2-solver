@@ -320,9 +320,9 @@ namespace MonsterTrain2Poju.Model
         internal CardInstanceState WithPlayedCost(int cost) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, cost, LastForgedAmount, PlayCount, ExternalInteractions,
             EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState, ForgeCountScalingTraits, RawCostOverride, CanBeCopied, TrainHealScalingTraits);
-        public CardInstanceState OnDiscard(bool played, int? cost = null)
+        public CardInstanceState OnDiscard(bool played, int? cost = null, bool suppressConsume = false)
         {
-            CardInstanceState callback = played ? CardExhaustModel.MarkPlayedDiscard(this) : this;
+            CardInstanceState callback = played && !suppressConsume ? CardExhaustModel.MarkPlayedDiscard(this) : this;
             CardModifiers temporary = Temporary.OnDiscard();
             var result = new CardInstanceState(InstanceId, DataId, Permanent, temporary, played ? cost ?? LastPlayedCost : LastPlayedCost, LastForgedAmount,
                 unchecked(PlayCount + (played ? 1 : 0)), ExternalInteractions, EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, callback.ExhaustState, ForgeCountScalingTraits, RawCostOverride, CanBeCopied, TrainHealScalingTraits);

@@ -307,6 +307,7 @@ param(
     [switch] $OriginalStartTurnPropagationRelic,
     [switch] $OriginalMooncycleFaeRelic,
     [switch] $OriginalRandomDrawCostRelic,
+    [switch] $OriginalSuppressExhaustRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -541,6 +542,7 @@ if ($OriginalRandomHandUpgradeRelic) { $BranchCardMasks = $true; $PhysicalSpawnP
 if ($OriginalStartTurnPropagationRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalMooncycleFaeRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalRandomDrawCostRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
+if ($OriginalSuppressExhaustRelic) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1018,6 +1020,7 @@ if ($OriginalRandomHandUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'or
 if ($OriginalStartTurnPropagationRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-turn-propagation' }
 if ($OriginalMooncycleFaeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mooncycle-fae' }
 if ($OriginalRandomDrawCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-random-draw-cost' }
+if ($OriginalSuppressExhaustRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-suppress-exhaust' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1958,6 +1961,14 @@ if ($OriginalStartTurnPropagationRelic -and ($trace.Schema -ne 231 -or $trace.Or
     @($trace.RelicStartTurnPropagationApplications).Count -lt 2 -or
     @($trace.RelicStartTurnPropagationTests | Where-Object EmptyControl).Count -ne 1)) {
     throw 'Original StartOfTurnPropagate acceptance failed.'
+}
+if ($OriginalSuppressExhaustRelic -and ($trace.Schema -ne 234 -or $trace.OriginalSuppressExhaustSchema -ne 234 -or
+    $trace.ModifierScenario -ne 'original-suppress-exhaust' -or -not $trace.OriginalSuppressExhaustPrepared -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.OriginalSuppressExhaustCaptureFailures -ne 0 -or $trace.OriginalSuppressExhaustMismatches -ne 0 -or
+    $trace.OriginalSuppressExhaustUnsupported -ne 0 -or $trace.OriginalSuppressExhaustPending -ne 0 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 8 -or @($trace.RelicSuppressExhaustRecords).Count -lt 16)) {
+    throw 'Original ChanceToNotConsume acceptance failed.'
 }
 if ($OriginalRandomDrawCostRelic -and ($trace.Schema -ne 233 -or $trace.OriginalRandomDrawCostSchema -ne 233 -or
     $trace.ModifierScenario -ne 'original-random-draw-cost' -or -not $trace.OriginalRandomDrawCostPrepared -or

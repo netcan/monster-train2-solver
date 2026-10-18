@@ -322,6 +322,9 @@ namespace MonsterTrain2Poju.Model
                 RelicCheaperSpellUpgradeResult randomDiscarded = RelicRandomHandUpgradeModel.Discarded(context, card.InstanceId);
                 if (!randomDiscarded.Supported) return Unsupported(randomDiscarded.UnsupportedReason!);
                 context = randomDiscarded.Context;
+                var suppression = RelicSuppressExhaustModel.Discarded(context, out _, preview: context.IsolatedBattlePreview == true);
+                if (!suppression.Supported) return Unsupported(suppression.UnsupportedReason!);
+                context = suppression.Context;
             }
             train = WithContext(train, context, spawn.Turn == 0);
             foreach (CardToken card in context.Cards.Hand.Reverse().Where(card => !retainedIds.Contains(card.InstanceId)))

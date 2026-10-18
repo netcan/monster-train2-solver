@@ -120,7 +120,17 @@ namespace MonsterTrain2Poju.Probe
             RelicFriendlyTriggerDamageRule? unitDamage = null;
             RelicMooncycleRoomEffectRule? mooncycleRoomEffect = null;
             RelicRandomDrawCostRule? randomDrawCost = null;
-            if (effect is RelicEffectRandomCardCostOnDraw)
+            RelicSuppressExhaustRule? suppressExhaust = null;
+            if (effect is RelicEffectSuppressExhaust)
+            {
+                var interactions = new List<string>();
+                if (data.GetParamCardEffectData().Count != 0 || data.GetTriggers().Count != 0 || data.GetParamCardUpgradeData() != null ||
+                    data.GetParamCardFilter() != null || data.GetParamCardFilterSecondary() != null) interactions.Add("Additional suppression payload");
+                object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+                suppressExhaust = new RelicSuppressExhaustRule((int)Field("percentageChance"), Field("cardType").ToString()!, (bool)Field("testPassed"), interactions);
+                amount = (int)Field("percentageChance");
+            }
+            else if (effect is RelicEffectRandomCardCostOnDraw)
             {
                 var interactions = new List<string>();
                 if (data.GetParamCardEffectData().Count != 0 || data.GetTriggers().Count != 0 || data.GetParamCardUpgradeData() != null ||
@@ -389,8 +399,8 @@ namespace MonsterTrain2Poju.Probe
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
-                effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost);
+                effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust ? data.GetParamFloat() : 0,
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust);
         }
 
         internal static ResourceSnapshot Capture()
