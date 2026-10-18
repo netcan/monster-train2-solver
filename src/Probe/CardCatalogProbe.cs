@@ -13,6 +13,8 @@ namespace MonsterTrain2Poju.Probe
         internal static void Capture(FullBattleTrace trace, AllGameManagers managers)
         {
             if (Environment.GetEnvironmentVariable("MT2_PROBE_CARD_CATALOG") != "1") return;
+            if (!CardBranchMaskProbe.Enabled)
+                throw new InvalidOperationException("Card catalog projections require branch card metadata.");
             var data = managers.GetSaveManager().GetAllGameData();
             var relics = managers.GetRelicManager();
             var cards = data.GetAllCardData().OrderBy(card => card.GetID(), StringComparer.Ordinal).ToArray();
@@ -56,6 +58,7 @@ namespace MonsterTrain2Poju.Probe
             using (var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, Scope = "AllGameData", GameVersion = UnityEngine.Application.version,
+                BranchCardMasksEnabled = CardBranchMaskProbe.Enabled,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = beforeRng, RngAfter = afterRng,
                 DecisionUnchanged = unchanged, Cards = entries

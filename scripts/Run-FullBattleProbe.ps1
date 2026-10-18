@@ -808,7 +808,7 @@ $environment = @{
     MT2_PROBE_CARD_STATUS_COMPOSITION = $(if ($CardStatusComposition) { '1' } else { '0' })
     MT2_PROBE_OWNED_CARD_MASKS = $(if ($OwnedCardMasks) { '1' } else { '0' })
     MT2_PROBE_CARD_UPGRADE_LIFECYCLE = $(if ($CardUpgradeLifecycle) { '1' } else { '0' })
-    MT2_PROBE_BRANCH_CARD_MASKS = $(if ($BranchCardMasks) { '1' } else { '0' })
+    MT2_PROBE_BRANCH_CARD_MASKS = $(if ($BranchCardMasks -or $CardCatalog) { '1' } else { '0' })
     MT2_PROBE_RELIC_CARD_UPGRADES = $(if ($RelicCardUpgrades) { '1' } else { '0' })
     MT2_PROBE_BATTLE_RELIC_UPGRADES = $(if ($BattleRelicUpgrades) { '1' } else { '0' })
     MT2_PROBE_CONDITIONAL_BATTLE_RELIC_UPGRADES = $(if ($ConditionalBattleRelicUpgrades) { '1' } else { '0' })
@@ -1119,6 +1119,15 @@ if ($RandomDiscard) {
     $environment.MT2_PROBE_BRANCH_CARD_MASKS = '1'
 }
 if ($RoomCapacityAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'room-capacity-attachment' }
+if ($CardCatalog) {
+    $cardCatalogAllowedArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'CardCatalog',
+        'BinaryCapture', 'CaptureJson', 'SkipBuild', 'FullRuleCatalog', 'Verbose', 'Debug', 'ErrorAction',
+        'WarningAction', 'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable',
+        'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
+    if ($Policy -ne 'no-cards' -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $cardCatalogAllowedArguments }).Count -gt 0) {
+        throw 'CardCatalog requires the no-cards baseline without authored mechanism scenarios.'
+    }
+}
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
@@ -2581,6 +2590,7 @@ if ($CardCatalog) {
         if ($cardCatalogRoot.GetProperty('Schema').GetInt32() -ne 1 -or
             $cardCatalogRoot.GetProperty('Scope').GetString() -ne 'AllGameData' -or
             $cardCatalogRoot.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            -not $cardCatalogRoot.GetProperty('BranchCardMasksEnabled').GetBoolean() -or
             -not $cardCatalogRoot.GetProperty('DecisionUnchanged').GetBoolean() -or
             $cardCatalogRoot.GetProperty('FrameBefore').GetInt32() -ne $cardCatalogRoot.GetProperty('FrameAfter').GetInt32() -or
             -not $cardCatalogRoot.GetProperty('RngBefore').ContentEquals($cardCatalogRoot.GetProperty('RngAfter')) -or
