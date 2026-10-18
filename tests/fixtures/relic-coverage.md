@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **196 distinct original collectable relics / 224 catalog entries
-(87.50%)** have accepted native evidence: 179 have full-battle effect evidence,
+As of 2026-10-18, **197 distinct original collectable relics / 224 catalog entries
+(87.95%)** have accepted native evidence: 180 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1696,4 +1696,26 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-dec
 dotnet run --project src/ModelChecks -c Release -- --original-deck-turn-draw-only tests/fixtures/full-battle-original-deck-turn-draw.mt2f
 dotnet run --project src/ModelChecks -c Release -- --deck-turn-draw-pure
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-deck-turn-draw.mt2f
+```
+
+## DamageOnCardPlayed
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `DamageOnCardPlayed` | `b6e80269-efdd-4e28-97b3-8b19e8236b2e` | `full-battle-original-card-play-damage.mt2f` | The unchanged owner deals 3 damage to a random enemy Hero in the played Spell's room. Four native Test/Application pairs cover multi-candidate selection, two 4-to-1 HP hits and two lethal hits; a Monster play, an empty other room and the emptied witness room provide negative/reset controls. |
+
+Native Test commits the Battle RNG selection and caches its target; Apply does not roll again. The focused checker independently replays all nine Tests and four completed Applications, including the full train context, two enemy deaths, callback queues and sixteen immutable parallel branches. At the raw coroutine boundary a removed character can still own its physical spawn point; the full action settles that point before the next decision. Both boundaries match native state without omitting lethal damage.
+
+The schema-220 winning battle records 32 stages, nine card actions, five EndTurns, nine train phases and seven spawns. Capture failures, mismatches, unsupported transitions and pending records are zero for both the full battle and this effect's callback capture. Independent search matches all nine recorded decisions, visits 128/128 states, has serial/parallel best equality and zero unsupported attempts, and replays three steps. The 26,356-byte archive has 3,895 unique nodes and SHA-256 `a4f6a264cbe357730880cc4218496e0176d8215f756701f8132576be16f44e73`; no JSON companion is tracked. Source run: `.probe-runs/full-battle-units-and-junk-20261018-084534-c3d0fa6f`.
+
+The integrated checker exits zero for this archive and the affected `original-big-damage-many-morsels`, `original-damage-on-floor-transition` and `unit-clone` archives, including complete recorded action/state comparisons, the existing full-policy replays and the selected dedicated search gates. The older BigDamage search retains its explicit excluded-branch boundary (three unsupported attempts across recorded decisions and sixteen during search); it is not evidence of complete alternative-action support. This new owner's recorded/search frontiers have zero unsupported attempts.
+
+Evidence covers this unchanged owner, its Spell-only filter, enemy-only random room targeting and fixed 3 damage. Ability/preview exclusion and missing-metadata guards have pure checks. The isolated empty Spells and strengthened Stewards exercise the unchanged relic; they do not establish arbitrary native card-effect combinations, other owner payloads, trait/moon-phase filters or mixed damage-relic ordering. Inventory is 416 archives: 378 full battles and 38 component calibrations. Accepted original relic evidence is 197/224 (87.95%): 180 battle, sixteen campaign and one native no-op owner; 27 owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCardPlayDamageRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-play-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-play-damage-pure
+dotnet run --project src/ModelChecks -c Release -- --original-card-play-damage-only tests/fixtures/full-battle-original-card-play-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-play-damage.mt2f
 ```

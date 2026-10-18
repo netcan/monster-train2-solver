@@ -285,7 +285,7 @@ namespace MonsterTrain2Poju.Model
             UnitCloneResult Fail(string reason) => new UnitCloneResult(null, unitId, RoomOutcome.Unsupported, reason, events, boundaries, pending);
         }
 
-        public static UnitCloneResult Drain(UnitCloneResult input)
+        public static UnitCloneResult Drain(UnitCloneResult input, bool deferPhysicalRemoval = false)
         {
             if (!input.Supported) return input;
             TrainCombatState state = input.State!; var queue = input.PendingCallbacks.ToList(); var events = input.Events.ToList();
@@ -304,7 +304,14 @@ namespace MonsterTrain2Poju.Model
                 callback =>
                 {
                     RoomCombatResult settled;
-                    if (callback.RelicDamageRemoval && callback.CompletePhysicalRemovalAfterQueue && state.Context?.SpawnPoints != null)
+                    // A native damage coroutine can finish before the death dissolve
+                    // releases its physical spawn point at the next decision boundary.
+                    if (deferPhysicalRemoval)
+                    {
+                        settled = RoomCombatModel.SettleQueuedSpawner(state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex),
+                            callback.Unit, preservePhysicalPoint: true);
+                    }
+                    else if (callback.RelicDamageRemoval && callback.CompletePhysicalRemovalAfterQueue && state.Context?.SpawnPoints != null)
                     {
                         UnitSpawnPointState? point = state.Context.SpawnPoints.Units.FirstOrDefault(item => item.UnitId == callback.Unit.Id);
                         SpawnPointGroupState? group = point?.Current == null ? null :

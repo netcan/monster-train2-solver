@@ -1,5 +1,15 @@
 # Native regression fixtures
 
+Current accepted inventory (2026-10-18): 416 archives (378 full battles and
+38 component calibrations), 197/224 original relic owners (87.95%): 180 battle
+owners, sixteen campaign-interface owners and one native no-op. The latest
+`DamageOnCardPlayed` fixture covers committed random-target Test RNG, four
+3-damage callbacks including two kills, and Monster/empty-room/reset controls.
+Its 32-stage winning battle has zero differential counters; focused checks
+and independent 128-state serial/parallel search pass. The 26,356-byte archive
+has 3,895 unique nodes and SHA-256
+`a4f6a264cbe357730880cc4218496e0176d8215f756701f8132576be16f44e73`.
+
 BalatroEventTriboulet extension (2026-10-18): 413 archives (375 battles and
 38 calibrations), 194/224 original relic owners (86.61%): 177 full-battle
 owners, sixteen campaign-interface owners and one native no-op. The unchanged

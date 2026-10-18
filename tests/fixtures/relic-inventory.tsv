@@ -146,7 +146,7 @@
 "CarriageJack"	"19e15240-37ca-460d-8230-693626fc7f7e"	"accepted-native-battle"	"RelicEffectModifyRoomCapacityOnCardPlay"	""
 "ExtraSpellUpgrades"	"60a7f580-0788-42f2-8896-cb8d22e849a5"	"accepted-native-campaign"	"RelicEffectAddSpellUpgradeSlot"	""
 "SteelStockpile"	"b2868935-103c-4d27-ae48-a96d947c05ed"	"accepted-native-battle"	"RelicEffectConserveForgePoints"	""
-"DamageOnCardPlayed"	"b6e80269-efdd-4e28-97b3-8b19e8236b2e"	"pending"	"RelicEffectDamageOnCardPlayed"	""
+"DamageOnCardPlayed"	"b6e80269-efdd-4e28-97b3-8b19e8236b2e"	"accepted-native-battle"	"RelicEffectDamageOnCardPlayed"	""
 "MoonPhaseModifyEmber"	"70096a91-220a-4ab3-b8d0-b8fe8f3a819c"	"accepted-native-battle"	"RelicEffectModifyEnergyOnMoonPhase"	""
 "DamageOnConsume"	"2d2450a5-4ed5-4d9a-bba2-15c9eb0eee6d"	"pending"	"RelicEffectDamageOnExhaust"	""
 "BoneDogTitanPyreLife"	"d7264164-b519-43e2-bcf3-055afee3d8dd"	"pending"	"RelicEffectPyreHeartResurrection"	""

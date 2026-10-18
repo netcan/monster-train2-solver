@@ -1,11 +1,21 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 403 binary archives, including 365
+Current accepted inventory (2026-10-18): 416 binary archives, including 378
 full battles and 38 component calibrations. Unchanged original relic evidence
-covers 183/224 catalog entries (81.70%): 166 battle owners, 16 campaign
+covers 197/224 catalog entries (87.95%): 180 battle owners, 16 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`DamageOnCardPlayed` now has isolated schema-220 native evidence for its
+unchanged Spell-only, random enemy-Hero, 3-damage payload. Native Test advances
+Battle RNG and caches its target, while Apply consumes no second selection.
+Four applications cover two nonlethal hits and two kills; Monster and empty-room
+controls do nothing. The model distinguishes raw callback death cleanup from
+physical spawn-point release before the next decision. Its 32-stage winning
+battle, focused checker and independent 128-state serial/parallel search pass
+with zero differential counters. Other owner payloads, trait/moon-phase filters
+and arbitrary combinations with other damage effects are not claimed.
 
 `ReduceFirstSpellCostPerDeckSize` now has isolated native coverage. Its unchanged
 15-card DeckPile threshold applies a temporary cost and X-cost reduction to

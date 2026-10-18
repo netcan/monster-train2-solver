@@ -116,6 +116,7 @@ namespace MonsterTrain2Poju.Probe
             RelicMoonPhaseStatusRule? moonPhaseStatus = null;
             RelicStartTurnHealRule? startTurnHeal = null;
             RelicStartTurnRoomEffectRule? startTurnRoomEffect = null;
+            RelicCardPlayDamageRule? cardPlayDamage = null;
             if (effect is RelicEffectDrawOnPreOpeningDraw)
             {
                 var upgradeData = data.GetParamCardUpgradeData(); CardUpgradeModifier? upgrade = null;
@@ -212,6 +213,12 @@ namespace MonsterTrain2Poju.Probe
                 amount = data.GetParamInt();
             else if (effect is RelicEffectCardDrawPerPileStartOfTurn)
                 amount = (int)AccessTools.Field(effect.GetType(), "_statCountPerCardEffect").GetValue(effect);
+            else if (effect is RelicEffectDamageOnCardPlayed)
+            {
+                amount = (int)AccessTools.Field(effect.GetType(), "damageAmount").GetValue(effect);
+                cardPlayDamage = new RelicCardPlayDamageRule(data.GetParamCardType().ToString(), data.GetTargetMode().ToString(),
+                    data.GetParamSourceTeam().ToString(), data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray());
+            }
             else if (effect is RelicEffectModifyDragonsHoardStartOfCombat)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddEffectPerPileStartOfTurn)
@@ -337,7 +344,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage);
         }
 
         internal static ResourceSnapshot Capture()
