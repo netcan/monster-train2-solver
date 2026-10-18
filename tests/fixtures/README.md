@@ -4719,8 +4719,10 @@ The scenario keeps the attachment floor empty and routes later unit deployments
 away from it. Native propagation of that attached room modifier to units is a
 separate behavior and is covered by the first-room attachment fixture below. The binary is
 34,617 bytes with 4,122 unique nodes and SHA-256
-`e9cd3c1375855dd15157c74c5fb50e8339a3f1e09c48c1482c668b12280bc813`; no JSON
-companion is tracked. Accepted original relic evidence is now 139/224 (62.05%),
+`e9cd3c1375855dd15157c74c5fb50e8339a3f1e09c48c1482c668b12280bc813`. The archive
+retains JSON-import source metadata: 61,585,179 bytes and source SHA-256
+`2f4e2b8d44bd583c39ebaf358c3a8b61d0a9d4ea968f6f4a72007a1f6506ae6e`;
+no JSON companion is tracked. Accepted original relic evidence was then 139/224 (62.05%),
 and the inventory has 361 archives: 323 battles and 38 component calibrations.
 
 ```powershell
