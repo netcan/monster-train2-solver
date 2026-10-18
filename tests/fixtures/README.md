@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 474 archives (435 full battles and
+Current accepted inventory (2026-10-18): 475 archives (436 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,20 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-474 accepted archives. Refresh/check the index with
+475 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-memorial.mt2f` keeps original Memorial of the Melted, two original
+Disassembles and a Fight Club replacement. Endless sends the selected dead
+unit's source card to the top of draw; normal draw supplies that same card for
+an outside-floor rebirth with a new unit identity and no inherited Endless.
+Replacement removes Endless from the original floor. The second sacrifice
+follows normal Exhausted routing. Both original forge effects and deployment's
+forge reset are observed. The eight-play/five-EndTurn win, sixteen immutable
+full chains and bounded search are checked. Binary-only: 25,312 bytes/3,468 nodes,
+SHA-256 `e837da85556fdd1c14fb985c5142e74934b4e273fc08b88d52181609d4eb9ed1`.
+Use `-Memorial` and `--memorial-only`. Focused room/death gate:
+`.probe-runs/model-checks-20261018-233131-813c7900/summary.json` (two passed).
 
 `full-battle-zone-of-silence.mt2f` keeps two original Zone of Silence cards and
 an original Fight Club replacement. Enemy birth inherits Silence; replacing

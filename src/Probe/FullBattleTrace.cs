@@ -795,6 +795,8 @@ namespace MonsterTrain2Poju.Probe
                 StewardsQuartersCardIds = StewardsQuartersScenario.CardIds,
                 ZoneOfSilencePrepared = ZoneOfSilenceScenario.Prepared,
                 ZoneOfSilenceCardIds = ZoneOfSilenceScenario.CardIds,
+                MemorialPrepared = MemorialScenario.Prepared,
+                MemorialCardIds = MemorialScenario.CardIds,
                 RunCardGenerationPrepared = RunCardGenerationScenario.Prepared,
                 ArmamentDrivePrepared = ArmamentDriveScenario.Prepared,
                 ArmamentDriveCardIds = ArmamentDriveScenario.CardIds,

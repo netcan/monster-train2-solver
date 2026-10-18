@@ -596,7 +596,7 @@ namespace MonsterTrain2Poju.Probe
                 energies.Length <= 1 && energies.All(modifier => modifier.GetParamInt() == 1)) &&
                 upgrade.GetAttackDamageBuff() == 0 && upgrade.GetAdditionalHP() == 0 &&
                 upgrade.GetAdditionalUnhealedHP() == 0 && upgrade.GetCostReduction() == 0 && upgrade.GetAdditionalSize() == 0 &&
-                upgrade.GetAdditionalEquipmentLimit() == 0 && upgrade.GetStatusEffectUpgrades().All(status => status.statusId is "multistrike" or "silenced" && status.count == 1 && !status.fromPermanentUpgrade) &&
+                upgrade.GetAdditionalEquipmentLimit() == 0 && upgrade.GetStatusEffectUpgrades().All(status => status.statusId is "multistrike" or "silenced" or "endless" && status.count == 1 && !status.fromPermanentUpgrade) &&
                 upgrade.GetTraitDataUpgrades().Count == 0 && upgrade.GetRemoveTraitUpgrades().Count == 0 &&
                 upgrade.GetTriggerUpgrades().Count == 0 && upgrade.GetCardTriggerUpgrades().Count == 0 &&
                 upgrade.GetUpgradesToRemove().Count == 0 && RoomCapacityModel.ValidateCharacterFilters(characterFilters) == null &&

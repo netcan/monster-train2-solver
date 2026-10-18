@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 474 binary archives, including 435
+Current accepted inventory (2026-10-18): 475 binary archives, including 436
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 474
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 475
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,15 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-memorial.mt2f` keeps unchanged Memorial of the Melted and two
+Disassembles. Room-granted Endless sends the sacrificed source card to draw;
+normal draw supplies the same identity for outside-floor rebirth without
+Endless. Replacement removes the original floor's Endless, and the second
+sacrifice follows normal Exhausted routing. Original forge effects and the
+deployment reset are checked. The eight-play/five-EndTurn win, sixteen immutable
+full chains and bounded search pass. Focused gate
+`model-checks-20261018-233131-813c7900` passed the new fixture and Zone of Silence.
 
 `full-battle-zone-of-silence.mt2f` keeps two unchanged original rooms and a
 Fight Club replacement. Enemy birth receives Silence; replacement enables the

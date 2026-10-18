@@ -324,6 +324,12 @@ if (args.Length == 2 && args[0] == "--original-status-cards-only")
     OriginalStatusCardsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--memorial-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    MemorialChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--zone-of-silence-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
