@@ -312,6 +312,12 @@ if (args.Length == 2 && args[0] == "--original-room-cards-only")
     OriginalRoomCardsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-forge-cards-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalForgeCardsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--eclipse-chamber-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

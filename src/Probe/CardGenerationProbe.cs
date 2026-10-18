@@ -12,6 +12,19 @@ namespace MonsterTrain2Poju.Probe
         [ThreadStatic] private static int contextCaptureDepth;
         [ThreadStatic] private static Dictionary<CardData, CardCreationRule>? contextCreations;
         internal static bool ProjectingSetup => projectionSetupDepth > 0;
+        internal static bool ForgeEligibility(CardData data)
+        {
+            // Reachable enemy-generated definitions need the same native filter
+            // metadata before and after their first live instance exists.
+            var instance = new CardState();
+            projectionSetupDepth++;
+            try
+            {
+                instance.Setup(data, AllGameManagers.Instance!.GetSaveManager());
+                return CardForgeHelper.IsCardOfInterest(instance, AllGameManagers.Instance.GetCoreManagers());
+            }
+            finally { projectionSetupDepth--; }
+        }
         internal static void BeginContextCapture()
         {
             if (contextCaptureDepth == 0)

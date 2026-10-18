@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 467 binary archives, including 428
+Current accepted inventory (2026-10-18): 468 binary archives, including 429
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 467
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 468
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,17 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-forge-cards.mt2f` plays unchanged Masterwork, Starter Forge,
+Disassemble, Anvil Breaker and Railforged Spike. The native forge chain is
+0/8/10/15/0/4: front-only armor and selected sacrifice precede normal opening
+draw, positive enemy damage and reset, then a one-energy X spell yielding four
+forge points and Consume. Deployment shuffles the isolated active deck before
+that draw. Reachable generated definitions now capture their native forge
+eligibility before their first instance exists, keeping metadata stable through
+generation. The 38-stage win (eight plays/five EndTurns), sixteen immutable
+complete chains and bounded search are checked. This fixture establishes those
+card sequences; other relic/trait combinations retain their existing guards.
 
 `full-battle-original-room-cards.mt2f` adds two unchanged Fight Clubs and Spell
 Sanctum. Existing and later-born friendly units gain +15 attack on the selected

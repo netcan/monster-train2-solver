@@ -119,7 +119,7 @@ namespace MonsterTrain2Poju.Probe
                 string id = pending.Dequeue(); if (reachable.ContainsKey(id)) continue;
                 CardData data = save.GetAllGameData().FindCardData(id)!;
                 bool? forgeEligible = nativeCardsByDataId.TryGetValue(id, out CardState? nativeCard)
-                    ? CardForgeHelper.IsCardOfInterest(nativeCard, managers.GetCoreManagers()) : null;
+                    ? CardForgeHelper.IsCardOfInterest(nativeCard, managers.GetCoreManagers()) : CardGenerationProbe.ForgeEligibility(data);
                 CardPlayRule rule = Definition(data, unplayedOrder, forgeEligible); reachable.Add(id, rule);
                 CombatUnit[] spawned = new[] { rule.SpawnUnit, rule.Summon?.Additional?.Unit }
                     .Where(unit => unit != null).Cast<CombatUnit>()

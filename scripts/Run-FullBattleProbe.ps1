@@ -38,6 +38,7 @@ param(
     [switch] $FusedWeaponry,
     [switch] $EclipseChamber,
     [switch] $OriginalRoomCards,
+    [switch] $OriginalForgeCards,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -471,6 +472,7 @@ if ($TranscendImp) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk'
 if ($FusedWeaponry) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EclipseChamber) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalForgeCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -954,6 +956,7 @@ if ($TranscendImp) { $environment['MT2_PROBE_MODIFIERS'] = 'transcend-imp' }
 if ($FusedWeaponry) { $environment['MT2_PROBE_MODIFIERS'] = 'fused-weaponry' }
 if ($EclipseChamber) { $environment['MT2_PROBE_MODIFIERS'] = 'eclipse-chamber' }
 if ($OriginalRoomCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-cards' }
+if ($OriginalForgeCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-cards' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2139,6 +2142,9 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
     @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 -or
     @($trace.EclipseChamberRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Eclipse Chamber native evidence is incomplete.'
+}
+if ($OriginalForgeCards -and (-not $trace.OriginalForgeCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 8)) {
+    throw 'Original forge cards require all eight unit/spell plays and a native win.'
 }
 if ($OriginalRoomCards -and (-not $trace.OriginalRoomCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
     throw 'Original room-card native evidence is incomplete.'

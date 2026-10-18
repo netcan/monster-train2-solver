@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 467 archives (428 full battles and
+Current accepted inventory (2026-10-18): 468 archives (429 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,8 +9,20 @@ definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-467 accepted archives. Refresh/check the index with
+468 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-forge-cards.mt2f` keeps original Masterwork, Starter Forge,
+Disassemble, Anvil Breaker and Railforged Spike. Front armor and selected sacrifice
+produce forge 0/8/10/15; after deployment's normal deck shuffle and draw, Anvil
+kills a live enemy and resets forge to zero. The remaining one energy drives the
+X spell to four forge points and Consume. The active deck is isolated before the
+first decision. Native forge eligibility for reachable generated definitions is
+captured before first birth. The 38-stage win (eight plays/five EndTurns), sixteen
+immutable chains and bounded search are checked. Other relic/trait combinations
+retain existing guards. Binary-only: 25,452 bytes/3,505 nodes, SHA-256
+`966eab638632df2657f0c8c8377393f8f0ef4789e07450a85992c81428527149`.
+Use `-OriginalForgeCards` and `--original-forge-cards-only`.
 
 `full-battle-original-room-cards.mt2f` keeps two original Fight Clubs and Spell
 Sanctum. Existing and later-born friendly units prove same-floor +15 attack,
