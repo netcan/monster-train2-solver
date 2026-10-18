@@ -66,6 +66,10 @@ Changed payloads and multiple/filtered queued upgrades remain guarded.
 Original Lunacy retains X-scaled moon advances before Conduit addition,
 phase parity, ordinary discard and exact Float-one/PlayedCost/List metadata.
 Uncalibrated moon card-upgrade/relic callbacks retain guards.
+Original Symphony of the Soul adds direct battle evidence for Corrupt five,
+Positive-category multiplication and friendly-only armor multiplication,
+including the zero-armor chance draw. These witnesses use the existing
+projections; the frozen catalog does not need regeneration.
 Original Unplayable markers retain
 their native rejection behavior. Scrap Metal retains Persistent discard guards
 and its calibrated single-base Refine 3 smelt path. A separate native legality

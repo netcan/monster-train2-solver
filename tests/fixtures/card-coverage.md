@@ -20,11 +20,11 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 87 | 90 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| direct-native-play | 88 | 91 | No captured projection guards; at least one successful native play has the same captured definition projection. |
 | mechanism-only | 371 | 444 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
 | partial | 104 | 121 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 12 | The current definition/activation pipeline is explicitly unimplemented. |
-| unreviewed | 1 | 1 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
+| unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
 
 These are evidence labels, not whole-card completion claims. A directly matched play proves that captured path; it does not prove every target, upgrade, relic combination, trigger or future branch. Indirect witnesses may execute an effect with no target; presence in a played chain is not a positive test of every parameter. The definition projection is conservative but is not a full raw-asset checksum.
 
@@ -66,7 +66,9 @@ Original Prism Retrieval calibrates X-scaled next-draw upgrades at three/zero/te
 
 Original Lunacy calibrates X-scaled moon advances before Conduit addition at three/zero/ten. Complete phase-effect train contexts, matched/unmatched status queries, phase parity, floor controls and ordinary discard match. Exact Float-one/PlayedCost source parameters and the ordered Conduit List filter are required; added/replaced traits, changed multipliers and uncalibrated moon card-upgrade/relic callbacks retain guards.
 
-Across all classifications, 90 identities (87 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Original Symphony of the Soul calibrates Corrupt five and Positive-category multiplication for friendly/enemy/empty-positive targets. Rage/Regeneration double; Persistent armor is excluded from the first stage and doubled only by the friendly second effect. Native full effect contexts, pre-effect corruption payment, negative/floor controls and chance RNG even with zero armor match. Horde-positive and relic-modified combinations need separate witnesses. This adds evidence without changing the frozen definition projections.
+
+Across all classifications, 91 identities (88 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 
@@ -76,7 +78,7 @@ Across all classifications, 90 identities (87 logbook) have at least one definit
 - [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 465 full battles and 7542 native actions whose captured prediction is supported, actual state exists and difference is null. 371 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 466 full battles and 7552 native actions whose captured prediction is supported, actual state exists and difference is null. 373 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 
