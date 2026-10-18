@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "f0a80a96fd845725d4ef48bc85e6a6c5ed120859109b63f82f4108d9c31dacda";
+    private const string CatalogHash = "68a26f84ebdcd4f848ebc8e67223a0ca4eddcaf8565e9201b769f8b18ae231f4";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -198,7 +198,7 @@ internal static class CardCoverageInventory
         FixtureValue[] traits = Array(definition, "Traits");
         if (traits.Any(trait => !CalibratedSourceTrait(trait))) return false;
         bool requiresRaw = traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAddDamage" or "CardTraitScalingAddStatusEffect" or "CardTraitUnpurgable" or "CardTraitIncreaseCostOfCardsInHand" or "CardTraitLimitedRange" or "CardTraitDrawInDeploymentPhase" or "CardTraitUnplayable" or "CardTraitPersistent" or "CardTraitRefine" or "CardTraitPermafrost" or "CardTraitDamageOverflow" or "CardTraitCorruptRestricted" or "CardTraitAddDamagePerStatusEffect" or "CardTraitScalingAddDamagePerCard" or "CardTraitScalingAddEnergy" or "CardTraitScalingRemoveStatusEffect" or "CardTraitScalingAddEffectApplications" or "CardTraitScalingCardDrawCountPerPile");
-        requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingBuffDamage" or "CardTraitScalingStatusEffectPerPile" or "CardTraitScalingTempCardUpgradeToCard" or "CardTraitShowCardTargets" or "CardTraitScalingAdvanceMoonPhase" or "CardTraitScalingAddCards");
+        requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingBuffDamage" or "CardTraitScalingStatusEffectPerPile" or "CardTraitScalingTempCardUpgradeToCard" or "CardTraitShowCardTargets" or "CardTraitScalingAdvanceMoonPhase" or "CardTraitScalingAddCards" or "CardTraitAddCardUpgradeOnMoonPhase");
         foreach (string source in new[] { "CardInstances", "CardRegistry" })
         foreach (FixtureValue instance in Array(context, source))
         {
@@ -211,6 +211,14 @@ internal static class CardCoverageInventory
                 !Strings(sourceDefinition, "MainEffectNames").SequenceEqual(Array(definition, "Effects").Select(effect => Text(effect, "Type")))) return false;
             if (!mask.TryGetProperty("BaseTraits", out FixtureValue baseTraits) || baseTraits.ValueKind != FixtureKind.Array) continue;
             FixtureValue[] bases = baseTraits.EnumerateArray().ToArray();
+            if (Text(definition, "Id") == "108b9153-0236-4ba2-ad20-d03a991bbd57" && bases.Length == traits.Length + 1 &&
+                bases.Count(trait => Text(trait, "RuntimeType") == "CardTraitStrongerMagicPower") == 1 &&
+                bases.Any(trait => Text(trait, "RuntimeType") == "CardTraitAddCardUpgradeOnMoonPhase" &&
+                    trait.TryGetProperty("MoonPhaseUpgradeState", out FixtureValue state) && Flag(state, "Active") && Flag(state, "Cached")) &&
+                instance.TryGetProperty("Permanent", out FixtureValue permanent) && Array(permanent, "Upgrades").Any(upgrade =>
+                    Text(upgrade, "DataId") == "328c86e6-19c4-4bf8-a717-4bae655edf2b" &&
+                    upgrade.TryGetProperty("Lifecycle", out FixtureValue life) && Strings(life, "TraitsModified").SequenceEqual(new[] { "CardTraitStrongerMagicPower" })))
+                bases = bases.Where(trait => Text(trait, "RuntimeType") != "CardTraitStrongerMagicPower").ToArray();
             if (!bases.Select(trait => Text(trait, "RuntimeType")).SequenceEqual(traits.Select(trait => Text(trait, "Type")))) return false;
             for (int index = 0; index < traits.Length; index++)
                 if (!bases[index].TryGetProperty("DefinitionParamInt", out FixtureValue value) ||
@@ -227,6 +235,19 @@ internal static class CardCoverageInventory
     {
         string type = Text(trait, "Type");
         if (type == "CardTraitSelfPurge") return true;
+        if (type == "CardTraitAddCardUpgradeOnMoonPhase")
+        {
+            if (!trait.TryGetProperty("MoonPhaseUpgrade", out FixtureValue upgrade) || upgrade.ValueKind != FixtureKind.Object) return false;
+            string id = Text(upgrade, "DataId");
+            bool newMoon = id is "9492665d-c631-41a8-9b87-5acd0b80bd91" or "6b7b5abc-4397-4e6e-9c25-3db5a7de0dd2";
+            bool gravity = id is "6b7b5abc-4397-4e6e-9c25-3db5a7de0dd2" or "3bbf752b-475b-4975-b3c7-b970f44a20b6";
+            return (id is "328c86e6-19c4-4bf8-a717-4bae655edf2b" or "12793a9c-fae4-42ab-80bb-c3274e681c19" or
+                "9492665d-c631-41a8-9b87-5acd0b80bd91" or "de575a7e-a3cf-45de-a67b-949ac05fcee6" or
+                "6b7b5abc-4397-4e6e-9c25-3db5a7de0dd2" or "3bbf752b-475b-4975-b3c7-b970f44a20b6" or "0c025567-26a8-4dae-8dca-5d49cef0e291") &&
+                trait.GetProperty("Int").GetInt32() == (newMoon ? 1 : 2) && trait.GetProperty("Int2").GetInt32() == (gravity ? 1 : 0) && trait.GetProperty("Int3").GetInt32() == 0 &&
+                Flag(trait, "Bool") == (id != "9492665d-c631-41a8-9b87-5acd0b80bd91") && Text(trait, "Str").Length == 0 &&
+                trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") && Text(trait, "TrackedValue") == "MoonPhase" && Text(trait, "EntryDuration") == "ThisTurn";
+        }
         if (type == "CardTraitScalingAddCards")
             return trait.GetProperty("Int").GetInt32() == 1 && trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
                 Flag(trait, "Bool") && Text(trait, "Str").Length == 0 && trait.GetProperty("Float").GetDouble() == 0 && Flag(trait, "Scaling") &&
@@ -435,7 +456,7 @@ internal static class CardCoverageInventory
         var text = new StringBuilder();
         text.Append("# Original card coverage inventory\n\n");
         text.Append("Generated by `scripts/Get-CardCoverageInventory.ps1`; inputs are the frozen native catalog and manifest-verified battle archives. This indexes existing evidence and does not replay battles or run regression.\n\n");
-        text.Append("The catalog/model projection is from 2026-10-19 (model revision `110149c`). See [catalog provenance](../catalogs/README.md). Keep the snapshot date in mind after model changes; regenerate the native catalog when projections change.\n\n");
+        text.Append("The catalog/model projection is from 2026-10-19 (model revision `f813b49`). See [catalog provenance](../catalogs/README.md). Keep the snapshot date in mind after model changes; regenerate the native catalog when projections change.\n\n");
         text.Append("## Scope\n\n| Native role | Definitions |\n| --- | ---: |\n");
         foreach (var group in cards.GroupBy(card => card.Role).OrderBy(group => group.Key, StringComparer.Ordinal)) text.Append($"| {group.Key} | {group.Count()} |\n");
         text.Append($"| **All definitions** | **{cards.Length}** |\n\n");
@@ -469,6 +490,7 @@ internal static class CardCoverageInventory
         text.Append("Original Prism Retrieval calibrates X-scaled next-draw upgrades at three/zero/ten, typed Monster draws with a skipped Spell, shared queue mutation and clearing, clamped recipient costs and Consume. Exact unchanged source parameters, original upgrade payload and the display-only ShowCardTargets marker are retained; missing metadata, changed/added/replaced traits and multiple/filtered queued upgrades retain guards.\n\n");
         text.Append("Original Lunacy calibrates X-scaled moon advances before Conduit addition at three/zero/ten. Complete phase-effect train contexts, matched/unmatched status queries, phase parity, floor controls and ordinary discard match. Exact Float-one/PlayedCost source parameters and the ordered Conduit List filter are required; added/replaced traits, changed multipliers and uncalibrated moon card-upgrade/relic callbacks retain guards.\n\n");
         text.Append("Original Awoken's Rail Spike calibrates played-discard draw at X three/zero/ten, original minus-one cost/plus-one X recipient upgrades, Consume and queue hiding/restoration/clearing. Ordinary and typed deck draws are blocked afterward, even at zero X; unplayed discard is a no-op and the next player turn resets blocking. Complete native discard contexts and sixteen immutable chains match. Exact source parameters and branch-owned draw-block state are required; the isolated thirty-card hand limit does not establish normal caps, reshuffles, OnCast or active relic combinations.\n\n");
+        text.Append("Original Celestial Storm, Gravity, Heavenfall, Silver Strike and Starstruck add ten plays at New/Full. Seven original upgrade payloads, native private cache/active state, six complete hand callbacks, positive magic-power refresh, physical descend/ascend, OnCast effects and played/unplayed reset/redraw match. The detached component separately compares 135 complete card states with existing-trait and preview controls. Active Celestial Storm's installed Stronger Magic Power base trait is accepted only with its original source metadata, active cached state and the matching permanent upgrade's recorded trait modification. Room overrides, living-unit traits, recast copies and active relic combinations need separate witnesses.\n\n");
         text.Append("Original Symphony of the Soul calibrates Corrupt five and Positive-category multiplication for friendly/enemy/empty-positive targets. Rage/Regeneration double; Persistent armor is excluded from the first stage and doubled only by the friendly second effect. Native full effect contexts, pre-effect corruption payment, negative/floor controls and chance RNG even with zero armor match. Horde-positive and relic-modified combinations need separate witnesses. This adds evidence without changing the frozen definition projections.\n\n");
         text.Append($"Across all classifications, {cards.Count(card => card.DirectPlays > 0)} identities ({cards.Count(card => card.Logbook && card.DirectPlays > 0)} logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.\n\n");
         text.Append("## Reproducible files\n\n- [Per-card inventory](card-inventory.tsv): identity, type/role, native effects/traits, evidence level, direct/other plays, primitive witnesses and exact projection guard paths.\n- [Played-card evidence](card-play-evidence.tsv): one row per original identity/archive, with zero-based indices into that archive's `Actions` array.\n- [Unplayed-trigger evidence](card-trigger-evidence.tsv): matched EndTurns with a positive new-copy or existing-spell-upgrade observation, source identity and zero-based `Turns` index. These supply mechanism evidence and do not count as direct card plays. Playing a card alone does not establish its unplayed trigger.\n- [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.\n- [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.\n\n");

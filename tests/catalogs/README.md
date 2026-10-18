@@ -23,17 +23,17 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-034749-b4670325/card-catalog.mt2f`.
-The committed archive is byte-identical: 94,998 bytes, SHA-256
-`f0a80a96fd845725d4ef48bc85e6a6c5ed120859109b63f82f4108d9c31dacda`.
-The projection reflects revision `110149c`. The 668 raw definitions match
-the previous snapshot exactly, including all ordered status lists and Dig Deep's
+Source: `.probe-runs/full-battle-no-cards-20261019-040724-5506b27b/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,766 bytes, SHA-256
+`68a26f84ebdcd4f848ebc8e67223a0ca4eddcaf8565e9201b769f8b18ae231f4`.
+The projection reflects revision `f813b49`. All 668 existing raw definitions
+match the previous snapshot, including all ordered status lists and Dig Deep's
 pile-status `horde` mask.
 This field captures native removal and List-filter status traits; Pyreborne
 Brainspike retains `cooldown` removal and `avarice` addition separately.
 Only Dante's Inferno's specific-card damage trait has this non-null field:
 `913694e9-bace-4480-8691-24f699ae583e` (Dante's Candle). This identity is captured
-from the actual native trait data. Frame 12,429/12,429, decision and RNG are unchanged.
+from the actual native trait data. Frame 11,974/11,974, decision and RNG are unchanged.
 The surrounding native battle won with all four capture counters zero and
 the protected original files unchanged. Positive Corrupt Restricted hand
 spells now retain their calibrated selected-room cost; source-room abilities
@@ -69,6 +69,12 @@ Uncalibrated moon card-upgrade/relic callbacks retain guards.
 Original Awoken's Rail Spike retains X-scaled played-discard draw, deck draw
 blocking and next-turn reset with exact source metadata. Missing draw-block
 state, changed source traits, OnCast and active relic combinations retain guards.
+The new `MoonPhaseUpgrade` source field retains all seven original upgrade
+payloads across Celestial Storm, Gravity, Heavenfall, Silver Strike and Starstruck;
+the independent root list records the card/trait-index mapping. Other source
+traits retain null. New/Full hand upgrades, OnCast effects and discard/reset
+routes now project; missing private state, living units and room/relic combinations
+retain guards. Native detached-card controls preserve live decision/frame/RNG.
 Original Symphony of the Soul adds direct battle evidence for Corrupt five,
 Positive-category multiplication and friendly-only armor multiplication,
 including the zero-armor chance draw. These witnesses use the existing
