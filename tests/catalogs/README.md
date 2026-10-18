@@ -23,10 +23,14 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-013252-8132b709/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,458 bytes, SHA-256
-`92c99c921a630f51c2a8638bcbbd3367c89c679bdb106bfe8fa4ec8d0b86a958`.
-The projection reflects revision `d23e320`. Original Ice and Pyre retains its
+Source: `.probe-runs/full-battle-no-cards-20261019-014023-925e8475/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,103 bytes, SHA-256
+`adcd05b179767e1c73fbf951864d4659977802e4cc2eb828ebd81c6f231880bf`.
+The projection reflects revision `579e3c9`. Original Unplayable markers retain
+their native rejection behavior. Scrap Metal retains Persistent discard guards
+and its calibrated single-base Refine 3 smelt path. A separate native legality
+index records original rejected attempts without increasing direct-play counts.
+Original Ice and Pyre retains its
 calibrated Limited Range restriction. Titan Corruption retains Monster-only
 costs and deployment marker source provenance: its false definition draw flag
 is separate from the runtime class's positive eligibility. Native queries do
@@ -42,9 +46,9 @@ Native Battering Ram/Bramble Lash
 queries retain the Monsters armor/spikes masks and use live selected-room units
 for zero and positive two-unit sums. Source trait descriptors retain the ordered
 status IDs and query team; older missing masks stay unverified. The catalog
-operation preserved decision state, frame 13,745 and every deterministic RNG
+operation preserved decision state, frame 13,853 and every deterministic RNG
 stream. All 668 shared raw definitions match the previous snapshot, excluding
-Rule/ProjectionError and the newly captured DeploymentDrawFlag source field.
+Rule/ProjectionError; no raw source field changed.
 
 Original Horn Break, Branding Rite
 and Inferno piercing have native controls for all four protection stages,

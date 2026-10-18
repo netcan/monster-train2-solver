@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "92c99c921a630f51c2a8638bcbbd3367c89c679bdb106bfe8fa4ec8d0b86a958";
+    private const string CatalogHash = "adcd05b179767e1c73fbf951864d4659977802e4cc2eb828ebd81c6f231880bf";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -29,6 +29,7 @@ internal static class CardCoverageInventory
         internal readonly List<int> Other = [];
     }
     private sealed record TurnWitness(string DataId, string Archive, int TurnIndex, int SourceCardId, string Effect, string Observation);
+    private sealed record LegalityWitness(string DataId, string Archive, int QueryIndex, int CardId, int RoomIndex, string Error, bool CanDiscard);
 
     internal static void Run(string workspace, bool check)
     {
@@ -60,6 +61,7 @@ internal static class CardCoverageInventory
         var excluded = new SortedDictionary<string, string>(StringComparer.Ordinal);
         int indexed = 0, actionCount = 0, nonCatalogActions = 0, unresolvedActions = 0;
         var triggerWitnesses = new List<TurnWitness>();
+        var legalityWitnesses = new List<LegalityWitness>();
         foreach (string line in manifest.Skip(1).Order(StringComparer.Ordinal))
         {
             string[] row = line.Split('\t');
@@ -105,6 +107,7 @@ internal static class CardCoverageInventory
                 (matches ? plays.Direct : plays.Other).Add(index);
             }
             CollectUnplayedWitnesses(battle, archive, mechanisms, triggerWitnesses);
+            CollectLegalityWitnesses(battle, archive, byId, legalityWitnesses);
         }
         foreach (Card card in cards)
         {
@@ -159,9 +162,15 @@ internal static class CardCoverageInventory
         foreach (TurnWitness witness in triggerWitnesses.Where(witness => byId.ContainsKey(witness.DataId)))
             Row(triggers, witness.DataId, byId[witness.DataId].Name, witness.Archive, witness.TurnIndex.ToString(CultureInfo.InvariantCulture),
                 witness.SourceCardId.ToString(CultureInfo.InvariantCulture), witness.Effect, witness.Observation);
-        string report = Report(cards, indexed, excluded, actionCount, nonCatalogActions, unresolvedActions);
+        var legality = new StringBuilder();
+        Row(legality, "DataId", "AssetKey", "Archive", "QueryIndex", "CardId", "RoomIndex", "NativeError", "CanDiscard");
+        foreach (LegalityWitness witness in legalityWitnesses)
+            Row(legality, witness.DataId, byId[witness.DataId].Name, witness.Archive, witness.QueryIndex.ToString(CultureInfo.InvariantCulture),
+                witness.CardId.ToString(CultureInfo.InvariantCulture), witness.RoomIndex.ToString(CultureInfo.InvariantCulture), witness.Error,
+                witness.CanDiscard.ToString().ToLowerInvariant());
+        string report = Report(cards, indexed, excluded, actionCount, nonCatalogActions, unresolvedActions, legalityWitnesses);
         foreach ((string name, string content) in new[] { ("card-inventory.tsv", inventory.ToString()), ("card-play-evidence.tsv", evidence.ToString()),
-            ("card-trigger-evidence.tsv", triggers.ToString()), ("card-coverage.md", report) })
+            ("card-trigger-evidence.tsv", triggers.ToString()), ("card-legality-evidence.tsv", legality.ToString()), ("card-coverage.md", report) })
         {
             string path = Path.Combine(fixtureDirectory, name);
             if (check) Require(File.Exists(path) && File.ReadAllText(path) == content, "Card inventory is stale: " + name);
@@ -188,7 +197,7 @@ internal static class CardCoverageInventory
         // parameters have their own original-card witnesses, do not promote them.
         FixtureValue[] traits = Array(definition, "Traits");
         if (traits.Any(trait => !CalibratedSourceTrait(trait))) return false;
-        bool requiresRaw = traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAddDamage" or "CardTraitScalingAddStatusEffect" or "CardTraitUnpurgable" or "CardTraitIncreaseCostOfCardsInHand" or "CardTraitLimitedRange" or "CardTraitDrawInDeploymentPhase");
+        bool requiresRaw = traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAddDamage" or "CardTraitScalingAddStatusEffect" or "CardTraitUnpurgable" or "CardTraitIncreaseCostOfCardsInHand" or "CardTraitLimitedRange" or "CardTraitDrawInDeploymentPhase" or "CardTraitUnplayable" or "CardTraitPersistent" or "CardTraitRefine");
         foreach (string source in new[] { "CardInstances", "CardRegistry" })
         foreach (FixtureValue instance in Array(context, source))
         {
@@ -238,6 +247,8 @@ internal static class CardCoverageInventory
         if (type == "CardTraitDrawInDeploymentPhase") return value == 0 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
             trait.TryGetProperty("DeploymentDrawFlag", out FixtureValue drawFlag) && drawFlag.ValueKind == FixtureKind.False;
         if (type is "CardTraitUnpurgable" or "CardTraitLimitedRange") return value == 0 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
+        if (type is "CardTraitUnplayable" or "CardTraitPersistent" or "CardTraitRefine") return
+            (type == "CardTraitUnplayable" ? value is 0 or 3 : value == 3) && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
         return type == "CardTraitStrongerMagicPower" ? value is 0 or 5 :
             type is "CardTraitIgnoreArmor" or "CardTraitExhaustState" && value == 0;
     }
@@ -344,12 +355,38 @@ internal static class CardCoverageInventory
         return left.ContentEquals(right);
     }
 
-    private static string Report(Card[] cards, int indexed, SortedDictionary<string, string> excluded, int actions, int nonCatalog, int unresolved)
+    private static void CollectLegalityWitnesses(FixtureValue battle, string archive, Dictionary<string, Card> byId, List<LegalityWitness> witnesses)
+    {
+        if (!Flag(battle, "OriginalUnplayableCardsPrepared") || !Flag(battle, "OriginalUnplayableCardsQueriesUnchanged") ||
+            !Flag(battle, "NativeWon") || !Flag(battle, "TerminalEffectsSettled")) return;
+        int index = -1;
+        foreach (FixtureValue query in Array(battle, "OriginalUnplayableCardsQueries"))
+        {
+            index++;
+            if (!query.TryGetProperty("CanPlay", out FixtureValue canPlay) || canPlay.ValueKind != FixtureKind.False ||
+                !query.TryGetProperty("FromHand", out FixtureValue fromHand) || fromHand.ValueKind != FixtureKind.False ||
+                !query.TryGetProperty("FromPlay", out FixtureValue fromPlay) || fromPlay.ValueKind != FixtureKind.False ||
+                new[] { "Error", "HandError", "PlayError" }.Any(key => Text(query, key) != "Unplayable")) continue;
+            string id = Text(query, "DataId");
+            if (!byId.TryGetValue(id, out Card? card) || !Array(card.Definition, "Traits").Any(trait => Text(trait, "Type") == "CardTraitUnplayable") ||
+                !query.TryGetProperty("SourceTraits", out FixtureValue traits) || !Equivalent(traits, card.Definition.GetProperty("Traits"))) continue;
+            FixtureValue before = query.GetProperty("Before"), action = query.GetProperty("Action"), context = before.GetProperty("Spawn").GetProperty("Train").GetProperty("Context");
+            int cardId = action.GetProperty("CardInstanceId").GetInt32();
+            FixtureValue rule = Array(before.GetProperty("PlayRules"), "Cards").FirstOrDefault(value => Text(value, "DataId") == id);
+            if (FindCardId(context, cardId) != id || rule.ValueKind != FixtureKind.Object || !Equivalent(card.Definition.GetProperty("Rule"), rule, ruleRoot: true) ||
+                !MatchesSourceMetadata(card.Definition, context, cardId)) continue;
+            // This table indexes whole-card native rejection queries. Trait-only range
+            // queries cannot establish full-card eligibility and are deliberately separate.
+            witnesses.Add(new(id, archive, index, cardId, action.GetProperty("RoomIndex").GetInt32(), "Unplayable", Flag(query, "CanDiscard")));
+        }
+    }
+
+    private static string Report(Card[] cards, int indexed, SortedDictionary<string, string> excluded, int actions, int nonCatalog, int unresolved, List<LegalityWitness> legality)
     {
         var text = new StringBuilder();
         text.Append("# Original card coverage inventory\n\n");
         text.Append("Generated by `scripts/Get-CardCoverageInventory.ps1`; inputs are the frozen native catalog and manifest-verified battle archives. This indexes existing evidence and does not replay battles or run regression.\n\n");
-        text.Append("The catalog/model projection is from 2026-10-19 (model revision `d23e320`). See [catalog provenance](../catalogs/README.md). Keep the snapshot date in mind after model changes; regenerate the native catalog when projections change.\n\n");
+        text.Append("The catalog/model projection is from 2026-10-19 (model revision `579e3c9`). See [catalog provenance](../catalogs/README.md). Keep the snapshot date in mind after model changes; regenerate the native catalog when projections change.\n\n");
         text.Append("## Scope\n\n| Native role | Definitions |\n| --- | ---: |\n");
         foreach (var group in cards.GroupBy(card => card.Role).OrderBy(group => group.Key, StringComparer.Ordinal)) text.Append($"| {group.Key} | {group.Count()} |\n");
         text.Append($"| **All definitions** | **{cards.Length}** |\n\n");
@@ -371,9 +408,10 @@ internal static class CardCoverageInventory
         text.Append("Original Titan Bane hand costs have two-owner native stacking/removal witnesses for spells, monsters, room attachments and equipment, with Blight/Junk exclusions. Captured source and runtime type filters are required. Native query controls verify the hand-only scope, upper clamp before numeric reductions and restoration after each owner leaves. CurrentCost statistic queries with hand cost traits and other paired traits keep their guards.\n\n");
         text.Append("Limited Range has restored native hand/play queries from Ice and Pyre, Siren Song and Trap Chute: only the Pyre room and the room immediately below it pass. Original Ice and Pyre has a paid top-floor damage play and an empty-Pyre paid cast, with lower-floor rejection. This does not remove the separate room effect/ability guards on Siren Song or Trap Chute. Exact default source parameters and provenance are required.\n\n");
         text.Append("Original Titan Corruption has Monster-only hand cost stacking/removal and Spell/room/Blight exclusion witnesses. Its unchanged deployment marker passes native eligibility checks, with non-deployable controls and restored state/RNG/frame. The captured definition flag is false while the runtime class still grants eligibility. These are battle-play and eligibility witnesses; initial deployment draw ordering and upgraded eligibility are outside this fixture.\n\n");
+        text.Append($"Unplayable source values zero/three and Persistent/Refine value three have original native witnesses. The separate legality index records {legality.Count} restored full-card rejection queries across {legality.Select(row => row.DataId).Distinct().Count()} definitions ({legality.Select(row => row.DataId).Distinct().Count(id => cards.Any(card => card.Id == id && card.Logbook))} logbook), with exact rule/source metadata. These are native rejection observations, not successful card plays; the dedicated checker independently verifies Illegal results and immutable parents. Ordinary unplayable cards discard/redraw, Persistent Scrap Metal stays in hand, and original Starter Scrap smelts it for Refine 3. Explicit discard and upgrade-added Refine remain guarded. These observations do not raise direct-play counts.\n\n");
         text.Append("New descriptors retain the actual CardData supplied to CardState.Setup, with source trait parameters separate from runtime traits. All captured raw source fields must match the frozen catalog when present; X damage/status scaling requires this provenance and older missing metadata remains unverified. Missing provenance, changed multiplier/query/filter, and changed runtime parameters are rejected. Other trait families need separate calibration. A shared DataId alone never establishes direct coverage. Instance upgrades do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically original-card evidence.\n\n");
         text.Append($"Across all classifications, {cards.Count(card => card.DirectPlays > 0)} identities ({cards.Count(card => card.Logbook && card.DirectPlays > 0)} logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.\n\n");
-        text.Append("## Reproducible files\n\n- [Per-card inventory](card-inventory.tsv): identity, type/role, native effects/traits, evidence level, direct/other plays, primitive witnesses and exact projection guard paths.\n- [Played-card evidence](card-play-evidence.tsv): one row per original identity/archive, with zero-based indices into that archive's `Actions` array.\n- [Unplayed-trigger evidence](card-trigger-evidence.tsv): matched EndTurns with a positive new-copy or existing-spell-upgrade observation, source identity and zero-based `Turns` index. These supply mechanism evidence and do not count as direct card plays. Playing a card alone does not establish its unplayed trigger.\n- [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.\n\n");
+        text.Append("## Reproducible files\n\n- [Per-card inventory](card-inventory.tsv): identity, type/role, native effects/traits, evidence level, direct/other plays, primitive witnesses and exact projection guard paths.\n- [Played-card evidence](card-play-evidence.tsv): one row per original identity/archive, with zero-based indices into that archive's `Actions` array.\n- [Unplayed-trigger evidence](card-trigger-evidence.tsv): matched EndTurns with a positive new-copy or existing-spell-upgrade observation, source identity and zero-based `Turns` index. These supply mechanism evidence and do not count as direct card plays. Playing a card alone does not establish its unplayed trigger.\n- [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.\n- [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.\n\n");
         text.Append($"Indexed {indexed} full battles and {actions} native actions whose captured prediction is supported, actual state exists and difference is null. {nonCatalog} actions use scenario-only identities; {unresolved} actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: {excluded.Count}. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.\n\n");
         text.Append("## Largest recorded guard groups\n\nCounts are per logbook identity and can overlap. Conditional upgrade/discard guards do not imply every normal play fails.\n\n| Guard | Logbook identities |\n| --- | ---: |\n");
         foreach (var group in cards.Where(card => card.Logbook).SelectMany(card => card.Gaps.Where(gap => !gap.StartsWith("no-indexed-transition-witness:", StringComparison.Ordinal)).Select(gap => (card.Id, Gap: gap.Contains(':') ? gap[(gap.IndexOf(':') + 1)..] : gap)))

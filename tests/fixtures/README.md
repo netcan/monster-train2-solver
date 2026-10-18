@@ -11,6 +11,8 @@ metadata do not become direct original-card evidence just by sharing a DataId.
 The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
+The [native legality index](card-legality-evidence.tsv) separately records
+definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
 491 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
