@@ -689,7 +689,7 @@ internal static class BattleActionChecks
         }
         if (fixture.TryGetProperty("ModifierScenario", out var targetedDrawPolicy) &&
             targetedDrawPolicy.GetString() is "original-card-draw-on-heal" or "original-rage-on-burnout-stack-loss" or
-                "original-balatro-event-triboulet")
+                "original-balatro-event-triboulet" or "original-cooldown-on-damage-dh")
         {
             Console.WriteLine("NATIVE-POLICY-CHAIN-SKIPPED: controlled native scenario actions are outside the generic captured policy; recorded plays and turns are checked individually, with the dedicated scenario search run separately.");
             return;

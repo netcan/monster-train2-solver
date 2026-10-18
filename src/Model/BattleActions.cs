@@ -499,6 +499,7 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingSpellCallbacks = Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();
             IReadOnlyList<CombatUnit> retainedSpellUnits = Array.Empty<CombatUnit>();
             IReadOnlyList<int>? lastMainTargets = null;
+            var lastDamagedUnitIds = new HashSet<int>();
             int nextUnitId = source.Spawn.NextUnitId;
             string? identityError = UnitIdentityModel.Validate(context, train.Rooms.SelectMany(room => room.Units), nextUnitId);
             if (identityError != null) return Unsupported(identityError);
@@ -662,6 +663,8 @@ namespace MonsterTrain2Poju.Model
                         .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
                     mixSelections: action.MixSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray());
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))
+                    lastDamagedUnitIds.Add(damage.Target);
                 piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!;
                 if (result.Outcome != RoomOutcome.Exchanged || outcome == RoomOutcome.Exchanged) outcome = result.Outcome;
@@ -700,6 +703,8 @@ namespace MonsterTrain2Poju.Model
                     action.TargetUnitId, card.InstanceId, source.PlayRules, piles, recursionSelections: onCastSelections,
                     onCastEffects: true, priorTargets: lastMainTargets);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))
+                    lastDamagedUnitIds.Add(damage.Target);
                 piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!;
                 outputPlayRules = result.PlayRules ?? outputPlayRules;
@@ -763,7 +768,8 @@ namespace MonsterTrain2Poju.Model
                 context.QueryFrame?.SelectedRoomIndex ?? action.RoomIndex, placement: source.Spawn.Turn == 0,
                 preview: context.IsolatedBattlePreview == true || train.Rooms.FirstOrDefault(room =>
                     room.RoomIndex == action.RoomIndex)?.Preview == true, trainState: train, playedCardRule: rule,
-                lastTargets: lastMainTargets ?? Array.Empty<int>(), originalTargetTeam: originalTargetTeam);
+                lastTargets: lastMainTargets ?? Array.Empty<int>(), originalTargetTeam: originalTargetTeam,
+                lastDamagedUnitIds: lastDamagedUnitIds.ToArray());
             if (!cardPlayMagicPower.Supported) return Unsupported(cardPlayMagicPower.UnsupportedReason!);
             context = cardPlayMagicPower.Context;
             train = cardPlayMagicPower.TrainState ?? CardSpellModel.WithContext(train, context);

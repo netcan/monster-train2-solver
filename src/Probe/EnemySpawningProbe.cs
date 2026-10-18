@@ -92,11 +92,14 @@ namespace MonsterTrain2Poju.Probe
                 if (status.fromPermanentUpgrade) interactions.Add("Separate permanent starting-status application group");
                 StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!;
                 Type? type = typeof(CardState).Assembly.GetType(rule.GetStatusEffectStateName());
-                if (type?.GetProperty(nameof(StatusEffectState.PreventRemovalDuringRelentlessPhase))?.DeclaringType != typeof(StatusEffectState))
+                bool cooldownStatus = type == typeof(StatusEffectCooldownState);
+                var relentlessProperty = type?.GetProperty(nameof(StatusEffectState.PreventRemovalDuringRelentlessPhase));
+                bool hasCustomRelentlessRemoval = relentlessProperty != null && relentlessProperty.DeclaringType != typeof(StatusEffectState);
+                if (hasCustomRelentlessRemoval && !cooldownStatus)
                     interactions.Add("Spawned status has custom relentless removal");
                 return new CombatStatus(status.statusId, status.count, rule.GetParamInt(), rule.GetRemoveWhenTriggered(),
                     rule.GetRemoveStackAtEndOfTurn(), rule.GetRemoveAtEndOfTurn(), rule.GetRemoveAtEndOfTurnAfterPostCombat(),
-                    false, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
+                    cooldownStatus, rule.GetSkipTriggerDuringDeployment(), rule.GetRemoveDuringDeployment(),
                     BattleActionProbe.TriggeredVfx(rule, -1f), BattleActionProbe.TriggeredVfx(rule, 1f), rule.IsStackable(), rule.IsHidden(), rule.GetDisplayCategory().ToString(),
                     rule.IsPropagatable(), rule.GetExcludeHeroPropagation(), rule.GetExcludeMonsterPropagation(),
                     rule.GetRemoveWhenTriggeredAfterCardPlayed(), rule.GetRemoveAtEndOfTurnIfTriggered());

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **194 distinct original collectable relics / 224 catalog entries
-(86.61%)** have accepted native evidence: 177 have full-battle effect evidence,
+As of 2026-10-18, **195 distinct original collectable relics / 224 catalog entries
+(87.05%)** have accepted native evidence: 178 have full-battle effect evidence,
 sixteen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -1658,4 +1658,23 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-bal
 dotnet run --project src/ModelChecks -c Release -- --original-triboulet-only tests/fixtures/full-battle-original-balatro-event-triboulet.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-triboulet-pure
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-balatro-event-triboulet.mt2f
+```
+
+## CooldownOnDamage_DH
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `CooldownOnDamage_DH` | `7cf3a2a3-afae-48fc-8721-365a5b056b8b` | `full-battle-original-cooldown-on-damage-dh.mt2f` | The unchanged owner applies `cooldown -1` to Monsters last damaged by a played card. Native evidence distinguishes one friendly 2-damage Spell (Test true, cooldown 3->2) from an empty-Spell no-damage control (Test false); the cooldown status retains its native Relentless-phase prevention flag. |
+
+The focused checker verifies the exact owner and payload, one completed native callback, the unchanged carrier state, the 3->2 damage transition, and the no-damage control against full-state prediction. Pure controls cover duplicate hit IDs, enemy/Pyre exclusion, empty events, wrong owners, and reject cooldown 1 because the ability-ready transition at zero is not calibrated. The 66-stage winning battle records 24 actions, seven EndTurns, 14 train phases and 11 spawns, with zero capture failures, mismatches, unsupported transitions or pending records. Independent search matches all 24 recorded decisions over 128/128 states with serial/parallel best equality and replays the three witness actions.
+
+The 38,848-byte archive has 6,233 unique nodes and SHA-256 `ee148b997ad195ab93fcb8c7b60e53aae526256802f1603ff0c3f4e4bea285f3`; no JSON companion is tracked. Inventory is 414 archives: 376 full battles and 38 component calibrations. Original relic evidence is 195/224 (87.05%): 178 battle, sixteen campaign and one native no-op owner.
+
+This witness covers only the unchanged owner, positive Spell damage to a present friendly Monster with cooldown above one, and one no-damage Spell control. Melee/self-damage, other non-Spell damage paths, cooldown reaching zero and other owner payloads remain unsupported.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-cooldown-on-damage-dh.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-cooldown-on-damage-only tests/fixtures/full-battle-original-cooldown-on-damage-dh.mt2f
+dotnet run --project src/ModelChecks -c Release -- --cooldown-on-damage-pure
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-cooldown-on-damage-dh.mt2f
 ```

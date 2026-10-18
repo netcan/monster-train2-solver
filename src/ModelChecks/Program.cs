@@ -122,10 +122,21 @@ if (args.Length == 1 && args[0] == "--original-triboulet-pure")
     OriginalTribouletChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--cooldown-on-damage-pure")
+{
+    RelicCardDamageStatusChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-triboulet-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     OriginalTribouletChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-cooldown-on-damage-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RelicCardDamageStatusChecks.Native(fixture.RootElement);
     return;
 }
 if (args.Length == 2 && args[0] == "--original-monster-spell-targeting-only")
@@ -1727,6 +1738,7 @@ OriginalCopyFirstConsumeChecks.Run();
 OriginalCopyConsumedCardChecks.Run();
 OriginalMothersRemnant3Checks.Run();
 OriginalTribouletChecks.Run();
+RelicCardDamageStatusChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

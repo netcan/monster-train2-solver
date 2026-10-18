@@ -290,6 +290,7 @@ param(
     [switch] $OriginalCopyConsumedCard,
     [switch] $OriginalMothersRemnant3Relic,
     [switch] $OriginalTribouletRelic,
+    [switch] $OriginalCooldownOnDamageRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -434,7 +435,7 @@ if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spel
 if ($OriginalFirstCardCost) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalRebalanceValor) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMothersRemnant3Relic -or $OriginalTribouletRelic -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMothersRemnant3Relic -or $OriginalTribouletRelic -or $OriginalCooldownOnDamageRelic -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
 if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -925,6 +926,7 @@ if ($OriginalCopyFirstConsumePlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'or
 if ($OriginalCopyConsumedCard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-consumed-card' }
 if ($OriginalMothersRemnant3Relic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mothers-remnant3' }
 if ($OriginalTribouletRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-balatro-event-triboulet' }
+if ($OriginalCooldownOnDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-cooldown-on-damage-dh' }
 if ($OriginalMonsterSpellTargeting) { $environment['MT2_PROBE_MODIFIERS'] = 'original-monster-spell-targeting' }
 if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-funguy-deck-scaling' }
 if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-heal' }
@@ -1886,6 +1888,20 @@ if ($OriginalTribouletRelic -and ($trace.Schema -ne 217 -or $trace.OriginalTribo
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-TRIBOULET-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 1)) {
     throw 'Triboulet lacks its unchanged owner, Rare deck seed, or cardless Monster-spawn witness.'
+}
+if ($OriginalCooldownOnDamageRelic -and ($trace.Schema -ne 218 -or $trace.OriginalCooldownOnDamageSchema -ne 218 -or
+    $trace.ModifierScenario -ne 'original-cooldown-on-damage-dh' -or
+    -not $trace.OriginalCooldownOnDamagePrepared -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-COOLDOWN-ON-DAMAGE-PREPARED' -Quiet) -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 3 -or
+    $trace.OriginalCooldownOnDamageCaptureFailures -ne 0 -or $trace.OriginalCooldownOnDamageMismatches -ne 0 -or
+    $trace.OriginalCooldownOnDamageUnsupported -ne 0 -or $trace.OriginalCooldownOnDamagePending -ne 0 -or
+    @($trace.RelicCooldownOnDamageApplications).Count -ne 1 -or
+    $trace.RelicCooldownOnDamageApplications[0].CooldownBefore -ne 3 -or
+    $trace.RelicCooldownOnDamageApplications[0].CooldownAfter -ne 2 -or
+    @($trace.RelicCooldownOnDamageTests | Where-Object { $_.CardDataId -eq 'fc119000-0000-4000-8000-000000000553' -and $_.Result }).Count -ne 1 -or
+    @($trace.RelicCooldownOnDamageTests | Where-Object { $_.CardDataId -eq 'fc119000-0000-4000-8000-000000000554' -and $_.Result }).Count -ne 0)) {
+    throw 'CooldownOnDamage lacks its unchanged owner, friendly-damage callback, no-damage control, or exact 3-to-2 cooldown witness.'
 }
 if ($OriginalMonsterSpellTargeting -and ($trace.Schema -ne 188 -or
     $trace.ModifierScenario -ne 'original-monster-spell-targeting' -or

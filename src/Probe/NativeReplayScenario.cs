@@ -303,6 +303,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalBalatroEventCavendishScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalTribouletScenario.Enabled && !OriginalTribouletScenario.Acquired)
                         OriginalTribouletScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalCooldownOnDamageScenario.Enabled && !OriginalCooldownOnDamageScenario.Acquired)
+                        OriginalCooldownOnDamageScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -1098,6 +1100,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalTribouletScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalCooldownOnDamageScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("CooldownOnDamage fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalCooldownOnDamageScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && ChooseDiscardScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Choose-discard fixture must start on deployment turn.");
@@ -1700,6 +1708,9 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalTribouletScenario.Enabled)
                     pendingPlay = OriginalTribouletScenario.Choose(decision) ??
                         OriginalTribouletScenario.AvoidRepeatedWitness(decision, pendingPlay);
+                if (OriginalCooldownOnDamageScenario.Enabled)
+                    pendingPlay = OriginalCooldownOnDamageScenario.Choose(decision) ??
+                        OriginalCooldownOnDamageScenario.AvoidUnsequencedWitness(decision, pendingPlay);
                 if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||
@@ -1901,6 +1912,7 @@ namespace MonsterTrain2Poju.Probe
                     CardEffectRecursionScenario.IsScenarioPrelude(action)) ||
                 (MixScenario.Enabled && MixScenario.IsScenarioPrelude(action)) ||
                 (OriginalTribouletScenario.Enabled && OriginalTribouletScenario.IsScenarioAction(action)) ||
+                (OriginalCooldownOnDamageScenario.Enabled && OriginalCooldownOnDamageScenario.IsScenarioAction(action)) ||
                 (OriginalCardTypeCostScenario.Enabled && OriginalCardTypeCostScenario.IsScenarioPrelude(action)) ||
                 (OriginalPurgeToExhaustScenario.Enabled && OriginalPurgeToExhaustScenario.IsScenarioPrelude(action)) ||
                 (OriginalUpgradeCountRelicsScenario.Enabled && OriginalUpgradeCountRelicsScenario.IsScenarioPrelude(action)) ||
