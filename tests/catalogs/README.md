@@ -23,18 +23,22 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-011246-2af6ed2e/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,448 bytes, SHA-256
-`949c8a3e76531507aa71e48c144b3f2cb20524622c684aff5950f3e787c311fa`.
-The projection reflects revision `6e749ac`. Original Unpurgable cards now retain
+Source: `.probe-runs/full-battle-no-cards-20261019-012200-bcd02d3a/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,225 bytes, SHA-256
+`30be9823c4b1e72fde0b9fab6564055e68870c2d06a813c77dc6cdfd3d16d305`.
+The projection reflects revision `0c8af0c`. Titan Bane retains four ordered
+native hand cost type filters. Runtime and source descriptors require the same
+filters; missing metadata is not inferred. The original hand cost witness also
+refreshes Engine Upgrade's complete nested source provenance.
+Original Unpurgable cards now retain
 their calibrated battle marker, including the positive temporary SelfPurge route.
 Native Battering Ram/Bramble Lash
 queries retain the Monsters armor/spikes masks and use live selected-room units
 for zero and positive two-unit sums. Source trait descriptors retain the ordered
 status IDs and query team; older missing masks stay unverified. The catalog
-operation preserved decision state, frame 13,943 and every deterministic RNG
+operation preserved decision state, frame 13,965 and every deterministic RNG
 stream. All 668 shared raw definitions match the previous snapshot, excluding
-only Rule/ProjectionError.
+Rule/ProjectionError and the newly captured HandCostTargetType source field.
 
 Original Horn Break, Branding Rite
 and Inferno piercing have native controls for all four protection stages,
