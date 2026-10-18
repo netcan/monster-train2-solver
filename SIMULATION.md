@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 483 binary archives, including 444
+Current accepted inventory (2026-10-19): 484 binary archives, including 445
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 483
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 484
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -30,6 +30,14 @@ They contribute mechanism evidence while keeping direct play counts separate.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-x-status-cards.mt2f` calibrates unchanged Spike of the
+Legion at X four/zero. Its original Consume/scaling trait pair adds twice the
+paid X to propagatable Rage and Regeneration; armor, adjacent units and another
+floor remain unchanged. Both plays exhaust with native statistics, including
+zero X. Exact source multiplier/filter/query metadata is required for this
+family's definition match. Five plays/five EndTurns and sixteen immutable full
+chains compare successfully. Other status scalars and queries remain unverified.
 
 `full-battle-original-x-damage-cards.mt2f` calibrates original Vent/Forever
 Consumed at zero and positive X with live enemies. Paid cost belongs to the

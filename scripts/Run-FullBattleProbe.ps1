@@ -54,6 +54,7 @@ param(
     [switch] $OriginalConsumeCards,
     [switch] $OriginalStrongMagicCards,
     [switch] $OriginalXDamageCards,
+    [switch] $OriginalXStatusCards,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -503,6 +504,7 @@ if ($InfernoRoom) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' 
 if ($OriginalConsumeCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStrongMagicCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXDamageCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -1002,6 +1004,7 @@ if ($InfernoRoom) { $environment['MT2_PROBE_MODIFIERS'] = 'inferno-room' }
 if ($OriginalConsumeCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-cards' }
 if ($OriginalStrongMagicCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-strong-magic-cards' }
 if ($OriginalXDamageCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-damage-cards' }
+if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2187,6 +2190,9 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
     @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 -or
     @($trace.EclipseChamberRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Eclipse Chamber native evidence is incomplete.'
+}
+if ($OriginalXStatusCards -and (-not $trace.OriginalXStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5)) {
+    throw 'Original X-status cards scenario lacks its positive/zero X plays or completed win.'
 }
 if ($OriginalXDamageCards -and (-not $trace.OriginalXDamageCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 9)) {
     throw 'Original X-damage cards scenario lacks its original zero/positive plays or completed win.'

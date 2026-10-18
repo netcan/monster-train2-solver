@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 483 archives (444 full battles and
+Current accepted inventory (2026-10-19): 484 archives (445 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,8 +12,21 @@ The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-483 accepted archives. Refresh/check the index with
+484 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-x-status-cards.mt2f` retains two original Spikes of the
+Legion. X four adds eight Rage/Regeneration stacks to the target; X zero leaves
+them unchanged. Armor is not propagatable; adjacent and outside-floor controls
+keep their complete unit state. Both cards enter Exhausted with native one-play,
+two-exhaustion-notification statistics. The original paired Consume/scaling
+traits require exact source multiplier two/filter one and PlayedCost query.
+Five plays/five EndTurns win with sixteen immutable full-chain comparisons.
+Binary-only: 22,930 bytes/2,996 nodes, SHA-256
+`8652107a09f0ec56bfb9e23c38563b910abceada192cc79672d3ecdf5b015d0b`.
+Use `-OriginalXStatusCards` and `--original-x-status-cards-only`.
+Focused X-status/original-status/X-damage gate:
+`.probe-runs/model-checks-20261019-004044-7d6f97d0/summary.json` (three passed).
 
 `full-battle-original-x-damage-cards.mt2f` retains original Vent and Forever
 Consumed at X zero/three and zero/two, respectively. Zero X has two live enemies
