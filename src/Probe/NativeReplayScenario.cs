@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalDrawUpgradeScalingScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original draw upgrade scaling fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalDrawUpgradeScalingScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPileStatusScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original pile status fixture must start on deployment turn.");
@@ -2258,6 +2264,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalPileRecursionScenario.Enabled) pendingPlay = OriginalPileRecursionScenario.Choose(decision, OriginalPileRecursionScenario.CardIds);
                 if (OriginalScaledBuffScenario.Enabled) pendingPlay = OriginalScaledBuffScenario.Choose(decision, OriginalScaledBuffScenario.CardIds);
                 if (OriginalPileStatusScenario.Enabled) pendingPlay = OriginalPileStatusScenario.Choose(decision, OriginalPileStatusScenario.CardIds);
+                if (OriginalDrawUpgradeScalingScenario.Enabled) pendingPlay = OriginalDrawUpgradeScalingScenario.Choose(decision, OriginalDrawUpgradeScalingScenario.CardIds);
                 if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);
                 if (OriginalCorruptionDamageScenario.Enabled) pendingPlay = OriginalCorruptionDamageScenario.Choose(decision, OriginalCorruptionDamageScenario.CardIds);
                 if (OriginalXStatusCardsScenario.Enabled) pendingPlay = OriginalXStatusCardsScenario.Choose(decision, OriginalXStatusCardsScenario.CardIds);

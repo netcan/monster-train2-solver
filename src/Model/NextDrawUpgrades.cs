@@ -131,9 +131,17 @@ namespace MonsterTrain2Poju.Model
             { error = "Missing captured next-draw upgrade reference identity."; return source; }
             CombatContext context = source;
             CardInstanceState? played = playedCardId == 0 ? null : context.FindCard(playedCardId);
-            if (played?.MaskDescriptor != null && Traits(played).Any(trait =>
-                trait.RuntimeType == "CardTraitScalingTempCardUpgradeToCard"))
-            { error = "Next-draw upgrade scaling from the played card is not captured."; return source; }
+            if (CardDrawUpgradeScalingModel.Present(played))
+            {
+                if (pending.Count != 1 || drawnCardIds.Count != 1 || pending[0].Filters.Count != 0)
+                { error = "Prism Retrieval scaling requires one unfiltered queued upgrade and one drawn card."; return source; }
+                UnitUpgradeScalingResult scaled = CardDrawUpgradeScalingModel.Apply(context, playedCardId, pending[0].Upgrade);
+                if (!scaled.Supported) { error = scaled.UnsupportedReason; return source; }
+                pending = new[] { new NextDrawUpgradeRule(scaled.Upgrade!, pending[0].Filters) };
+                context = scaled.Context!.WithCards(new CardCycleState(context.Cards.Hand, context.Cards.Draw, context.Cards.Discard,
+                    context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw,
+                    pending, context.Cards.NextUpgradeReferenceId));
+            }
             foreach (int id in drawnCardIds)
             {
                 CardInstanceState? card = context.FindCard(id);

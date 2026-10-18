@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 503 archives (464 full battles and
+Current accepted inventory (2026-10-19): 504 archives (465 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,25 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-503 accepted archives. Refresh/check the index with
+504 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-draw-upgrade-scaling.mt2f` retains original Prism Retrieval.
+X three/zero/ten scales the original +five attack/-one cost upgrade to
++fifteen/zero/fifty and -three/zero/ten. Three Monster draws skip a top Spell;
+cost-four recipients become cost one/four/zero. Three actual callbacks and
+three unchanged fresh-upgrade queries match. Six complete typed-draw effect
+contexts, three individual draw contexts, shared upgrade identities and three
+queue clears match, with sixteen parallel draw branches. Each source Consumes;
+units and the untargeted Spell remain unchanged. Changed source parameters,
+added/replaced traits, changed upgrade payloads and multiple/filtered queued
+upgrades remain guarded. Six plays/five EndTurns win with sixteen immutable
+chains and matching 128-state serial/parallel search (22 roots, zero unsupported).
+Focused gate `model-checks-20261019-030626-d8f53325` passes this witness and
+the existing typed-draw fixture, including shared-upgrade alias coverage.
+Binary-only: 29,730 bytes/4,234 nodes, SHA-256
+`fea28d83c0238edb25e25430a4694dc7f878e7d10a5eb5c7c9c29e604c94912d`.
+Use `-OriginalDrawUpgradeScaling` and `--original-draw-upgrade-scaling-only`.
 
 `full-battle-original-pile-status.mt2f` retains original Dig Deep.
 Twenty-four restored queries cover zero/nine/ten/nineteen/twenty/thirty

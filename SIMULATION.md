@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 503 binary archives, including 464
+Current accepted inventory (2026-10-19): 504 binary archives, including 465
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 503
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 504
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,16 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-draw-upgrade-scaling.mt2f` models original Prism Retrieval
+at X three/zero/ten. Its original +five/-one attack/cost upgrade becomes
++fifteen/zero/fifty and -three/zero/ten; cost-four recipients cost one/four/zero.
+Three typed Monster draws skip an unchanged top Spell. Three native callbacks,
+three pure fresh-upgrade queries, six effect contexts, three draw contexts and
+three queue clears match. Shared upgrade identities and sixteen parallel draw
+branches agree. Consume, six plays/five EndTurns, sixteen immutable chains and
+128-state serial/parallel search pass with zero errors. Changed source traits,
+changed upgrade payloads and multiple/filtered queued upgrades retain guards.
 
 `full-battle-original-pile-status.mt2f` models original Dig Deep: at thirty
 visible permanent cards its base one Horde gains three bonus stacks. Two casts
