@@ -1,11 +1,24 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 427 binary archives, including 388
+Current accepted inventory (2026-10-18): 428 binary archives, including 389
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 208/224 catalog entries (92.86%): 190 battle owners, 17 campaign
+covers 209/224 catalog entries (93.30%): 191 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`StartOfTurnPropagate` now has schema-231 native evidence for its unchanged
+before-draw all-room propagation. Four applications visit the three combat
+floors in ascending order, including an empty floor. Sixteen exact +1 changes
+affect Regen and Spikes; twenty-one exclusions preserve Armor, Immobile and
+Monster-excluded Spell Weakness. Enemy/Pyre state and Battle RNG remain exact.
+Four natural timing Tests and one explicit native empty-floor Test preserve
+complete state and return true. The 39-stage winning battle, two deployment
+actions, independent five-EndTurn suffix, sixteen immutable branches, focused
+checks, serial/parallel search and eight affected archives pass. Placement and
+preview permissions have pure checks; disabled-floor execution, independent
+native preview, additional status callbacks and combined start-turn relics
+require separate evidence.
 
 `ReduceRandomCardCostOnUnitPlay` now has schema-230 native evidence for its
 original Monster-play filter and unique FreeFromBlessing upgrade. Test filters

@@ -115,6 +115,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-freeze-reduce-cost.mt2f',
     'full-battle-original-random-freeze.mt2f',
     'full-battle-original-random-hand-upgrade.mt2f',
+    'full-battle-original-start-turn-propagation.mt2f',
     'full-battle-original-propagate-on-status-effect-applied.mt2f',
     'full-battle-original-pyre-health-card-cost.mt2f',
     'full-battle-original-unit-upgrade-trigger-relic.mt2f',
@@ -1476,5 +1477,14 @@ foreach ($fixturePath in $originalRandomHandUpgradeFixtures) {
     foreach ($mode in @('--original-random-hand-upgrade-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original ReduceRandomCardCostOnUnitPlay checks failed ($mode): $fixturePath" }
+    }
+}
+$originalStartTurnPropagationFixtures = @($fixtures | Where-Object {
+    (Split-Path -Leaf $_) -eq 'full-battle-original-start-turn-propagation.mt2f'
+})
+foreach ($fixturePath in $originalStartTurnPropagationFixtures) {
+    foreach ($mode in @('--original-start-turn-propagation-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original StartOfTurnPropagate checks failed ($mode): $fixturePath" }
     }
 }

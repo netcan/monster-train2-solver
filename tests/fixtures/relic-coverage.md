@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **208 distinct original collectable relics / 224 catalog entries
-(92.86%)** have accepted native evidence: 190 have full-battle effect evidence,
+As of 2026-10-18, **209 distinct original collectable relics / 224 catalog entries
+(93.30%)** have accepted native evidence: 191 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2265,4 +2265,64 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-ran
 dotnet run --project src/ModelChecks -c Release -- --random-hand-upgrade-pure
 dotnet run --project src/ModelChecks -c Release -- --original-random-hand-upgrade-only tests/fixtures/full-battle-original-random-hand-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-random-hand-upgrade.mt2f
+```
+
+## StartOfTurnPropagate
+
+| Original relic asset | Data ID | Native fixture | Accepted effect evidence |
+| --- | --- | --- | --- |
+| `StartOfTurnPropagate` | `a42d2f85-7b53-4d2b-9979-5e6269b4e01c` | `full-battle-original-start-turn-propagation.mt2f` | The unchanged `RelicEffectAddEffectStartOfTurn` applies its original +1 `CardEffectAdjustAllStatusEffects` to all three combat floors before draw. Four applications match complete native state/RNG, including repeat friendly propagation, team/propagation exclusions and an empty floor. |
+
+The original owner permits placement and preview. Its outer mode is
+ApplyToAllRooms (1), with its original true ParamBool, no conditions and no
+trigger metadata. The single nested effect targets Room/Monsters with Int 1
+and AnyFlaggedIsPropagatable (1). It does not require valid targets. Native Test
+therefore returns true even when the first tested floor is empty; it does not
+select a random room or consume RNG. This witness records four natural timing
+Tests plus one explicitly invoked native empty-floor Test, all preserving
+complete state. The explicit control is not counted as a natural timing event.
+
+Apply visits floors 0, 1 and 2 in ascending order, including empty floor 2,
+then performs native dead-character cleanup. Two authored Stewards on floors
+0 and 1 carry the original registry definitions for Regen, Spikes, Armor,
+Immobile and Spell Weakness. Across four callbacks, sixteen exact +1 changes
+propagate Regen/Spikes. Twenty-one observations preserve excluded statuses:
+Armor and Immobile are not propagatable, and Spell Weakness excludes Monster
+propagation. Enemy units and the Pyre are unchanged; complete state and Battle
+RNG match after every Test/application. Status callbacks use the existing
+CardSpellModel queue, with null actor/card source and fromPlayedCard false.
+
+The probe authors two 80-HP/30-attack size-one, zero-cost Stewards without
+character triggers before the first action. Their starting statuses are Armor 4,
+Regen 2, Spikes 2, Spell Weakness 2 and Immobile 1. Both cards are deployed
+through controlled actions; no carrier is inserted across recorded turns. The
+winning native battle records 39 stages, two plays and five EndTurns. Independent
+action replay and the complete policy suffix match in sixteen immutable
+branches. Search matches two recorded decisions and six root actions, with zero
+unsupported attempts, equal serial/parallel best results, 116/103 visited states
+and three replayed steps.
+
+Eight affected archives pass with two workers and terminal exit zero: this
+owner, Nims Oath, PropagateOnStatusEffectApplied, moon-phase status relics,
+ChanceToCleanse, status scaling, triggered status and status callbacks. Pure
+checks cover repeated turns, absent-owner and empty-floor no-ops, placement and
+preview permissions, strict changed-payload rejection and immutable branches.
+The shared Nims Oath random candidate pool is local to its own resource, so
+all-room propagation does not enter its random selection. Combined owners,
+disabled-floor native execution, independent native preview, arbitrary status
+callbacks and terminal status outcomes require separate witnesses.
+
+The schema-231 binary archive is 22,276 bytes, with 3,012 unique nodes and SHA-256
+`c26ca41cb85f9b7d121a36de11dd807c376f8175554d55ffcedfebea62e0c234`.
+Its source length is zero and source hash is all zeroes; no JSON companion is
+tracked. Accepted inventory is 428 archives: 389 battles and 39 component
+calibrations. Original-owner evidence is 209/224 (93.30%): 191 battle, seventeen
+campaign and one native no-op owner; fifteen owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalStartTurnPropagationRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-start-turn-propagation.mt2f
+dotnet run --project src/ModelChecks -c Release -- --start-turn-propagation-pure
+dotnet run --project src/ModelChecks -c Release -- --original-start-turn-propagation-only tests/fixtures/full-battle-original-start-turn-propagation.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-start-turn-propagation.mt2f
 ```

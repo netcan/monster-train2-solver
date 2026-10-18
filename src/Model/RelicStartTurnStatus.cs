@@ -35,7 +35,8 @@ namespace MonsterTrain2Poju.Model
             RelicResourceEffect[] resources = (relic.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
                 .Where(rule => rule.Type == Effect).ToArray();
             if (indices.Length != 1 || !indices.SequenceEqual(new[] { 0 }) || resources.Length != 1 ||
-                relic.EffectTypes.Count != 1 || relic.DataId != DataId || relic.AssetKey != AssetKey ||
+                relic.EffectTypes.Count != 1 ||
+                !(relic.DataId == DataId && relic.AssetKey == AssetKey || relic.DataId == RelicStartTurnPropagationModel.DataId && relic.AssetKey == RelicStartTurnPropagationModel.AssetKey) ||
                 relic.IsCovenant != false || relic.DisallowedInPlacementPhase != false)
                 return "Unmodeled native start-turn room-effect owner.";
             return Validate(relic, resources[0]);
@@ -43,6 +44,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Validate(CombatRelicState relic, RelicResourceEffect resource)
         {
+            if (relic.DataId == RelicStartTurnPropagationModel.DataId) return RelicStartTurnPropagationModel.Validate(relic, resource);
             RelicStartTurnRoomEffectRule? rule = resource.StartTurnRoomEffect;
             CardActionEffect? action = rule?.Action;
             if (resource.Type != Effect || resource.EffectIndex != 0 || rule == null || action == null ||
@@ -113,7 +115,15 @@ namespace MonsterTrain2Poju.Model
                     error = Validate(relic, resource);
                     if (error != null) return Fail(error);
                     RelicStartTurnRoomEffectRule rule = resource.StartTurnRoomEffect!;
+                    if (relic.DataId == RelicStartTurnPropagationModel.DataId)
+                    {
+                        RelicStartTurnStatusResult propagated = RelicStartTurnPropagationModel.Apply(state, rooms, resource);
+                        if (!propagated.Supported) return propagated;
+                        state = propagated.State!; allCandidates.AddRange(propagated.CandidateRooms);
+                        continue;
+                    }
                     var targetsByRoom = new Dictionary<int, int[]>();
+                    var candidates = new List<int>();
                     foreach (RoomPlayRule roomRule in rooms.Where(room => room.RoomIndex < pyreRule.RoomIndex && room.Enabled))
                     {
                         RoomCombatState? room = state.Rooms.FirstOrDefault(item => item.RoomIndex == roomRule.RoomIndex);
@@ -122,12 +132,13 @@ namespace MonsterTrain2Poju.Model
                             Array.Empty<int>(), isTesting: true);
                         if (!targets.Supported) return Fail(targets.UnsupportedReason!);
                         targetsByRoom.Add(room.RoomIndex, targets.UnitIds.ToArray());
-                        if (Eligible(targets.UnitIds, state, rule)) allCandidates.Add(room.RoomIndex);
+                        if (Eligible(targets.UnitIds, state, rule)) candidates.Add(room.RoomIndex);
                     }
-                    if (allCandidates.Count == 0) continue;
+                    allCandidates.AddRange(candidates);
+                    if (candidates.Count == 0) continue;
 
-                    RngDraw draw = state.Context!.BattleRng.Range(0, allCandidates.Count);
-                    selectedRoom = allCandidates[draw.Value];
+                    RngDraw draw = state.Context!.BattleRng.Range(0, candidates.Count);
+                    selectedRoom = candidates[draw.Value];
                     state = WithContext(state, state.Context.WithBattleRng(draw.State));
                     foreach (int targetId in targetsByRoom[selectedRoom.Value])
                     {

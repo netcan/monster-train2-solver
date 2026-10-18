@@ -177,6 +177,17 @@ if (args.Length == 1 && args[0] == "--random-hand-upgrade-pure")
     OriginalRandomHandUpgradeChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--start-turn-propagation-pure")
+{
+    OriginalStartTurnPropagationChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-start-turn-propagation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalStartTurnPropagationChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-random-hand-upgrade-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1888,6 +1899,7 @@ OriginalSpawnSilenceChecks.Run();
 OriginalFreezeReduceCostChecks.Run();
 OriginalRandomFreezeChecks.Run();
 OriginalRandomHandUpgradeChecks.Run();
+OriginalStartTurnPropagationChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

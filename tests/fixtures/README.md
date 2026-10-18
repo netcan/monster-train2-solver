@@ -1,8 +1,18 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 427 archives (388 full battles and
-39 component calibrations), 208/224 original relic owners (92.86%): 190 battle
+Current accepted inventory (2026-10-18): 428 archives (389 full battles and
+39 component calibrations), 209/224 original relic owners (93.30%): 191 battle
 owners, seventeen campaign-interface owners and one native no-op. The latest
+`StartOfTurnPropagate` fixture covers four original all-room before-draw
+applications, sixteen exact +1 changes and twenty-one excluded statuses.
+Regen/Spikes propagate while Armor, Immobile and Monster-excluded Spell Weakness
+remain unchanged. Enemy/Pyre state and Battle RNG match. Four natural Tests and
+one explicit empty-floor native Test return true without changing state/RNG.
+The 39-stage winning battle, two deployment actions, independent five-EndTurn
+suffix with sixteen immutable branches, focused checks, serial/parallel search
+and eight affected archives pass. Placement/preview permissions have pure
+checks; independent native preview, disabled floors and arbitrary additional
+status/start-turn relic callbacks require separate evidence. The previous
 `ReduceRandomCardCostOnUnitPlay` fixture covers two original FreeFromBlessing
 applications after Monster plays, with zero/X-cost and unplayable controls.
 Test-stage whole-candidate shuffle, singleton/empty RNG, cached selection and
