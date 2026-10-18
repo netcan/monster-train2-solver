@@ -886,6 +886,9 @@ namespace MonsterTrain2Poju.Model
                 RelicCheaperSpellUpgradeResult discarded = RelicCheaperSpellUpgradeModel.CardDiscarded(context, card.InstanceId);
                 if (!discarded.Supported) return Unsupported(discarded.UnsupportedReason!);
                 context = discarded.Context;
+                RelicCheaperSpellUpgradeResult randomDiscarded = RelicRandomHandUpgradeModel.Discarded(context, card.InstanceId);
+                if (!randomDiscarded.Supported) return Unsupported(randomDiscarded.UnsupportedReason!);
+                context = randomDiscarded.Context;
             }
             BattleStatistics? statistics = context.Statistics;
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });

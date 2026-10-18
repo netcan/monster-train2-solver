@@ -303,6 +303,7 @@ param(
     [switch] $OriginalChanceToSilenceRelic,
     [switch] $OriginalFreezeReduceCostRelic,
     [switch] $OriginalRandomFreezeRelic,
+    [switch] $OriginalRandomHandUpgradeRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -533,6 +534,7 @@ if ($OriginalKillAttackRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints =
 if ($OriginalChanceToSilenceRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalFreezeReduceCostRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalRandomFreezeRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalRandomHandUpgradeRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1006,6 +1008,7 @@ if ($OriginalKillAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalChanceToSilenceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-chance-to-silence' }
 if ($OriginalFreezeReduceCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-freeze-reduce-cost' }
 if ($OriginalRandomFreezeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-random-freeze' }
+if ($OriginalRandomHandUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-random-hand-upgrade' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1936,6 +1939,16 @@ if ($OriginalTribouletRelic -and ($trace.Schema -ne 217 -or $trace.OriginalTribo
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-TRIBOULET-PREPARED' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -lt 1)) {
     throw 'Triboulet lacks its unchanged owner, Rare deck seed, or cardless Monster-spawn witness.'
+}
+if ($OriginalRandomHandUpgradeRelic -and ($trace.Schema -ne 230 -or $trace.OriginalRandomHandUpgradeSchema -ne 230 -or
+    $trace.ModifierScenario -ne 'original-random-hand-upgrade' -or -not $trace.OriginalRandomHandUpgradePrepared -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.OriginalRandomHandUpgradeCaptureFailures -ne 0 -or $trace.OriginalRandomHandUpgradeMismatches -ne 0 -or
+    $trace.OriginalRandomHandUpgradeUnsupported -ne 0 -or $trace.OriginalRandomHandUpgradePending -ne 0 -or
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne 6 -or
+    @($trace.RelicRandomHandUpgradeRecords | Where-Object Phase -eq 'ApplyPlay').Count -ne 2 -or
+    @($trace.RelicRandomHandUpgradeRecords | Where-Object Phase -eq 'ApplyDiscard').Count -ne 2)) {
+    throw 'Original random hand-upgrade acceptance failed.'
 }
 if ($OriginalRandomFreezeRelic -and ($trace.Schema -ne 229 -or $trace.OriginalRandomFreezeSchema -ne 229 -or
     $trace.ModifierScenario -ne 'original-random-freeze' -or -not $trace.OriginalRandomFreezePrepared -or

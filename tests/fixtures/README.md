@@ -1,9 +1,18 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 426 archives (387 full battles and
-39 component calibrations), 207/224 original relic owners (92.41%): 189 battle
+Current accepted inventory (2026-10-18): 427 archives (388 full battles and
+39 component calibrations), 208/224 original relic owners (92.86%): 190 battle
 owners, seventeen campaign-interface owners and one native no-op. The latest
-`FreezeRandomEndOfTurn` fixture covers two original temporary Freeze applications,
+`ReduceRandomCardCostOnUnitPlay` fixture covers two original FreeFromBlessing
+applications after Monster plays, with zero/X-cost and unplayable controls.
+Test-stage whole-candidate shuffle, singleton/empty RNG, cached selection and
+the relic's separate discard tracking match. A zero-cost spell play and bulk
+discard each remove one -99 upgrade. The 36-stage winning battle, six actions,
+independent four-EndTurn suffix with sixteen immutable branches, focused checks,
+128-state serial/parallel search and eight affected archives pass. Deployment,
+preview, other target card types and nonempty wrong-type cache preservation have
+pure checks; arbitrary additional trait/relic callbacks need separate evidence.
+The previous `FreezeRandomEndOfTurn` fixture covers two original temporary Freeze applications,
 two empty Tests and unchanged already-frozen/Blight/Junk controls. Whole-candidate
 shuffle, singleton zero-draw RNG, exact temporary traits and persistent hand
 retention match. The 35-stage winning battle, two deployment actions, independent

@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **207 distinct original collectable relics / 224 catalog entries
-(92.41%)** have accepted native evidence: 189 have full-battle effect evidence,
+As of 2026-10-18, **208 distinct original collectable relics / 224 catalog entries
+(92.86%)** have accepted native evidence: 190 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2196,4 +2196,73 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-ran
 dotnet run --project src/ModelChecks -c Release -- --random-freeze-pure
 dotnet run --project src/ModelChecks -c Release -- --original-random-freeze-only tests/fixtures/full-battle-original-random-freeze.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-random-freeze.mt2f
+```
+
+## ReduceRandomCardCostOnUnitPlay
+
+| AssetKey | DataId | Fixture | Evidence |
+| --- | --- | --- | --- |
+| `ReduceRandomCardCostOnUnitPlay` | `128dd519-611c-4999-b7ac-e63ea027b1fa` | `full-battle-original-random-hand-upgrade.mt2f` | The unchanged `RelicEffectAddTempUpgradeToRandomCardInHand` filters Monster plays, selects one eligible hand card in Test and applies its original unique FreeFromBlessing (-99 cost) upgrade. Zero/X-cost and unplayable controls are excluded. Its internal upgraded-card list removes both discounts through played-card and bulk-discard callbacks. |
+
+The schema-230 winning battle matches all 36 stages, six controlled actions and
+five EndTurns. Two deployment Monster plays are excluded by the original owner
+gate. Three later Monster plays exercise candidate counts two, one and zero;
+two Tests are positive and one is empty. A Spell play supplies a wrong-type Test.
+Every Test and raw Apply coroutine matches complete train, card, room, pile,
+cached selection, tracked-card list and Battle RNG state. Root and dedicated
+capture/mismatch/unsupported/pending counters are zero, terminal effects are
+settled and the native trace reports `DEPTH-PASS`.
+
+The original count is one, played card type is Monster, conditions are empty,
+deployment is disallowed and preview permission is false. The original upgrade
+is `988193e9-2933-4c84-a957-71b97809170e` / `FreeFromBlessing`, unique, with -99
+cost and no remove-on-discard flag. Its two unchanged filters require cost in
+1..99, exclude X-cost and exclude `CardTraitUnplayable`. Target card type is
+unrestricted by these filters; native positive targets here are spells. The
+zero-cost, X-cost and unplayable controls have Persistent so all three remain
+available across turns without receiving an upgrade.
+
+Test clears the candidate cache only after passing the played-card type gate.
+It shuffles the complete eligible list and truncates only when the configured
+count is smaller than the candidate count. The two-card Test consumes one Battle
+RNG draw; singleton and empty Tests consume none. Apply uses the cached IDs,
+adds the upgrade and appends successful targets to a separate tracked list.
+Neither applying nor discarding consumes RNG. One discounted spell is played
+at zero cost and loses its upgrade on discard; the other remains in hand until
+bulk discard and then also loses the upgrade. Discard removes the first matching
+upgrade identity and tracked entry, preserving the independent selection cache.
+
+The witness authors five 80-HP/30-attack size-one Stewards without character
+triggers, two ordinary 99-cost target spells and three Persistent controls before
+the first recorded action. No new carrier is inserted across a recorded turn.
+Independent action replay checks all six plays; a separate retain policy then
+completes the four-EndTurn suffix to native victory in sixteen immutable
+branches. Search matches six recorded decisions and 23 root actions without
+unsupported alternatives; serial/parallel best results agree (128/128 visited
+states, three replayed steps).
+
+Eight affected archives pass with two workers and terminal exit zero: this owner,
+cheaper-spell cost, first-card cost, no-upgrade card cost, FreezeRandomEndOfTurn,
+FreezeReduceCost, choose-discard Persistent and random discard. The shared hand
+removal path also invokes the tracked discount cleanup. Pure checks exercise
+Monster/Equipment target eligibility, a nonempty selection preserved by a
+wrong-type Test, absent-owner/deployment/preview gates, singleton/empty RNG,
+discard untracking/idempotence, changed-count rejection and sixteen immutable
+branches. Those additional target card types, card-effect discard combinations,
+extra OnCardBeingUpgraded trait callbacks and arbitrary combined relic/upgrade
+effects require separate native evidence.
+
+The binary archive is 28,076 bytes, with 4,073 unique nodes and SHA-256
+`100549acbdaf689798bfb2decbcfed92b3672f27498ac1c95d31b88c7f9c2af6`.
+Its source length is zero and source hash is all zeroes; no JSON companion is
+tracked. Accepted inventory is 427 archives: 388 battles and 39 component
+calibrations. Original-owner evidence is 208/224 (92.86%): 190 battle, seventeen
+campaign and one native no-op owner; sixteen owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalRandomHandUpgradeRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-random-hand-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --random-hand-upgrade-pure
+dotnet run --project src/ModelChecks -c Release -- --original-random-hand-upgrade-only tests/fixtures/full-battle-original-random-hand-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-random-hand-upgrade.mt2f
 ```

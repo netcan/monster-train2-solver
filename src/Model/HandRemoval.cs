@@ -99,6 +99,9 @@ namespace MonsterTrain2Poju.Model
                     RelicCheaperSpellUpgradeResult cheaperSpellDiscard = RelicCheaperSpellUpgradeModel.CardDiscarded(context, token.InstanceId);
                     if (!cheaperSpellDiscard.Supported) return Unsupported(cheaperSpellDiscard.UnsupportedReason!);
                     context = cheaperSpellDiscard.Context;
+                    RelicCheaperSpellUpgradeResult randomUpgradeDiscard = RelicRandomHandUpgradeModel.Discarded(context, token.InstanceId);
+                    if (!randomUpgradeDiscard.Supported) return Unsupported(randomUpgradeDiscard.UnsupportedReason!);
+                    context = randomUpgradeDiscard.Context;
                     CardInstanceState? instance = context.FindCard(token.InstanceId);
                     if (instance != null) context = context.WithCard(instance.OnDiscard(false));
                     context = ConduitModel.Discarded(context, token.InstanceId);

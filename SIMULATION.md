@@ -1,11 +1,23 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 426 binary archives, including 387
+Current accepted inventory (2026-10-18): 427 binary archives, including 388
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 207/224 catalog entries (92.41%): 189 battle owners, 17 campaign
+covers 208/224 catalog entries (92.86%): 190 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`ReduceRandomCardCostOnUnitPlay` now has schema-230 native evidence for its
+original Monster-play filter and unique FreeFromBlessing upgrade. Test filters
+zero/X-cost and unplayable cards, shuffles the whole eligible hand when needed,
+and caches one selection. Two positive, one empty and one wrong-type Test match;
+two -99 upgrades make the selected cards free. The relic's tracked list removes
+both discounts, once after a zero-cost play and once during bulk discard. The
+36-stage winning battle, six actions, independent four-EndTurn suffix with
+sixteen immutable branches, focused checks, 128-state serial/parallel search and
+eight affected archives pass with zero differential counters. Other target card
+types and nonempty wrong-type cache preservation have pure checks. Additional
+upgrade trait callbacks and arbitrary combined relic effects need native proof.
 
 `FreezeRandomEndOfTurn` now has schema-229 native evidence for its original
 one-card temporary Freeze effect before hand discard. Two positive and two empty

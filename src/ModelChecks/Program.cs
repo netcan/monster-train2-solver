@@ -172,6 +172,17 @@ if (args.Length == 1 && args[0] == "--random-freeze-pure")
     OriginalRandomFreezeChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--random-hand-upgrade-pure")
+{
+    OriginalRandomHandUpgradeChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-random-hand-upgrade-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalRandomHandUpgradeChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-random-freeze-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1876,6 +1887,7 @@ OriginalKillAttackChecks.Run();
 OriginalSpawnSilenceChecks.Run();
 OriginalFreezeReduceCostChecks.Run();
 OriginalRandomFreezeChecks.Run();
+OriginalRandomHandUpgradeChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

@@ -57,8 +57,21 @@ namespace MonsterTrain2Poju.Probe
                     .Where(item => item.Effect is RelicEffectAddTempUpgrade || item.Effect is RelicEffectModifyTrait ||
                         item.Effect.GetType().Name == RelicNoUpgradeCardCostModel.Effect ||
                         item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon ||
-                        item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurn || item.Effect is RelicEffectFreezeRandomCards).Select(item =>
+                        item.Effect is RelicEffectApplyCardUpgradeToHandEndOfTurn || item.Effect is RelicEffectFreezeRandomCards ||
+                        item.Effect is RelicEffectAddTempUpgradeToRandomCardInHand).Select(item =>
                     {
+                        if (item.Effect is RelicEffectAddTempUpgradeToRandomCardInHand)
+                        {
+                            object Field(string name) => AccessTools.Field(item.Effect.GetType(), name).GetValue(item.Effect);
+                            var upgrade = (CardUpgradeState)Field("relicUpgradeState");
+                            return new RelicCardModifier(item.Index, null, null, false,
+                                RelicCardModifierProbe.Conditions(item.Effect), randomHandUpgrade: new RelicRandomHandUpgrade(
+                                    (int)Field("numCardsToUpgrade"), Field("cardType").ToString()!, ((RelicEffectBase)item.Effect).CanApplyInPreviewMode,
+                                    CardModifierProbe.Upgrade(upgrade, rejectFilters: false, filtersAlreadyApplied: true),
+                                    upgrade.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray(),
+                                    ((List<CardState>)Field("cardsToUpgrade")).Select(FullBattleTrace.Active!.CardId).ToArray(),
+                                    ((List<CardState>)Field("upgradedCards")).Select(FullBattleTrace.Active!.CardId).ToArray()));
+                        }
                         if (item.Effect is RelicEffectFreezeRandomCards)
                         {
                             var effectData = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(item.Effect);

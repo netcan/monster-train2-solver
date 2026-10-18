@@ -58,19 +58,20 @@ namespace MonsterTrain2Poju.Model
         public RelicMoonPhaseHandUpgrade? MoonPhaseHandUpgrade { get; }
         public RelicFreezeHandUpgrade? FreezeHandUpgrade { get; }
         public RelicRandomFreeze? RandomFreeze { get; }
+        public RelicRandomHandUpgrade? RandomHandUpgrade { get; }
         public RelicCardModifier(int effectIndex, RelicCardUpgradeRule? rule, CardUpgradeModifier? upgrade,
             bool applyToCardlessSpawns, IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0,
             RelicTraitReplacement? traitReplacement = null, RelicNoUpgradeCardCostModifier? noUpgradeCost = null,
             RelicMoonPhaseHandUpgrade? moonPhaseHandUpgrade = null, RelicFreezeHandUpgrade? freezeHandUpgrade = null,
-            RelicRandomFreeze? randomFreeze = null)
+            RelicRandomFreeze? randomFreeze = null, RelicRandomHandUpgrade? randomHandUpgrade = null)
         { EffectIndex = effectIndex; Rule = rule; Upgrade = upgrade; ApplyToCardlessSpawns = applyToCardlessSpawns;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             ConditionCount = conditions?.Count ?? conditionCount; TraitReplacement = traitReplacement; NoUpgradeCost = noUpgradeCost;
-            MoonPhaseHandUpgrade = moonPhaseHandUpgrade; FreezeHandUpgrade = freezeHandUpgrade; RandomFreeze = randomFreeze; }
+            MoonPhaseHandUpgrade = moonPhaseHandUpgrade; FreezeHandUpgrade = freezeHandUpgrade; RandomFreeze = randomFreeze; RandomHandUpgrade = randomHandUpgrade; }
         internal RelicCardModifier WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicCardModifier(EffectIndex, Rule, Upgrade, ApplyToCardlessSpawns, conditions,
                 traitReplacement: TraitReplacement, noUpgradeCost: NoUpgradeCost, moonPhaseHandUpgrade: MoonPhaseHandUpgrade,
-                freezeHandUpgrade: FreezeHandUpgrade, randomFreeze: RandomFreeze);
+                freezeHandUpgrade: FreezeHandUpgrade, randomFreeze: RandomFreeze, randomHandUpgrade: RandomHandUpgrade);
     }
     public sealed class RelicNoUpgradeCardCostModifier
     {
@@ -123,7 +124,7 @@ namespace MonsterTrain2Poju.Model
             var indices = relic.EffectTypes.Select((type, index) => (type, index)).Where(item =>
                     item.type == RelicModel.AddTempUpgrade || item.type == RelicModel.ModifyTrait ||
                     item.type == RelicModel.ModifyCardCostIfNoUpgrades || item.type == RelicModel.ApplyCardUpgradeToHandEndOfTurnOnMoon ||
-                    item.type == RelicFreezeHandUpgradeModel.Effect || item.type == RelicRandomFreezeModel.Effect)
+                    item.type == RelicFreezeHandUpgradeModel.Effect || item.type == RelicRandomFreezeModel.Effect || item.type == RelicRandomHandUpgradeModel.Effect)
                 .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.CardModifiers?.Count > 0 ? "Unexpected relic card modifier definitions." : null;
             if (relic.CardModifiers == null || !indices.SequenceEqual(relic.CardModifiers.Select(rule => rule.EffectIndex)))
@@ -131,6 +132,12 @@ namespace MonsterTrain2Poju.Model
             foreach (var effect in relic.CardModifiers)
             {
                 string type = relic.EffectTypes[effect.EffectIndex];
+                if (type == RelicRandomHandUpgradeModel.Effect)
+                {
+                    string? randomError = RelicRandomHandUpgradeModel.Validate(relic, effect);
+                    if (randomError != null) return randomError;
+                    continue;
+                }
                 if (type == RelicRandomFreezeModel.Effect)
                 {
                     string? freezeError = RelicRandomFreezeModel.Validate(relic, effect);

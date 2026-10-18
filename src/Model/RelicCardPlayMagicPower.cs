@@ -78,6 +78,7 @@ namespace MonsterTrain2Poju.Model
         {
             bool hasMagicPower = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCardMagicPowerOnCardPlayed)) == true;
             bool hasCheaperSpellUpgrade = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddTempUpgradeToHandCardsIfCheaper)) == true;
+            bool hasRandomHandUpgrade = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicRandomHandUpgradeModel.Effect)) == true;
             bool hasCardCopy = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CopyCardOnCardPlay)) == true;
             bool hasCardDraw = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.CardDrawOnCardPlay)) == true;
             bool hasGoldOnExhaust = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicCardPlayGoldOnExhaustModel.Effect)) == true;
@@ -91,7 +92,7 @@ namespace MonsterTrain2Poju.Model
             bool hasCorruptRestrictedCardPlay = source.Relics?.Any(relic => relic.EffectTypes.Any(type =>
                 type == RelicResourceModel.EnergyOnCorruptRestrictedPlayed ||
                 type == RelicResourceModel.CorruptionOnCorruptRestrictedPlayed)) == true;
-            if (!hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasMonsterSpellTargeting && !hasRoomCapacity &&
+            if (!hasRandomHandUpgrade && !hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasMonsterSpellTargeting && !hasRoomCapacity &&
                 !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay && !hasGoldOnExhaust && !hasCorruption && !hasDamageStatus && !hasCardPlayDamage && !hasConsumeDamage)
                 return new RelicCardPlayMagicPowerResult(source);
             if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay || hasGoldOnExhaust || hasCorruption) && source.CardInstances == null)
@@ -108,6 +109,14 @@ namespace MonsterTrain2Poju.Model
                 for (int effectIndex = 0; effectIndex < context.Relics![relicIndex].EffectTypes.Count; effectIndex++)
                 {
                     CombatRelicState relic = context.Relics[relicIndex];
+                    if (relic.EffectTypes[effectIndex] == RelicRandomHandUpgradeModel.Effect)
+                    {
+                        if (placement && relic.DisallowedInPlacementPhase == true || preview && !relic.CardModifiers!.Single().RandomHandUpgrade!.CanApplyInPreviewMode) continue;
+                        RelicCheaperSpellUpgradeResult upgraded = RelicRandomHandUpgradeModel.Played(context, playedCardId);
+                        if (!upgraded.Supported) return Fail(context, upgraded.UnsupportedReason!);
+                        context = upgraded.Context;
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicConsumeDamageModel.Effect)
                     {
                         if (trainState == null) return Fail(context, "Consume damage requires train state.");

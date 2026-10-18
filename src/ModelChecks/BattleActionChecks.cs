@@ -671,9 +671,9 @@ internal static class BattleActionChecks
             return;
         }
         if (fixture.TryGetProperty("ModifierScenario", out var eatenDamagePolicy) &&
-            eatenDamagePolicy.GetString() is "original-eaten-damage" or "original-burnout-death-damage" or "original-heal-to-damage" or "original-kill-attack" or "original-chance-to-silence" or "original-freeze-reduce-cost" or "original-random-freeze")
+            eatenDamagePolicy.GetString() is "original-eaten-damage" or "original-burnout-death-damage" or "original-heal-to-damage" or "original-kill-attack" or "original-chance-to-silence" or "original-freeze-reduce-cost" or "original-random-freeze" or "original-random-hand-upgrade")
         {
-            int scenarioActions = eatenDamagePolicy.GetString() switch { "original-eaten-damage" => 10, "original-burnout-death-damage" => 7, "original-kill-attack" or "original-chance-to-silence" or "original-random-freeze" => 2, "original-freeze-reduce-cost" => 3, _ => 9 };
+            int scenarioActions = eatenDamagePolicy.GetString() switch { "original-eaten-damage" => 10, "original-burnout-death-damage" => 7, "original-kill-attack" or "original-chance-to-silence" or "original-random-freeze" => 2, "original-freeze-reduce-cost" => 3, "original-random-hand-upgrade" => 6, _ => 9 };
             Require(allActions.Length == scenarioActions && policyActions.Length == 0,
                 "Controlled relic coverage requires its complete scenario actions and no later native card plays.");
             BattleTurnState suffixRoot = allActions[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -681,7 +681,7 @@ internal static class BattleActionChecks
                 .GetProperty("Spawn").GetProperty("Turn").GetInt32() >= suffixRoot.Spawn.Turn).ToArray();
             string parentState = JsonSerializer.Serialize(suffixRoot);
             // This witness deliberately retains the remaining frozen/control cards.
-            Func<BattleTurnState, PlayCardAction?> suffixChooser = eatenDamagePolicy.GetString() == "original-freeze-reduce-cost"
+            Func<BattleTurnState, PlayCardAction?> suffixChooser = eatenDamagePolicy.GetString() is "original-freeze-reduce-cost" or "original-random-hand-upgrade"
                 ? _ => null : chooser;
             BattleTurnState suffixTerminal = RunPolicy(suffixRoot, [], suffixTurns, suffixChooser, compareRoomEnabled);
             string expectedTerminal = BattleTurnChecks.Comparable(suffixTerminal, compareRoomEnabled: compareRoomEnabled);
