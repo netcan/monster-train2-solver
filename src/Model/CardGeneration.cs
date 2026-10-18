@@ -426,9 +426,12 @@ namespace MonsterTrain2Poju.Model
             if (CardGraftedEquipmentModel.Present(card)) return "Grafted equipment copying requires native private-state calibration.";
             if (!card.CanBeCopied.HasValue) return "Copy generation requires captured CardState.CanBeCopied state.";
             if (card.MaskDescriptor == null) return "Copy generation requires branch-owned source traits.";
-            if (card.MaskDescriptor.TemporaryTraits.Count > 0 || card.MaskDescriptor.PermanentReplacements.Count > 0 ||
+            // Freeze and Ephemeral inherit GetIsCopyable=true; their discard/play
+            // callbacks do not invalidate the captured CanBeCopied query.
+            bool Neutral(CardTraitValue trait) => trait.RuntimeType is "CardTraitFreeze" or "CardTraitEphemeral" && trait.DeclaredName == trait.RuntimeType;
+            if (card.MaskDescriptor.TemporaryTraits.Any(trait => !Neutral(trait)) || card.MaskDescriptor.PermanentReplacements.Count > 0 ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
-                    upgrade.Lifecycle?.AddedTraits.Count > 0 || upgrade.Lifecycle?.RemovedRuntimeTypes.Count > 0))
+                    upgrade.Lifecycle?.AddedTraits.Any(trait => !Neutral(trait)) == true || upgrade.Lifecycle?.RemovedRuntimeTypes.Count > 0))
                 return "Copyability changes from card trait upgrades are not modeled.";
             return null;
         }

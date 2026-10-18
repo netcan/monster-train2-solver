@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 519 binary archives, including 479
+Current accepted inventory (2026-10-19): 520 binary archives, including 480
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 519
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 520
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,17 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-kill-copy.mt2f` adds Surgical Strike's card-owned self-copy
+and native Monsters/FunGuy-only kill suppression. Ordinary friendly/enemy kills
+copy; lethal and Undying-revived FunGuy targets do not. Piercing retains shield
+and armor while dealing damage. Three deterministic copies inherit temporary
+Ephemeral upgrades and all purge after played/unplayed paths. Branch-owned
+source metadata avoids recursively embedding the card in its own trigger.
+Twelve plays/five EndTurns, sixteen immutable complete chains and bounded
+search pass with zero unsupported attempts and equal serial/parallel results.
+Bonus fire counts, other subtypes, starting upgrades, all-subtype relics and
+character-attributed kills remain guarded.
 
 `full-battle-original-unit-buffs.mt2f` adds eight unchanged original spells:
 Cycle of Life, Steel Enhancer, Wicklash, Wick Extension, Void Binding, Umbra

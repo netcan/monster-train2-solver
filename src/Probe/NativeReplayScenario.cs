@@ -1167,6 +1167,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalUnitBuffsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalKillCopyScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original kill copy fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalKillCopyScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPileStatusScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original pile status fixture must start on deployment turn.");
@@ -2358,6 +2364,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalOnKillGenerationScenario.Enabled) pendingPlay = OriginalOnKillGenerationScenario.Choose(decision, OriginalOnKillGenerationScenario.CardIds);
                 if (OriginalMorselEatenScenario.Enabled) pendingPlay = OriginalMorselEatenScenario.Choose(decision, OriginalMorselEatenScenario.CardIds);
                 if (OriginalUnitBuffsScenario.Enabled) pendingPlay = OriginalUnitBuffsScenario.Choose(decision, OriginalUnitBuffsScenario.CardIds);
+                if (OriginalKillCopyScenario.Enabled) pendingPlay = OriginalKillCopyScenario.Choose(decision, OriginalKillCopyScenario.CardIds);
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);

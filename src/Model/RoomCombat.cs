@@ -2417,7 +2417,7 @@ namespace MonsterTrain2Poju.Model
                     if (unsupportedReason != null) return;
                     CardInstanceState killSource = context.FindCard(sourceCardId)!;
                     context = CardKillTriggerModel.Apply(context, killSource, source.Preview, source.Deployment,
-                        actor?.Source.Id ?? 0, out string? killError);
+                        actor?.Source.Id ?? 0, target.Freeze(), out string? killError);
                     if (killError != null) { unsupportedReason = killError; return; }
                 }
                 if (!target.Alive && !target.DeathFinished)

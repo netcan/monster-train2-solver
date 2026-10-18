@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 519 archives (479 full battles and
+Current accepted inventory (2026-10-19): 520 archives (480 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,32 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-519 accepted archives. Refresh/check the index with
+520 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-kill-copy.mt2f` captures six unchanged Surgical Strike
+plays and one generated copy. Native OnKill suppression requires both Monsters
+team and FunGuy subtype: lethal FunGuy and Undying-revived FunGuy create no
+copy, while ordinary friendly and enemy kills do. Piercing bypasses and retains
+Damage Shield on a nonlethal hit, and bypasses enemy armor. The targetless
+copy effect copies the played card itself despite LastTargetedCharacters in
+its shared data. Three deterministic hand copies preserve RNG, allocation,
+source traits and the original temporary Ephemeral upgrade. Playing the first
+copy inherits a second Ephemeral upgrade; played and unplayed copies all purge.
+Freeze and Ephemeral inherit native copyability without overriding it; other
+added/removed/replaced copyability traits remain guarded. Self-reference is
+resolved from the captured source rather than recursively embedding a card
+inside its own trigger. Missing suppression team/subtype metadata rejects.
+Source `.probe-runs/full-battle-units-spells-and-junk-20261019-054927-df9e061f`
+won in 53.49 seconds with twelve plays/five EndTurns, all four capture counters
+zero and protected original files unchanged. Binary-only: 33,940 bytes/5,186
+nodes, SHA-256 `28cfdcd530162dfece819f3d82739f21f47ce4bf5de10fa1a801fea9a5831f6f`.
+Use `--original-kill-copy-only`. Sixteen complete immutable chains and existing
+Bloody Moon, Antumbra and first-spell-copy checks pass. Search matches twelve
+decisions/sixteen roots, 128/128 states and three replayed steps, with zero
+unsupported attempts and equal serial/parallel best. Bonus fire counts, other
+subtypes, starting upgrades, all-subtype relics and character-attributed kills
+remain explicit boundaries.
 
 `full-battle-original-unit-buffs.mt2f` captures unchanged Cycle of Life,
 Steel Enhancer, Wicklash, Wick Extension, Void Binding, Umbra Stone,

@@ -469,9 +469,11 @@ namespace MonsterTrain2Poju.Probe
                     upgrade = CardModifierProbe.Upgrade(upgradeState);
                     interactions.AddRange(CardModifierModel.UpgradeInteractions(upgrade));
                 }
-                if (data == null) interactions.Add("Upgraded-copy trigger requires its source card definition");
+                // Card-owned self-copy triggers refer to their branch-owned source;
+                // embedding its creation descriptor here would recurse into this trigger.
+                if (data == null && !cardTrigger) interactions.Add("Upgraded-copy trigger requires its source card definition");
                 else generation = new CardGenerationRule(((CardPile)effect.GetParamInt()).ToString(), 1,
-                    new[] { CardGenerationProbe.Creation(data) }, copyModifiers: effect.GetCopyModifiersFromSource(),
+                    data == null ? Array.Empty<CardCreationRule>() : new[] { CardGenerationProbe.Creation(data) }, copyModifiers: effect.GetCopyModifiersFromSource(),
                     ignoreTemporaryModifiers: effect.GetIgnoreTempModifiersFromSource(), upgrade: upgrade,
                     deterministicPoolSelection: true, requireCopyableSource: true,
                     upgradeIsPermanent: effect.GetParamBool());

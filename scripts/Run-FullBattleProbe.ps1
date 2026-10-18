@@ -81,6 +81,7 @@ param(
     [switch] $OriginalOnKillGeneration,
     [switch] $OriginalMorselEaten,
     [switch] $OriginalUnitBuffs,
+    [switch] $OriginalKillCopy,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -565,6 +566,7 @@ if ($OriginalOnKill) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $
 if ($OriginalOnKillGeneration) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMorselEaten) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitBuffs) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalKillCopy) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1099,6 +1101,7 @@ if ($OriginalOnKill) { $environment['MT2_PROBE_MODIFIERS'] = 'original-on-kill' 
 if ($OriginalOnKillGeneration) { $environment['MT2_PROBE_MODIFIERS'] = 'original-on-kill-generation' }
 if ($OriginalMorselEaten) { $environment['MT2_PROBE_MODIFIERS'] = 'original-morsel-eaten' }
 if ($OriginalUnitBuffs) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-buffs' }
+if ($OriginalKillCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-kill-copy' }
 if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
@@ -2357,6 +2360,9 @@ if ($OriginalMorselEaten -and (-not $trace.OriginalMorselEatenPrepared -or -not 
 }
 if ($OriginalUnitBuffs -and (-not $trace.OriginalUnitBuffsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 12)) {
     throw 'Original unit buff witness lacks eight original spells and positive upgrade/status controls.'
+}
+if ($OriginalKillCopy -and (-not $trace.OriginalKillCopyPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 12)) {
+    throw 'Original Surgical Strike witness lacks original and copied plays with target-team and lethal controls.'
 }
 if ($OriginalPileStatus -and (-not $trace.OriginalPileStatusPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or
     @($trace.OriginalPileStatusQueries).Count -ne 24 -or -not $trace.OriginalPileStatusQueriesUnchanged -or
