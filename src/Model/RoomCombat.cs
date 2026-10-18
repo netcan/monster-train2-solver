@@ -477,14 +477,15 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).UnitPostCombat(cannotAttackOrHeal, cannotFireTriggers);
         }
 
-        public static RoomCombatResult ApplyFeeding(RoomCombatState state, CombatTeam team)
+        public static RoomCombatResult ApplyFeeding(RoomCombatState state, CombatTeam team,
+            IReadOnlyList<int>? foodIds = null, int triggerCount = 1)
         {
             string? error = Validate(state);
             if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
             if (state.Deployment || !state.Units.Any(unit => unit.Team == team && unit.Health > 0 && IsFood(unit)) ||
                 !state.Units.Any(unit => unit.Team == team && unit.Health > 0 && unit.Status("untouchable") == null && !IsFood(unit)))
                 return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
-            return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).FeedOnly(team);
+            return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).FeedOnly(team, foodIds, triggerCount);
         }
 
         internal static bool IsFood(CombatUnit unit) => unit.Status("inedible") == null && unit.Status("silenced") == null &&
@@ -2668,9 +2669,9 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            internal RoomCombatResult FeedOnly(CombatTeam team)
+            internal RoomCombatResult FeedOnly(CombatTeam team, IReadOnlyList<int>? foodIds = null, int triggerCount = 1)
             {
-                Feed(team);
+                Feed(team, foodIds, triggerCount);
                 return Finish(RoomOutcome.Exchanged);
             }
 
@@ -2680,11 +2681,13 @@ namespace MonsterTrain2Poju.Model
                 if (unsupportedReason == null) Feed(CombatTeam.Enemy);
             }
 
-            private void Feed(CombatTeam team)
+            private void Feed(CombatTeam team, IReadOnlyList<int>? foodIds = null, int triggerCount = 1)
             {
                 if (source.Deployment) return;
                 WorkingUnit[] living = units.Where(unit => unit.InRoom && unit.Alive && unit.Source.Team == team).ToArray();
-                WorkingUnit[] food = living.Where(unit => IsFood(unit.Freeze())).ToArray();
+                WorkingUnit[] food = foodIds == null ? living.Where(unit => IsFood(unit.Freeze())).ToArray() :
+                    foodIds.Select(id => living.FirstOrDefault(unit => unit.Source.Id == id))
+                        .Where(unit => unit != null && IsFood(unit.Freeze())).Cast<WorkingUnit>().ToArray();
                 WorkingUnit? feeder = living.FirstOrDefault(unit => !unit.Has("untouchable") && !IsFood(unit.Freeze()));
                 if (food.Length == 0 || feeder == null) return;
                 if (context?.QueryFrame?.SelectedRoomIndex != null)
@@ -2695,7 +2698,7 @@ namespace MonsterTrain2Poju.Model
                 foreach (WorkingUnit unit in food)
                 {
                     unit.LastFeederId = feeder.Source.Id;
-                    FireTriggers(unit, "OnEaten");
+                    for (int repeat = 0; repeat < triggerCount; repeat++) FireTriggers(unit, "OnEaten");
                 }
                 runningTriggerQueue = wasRunning;
                 DrainLocalTriggerQueue();
@@ -2728,7 +2731,7 @@ namespace MonsterTrain2Poju.Model
                     if (!UpdateEnchantments()) return;
                 }
                 runningTriggerQueue = true;
-                foreach (WorkingUnit unit in food) FireTriggers(feeder, "OnFeed");
+                for (int repeat = 0; repeat < unchecked(food.Length * triggerCount); repeat++) FireTriggers(feeder, "OnFeed");
                 runningTriggerQueue = wasRunning;
                 DrainLocalTriggerQueue();
             }

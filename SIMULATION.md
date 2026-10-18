@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 450 binary archives, including 411
+Current accepted inventory (2026-10-18): 451 binary archives, including 412
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 450
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 451
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -27,6 +27,20 @@ labels describe evidence boundaries rather than whole-card completion.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-forced-feeding.mt2f` adds unchanged Feast to the feeding witness.
+The spell rejects deployment, permits a no-feeder cast, and consumes only its
+collected food targets before the normal combat meal. Three positive casts and
+one no-feeder control match complete native state, RNG and food statistics,
+including surviving Eatmany and final source-card routing. Its 41-stage win has
+six plays/five EndTurns and zero capture, mismatch, unsupported or pending rows.
+Focused checks replay every decision and sixteen independent immutable chains;
+bounded search checks serial/parallel agreement, not global optimality.
+ScalingFeederRules and self-overridden feeders remain guarded separately.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -ForcedFeeding -BinaryCapture -SkipBuild
+```
 
 `full-battle-tower-corruption-callbacks.mt2f` places Keeper of Echoes on two
 floors, with a current-room corruption health-scaling trait. Tower corruption

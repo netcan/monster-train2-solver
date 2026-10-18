@@ -326,6 +326,7 @@ param(
     [switch] $OriginalDecayDeathRelic,
     [switch] $OriginalOpeningMorselsRelic,
     [switch] $CardBackedFeeding,
+    [switch] $ForcedFeeding,
     [switch] $OriginalOpeningDeckSpawnRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
@@ -578,6 +579,7 @@ if ($OriginalSpawnRetreatRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints
 if ($OriginalGrosMichelRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalBoneDogRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalDecayDeathRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($ForcedFeeding) { $CardBackedFeeding = $true }
 if ($CardBackedFeeding) { $OriginalOpeningMorselsRelic = $true }
 if ($OriginalOpeningMorselsRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalOpeningDeckSpawnRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
@@ -1074,6 +1076,7 @@ if ($OriginalBoneDogRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-bon
 if ($OriginalDecayDeathRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-decay-death' }
 if ($OriginalOpeningMorselsRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-morsels' }
 if ($CardBackedFeeding) { $environment['MT2_PROBE_FOOD_CARDS'] = '1' }
+if ($ForcedFeeding) { $environment['MT2_PROBE_FORCED_FEEDING'] = '1' }
 if ($OriginalOpeningDeckSpawnRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-deck-spawn' }
 if ($OriginalPerkeoRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perkeo' }
 if ($OriginalCorruptedAngelsRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupted-angels' }
@@ -2067,6 +2070,13 @@ if ($OriginalOpeningDeckSpawnRelic -and ($trace.Schema -ne 244 -or -not $trace.O
     @($trace.RelicOpeningDeckSpawnApplications).Count -ne 3 -or
     @($trace.RelicOpeningDeckSpawnTests | Where-Object { $_.Isolated -and -not $_.Returned -and $_.CacheBefore.Count -gt 0 }).Count -eq 0)) {
     throw 'Original opening deck-spawn native evidence is incomplete or divergent.'
+}
+if ($ForcedFeeding -and (-not $trace.ForcedFeedingDeploymentRejected -or
+    $trace.ForcedFeedingCaptureFailures -ne 0 -or $trace.ForcedFeedingMismatches -ne 0 -or
+    $trace.ForcedFeedingUnsupported -ne 0 -or $trace.ForcedFeedingPending -ne 0 -or
+    @($trace.ForcedFeedingRecords | Where-Object { $_.Meals -gt 0 }).Count -lt 2 -or
+    @($trace.ForcedFeedingRecords | Where-Object { $_.Meals -eq 0 }).Count -lt 1)) {
+    throw 'Forced feeding native evidence is incomplete or divergent.'
 }
 if ($OriginalOpeningMorselsRelic -and ($trace.Schema -ne 243 -or -not $trace.OriginalOpeningMorselsPrepared -or
     -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or

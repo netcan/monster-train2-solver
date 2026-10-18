@@ -38,7 +38,7 @@ Across all classifications, 11 identities (11 logbook) have at least one definit
 - [Played-card evidence](card-play-evidence.tsv): one row per original identity/archive, with zero-based indices into that archive's `Actions` array.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 410 full battles and 7052 native actions whose captured prediction is supported, actual state exists and difference is null. 308 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 411 full battles and 7058 native actions whose captured prediction is supported, actual state exists and difference is null. 309 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 

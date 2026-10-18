@@ -19,6 +19,11 @@ internal static class OriginalOpeningMorselsChecks
 
     internal static void Native(FixtureValue root)
     {
+        if (root.TryGetProperty("ForcedFeeding", out var forced) && forced.GetBoolean())
+        {
+            ForcedFeedingChecks.Native(root);
+            return;
+        }
         if (root.TryGetProperty("CardBackedFeeding", out var feeding) && feeding.GetBoolean())
         {
             CardBackedFeedingChecks.Native(root);

@@ -409,6 +409,23 @@ namespace MonsterTrain2Poju.Model
                     }
                     continue;
                 }
+                if (effect.Type == "FeederRules")
+                {
+                    if (targets.UnitIds.Count == 0) continue;
+                    RoomCombatState feedingRoom = state.Rooms.Single(room => room.Units.Any(unit => unit.Id == targets.UnitIds[0]));
+                    if (targets.UnitIds.Any(id => feedingRoom.Units.All(unit => unit.Id != id)))
+                        return UnsupportedTrain("Forced feeding across multiple rooms requires native calibration.");
+                    RoomCombatResult fed = RoomCombatModel.ApplyFeeding(feedingRoom, CombatTeam.Player, targets.UnitIds);
+                    if (!fed.Supported) return UnsupportedTrain(fed.UnsupportedReason!);
+                    state = ReplaceRoom(state, fed.State!);
+                    events.AddRange(fed.Events); callbacks.AddRange(fed.PendingCallbacks);
+                    foreach (CombatUnit retainedUnit in fed.RetainedUnits) retained[retainedUnit.Id] = retainedUnit;
+                    if (fed.Outcome != RoomOutcome.Exchanged) outcome = fed.Outcome;
+                    if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                    DrainDeaths();
+                    if (routingError != null) return UnsupportedTrain(routingError);
+                    continue;
+                }
                 if (effect.Type == "HealTrain")
                 {
                     if (targets.UnitIds.Count != 1) return UnsupportedTrain("Train healing requires one live Pyre target.");
@@ -1821,6 +1838,12 @@ namespace MonsterTrain2Poju.Model
                         return "Train healing requires captured tower-healing rules.";
                     continue;
                 }
+                if (effect.Type == "FeederRules")
+                {
+                    if (effect.Range != null || !effect.AllowPlayer || effect.AllowEnemy)
+                        return "Forced feeding requires captured player targets and fixed parameters.";
+                    continue;
+                }
                 if (effect.Type == "HandUpgrade")
                 {
                     if (effect.Upgrade == null) return "Missing hand upgrade definition.";
@@ -2081,6 +2104,7 @@ namespace MonsterTrain2Poju.Model
         private static bool PassesTest(CardActionEffect effect, int count, bool bossDead = false, CombatContext? context = null, bool preview = false,
             RoomCombatState? room = null, bool? pyreAlive = null, int sourceCardId = 0)
         {
+            if (effect.Type == "FeederRules") return room?.Deployment == false;
             if (effect.Type == "RewardGold") return context != null && (pyreAlive ?? context.EnergyState?.PyreAlive) == true &&
                 (effect.Value >= 0 || effect.GoldCostRequired == false || context.Gold >= unchecked(-effect.Value));
             if (effect.Type == "AdjustDragonsHoard") return (pyreAlive ?? context?.EnergyState?.PyreAlive) == true;

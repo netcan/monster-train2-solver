@@ -84,7 +84,7 @@ namespace MonsterTrain2Poju.Probe
                 repeated.name = "PojuRepeatedMiner"; Set(repeated, "id", "f00d0000-0000-4000-8000-000000000001");
                 CharacterData repeatUnit = UnityEngine.Object.Instantiate(food.GetSpawnCharacterData());
                 repeatUnit.name = "PojuRepeatedMinerUnit";
-                Set(repeatUnit, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "eatmany", count = 2 } });
+                Set(repeatUnit, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "eatmany", count = ForcedFeedingScenario.Enabled ? 3 : 2 } });
                 CardEffectData spawn = new CardEffectData("CardEffectSpawnMonster", null!, Team.Type.Monsters);
                 spawn.Cheat_SetTargetMode(TargetMode.Room); Set(spawn, "paramCharacterData", repeatUnit);
                 Set(repeated, "effects", new List<CardEffectData> { spawn });
@@ -101,7 +101,8 @@ namespace MonsterTrain2Poju.Probe
                 Set(gear, "effects", new List<CardEffectData> { attach });
                 var definitions = (List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(data);
                 definitions.Add(repeated); definitions.Add(gear);
-                foreach (CardData addition in new[] { food, repeated, food, gear })
+                CardData feast = data.GetAllCardData().Single(item => item.name == "Feast");
+                foreach (CardData addition in ForcedFeedingScenario.Enabled ? new[] { repeated, feast, feast, feast } : new[] { food, repeated, food, gear })
                     save.AddCardToDeck(addition, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
             }
             CollectableRelicData owner = data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicOpeningSpawnModel.DataId);
@@ -116,6 +117,7 @@ namespace MonsterTrain2Poju.Probe
         {
             if (Prepared || !Acquired || managers.GetCombatManager()!.GetTurnCount() != 0) throw new InvalidOperationException("Expected Morsel deployment.");
             Prepared = true;
+            if (ForcedFeedingScenario.Enabled) ForcedFeedingScenario.CheckDeployment(managers);
             RelicState owner = managers.GetSaveManager().GetCollectedRelics().Single(item => item.GetRelicDataID() == RelicOpeningSpawnModel.DataId);
             CollectableRelicData definition = managers.GetSaveManager().GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == RelicOpeningSpawnModel.DataId);
             foreach (int floor in new[] { -1, managers.GetRoomManager()!.GetNumRooms() })
@@ -129,6 +131,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static PlayCardAction? Choose(BattleTurnState source)
         {
+            if (ForcedFeedingScenario.Enabled) return ForcedFeedingScenario.Choose(source);
             var plays = BattleActionModel.EnumerateSupportedPlays(source);
             PlayCardAction? equipment = plays.FirstOrDefault(play => play.TargetUnitId > 0 &&
                 source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(play.CardInstanceId)!.DataId).Effect == "Equipment" &&

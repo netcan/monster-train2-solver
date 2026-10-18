@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         private static readonly HashSet<string> SpellEffectTypes = new HashSet<string>(new[]
         {
-            "CardEffectNULL", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
+            "CardEffectNULL", "CardEffectFeederRules", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
             "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown",
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
@@ -319,6 +319,8 @@ namespace MonsterTrain2Poju.Probe
         {
             if (AbilityLifecycleProbe.Known(effect.GetEffectStateName())) return AbilityLifecycleProbe.Describe(effect);
             if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) return AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool());
+            if (effect.GetEffectStateName() == "CardEffectFeederRules" && effect.GetParamBool())
+                interactions.Add("Forced feeding with an overridden self feeder requires native calibration");
             if (effect.GetEffectStateName() == "CardEffectMix")
                 return new CardActionEffect("Mix", "None", effect.GetParamInt(), false, false,
                     Array.Empty<CombatStatus>(), tests: new CardEffectTests(true, false, false, false, true));
@@ -355,6 +357,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Spell scaling or target filters");
             string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
                 effect.GetEffectStateName() == "CardEffectNULL" ? "Null" :
+                effect.GetEffectStateName() == "CardEffectFeederRules" ? "FeederRules" :
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
                 effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
