@@ -878,6 +878,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalGraftedEquipmentIds = OriginalGraftedEquipmentScenario.CardIds,
                 OriginalGraftedEquipmentResets = OriginalGraftedEquipmentScenario.Resets,
                 OriginalGraftedEquipmentControlsUnchanged = OriginalGraftedEquipmentScenario.ControlsUnchanged,
+                OriginalSelfAttackPrepared = OriginalSelfAttackScenario.Prepared,
+                OriginalSelfAttackIds = OriginalSelfAttackScenario.CardIds,
                 OriginalStatusCompositionsIds = OriginalStatusCompositionsScenario.CardIds,
                 OriginalConsumedUpgradeIds = OriginalConsumedUpgradeScenario.CardIds,
                 OriginalConsumedUpgradeSamples = OriginalConsumedUpgradeScenario.Samples,

@@ -508,7 +508,7 @@ namespace MonsterTrain2Poju.Model
 
         public static RoomCombatResult ApplyUnitTurn(RoomCombatState state, int unitId,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-            bool ignoreAttackPrevention = false, CombatUnit? externalActor = null)
+            bool ignoreAttackPrevention = false, CombatUnit? externalActor = null, IReadOnlyList<int>? overrideTargets = null)
         {
             string? error = Validate(state);
             bool localActor = state.Units.Any(unit => unit.Id == unitId);
@@ -518,8 +518,11 @@ namespace MonsterTrain2Poju.Model
             if (externalActor != null && (externalActor.Health <= 0 || externalActor.DeathState?.IsDestroyed == true))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     "External unit turn requires a living actor.");
+            if (overrideTargets != null && (overrideTargets.Distinct().Count() != overrideTargets.Count ||
+                overrideTargets.Any(id => !state.Units.Any(unit => unit.Id == id))))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Unit turn override targets require captured unique room identities.");
             return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre, externalActor: externalActor)
-                .UnitTurn(unitId, ignoreAttackPrevention);
+                .UnitTurn(unitId, ignoreAttackPrevention, overrideTargets);
         }
 
         public static RoomCombatResult ApplyTeamTurnBegin(RoomCombatState state, CombatTeam team, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
@@ -1825,11 +1828,11 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            internal RoomCombatResult UnitTurn(int unitId, bool ignoreAttackPrevention = false)
+            internal RoomCombatResult UnitTurn(int unitId, bool ignoreAttackPrevention = false, IReadOnlyList<int>? overrideTargets = null)
             {
                 stopAfterBossRemoval = true;
                 round = 1;
-                Turn(units.Single(unit => unit.Source.Id == unitId), ignoreAttackPrevention);
+                Turn(units.Single(unit => unit.Source.Id == unitId), ignoreAttackPrevention, overrideTargets);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -2027,7 +2030,7 @@ namespace MonsterTrain2Poju.Model
             private bool CombatPreviewStopped() => source.Preview && units.Any(unit => !unit.Alive &&
                 (IsTerminalBossDeath(unit) || unit.Source.IsPyre));
 
-            private void Turn(WorkingUnit actor, bool ignoreAttackPrevention = false)
+            private void Turn(WorkingUnit actor, bool ignoreAttackPrevention = false, IReadOnlyList<int>? overrideTargets = null)
             {
                 if (!actor.Alive || !actor.InRoom) return;
                 bool dazed = actor.Has("dazed") && Active(actor.Statuses["dazed"]);
@@ -2046,11 +2049,18 @@ namespace MonsterTrain2Poju.Model
                 int strikes = actor.Attacks;
                 for (int strike = 0; strike < strikes && actor.Alive; strike++)
                 {
-                    WorkingUnit[] targets = units.Where(unit => unit.Alive && unit.InRoom && unit.Source.Team != actor.Source.Team &&
-                        !unit.Has("stealth") && !unit.Has("untouchable")).ToArray();
-                    if (targets.Length == 0) continue;
                     bool sweep = actor.Has("sweep");
-                    if (!sweep) targets = new[] { actor.Has("sniper") ? targets.Last() : targets.First() };
+                    WorkingUnit[] targets = overrideTargets?.Select(id => units.FirstOrDefault(unit => unit.Source.Id == id))
+                        .Where(unit => unit != null && unit.Alive && unit.InRoom).Cast<WorkingUnit>().ToArray() ?? Array.Empty<WorkingUnit>();
+                    if (targets.Length == 0)
+                    {
+                        // Native prunes dead overrides before each strike, then
+                        // falls back to normal targeting when none remain.
+                        targets = units.Where(unit => unit.Alive && unit.InRoom && unit.Source.Team != actor.Source.Team &&
+                            !unit.Has("stealth") && !unit.Has("untouchable")).ToArray();
+                        if (targets.Length == 0) continue;
+                        if (!sweep) targets = new[] { actor.Has("sniper") ? targets.Last() : targets.First() };
+                    }
                     if (strike > 0)
                     {
                         Trigger(actor, "multistrike", 1);

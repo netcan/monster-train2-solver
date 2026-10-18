@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         private static readonly HashSet<string> SpellEffectTypes = new HashSet<string>(new[]
         {
-            "CardEffectNULL", "CardEffectAddStatusEffectNull", "CardEffectFeederRules", "CardEffectFreezeCard", "CardEffectDuplicateCardInHand", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
+            "CardEffectNULL", "CardEffectAddStatusEffectNull", "CardEffectFeederRules", "CardEffectFreezeCard", "CardEffectDuplicateCardInHand", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectAttackTargetsWithSelfUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
             "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown",
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
@@ -392,6 +392,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
                 effect.GetEffectStateName() == "CardEffectUnitAbilityTeleport" ? "AbilityTeleport" :
                 effect.GetEffectStateName() == "CardEffectAttackWithUnit" ? "AttackWithUnit" :
+                effect.GetEffectStateName() == "CardEffectAttackTargetsWithSelfUnit" ? "AttackTargetsWithSelfUnit" :
                 effect.GetEffectStateName() == "CardEffectAttachEquipment" ? "AttachEquipment" :
                 effect.GetEffectStateName() == "CardEffectBuffEquipment" ? "BuffEquipment" :
                 effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? "RemoveEquipment" :
@@ -551,7 +552,7 @@ namespace MonsterTrain2Poju.Probe
                 requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0,
                 goldCostRequired: type == "RewardGold" ? effect.GetParamBool() : (bool?)null,
                 useCardTraits: (type == "DamagePerSourceAttack" || type == "HealTrain") && effect.GetParamBool(),
-                requireEquipment: type == "AttackWithUnit" && effect.GetParamBool(), useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
+                requireEquipment: (type == "AttackWithUnit" || type == "AttackTargetsWithSelfUnit") && effect.GetParamBool(), useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
                 countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool(), spawnFallbackUnit: spawnFallbackUnit,
                 disallowStatusStackModifiers: type == "SpawnOrStatus" && effect.GetDisallowStatusEffectStackModifiers(),
                 statusAdjustmentFilter: type == "AdjustAllStatusEffects" ? (int?)effect.GetAdditionalParamInt() : null,

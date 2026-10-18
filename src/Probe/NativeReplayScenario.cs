@@ -1131,6 +1131,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalGraftedEquipmentScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalSelfAttackScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original self attack fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalSelfAttackScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPileStatusScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original pile status fixture must start on deployment turn.");
@@ -2316,6 +2322,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalConsumedUpgradeScenario.Enabled) pendingPlay = OriginalConsumedUpgradeScenario.Choose(decision, OriginalConsumedUpgradeScenario.CardIds);
                 if (OriginalStatusCompositionsScenario.Enabled) pendingPlay = OriginalStatusCompositionsScenario.Choose(decision, OriginalStatusCompositionsScenario.CardIds);
                 if (OriginalGraftedEquipmentScenario.Enabled) pendingPlay = OriginalGraftedEquipmentScenario.Choose(decision, OriginalGraftedEquipmentScenario.CardIds);
+                if (OriginalSelfAttackScenario.Enabled) pendingPlay = OriginalSelfAttackScenario.Choose(decision, OriginalSelfAttackScenario.CardIds);
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);
@@ -2643,7 +2650,15 @@ namespace MonsterTrain2Poju.Probe
             {
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
                 FullBattleTrace.Active.BeginCardPlay(action, scenarioAction: scenarioPrelude);
-                if (action.TargetSpawnPointIndex < 0)
+                if (action.TargetUnitId > 0)
+                {
+                    CharacterState target = FullBattleTrace.Active.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.TargetUnitId);
+                    if (!actor.CanActivateUnitAbility() || !actor.CanTargetUnitAbilityInRoom(action.RoomIndex) ||
+                        !cards.PlayAnyCard(actor.GetUnitAbilityCardState(), out CommonSelectionBehavior.SelectionError abilityError,
+                            actor, target.GetSpawnPoint(), ignoreCost: false, discardCard: false, fromDirectPlay: true, characterThatActivatedAbility: actor))
+                        throw new InvalidOperationException("Native targeted unit ability failed.");
+                }
+                else if (action.TargetSpawnPointIndex < 0)
                 {
                     if (!actor.ActivateUnitAbility(cards)) throw new InvalidOperationException("Native unit ability activation failed.");
                 }

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 513 archives (473 full battles and
+Current accepted inventory (2026-10-19): 514 archives (474 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,33 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-513 accepted archives. Refresh/check the index with
+514 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+`full-battle-original-self-attack.mt2f` captures unchanged Animus of Speed and
+four activations of its original targeted ability. The first attack deals 35
+to the selected back enemy while leaving the front enemy unchanged. Dazed
+prevents the second attack and remains present; an authored control removes
+it before Sweep hits both enemies and takes two Spikes retaliation. After a
+control removes Sweep and grants Multistrike, the first hit kills the selected
+five-health back enemy and the second falls back to the front for 35 damage.
+Original zero ability cost, two cooldown, cached-card ownership/global played
+history, invalid target rejection, search enumeration and neighbor-floor
+controls match. Frozen hand cards defer their discard routing during abilities,
+using the ordinary action interaction boundary. Authored anchors/enemy health,
+cooldown/status resets and a damage control isolate these paths.
+Eleven plays/five EndTurns and sixteen independent full replay chains pass.
+Source `.probe-runs/full-battle-units-spells-and-junk-20261019-045139-c318fdb8`
+won with all four counters zero and protected original profiles unchanged.
+Bounded search matches eleven decisions/nine roots, visits 128/128 states and
+replays three steps with zero unsupported attempts and equal serial/parallel
+best results. Binary-only: 28,828 bytes/3,959 nodes, SHA-256
+`4be643c890e44ba99634b372656aacfe45ebf8f1cfd314be9b45e6e2cca46dfd`.
+Use `--original-self-attack-only`. Other equipment-gated, remote, trigger/relic
+and changed-definition combinations require their own native witnesses.
+Focused gate `model-checks-20261019-045300-46ee701a` passed this fixture,
+the existing ability-activation battle and unit-turn-begin battle. The prior
+AttackWithUnit pure checks also passed their Dazed bypass and 32 branches.
 
 `full-battle-original-grafted-equipment.mt2f` captures unchanged Double Edged
 Arms, Scissor Hands, Spiky Skin, Twisted Assistant's Back and Vampire's Tooth.

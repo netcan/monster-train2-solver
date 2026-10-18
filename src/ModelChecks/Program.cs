@@ -384,6 +384,12 @@ if (args.Length == 2 && args[0] == "--original-grafted-equipment-only")
     OriginalGraftedEquipmentChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-self-attack-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalSelfAttackChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-pile-status-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

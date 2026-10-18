@@ -1188,15 +1188,17 @@ namespace MonsterTrain2Poju.Model
                     events.AddRange(upgraded.Events);
                     continue;
                 }
-                if (effect.Type == "AttackWithUnit")
+                if (effect.Type == "AttackWithUnit" || effect.Type == "AttackTargetsWithSelfUnit")
                 {
-                    if (targets.UnitIds.Count == 0) continue;
-                    RoomCombatState? firstRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == targets.UnitIds[0]));
+                    bool selfAttack = effect.Type == "AttackTargetsWithSelfUnit";
+                    CombatUnit? self = selfAttack ? state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == selfUnitId) : null;
+                    if (selfAttack && self == null || targets.UnitIds.Count == 0 && self?.Status("sweep") == null) continue;
+                    RoomCombatState? firstRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == (selfAttack ? selfUnitId : targets.UnitIds[0])));
                     if (!effect.UseSelectedRoom && firstRoom == null) continue;
                     // Native Pyre targeting moves room selection to the Pyre floor before this effect runs.
                     int selectedRoomForEffect = effect.Target == "Pyre" && firstRoom != null ? firstRoom.RoomIndex : roomIndex;
-                    int attackRoom = effect.UseSelectedRoom ? selectedRoomForEffect : firstRoom!.RoomIndex;
-                    foreach (int actorId in targets.UnitIds)
+                    int attackRoom = !selfAttack && effect.UseSelectedRoom ? selectedRoomForEffect : firstRoom!.RoomIndex;
+                    foreach (int actorId in selfAttack ? new[] { selfUnitId } : targets.UnitIds)
                     {
                         CombatUnit? actor = state.Rooms.SelectMany(item => item.Units).FirstOrDefault(unit => unit.Id == actorId);
                         if (actor == null) continue;
@@ -1206,7 +1208,8 @@ namespace MonsterTrain2Poju.Model
                                 return UnsupportedTrain("Equipment-gated unit attack requires captured equipment state.");
                             if (actor.EquipmentCards.Count == 0) continue;
                         }
-                        TrainSpellResult turn = ApplyUnitAttackTurn(state, attackRoom, actorId, Refresh);
+                        TrainSpellResult turn = ApplyUnitAttackTurn(state, attackRoom, actorId, Refresh,
+                            ignoreAttackPrevention: !selfAttack, overrideTargets: selfAttack && actor.Status("sweep") == null ? targets.UnitIds : null);
                         if (!turn.Supported) return UnsupportedTrain(turn.UnsupportedReason!);
                         state = turn.State!;
                         events.AddRange(turn.Events);
@@ -1941,7 +1944,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static TrainSpellResult ApplyUnitAttackTurn(TrainCombatState source, int roomIndex, int actorId,
-            Func<CombatContext, bool, RelicPyreAttackRefreshResult> refreshPyre)
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult> refreshPyre, bool ignoreAttackPrevention = true, IReadOnlyList<int>? overrideTargets = null)
         {
             RoomCombatState? attackRoom = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
             RoomCombatState? actorRoom = source.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == actorId));
@@ -1950,7 +1953,7 @@ namespace MonsterTrain2Poju.Model
                 return UnsupportedTrain("Unit attack requires a live actor and attack room.");
             bool external = actorRoom.RoomIndex != attackRoom.RoomIndex;
             RoomCombatResult turn = RoomCombatModel.ApplyUnitTurn(attackRoom, actorId, refreshPyre,
-                ignoreAttackPrevention: true, externalActor: external ? actor : null);
+                ignoreAttackPrevention: ignoreAttackPrevention, externalActor: external ? actor : null, overrideTargets: overrideTargets);
             if (!turn.Supported) return UnsupportedTrain(turn.UnsupportedReason!);
 
             TrainCombatState changed;
@@ -2232,7 +2235,7 @@ namespace MonsterTrain2Poju.Model
                         return "Mix requires a positive draft size and captured elixir state.";
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "TransferAllStatuses" &&
                     (effect.Target != "DropTargetCharacter" || effect.Statuses.Count != 1))

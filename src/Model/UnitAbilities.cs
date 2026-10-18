@@ -13,12 +13,13 @@ namespace MonsterTrain2Poju.Model
             if (context == null || source.PlayRules == null) return Unsupported("Missing ability battle context or definitions.");
             string? identityError = UnitIdentityModel.Validate(context, train.Rooms.SelectMany(room => room.Units), source.Spawn.NextUnitId);
             if (identityError != null) return Unsupported(identityError);
-            if (source.ExternalInteractions.Count > 0 || source.Spawn.ExternalInteractions.Count > 0)
-                return Unsupported(string.Join("; ", source.ExternalInteractions.Concat(source.Spawn.ExternalInteractions)));
+            IReadOnlyList<string> actionInteractions = BattleTurnModel.ActionInteractions(source);
+            if (actionInteractions.Count > 0 || source.Spawn.ExternalInteractions.Count > 0)
+                return Unsupported(string.Join("; ", actionInteractions.Concat(source.Spawn.ExternalInteractions)));
             if (source.PlayRules.Cards.Select(rule => rule.DataId).Distinct().Count() != source.PlayRules.Cards.Count)
                 return Unsupported("Duplicate ability play definitions.");
-            if (action.PlayerPosition != -1 || action.TargetUnitId != 0)
-                return Illegal("A unit ability does not accept a summon position or card unit target.");
+            if (action.PlayerPosition != -1)
+                return Illegal("A unit ability does not accept a summon position.");
             RoomCombatState? actorRoom = train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == action.ActivatorUnitId));
             CombatUnit? actor = actorRoom?.Units.FirstOrDefault(unit => unit.Id == action.ActivatorUnitId);
             if (actor == null || actor.Health <= 0 || actor.Ability?.HasAbility != true) return Illegal("The selected unit has no live ability.");
@@ -50,6 +51,15 @@ namespace MonsterTrain2Poju.Model
             context = cache.Context!.WithOtherPiles(source.OtherPiles);
             rule = CardModifierModel.Resolve(rule, cache.Card);
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
+            if (CardSpellModel.RequiresUnitTarget(rule.Effects))
+            {
+                CombatUnit? victim = train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
+                if (victim == null || victim.Health <= 0 || victim.IsPyre || victim.Status("untouchable") != null)
+                    return Illegal("The ability has no legal unit target in its selected room.");
+                if (!rule.Effects.Where(effect => effect.Target == "DropTargetCharacter").Any(effect => victim.Team == CombatTeam.Enemy ? effect.AllowEnemy : effect.AllowPlayer))
+                    return Illegal("The ability excludes the target team.");
+            }
+            else if (action.TargetUnitId != 0) return Illegal("This unit ability does not take a unit target.");
             bool hasTeleport = rule.Effects.Any(effect => effect.Type == "AbilityTeleport");
             if (action.TargetSpawnPointIndex != -1 && !hasTeleport)
                 return Illegal("This unit ability does not accept a destination spawn point.");
@@ -63,7 +73,7 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return Unsupported(error);
             train = CardSpellModel.WithContext(train, context);
             SpellCastCheck cast = rule.Effect == "Null" ? new SpellCastCheck(true, battleRngAfterTests: context.BattleRng) :
-                CardSpellModel.TestPlay(train, action.RoomIndex, rule.Effects, 0, source.PlayRules, actor.Id, action.TargetSpawnPointIndex);
+                CardSpellModel.TestPlay(train, action.RoomIndex, rule.Effects, action.TargetUnitId, source.PlayRules, actor.Id, action.TargetSpawnPointIndex);
             if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
             if (!cast.CanPlay) return Illegal("The ability failed its casting test.");
             RoomCombatState? selectedRoomState = train.Rooms.FirstOrDefault(room => room.RoomIndex == action.RoomIndex);
@@ -105,7 +115,7 @@ namespace MonsterTrain2Poju.Model
                 train = CardSpellModel.WithContext(train, train.Context.WithCard(
                     train.Context.FindCard(cache.Card.InstanceId)!.WithPlayedRoomUnits(cachedUnits)));
             TrainSpellResult applied = rule.Effect == "Null" ? new TrainSpellResult(train, RoomOutcome.Exchanged, Array.Empty<CombatEvent>()) :
-                CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.Effects, 0, cache.Card.InstanceId,
+                CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.Effects, action.TargetUnitId, cache.Card.InstanceId,
                     source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actor.Id, action.TargetSpawnPointIndex);
             if (!applied.Supported) return Unsupported(applied.UnsupportedReason!);
             train = applied.State!; if (Terminal(applied.Outcome)) outcome = applied.Outcome;
@@ -145,7 +155,7 @@ namespace MonsterTrain2Poju.Model
                 context.QueryFrame?.MoonPhase == 1 ? "New" : context.QueryFrame?.MoonPhase == 2 ? "Full" : source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
-                context.OtherPiles ?? source.OtherPiles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled,
+                context.OtherPiles ?? source.OtherPiles, BattleTurnModel.AfterActionInteractions(source, context), source.PlayRules, source.BattlePreviewEnabled,
                 source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                 train.Context?.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom,
                 source.MoonPhaseTrackingActive), outcome: outcome);
@@ -184,6 +194,7 @@ namespace MonsterTrain2Poju.Model
                 CardPlayRule? abilityRule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == actor.Ability.DataId);
                 bool hasTeleport = abilityRule != null && CardModifierModel.Resolve(abilityRule, cached.Card!).Effects
                     .Any(effect => effect.Type == "AbilityTeleport");
+                bool unitTarget = abilityRule != null && CardSpellModel.RequiresUnitTarget(abilityRule.Effects);
                 foreach (RoomPlayRule target in source.PlayRules.Rooms.OrderBy(target => target.RoomIndex == room.RoomIndex ? 0 : 1))
                 {
                     int targetCount = hasTeleport ? context.SpawnPoints?.Group(target.RoomIndex, CombatTeam.Player)?.GroupCount ?? 0 : 1;
@@ -194,9 +205,11 @@ namespace MonsterTrain2Poju.Model
                         continue;
                     }
                     for (int targetIndex = 0; targetIndex < targetCount; targetIndex++)
+                    foreach (int targetId in unitTarget ? source.Spawn.Train.Rooms.Single(room => room.RoomIndex == target.RoomIndex).Units
+                        .Where(unit => unit.Health > 0).Select(unit => unit.Id) : new[] { 0 })
                     {
                         var action = new PlayCardAction(cached.Card!.InstanceId, target.RoomIndex,
-                            activatorUnitId: actor.Id, targetSpawnPointIndex: hasTeleport ? targetIndex : -1);
+                            targetUnitId: targetId, activatorUnitId: actor.Id, targetSpawnPointIndex: hasTeleport ? targetIndex : -1);
                         BattleActionResult attempt = BattleActionModel.PlayCard(source, action);
                         if (attempt.Supported) actions.Add(new SupportedActionCandidate(action, attempt));
                         else if (attempt.Rejection == ActionRejection.Unsupported)

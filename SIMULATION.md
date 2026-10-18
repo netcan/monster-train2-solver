@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 513 binary archives, including 473
+Current accepted inventory (2026-10-19): 514 binary archives, including 474
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -12,7 +12,7 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 513
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 514
 accepted battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
 
@@ -33,6 +33,18 @@ increase successful direct-play counts.
 manifest hashes and deterministic reports without running model regression.
 
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
+
+`full-battle-original-self-attack.mt2f` covers unchanged Animus of Speed and
+its original zero-cost, cooldown-two ability. A selected back enemy takes 35;
+Dazed prevents an attack and stays until removed; Sweep hits both enemies;
+Multistrike kills the selected enemy then prunes it and falls back to normal
+front targeting. Targeted unit abilities now pass the selected character to
+testing, application, native execution and search enumeration, keeping the
+acting unit separate. Frozen hand-card discard routing uses the shared action
+boundary. Eleven plays/five EndTurns, sixteen immutable full chains and
+128-state serial/parallel search pass with zero failure counters. Authored
+durable targets/status controls isolate these paths; other effect parameters,
+equipment gates, remote targets and relic/trigger combinations need witnesses.
 
 `full-battle-original-grafted-equipment.mt2f` covers five unchanged original
 equipment definitions, their exact costs/upgrades and private Severed state.

@@ -673,6 +673,8 @@ internal static class BattleActionChecks
             chooser = source => OriginalStatusCompositionsChecks.Choose(source, fixture.GetProperty("OriginalStatusCompositionsIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalGraftedEquipmentPrepared", out var originalGraftedEquipmentPrepared) && originalGraftedEquipmentPrepared.GetBoolean())
             chooser = source => OriginalGraftedEquipmentChecks.Choose(source, fixture.GetProperty("OriginalGraftedEquipmentIds").Deserialize<int[]>()!);
+        if (fixture.TryGetProperty("OriginalSelfAttackPrepared", out var originalSelfAttackPrepared) && originalSelfAttackPrepared.GetBoolean())
+            chooser = source => OriginalSelfAttackChecks.Choose(source, fixture.GetProperty("OriginalSelfAttackIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalScaledMoonPhasePrepared", out var originalScaledMoonPhasePrepared) && originalScaledMoonPhasePrepared.GetBoolean())
             chooser = source => OriginalScaledMoonPhaseChecks.Choose(source, fixture.GetProperty("OriginalScaledMoonPhaseIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalPositiveStatusPrepared", out var originalPositiveStatusPrepared) && originalPositiveStatusPrepared.GetBoolean())

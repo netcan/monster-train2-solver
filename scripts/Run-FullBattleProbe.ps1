@@ -75,6 +75,7 @@ param(
     [switch] $OriginalConsumedUpgrade,
     [switch] $OriginalStatusCompositions,
     [switch] $OriginalGraftedEquipment,
+    [switch] $OriginalSelfAttack,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -553,6 +554,7 @@ if ($OriginalDrawUpgradeScaling) { $BranchCardMasks = $true; $Policy = 'units-sp
 if ($OriginalConsumedUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalGraftedEquipment) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSelfAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1081,6 +1083,7 @@ if ($OriginalDrawUpgradeScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalConsumedUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consumed-upgrade' }
 if ($OriginalStatusCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-compositions' }
 if ($OriginalGraftedEquipment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-grafted-equipment' }
+if ($OriginalSelfAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-self-attack' }
 if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
@@ -2318,6 +2321,9 @@ if ($OriginalStatusCompositions -and (-not $trace.OriginalStatusCompositionsPrep
 if ($OriginalGraftedEquipment -and (-not $trace.OriginalGraftedEquipmentPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 14 -or
     @($trace.OriginalGraftedEquipmentResets).Count -ne 10 -or -not $trace.OriginalGraftedEquipmentControlsUnchanged)) {
     throw 'Original grafted equipment witness lacks all five definitions, replacement/removal/death or unchanged detached reset controls.'
+}
+if ($OriginalSelfAttack -and (-not $trace.OriginalSelfAttackPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 11)) {
+    throw 'Original Animus of Speed witness lacks four targeted ability activations or a completed native battle.'
 }
 if ($OriginalPileStatus -and (-not $trace.OriginalPileStatusPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 5 -or
     @($trace.OriginalPileStatusQueries).Count -ne 24 -or -not $trace.OriginalPileStatusQueriesUnchanged -or
