@@ -228,6 +228,17 @@ if (args.Length == 2 && args[0] == "--original-spawn-retreat-only")
     OriginalSpawnRetreatChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 1 && args[0] == "--gros-michel-pure")
+{
+    OriginalGrosMichelChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-gros-michel-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalGrosMichelChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-whelp-cooldown-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1996,6 +2007,7 @@ OriginalWolosBloodletterChecks.Run();
 OriginalCardTypeSequenceChecks.Run();
 OriginalWhelpCooldownChecks.Run();
 OriginalSpawnRetreatChecks.Run();
+OriginalGrosMichelChecks.Run();
 RelicMonsterSpellTargetingChecks.Run();
 RelicFloorTransitionDamageChecks.Run();
 OriginalCardDrawOnHealChecks.Run();

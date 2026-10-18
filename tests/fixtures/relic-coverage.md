@@ -1,7 +1,7 @@
 # Original relic coverage evidence
 
-As of 2026-10-18, **217 distinct original collectable relics / 224 catalog entries
-(96.88%)** have accepted native evidence: 199 have full-battle effect evidence,
+As of 2026-10-18, **218 distinct original collectable relics / 224 catalog entries
+(97.32%)** have accepted native evidence: 200 have full-battle effect evidence,
 seventeen have campaign consumer interfaces validated, and one is an explicit
 native no-op with seeded baseline equivalence. Except for that no-op, this counts
 unchanged relic definitions whose effects actually ran, including original filters and
@@ -2816,4 +2816,68 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-spa
 dotnet run --project src/ModelChecks -c Release -- --spawn-retreat-pure
 dotnet run --project src/ModelChecks -c Release -- --original-spawn-retreat-only tests/fixtures/full-battle-original-spawn-retreat.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-spawn-retreat.mt2f
+```
+
+## Original Gros Michel lifecycle evidence
+
+| Original owner | Data ID | Native effects | Accepted witness |
+| --- | --- | --- | --- |
+| `BalatroEventGrosMichel` | `75abded0-b922-4413-84ca-f0095642c600` | `RelicEffectModifyCardAttack`, `GrosMichelRelicEffectChanceToDestroySelf`, `RelicEffectBalatroBananaShake` | `full-battle-original-gros-michel.mt2f`: unchanged +10 non-Champion Monster attack, two saved waiting rounds, natural 10% miss/hit and deck undo, post-removal attempt and birth, full native state/RNG, independent full policy and search. |
+
+The schema-240 witness acquires the unchanged original owner before battle.
+Three authored ordinary Stewards have 30 base attack and 100 HP; two deploy
+on floors zero and one while the owner is present. A Champion and a Spell are
+filter controls. Six native manager calls cover accumulated and reset modifiers
+on the ordinary Monster, Champion and Spell; full cards, ordered contribution
+tracking, statistics and dispatches match independently in sixteen branches.
+
+The saved combat-round counter begins at zero. Each end of a turn's four-room
+combat resolution draws once from Battle RNG. Under one initial seed (882),
+natural rolls 0 and 7 only advance the waiting counter to one and two; mature
+roll 31 misses; mature roll 3 destroys the owner and reverses tracked attack on
+owned deck cards. The two living units retain 40 attack. The third policy play,
+after removal, produces a 30-attack unit. The global saved counter remains two
+after removal. Native resources remain captured after their owner disappears.
+
+Four Tests return true without side effects. Four applications and four Banana
+Shake callbacks match full train state and RNG in sixteen immutable branches.
+Only the mature hit emits a Triggered notification. Banana Shake emits only an
+Attempted notification, including after destruction because the native manager
+continues its previously captured effect list. The terminal battle victory
+returns before the following end-of-combat callback.
+
+The winning capture reaches DEPTH-PASS with all eight differential counters
+zero: 40 stages, three model-selected actions, five EndTurns, nine card cycles,
+nine train phases and seven spawn observations. Independent policy replay
+selects all three actions and replays all five EndTurns from deployment, plus
+the mid-battle suffix and sixteen parallel branches. Bounded search matches
+three decisions, exposes twelve root actions, visits 128/128 serial/parallel
+states and returns the same best result with zero unsupported attempts.
+
+Twelve affected archives pass in two workers, both terminal exit zero; all
+three tested assembly hashes remain unchanged. Regression summary:
+`.probe-runs/model-checks-20261018-150239-00a6ed67/summary.json`. Coverage includes
+Cavendish, Yorick, Triboulet, relic-count attack, resource interfaces, Pyre
+resource refresh, First Imp, random draw cost, spawn retreat, Whelp cooldown
+and the ordinary units-and-Junk battle.
+
+Native preview, cardless/clone/Champion births, cross-battle reacquisition,
+purged/non-deck contribution cleanup, simultaneous banana owners and additional
+combined callbacks are outside this witness. Multiple banana owners are
+rejected explicitly. The saved count is captured independently of owner
+presence and retained by frame copies and comparison normalization.
+
+The archive is 26,395 bytes with 3,581 unique nodes and SHA-256
+`9eef1d92102f4cbc2ee350702e990b1afee414a527cb7b79f010709bafb4a0ce`.
+Source length/hash are zero and no JSON companion is tracked. Inventory is 437
+archives: 398 battles and 39 component calibrations. Accepted original-owner
+coverage is 218/224 (97.32%): 200 battle, seventeen campaign and one native no-op;
+six owners remain pending.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalGrosMichelRelic -BinaryCapture -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-gros-michel.mt2f
+dotnet run --project src/ModelChecks -c Release -- --gros-michel-pure
+dotnet run --project src/ModelChecks -c Release -- --original-gros-michel-only tests/fixtures/full-battle-original-gros-michel.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-gros-michel.mt2f
 ```

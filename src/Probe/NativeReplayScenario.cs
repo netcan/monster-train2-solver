@@ -347,6 +347,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalWhelpCooldownScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSpawnRetreatScenario.Enabled && !OriginalSpawnRetreatScenario.Acquired)
                         OriginalSpawnRetreatScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalGrosMichelScenario.Enabled && !OriginalGrosMichelScenario.Acquired)
+                        OriginalGrosMichelScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardTypeCostScenario.Enabled && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPurgeToExhaustScenario.Enabled && !OriginalPurgeToExhaustScenario.Acquired)
@@ -1238,6 +1240,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSpawnRetreatScenario.PrepareDeployment(managers);
             }
+            if (fullBattle && OriginalGrosMichelScenario.Enabled && !OriginalGrosMichelScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalGrosMichelScenario.PrepareDeployment(managers);
+            }
             if (fullBattle && OriginalExpensiveCardUpgradeScenario.Enabled && !OriginalExpensiveCardUpgradeScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -1673,7 +1680,7 @@ namespace MonsterTrain2Poju.Probe
                 else NumericUpgradeScenario.Prepare(managers, log);
                 return;
             }
-            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalRelicBatchScenario.Enabled && !OriginalHealingPowerScenario.Enabled &&
+            if (fullBattle && RelicCardModifierProbe.Enabled && !OriginalGrosMichelScenario.Enabled && !OriginalRelicBatchScenario.Enabled && !OriginalHealingPowerScenario.Enabled &&
                 !OriginalCardAttackRelicScenario.Enabled && !OriginalCardTypeCostScenario.Enabled && !OriginalUpgradeCountRelicsScenario.Enabled &&
                 !OriginalPurgeToExhaustScenario.Enabled && !OriginalExpensiveCardUpgradeScenario.Enabled && !OriginalWolosBloodletterScenario.Enabled &&
                 !RelicCardModifierScenario.Prepared)
@@ -1940,6 +1947,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalWhelpCooldownScenario.Choose(decision);
                 if (OriginalSpawnRetreatScenario.Enabled)
                     pendingPlay = OriginalSpawnRetreatScenario.Choose(decision);
+                if (OriginalGrosMichelScenario.Enabled)
+                    pendingPlay = RelicEndCombatModel.ChooseGrosMichelPlay(decision);
                 if (ChooseDiscardScenario.Enabled) pendingPlay = ChooseDiscardScenario.Choose(decision);
                 if (modifierScenario == "typed-draw") pendingPlay = TypedDrawScenario.Choose(decision);
                 if (modifierScenario == DamagePerHpScenario.Name || modifierScenario == DamagePerHpScenario.ArmorName ||

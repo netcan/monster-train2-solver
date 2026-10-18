@@ -18,17 +18,17 @@ coverage inventory checks.
 Regenerate the checklist with `scripts/Get-RelicCoverageInventory.ps1 -Catalog
 <relic-catalog.mt2f> -OutputPath tests/fixtures/relic-inventory.tsv`. This verifies
 catalog identity, unique owner IDs, accepted table identities and source presence.
-Current checkpoint: 217 original owners accepted (199 native battle owners,
+Current checkpoint: 218 original owners accepted (200 native battle owners,
 seventeen actual campaign-interface owners and one explicit native no-op owner);
-7 remain pending. The latest accepted owner is `ChanceRetreatEnemiesOnSpawn`:
-its unchanged 100% enemy AfterSpawnEnchant effect moves the active back enemy
-to the front once per room. Four room flags reset after each turn's four-room
-combat resolution, while terminal victory skips the later reset. Original
-Boss subtype exclusions restrict the actor, not the moved target. Independent
-trigger/team/repeated-room/excluded-actor controls and pure controls for all
-four exclusions match. Native preview, the other three native exclusion
-carriers, retained-dead cleanup and additional combined movement, Sentry,
-enchantment, card or relic callbacks remain uncalibrated.
+6 remain pending. The latest accepted owner is `BalatroEventGrosMichel`:
+its unchanged +10 non-Champion Monster attack, two saved waiting rounds then
+10% destruction, and Banana Shake all execute. Two low waiting rolls advance
+the counter; a mature miss retains the owner; a mature hit removes it and
+undoes tracked deck attack while retaining live-unit attack. A later birth
+loses the +10 bonus. The saved count remains two after removal, and the manager
+still runs Banana Shake's attempt callback. Native preview, cardless/clone/
+Champion births, cross-battle reacquisition, purged/non-deck cleanup,
+simultaneous banana owners and additional callbacks remain uncalibrated.
 
 Acceptance requires an unchanged original owner, actual eligible and control
 paths, exact model/native state and relevant ordering/callback checks. Battle
@@ -39,23 +39,23 @@ need their actual campaign lifecycle evidence; definition enumeration and
 inert battle presence do not validate those effects. Pure no-op definitions
 must be explicitly identified without inventing activation evidence.
 
-The latest fixture, `full-battle-original-spawn-retreat.mt2f`, captures 248 Tests,
-four applications, four formation changes and four resets. Full state, return
-values, the four private room flags and unchanged Battle RNG match independently
-in sixteen immutable branches. An authored ordinary enemy carrying the first
-original Boss exclusion is rejected as an actor but can still be moved.
+The latest fixture, `full-battle-original-gros-michel.mt2f`, captures four Tests,
+four applications and four Banana Shake attempts. One initial seed produces
+natural rolls 0, 7, 31 and 3. All callback states, RNG, notifications, saved count
+and contribution undo match in sixteen immutable branches. Six accumulated/
+reset Monster, Champion and Spell card-modifier controls also match.
 
-The 42-stage winning battle records two actions and five EndTurns, with all
-eight differential counters zero. Focused checks, an independent five-EndTurn
-suffix, bounded serial/parallel search and fourteen affected archives pass.
+The 40-stage winning battle records three model-selected actions and five
+EndTurns, with all eight differential counters zero. Focused checks, independent
+full policy replay, 128-state serial/parallel search and twelve affected archives pass.
 The new fixture has zero unsupported search attempts. Both regression workers
 finish with exit zero and all three tested assembly hashes remain unchanged.
-Search matches both recorded decisions and six root actions; serial/parallel
-modes visit 116/103 states and return the same best result.
-Regression summary: `.probe-runs/model-checks-20261018-144235-a9f39a86/summary.json`.
-The 25,296-byte archive has 3,638
+Search matches all three recorded decisions and twelve root actions;
+serial/parallel modes visit 128/128 states and return the same best result.
+Regression summary: `.probe-runs/model-checks-20261018-150239-00a6ed67/summary.json`.
+The 26,395-byte archive has 3,581
 unique nodes and SHA-256
-`d10919d1a0d081c9c540580e6cd6aec47e81ab7e28cea921cfab025b47d97f81`; no JSON
-companion is tracked. Inventory is 436 archives: 397 battles and 39 component
-calibrations. Original relic coverage is 217/224 (96.88%): 199 battle owners,
+`9eef1d92102f4cbc2ee350702e990b1afee414a527cb7b79f010709bafb4a0ce`; no JSON
+companion is tracked. Inventory is 437 archives: 398 battles and 39 component
+calibrations. Original relic coverage is 218/224 (97.32%): 200 battle owners,
 seventeen campaign owners and one native no-op owner.

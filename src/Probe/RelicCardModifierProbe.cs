@@ -10,10 +10,10 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class RelicCardModifierProbe
     {
-        internal static bool Enabled => OriginalBalatroEventCavendishScenario.Enabled || OriginalRelicCountAttackScenario.Enabled || OriginalHealingPowerScenario.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_RELIC_UPGRADES") == "1" ||
+        internal static bool Enabled => OriginalGrosMichelScenario.Enabled || OriginalBalatroEventCavendishScenario.Enabled || OriginalRelicCountAttackScenario.Enabled || OriginalHealingPowerScenario.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_RELIC_UPGRADES") == "1" ||
             OriginalRelicBatchScenario.Enabled || OriginalCardAttackRelicScenario.Enabled || OriginalCardTypeCostScenario.Enabled || OriginalUpgradeCountRelicsScenario.Enabled ||
             OriginalPurgeToExhaustScenario.Enabled || OriginalNoUpgradeCardCostScenario.Enabled || OriginalExpensiveCardUpgradeScenario.Enabled || OriginalWolosBloodletterScenario.Enabled;
-        internal static bool CaptureReady => OriginalRelicCountAttackScenario.CaptureReady || OriginalHealingPowerScenario.CaptureReady || RelicCardModifierScenario.CaptureReady || OriginalRelicBatchScenario.CaptureReady ||
+        internal static bool CaptureReady => OriginalGrosMichelScenario.CaptureReady || OriginalRelicCountAttackScenario.CaptureReady || OriginalHealingPowerScenario.CaptureReady || RelicCardModifierScenario.CaptureReady || OriginalRelicBatchScenario.CaptureReady ||
             MagebladeScenario.CaptureReady || OriginalCardAttackRelicScenario.CaptureReady || OriginalBalatroEventCavendishScenario.CaptureReady || OriginalCardTypeCostScenario.CaptureReady || OriginalUpgradeCountRelicsScenario.CaptureReady ||
             OriginalPurgeToExhaustScenario.CaptureReady || OriginalNoUpgradeCardCostScenario.CaptureReady || OriginalExpensiveCardUpgradeScenario.Prepared || OriginalWolosBloodletterScenario.Prepared;
         internal static readonly List<Record> Records = new List<Record>();

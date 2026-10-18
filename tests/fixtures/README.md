@@ -1,10 +1,28 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 436 archives (397 full battles and
-39 component calibrations), 217/224 original relic owners (96.88%): 199 battle
+Current accepted inventory (2026-10-18): 437 archives (398 full battles and
+39 component calibrations), 218/224 original relic owners (97.32%): 200 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
-The latest `ChanceRetreatEnemiesOnSpawn` fixture covers the unchanged 100%
+The latest `BalatroEventGrosMichel` fixture covers its unchanged +10
+non-Champion Monster attack, two waiting rounds then 10% destruction, and
+Banana Shake. Four natural combat-end callbacks draw 0, 7, 31 and 3 from one
+initial seed: two low waiting rolls, a mature miss and a mature hit. The saved
+counter stays at two after removal. Tracked deck attack is undone, existing
+units keep 40 attack, and a later unit is born with 30. Banana Shake still
+notifies an attempt after removal. Six native Monster/Champion/Spell manager
+reset controls and all twelve callbacks match in sixteen immutable branches.
+The 40-stage winning battle, three model-selected actions, full independent
+five-EndTurn policy, 128-state serial/parallel search and twelve affected
+archives pass. Search has twelve root actions and zero unsupported attempts.
+Native preview, cardless/clone/Champion births, cross-battle reacquisition,
+purged/non-deck cleanup, simultaneous banana owners and extra combined
+callbacks remain uncalibrated. The archive is 26,395 bytes, has 3,581 unique
+nodes and SHA-256
+`9eef1d92102f4cbc2ee350702e990b1afee414a527cb7b79f010709bafb4a0ce`.
+It has no text source or tracked JSON companion.
+
+The preceding `ChanceRetreatEnemiesOnSpawn` fixture covers the unchanged 100%
 AfterSpawnEnchant BackInRoom-to-front effect. All 248 Tests, four applications,
 four formation changes and four combat resets match complete state without
 Battle RNG draws. Flags reset after each turn's four-room combat resolution;

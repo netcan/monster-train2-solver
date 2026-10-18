@@ -160,7 +160,8 @@ namespace MonsterTrain2Poju.Probe
                     frame.ForgeTrackingActive.HasValue || frame.ForgeToggleActive.HasValue))
                 context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
                     frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle,
-                    forgeTrackingActive: frame.ForgeTrackingActive, forgeToggleActive: frame.ForgeToggleActive));
+                    forgeTrackingActive: frame.ForgeTrackingActive, forgeToggleActive: frame.ForgeToggleActive,
+                    grosMichelCombatRoundCount: frame.GrosMichelCombatRoundCount));
             if (context?.SpawnPoints is BattleSpawnPoints points && points.NextPreviewCopyId.HasValue)
                 context = context.WithSpawnPoints(new BattleSpawnPoints(points.Groups, points.Units));
             return context;

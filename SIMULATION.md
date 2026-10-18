@@ -1,11 +1,30 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 436 binary archives, including 397
+Current accepted inventory (2026-10-18): 437 binary archives, including 398
 full battles and 39 component calibrations. Unchanged original relic evidence
-covers 217/224 catalog entries (96.88%): 199 battle owners, 17 campaign
+covers 218/224 catalog entries (97.32%): 200 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+`BalatroEventGrosMichel` now has schema-240 evidence for all three original
+effects: +10 attack on non-Champion Monster cards, two waiting combat rounds
+followed by a 10% destruction chance, and the Banana Shake attempt callback.
+The saved waiting counter advances at each turn's four-room combat end and
+persists after destruction. Each destruction callback draws Battle RNG even
+while waiting. A single seed produces natural rolls 0, 7, 31 and 3: the two
+low waiting rolls retain the owner, the mature miss retains it, and the mature
+hit removes it and undoes tracked deck attack. Existing units retain 40 attack;
+a later birth has 30. The manager still executes Banana Shake after removing
+the owner from its saved snapshot. Six accumulated/reset Monster, Champion
+and Spell modifier controls match full card state, tracking, statistics and
+dispatches. All twelve callbacks match full train state in sixteen immutable
+branches. The 40-stage winning battle, three model-selected actions, independent
+five-EndTurn policy, 128-state serial/parallel search and twelve affected
+archives pass. Search has twelve root actions and zero unsupported attempts.
+Native preview, cardless/clone/Champion births, cross-battle reacquisition,
+purged/non-deck contribution cleanup, simultaneous banana owners and additional
+combined callbacks remain outside this witness.
 
 `ChanceRetreatEnemiesOnSpawn` now has schema-239 evidence for its unchanged
 100% AfterSpawnEnchant effect. An eligible enemy moves the active back enemy

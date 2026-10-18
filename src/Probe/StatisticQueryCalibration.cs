@@ -108,7 +108,8 @@ namespace MonsterTrain2Poju.Probe
                     var frame = new StatisticQueryFrame(managers.GetPlayerManager().GetEnergy(), !empty && managers.GetCombatManager()!.GetIsRunningCombat(),
                         empty ? stoppedCombat.GetTurnCount() : managers.GetCombatManager()!.GetTurnCount(), save.GetForgePoints(),
                         save.GetDragonsHoardAmount(), (int)managers.GetPlayerManager().CurrentMoonPhase, 0,
-                        save.GetGameSequence() == SaveData.GameSequence.InBattle, managers.GetRoomManager()!.GetSelectedRoom());
+                        save.GetGameSequence() == SaveData.GameSequence.InBattle, managers.GetRoomManager()!.GetSelectedRoom(),
+                        grosMichelCombatRoundCount: save.GetBalatroGrosMichelCombatRoundCount());
                     var samples = new List<object>();
                     BattleStatistics? expectedStatistics = null;
                     string? expectedStatisticsJson = null;

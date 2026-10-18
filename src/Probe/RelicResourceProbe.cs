@@ -49,6 +49,7 @@ namespace MonsterTrain2Poju.Probe
         private static Operation? hoardOperation;
         private static bool dragonHoardResourceObserved;
         private static bool trainHealResourceObserved;
+        private static bool grosMichelResourceObserved;
 
         private static RelicState[] Current(AllGameManagers managers)
         {
@@ -71,10 +72,12 @@ namespace MonsterTrain2Poju.Probe
             bool trainHealCards = cardEffects.Any(effect => effect.GetCardEffect() is CardEffectHealTrain);
             dragonHoardResourceObserved |= dragonHoardCards;
             trainHealResourceObserved |= trainHealCards;
+            grosMichelResourceObserved |= Current(managers).Any(owner => owner.GetRelicDataID() == RelicEndCombatModel.GrosMichelId);
             if (!OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled && !OriginalFloorCapacityRelicScenario.Enabled &&
                 !OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
                 !OriginalStartCombatHoardScenario.Enabled && !OriginalStartCombatHoardScenario.Acquired &&
                 !OriginalFirstCardCostScenario.Enabled &&
+                !grosMichelResourceObserved &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect => RelicResourceModel.IsEffect(effect.GetType().Name))) &&
                 !dragonHoardResourceObserved && !trainHealResourceObserved)
                 return null;
@@ -418,6 +421,8 @@ namespace MonsterTrain2Poju.Probe
                     subtype == null || subtype.IsNone ? null : subtype.Key, data.GetEffectConditions().Count);
                 amount = data.GetParamInt();
             }
+            else if (effect is GrosMichelRelicEffectChanceToDestroySelf)
+                amount = (int)AccessTools.Field(effect.GetType(), "chanceToDestroySelf").GetValue(effect);
             else if (effect is RelicEffectEnergyOnCardEarlyDiscard)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddGoldOnExhaust)

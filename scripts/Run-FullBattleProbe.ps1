@@ -313,6 +313,7 @@ param(
     [switch] $OriginalCardTypeSequenceRelic,
     [switch] $OriginalWhelpCooldownRelic,
     [switch] $OriginalSpawnRetreatRelic,
+    [switch] $OriginalGrosMichelRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
     [switch] $OriginalCardDrawOnHeal,
@@ -553,6 +554,7 @@ if ($OriginalWolosBloodletterRelic) { $BranchCardMasks = $true; $PhysicalSpawnPo
 if ($OriginalCardTypeSequenceRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalWhelpCooldownRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalSpawnRetreatRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalGrosMichelRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1036,6 +1038,7 @@ if ($OriginalWolosBloodletterRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'ori
 if ($OriginalCardTypeSequenceRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-type-sequence' }
 if ($OriginalWhelpCooldownRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-whelp-spawn-cooldown' }
 if ($OriginalSpawnRetreatRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spawn-retreat' }
+if ($OriginalGrosMichelRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-gros-michel' }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
 if ($OriginalSoloUnitUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-add-stats-to-solo-units' }
 if ($OriginalFrontRoomHealthUpgradeRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-front-room-health-upgrade' }
@@ -1991,6 +1994,13 @@ if ($OriginalWolosBloodletterRelic -and ($trace.Schema -ne 236 -or -not $trace.O
     $trace.OriginalWolosBloodletterUnsupported -ne 0 -or $trace.OriginalWolosBloodletterPending -ne 0 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 5 -or @($trace.RelicWolosBloodletterRecords).Count -lt 12)) {
     throw 'Original Wolos Bloodletter acceptance failed.'
+}
+if ($OriginalGrosMichelRelic -and ($trace.Schema -ne 240 -or -not $trace.OriginalGrosMichelPrepared -or
+    $trace.ModifierScenario -ne 'original-gros-michel' -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.OriginalGrosMichelCaptureFailures -ne 0 -or $trace.OriginalGrosMichelMismatches -ne 0 -or
+    $trace.OriginalGrosMichelUnsupported -ne 0 -or $trace.OriginalGrosMichelPending -ne 0 -or
+    @($trace.RelicGrosMichelRecords).Count -lt 12 -or @($trace.Actions).Count -ne 3)) {
+    throw 'Original Gros Michel native evidence is incomplete or divergent.'
 }
 if ($OriginalSpawnRetreatRelic -and ($trace.Schema -ne 239 -or -not $trace.OriginalSpawnRetreatPrepared -or
     $trace.ModifierScenario -ne 'original-spawn-retreat' -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
