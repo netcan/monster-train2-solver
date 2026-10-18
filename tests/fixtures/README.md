@@ -4,6 +4,14 @@ Current accepted inventory (2026-10-18): 450 archives (411 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
+The separate [per-card inventory](card-coverage.md) covers all 668 original
+definitions and identifies the 563 native logbook entries. It records exact
+archive/action evidence and explicit gaps; authored variants and missing trait
+metadata do not become direct original-card evidence just by sharing a DataId.
+The [native catalog](../catalogs/README.md) is metadata outside this directory's
+450 accepted archives. Refresh/check the index with
+`scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
 `full-battle-tower-corruption-callbacks.mt2f` covers two Keepers on different
 floors, sequential corruption commits and notification-driven room focus before
 current-room upgrade scaling. Its 42-stage win has nineteen plays/five EndTurns

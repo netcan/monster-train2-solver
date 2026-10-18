@@ -7,6 +7,25 @@ interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
 
+### Per-card evidence inventory
+
+The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
+original card definitions by DataId, retaining 563 native logbook entries, unit
+and room abilities, and other internal definitions separately. The raw catalog
+is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 450
+accepted battle/component archives. Native decision state, RNG and frame are
+unchanged by catalog inspection; branch card metadata is enabled explicitly.
+
+The report distinguishes definition-matched native plays, indirect mechanism
+witnesses, partial/unsupported paths and unreviewed evidence. A DataId appearing
+in a modified scenario does not establish original-card coverage. Exact archive
+and action indices remain in `card-play-evidence.tsv`; source traits without
+enough captured parameters and older missing metadata are not promoted. These
+labels describe evidence boundaries rather than whole-card completion.
+
+`scripts/Get-CardCoverageInventory.ps1 -Check` verifies frozen catalog facts,
+manifest hashes and deterministic reports without running model regression.
+
 ### Remaining mechanic coverage: corruption, empty abilities and removed stacks
 
 `full-battle-tower-corruption-callbacks.mt2f` places Keeper of Echoes on two
