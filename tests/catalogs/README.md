@@ -1,7 +1,7 @@
 # Original card definition catalog
 
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
-and component fixtures. It does not increase their 470-archive acceptance count.
+and component fixtures. It does not increase their 473-archive acceptance count.
 
 The isolated `no-cards` run on 2026-10-18 inspected all 668 unique
 `AllGameData.GetAllCardData()` definitions from game module
@@ -23,11 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261018-230727-2ba206ea/card-catalog.mt2f`.
-The committed archive is byte-identical: 94,604 bytes, SHA-256
-`60b40352d0fe733047a6bce2f5c302388ad7f21f425a1ba16562a041fdb922cf`.
-The projection reflects revision `7efe5c6`: original Fight Club attack and Spell
-Sanctum cost attachments join the calibrated room payloads. Native witnesses
+Source: `.probe-runs/full-battle-no-cards-20261018-232342-def96a1b/card-catalog.mt2f`.
+The committed archive is byte-identical: 94,901 bytes, SHA-256
+`e6ed4d5cbb95a3fc8240f08c2280f13ce0901345c21adf6d48cc75f4eea431e4`.
+The projection reflects revision `bc5499d`: original Engine Upgrade delayed
+energy and Stewards Quarters subtype/Multistrike upgrades join Fight Club attack
+and Spell Sanctum cost attachments. Native witnesses
 also cover five original forge spells, three propagation spells and Great Decay
 across card piles. Card modifier resolution preserves propagation filters.
 Fused Weaponry ordered equipment merging and Eclipse Chamber room phase
@@ -40,6 +41,9 @@ Projection support alone does not establish
 direct original-card coverage or remove runtime guards. All 668 raw card
 definitions are unchanged from the previous catalog, comparing every field
 except Rule and ProjectionError.
+The new room energy/filter fields make some older captures insufficient for
+exact definition matching; they remain mechanism evidence. The matcher does
+not infer absent non-null metadata from a shared DataId.
 All 668 raw upgrade-mask definitions still match the accepted native calibration. Original
 card facts and projection guards remain separate from runtime evidence.
 
