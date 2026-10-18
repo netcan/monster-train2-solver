@@ -252,6 +252,12 @@ if (args.Length == 2 && args[0] == "--original-opening-morsels-only")
     OriginalOpeningMorselsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--card-backed-feeding-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CardBackedFeedingChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--decay-death-pure")
 {
     OriginalDecayDeathChecks.Run();

@@ -1934,6 +1934,7 @@ namespace MonsterTrain2Poju.Probe
                 if (MoonPhaseAdvanceScenario.Enabled) pendingPlay = MoonPhaseAdvanceScenario.Choose(decision);
                 if (MoonPhaseCallbackScenario.Enabled) pendingPlay = MoonPhaseCallbackScenario.Choose(decision);
                 if (OriginalMoonPhaseHealRelicScenario.Enabled) pendingPlay = OriginalMoonPhaseHealRelicScenario.Choose(decision);
+                if (OriginalOpeningMorselsScenario.FoodCardsMode) pendingPlay = OriginalOpeningMorselsScenario.Choose(decision);
                 if (OriginalMoonPhaseStatusRelicScenario.Enabled) pendingPlay = OriginalMoonPhaseStatusRelicScenario.Choose(decision);
                 if (ConditionalNoPlayerUnitScenario.Enabled) pendingPlay = ConditionalNoPlayerUnitScenario.Choose(decision);
                 if (SelfAttackStatusScenario.Enabled) pendingPlay = SelfAttackStatusScenario.Choose(decision);
@@ -2160,6 +2161,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalBalatroEventYorickScenario.Enabled && OriginalBalatroEventYorickScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared) ||
                 (modifierScenario == "dragon-hoard" && DragonHoardScenario.IsScenarioAction(action)) ||
+                OriginalOpeningMorselsScenario.FoodCardsMode ||
                 (OriginalCarriageJackScenario.Enabled && OriginalCarriageJackScenario.IsScenarioAction(action)) ||
                 (OriginalTwoChargesOnCardConsumedScenario.Enabled && OriginalTwoChargesOnCardConsumedScenario.IsScenarioAction(action)) ||
                 (OriginalFirstRoomAttachmentScenario.Enabled && OriginalFirstRoomAttachmentScenario.IsScenarioAction(action)) ||

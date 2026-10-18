@@ -19,6 +19,11 @@ internal static class OriginalOpeningMorselsChecks
 
     internal static void Native(FixtureValue root)
     {
+        if (root.TryGetProperty("CardBackedFeeding", out var feeding) && feeding.GetBoolean())
+        {
+            CardBackedFeedingChecks.Native(root);
+            return;
+        }
         Run();
         Require(root.GetProperty("Schema").GetInt32() == 243 && root.GetProperty("OriginalOpeningMorselsPrepared").GetBoolean() &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Incomplete opening Morsels witness.");

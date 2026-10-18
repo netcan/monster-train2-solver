@@ -50,7 +50,7 @@ both workers terminate with zero exits and three tested assembly hashes unchange
 The 46,559-byte archive has 8,481 unique nodes, zero source length/hash, no JSON
 companion and SHA-256
 `66d53f653b7bb12bd64ddc63d84b51313e2c38347fac5073dfbafcfb280b387c`.
-Current inventory is 443 archives: 404 battles and 39 components. Pending
+The relic-owner completion checkpoint contains 443 archives: 404 battles and 39 components. Pending
 draw-upgrade queues, random-cost co-owner ordering, disabled deck draws, other
 callback combinations and metagame consumers require separate evidence.
 

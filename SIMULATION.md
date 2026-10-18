@@ -1,11 +1,34 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-18): 443 binary archives, including 404
+Current accepted inventory (2026-10-18): 444 binary archives, including 405
 full battles and 39 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+### Card-backed feeding lifecycle
+
+`full-battle-card-backed-feeding.mt2f` extends native feeding evidence to ordinary
+food card plays, a source-backed equipped Miner, and an authored Miner with two
+Eatmany stacks. Native OnEaten callbacks finish before OnPreEaten consumes a stack;
+lethality is sampled before that consumption. Surviving food retains its physical
+slot and source card. Final meals remove the source from Standby into Eaten without
+TimesExhausted, damage death or Harvest, while attached ordinary equipment returns
+to Exhausted. All meals, including surviving meals, count toward OnFeed/run stats.
+The 41-stage Pyre79 win has five plays/five EndTurns, four source-backed meals,
+one equipment return, one surviving/final repeated pair, 36 no-meal controls and
+eight zero error counters. Every feeding transition and the complete recorded
+battle replay match native, including sixteen independent immutable branches.
+128-state serial/parallel search agrees with zero unsupported attempts. Six affected
+older archives pass (`.probe-runs/model-checks-20261018-183552-b4cedc05/summary.json`);
+no full inventory regression was run. Forced feeding card effects, external
+OnFeed card callbacks and additional removal/relic combinations need separate evidence.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardBackedFeeding -BinaryCapture -SkipBuild
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-backed-feeding.mt2f
+```
 
 `CorruptedAngelsArtifact` completes original-owner coverage with schema-246
 evidence for its unchanged Blight/Junk trigger and original 13-card exclusion
@@ -96,10 +119,8 @@ workers exit zero with unchanged tested binaries; summary:
 `.probe-runs/model-checks-20261018-160603-bf7a4709/summary.json`.
 Card-backed/equipped/repeatedly edible food, card-effect forced feeding,
 additional combined callbacks and metagame unlock consumers need separate evidence.
-Ordinary food-card plays are rejected at the action boundary until their
-card-backed feeding/removal lifecycle is calibrated. This also preserves the
-independent policy of older after-draw generation witnesses after OnEaten
-became supported for the original cardless Morsels.
+The later card-backed feeding witness above validates ordinary food-card plays,
+equipment returns and repeated meals; the original cardless witness remains unchanged.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalOpeningMorselsRelic -BinaryCapture -GameSpeed Instant

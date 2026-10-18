@@ -128,6 +128,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-bone-dog.mt2f',
     'full-battle-original-decay-death.mt2f',
     'full-battle-original-opening-morsels.mt2f',
+    'full-battle-card-backed-feeding.mt2f',
     'full-battle-original-opening-deck-spawn.mt2f',
     'full-battle-original-perkeo.mt2f',
     'full-battle-original-corrupted-angels.mt2f',
@@ -1605,6 +1606,13 @@ foreach ($fixturePath in $originalOpeningMorselsFixtures) {
     foreach ($mode in @('--original-opening-morsels-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original opening Morsels checks failed ($mode): $fixturePath" }
+    }
+}
+$feedingFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-card-backed-feeding.mt2f' })
+foreach ($fixturePath in $feedingFixtures) {
+    foreach ($mode in @('--card-backed-feeding-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Card-backed feeding checks failed ($mode): $fixturePath" }
     }
 }
 $originalDecayDeathFixtures = @($fixtures | Where-Object {

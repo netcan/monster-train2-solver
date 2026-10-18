@@ -698,6 +698,11 @@ internal static class BattleActionChecks
             Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {scenarioActions} controlled relic actions checked individually, independent {suffixTurns.Length}-EndTurn suffix to native victory, and 16 immutable parallel branches.");
             return;
         }
+        if (fixture.TryGetProperty("CardBackedFeeding", out var feeding) && feeding.GetBoolean())
+        {
+            RecordedBattleChecks.Native(fixture);
+            return;
+        }
         Require(policyActions.Length > 0, "The fixture has no subsequent native policy actions.");
         BattleTurnState root = policyActions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         FixtureValue[] policyTurns = turns.EnumerateArray().ToArray();

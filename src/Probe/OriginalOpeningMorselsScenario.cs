@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "original-opening-morsels";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool FoodCardsMode => Environment.GetEnvironmentVariable("MT2_PROBE_FOOD_CARDS") == "1";
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
         private static bool observing, control;
@@ -75,6 +76,34 @@ namespace MonsterTrain2Poju.Probe
             Set(steward, "triggers", new List<CharacterTriggerData>()); Set(steward, "startingStatusEffects", Array.Empty<StatusEffectStackData>());
             Set(steward, "unitAbility", null!); Set(card, "cost", 0); Set(card, "traits", new List<CardTraitData>());
             save.GetDeckState().Clear(); save.AddCardToDeck(card, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
+            if (FoodCardsMode)
+            {
+                CardData food = data.GetAllCardData().Single(item => item.GetSpawnCharacterData()?.name == "MorselMorselMiner");
+                Set(food, "cost", 0);
+                CardData repeated = UnityEngine.Object.Instantiate(food);
+                repeated.name = "PojuRepeatedMiner"; Set(repeated, "id", "f00d0000-0000-4000-8000-000000000001");
+                CharacterData repeatUnit = UnityEngine.Object.Instantiate(food.GetSpawnCharacterData());
+                repeatUnit.name = "PojuRepeatedMinerUnit";
+                Set(repeatUnit, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "eatmany", count = 2 } });
+                CardEffectData spawn = new CardEffectData("CardEffectSpawnMonster", null!, Team.Type.Monsters);
+                spawn.Cheat_SetTargetMode(TargetMode.Room); Set(spawn, "paramCharacterData", repeatUnit);
+                Set(repeated, "effects", new List<CardEffectData> { spawn });
+                CardData gear = UnityEngine.Object.Instantiate(data.GetAllCardData().First(item => item.GetCardType() == CardType.Spell));
+                gear.name = "PojuFoodEquipment"; Set(gear, "id", "f00d0000-0000-4000-8000-000000000002");
+                Set(gear, "cardType", CardType.Equipment); Set(gear, "cost", 0); Set(gear, "costType", CardData.CostType.Default);
+                Set(gear, "targetless", false); Set(gear, "targetsRoom", true); Set(gear, "traits", new List<CardTraitData>());
+                Set(gear, "triggers", new List<CardTriggerEffectData>()); Set(gear, "effectTriggers", new List<CharacterTriggerData>());
+                Set(gear, "startingUpgrades", new List<CardUpgradeData>());
+                CardUpgradeData upgrade = DynamicUpgradeScenario.Upgrade("PojuFoodEquipmentUpgrade", "f00d0000-0000-4000-8000-000000000003", 0, 2, 0, 0, "armor", 0);
+                Set(upgrade, "statusEffectUpgrades", new List<StatusEffectStackData>());
+                CardEffectData attach = new CardEffectData("CardEffectAttachEquipment", null!, Team.Type.Monsters);
+                attach.Cheat_SetTargetMode(TargetMode.DropTargetCharacter); Set(attach, "paramCardUpgradeData", upgrade);
+                Set(gear, "effects", new List<CardEffectData> { attach });
+                var definitions = (List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(data);
+                definitions.Add(repeated); definitions.Add(gear);
+                foreach (CardData addition in new[] { food, repeated, food, gear })
+                    save.AddCardToDeck(addition, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
+            }
             CollectableRelicData owner = data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicOpeningSpawnModel.DataId);
             save.AddRelic(owner); Acquired = true;
             CombatRelicState captured = RelicProbe.Capture(managers).Single(item => item.DataId == RelicOpeningSpawnModel.DataId);
@@ -97,6 +126,23 @@ namespace MonsterTrain2Poju.Probe
                 try { if (isolated.TestEffectStartOfBattle(new RelicEffectParams(), managers.GetCoreManagers())) throw new InvalidOperationException("Out-of-range native spawn Test returned true."); }
                 finally { control = false; }
             }
+        }
+        internal static PlayCardAction? Choose(BattleTurnState source)
+        {
+            var plays = BattleActionModel.EnumerateSupportedPlays(source);
+            PlayCardAction? equipment = plays.FirstOrDefault(play => play.TargetUnitId > 0 &&
+                source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(play.CardInstanceId)!.DataId).Effect == "Equipment" &&
+                source.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == play.TargetUnitId && unit.SpawnerCardId > 0 && RoomCombatModel.IsFood(unit)));
+            if (equipment != null) return equipment;
+            foreach (RoomCombatState room in source.Spawn.Train.Rooms)
+            {
+                if (!room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Health > 0 && !RoomCombatModel.IsFood(unit))) continue;
+                PlayCardAction? food = plays.FirstOrDefault(play => play.RoomIndex == room.RoomIndex &&
+                    source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(play.CardInstanceId)!.DataId)
+                        .SpawnUnit?.Triggers.Any(trigger => trigger.Kind == "OnEaten") == true && play.PlayerPosition > 0);
+                if (food != null) return food;
+            }
+            return BattleActionModel.ChooseUnitAndJunkPlay(source);
         }
         [HarmonyPatch(typeof(RelicEffectSpawnUnitStartOfCombat), nameof(RelicEffectSpawnUnitStartOfCombat.TestEffectStartOfBattle))]
         private static class TestPatch

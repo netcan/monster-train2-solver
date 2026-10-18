@@ -2687,8 +2687,6 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit[] food = living.Where(unit => IsFood(unit.Freeze())).ToArray();
                 WorkingUnit? feeder = living.FirstOrDefault(unit => !unit.Has("untouchable") && !IsFood(unit.Freeze()));
                 if (food.Length == 0 || feeder == null) return;
-                if (food.Any(unit => unit.Source.SpawnerCardId != 0 || unit.Count("eatmany") > 0 || unit.Source.EquipmentCards?.Count > 0))
-                { unsupportedReason = "Card-backed, repeatedly edible or equipped food requires separate native removal evidence."; return; }
                 if (context?.QueryFrame?.SelectedRoomIndex != null)
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
                 // Native sets every relationship before dispatching any OnEaten callback.
@@ -2704,9 +2702,28 @@ namespace MonsterTrain2Poju.Model
                 if (unsupportedReason != null) return;
                 foreach (WorkingUnit unit in food)
                 {
-                    unit.Despawned = true;
-                    unit.Removed = true;
-                    RemovePhysicalPoint(unit);
+                    // Native snapshots lethality before OnPreEaten consumes Eatmany.
+                    bool dies = unit.Count("eatmany") <= 1;
+                    if (unit.Has("eatmany")) Trigger(unit, "eatmany", 1);
+                    if (dies)
+                    {
+                        unit.Despawned = true;
+                        unit.Removed = true;
+                        RemovePhysicalPoint(unit);
+                        if (!source.Preview && context != null)
+                        {
+                            if (unit.Source.Team == CombatTeam.Player && unit.Source.SpawnerCardId > 0)
+                            {
+                                CardPileState? standby = context.OtherPiles?.FirstOrDefault(pile => pile.Name == "Standby");
+                                CardToken? card = standby?.Cards.FirstOrDefault(item => item.InstanceId == unit.Source.SpawnerCardId);
+                                if (card == null || context.OtherPiles!.All(pile => pile.Name != "Eaten"))
+                                { unsupportedReason = "Eaten source cards require captured Standby and Eaten piles."; return; }
+                                context = context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name == "Standby" ? CardPileModel.Remove(pile, card.InstanceId) :
+                                    pile.Name == "Eaten" ? CardPileModel.Add(pile, card) : pile).ToArray());
+                            }
+                            context = EquipmentModel.ReturnAttached(context, unit.Freeze());
+                        }
+                    }
                     Emit("Eaten", feeder, unit, 1);
                     if (!UpdateEnchantments()) return;
                 }

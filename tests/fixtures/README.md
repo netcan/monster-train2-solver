@@ -1,8 +1,22 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-18): 443 archives (404 full battles and
+Current accepted inventory (2026-10-18): 444 archives (405 full battles and
 39 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-card-backed-feeding.mt2f` adds ordinary food plays, a source-backed
+equipped Miner and a two-stack Eatmany Miner. Its 41-stage Pyre79 native win has
+five plays/five EndTurns, four card-backed meals, an equipment return, a surviving
+meal followed by final removal, and 36 no-meal controls. All eight counters are
+zero. Full feeding states, source/Eaten/Exhausted routing, live statistics, every
+recorded play/turn, sixteen immutable complete-battle branches and 128-state
+serial/parallel search match. Binary-only capture: 28,520 bytes, 4,016 nodes,
+zero source length/hash; SHA-256
+`0bd6b0c5be4367a27fc32acf954f0abc7c1fba896287d60a07775b0239e85ede`.
+Run `Check-Models.ps1 -Fixture full-battle-card-backed-feeding.mt2f` or
+`--card-backed-feeding-only` for its focused gate. Six affected old captures pass;
+the full inventory was not rerun. Forced feeding and extra card/relic callbacks
+remain separate evidence boundaries.
 
 The latest `full-battle-original-corrupted-angels.mt2f` retains unchanged
 CorruptedAngelsArtifact and both original filters, including the thirteen-card
