@@ -6,6 +6,7 @@ internal static class OriginalSupportUnitsChecks
 {
     private const string BlightedTotemId = "21ad4f07-1568-4461-8be4-6fb2670bd90d";
     private const string ProsperityTotemId = "21567cc4-f684-48db-b377-b8289729dedc";
+    private const string BattleDancerId = "a0b051b2-7898-454a-8bd8-300b72b99c93";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -16,11 +17,11 @@ internal static class OriginalSupportUnitsChecks
     {
         int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
         if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
-        int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 21 or 22 or 30 or 31 or 32 or 33 ? 2 : 0;
+        int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 21 or 22 or 30 or 31 or 32 or 33 or 34 ? 2 : 0;
         int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is >= 19 and <= 22 ? index - 18 :
-            index is 32 or 33 ? source.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2).Units.Count(unit => unit.Team == CombatTeam.Player) : -1;
+            index is 32 or 33 or 34 ? source.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2).Units.Count(unit => unit.Team == CombatTeam.Player) : -1;
         int host = index is 23 or 24 ? 11 : index is 25 or 26 ? 12 : index == 27 ? 9 : index == 28 ? 8 : index == 29 ? 10 : index == 31 ? 21 : 19;
-        int target = index >= 23 && index != 32 && index != 33 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
+        int target = index >= 23 && index != 32 && index != 33 && index != 34 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
         var action = new PlayCardAction(ids[index], room, playerPosition: position, targetUnitId: target);
         return BattleActionModel.PlayCard(source, action).Supported ? action : null;
     }
@@ -31,7 +32,7 @@ internal static class OriginalSupportUnitsChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalSupportUnitsIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 34 && actions.Length == 34, "Missing seventeen original births or positive trigger controls.");
+        Require(ids.Length == 35 && actions.Length == 35, "Missing eighteen original births or positive trigger controls.");
         BattleTurnState Before(int i) => actions[i].GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState After(int i) => actions[i].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         CombatUnit Actor(BattleTurnState state, int index) => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[index]);
@@ -160,8 +161,26 @@ internal static class OriginalSupportUnitsChecks
             drawEffect.Type == "DrawNextTurn" && drawEffect.Target == "Room" &&
             !drawTrigger.HasTriggered && !actualDrawTrigger.HasTriggered,
             "Prosperity Totem must preserve its original 0/1 size-1 spawn and captured, untriggered CardSpellPlayed draw callback.");
+        BattleTurnState dancerBefore = Before(34), dancerAfter = After(34);
+        PlayCardAction dancerAction = actions[34].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CardPlayRule dancerRule = dancerBefore.PlayRules!.Cards.Single(rule => rule.DataId == BattleDancerId);
+        CombatUnit dancerTemplate = dancerRule.SpawnUnit!, dancer = Actor(dancerAfter, 34);
+        CombatTrigger shiftTrigger = dancerTemplate.Triggers.Single(trigger => trigger.Kind == "OnShift");
+        CombatTrigger actualShiftTrigger = dancer.Triggers.Single(trigger => trigger.Kind == "OnShift");
+        CardActionEffect valorEffect = shiftTrigger.Effects.Single().Action!;
+        RoomCombatState dancerRoom = dancerBefore.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2);
+        int dancerAppendPosition = dancerRoom.Units.Count(unit => unit.Team == CombatTeam.Player);
+        Require(dancerBefore.Spawn.Train.Context!.FindCard(ids[34])!.DataId == BattleDancerId &&
+            dancerAction.RoomIndex == 2 && dancerAction.PlayerPosition == dancerAppendPosition && dancerAction.TargetUnitId == 0 &&
+            dancerBefore.Energy - dancerAfter.Energy == dancerRule.Cost && dancerRule.AssetKey == "BattleDancer" &&
+            dancer.AssetKey == "MonsterBattleDancer" && dancer.Health == 14 && dancer.MaxHealth == 14 &&
+            dancer.Modifiers!.AttackDamage == 7 && dancer.Size == 2 && Stacks(dancer, "valor") == 0 &&
+            valorEffect.Type == "AddStatus" && valorEffect.Target == "Self" &&
+            valorEffect.Statuses.Single().Id == "valor" && valorEffect.Statuses.Single().Stacks == 3 &&
+            !shiftTrigger.HasTriggered && !actualShiftTrigger.HasTriggered,
+            "Battle Dancer must preserve its original 7/14 size-2 spawn and captured, untriggered three-Valor OnShift callback.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-SUPPORT-UNITS PASS: seventeen unchanged units, Alchemical Assistant native spawn/death with capped Dragon's Hoard, Avenger OnHit and Blighted/Prosperity Totem CardSpellPlayed boundaries, positive spawn/rally/heal/hit/attack/equipment/postcombat callbacks, native no-match typed-draw control and 16 immutable full chains.");
+        Console.WriteLine("ORIGINAL-SUPPORT-UNITS PASS: eighteen unchanged units, Alchemical Assistant native spawn/death with capped Dragon's Hoard, Avenger OnHit, Blighted/Prosperity Totem CardSpellPlayed and Battle Dancer OnShift boundaries, positive spawn/rally/heal/hit/attack/equipment/postcombat callbacks, native no-match typed-draw control and 16 immutable full chains.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }
