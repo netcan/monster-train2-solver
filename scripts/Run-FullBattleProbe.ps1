@@ -117,6 +117,7 @@ param(
     [switch] $OriginalXStygianSpike,
     [switch] $OriginalXWurmkinSpike,
     [switch] $OriginalMineCollapse,
+    [switch] $OriginalImpOlate,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -629,6 +630,7 @@ if ($OriginalXLunaSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and
 if ($OriginalXStygianSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXWurmkinSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMineCollapse) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalImpOlate) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -1194,6 +1196,7 @@ if ($OriginalXLunaSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-lun
 if ($OriginalXStygianSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-stygian-spike' }
 if ($OriginalXWurmkinSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-wurmkin-spike' }
 if ($OriginalMineCollapse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mine-collapse' }
+if ($OriginalImpOlate) { $environment['MT2_PROBE_MODIFIERS'] = 'original-imp-olate' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2619,6 +2622,10 @@ if ($OriginalXWurmkinSpike -and (-not $trace.OriginalXWurmkinSpikePrepared -or -
 }
 if ($OriginalMineCollapse -and (-not $trace.OriginalMineCollapsePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 8)) {
     throw 'Original Mine Collapse scenario lacks its lethal/refund/zero-X plays or completed win.'
+}
+if ($OriginalImpOlate -and (-not $trace.OriginalImpOlatePrepared -or $trace.OriginalImpOlateImpWitnessId -le 0 -or
+        -not $trace.NativeWon -or @($trace.Actions).Count -ne 2)) {
+    throw 'Original Imp Olate scenario lacks its native Imp witness, protector/card play or completed win.'
 }
 if ($OriginalXDamageCards -and (-not $trace.OriginalXDamageCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 9)) {
     throw 'Original X-damage cards scenario lacks its original zero/positive plays or completed win.'

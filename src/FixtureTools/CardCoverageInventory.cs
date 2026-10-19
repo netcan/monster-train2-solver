@@ -196,7 +196,7 @@ internal static class CardCoverageInventory
         // Rule projections do not retain every raw trait parameter. Until those
         // parameters have their own original-card witnesses, do not promote them.
         FixtureValue[] traits = Array(definition, "Traits");
-        if (traits.Any(trait => !CalibratedSourceTrait(trait))) return false;
+        if (traits.Any(trait => !CalibratedSourceTrait(trait, Text(definition, "Id")))) return false;
         bool requiresRaw = traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAddDamage" or "CardTraitScalingAddStatusEffect" or "CardTraitUnpurgable" or "CardTraitIncreaseCostOfCardsInHand" or "CardTraitLimitedRange" or "CardTraitDrawInDeploymentPhase" or "CardTraitUnplayable" or "CardTraitPersistent" or "CardTraitRefine" or "CardTraitPermafrost" or "CardTraitDamageOverflow" or "CardTraitCorruptRestricted" or "CardTraitAddDamagePerStatusEffect" or "CardTraitScalingAddDamagePerCard" or "CardTraitScalingAddEnergy" or "CardTraitScalingRemoveStatusEffect" or "CardTraitScalingAddEffectApplications" or "CardTraitScalingCardDrawCountPerPile");
         requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingBuffDamage" or "CardTraitScalingStatusEffectPerPile" or "CardTraitScalingTempCardUpgradeToCard" or "CardTraitScalingByConsumedTempCardUpgradeToCard" or "CardTraitShowCardTargets" or "CardTraitScalingAdvanceMoonPhase" or "CardTraitScalingAddCards" or "CardTraitAddCardUpgradeOnMoonPhase" or "CardTraitScalingFeederRules");
         requiresRaw |= traits.Any(trait => Text(trait, "Type") == "CardTraitGraftedEquipment");
@@ -244,9 +244,16 @@ internal static class CardCoverageInventory
         return false; // Legacy schemas without base-trait evidence stay unverified.
     }
 
-    private static bool CalibratedSourceTrait(FixtureValue trait)
+    private static bool CalibratedSourceTrait(FixtureValue trait, string cardId)
     {
         string type = Text(trait, "Type");
+        if (cardId == "e6e77821-f0c2-4d76-bc7f-2efece0e065f")
+            return type == "CardTraitScalingAddDamage" && trait.GetProperty("Int").GetInt32() == 25 &&
+                trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
+                !Flag(trait, "Bool") && Text(trait, "Str") == "" && trait.GetProperty("Float").GetDouble() == 1 &&
+                !Flag(trait, "Scaling") && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
+                Text(trait, "SpecificCardDataId") == "" && Text(trait, "StatusQueryTeam") == "" &&
+                !Strings(trait, "StatusQueryStatuses").Any() && !Strings(trait, "StatusEffectIds").Any();
         if (type == "CardTraitSelfPurge") return true;
         if (type == "CardTraitModifyCardTriggerSlayFireCount") return Flag(trait, "Bool") &&
             Text(trait, "KillTargetTeam") == "Monsters" && Text(trait, "KillTargetSubtype") == "SubtypesData_FunGuy" &&
@@ -574,7 +581,7 @@ internal static class CardCoverageInventory
             ("unreviewed", "Projection failed or a required primitive has no indexed transition witness; support is unknown.") })
             text.Append($"| {level} | {cards.Count(card => card.Logbook && card.Coverage == level)} | {cards.Count(card => card.Coverage == level)} | {meaning} |\n");
         text.Append("\nThese are evidence labels, not whole-card completion claims. A directly matched play proves that captured path; it does not prove every target, upgrade, relic combination, trigger or future branch. Indirect witnesses may execute an effect with no target; presence in a played chain is not a positive test of every parameter. The definition projection is conservative but is not a full raw-asset checksum.\n\n");
-        text.Append("Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge, calibrated IgnoreArmor/ExhaustState/StrongerMagicPower parameters, and PlayedCost damage scalars five/eighty with exact source parameters and runtime/declared identity. Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower covers raw Int zero/five and zero/five room power for damage/healing. The X-damage witnesses cover enemy-present zero and positive X.\n\n");
+        text.Append("Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge, calibrated IgnoreArmor/ExhaustState/StrongerMagicPower parameters, and PlayedCost damage scalars five/eighty with exact source parameters and runtime/declared identity. Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower covers raw Int zero/five and zero/five room power for damage/healing. The X-damage witnesses cover enemy-present zero and positive X. Imp Olate has exact source calibration and native zero/one-Imp `SubtypeInDeck` witnesses for zero/twenty-five damage.\n\n");
         text.Append("PlayedCost status scaling is calibrated only at multiplier two/filter one with exact original source parameters. Spike of the Legion covers positive/zero X, propagatable Rage/Regeneration, unchanged armor, neighbor/floor controls and both Consume paths.\n\n");
         text.Append("CorruptionInTargetRoom damage scaling is calibrated at multiplier one, using original Echo Break at corruption zero/two/six. Original Unearthed Remains and Soul Siphon supply accumulation/fill-to-max; neighbor and selected-floor controls distinguish live selected-room state from cached/global values. Soul Siphon's negative amount with add mode fills the current maximum and also applies room-only Scorch. This witness targets friendly units; enemy-target paths need separate evidence.\n\n");
         text.Append("StatusEffectCountInTargetRoom damage scaling is calibrated only for native Monsters armor/spikes filters with scalars four/ten. Battering Ram and Bramble Lash cover zero and positive two-unit sums, enemy and outside-floor controls. These queries require current selected-room units and captured status IDs; old missing filters remain unsupported. Source descriptors retain the query team and ordered status mask separately from runtime traits.\n\n");

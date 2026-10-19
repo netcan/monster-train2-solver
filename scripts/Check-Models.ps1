@@ -162,6 +162,8 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-consume-cards.mt2f',
     'full-battle-original-strong-magic-cards.mt2f',
     'full-battle-original-mine-collapse.mt2f',
+    'full-battle-original-imp-olate.mt2f',
+    'full-battle-original-imp-olate-zero.mt2f',
     'full-battle-original-x-damage-cards.mt2f',
     'full-battle-original-unpurgable-cards.mt2f',
     'full-battle-original-hand-costs.mt2f',
@@ -2200,6 +2202,20 @@ foreach ($fixturePath in $originalMineCollapseFixtures) {
     foreach ($mode in @('--original-mine-collapse-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Mine Collapse checks failed ($mode): $fixturePath" }
+    }
+}
+$originalImpOlateFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-imp-olate.mt2f' })
+foreach ($fixturePath in $originalImpOlateFixtures) {
+    foreach ($mode in @('--original-imp-olate-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Imp Olate checks failed ($mode): $fixturePath" }
+    }
+}
+$originalImpOlateZeroFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-imp-olate-zero.mt2f' })
+foreach ($fixturePath in $originalImpOlateZeroFixtures) {
+    foreach ($mode in @('--original-imp-olate-zero-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Imp Olate zero-Imp checks failed ($mode): $fixturePath" }
     }
 }
 $originalStrongMagicFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-strong-magic-cards.mt2f' })

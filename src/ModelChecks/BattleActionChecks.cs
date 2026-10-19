@@ -745,6 +745,8 @@ internal static class BattleActionChecks
             chooser = source => OriginalXWurmkinSpikeChecks.Choose(source, fixture.GetProperty("OriginalXWurmkinSpikeIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalMineCollapsePrepared", out var originalMineCollapsePrepared) && originalMineCollapsePrepared.GetBoolean())
             chooser = source => OriginalMineCollapseChecks.Choose(source, fixture.GetProperty("OriginalMineCollapseIds").Deserialize<int[]>()!);
+        if (fixture.TryGetProperty("OriginalImpOlatePrepared", out var originalImpOlatePrepared) && originalImpOlatePrepared.GetBoolean())
+            chooser = source => OriginalImpOlateChecks.Choose(source, fixture.GetProperty("OriginalImpOlateIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalXDamageCardsPrepared", out var originalXPrepared) && originalXPrepared.GetBoolean())
             chooser = source => OriginalXDamageCardsChecks.Choose(source, fixture.GetProperty("OriginalXDamageCardsIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalStrongMagicCardsPrepared", out var originalStrongPrepared) && originalStrongPrepared.GetBoolean())
