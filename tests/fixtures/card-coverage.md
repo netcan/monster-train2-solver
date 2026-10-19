@@ -20,15 +20,15 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 304 | 308 | No captured projection guards; at least one successful native play has the same captured definition projection. |
-| mechanism-only | 177 | 250 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
+| direct-native-play | 305 | 309 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| mechanism-only | 176 | 249 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
 | partial | 82 | 99 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 11 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
 
 These are evidence labels, not whole-card completion claims. A directly matched play proves that captured path; it does not prove every target, upgrade, relic combination, trigger or future branch. Indirect witnesses may execute an effect with no target; presence in a played chain is not a positive test of every parameter. The definition projection is conservative but is not a full raw-asset checksum.
 
-Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge, calibrated IgnoreArmor/ExhaustState/StrongerMagicPower parameters, and PlayedCost damage scalars five/eighty with exact source parameters and runtime/declared identity. Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower covers raw Int zero/five and zero/five room power for damage/healing. The X-damage witnesses cover enemy-present zero and positive X. Imp Olate has exact source calibration and native zero/one-Imp `SubtypeInDeck` witnesses for zero/twenty-five damage. Pyreshot has an original-card play witness for its selected-floor Pyre attack, including Sweep damage and the live per-floor enemy target set.
+Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge, calibrated IgnoreArmor/ExhaustState/StrongerMagicPower parameters, and PlayedCost damage scalars five/eighty with exact source parameters and runtime/declared identity. Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower covers raw Int zero/five and zero/five room power for damage/healing. The X-damage witnesses cover enemy-present zero and positive X. Imp Olate has exact source calibration and native zero/one-Imp `SubtypeInDeck` witnesses for zero/twenty-five damage. Pyreshot has an original-card play witness for its selected-floor Pyre attack, including Sweep damage and the live per-floor enemy target set. Retch has an exact original-card `RandomToHand` witness from a controlled starting Eaten pile; it does not cover how cards enter Eaten through native feeding.
 
 PlayedCost status scaling is calibrated only at multiplier two/filter one with exact original source parameters. Spike of the Legion covers positive/zero X, propagatable Rage/Regeneration, unchanged armor, neighbor/floor controls and both Consume paths.
 
@@ -78,7 +78,7 @@ Original Bloody Moon and Antumbra Assault each add seven unchanged plays with de
 
 Original Surgical Strike adds six unchanged plays and one generated play. Native suppression requires both Monsters team and FunGuy subtype; ordinary friendly and enemy kills still copy. Piercing bypasses armor/shield, nonlethal hits do not copy, and a revived FunGuy remains suppressed. Three deterministic source-card copies preserve the original temporary Ephemeral upgrade, upgrade inheritance, allocation/RNG and played/unplayed purge. Source team/subtype metadata is required; bonus fire counts, other subtypes, starting upgrades, all-subtype relics and character-attributed kills remain guarded.
 
-Across all classifications, 310 identities (306 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Across all classifications, 311 identities (307 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 
@@ -88,7 +88,7 @@ Across all classifications, 310 identities (306 logbook) have at least one defin
 - [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 512 full battles and 8112 native actions whose captured prediction is supported, actual state exists and difference is null. 535 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 513 full battles and 8114 native actions whose captured prediction is supported, actual state exists and difference is null. 535 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 

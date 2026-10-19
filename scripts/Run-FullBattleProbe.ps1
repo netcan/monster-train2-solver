@@ -119,6 +119,7 @@ param(
     [switch] $OriginalMineCollapse,
     [switch] $OriginalImpOlate,
     [switch] $OriginalPyreshot,
+    [switch] $OriginalRetch,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -633,6 +634,7 @@ if ($OriginalXWurmkinSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalMineCollapse) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalImpOlate) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreshot) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalRetch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -1200,6 +1202,7 @@ if ($OriginalXWurmkinSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-
 if ($OriginalMineCollapse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mine-collapse' }
 if ($OriginalImpOlate) { $environment['MT2_PROBE_MODIFIERS'] = 'original-imp-olate' }
 if ($OriginalPyreshot) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyreshot' }
+if ($OriginalRetch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-retch' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2632,6 +2635,10 @@ if ($OriginalImpOlate -and (-not $trace.OriginalImpOlatePrepared -or $trace.Orig
 }
 if ($OriginalPyreshot -and (-not $trace.OriginalPyreshotPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 2)) {
     throw 'Original Pyreshot scenario lacks its protector/card play or completed win.'
+}
+if ($OriginalRetch -and (-not $trace.OriginalRetchPrepared -or $trace.OriginalRetchEatenWitnessId -le 0 -or
+        -not $trace.NativeWon -or @($trace.Actions).Count -ne 2)) {
+    throw 'Original Retch scenario lacks its Eaten Monster witness, protector/card play or completed win.'
 }
 if ($OriginalXDamageCards -and (-not $trace.OriginalXDamageCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 9)) {
     throw 'Original X-damage cards scenario lacks its original zero/positive plays or completed win.'

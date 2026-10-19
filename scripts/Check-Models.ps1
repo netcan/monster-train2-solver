@@ -165,6 +165,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-imp-olate.mt2f',
     'full-battle-original-imp-olate-zero.mt2f',
     'full-battle-original-pyreshot.mt2f',
+    'full-battle-original-retch.mt2f',
     'full-battle-original-x-damage-cards.mt2f',
     'full-battle-original-unpurgable-cards.mt2f',
     'full-battle-original-hand-costs.mt2f',
@@ -2228,6 +2229,13 @@ foreach ($fixturePath in $originalPyreshotFixtures) {
             dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         }
         if ($LASTEXITCODE -ne 0) { throw "Original Pyreshot checks failed ($mode): $fixturePath" }
+    }
+}
+$originalRetchFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-retch.mt2f' })
+foreach ($fixturePath in $originalRetchFixtures) {
+    foreach ($mode in @('--original-retch-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Retch checks failed ($mode): $fixturePath" }
     }
 }
 $originalStrongMagicFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-strong-magic-cards.mt2f' })

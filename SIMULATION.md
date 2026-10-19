@@ -2223,6 +2223,21 @@ other uncalibrated trait, trigger and ability interactions remain unsupported.
 The native `RequiresRoomInHand` gate for upgraded recursion is calibrated; it
 checks eligible pile counts rather than free hand slots.
 
+The original `Retch` fixture records its unchanged `RandomToHand` effect from
+Eaten, filtered to Monsters with a native value of 99. One original Monster is
+seeded into the Eaten list as a controlled starting condition; native card play
+returns that exact instance to Hand and the full battle/action replay and
+bounded search pass. This does not cover how native feeding creates Eaten cards.
+The schema-103 archive is 24,633 bytes with 3,122 unique nodes and SHA-256
+`d177a8d0dccd32b06466137b026399dca39827a4e72bdc0872997a0435632195`; no JSON
+companion is tracked.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-retch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-retch-only tests/fixtures/full-battle-original-retch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-retch.mt2f
+```
+
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-recursion.mt2f

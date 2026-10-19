@@ -1467,6 +1467,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalPyreshotScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalRetchScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Retch fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalRetchScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalXDamageCardsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original X-damage fixture must start on deployment turn.");
@@ -2576,6 +2582,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalMineCollapseScenario.Enabled) pendingPlay = OriginalMineCollapseScenario.Choose(decision, OriginalMineCollapseScenario.CardIds);
                 if (OriginalImpOlateScenario.Enabled) pendingPlay = OriginalImpOlateScenario.Choose(decision, OriginalImpOlateScenario.CardIds);
                 if (OriginalPyreshotScenario.Enabled) pendingPlay = OriginalPyreshotScenario.Choose(decision, OriginalPyreshotScenario.CardIds);
+                if (OriginalRetchScenario.Enabled) pendingPlay = OriginalRetchScenario.Choose(decision, OriginalRetchScenario.CardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);
