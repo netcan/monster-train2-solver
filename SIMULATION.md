@@ -759,6 +759,15 @@ records. Binary-only: 25,371 bytes, 3,088 unique nodes, SHA-256
 `89d2636dba3046f16f5c91ebb967de7f4365f52aba717c5c9740d67e2a26fa76`. Repeated
 copies and combinations with other draw/energy modifiers remain untested.
 
+`full-battle-original-drain.mt2f` plays unchanged one-cost Drain on a controlled
+friendly Train Steward. It applies three Debuff, then randomly discards the
+single eligible controlled Train Steward. The 37-stage win (two plays/five
+EndTurns), dedicated check, full action-policy replay and 128-state search pass
+with zero capture failures, mismatches, unsupported transitions or pending
+records. Binary-only: 24,974 bytes, 3,171 unique nodes, SHA-256
+`9f20645a3b58a412eca96e652f9b493f149d20289c0dcd2b98fae4bb154d1e58`. Multiple
+eligible discard choices and RNG ordering are not covered.
+
 `full-battle-original-deadly-variant.mt2f` plays unchanged two-cost Deadly
 Variant on a Train Steward carrying one Debuff. Its native target-scoped
 multiplier adds five Decay and leaves the counted Debuff intact; the card is

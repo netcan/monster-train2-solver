@@ -1392,6 +1392,17 @@ covers one sufficient-gold state and one friendly target; other payment values
 and target combinations are not claimed. Use `-OriginalSmeltedTreasure` and
 `--original-smelted-treasure-only`.
 
+`full-battle-original-drain.mt2f` plays unchanged one-cost Drain on a
+controlled friendly Train Steward. The native spell adds three Debuff, then
+randomly discards its one eligible controlled Train Steward; the played spell
+itself enters discard. The 37-stage win (two plays/five EndTurns), dedicated
+check, full action-policy replay and 128-state search pass with zero capture
+failures, mismatches, unsupported transitions or pending records. Binary-only:
+24,974 bytes, 3,171 unique nodes, SHA-256
+`9f20645a3b58a412eca96e652f9b493f149d20289c0dcd2b98fae4bb154d1e58`. Multiple
+eligible discard choices and their RNG ordering are not covered. Use
+`-OriginalDrain` and `--original-drain-only`.
+
 `full-battle-original-pyre-gro.mt2f` plays unchanged zero-cost PyreGro. Its
 native ordered effects reduce next-turn draw by two and add one recurring
 energy, then the original Consume trait exhausts the spell. The 37-stage native

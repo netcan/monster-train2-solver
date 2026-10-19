@@ -51,6 +51,7 @@ param(
     [switch] $OriginalSmeltedTreasure,
     [switch] $OriginalPyreGro,
     [switch] $OriginalDeadlyVariant,
+    [switch] $OriginalDrain,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -576,6 +577,7 @@ if ($OriginalSelfPurgeEnergyGain) { $BranchCardMasks = $true; $Policy = 'units-s
 if ($OriginalSmeltedTreasure) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreGro) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeadlyVariant) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalDrain) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1151,6 +1153,7 @@ if ($OriginalSelfPurgeEnergyGain) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalSmeltedTreasure) { $environment['MT2_PROBE_MODIFIERS'] = 'original-smelted-treasure' }
 if ($OriginalPyreGro) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-gro' }
 if ($OriginalDeadlyVariant) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deadly-variant' }
+if ($OriginalDrain) { $environment['MT2_PROBE_MODIFIERS'] = 'original-drain' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2752,6 +2755,10 @@ if ($OriginalDeadlyVariant -and ($trace.Schema -ne 260 -or -not $trace.OriginalD
     @($trace.OriginalDeadlyVariantCardIds).Count -ne 2)) {
     throw 'Original Deadly Variant requires one matched play, a controlled Debuff target and a native win.'
 }
+if ($OriginalDrain -and ($trace.Schema -ne 261 -or -not $trace.OriginalDrainPrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalDrainCardIds).Count -ne 3)) {
+    throw 'Original Drain requires one matched play, a controlled Debuff target and eligible discard card.'
+}
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
 }
@@ -3761,6 +3768,14 @@ $deadlyVariantActions = @($trace.Actions | Where-Object {
     $played.DataId -eq '5efb679b-6035-4d64-ab80-f29daad1fdf4'
 })
 $deadlyVariantCoverage = -not $OriginalDeadlyVariant -or @($deadlyVariantActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+$drainActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '6fe6bf99-7e77-4191-9136-fbbecc223bdf'
+})
+$drainCoverage = -not $OriginalDrain -or @($drainActions | Where-Object {
     -not $_.Difference -and $_.Predicted.Supported
 }).Count -eq 1
 $frostChannelingActions = @($trace.Actions | Where-Object {
@@ -5561,6 +5576,8 @@ $result = [pscustomobject]@{
     PyreGroCoverage = $pyreGroCoverage
     DeadlyVariantActions = $deadlyVariantActions.Count
     DeadlyVariantCoverage = $deadlyVariantCoverage
+    DrainActions = $drainActions.Count
+    DrainCoverage = $drainCoverage
     FrostChannelingActions = $frostChannelingActions.Count
     FrostChannelingCoverage = $frostChannelingCoverage
     TransferAbilityActions = $transferAbilityActions.Count
@@ -5681,6 +5698,9 @@ if ($OriginalPyreGro -and ($pyreGroActions.Count -ne 1 -or -not $pyreGroCoverage
 }
 if ($OriginalDeadlyVariant -and ($deadlyVariantActions.Count -ne 1 -or -not $deadlyVariantCoverage)) {
     throw 'Original Deadly Variant did not produce exactly one matched card play.'
+}
+if ($OriginalDrain -and ($drainActions.Count -ne 1 -or -not $drainCoverage)) {
+    throw 'Original Drain did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }
