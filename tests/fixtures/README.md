@@ -3018,9 +3018,10 @@ dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fi
 `full-battle-card-recursion.mt2f` captures `WurmkinEtchings` returning five of
 six exhausted Spells to Draw through `RandomToDeck`. The native battle and
 independent action replay match all 61 stages and 22 actions with zero
-unsupported transitions. The binary is 36,006 bytes, contains 6,025 unique
-nodes and has SHA-256
-`a1c9997717e630c84e3766efd8bc1ce9ad52e3823e26bb50bdc6644eff67c4a8`; no JSON
+unsupported transitions. Its one original play matches the frozen card
+definition under the current projection. The binary is 43,418 bytes, contains
+6,871 unique nodes and has SHA-256
+`df64cc1d27efe2f25533b7a168950ccac4a63027aa9a4c5cc8b9b3a5e11a9a81`; no JSON
 companion is tracked.
 
 ```powershell

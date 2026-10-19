@@ -2212,9 +2212,10 @@ mismatches, unsupported transitions and pending records are zero. Independent
 action replay matches every play, and the scenario gate confirms that five of
 the six original candidates return to Draw.
 
-The schema-103 archive is 36,006 bytes with 6,025 unique nodes and SHA-256
-`a1c9997717e630c84e3766efd8bc1ce9ad52e3823e26bb50bdc6644eff67c4a8`; it has no
-JSON companion. Pure checks also cover random-to-hand, Eaten restoration and
+The refreshed schema-103 archive is 43,418 bytes with 6,871 unique nodes and
+SHA-256 `df64cc1d27efe2f25533b7a168950ccac4a63027aa9a4c5cc8b9b3a5e11a9a81`;
+it has no JSON companion. Its original play matches the frozen definition under
+the current projection. Pure checks also cover random-to-hand, Eaten restoration and
 Battle RNG. ChooseToHand and ChooseToDeck now branch on one eligible card without
 consuming Battle RNG. Controlled native calibrations below verify each mode's
 destination and the full-battle replay. Captured native card filters now use
