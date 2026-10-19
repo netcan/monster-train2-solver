@@ -24,7 +24,7 @@ internal static class OriginalScaledDamageChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalScaledDamageIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 21 && actions.Length == 21, "Missing original scaling spells or authored positive/zero controls.");
+        Require(ids.Length == 22 && actions.Length == 22, "Missing original scaling spells or authored positive/zero controls.");
         int consumed = 0;
         foreach (int i in Indices)
         {
@@ -37,18 +37,22 @@ internal static class OriginalScaledDamageChecks
             CombatUnit[] a = before.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray(),
                 b = after.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
             Require(a.Length == 2 && a.Select(unit => unit.Id).SequenceEqual(b.Select(unit => unit.Id)) && b.All(unit => unit.Health > 0), "Scaling controls require two surviving enemies.");
-            int expected = i switch { 9 => 0, 10 => 255, 11 => 120, 12 => 48, 13 => 84, 15 => 12, 17 => 20, _ => throw new InvalidOperationException() };
+            int expected = i switch { 9 => 0, 10 => 255, 11 => 120, 12 => 48, 13 => 90, 15 => 12, 17 => 20, _ => throw new InvalidOperationException() };
             Require(a.Sum(Effective) - b.Sum(Effective) == expected, "Exact resource/HP/attack/death/deck-type scaled damage differs at action " + i);
             if (i == 10)
             {
                 CombatUnit support = before.Spawn.Train.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[3]);
-                Require(support.Health == 80 && support.Status("armor")?.Stacks == 5 && rule.Effects![0].DamagePerHpIncludeArmor,
-                    "Deadly Plunge must use three times 80 HP plus five armor.");
+                Require(support.Health == 80 && support.Status("armor")?.Stacks == 5 && support.Status("horde")?.Stacks == 1 &&
+                    support.Subtypes.Contains("SubtypesData_FunGuy") && rule.Effects![0].DamagePerHpIncludeArmor,
+                    "Deadly Plunge must use three times 80 HP plus five armor while retaining a positive FunGuy Horde target.");
             }
             if (i == 12) Require(context.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 3, "Ancient Resonance requires positive three-Corruption scaling.");
-            if (i == 13) Require(card.MaskDescriptor!.SourceTraits!.Single().QueryCardType == "Spell" &&
-                rule.Effects!.Count == 3 && context.CardRegistry!.Count(state => state.MaskDescriptor?.Definition.CardType == "Spell" && ids.Contains(state.InstanceId)) == 15,
-                "Ancient Synergy requires captured Spell query metadata and fifteen created spells; the resolving source leaves the native deck query.");
+            if (i == 13)
+            {
+                int registeredSpells = context.CardRegistry!.Count(state => state.MaskDescriptor?.Definition.CardType == "Spell" && ids.Contains(state.InstanceId));
+                Require(card.MaskDescriptor!.SourceTraits!.Single().QueryCardType == "Spell" && rule.Effects!.Count == 3 && registeredSpells == 16,
+                    "Ancient Synergy requires captured Spell query metadata and sixteen created spells; the resolving source leaves the native deck query. Actual=" + registeredSpells);
+            }
             if (i == 15) Require(before.Spawn.Train.Rooms[0].Units.All(unit => unit.SpawnerCardId != ids[4] && unit.SpawnerCardId != ids[5]),
                 "Positive death-count damage must follow both authored allied deaths.");
             Require(Json(before.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Player)) ==
@@ -200,9 +204,51 @@ internal static class OriginalScaledDamageChecks
             reactionContext.BattleRng.Equals(reactionAfter.Spawn.Train.Context!.BattleRng) &&
             Json(reactionBefore.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)) == Json(reactionAfter.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)),
             "Original Explosive Reaction must add Unstable, then deal 5 to that same target only, and discard without RNG or neighbor changes.");
+        BattleTurnState mushroomBefore = actions[21].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState mushroomAfter = actions[21].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        CombatContext mushroomContext = mushroomBefore.Spawn.Train.Context!;
+        CombatContext mushroomChanged = mushroomAfter.Spawn.Train.Context!;
+        CardInstanceState mushroom = mushroomContext.FindCard(ids[21])!;
+        CardPlayRule mushroomRule = mushroomBefore.PlayRules!.Cards.Single(rule => rule.DataId == mushroom.DataId);
+        CardActionEffect removeHorde = mushroomRule.Effects![0];
+        CardActionEffect mushroomDecay = mushroomRule.Effects[1];
+        CardActionEffect mushroomDamage = mushroomRule.Effects[2];
+        CombatUnit funGuy = mushroomBefore.Spawn.Train.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[3]);
+        CombatUnit? funGuyAfter = mushroomAfter.Spawn.Train.Rooms[0].Units.SingleOrDefault(unit => unit.Id == funGuy.Id);
+        Require(mushroom.DataId == "55251be0-b711-4398-bd3f-d26a0976fcfc" && mushroomRule.AssetKey == "MushroomCloud" &&
+            mushroomRule.Cost == 1 && mushroomRule.CostType == "Default" && mushroomRule.Effects.Count == 3 &&
+            removeHorde.Type == "RemoveStatus" && removeHorde.Target == "Room" && !removeHorde.AllowEnemy && removeHorde.AllowPlayer &&
+            removeHorde.Filters!.Subtype == "SubtypesData_FunGuy" && removeHorde.Statuses.Single().Id == "horde" && removeHorde.Statuses[0].Stacks == 1 &&
+            mushroomDecay.Type == "AddStatus" && mushroomDecay.Target == "Room" && mushroomDecay.AllowEnemy && !mushroomDecay.AllowPlayer &&
+            mushroomDecay.Statuses.Single().Id == "decay" && mushroomDecay.Statuses[0].Stacks == 10 &&
+            mushroomDamage.Type == "Damage" && mushroomDamage.Target == "Room" && mushroomDamage.Value == 10 && mushroomDamage.AllowEnemy &&
+            !mushroomDamage.AllowPlayer && funGuy.Subtypes.Contains("SubtypesData_FunGuy") && funGuy.Status("horde")?.Stacks == 1,
+            "Original Mushroom Cloud definition, FunGuy Horde filter, enemy Decay or room damage metadata differs.");
+        CombatUnit[] mushroomEnemies = mushroomBefore.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
+        CombatUnit[] mushroomEnemiesAfter = mushroomAfter.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
+        bool mushroomEnemyEffectsExact = mushroomEnemiesAfter.All(after =>
+        {
+            CombatUnit before = mushroomEnemies.Single(unit => unit.Id == after.Id);
+            return Effective(before) - Effective(after) == 10 &&
+                (after.Status("decay")?.Stacks ?? 0) - (before.Status("decay")?.Stacks ?? 0) == 10;
+        }) && mushroomEnemies.All(before =>
+        {
+            CombatUnit? after = mushroomEnemiesAfter.SingleOrDefault(unit => unit.Id == before.Id);
+            return after == null ? Effective(before) <= 10 : true;
+        });
+        Require(funGuyAfter == null &&
+            mushroomEnemyEffectsExact &&
+            Json(mushroomBefore.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Player && unit.Id != funGuy.Id)) ==
+                Json(mushroomAfter.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Player && unit.Id != funGuy.Id)),
+            "Original Mushroom Cloud must remove one FunGuy Horde and deal 10/add 10 Decay to all enemies only.");
+        Require(CardExhaustModel.HasConsume(mushroom) && mushroomBefore.Energy - mushroomAfter.Energy == 1 &&
+            mushroomChanged.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == ids[21]) &&
+            mushroomContext.BattleRng.Equals(mushroomChanged.BattleRng) &&
+            Json(mushroomBefore.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)) == Json(mushroomAfter.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)),
+            "Original Mushroom Cloud payment, Consume route, RNG or neighboring floor differs.");
         Require(consumed == 1, "Deadly Plunge must be the only Consume spell among the scaling-damage witness cards.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-SCALED-DAMAGE PASS: ten unchanged originals/eleven plays, exact scaled damage, room-wide Pox and targeted Rot/Explosive Reaction status-damage chains, three Corruption, fourteen TypeInDeck Spell members while Ancient Synergy resolves, zero/two allied deaths, Memento Mori +20 from AnyMonsterDeath, Power of Knowledge +20 from one exhausted Spell and 21 immutable full chains.");
+        Console.WriteLine("ORIGINAL-SCALED-DAMAGE PASS: eleven unchanged originals/twelve plays, exact scaled damage, Pox/Rot/Explosive Reaction/Mushroom Cloud effect chains with positive FunGuy Horde removal, three Corruption, fifteen TypeInDeck Spell members while Ancient Synergy resolves, zero/two allied deaths, Memento Mori +20 from AnyMonsterDeath, Power of Knowledge +20 from one exhausted Spell and 22 immutable full chains.");
     }
     private static int Effective(CombatUnit unit) => unit.Health + (unit.Status("armor")?.Stacks ?? 0);
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);

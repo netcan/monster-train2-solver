@@ -197,13 +197,13 @@ files unchanged. Binary-only: 35,454 bytes/5,517 nodes, SHA-256
 
 `full-battle-original-scaled-damage.mt2f` captures unchanged Deadly Plunge,
 Cleave, Ancient Resonance, Ancient Synergy, DamageExtinguish, Memento Mori,
-Power of Knowledge, Pox, Rot and Explosive Reaction.
+Power of Knowledge, Pox, Rot, Explosive Reaction and Mushroom Cloud.
 An authored 80-HP/five-armor support and two one-HP victims isolate scaling. Deadly
 Plunge deals 255 damage including armor; Cleave uses the front ally's 60 attack
 for both enemies; three Corruption produces 24 damage per enemy. Ancient
-Synergy uses fourteen Spell deck members while its source is resolving, for three
-28-damage hits; fifteen spells exist before play, but the resolving source leaves
-the native deck membership query. A raw `QueryCardType=Spell` field preserves
+Synergy uses fifteen Spell deck members while its source is resolving, for three
+30-damage hits; sixteen spells are registered before play, but the resolving
+source leaves the native deck membership query. A raw `QueryCardType=Spell` field preserves
 that original filter, omitted for unrelated source traits. DamageExtinguish
 replaces its base damage with zero/six per enemy before/after two allied deaths;
 Memento Mori deals 20 front damage from those same two deaths. Power of Knowledge
@@ -213,18 +213,20 @@ Ember, deals 20 damage and applies 10 Decay to every living unit on both teams
 in the room, then exhausts. Rot spends three Ember, deals 15 damage to its chosen
 enemy and adds 15 Decay to that same LastTargetedCharacters set. Explosive Reaction
 spends two Ember, applies 25 Unstable to its chosen target, then deals 5 damage to
-that same LastTargetedCharacters set. Original costs, Consume/discard routes,
-fixed RNG and friendly/neighbor-floor controls match. Use
-`--original-scaled-damage-only`; twenty-one full immutable chains and the existing
-resource-spell checks pass. Search matches 21 decisions/58 roots, visits 128/128
+that same LastTargetedCharacters set. Mushroom Cloud spends one Ember, removes
+the last Horde stack from the friendly FunGuy and removes that unit, then adds
+10 Decay and deals 10 room damage to enemies; lethal targets leave the room.
+Original costs, Consume/discard routes, fixed RNG and friendly/neighbor-floor
+controls match. Use `--original-scaled-damage-only`; twenty-two full immutable
+chains and the existing resource-spell checks pass. Search matches 22 decisions/58 roots, visits 128/128
 states and replays three steps with equal serial/parallel best. It reports four
 unsupported frontier attempts across recorded decisions and one in search; the
 first is an Explosive Reaction branch rejected because a physical shift lacks its
-retained occupant's combat state. All 21 selected native actions match. Source
-`.probe-runs/full-battle-units-spells-and-junk-20261019-124836-69148ded` won in
-98.85 seconds with 21 plays/five EndTurns, all four battle counters zero and
-protected files unchanged. Binary-only: 50,635 bytes/7,803 nodes, SHA-256
-`b38593fef58ab184ce70dc3cd9157c8fef747fe04c297d5ea1aeadc8acece38d`.
+retained occupant's combat state. All 22 selected native actions match. Source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-125808-f2c1c90a` won in
+104.96 seconds with 22 plays/five EndTurns, all four battle counters zero and
+protected files unchanged. Binary-only: 52,062 bytes/8,121 nodes, SHA-256
+`74729cd8eecea2ab70961a1ae6732e2fe1f46bd97322629666e2cf82a33a12d4`.
 
 `full-battle-original-hostile-statuses.mt2f` captures unchanged Pyrecask, Lava
 Flow, Superheated, Gooey Flask, Echo Snare, Soul Cripple, Fracture, Sporetouch,

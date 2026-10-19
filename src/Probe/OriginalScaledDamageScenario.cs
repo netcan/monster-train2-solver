@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string PoxId = "eb866e99-d16b-427a-a762-69d6b0f320f8";
         internal const string RotId = "d27baa97-0afa-4bb4-a8e0-2af43a507e67";
         internal const string ExplosiveReactionId = "d7f93607-5e85-45fe-b764-d716c0776727";
+        internal const string MushroomCloudId = "55251be0-b711-4398-bd3f-d26a0976fcfc";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -31,6 +32,7 @@ namespace MonsterTrain2Poju.Probe
             CardData pox = all.FindCardData(PoxId)!;
             CardData rot = all.FindCardData(RotId)!;
             CardData explosiveReaction = all.FindCardData(ExplosiveReactionId)!;
+            CardData mushroomCloud = all.FindCardData(MushroomCloudId)!;
             CardEffectData mementoEffect = mementoMori.GetEffects().Single();
             if (mementoMori.name != "MementoMori" || mementoMori.GetCardType() != CardType.Spell || mementoMori.GetCost() != 3 ||
                 mementoEffect.GetEffectStateName() != "CardEffectDamage" || mementoEffect.GetTargetMode() != TargetMode.FrontInRoom ||
@@ -50,7 +52,12 @@ namespace MonsterTrain2Poju.Probe
                 explosiveReaction.GetEffects().Count != 2 || explosiveReaction.GetEffects()[0].GetEffectStateName() != "CardEffectAddStatusEffect" ||
                 explosiveReaction.GetEffects()[0].GetTargetMode() != TargetMode.DropTargetCharacter ||
                 explosiveReaction.GetEffects()[1].GetEffectStateName() != "CardEffectDamage" ||
-                explosiveReaction.GetEffects()[1].GetTargetMode() != TargetMode.LastTargetedCharacters || explosiveReaction.GetTraits().Count != 0)
+                explosiveReaction.GetEffects()[1].GetTargetMode() != TargetMode.LastTargetedCharacters || explosiveReaction.GetTraits().Count != 0 ||
+                mushroomCloud.name != "MushroomCloud" || mushroomCloud.GetCardType() != CardType.Spell || mushroomCloud.GetCost() != 1 ||
+                mushroomCloud.GetEffects().Count != 3 || mushroomCloud.GetEffects()[0].GetEffectStateName() != "CardEffectRemoveStatusEffect" ||
+                mushroomCloud.GetEffects()[1].GetEffectStateName() != "CardEffectAddStatusEffect" ||
+                mushroomCloud.GetEffects()[2].GetEffectStateName() != "CardEffectDamage" ||
+                mushroomCloud.GetEffects().Any(effect => effect.GetTargetMode() != TargetMode.Room))
                 throw new InvalidOperationException("Original scaled damage spell definitions changed.");
             Set(steward, "cost", 0); Set(anchor, "attackDamage", 60); Set(anchor, "health", 500); Set(anchor, "size", 1);
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
@@ -68,29 +75,33 @@ namespace MonsterTrain2Poju.Probe
                 if (effectName == "CardEffectAdjustCorruption") Set(effect, "paramBool", true);
                 Set(data, "effects", new List<CardEffectData> { effect }); Register(data); return data;
             }
-            CardData Body(int suffix, int health, int armor)
+            CardData Body(int suffix, int health, int armor, bool funGuy = false)
             {
                 CardData data = UnityEngine.Object.Instantiate(steward); data.name = "PojuScaledDamageBody" + suffix;
                 Set(data, "id", "ac110049-0000-4000-8000-00000000000" + suffix);
                 CharacterData body = UnityEngine.Object.Instantiate(anchor); body.name = data.name + "Unit";
                 Set(body, "attackDamage", 0); Set(body, "health", health);
-                Set(body, "startingStatusEffects", armor == 0 ? Array.Empty<StatusEffectStackData>() : new[] { new StatusEffectStackData { statusId = "armor", count = armor } });
+                if (funGuy) Set(body, "subtypeKeys", new List<string> { "SubtypesData_FunGuy" });
+                var statuses = new List<StatusEffectStackData>();
+                if (armor != 0) statuses.Add(new StatusEffectStackData { statusId = "armor", count = armor });
+                if (funGuy) statuses.Add(new StatusEffectStackData { statusId = "horde", count = 1 });
+                Set(body, "startingStatusEffects", statuses.ToArray());
                 var effect = new CardEffectData("CardEffectSpawnMonster", body, Team.Type.Monsters); effect.Cheat_SetTargetMode(steward.GetEffects()[0].GetTargetMode());
                 Set(data, "effects", new List<CardEffectData> { effect }); Register(data); return data;
             }
             CardData battery = Control(1, "CardEffectGainEnergy", 20, Team.Type.None), health = Control(2, "CardEffectBuffMaxHealth", 500, Team.Type.Heroes),
-                support = Body(3, 80, 5), doomed = Body(4, 1, 0), corruption = Control(5, "CardEffectAdjustCorruption", 3, Team.Type.None),
+                support = Body(3, 80, 5, funGuy: true), doomed = Body(4, 1, 0), corruption = Control(5, "CardEffectAdjustCorruption", 3, Team.Type.None),
                 wound = Control(6, "CardEffectDamage", 1, Team.Type.Monsters);
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
             CardState[] created = { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(support.GetID()), Add(doomed.GetID()), Add(doomed.GetID()),
                 Add(battery.GetID()), Add(health.GetID()), Add(corruption.GetID()), Add("97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3"),
                 Add("f6434819-3b62-44e4-a82c-e344dc4c1aa0"), Add("e8e593f4-7e2d-4791-a7d4-8a6155f1a50f"),
-                Add("f2bed1d3-6b52-43d5-8b97-bfe5c90dce53"), Add("acc7bdd1-8f5b-4738-8c4a-4542792e7388"), Add(wound.GetID()), Add("97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3"), Add(MementoMoriId), Add(PowerOfKnowledgeId), Add(PoxId), Add(RotId), Add(ExplosiveReactionId) };
+                Add("f2bed1d3-6b52-43d5-8b97-bfe5c90dce53"), Add("acc7bdd1-8f5b-4738-8c4a-4542792e7388"), Add(wound.GetID()), Add("97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3"), Add(MementoMoriId), Add(PowerOfKnowledgeId), Add(PoxId), Add(RotId), Add(ExplosiveReactionId), Add(MushroomCloudId) };
             foreach (CardState card in created.Skip(6)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-SCALED-DAMAGE-PREPARED ten unchanged originals; armor-inclusive HP, front caster attack, corruption, deck spell type, zero/two allied deaths, Memento Mori, Power of Knowledge, Pox, Rot and Explosive Reaction target retention.");
+            log.LogInfo("ORIGINAL-SCALED-DAMAGE-PREPARED eleven unchanged originals; armor-inclusive HP, front caster attack, corruption, deck spell type, zero/two allied deaths, Memento Mori, Power of Knowledge, Pox, Rot, Explosive Reaction and positive FunGuy Horde removal.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
