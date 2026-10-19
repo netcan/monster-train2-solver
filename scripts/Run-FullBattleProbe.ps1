@@ -94,6 +94,7 @@ param(
     [switch] $OriginalFertileGround,
     [switch] $OriginalCoverOfNight,
     [switch] $OriginalWaxenSpike,
+    [switch] $OriginalImpPressive,
     [switch] $OriginalCopyMorselTwice,
     [switch] $OriginalLazarusLeagueSpike,
     [switch] $OriginalTomeOfContracts,
@@ -632,6 +633,7 @@ if ($OriginalMetallurgy) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $tru
 if ($OriginalFertileGround) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCoverOfNight) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalWaxenSpike) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalImpPressive) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyMorselTwice) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalLazarusLeagueSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1220,6 +1222,7 @@ if ($OriginalMetallurgy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-metal
 if ($OriginalFertileGround) { $environment['MT2_PROBE_MODIFIERS'] = 'original-fertile-ground' }
 if ($OriginalCoverOfNight) { $environment['MT2_PROBE_MODIFIERS'] = 'original-cover-of-night' }
 if ($OriginalWaxenSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-waxen-spike' }
+if ($OriginalImpPressive) { $environment['MT2_PROBE_MODIFIERS'] = 'original-imp-pressive' }
 if ($OriginalCopyMorselTwice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-morsel-twice' }
 if ($OriginalLazarusLeagueSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lazarus-league-spike' }
 if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
@@ -2564,6 +2567,10 @@ if ($OriginalCoverOfNight -and ($trace.Schema -ne 103 -or $trace.ModifierScenari
 if ($OriginalWaxenSpike -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-waxen-spike' -or
     -not $trace.NativeWon -or @($trace.Actions).Count -ne 3)) {
     throw 'Original Waxen Spike witness lacks its target/control units and direct X-cost play.'
+}
+if ($OriginalImpPressive -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-imp-pressive' -or
+    -not $trace.OriginalImpPressivePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3)) {
+    throw 'Original ImpPressive witness lacks its native Imp, protected floor and direct card play.'
 }
 if ($OriginalCopyMorselTwice -and ($trace.Schema -ne 250 -or $trace.ModifierScenario -ne 'original-copy-morsel-twice' -or
     -not $trace.OriginalCopyMorselTwicePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
@@ -5917,6 +5924,17 @@ $waxenSpikeCoverage = -not $OriginalWaxenSpike -or @($waxenSpikeActions | Where-
 }).Count -eq 1
 if ($OriginalWaxenSpike -and ($waxenSpikeActions.Count -ne 1 -or -not $waxenSpikeCoverage)) {
     throw 'Original Waxen Spike did not produce exactly one matched X-cost card play.'
+}
+$impPressiveActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'adfdfdab-18cf-4f2e-8664-f33dd9251ba4'
+})
+$impPressiveCoverage = -not $OriginalImpPressive -or @($impPressiveActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalImpPressive -and ($impPressiveActions.Count -ne 1 -or -not $impPressiveCoverage)) {
+    throw 'Original ImpPressive did not produce exactly one matched native Imp-sacrifice play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

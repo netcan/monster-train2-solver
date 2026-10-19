@@ -1215,6 +1215,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalWaxenSpikeScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalImpPressiveScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original ImpPressive fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalImpPressiveScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoonCardUpgradesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original moon card upgrades must start on deployment turn.");
@@ -2670,6 +2676,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalFertileGroundScenario.Enabled) pendingPlay = OriginalFertileGroundScenario.Choose(decision, OriginalFertileGroundScenario.CardIds);
                 if (OriginalCoverOfNightScenario.Enabled) pendingPlay = OriginalCoverOfNightScenario.Choose(decision, OriginalCoverOfNightScenario.CardIds);
                 if (OriginalWaxenSpikeScenario.Enabled) pendingPlay = OriginalWaxenSpikeScenario.Choose(decision, OriginalWaxenSpikeScenario.CardIds);
+                if (OriginalImpPressiveScenario.Enabled) pendingPlay = OriginalImpPressiveScenario.Choose(decision, OriginalImpPressiveScenario.CardIds);
                 if (OriginalMindsOfTheirOwnScenario.Enabled) pendingPlay = OriginalMindsOfTheirOwnScenario.Choose(decision, OriginalMindsOfTheirOwnScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);

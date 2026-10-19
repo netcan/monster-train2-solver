@@ -7923,3 +7923,24 @@ dotnet run --project src/ModelChecks -c Release -- --original-waxen-spike-only t
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-waxen-spike.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-waxen-spike.mt2f
 ```
+
+### Original ImpPressive
+
+`full-battle-original-imp-pressive.mt2f` plays unchanged ImpPressive after
+deploying a native Starter Imp behind a controlled Train Steward. The support
+unit costs are set to zero for the isolated setup; ImpPressive retains its
+native one-cost definition, sacrifices only the targeted Imp subtype, then
+deals its 50 base damage to the front enemy with the original +5 Stronger
+Magic Power trait. The Instant battle won with three card plays and five
+EndTurns in 36.90 seconds; capture failures, mismatches, unsupported
+transitions and pending records were zero, and protected original files were
+unchanged. The 27,013-byte archive has 3,571 unique nodes and SHA-256
+`524fe61ba7034831fba17beeb242bd3d6edfd6a736f806538fdcc27d3ef5e33e`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalImpPressive -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-imp-pressive-only tests/fixtures/full-battle-original-imp-pressive.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-imp-pressive.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-imp-pressive.mt2f
+```

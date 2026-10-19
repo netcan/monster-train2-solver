@@ -659,6 +659,8 @@ internal static class BattleActionChecks
             chooser = source => OriginalCoverOfNightChecks.Choose(source, OriginalCoverOfNightChecks.CardIds(fixture));
         if (fixture.TryGetProperty("ModifierScenario", out var originalWaxenSpikeScenario) && originalWaxenSpikeScenario.GetString() == "original-waxen-spike")
             chooser = source => OriginalWaxenSpikeChecks.Choose(source, OriginalWaxenSpikeChecks.CardIds(fixture));
+        if (fixture.TryGetProperty("ModifierScenario", out var originalImpPressiveScenario) && originalImpPressiveScenario.GetString() == "original-imp-pressive")
+            chooser = source => OriginalImpPressiveChecks.Choose(source, OriginalImpPressiveChecks.CardIds(fixture));
         if (fixture.TryGetProperty("GoldmancePrepared", out var goldmancePrepared) && goldmancePrepared.GetBoolean())
             chooser = source => GoldmanceChecks.Choose(source, fixture.GetProperty("GoldmanceCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("EngineUpgradePrepared", out var engineUpgradePrepared) && engineUpgradePrepared.GetBoolean())

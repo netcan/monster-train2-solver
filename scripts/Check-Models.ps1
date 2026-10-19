@@ -2159,6 +2159,13 @@ foreach ($fixturePath in $originalWaxenSpikeFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Waxen Spike checks failed ($mode): $fixturePath" }
     }
 }
+$originalImpPressiveFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-imp-pressive.mt2f' })
+foreach ($fixturePath in $originalImpPressiveFixtures) {
+    foreach ($mode in @('--original-imp-pressive-only', '--native-actions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original ImpPressive checks failed ($mode): $fixturePath" }
+    }
+}
 $originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })
 foreach ($fixturePath in $originalOverflowFixtures) {
     foreach ($mode in @('--original-overflow-cards-only', '--battle-search-only')) {
