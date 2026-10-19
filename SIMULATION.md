@@ -793,6 +793,9 @@ Definitions with starting upgrades remain guarded, as does Ephemeral combined
 with SelfPurge: a separate failed native sample exposed repeated Purged-pile
 membership, which still requires calibration. Arbitrary trait/relic combinations
 are outside this witness.
+The refreshed schema-103 archive is 38,324 bytes with 6,307 unique nodes and
+SHA-256 `77236b4a458489e06328acef6e50e3109be4d4bc5bfbd9063ead27e65f810db9`;
+both original plays match the frozen definition.
 
 `full-battle-mass-production.mt2f` adds unchanged Mass Production and chosen
 hand-card duplication. Two full-hand casts leave a source vacancy and generate

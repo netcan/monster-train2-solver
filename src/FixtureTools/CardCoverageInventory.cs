@@ -341,6 +341,11 @@ internal static class CardCoverageInventory
                 trait.GetProperty("Int3").GetInt32() == (type == "CardTraitExhaustState" ? 30 : 15) && Flag(trait, "Bool") == (type != "CardTraitExhaustState") &&
                 Text(trait, "Str").Length == 0 && trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") &&
                 Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
+        if (cardId == "135cf22d-6d1b-47ee-b48e-e8f7b47e5750" && type == "CardTraitDistinct")
+            return trait.GetProperty("Int").GetInt32() == 0 && trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
+                !Flag(trait, "Bool") && Text(trait, "Str") == "" && Text(trait, "TrackedValue") == "SubtypeInDeck" &&
+                Text(trait, "EntryDuration") == "ThisTurn" && Text(trait, "SpecificCardDataId") == "" &&
+                Text(trait, "StatusQueryTeam") == "" && !Strings(trait, "StatusQueryStatuses").Any() && !Strings(trait, "StatusEffectIds").Any();
         if (type == "CardTraitAddDamagePerStatusEffect")
             return trait.GetProperty("Int").GetInt32() == 3 && trait.GetProperty("Int2").GetInt32() == 2 &&
                 trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") && !Flag(trait, "Scaling") &&

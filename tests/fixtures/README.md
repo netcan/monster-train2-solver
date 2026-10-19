@@ -1441,9 +1441,9 @@ the generated card remains temporary. Complete contexts/RNG, the 37-stage win
 checked. The targetless recipient and strengthened units are setup controls.
 Starting-upgrade definitions remain guarded. Combining Ephemeral with SelfPurge
 is explicitly unsupported: a separate native counterexample produced repeated
-Purged-pile entries and is not accepted as this fixture. Binary-only: 36,073
-bytes/6,016 nodes, SHA-256
-`c4d50f696d58ba54479a31c0ea032e31f8e14f1acc3fade1fece354c4af1e66d`.
+Purged-pile entries and is not accepted as this fixture. Both original plays
+match the frozen definition. Binary-only: 38,324 bytes/6,307 nodes, SHA-256
+`77236b4a458489e06328acef6e50e3109be4d4bc5bfbd9063ead27e65f810db9`.
 Use `-StardustInvocation` and `--card-duplicate-only`.
 
 `full-battle-mass-production.mt2f` keeps two original Mass Productions. Each
