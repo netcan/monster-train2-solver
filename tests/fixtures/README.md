@@ -1074,6 +1074,21 @@ unsupported attempts. Binary-only: 30,185 bytes/4,198 nodes, SHA-256
 `db90b03fda49df96b21fa45de5b1414a3be662e945d70811f8b820f0efecc2b3`.
 Use `-OriginalXStygianSpike` and `--original-x-stygian-spike-only`.
 
+`full-battle-original-mine-collapse.mt2f` retains two unchanged original Mine
+Collapses at X three and X zero. X three deals nine damage to and kills a
+nine-health friendly control, then its captured OnKill payload returns exactly
+two Ember; a fixed-cost two Ember null spell consumes that refund before X zero
+is played against a second control with no damage or kill reward. The source
+trait, target permissions, fixed OnKill energy payload, paid X, untouched floors
+and immutable replay are checked. The eight-play/five-EndTurn Instant battle
+won in 44.94 seconds with all capture, mismatch, unsupported and pending
+counters at zero; protected files were unchanged. Search matches eight
+decisions/19 root actions, visits 128/128 states and replays three steps with
+equal serial/parallel best and zero unsupported attempts. Binary-only: 27,379
+bytes/3,714 nodes, SHA-256
+`7dd08d11221fe2f4039e4d4895a820c01c06fe7fb741d26fb1aab609662c8f93`.
+Use `-OriginalMineCollapse` and `--original-mine-collapse-only`.
+
 `full-battle-original-x-wurmkin-spike.mt2f` retains two unchanged original
 Wurmkin Spikes cast into the same enemy room at X three and X zero. X three adds
 eighteen Corrupt Poison to every enemy; X zero leaves it unchanged. Friendly

@@ -387,6 +387,10 @@ internal static class CardCoverageInventory
             Text(trait, "SpecificCardDataId") == "913694e9-bace-4480-8691-24f699ae583e";
         if (type == "CardTraitExhaustState" && value == 10 && trait.GetProperty("Float").GetDouble() == 1 && !Flag(trait, "Scaling") &&
             Text(trait, "TrackedValue") == "NumSpecificCardsInDeck" && Text(trait, "EntryDuration") == "ThisTurn") return true;
+        if (type == "CardTraitScalingAddDamage" && value == 3 && trait.GetProperty("Int2").GetInt32() == 0 &&
+            trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") && Text(trait, "Str") == "" &&
+            trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") && Text(trait, "TrackedValue") == "PlayedCost" &&
+            Text(trait, "EntryDuration") == "ThisTurn") return true;
         if (type == "CardTraitScalingAddDamage")
             return trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") && Text(trait, "EntryDuration") == "ThisTurn" &&
                 (Text(trait, "TrackedValue") == "PlayedCost" && value is 5 or 80 ||
