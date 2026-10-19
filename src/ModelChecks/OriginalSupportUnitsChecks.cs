@@ -4,6 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalSupportUnitsChecks
 {
+    private const string BlightedTotemId = "21ad4f07-1568-4461-8be4-6fb2670bd90d";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -14,10 +15,11 @@ internal static class OriginalSupportUnitsChecks
     {
         int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
         if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
-        int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 21 or 22 or 30 or 31 ? 2 : 0;
-        int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is >= 19 and <= 22 ? index - 18 : -1;
+        int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 21 or 22 or 30 or 31 or 32 ? 2 : 0;
+        int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is >= 19 and <= 22 ? index - 18 :
+            index == 32 ? source.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2).Units.Count(unit => unit.Team == CombatTeam.Player) : -1;
         int host = index is 23 or 24 ? 11 : index is 25 or 26 ? 12 : index == 27 ? 9 : index == 28 ? 8 : index == 29 ? 10 : index == 31 ? 21 : 19;
-        int target = index >= 23 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
+        int target = index >= 23 && index != 32 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
         var action = new PlayCardAction(ids[index], room, playerPosition: position, targetUnitId: target);
         return BattleActionModel.PlayCard(source, action).Supported ? action : null;
     }
@@ -28,7 +30,7 @@ internal static class OriginalSupportUnitsChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalSupportUnitsIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 32 && actions.Length == 32, "Missing fifteen original births or positive trigger controls.");
+        Require(ids.Length == 33 && actions.Length == 33, "Missing sixteen original births or positive trigger controls.");
         BattleTurnState Before(int i) => actions[i].GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState After(int i) => actions[i].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         CombatUnit Actor(BattleTurnState state, int index) => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[index]);
@@ -122,8 +124,26 @@ internal static class OriginalSupportUnitsChecks
             !alchemicalDeathAfter.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.SpawnerCardId == ids[21]) &&
             hoardBefore.EnergyState!.PyreAlive && cap == 4 && amount == 2 && hoardAfter.QueryFrame!.DragonsHoard == Math.Min(amount + 1, cap),
             "Alchemical Assistant must be killed by the captured 30-damage control and apply its native capped Dragon's Hoard death effect.");
+        BattleTurnState totemBefore = Before(32), totemAfter = After(32);
+        PlayCardAction totemAction = actions[32].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CardPlayRule totemRule = totemBefore.PlayRules!.Cards.Single(rule => rule.DataId == BlightedTotemId);
+        CombatUnit totemTemplate = totemRule.SpawnUnit!, totem = Actor(totemAfter, 32);
+        CombatTrigger spellTrigger = totemTemplate.Triggers.Single(trigger => trigger.Kind == "CardSpellPlayed");
+        CombatTrigger actualSpellTrigger = totem.Triggers.Single(trigger => trigger.Kind == "CardSpellPlayed");
+        CardActionEffect spellEffect = spellTrigger.Effects.Single().Action!;
+        RoomCombatState totemRoom = totemBefore.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2);
+        int appendPosition = totemRoom.Units.Count(unit => unit.Team == CombatTeam.Player);
+        Require(totemBefore.Spawn.Train.Context!.FindCard(ids[32])!.DataId == BlightedTotemId &&
+            totemAction.RoomIndex == 2 && totemAction.PlayerPosition == appendPosition && totemAction.TargetUnitId == 0 &&
+            totemBefore.Energy - totemAfter.Energy == totemRule.Cost && totemRule.AssetKey == "BlightedTotem" &&
+            totem.AssetKey == "MonsterBlightedTotem" && totem.Health == 1 && totem.MaxHealth == 1 &&
+            totem.Modifiers!.AttackDamage == 0 && totem.Size == 1 && Stacks(totem, "poison") == 0 &&
+            spellTrigger.Effects.Single().Type == "CardEffectAddStatusEffect" && spellEffect.Type == "AddStatus" &&
+            spellEffect.Target == "Room" && spellEffect.Statuses.Single().Id == "poison" &&
+            spellEffect.Statuses.Single().Stacks == 2 && !spellTrigger.HasTriggered && !actualSpellTrigger.HasTriggered,
+            "Blighted Totem must preserve its original 0/1 size-1 spawn and captured, untriggered two-Poison CardSpellPlayed callback.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-SUPPORT-UNITS PASS: fifteen unchanged units, Alchemical Assistant native spawn/death with capped Dragon's Hoard, Avenger direct spawn with OnHit boundary, positive spawn/rally/heal/hit/attack/equipment/postcombat callbacks, native no-match typed-draw control and 16 immutable full chains.");
+        Console.WriteLine("ORIGINAL-SUPPORT-UNITS PASS: sixteen unchanged units, Alchemical Assistant native spawn/death with capped Dragon's Hoard, Avenger OnHit and Blighted Totem CardSpellPlayed boundaries, positive spawn/rally/heal/hit/attack/equipment/postcombat callbacks, native no-match typed-draw control and 16 immutable full chains.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }
