@@ -24,7 +24,7 @@ internal static class OriginalScaledDamageChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalScaledDamageIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 18 && actions.Length == 18, "Missing original scaling spells or authored positive/zero controls.");
+        Require(ids.Length == 19 && actions.Length == 19, "Missing original scaling spells or authored positive/zero controls.");
         int consumed = 0;
         foreach (int i in Indices)
         {
@@ -37,8 +37,7 @@ internal static class OriginalScaledDamageChecks
             CombatUnit[] a = before.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray(),
                 b = after.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
             Require(a.Length == 2 && a.Select(unit => unit.Id).SequenceEqual(b.Select(unit => unit.Id)) && b.All(unit => unit.Health > 0), "Scaling controls require two surviving enemies.");
-            int Effective(CombatUnit unit) => unit.Health + (unit.Status("armor")?.Stacks ?? 0);
-            int expected = i switch { 9 => 0, 10 => 255, 11 => 120, 12 => 48, 13 => 66, 15 => 12, 17 => 20, _ => throw new InvalidOperationException() };
+            int expected = i switch { 9 => 0, 10 => 255, 11 => 120, 12 => 48, 13 => 72, 15 => 12, 17 => 20, _ => throw new InvalidOperationException() };
             Require(a.Sum(Effective) - b.Sum(Effective) == expected, "Exact resource/HP/attack/death/deck-type scaled damage differs at action " + i);
             if (i == 10)
             {
@@ -48,8 +47,8 @@ internal static class OriginalScaledDamageChecks
             }
             if (i == 12) Require(context.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 3, "Ancient Resonance requires positive three-Corruption scaling.");
             if (i == 13) Require(card.MaskDescriptor!.SourceTraits!.Single().QueryCardType == "Spell" &&
-                rule.Effects!.Count == 3 && context.CardRegistry!.Count(state => state.MaskDescriptor?.Definition.CardType == "Spell" && ids.Contains(state.InstanceId)) == 12,
-                "Ancient Synergy requires captured Spell query metadata and twelve created spells; the resolving source leaves the native deck query.");
+                rule.Effects!.Count == 3 && context.CardRegistry!.Count(state => state.MaskDescriptor?.Definition.CardType == "Spell" && ids.Contains(state.InstanceId)) == 13,
+                "Ancient Synergy requires captured Spell query metadata and thirteen created spells; the resolving source leaves the native deck query.");
             if (i == 15) Require(before.Spawn.Train.Rooms[0].Units.All(unit => unit.SpawnerCardId != ids[4] && unit.SpawnerCardId != ids[5]),
                 "Positive death-count damage must follow both authored allied deaths.");
             Require(Json(before.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Player)) ==
@@ -126,10 +125,37 @@ internal static class OriginalScaledDamageChecks
             knowledgeAfter.Spawn.Train.Context!.Cards.Discard.Any(card => card.InstanceId == ids[17]) &&
             knowledgeBefore.Spawn.Train.Context!.BattleRng.Equals(knowledgeAfter.Spawn.Train.Context!.BattleRng),
             "Original Power of Knowledge target damage, payment, discard or RNG differs.");
+        BattleTurnState poxBefore = actions[18].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState poxAfter = actions[18].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        CombatContext poxContext = poxBefore.Spawn.Train.Context!;
+        CombatContext poxChanged = poxAfter.Spawn.Train.Context!;
+        CardInstanceState pox = poxContext.FindCard(ids[18])!;
+        CardPlayRule poxRule = poxBefore.PlayRules!.Cards.Single(rule => rule.DataId == pox.DataId);
+        CardActionEffect poxDamage = poxRule.Effects!.Single(effect => effect.Type == "Damage");
+        CardActionEffect poxDecay = poxRule.Effects.Single(effect => effect.Type == "AddStatus");
+        Require(pox.DataId == "eb866e99-d16b-427a-a762-69d6b0f320f8" && poxRule.AssetKey == "Pox" &&
+            poxRule.Cost == 2 && poxRule.CostType == "Default" && poxRule.Effects.Count == 2 &&
+            poxDamage.Target == "Room" && poxDamage.Value == 20 && poxDamage.AllowEnemy && poxDamage.AllowPlayer &&
+            poxDecay.Target == "Room" && poxDecay.AllowEnemy && poxDecay.AllowPlayer && poxDecay.Statuses.Single().Id == "decay" &&
+            poxDecay.Statuses[0].Stacks == 10 && poxDecay.Statuses[0].ParamInt == 3 && poxDecay.Statuses[0].RemoveStackAtEnd,
+            "Original Pox definition, room targets, base damage or Decay metadata differs.");
+        CombatUnit[] poxUnits = poxBefore.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team is CombatTeam.Player or CombatTeam.Enemy).ToArray();
+        CombatUnit[] poxUnitsAfter = poxAfter.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team is CombatTeam.Player or CombatTeam.Enemy).ToArray();
+        Require(poxUnits.Select(unit => unit.Id).SequenceEqual(poxUnitsAfter.Select(unit => unit.Id)) &&
+            poxUnits.All(unit => Effective(unit) - Effective(poxUnitsAfter.Single(changed => changed.Id == unit.Id)) == 20 &&
+                (poxUnitsAfter.Single(changed => changed.Id == unit.Id).Status("decay")?.Stacks ?? 0) - (unit.Status("decay")?.Stacks ?? 0) == 10),
+            "Original Pox must deal 20 and add 10 Decay to every living unit on both teams.");
+        bool poxConsumes = CardExhaustModel.HasConsume(pox);
+        Require(poxBefore.Energy - poxAfter.Energy == 2 &&
+            (poxConsumes ? poxChanged.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == ids[18]) :
+                poxChanged.Cards.Discard.Any(card => card.InstanceId == ids[18])) && poxBefore.Spawn.Train.Context!.BattleRng.Equals(poxChanged.BattleRng) &&
+            Json(poxBefore.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)) == Json(poxAfter.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)),
+            "Original Pox payment, Consume/discard route, RNG or neighboring floor differs.");
         Require(consumed == 1, "Deadly Plunge must be the only original Consume spell in this witness.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-SCALED-DAMAGE PASS: seven unchanged originals/eight plays, exact armor-inclusive HP and front attack damage, three Corruption, eleven TypeInDeck Spell members while Ancient Synergy resolves, zero/two allied deaths, Memento Mori +20 from AnyMonsterDeath, Power of Knowledge +20 from one exhausted Spell and 18 immutable full chains.");
+        Console.WriteLine("ORIGINAL-SCALED-DAMAGE PASS: eight unchanged originals/nine plays, exact scaled damage, room-wide Pox 20 damage + 10 Decay to both teams, three Corruption, twelve TypeInDeck Spell members while Ancient Synergy resolves, zero/two allied deaths, Memento Mori +20 from AnyMonsterDeath, Power of Knowledge +20 from one exhausted Spell and 19 immutable full chains.");
     }
+    private static int Effective(CombatUnit unit) => unit.Health + (unit.Status("armor")?.Stacks ?? 0);
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

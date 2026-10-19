@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "original-scaled-damage";
         internal const string MementoMoriId = "c04c359c-9991-42bc-9040-bff7d3441248";
         internal const string PowerOfKnowledgeId = "f50ecee3-8bde-4100-a315-a362ff23a561";
+        internal const string PoxId = "eb866e99-d16b-427a-a762-69d6b0f320f8";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -25,6 +26,7 @@ namespace MonsterTrain2Poju.Probe
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
             CardData mementoMori = all.FindCardData(MementoMoriId)!;
             CardData powerOfKnowledge = all.FindCardData(PowerOfKnowledgeId)!;
+            CardData pox = all.FindCardData(PoxId)!;
             CardEffectData mementoEffect = mementoMori.GetEffects().Single();
             if (mementoMori.name != "MementoMori" || mementoMori.GetCardType() != CardType.Spell || mementoMori.GetCost() != 3 ||
                 mementoEffect.GetEffectStateName() != "CardEffectDamage" || mementoEffect.GetTargetMode() != TargetMode.FrontInRoom ||
@@ -32,7 +34,10 @@ namespace MonsterTrain2Poju.Probe
                 powerOfKnowledge.name != "PowerOfKnowledge" || powerOfKnowledge.GetCardType() != CardType.Spell || powerOfKnowledge.GetCost() != 2 ||
                 powerOfKnowledge.GetEffects().Single().GetEffectStateName() != "CardEffectDamage" ||
                 powerOfKnowledge.GetEffects().Single().GetTargetMode() != TargetMode.DropTargetCharacter ||
-                powerOfKnowledge.GetTraits().Count(trait => trait.GetTraitStateName() == "CardTraitScalingAddDamage") != 1)
+                powerOfKnowledge.GetTraits().Count(trait => trait.GetTraitStateName() == "CardTraitScalingAddDamage") != 1 ||
+                pox.name != "Pox" || pox.GetCardType() != CardType.Spell || pox.GetCost() != 2 || pox.GetEffects().Count != 2 ||
+                pox.GetEffects()[0].GetEffectStateName() != "CardEffectDamage" || pox.GetEffects()[0].GetTargetMode() != TargetMode.Room ||
+                pox.GetEffects()[1].GetEffectStateName() != "CardEffectAddStatusEffect" || pox.GetEffects()[1].GetTargetMode() != TargetMode.Room)
                 throw new InvalidOperationException("Original scaled damage spell definitions changed.");
             Set(steward, "cost", 0); Set(anchor, "attackDamage", 60); Set(anchor, "health", 500); Set(anchor, "size", 1);
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
@@ -67,12 +72,12 @@ namespace MonsterTrain2Poju.Probe
             CardState[] created = { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(support.GetID()), Add(doomed.GetID()), Add(doomed.GetID()),
                 Add(battery.GetID()), Add(health.GetID()), Add(corruption.GetID()), Add("97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3"),
                 Add("f6434819-3b62-44e4-a82c-e344dc4c1aa0"), Add("e8e593f4-7e2d-4791-a7d4-8a6155f1a50f"),
-                Add("f2bed1d3-6b52-43d5-8b97-bfe5c90dce53"), Add("acc7bdd1-8f5b-4738-8c4a-4542792e7388"), Add(wound.GetID()), Add("97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3"), Add(MementoMoriId), Add(PowerOfKnowledgeId) };
+                Add("f2bed1d3-6b52-43d5-8b97-bfe5c90dce53"), Add("acc7bdd1-8f5b-4738-8c4a-4542792e7388"), Add(wound.GetID()), Add("97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3"), Add(MementoMoriId), Add(PowerOfKnowledgeId), Add(PoxId) };
             foreach (CardState card in created.Skip(6)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-SCALED-DAMAGE-PREPARED seven unchanged originals; armor-inclusive HP, front caster attack, corruption, deck spell type, zero/two allied deaths, Memento Mori and Power of Knowledge.");
+            log.LogInfo("ORIGINAL-SCALED-DAMAGE-PREPARED eight unchanged originals; armor-inclusive HP, front caster attack, corruption, deck spell type, zero/two allied deaths, Memento Mori, Power of Knowledge and room-wide Pox.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
