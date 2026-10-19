@@ -112,6 +112,7 @@ param(
     [switch] $OriginalRoomStatusDamage,
     [switch] $OriginalCorruptionDamage,
     [switch] $OriginalXStatusCards,
+    [switch] $OriginalXBanishedSpike,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -619,6 +620,7 @@ if ($OriginalMoonCardUpgrades) { $BranchCardMasks = $true; $PhysicalSpawnPoints 
 if ($OriginalRoomStatusDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptionDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalXBanishedSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -1179,6 +1181,7 @@ if ($OriginalMoonCardUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalRoomStatusDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-status-damage' }
 if ($OriginalCorruptionDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corruption-damage' }
 if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
+if ($OriginalXBanishedSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-banished-spike' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2589,6 +2592,9 @@ if ($OriginalCorruptionDamage -and (-not $trace.OriginalCorruptionDamagePrepared
 }
 if ($OriginalXStatusCards -and (-not $trace.OriginalXStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
     throw 'Original X-status cards scenario lacks its positive/zero X plays or completed win.'
+}
+if ($OriginalXBanishedSpike -and (-not $trace.OriginalXBanishedSpikePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
+    throw 'Original Spike of the Banished scenario lacks its positive/zero X plays or completed win.'
 }
 if ($OriginalXDamageCards -and (-not $trace.OriginalXDamageCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 9)) {
     throw 'Original X-damage cards scenario lacks its original zero/positive plays or completed win.'

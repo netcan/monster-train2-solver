@@ -1031,6 +1031,20 @@ Use `-OriginalXStatusCards` and `--original-x-status-cards-only`.
 Focused X-status/original-status/X-damage gate:
 `.probe-runs/model-checks-20261019-004044-7d6f97d0/summary.json` (three passed).
 
+`full-battle-original-x-banished-spike.mt2f` retains two unchanged original
+Spikes of the Banished, played at X four and X zero on a selected ally. X four
+adds sixteen Valor and sixteen Attack; X zero leaves both unchanged. Both copies
+are Exhausted, all remaining Ember is consumed, and the neighboring-floor unit
+is unchanged. Raw original effect/trait metadata, exact PlayedCost scaling,
+target selection, and immutable replay are checked. The four-play/five-EndTurn
+Instant battle won in 41.09 seconds with all capture, mismatch, unsupported and
+pending counters at zero; protected files were unchanged. Search matches four
+decisions/six root actions, visits 128/128 states and replays four steps with
+equal serial/parallel best and zero unsupported attempts. Binary-only: 26,143
+bytes/3,450 nodes, SHA-256
+`4140cbd74436bfb5661062366628f99dfb8e1d06c24e7dcd52d21dcd8f7664eb`.
+Use `-OriginalXBanishedSpike` and `--original-x-banished-spike-only`.
+
 `full-battle-original-x-damage-cards.mt2f` retains original Vent and Forever
 Consumed at X zero/three and zero/two, respectively. Zero X has two live enemies
 and leaves health/armor unchanged. Vent deals fifteen to the enemy room,

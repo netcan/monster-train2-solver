@@ -714,6 +714,12 @@ if (args.Length == 2 && args[0] == "--original-x-status-cards-only")
     OriginalXStatusCardsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-x-banished-spike-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalXBanishedSpikeChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-x-damage-cards-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
