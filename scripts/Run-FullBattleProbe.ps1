@@ -2587,7 +2587,7 @@ if ($OriginalRoomStatusDamage -and (-not $trace.OriginalRoomStatusDamagePrepared
 if ($OriginalCorruptionDamage -and (-not $trace.OriginalCorruptionDamagePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
     throw 'Original corruption-damage fixture did not finish its accumulation/fill-to-max and selected-floor controls.'
 }
-if ($OriginalXStatusCards -and (-not $trace.OriginalXStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 8)) {
+if ($OriginalXStatusCards -and (-not $trace.OriginalXStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
     throw 'Original X-status cards scenario lacks its positive/zero X plays or completed win.'
 }
 if ($OriginalXDamageCards -and (-not $trace.OriginalXDamageCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 9)) {

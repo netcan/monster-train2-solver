@@ -22,7 +22,7 @@ internal static class OriginalXStatusCardsChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalXStatusCardsIds").Deserialize<int[]>()!;
         FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 8 && actions.Length == 8, "Missing original positive/zero X plays or controls.");
+        Require(ids.Length == 10 && actions.Length == 10, "Missing original positive/zero X plays or controls.");
         BattleTurnState Before(int index) => actions[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState After(int index) => actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         CombatUnit Unit(BattleTurnState state, int owner) => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[owner]);
@@ -54,13 +54,16 @@ internal static class OriginalXStatusCardsChecks
         }
         Require(Unit(Before(3), 0).Status("buff")?.Stacks == 3 && Unit(Before(3), 0).Status("regen")?.Stacks == 2,
             "Missing positive source statuses.");
-        BattleTurnState refillBefore = Before(6), refillAfter = After(6);
-        CardInstanceState refill = refillBefore.Spawn.Train.Context!.FindCard(ids[6])!;
-        CardPlayRule refillRule = refillBefore.PlayRules!.Cards.Single(card => card.DataId == refill.DataId);
-        Require(refillRule.AssetKey == "PojuXStatusEnergyRefill" && refillRule.Cost == 0 && refillRule.Effects!.Count == 1 &&
-            refillRule.Effects[0].Type == "GainEnergy" && refillRule.Effects[0].Target == "Room" && refillRule.Effects[0].Value == 4 &&
-            refillBefore.Energy == 0 && refillAfter.Energy == 4,
-            "Synthetic energy control must restore exactly four Ember between X=0 and X=4 witnesses.");
+        foreach (int index in new[] { 6, 8 })
+        {
+            BattleTurnState refillBefore = Before(index), refillAfter = After(index);
+            CardInstanceState refill = refillBefore.Spawn.Train.Context!.FindCard(ids[index])!;
+            CardPlayRule refillRule = refillBefore.PlayRules!.Cards.Single(card => card.DataId == refill.DataId);
+            Require(refillRule.AssetKey == "PojuXStatusEnergyRefill" && refillRule.Cost == 0 && refillRule.Effects!.Count == 1 &&
+                refillRule.Effects[0].Type == "GainEnergy" && refillRule.Effects[0].Target == "Room" && refillRule.Effects[0].Value == 4 &&
+                refillBefore.Energy == 0 && refillAfter.Energy == 4,
+                "Synthetic energy control must restore exactly four Ember between X=0 and X=4 witnesses.");
+        }
         foreach (int index in new[] { 5, 7 })
         {
             BattleTurnState before = Before(index), after = After(index);
@@ -97,8 +100,48 @@ internal static class OriginalXStatusCardsChecks
                 targetControls && exhausted && otherUnitsUnchanged && otherFloorsUnchanged,
                 "Prismal Dust X payment/scaling, Consume routing, target isolation or neighboring-floor state differs.");
         }
+        {
+            const int index = 9;
+            BattleTurnState before = Before(index), after = After(index);
+            CardInstanceState card = before.Spawn.Train.Context!.FindCard(ids[index])!;
+            CardPlayRule rule = before.PlayRules!.Cards.Single(candidate => candidate.DataId == card.DataId);
+            CardSourceTrait[] raw = card.MaskDescriptor!.SourceTraits!.ToArray();
+            ScalingStatusTrait[] scaling = card.StatusScalingTraits!.ToArray();
+            const int expected = 4;
+            CombatUnit target = Unit(before, 0), targetAfter = Unit(after, 0);
+            Require(card.DataId == "7684a346-ac5f-41a4-8c88-1691784a185e" && rule.AssetKey == "SpikeOfTheHellhorned" &&
+                rule.Cost == 0 && rule.CostType == "ConsumeRemainingEnergy" && rule.Effects!.Count == 2 &&
+                rule.Effects[0].Type == "AddStatus" && rule.Effects[0].Target == "DropTargetCharacter" &&
+                rule.Effects[0].Statuses.Single().Id == "buff" && rule.Effects[0].Statuses[0].Stacks == 0 &&
+                rule.Effects[1].Type == "AddStatus" && rule.Effects[1].Target == "LastTargetedCharacters" &&
+                rule.Effects[1].Statuses.Single().Id == "armor" && rule.Effects[1].Statuses[0].Stacks == 0 &&
+                raw.Length == 3 && raw[0].Type == "CardTraitScalingAddStatusEffect" && raw[1].Type == "CardTraitScalingAddStatusEffect" &&
+                raw[2].Type == "CardTraitExhaustState" && raw.Take(2).All(trait => trait.Int == 4 && trait.Int2 == 0 && trait.Int3 == 0 &&
+                    !trait.Bool && trait.Str == "" && trait.Float == 1 && trait.Scaling && trait.TrackedValue == "PlayedCost" &&
+                    trait.EntryDuration == "ThisBattle") && raw[0].StatusEffectIds!.SequenceEqual(new[] { "buff" }) &&
+                raw[1].StatusEffectIds!.SequenceEqual(new[] { "armor" }) && scaling.Length == 2 &&
+                scaling.All(trait => trait.Query.Type == "PlayedCost" && trait.StacksPerStat == 4 && trait.Filter == 0) &&
+                scaling[0].StatusIds.SequenceEqual(new[] { "buff" }) && scaling[1].StatusIds.SequenceEqual(new[] { "armor" }),
+                "Original Spike of the Hellhorned effects or paired X-status source traits differ.");
+            int lastCost = after.Spawn.Train.Context!.FindCard(ids[index])!.LastPlayedCost;
+            int rageDelta = (targetAfter.Status("buff")?.Stacks ?? 0) - (target.Status("buff")?.Stacks ?? 0);
+            int armorDelta = (targetAfter.Status("armor")?.Stacks ?? 0) - (target.Status("armor")?.Stacks ?? 0);
+            int attackDelta = targetAfter.Attack - target.Attack;
+            bool targetHealthAndStatuses = targetAfter.Health == target.Health &&
+                targetAfter.Status("regen")?.Stacks == target.Status("regen")?.Stacks &&
+                targetAfter.Status("damage shield")?.Stacks == target.Status("damage shield")?.Stacks;
+            bool otherUnitsUnchanged = JsonSerializer.Serialize(before.Spawn.Train.Rooms[0].Units.Where(unit => unit.Id != target.Id), ModelJson.Options) ==
+                JsonSerializer.Serialize(after.Spawn.Train.Rooms[0].Units.Where(unit => unit.Id != target.Id), ModelJson.Options);
+            bool otherFloorsUnchanged = JsonSerializer.Serialize(before.Spawn.Train.Rooms.Skip(1).Select(room => room.Units), ModelJson.Options) ==
+                JsonSerializer.Serialize(after.Spawn.Train.Rooms.Skip(1).Select(room => room.Units), ModelJson.Options);
+            bool exhausted = after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == ids[index]);
+            Require(before.Energy == expected && after.Energy == 0 && lastCost == expected && rageDelta == expected * 4 && armorDelta == expected * 4 &&
+                attackDelta == rageDelta * 2 &&
+                targetHealthAndStatuses && exhausted && otherUnitsUnchanged && otherFloorsUnchanged,
+                "Spike of the Hellhorned X=4 payment/scaling, Consume routing, target isolation or neighboring-floor state differs.");
+        }
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-X-STATUS-CARDS PASS: unchanged Spike of the Legion and Prismal Dust at X=4/0, paired source traits, positive scaling, target/floor/armor controls, Consume paths and 19 immutable chains.");
+        Console.WriteLine("ORIGINAL-X-STATUS-CARDS PASS: unchanged Spike of the Legion and Prismal Dust at X=4/0 plus Spike of the Hellhorned at X=4, paired traits, target/floor controls and Consume paths.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

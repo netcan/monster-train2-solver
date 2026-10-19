@@ -1008,21 +1008,25 @@ Focused corruption-damage/Soul-Siphon/X-damage gate:
 `.probe-runs/model-checks-20261019-004509-459c4455/summary.json` (three passed).
 
 `full-battle-original-x-status-cards.mt2f` retains two original Spikes of the
-Legion and two original Prismal Dust plays. Spike X four adds eight
-Rage/Regeneration stacks to the target; X zero leaves them unchanged. Armor is
-not propagatable; adjacent and outside-floor controls keep their complete unit
-state. Prismal Dust X four adds four Damage Shield to its selected ally, while
-X zero adds none; both copies enter Exhausted. A synthetic energy control restores
-four Ember between the original-card witnesses. The Spike paired Consume/scaling
-traits require exact source multiplier two/filter one; Prismal Dust retains its
-one-per-PlayedCost Damage Shield trait. Eight plays/five EndTurns win with
-nineteen immutable full-chain comparisons. Search matches eight decisions/13
-root actions, visits 128/128 states and replays three steps with equal
-serial/parallel best and zero unsupported attempts. Source
-`.probe-runs/full-battle-units-spells-and-junk-20261019-131033-1bf0138c` won in
-45.98 seconds with all four battle counters zero and protected files unchanged.
-Binary-only: 26,673 bytes/3,664 nodes, SHA-256
-`b00da67b5d31598c681b67ab614024bbf2240a0e4dfab313ff4311f2d5384c21`.
+Legion, two original Prismal Dust plays and one original Spike of the
+Hellhorned. Spike of the Legion X four adds eight Rage/Regeneration stacks to
+the target; X zero leaves them unchanged. Armor is not propagatable; adjacent
+and outside-floor controls keep their complete unit state. Prismal Dust X four
+adds four Damage Shield to its selected ally, while X zero adds none; both copies
+enter Exhausted. Spike of the Hellhorned X four adds 16 Rage and 16 Armor to its
+selected ally through ordered DropTarget and LastTargeted effects, increasing
+Attack by 32. Two synthetic controls restore four Ember for the positive Prismal
+Dust and Spike of the Hellhorned plays. The Spike of the Legion paired
+Consume/scaling traits require exact source multiplier two/filter one; Prismal
+Dust retains its one-per-PlayedCost Damage Shield trait; Spike of the Hellhorned
+retains paired four-per-PlayedCost Rage/Armor traits. Ten plays/five EndTurns win
+with 16 independent immutable branches. Search matches ten decisions/17 root
+actions, visits 128/128 states and replays three steps with equal serial/parallel
+best and zero unsupported attempts. Source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-131857-ac0aad90` won in
+52.50 seconds with all four battle counters zero and protected files unchanged.
+Binary-only: 28,164 bytes/4,025 nodes, SHA-256
+`221d88c8c7b11e27d0f269811d386d480752ea534664a3587c09dbfa11ca9928`.
 Use `-OriginalXStatusCards` and `--original-x-status-cards-only`.
 Focused X-status/original-status/X-damage gate:
 `.probe-runs/model-checks-20261019-004044-7d6f97d0/summary.json` (three passed).
