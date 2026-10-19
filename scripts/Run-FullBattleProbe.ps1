@@ -2652,8 +2652,8 @@ if ($OriginalTomeOfContracts -and ($trace.Schema -ne 248 -or $trace.ModifierScen
     -not $trace.OriginalTomeOfContractsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
     throw 'Original Tome of Contracts witness lacks two control unit plays and the direct Spell play.'
 }
-if ($OriginalSupportUnits -and (-not $trace.OriginalSupportUnitsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 33)) {
-    throw 'Original support unit witness lacks sixteen unchanged units and positive native death-resource callback controls.'
+if ($OriginalSupportUnits -and (-not $trace.OriginalSupportUnitsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 34)) {
+    throw 'Original support unit witness lacks seventeen unchanged units and positive native death-resource callback controls.'
 }
 if ($OriginalAttackOverrides -and (-not $trace.OriginalAttackOverridesPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 29)) {
     throw 'Original attack override witness lacks unchanged equipment and positive priority/removal damage controls.'

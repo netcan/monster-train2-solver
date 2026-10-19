@@ -7682,8 +7682,8 @@ dotnet run --project src/ModelChecks -c Release -- --original-first-imp-bonus-on
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
 ```
 
-`full-battle-original-support-units.mt2f` captures sixteen unchanged original
-units across 33 plays and five EndTurns. It verifies native births/costs and
+`full-battle-original-support-units.mt2f` captures seventeen unchanged original
+units across 34 plays and five EndTurns. It verifies native births/costs and
 spawn triggers for Starter Imp (16 damage through armor), Hollow maximum-health
 increases that preserve current HP, Enoki's +1 Regen/+1 MaxHealth rally, and
 Welder Helper/Aggressive Imp effects. Awoken and Thorned Hollow healing,
@@ -7696,21 +7696,23 @@ is born unchanged at 20/40 with size 2 and cost 2; its captured OnHit effect
 targets LastAttackerCharacter for one Melee Weakness, but this route does not
 trigger the effect and makes no claim about its resolved status application.
 Blighted Totem is born unchanged at 0/1, size 1 and cost 1. Its captured
-CardSpellPlayed callback adds two Poison to the room, but it is the final card
-play in this witness, so the callback remains untriggered and its status
-application is not claimed.
+CardSpellPlayed callback adds two Poison to the room, but no Spell follows it
+in this witness, so the callback remains untriggered and its status application
+is not claimed. Prosperity Totem is also born unchanged at 0/1, size 1 and cost
+1; its CardSpellPlayed callback draws next turn, and likewise remains
+untriggered. Neither callback's resolved effect is claimed.
 Swordmaiden's captured Equipment DrawType is a no-match control: the only
 equipment remains in hand, outside draw/discard, so this archive does not claim
 a successful native draw. Positive typed-draw selection remains covered by the
 focused pure model checks.
 
-The isolated Instant native run took 326.11 seconds with preview RNG isolated;
+The isolated Instant native run took 346.39 seconds with preview RNG isolated;
 it won with CaptureFailures, Mismatches, Unsupported and Pending all zero and
-the protected original files unchanged. The 59,486-byte binary archive has
-12,234 unique nodes and SHA-256
-`99d846c9cc35d56db93533537b0078d9fee3009c219e0aae50ea32d27ed63f35`.
-The native checks pass, and a 128-state serial/parallel search matches all 33
-recorded decisions with 74 root actions. The unit-trigger
+the protected original files unchanged. The 61,059-byte binary archive has
+12,615 unique nodes and SHA-256
+`ba04f58cd8e7fe8e7fa532e12d8742c15daecae591493d6ee37a10252aabbd91`.
+The native checks pass, and a 128-state serial/parallel search matches all 34
+recorded decisions with 77 root actions. The unit-trigger
 model requires captured Hoard amount, cap and Pyre liveness, and rejects a
 change if any tracked card has a Dragon's Hoard-scaled unit upgrade because
 live stat refresh is not modeled.
