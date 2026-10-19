@@ -1195,9 +1195,7 @@ namespace MonsterTrain2Poju.Model
                     if (selfAttack && self == null || targets.UnitIds.Count == 0 && self?.Status("sweep") == null) continue;
                     RoomCombatState? firstRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == (selfAttack ? selfUnitId : targets.UnitIds[0])));
                     if (!effect.UseSelectedRoom && firstRoom == null) continue;
-                    // Native Pyre targeting moves room selection to the Pyre floor before this effect runs.
-                    int selectedRoomForEffect = effect.Target == "Pyre" && firstRoom != null ? firstRoom.RoomIndex : roomIndex;
-                    int attackRoom = !selfAttack && effect.UseSelectedRoom ? selectedRoomForEffect : firstRoom!.RoomIndex;
+                    int attackRoom = !selfAttack && effect.UseSelectedRoom ? roomIndex : firstRoom!.RoomIndex;
                     foreach (int actorId in selfAttack ? new[] { selfUnitId } : targets.UnitIds)
                     {
                         CombatUnit? actor = state.Rooms.SelectMany(item => item.Units).FirstOrDefault(unit => unit.Id == actorId);

@@ -164,6 +164,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-mine-collapse.mt2f',
     'full-battle-original-imp-olate.mt2f',
     'full-battle-original-imp-olate-zero.mt2f',
+    'full-battle-original-pyreshot.mt2f',
     'full-battle-original-x-damage-cards.mt2f',
     'full-battle-original-unpurgable-cards.mt2f',
     'full-battle-original-hand-costs.mt2f',
@@ -2216,6 +2217,17 @@ foreach ($fixturePath in $originalImpOlateZeroFixtures) {
     foreach ($mode in @('--original-imp-olate-zero-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Imp Olate zero-Imp checks failed ($mode): $fixturePath" }
+    }
+}
+$originalPyreshotFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-pyreshot.mt2f' })
+foreach ($fixturePath in $originalPyreshotFixtures) {
+    foreach ($mode in @('--attack-with-unit-pure', '--original-pyreshot-only', '--battle-search-only')) {
+        if ($mode -eq '--attack-with-unit-pure') {
+            dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode
+        } else {
+            dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        }
+        if ($LASTEXITCODE -ne 0) { throw "Original Pyreshot checks failed ($mode): $fixturePath" }
     }
 }
 $originalStrongMagicFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-strong-magic-cards.mt2f' })

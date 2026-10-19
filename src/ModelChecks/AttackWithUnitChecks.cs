@@ -53,11 +53,11 @@ internal static class AttackWithUnitChecks
         TrainCombatState crossRoom = Train([Unit(3, "selected-floor-decoy", CombatTeam.Enemy, 1, 100)], [pyre, pyreFloorEnemy]);
         var pyreAttack = new CardActionEffect("AttackWithUnit", "Pyre", 0, false, false, [], useSelectedRoom: true);
         TrainSpellResult selectedRoom = CardSpellModel.Apply(crossRoom, 0, [pyreAttack], 0);
-        Require(selectedRoom.Supported && selectedRoom.State!.Rooms[0].Units.Single(unit => unit.Id == 3).Health == 100 &&
-            selectedRoom.State.Rooms[3].Units.Single(unit => unit.Id == 13).Health == 55 &&
+        Require(selectedRoom.Supported && selectedRoom.State!.Rooms[0].Units.Single(unit => unit.Id == 3).Health == 55 &&
+            selectedRoom.State.Rooms[3].Units.Single(unit => unit.Id == 13).Health == 100 &&
             selectedRoom.State.Rooms[3].Units.Single(unit => unit.Id == 12).Health == 80 &&
             selectedRoom.State.Rooms.All(room => ReferenceEquals(room.Context, selectedRoom.State.Context)),
-            "The Pyre attack used the card's drop room instead of the target-selected room.");
+            "The Pyre attack used the Pyre's room instead of the card-selected room.");
 
         CombatUnit remoteActor = Actor();
         TrainCombatState externalRoot = new([
