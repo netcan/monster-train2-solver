@@ -1,6 +1,7 @@
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 internal static class TrainCombatChecks
 {
@@ -89,12 +90,12 @@ internal static class TrainCombatChecks
         int matched = 0, unsupported = 0;
         foreach (FixtureValue phase in phases.EnumerateArray())
         {
+            string kind = phase.GetProperty("Kind").GetString()!;
             TrainCombatState before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!;
-            TrainCombatResult result = phase.GetProperty("Kind").GetString() == "Combat"
-                ? TrainCombatModel.ResolveCombat(before) : TrainCombatModel.Ascend(before);
+            TrainCombatResult result = kind == "Combat" ? TrainCombatModel.ResolveCombat(before) : TrainCombatModel.Ascend(before);
             if (!result.Supported) { unsupported++; continue; }
             TrainCombatState actual = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
-            Require(Comparable(result.State!) == Comparable(actual),
+            Require(Comparable(result.State!, kind) == Comparable(actual, kind),
                 "Native train state differs at phase " + phase.GetProperty("Index"));
             matched++;
         }
@@ -103,6 +104,15 @@ internal static class TrainCombatChecks
         Console.WriteLine($"NATIVE-TRAIN-CHECKS PASS: {matched} matched, {unsupported} unsupported.");
     }
 
-    private static string Comparable(TrainCombatState state) => JsonSerializer.Serialize(new
-        { Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(), Context = BattleTurnChecks.ComparableContext(state.Context) });
+    private static string Comparable(TrainCombatState state, string kind)
+    {
+        JsonNode comparable = JsonNode.Parse(JsonSerializer.Serialize(new
+        {
+            Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(),
+            Context = BattleTurnChecks.ComparableContext(state.Context)
+        }))!;
+        // DoTurn may finish the next draw before an Ascend wrapper captures its result.
+        if (kind == "Ascend") (comparable["Context"]?["Statistics"] as JsonObject)?.Remove("StoredCards");
+        return comparable.ToJsonString();
+    }
 }

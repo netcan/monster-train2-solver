@@ -456,7 +456,7 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "decay", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
-            "fixedattack", "armorattack", "equalizer"
+            "fixedattack", "armorattack", "equalizer", "inert", "spark"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -2056,10 +2056,20 @@ namespace MonsterTrain2Poju.Model
                     Trigger(actor, "dazed", 1);
                     Emit("Dazed", actor, actor, 0);
                 }
+                // Inert checks fuel before Spark consumes one stack. The last stack still
+                // permits this entire unit turn, including every Multistrike attack.
+                bool inert = !dazed && actor.Has("inert") && Active(actor.Statuses["inert"]) && !actor.Has("spark");
+                if (inert)
+                {
+                    if (!ignoreAttackPrevention) cannotAttackOrHeal.Add(actor.Source.Id);
+                    Trigger(actor, "inert", 1);
+                    Emit("Inert", actor, actor, 0);
+                }
+                if (actor.Has("spark") && Active(actor.Statuses["spark"])) Trigger(actor, "spark", 1);
                 // Native queues this after attack/trigger prevention, before attack conditions.
                 // Ignored-silence triggers can run while dazed, without restoring this turn's attack.
                 FireTriggers(actor, "OnTurnBegin", canFireTriggers: !dazed);
-                if (!actor.Alive || dazed && !ignoreAttackPrevention || !actor.Source.CanAttack || actor.Attack <= 0) return;
+                if (!actor.Alive || (dazed || inert) && !ignoreAttackPrevention || !actor.Source.CanAttack || actor.Attack <= 0) return;
                 int multistrikeExtraAttacks = actor.Statuses.TryGetValue("multistrike", out CombatStatus? multi)
                     ? CombatUnit.AdditionalAttacks(multi) : 0;
                 int strikes = actor.Attacks;

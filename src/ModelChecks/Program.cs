@@ -461,6 +461,17 @@ if (args.Length == 1 && args[0] == "--status-callback-pure")
     StatusCallbackChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--fuel-pure")
+{
+    FuelChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-fuel-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalFuelChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--triggered-typed-draw-pure")
 {
     TriggeredTypedDrawChecks.Run();

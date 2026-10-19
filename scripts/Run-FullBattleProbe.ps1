@@ -97,6 +97,7 @@ param(
     [switch] $OriginalReactiveUnits,
     [switch] $OriginalAttackOverrides,
     [switch] $OriginalSupportUnits,
+    [switch] $OriginalFuel,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
@@ -587,6 +588,7 @@ if ($OriginalFriendlyStatuses) { $BranchCardMasks = $true; $PhysicalSpawnPoints 
 if ($OriginalBasicDamage) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalResourceSpells) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHostileStatuses) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalFuel) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSupportUnits) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalAttackOverrides) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalReactiveUnits) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -1136,6 +1138,7 @@ if ($OriginalFriendlyStatuses) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalBasicDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-basic-damage' }
 if ($OriginalResourceSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-resource-spells' }
 if ($OriginalHostileStatuses) { $environment['MT2_PROBE_MODIFIERS'] = 'original-hostile-statuses' }
+if ($OriginalFuel) { $environment['MT2_PROBE_MODIFIERS'] = 'original-fuel' }
 if ($OriginalSupportUnits) { $environment['MT2_PROBE_MODIFIERS'] = 'original-support-units' }
 if ($OriginalAttackOverrides) { $environment['MT2_PROBE_MODIFIERS'] = 'original-attack-overrides' }
 if ($OriginalReactiveUnits) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reactive-units' }
@@ -2411,6 +2414,9 @@ if ($OriginalUnitBuffs -and (-not $trace.OriginalUnitBuffsPrepared -or -not $tra
 }
 if ($OriginalKillCopy -and (-not $trace.OriginalKillCopyPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 12)) {
     throw 'Original Surgical Strike witness lacks original and copied plays with target-team and lethal controls.'
+}
+if ($OriginalFuel -and (-not $trace.OriginalFuelPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 13)) {
+    throw 'Original fuel witness lacks unchanged Construct, forced empty/last fuel, feeding and refill controls.'
 }
 if ($OriginalSupportUnits -and (-not $trace.OriginalSupportUnitsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 29)) {
     throw 'Original support unit witness lacks thirteen unchanged units and positive native callback controls.'

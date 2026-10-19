@@ -908,6 +908,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalResourceSpellsIds = OriginalResourceSpellsScenario.CardIds,
                 OriginalHostileStatusesPrepared = OriginalHostileStatusesScenario.Prepared,
                 OriginalHostileStatusesIds = OriginalHostileStatusesScenario.CardIds,
+                OriginalFuelPrepared = OriginalFuelScenario.Prepared,
+                OriginalFuelIds = OriginalFuelScenario.CardIds,
                 OriginalSupportUnitsPrepared = OriginalSupportUnitsScenario.Prepared,
                 OriginalSupportUnitsIds = OriginalSupportUnitsScenario.CardIds,
                 OriginalAttackOverridesPrepared = OriginalAttackOverridesScenario.Prepared,

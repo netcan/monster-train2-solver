@@ -7358,3 +7358,30 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --triggered-typed-draw-pure
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-support-units.mt2f
 ```
+
+### Original Alloyed Construct fuel
+
+`full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
+original Shadow Morsel alongside isolated target/control cards. Native evidence
+checks the original cost and 25/25 Construct with two Spark, Inert and
+Multistrike 2; three forced attacks exercise two/one/zero-fuel consumption and
+the empty-fuel forced-bypass control. In normal combat, empty fuel blocks the
+first attack, the Morsel's OnEaten raises max health to 34 and adds one Spark,
+and the selected refill adds one more. The following two turns each deal 50
+damage while consuming one Spark, including the last-stack turn. The focused
+model checks also cover Dazed, missing targets, disabled attacks, trigger order,
+RNG stability and immutable branches.
+
+The 89.40-second Instant native run won with 13 actions, seven EndTurns and 14
+train phases; CaptureFailures, Mismatches, Unsupported and Pending were all
+zero, and protected original files were unchanged. The 46,997-byte archive has
+8,400 unique nodes and SHA-256
+`16f02008532a7cb4396098c62ac58ad816c121c68b7e6eff52a950d36682ae20`. Native
+checks and 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-fuel.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-fuel-only tests/fixtures/full-battle-original-fuel.mt2f
+dotnet run --project src/ModelChecks -c Release -- --fuel-pure
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-fuel.mt2f
+```

@@ -84,8 +84,8 @@ namespace MonsterTrain2Poju.Probe
                 record.Actual = Capture();
                 if (record.Predicted.Supported)
                 {
-                    JToken expected = Comparable(record.Predicted.State!);
-                    JToken actual = Comparable(record.Actual);
+                    JToken expected = Comparable(record.Predicted.State!, record.Kind);
+                    JToken actual = Comparable(record.Actual, record.Kind);
                     record.Difference = JToken.DeepEquals(expected, actual) ? null : "Train room unit states differ";
                     log.LogInfo("TRAIN-MODEL-" + (record.Difference == null ? "MATCH" : "MISMATCH") +
                         " index=" + record.Index + " kind=" + record.Kind + " turn=" + record.Turn);
@@ -96,8 +96,19 @@ namespace MonsterTrain2Poju.Probe
             catch (Exception error) { trace.CaptureFailure(error); }
         }
 
-        private static JToken Comparable(TrainCombatState state) => JToken.FromObject(new
-            { Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(), Context = BattleTurnProbe.ComparableContext(state.Context) });
+        private static JToken Comparable(TrainCombatState state, string kind)
+        {
+            JObject comparable = JObject.FromObject(new
+            {
+                Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(),
+                Context = BattleTurnProbe.ComparableContext(state.Context)
+            });
+            // HeroManager.DoTurn can finish the next draw before its wrapper returns.
+            // That draw refreshes card ownership statistics outside Ascend's model.
+            if (kind == "Ascend" && comparable["Context"]?["Statistics"] is JObject statistics)
+                statistics.Remove("StoredCards");
+            return comparable;
+        }
 
         internal sealed class Record
         {
