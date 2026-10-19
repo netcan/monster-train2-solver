@@ -176,6 +176,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-overflow-cards.mt2f',
     'full-battle-original-corrupt-restricted.mt2f',
     'full-battle-original-perfect-insanity.mt2f',
+    'full-battle-original-starter-reform.mt2f',
     'full-battle-original-status-stack-damage.mt2f',
     'full-battle-original-specific-card-damage.mt2f',
     'full-battle-original-scaled-energy.mt2f',
@@ -2100,6 +2101,13 @@ foreach ($fixturePath in $originalPerfectInsanityFixtures) {
     foreach ($mode in @('--original-perfect-insanity-only', '--native-actions-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Perfect Insanity checks failed ($mode): $fixturePath" }
+    }
+}
+$originalStarterReformFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-starter-reform.mt2f' })
+foreach ($fixturePath in $originalStarterReformFixtures) {
+    foreach ($mode in @('--original-starter-reform-only', '--native-actions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Starter Reform checks failed ($mode): $fixturePath" }
     }
 }
 $originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })

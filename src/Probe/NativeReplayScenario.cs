@@ -1167,6 +1167,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalPerfectInsanityScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalStarterReformScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Starter Reform fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalStarterReformScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoonCardUpgradesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original moon card upgrades must start on deployment turn.");
@@ -2614,6 +2620,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalFeedingFrenzyScenario.Enabled) pendingPlay = OriginalFeedingFrenzyScenario.Choose(decision, OriginalFeedingFrenzyScenario.CardIds);
                 if (OriginalTitansGratitudeScenario.Enabled) pendingPlay = OriginalTitansGratitudeScenario.Choose(decision, OriginalTitansGratitudeScenario.CardIds);
                 if (OriginalPerfectInsanityScenario.Enabled) pendingPlay = OriginalPerfectInsanityScenario.Choose(decision, OriginalPerfectInsanityScenario.CardIds);
+                if (OriginalStarterReformScenario.Enabled) pendingPlay = OriginalStarterReformScenario.Choose(decision, OriginalStarterReformScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);
                 if (StewardsQuartersScenario.Enabled) pendingPlay = StewardsQuartersScenario.Choose(decision, StewardsQuartersScenario.CardIds);

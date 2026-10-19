@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-19): 569 archives (529 full battles and
+Current manifest inventory (2026-10-19): 570 archives (530 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,7 +14,7 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-568 indexed archives. Refresh/check the index with
+569 indexed archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
 `full-battle-original-attack-overrides.mt2f` captures unchanged Irontongue and
@@ -1453,6 +1453,20 @@ This covers one friendly target and sufficient selected-room corruption; enemy
 targets, insufficient corruption and other upgrade/relic interactions remain
 outside this fixture. Use `-OriginalPerfectInsanity` and
 `--original-perfect-insanity-only`.
+
+`full-battle-original-starter-reform.mt2f` plays unchanged one-cost Starter
+Reform with a sole controlled Monster in Exhaust. Its native RandomToHand
+recursion returns that Train Steward, applies the original Raise upgrade
+(+5/+5, -99 cost and Ephemeral), pays one Ember, and discards the spell. This
+fixture isolates the single eligible recursion candidate; other Exhaust
+contents, hand overflow and competing upgrades are not claimed. Use
+`-OriginalStarterReform` and `--original-starter-reform-only`.
+
+The 37-stage native win has two plays and five EndTurns; the dedicated check,
+action-policy replay and 128-state serial/parallel search pass with zero capture
+failures, mismatches, unsupported transitions or pending records. Binary-only:
+25,366 bytes, 3,216 unique nodes, SHA-256
+`f59fa180d983d73a9b3bd7371d9b1952b9b18671d3fab4f9a55ac1b60f79d3c6`.
 
 `full-battle-original-pyre-gro.mt2f` plays unchanged zero-cost PyreGro. Its
 native ordered effects reduce next-turn draw by two and add one recurring
