@@ -1,4 +1,5 @@
 "DataId"	"AssetKey"	"Archive"	"MatchingDefinitionPlays"	"OtherRecordedPlays"	"MatchingActionIndices"	"OtherActionIndices"
+"71df734f-cb47-4f8b-a298-d15052e6b396"	"AcceleratedIncubation"	"full-battle-original-accelerated-incubation.mt2f"	"1"	"0"	"2"	""
 "2ffb1e93-357a-4d82-800a-f41524766981"	"AcidShower"	"full-battle-original-status-compositions.mt2f"	"1"	"0"	"8"	""
 "6f23bf7b-49c3-4a30-aa84-542ab9f939d0"	"AdaptiveMutation"	"full-battle-adaptive-mutation.mt2f"	"3"	"0"	"5,6,7"	""
 "5a8399dd-a958-4317-b814-de0e2972ca3d"	"AggressiveImp"	"full-battle-original-after-draw-generation-relics.mt2f"	"0"	"1"	""	"15"
@@ -1745,6 +1746,7 @@
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-numeric-ranges-lethal-ui-isolated.mt2f"	"0"	"2"	""	"0,1"
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-numeric-ranges-ui-isolated.mt2f"	"0"	"2"	""	"0,1"
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-numeric-upgrades.mt2f"	"0"	"2"	""	"0,1"
+"d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-accelerated-incubation.mt2f"	"0"	"2"	""	"0,1"
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-add-snack-on-kill.mt2f"	"0"	"1"	""	"0"
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-after-draw-generation-relics.mt2f"	"0"	"2"	""	"0,1"
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-attack-overrides.mt2f"	"0"	"4"	""	"0,1,2,3"

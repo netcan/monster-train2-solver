@@ -7405,3 +7405,21 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-car
 dotnet run --project src/ModelChecks -c Release -- --original-card-draw-potion-only tests/fixtures/full-battle-original-card-draw-potion.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-draw-potion.mt2f
 ```
+
+### Original Accelerated Incubation
+
+`full-battle-original-accelerated-incubation.mt2f` directly plays the unchanged
+zero-cost Accelerated Incubation after two friendly Stewards are in the room.
+The isolated support setup gives both controls Hatch 3; the native room effect
+removes all three stacks from both units and routes the Exhaust card to its
+original pile. The three-play Instant battle won in 36.89 seconds with five
+EndTurns, zero capture failures, mismatches, unsupported transitions or pending
+records, and unchanged protected files. The 23,403-byte archive has 2,779
+unique nodes and SHA-256
+`16e2044b25f69db7c7c1acc3da0b095aab2ee88156a49fe04b6b5500f28d5e76`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+dotnet run --project src/ModelChecks -c Release -- --original-accelerated-incubation-only tests/fixtures/full-battle-original-accelerated-incubation.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-accelerated-incubation.mt2f
+```

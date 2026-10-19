@@ -69,6 +69,7 @@ param(
     [switch] $OriginalEffectApplications,
     [switch] $OriginalPileDraw,
     [switch] $OriginalCardDrawPotion,
+    [switch] $OriginalAcceleratedIncubation,
     [switch] $OriginalPileRecursion,
     [switch] $OriginalScaledBuff,
     [switch] $OriginalPileStatus,
@@ -571,6 +572,7 @@ if ($OriginalStatusRemovalScaling) { $BranchCardMasks = $true; $Policy = 'units-
 if ($OriginalEffectApplications) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPileDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardDrawPotion) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalAcceleratedIncubation) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPileRecursion) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledBuff) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPileStatus) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -1123,6 +1125,7 @@ if ($OriginalStatusRemovalScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'orig
 if ($OriginalEffectApplications) { $environment['MT2_PROBE_MODIFIERS'] = 'original-effect-applications' }
 if ($OriginalPileDraw) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-draw' }
 if ($OriginalCardDrawPotion) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-potion' }
+if ($OriginalAcceleratedIncubation) { $environment['MT2_PROBE_MODIFIERS'] = 'original-accelerated-incubation' }
 if ($OriginalPileRecursion) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-recursion' }
 if ($OriginalScaledBuff) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-buff' }
 if ($OriginalPileStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-status' }
@@ -2424,6 +2427,10 @@ if ($OriginalFuel -and (-not $trace.OriginalFuelPrepared -or -not $trace.NativeW
 if ($OriginalCardDrawPotion -and ($trace.Schema -ne 247 -or $trace.ModifierScenario -ne 'original-card-draw-potion' -or
     -not $trace.OriginalCardDrawPotionPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3)) {
     throw 'Original Card Draw Potion witness lacks its unchanged direct play and native next-turn draw.'
+}
+if ($OriginalAcceleratedIncubation -and ($trace.ModifierScenario -ne 'original-accelerated-incubation' -or
+    -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
+    throw 'Original Accelerated Incubation witness lacks two control unit plays and the direct Spell play.'
 }
 if ($OriginalSupportUnits -and (-not $trace.OriginalSupportUnitsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 29)) {
     throw 'Original support unit witness lacks thirteen unchanged units and positive native callback controls.'

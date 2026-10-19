@@ -587,6 +587,12 @@ if (args.Length == 2 && args[0] == "--original-card-draw-potion-only")
     OriginalCardDrawPotionChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-accelerated-incubation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalAcceleratedIncubationChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-effect-applications-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
