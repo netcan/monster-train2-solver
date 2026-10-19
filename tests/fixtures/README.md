@@ -3265,8 +3265,12 @@ room mechanism coverage, not original relic-owner evidence.
 branches of `CardEffectSpawnMonsterOrAddStatusEffect` across two native skill
 activations.
 `full-battle-sacrifice-effects.mt2f` covers native `CardEffectSacrifice` target
-selection, death callbacks, spawner exhaustion and a 23-action, seven-turn battle;
-the binary archive is 30,799 bytes with 5,088 unique nodes and no JSON source.
+selection, death callbacks, spawner exhaustion and two unchanged ImpProvisation
+casts in a 23-action, seven-turn battle. Both original plays match the frozen
+definition; their sacrificed units leave the room. The schema-103 archive is
+40,809 bytes with 6,324 unique nodes and SHA-256
+`a2e6bc01d53847703bf14bd5032fee002f795db63303373828303430a0d924c1`; no JSON
+source is tracked.
 `full-battle-relic-card-piercing-upgrades.mt2f` verifies a native relic's
 IgnoreArmor trait survives temporary upgrade composition and drives card piercing.
 `full-battle-generation-relic-card-status-upgrades.mt2f` combines generated-card
