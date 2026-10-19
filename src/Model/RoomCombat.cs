@@ -1067,6 +1067,18 @@ namespace MonsterTrain2Poju.Model
                             if (summonError != null) return summonError;
                             continue;
                         }
+                        if (effect.Type == "CardEffectSpawnMonsterOrAddStatusEffect")
+                        {
+                            CardActionEffect? action = effect.Action;
+                            string? filterError = action?.Filters?.Validate();
+                            if (action?.Type != "SpawnOrStatus" || action.Target != "Room" || action.AllowEnemy ||
+                                !action.AllowPlayer || action.Statuses.Count == 0 || action.SpawnFallbackUnit == null ||
+                                action.Range != null || filterError != null)
+                                return filterError ?? "Unsupported triggered spawn-or-status definition.";
+                            if (action.Statuses.Any(status => !KnownStatuses.Contains(status.Id)))
+                                return "Unmodeled triggered spawn-or-status status.";
+                            continue;
+                        }
                         if (effect.Type is "CardEffectRemoveStatusEffectPerCorrupt" or "CardEffectSacrifice" or "CardEffectForceHatchCheck")
                         {
                             CardActionEffect? hatch = effect.Action;
@@ -3799,12 +3811,17 @@ namespace MonsterTrain2Poju.Model
                         continue;
                     }
                     if (action.Tests?.ShouldTest == false) continue;
-                    CardTargets targets = TriggerTargets(actor, action, testing: true, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId);
-                    if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
-                    if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
-                    bool valid = effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
-                        ? NoPlayerUnitsInActorRoom(actor)
-                        : action.Type == "AddStatus" ? StatusTest(actor, effect, targets) : ActionTestValid(action, targets, TestActionAmount(action));
+                    bool valid;
+                    if (action.Type == "SpawnOrStatus") valid = SpawnOrStatusCanApply(actor, action, trigger.Kind);
+                    else
+                    {
+                        CardTargets targets = TriggerTargets(actor, action, testing: true, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId);
+                        if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
+                        if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                        valid = effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
+                            ? NoPlayerUnitsInActorRoom(actor)
+                            : action.Type == "AddStatus" ? StatusTest(actor, effect, targets) : ActionTestValid(action, targets, TestActionAmount(action));
+                    }
                     if (!valid && action.Tests?.FailToCast == true) return false;
                     passed |= valid;
                 }
@@ -3901,9 +3918,115 @@ namespace MonsterTrain2Poju.Model
 
             private int TestActionAmount(CardActionEffect action) => action.Type == "Damage" ? SampleActionAmount(action) : action.Value;
 
+            private CombatUnit[] SpawnOrStatusTargets(WorkingUnit actor, CardActionEffect action) => units
+                .Where(unit => unit.Source.Team == CombatTeam.Player && unit.InRoom && !unit.Removed && !unit.Despawned &&
+                    !unit.Source.IsPyre && unit.Source.IsBoss != true &&
+                    (unit.Alive || unit.Count("endless") > 0 || unit.Count("undying") > 0) &&
+                    (string.IsNullOrEmpty(action.Filters?.Subtype) || unit.Source.Subtypes.Contains(action.Filters.Subtype)))
+                .Select(unit => unit.Freeze()).ToArray();
+
+            private bool SpawnOrStatusCanApply(WorkingUnit actor, CardActionEffect action, string triggerKind)
+            {
+                RoomCapacityState? room = context?.RoomCapacities?.FirstOrDefault(item => item.RoomIndex == source.RoomIndex);
+                if (room == null || context?.SpawnPoints == null)
+                { unsupportedReason = "Triggered spawn-or-status requires captured room and physical spawn-point state."; return false; }
+                if (room.IsPyre) return false;
+                if (SpawnOrStatusTargets(actor, action).Length > 0) return true;
+                SpawnPointGroupState? points = context.SpawnPoints.SelectedGroup(source.RoomIndex, CombatTeam.Player);
+                if (points == null || points.GroupCount == 0) return false;
+                bool dyingMonster = triggerKind == "OnDeath" && actor.Source.Team == CombatTeam.Player && !actor.Alive &&
+                    actor.Source.IsPyre == false && actor.Source.IsBoss != true;
+                return dyingMonster || points.Occupants[0] == 0;
+            }
+
+            private bool ApplyTriggeredSpawnOrStatus(WorkingUnit actor, CardActionEffect action, string triggerKind)
+            {
+                if (source.Preview) return true;
+                if (!SpawnOrStatusCanApply(actor, action, triggerKind))
+                    return unsupportedReason == null && action.Tests?.CancelSubsequent != true;
+                if (action.Statuses.Count == 0 || action.SpawnFallbackUnit == null)
+                { unsupportedReason = "Triggered spawn-or-status requires its status and fallback unit definitions."; return false; }
+
+                CombatStatus status = action.Statuses[0];
+                if (action.Statuses.Count > 1)
+                {
+                    RngDraw draw = context!.BattleRng.Range(0, action.Statuses.Count);
+                    context = context.WithBattleRng(draw.State);
+                    status = action.Statuses[draw.Value];
+                }
+                CombatUnit[] targets = SpawnOrStatusTargets(actor, action);
+                if (targets.Length > 0)
+                {
+                    RoomCombatResult applied = StatusApplicationModel.ApplyRetained(RetainedStatusRoom(actor,
+                        new[] { targets[0].Id }), targets[0].Id, status, actor.Source.SpawnerCardId,
+                        fromEffectType: "CardEffectSpawnMonsterOrAddStatusEffect",
+                        allowStackModifiers: !action.DisallowStatusStackModifiers);
+                    if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
+                    context = applied.State!.Context;
+                    foreach (CombatUnit changed in applied.State.Units)
+                    {
+                        WorkingUnit? current = units.FirstOrDefault(unit => unit.Source.Id == changed.Id);
+                        current?.Apply(changed);
+                    }
+                    foreach (QueuedCharacterTrigger callback in applied.PendingCallbacks) QueueCallback(callback);
+                    foreach (CombatEvent item in applied.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
+                    battleWon |= applied.Outcome == RoomOutcome.BattleWon;
+                    return true;
+                }
+
+                var definition = new CardPlayRule("triggered-cardless-spawn:" + action.SpawnFallbackUnit.AssetKey,
+                    "CardlessTriggeredSpawn", 0, "SpawnMonster", "Room", action.SpawnFallbackUnit,
+                    Array.Empty<string>(), cardType: "Monster");
+                var cardless = new CombatStatus("cardless", 1, triggerVfxEnemy: false, triggerVfxPlayer: false,
+                    stackable: false, hidden: false, displayCategory: "Persistent",
+                    propagatable: status.Propagatable.HasValue ? false : null,
+                    excludeHeroPropagation: status.ExcludeHeroPropagation.HasValue ? false : null,
+                    excludeMonsterPropagation: status.ExcludeMonsterPropagation.HasValue ? false : null);
+                var additional = new SpawnStatusApplication(status, actor.Source.SpawnerCardId, !action.DisallowStatusStackModifiers,
+                    "CardEffectSpawnMonsterOrAddStatusEffect");
+                bool canFreeDyingActor = triggerKind == "OnDeath" && actor.Source.Team == CombatTeam.Player && !actor.Alive &&
+                    actor.Source.IsPyre == false && actor.Source.IsBoss != true && context!.SpawnPoints!.Units
+                        .FirstOrDefault(unit => unit.UnitId == actor.Source.Id)?.Current != null;
+                UnitBirthResult born = UnitBirthModel.SpawnWithStatus(CurrentRoom(), definition, 0, 0, cardless, additional);
+                if (!born.Supported && canFreeDyingActor)
+                {
+                    RemovePhysicalPoint(actor);
+                    if (unsupportedReason != null) return false;
+                    born = UnitBirthModel.SpawnWithStatus(CurrentRoom(), definition, 0, 0, cardless, additional);
+                }
+                if (!born.Supported) { unsupportedReason = born.Result.UnsupportedReason; return false; }
+                context = born.Result.State!.Context;
+                if (context?.SpawnPoints != null)
+                {
+                    var physicalUnits = units.Select(unit => unit.Freeze()).ToList();
+                    var knownPhysicalIds = physicalUnits.Select(unit => unit.Id).ToHashSet();
+                    physicalUnits.AddRange(born.Result.State.Units.Where(unit => knownPhysicalIds.Add(unit.Id)));
+                    var physicalRoom = new RoomCombatState(source.RoomIndex, source.Deployment, physicalUnits,
+                        source.ExternalInteractions, context, source.Preview, CompanionBossSnapshot());
+                    BattleSpawnPointResult compacted = BattleSpawnPointModel.Apply(context.SpawnPoints,
+                        physicalRoom, "Compact", CombatTeam.Enemy);
+                    if (!compacted.Supported) { unsupportedReason = compacted.Error; return false; }
+                    context = context.WithSpawnPoints(compacted.State!);
+                }
+                foreach (CombatUnit changed in born.Result.State.Units)
+                {
+                    WorkingUnit? current = units.FirstOrDefault(unit => unit.Source.Id == changed.Id);
+                    if (current == null) units.Add(NewUnit(changed, true));
+                    else current.Apply(changed);
+                }
+                var roomUnits = born.Result.State.Units.Select(changed => units.Single(unit => unit.Source.Id == changed.Id)).ToArray();
+                var retainedUnits = units.Where(unit => !born.Result.State.Units.Any(changed => changed.Id == unit.Source.Id)).ToArray();
+                units.Clear(); units.AddRange(roomUnits); units.AddRange(retainedUnits);
+                foreach (QueuedCharacterTrigger callback in born.Result.PendingCallbacks) QueueCallback(callback);
+                foreach (CombatEvent item in born.Result.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
+                battleWon |= born.Result.Outcome == RoomOutcome.BattleWon;
+                return true;
+            }
+
             private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId)
             {
                 CardActionEffect action = effect.Action!;
+                if (action.Type == "SpawnOrStatus") return ApplyTriggeredSpawnOrStatus(actor, action, triggerKind);
                 if (action.Type == "DrawType")
                 {
                     if (source.Preview || battleWon || context?.AllScenarioBossesDead == true) return true;

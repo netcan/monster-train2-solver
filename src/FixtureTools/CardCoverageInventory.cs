@@ -587,6 +587,7 @@ internal static class CardCoverageInventory
         {
             bool Include(FixtureProperty property) => property.Value.ValueKind != FixtureKind.Null &&
                 !(legacyMask && property.Name == "FromPermanentUpgrade" && property.Value.ValueKind == FixtureKind.False) &&
+                !(cardRule && path == "$" && property.Name == "HasKillTriggers" && property.Value.ValueKind == FixtureKind.False) &&
                 !(ruleRoot && property.Name is "ForgeEligible" or "UnplayedNegativeOrder");
             var a = left.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
             var b = right.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
@@ -599,6 +600,15 @@ internal static class CardCoverageInventory
                     statusAttackModifiers.ValueKind == FixtureKind.Array && statusAttackModifiers.GetArrayLength() == 0 &&
                     !b.ContainsKey("StatusAttackModifiers"))
                     a.Remove("StatusAttackModifiers");
+            }
+            if (cardRule && path.Contains("$.SpawnUnit.Triggers[", StringComparison.Ordinal) &&
+                path.Contains(".Effects[", StringComparison.Ordinal) && a.TryGetValue("Type", out FixtureValue effectType) &&
+                effectType.GetString() == "CardEffectSpawnMonsterOrAddStatusEffect" && !a.ContainsKey("Action") &&
+                b.TryGetValue("Action", out FixtureValue spawnOrStatus) && Text(spawnOrStatus, "Type") == "SpawnOrStatus")
+            {
+                // Older frozen catalogs record this effect type before its structured action projection existed.
+                // The effect identity remains exact; native scenario checks validate the richer action payload.
+                b.Remove("Action");
             }
             return a.Count == b.Count && a.All(pair => b.TryGetValue(pair.Key, out FixtureValue other) &&
                 Equivalent(pair.Value, other, legacyMask: legacyMask, cardRule: cardRule, path: path + "." + pair.Key));

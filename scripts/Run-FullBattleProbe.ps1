@@ -99,6 +99,7 @@ param(
     [switch] $OriginalTomeOfTheLostPath,
     [switch] $OriginalMakeItRain,
     [switch] $OriginalDeathroar,
+    [switch] $OriginalGreenRecruit,
     [switch] $OriginalCopyMorselTwice,
     [switch] $OriginalLazarusLeagueSpike,
     [switch] $OriginalTomeOfContracts,
@@ -643,6 +644,7 @@ if ($OriginalTomeOfEvergrowth) { $BranchCardMasks = $true; $PhysicalSpawnPoints 
 if ($OriginalTomeOfTheLostPath) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMakeItRain) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeathroar) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalGreenRecruit) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyMorselTwice) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalLazarusLeagueSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1242,6 +1244,7 @@ if ($OriginalTomeOfEvergrowth) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalTomeOfTheLostPath) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-the-lost-path' }
 if ($OriginalMakeItRain) { $environment['MT2_PROBE_MODIFIERS'] = 'original-make-it-rain' }
 if ($OriginalDeathroar) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathroar' }
+if ($OriginalGreenRecruit) { $environment['MT2_PROBE_MODIFIERS'] = 'original-green-recruit' }
 if ($OriginalCopyMorselTwice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-morsel-twice' }
 if ($OriginalLazarusLeagueSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lazarus-league-spike' }
 if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
@@ -2607,6 +2610,10 @@ if ($OriginalMakeItRain -and ($trace.Schema -ne 103 -or $trace.ModifierScenario 
 if ($OriginalDeathroar -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-deathroar' -or
     -not $trace.OriginalDeathroarPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
     throw 'Original Deathroar witness lacks its three controlled Stewards and direct damage/status-transfer play.'
+}
+if ($OriginalGreenRecruit -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-green-recruit' -or
+    -not $trace.OriginalGreenRecruitPrepared -or -not $trace.NativeWon)) {
+    throw 'Original Green Recruit witness did not complete its native Monster deployment.'
 }
 if ($OriginalSecretIngredient -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-secret-ingredient-mix' -or
     -not $trace.OriginalSecretIngredientPrepared -or -not $trace.NativeWon)) {
@@ -6030,6 +6037,17 @@ $secretIngredientCoverage = -not $OriginalSecretIngredient -or @($secretIngredie
 }).Count -ge 1
 if ($OriginalSecretIngredient -and ($secretIngredientActions.Count -lt 1 -or -not $secretIngredientCoverage)) {
     throw 'Original Secret Ingredient produced no matched original Mix play.'
+}
+$greenRecruitActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'c052c567-1e3c-4f36-a6cd-89b0648b9475'
+})
+$greenRecruitCoverage = -not $OriginalGreenRecruit -or @($greenRecruitActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalGreenRecruit -and ($greenRecruitActions.Count -ne 1 -or -not $greenRecruitCoverage)) {
+    throw 'Original Green Recruit did not produce exactly one matched deployment.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

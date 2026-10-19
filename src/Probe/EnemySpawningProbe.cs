@@ -150,7 +150,7 @@ namespace MonsterTrain2Poju.Probe
                     ((CardPile)effect.GetParamInt()).ToString(), effect.GetAdditionalParamInt(),
                     pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
                     effect.GetEffectStateName() == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
-                    UnitTriggerUpgradeProbe.Definition(effect, interactions), UnitTriggerActionProbe.Definition(effect),
+                    UnitTriggerUpgradeProbe.Definition(effect, interactions), UnitTriggerActionProbe.Definition(effect, interactions),
                     effect.GetEffectStateName() is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect),
                     TriggeredSummonProbe.Definition(effect), EnchantmentCombatProbe.Definition(effect));
             }).ToArray();

@@ -8049,3 +8049,27 @@ dotnet run --project src/ModelChecks -c Release -- --original-secret-ingredient-
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-secret-ingredient.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-secret-ingredient.mt2f
 ```
+
+### Original Green Recruit
+
+`full-battle-original-green-recruit.mt2f` plays unchanged, trait-free Green
+Recruit (cost 0) once, summoning its original `MonsterGenerousHost`. Its native
+OnDeath trigger adds horde 4 to an eligible room ally, or spawns a cardless
+`MonsterFunguy` with horde 4 when no ally can receive the status. The Instant
+battle won with 19 matched card plays and six EndTurns. Current-model replay
+matches all 52 room stages, 11 train phases and six EndTurns; capture failures,
+mismatches, unsupported transitions and pending records are zero. The native
+Actual snapshots were preserved. Four stale Predicted/Difference records (two
+room stages, one train phase and one EndTurn) were refreshed offline and each
+rechecked against those Actual snapshots. The focused check verifies the exact
+OnDeath status/fallback definition and resulting cardless Funguy. Bounded
+serial/parallel search agrees at 128 states; optimality is not established.
+The 57,656-byte archive has 7,132 unique nodes and SHA-256
+`75651ffad8616b585081eafb6a4255ce468f697d1e0b3ab91972c3989f6fd14a`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalGreenRecruit -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-green-recruit-only tests/fixtures/full-battle-original-green-recruit.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-green-recruit.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-green-recruit.mt2f
+```
