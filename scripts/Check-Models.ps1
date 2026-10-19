@@ -2166,6 +2166,13 @@ foreach ($fixturePath in $originalImpPressiveFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original ImpPressive checks failed ($mode): $fixturePath" }
     }
 }
+$originalTomeOfEvergrowthFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-tome-of-evergrowth.mt2f' })
+foreach ($fixturePath in $originalTomeOfEvergrowthFixtures) {
+    foreach ($mode in @('--original-tome-of-evergrowth-only', '--native-actions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Tome of Evergrowth checks failed ($mode): $fixturePath" }
+    }
+}
 $originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })
 foreach ($fixturePath in $originalOverflowFixtures) {
     foreach ($mode in @('--original-overflow-cards-only', '--battle-search-only')) {

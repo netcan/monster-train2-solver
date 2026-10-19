@@ -7944,3 +7944,23 @@ dotnet run --project src/ModelChecks -c Release -- --original-imp-pressive-only 
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-imp-pressive.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-imp-pressive.mt2f
 ```
+
+### Original Tome of Evergrowth
+
+`full-battle-original-tome-of-evergrowth.mt2f` deploys controlled original
+Train Stewards on separate floors and plays unchanged Tome of Evergrowth on
+the first. The one-cost Exhaust spell sets that unit's ability to the native
+EvergrowthAbility (cooldown 1, cooldown at spawn 0); the control floor remains
+without an ability. The Instant battle won with three card plays and five
+EndTurns in 38.62 seconds; capture failures, mismatches, unsupported
+transitions and pending records were zero, and protected original files were
+unchanged. The 27,519-byte archive has 3,652 unique nodes and SHA-256
+`93003dd746d44e382d0c385f24cdbc1e9a9d98101301d17cee51d45e94ffacf0`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTomeOfEvergrowth -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-tome-of-evergrowth-only tests/fixtures/full-battle-original-tome-of-evergrowth.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-tome-of-evergrowth.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-tome-of-evergrowth.mt2f
+```
