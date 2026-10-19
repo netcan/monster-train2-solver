@@ -581,6 +581,12 @@ if (args.Length == 2 && args[0] == "--original-pile-draw-only")
     OriginalPileDrawChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-card-draw-potion-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalCardDrawPotionChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-effect-applications-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

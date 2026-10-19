@@ -1293,6 +1293,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalPileDrawScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalCardDrawPotionScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Card Draw Potion fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalCardDrawPotionScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalEffectApplicationsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original effect applications fixture must start on deployment turn.");
@@ -2447,6 +2453,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalStatusRemovalScalingScenario.Enabled) pendingPlay = OriginalStatusRemovalScalingScenario.Choose(decision, OriginalStatusRemovalScalingScenario.CardIds);
                 if (OriginalEffectApplicationsScenario.Enabled) pendingPlay = OriginalEffectApplicationsScenario.Choose(decision, OriginalEffectApplicationsScenario.CardIds);
                 if (OriginalPileDrawScenario.Enabled) pendingPlay = OriginalPileDrawScenario.Choose(decision, OriginalPileDrawScenario.CardIds);
+                if (OriginalCardDrawPotionScenario.Enabled) pendingPlay = OriginalCardDrawPotionScenario.Choose(decision, OriginalCardDrawPotionScenario.CardIds);
                 if (OriginalPileRecursionScenario.Enabled) pendingPlay = OriginalPileRecursionScenario.Choose(decision, OriginalPileRecursionScenario.CardIds);
                 if (OriginalScaledBuffScenario.Enabled) pendingPlay = OriginalScaledBuffScenario.Choose(decision, OriginalScaledBuffScenario.CardIds);
                 if (OriginalPileStatusScenario.Enabled) pendingPlay = OriginalPileStatusScenario.Choose(decision, OriginalPileStatusScenario.CardIds);

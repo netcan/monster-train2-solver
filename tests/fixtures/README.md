@@ -7385,3 +7385,23 @@ dotnet run --project src/ModelChecks -c Release -- --original-fuel-only tests/fi
 dotnet run --project src/ModelChecks -c Release -- --fuel-pure
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-fuel.mt2f
 ```
+
+### Original Card Draw Potion
+
+`full-battle-original-card-draw-potion.mt2f` directly plays the unchanged
+one-cost Card Draw Potion. Its native action pays one energy and schedules the
+original three-card draw modifier; the next player draw contains eight cards
+and resets that modifier. Two free original Stewards keep the isolated battle
+winning without changing the Potion's definition. The archive records three
+plays, five EndTurns, one bonus-draw sample and no capture failures, mismatches,
+unsupported transitions or pending records. The 41.74-second Instant run won
+with protected original files unchanged. Its 25,812-byte archive has 3,490
+unique nodes and SHA-256
+`b2d53d66683a538d5ae04a12a415a14a698b63d0daa1ed83354e3fedbf64c6e2`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-draw-potion.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-draw-potion-only tests/fixtures/full-battle-original-card-draw-potion.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-draw-potion.mt2f
+```

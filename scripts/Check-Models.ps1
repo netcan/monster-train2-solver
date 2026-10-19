@@ -176,6 +176,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-status-removal-scaling.mt2f',
     'full-battle-original-effect-applications.mt2f',
     'full-battle-original-pile-draw.mt2f',
+    'full-battle-original-card-draw-potion.mt2f',
     'full-battle-original-pile-recursion.mt2f',
     'full-battle-original-scaled-buff.mt2f',
     'full-battle-original-pile-status.mt2f',
@@ -1987,6 +1988,13 @@ foreach ($fixturePath in $originalPileDrawFixtures) {
     foreach ($mode in @('--original-pile-draw-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original pile draw checks failed ($mode): $fixturePath" }
+    }
+}
+$originalCardDrawPotionFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-card-draw-potion.mt2f' })
+foreach ($fixturePath in $originalCardDrawPotionFixtures) {
+    foreach ($mode in @('--original-card-draw-potion-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Card Draw Potion checks failed ($mode): $fixturePath" }
     }
 }
 $originalEffectApplicationsFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-effect-applications.mt2f' })

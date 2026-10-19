@@ -68,6 +68,7 @@ param(
     [switch] $OriginalStatusRemovalScaling,
     [switch] $OriginalEffectApplications,
     [switch] $OriginalPileDraw,
+    [switch] $OriginalCardDrawPotion,
     [switch] $OriginalPileRecursion,
     [switch] $OriginalScaledBuff,
     [switch] $OriginalPileStatus,
@@ -569,6 +570,7 @@ if ($OriginalScaledEnergy) { $BranchCardMasks = $true; $Policy = 'units-spells-a
 if ($OriginalStatusRemovalScaling) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEffectApplications) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPileDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalCardDrawPotion) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPileRecursion) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledBuff) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPileStatus) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -1120,6 +1122,7 @@ if ($OriginalScaledEnergy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-sca
 if ($OriginalStatusRemovalScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-removal-scaling' }
 if ($OriginalEffectApplications) { $environment['MT2_PROBE_MODIFIERS'] = 'original-effect-applications' }
 if ($OriginalPileDraw) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-draw' }
+if ($OriginalCardDrawPotion) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-potion' }
 if ($OriginalPileRecursion) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-recursion' }
 if ($OriginalScaledBuff) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-buff' }
 if ($OriginalPileStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-status' }
@@ -2418,6 +2421,10 @@ if ($OriginalKillCopy -and (-not $trace.OriginalKillCopyPrepared -or -not $trace
 if ($OriginalFuel -and (-not $trace.OriginalFuelPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 13)) {
     throw 'Original fuel witness lacks unchanged Construct, forced empty/last fuel, feeding and refill controls.'
 }
+if ($OriginalCardDrawPotion -and ($trace.Schema -ne 247 -or $trace.ModifierScenario -ne 'original-card-draw-potion' -or
+    -not $trace.OriginalCardDrawPotionPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3)) {
+    throw 'Original Card Draw Potion witness lacks its unchanged direct play and native next-turn draw.'
+}
 if ($OriginalSupportUnits -and (-not $trace.OriginalSupportUnitsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 29)) {
     throw 'Original support unit witness lacks thirteen unchanged units and positive native callback controls.'
 }
@@ -2484,6 +2491,9 @@ if ($OriginalPileDraw -and (-not $trace.OriginalPileDrawPrepared -or -not $trace
     @($trace.OriginalPileDrawQueries).Count -ne 5 -or -not $trace.OriginalPileDrawQueriesUnchanged -or
     @($trace.OriginalPileDrawQueries | Where-Object { -not $_.StateUnchanged }).Count -ne 0 -or @($trace.OriginalPileDrawAdjustments).Count -ne 1)) {
     throw 'Original Mulch witness lacks restored visible-deck thresholds or actual future-draw adjustment.'
+}
+if ($OriginalCardDrawPotion -and (@($trace.CardCycles | Where-Object { $_.Kind -eq 'Draw' -and $_.Before.DrawModifier -eq 3 -and $_.Actual.Hand.Count -eq 8 -and $_.Actual.DrawModifier -eq 0 }).Count -ne 1)) {
+    throw 'Original Card Draw Potion witness lacks one native eight-card draw and modifier reset.'
 }
 if ($OriginalEffectApplications -and (-not $trace.OriginalEffectApplicationsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 8 -or
     @($trace.OriginalEffectApplicationsCounts).Count -ne 3 -or @($trace.OriginalEffectApplicationsSamples).Count -ne 4 -or
