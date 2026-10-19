@@ -1392,6 +1392,18 @@ covers one sufficient-gold state and one friendly target; other payment values
 and target combinations are not claimed. Use `-OriginalSmeltedTreasure` and
 `--original-smelted-treasure-only`.
 
+`full-battle-original-pyre-gro.mt2f` plays unchanged zero-cost PyreGro. Its
+native ordered effects reduce next-turn draw by two and add one recurring
+energy, then the original Consume trait exhausts the spell. The 37-stage native
+win has two card plays and five EndTurns, with zero capture failures,
+mismatches, unsupported transitions or pending records. Its focused checker,
+action-policy replay and bounded serial/parallel search pass. Binary-only:
+25,371 bytes, 3,088 unique nodes, SHA-256
+`89d2636dba3046f16f5c91ebb967de7f4365f52aba717c5c9740d67e2a26fa76`. This
+covers one deployment play and its persistent draw/energy state; repeated
+copies and interactions with other draw/energy modifiers are not claimed. Use
+`-OriginalPyreGro` and `--original-pyre-gro-only`.
+
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation
 filter. Two same-floor units gain two Rage/Regen; the selected Glow Up target

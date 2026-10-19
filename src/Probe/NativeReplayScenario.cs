@@ -1125,6 +1125,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSmeltedTreasureScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalPyreGroScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original PyreGro fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalPyreGroScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoonCardUpgradesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original moon card upgrades must start on deployment turn.");
@@ -2565,6 +2571,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalMoonRitualScenario.Enabled) pendingPlay = OriginalMoonRitualScenario.Choose(decision, OriginalMoonRitualScenario.CardIds);
                 if (OriginalSelfPurgeEnergyGainScenario.Enabled) pendingPlay = OriginalSelfPurgeEnergyGainScenario.Choose(decision, OriginalSelfPurgeEnergyGainScenario.CardIds);
                 if (OriginalSmeltedTreasureScenario.Enabled) pendingPlay = OriginalSmeltedTreasureScenario.Choose(decision, OriginalSmeltedTreasureScenario.CardIds);
+                if (OriginalPyreGroScenario.Enabled) pendingPlay = OriginalPyreGroScenario.Choose(decision, OriginalPyreGroScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);
                 if (StewardsQuartersScenario.Enabled) pendingPlay = StewardsQuartersScenario.Choose(decision, StewardsQuartersScenario.CardIds);

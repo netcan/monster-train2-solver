@@ -49,6 +49,7 @@ param(
     [switch] $OriginalMoonRitual,
     [switch] $OriginalSelfPurgeEnergyGain,
     [switch] $OriginalSmeltedTreasure,
+    [switch] $OriginalPyreGro,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -572,6 +573,7 @@ if ($OriginalOfferingToken) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalMoonRitual) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSelfPurgeEnergyGain) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSmeltedTreasure) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalPyreGro) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1145,6 +1147,7 @@ if ($OriginalOfferingToken) { $environment['MT2_PROBE_MODIFIERS'] = 'original-of
 if ($OriginalMoonRitual) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-ritual' }
 if ($OriginalSelfPurgeEnergyGain) { $environment['MT2_PROBE_MODIFIERS'] = 'original-self-purge-energy-gain' }
 if ($OriginalSmeltedTreasure) { $environment['MT2_PROBE_MODIFIERS'] = 'original-smelted-treasure' }
+if ($OriginalPyreGro) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-gro' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2738,6 +2741,10 @@ if ($OriginalSmeltedTreasure -and ($trace.Schema -ne 258 -or -not $trace.Origina
     @($trace.OriginalSmeltedTreasureCardIds).Count -ne 2)) {
     throw 'Original Smelted Treasure requires one matched play, a controlled friendly target and a native win.'
 }
+if ($OriginalPyreGro -and ($trace.Schema -ne 259 -or -not $trace.OriginalPyreGroPrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalPyreGroCardIds).Count -ne 2)) {
+    throw 'Original PyreGro requires one matched play, scheduled draw/energy effects and a native win.'
+}
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
 }
@@ -3731,6 +3738,14 @@ $smeltedTreasureActions = @($trace.Actions | Where-Object {
     $played.DataId -eq 'a1049085-eba0-4118-9546-ca20d680c2b8'
 })
 $smeltedTreasureCoverage = -not $OriginalSmeltedTreasure -or @($smeltedTreasureActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+$pyreGroActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '2ba0f9eb-744e-4b3c-af4e-3ad39ae8a74f'
+})
+$pyreGroCoverage = -not $OriginalPyreGro -or @($pyreGroActions | Where-Object {
     -not $_.Difference -and $_.Predicted.Supported
 }).Count -eq 1
 $frostChannelingActions = @($trace.Actions | Where-Object {
@@ -5527,6 +5542,8 @@ $result = [pscustomobject]@{
     SelfPurgeEnergyGainCoverage = $selfPurgeEnergyGainCoverage
     SmeltedTreasureActions = $smeltedTreasureActions.Count
     SmeltedTreasureCoverage = $smeltedTreasureCoverage
+    PyreGroActions = $pyreGroActions.Count
+    PyreGroCoverage = $pyreGroCoverage
     FrostChannelingActions = $frostChannelingActions.Count
     FrostChannelingCoverage = $frostChannelingCoverage
     TransferAbilityActions = $transferAbilityActions.Count
@@ -5641,6 +5658,9 @@ if ($OriginalSelfPurgeEnergyGain -and ($selfPurgeEnergyGainActions.Count -ne 1 -
 }
 if ($OriginalSmeltedTreasure -and ($smeltedTreasureActions.Count -ne 1 -or -not $smeltedTreasureCoverage)) {
     throw 'Original Smelted Treasure did not produce exactly one matched card play.'
+}
+if ($OriginalPyreGro -and ($pyreGroActions.Count -ne 1 -or -not $pyreGroCoverage)) {
+    throw 'Original PyreGro did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }
