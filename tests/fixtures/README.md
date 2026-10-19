@@ -2656,10 +2656,12 @@ FrostChanneling owner, not every other use of this effect class.
 3 and Scorch 2 when sacrificed; the Steward receives both statuses and rises
 from 8 to 15 attack with a temporary spawner-card upgrade. The muted Instant
 battle wins with 56 matched stages, 24 actions and seven EndTurns, with zero
-capture failures, mismatches, unsupported transitions or pending records.
+capture failures, mismatches, unsupported transitions or pending records. Its
+575 branch-card-mask contexts capture the temporary upgrade metadata needed to
+replay this effect with per-card mask validation enabled.
 This is original-owner evidence for `CardEffectTransferAllStatusEffectsFromUnit`
 and the `LastSacrificedCharacter` target chain. The binary-only archive is
-34,440 bytes and has 5,754 unique nodes.
+43,227 bytes and has 6,795 unique nodes.
 
 `full-battle-transfer-attack-ability.mt2f` calibrates the ability-user target
 of the native `CardEffectTransferAttackFromUnit` class on a prepared unit

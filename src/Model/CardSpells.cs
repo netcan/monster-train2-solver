@@ -1330,7 +1330,9 @@ namespace MonsterTrain2Poju.Model
                         Array.Empty<CardTraitValue>(), Array.Empty<string>(), false, Array.Empty<string>(),
                         Array.Empty<string>(), Array.Empty<CardLifecycleTrigger>());
                     var upgrade = new CardUpgradeModifier("", "", stats, Array.Empty<CombatStatus>(),
-                        false, false, false, 0, 0, Array.Empty<string>(), lifecycle: lifecycle);
+                        false, false, false, 0, 0, Array.Empty<string>(),
+                        maskMetadata: new CardUpgradeMaskMetadata(Array.Empty<UpgradeMaskStatus>(), false, false, false, false),
+                        lifecycle: lifecycle);
                     RoomCombatState targetRoom = state.Rooms.Single(room => room.Units.Any(unit => unit.Id == recipient.Id));
                     RoomCombatResult applied = UnitModifierModel.ApplyDirectDeferred(targetRoom, recipient.Id, upgrade, Refresh);
                     if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
