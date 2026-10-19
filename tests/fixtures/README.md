@@ -2985,10 +2985,11 @@ two ordered random kills, one against an enemy and one against a player unit.
 The muted Instant battle wins with 60 stages, 22 card actions and seven
 EndTurns. The card is played twice; one matched action removes an enemy and a
 player unit from the room, with zero capture failures, mismatches, unsupported
-transitions or pending records. The 31,129-byte schema-103 binary
-has 5,100 unique nodes and SHA-256
-`fec1eb5dec554ab93d398c51c273012073aa5b521f3a52268fa593de42221f4a`; no JSON
-companion is tracked.
+transitions or pending records. The 40,141-byte schema-103 binary
+has 6,129 unique nodes and SHA-256
+`0aab864a2db62ce42873293e243e4c22cc3c81a5614d8332daabd4eebcfe61f1`. Both
+plays match the frozen original definition under the current projection; no
+JSON companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill.mt2f

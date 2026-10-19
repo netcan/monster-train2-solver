@@ -2181,9 +2181,10 @@ The schema-103 subtype archive is 31,054 bytes with 5,040 unique nodes and
 SHA-256 `e80d34ba3fae893410072619056f9a29918cf235908f78cc466ef394f1c5ca5a`;
 it has no JSON companion.
 
-The schema-103 binary is 31,129 bytes with 5,100 unique nodes and SHA-256
-`fec1eb5dec554ab93d398c51c273012073aa5b521f3a52268fa593de42221f4a`; it has no
-JSON companion.
+The refreshed schema-103 binary is 40,141 bytes with 6,129 unique nodes and
+SHA-256 `0aab864a2db62ce42873293e243e4c22cc3c81a5614d8332daabd4eebcfe61f1`;
+both plays match the frozen original definition under the current projection.
+It has no JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill.mt2f
