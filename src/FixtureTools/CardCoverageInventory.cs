@@ -267,6 +267,11 @@ internal static class CardCoverageInventory
             Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn" &&
             (Strings(trait, "StatusEffectIds").SequenceEqual(new[] { "melee weakness" }) ||
              Strings(trait, "StatusEffectIds").SequenceEqual(new[] { "undying" }))) return true;
+        if (type == "CardTraitScalingAddStatusEffect" && trait.GetProperty("Int").GetInt32() == 1 &&
+            trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") &&
+            Text(trait, "Str") == "" && trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") &&
+            Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn" &&
+            Strings(trait, "StatusEffectIds").SequenceEqual(new[] { "damage shield" })) return true;
         if (type == "CardTraitScalingAdvanceMoonPhase" || type == "CardTraitScalingAddStatusEffect" && trait.GetProperty("Int").GetInt32() == 1)
             return trait.GetProperty("Int").GetInt32() == (type == "CardTraitScalingAdvanceMoonPhase" ? 0 : 1) &&
                 trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") &&
