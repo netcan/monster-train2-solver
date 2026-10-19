@@ -1056,6 +1056,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalSecretIngredientPrepared = MixScenario.SecretIngredientMode && MixScenario.Prepared,
                 OriginalGreenRecruitPrepared = OriginalGreenRecruitScenario.Prepared,
                 OriginalPrimordiumPrepared = OriginalPrimordiumScenario.Prepared,
+                OriginalCheeryDeathcapPrepared = OriginalCheeryDeathcapScenario.Prepared,
                 OriginalPyreshotPrepared = OriginalPyreshotScenario.Prepared,
                 OriginalPyreshotIds = OriginalPyreshotScenario.CardIds,
                 OriginalRetchPrepared = OriginalRetchScenario.Prepared,
