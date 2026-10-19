@@ -1143,6 +1143,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDrainScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalStarterFrostbiteDiscardScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Starter Frostbite Discard fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalStarterFrostbiteDiscardScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoonCardUpgradesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original moon card upgrades must start on deployment turn.");
@@ -2586,6 +2592,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalPyreGroScenario.Enabled) pendingPlay = OriginalPyreGroScenario.Choose(decision, OriginalPyreGroScenario.CardIds);
                 if (OriginalDeadlyVariantScenario.Enabled) pendingPlay = OriginalDeadlyVariantScenario.Choose(decision, OriginalDeadlyVariantScenario.CardIds);
                 if (OriginalDrainScenario.Enabled) pendingPlay = OriginalDrainScenario.Choose(decision, OriginalDrainScenario.CardIds);
+                if (OriginalStarterFrostbiteDiscardScenario.Enabled) pendingPlay = OriginalStarterFrostbiteDiscardScenario.Choose(decision, OriginalStarterFrostbiteDiscardScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);
                 if (StewardsQuartersScenario.Enabled) pendingPlay = StewardsQuartersScenario.Choose(decision, StewardsQuartersScenario.CardIds);

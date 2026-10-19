@@ -52,6 +52,7 @@ param(
     [switch] $OriginalPyreGro,
     [switch] $OriginalDeadlyVariant,
     [switch] $OriginalDrain,
+    [switch] $OriginalStarterFrostbiteDiscard,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -578,6 +579,7 @@ if ($OriginalSmeltedTreasure) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalPyreGro) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeadlyVariant) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDrain) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalStarterFrostbiteDiscard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1154,6 +1156,7 @@ if ($OriginalSmeltedTreasure) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalPyreGro) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-gro' }
 if ($OriginalDeadlyVariant) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deadly-variant' }
 if ($OriginalDrain) { $environment['MT2_PROBE_MODIFIERS'] = 'original-drain' }
+if ($OriginalStarterFrostbiteDiscard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-starter-frostbite-discard' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2759,6 +2762,10 @@ if ($OriginalDrain -and ($trace.Schema -ne 261 -or -not $trace.OriginalDrainPrep
     @($trace.OriginalDrainCardIds).Count -ne 3)) {
     throw 'Original Drain requires one matched play, a controlled Debuff target and eligible discard card.'
 }
+if ($OriginalStarterFrostbiteDiscard -and ($trace.Schema -ne 262 -or -not $trace.OriginalStarterFrostbiteDiscardPrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalStarterFrostbiteDiscardCardIds).Count -ne 3)) {
+    throw 'Original Starter Frostbite Discard requires one matched play, an enemy-front Poison target and eligible discard card.'
+}
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
 }
@@ -3776,6 +3783,14 @@ $drainActions = @($trace.Actions | Where-Object {
     $played.DataId -eq '6fe6bf99-7e77-4191-9136-fbbecc223bdf'
 })
 $drainCoverage = -not $OriginalDrain -or @($drainActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+$starterFrostbiteDiscardActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '6b91f902-deb4-4519-863b-0c8a7f5d871c'
+})
+$starterFrostbiteDiscardCoverage = -not $OriginalStarterFrostbiteDiscard -or @($starterFrostbiteDiscardActions | Where-Object {
     -not $_.Difference -and $_.Predicted.Supported
 }).Count -eq 1
 $frostChannelingActions = @($trace.Actions | Where-Object {
@@ -5701,6 +5716,9 @@ if ($OriginalDeadlyVariant -and ($deadlyVariantActions.Count -ne 1 -or -not $dea
 }
 if ($OriginalDrain -and ($drainActions.Count -ne 1 -or -not $drainCoverage)) {
     throw 'Original Drain did not produce exactly one matched card play.'
+}
+if ($OriginalStarterFrostbiteDiscard -and ($starterFrostbiteDiscardActions.Count -ne 1 -or -not $starterFrostbiteDiscardCoverage)) {
+    throw 'Original Starter Frostbite Discard did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

@@ -768,6 +768,16 @@ records. Binary-only: 24,974 bytes, 3,171 unique nodes, SHA-256
 `9f20645a3b58a412eca96e652f9b493f149d20289c0dcd2b98fae4bb154d1e58`. Multiple
 eligible discard choices and RNG ordering are not covered.
 
+`full-battle-original-starter-frostbite-discard.mt2f` plays unchanged
+zero-cost Starter Frostbite Discard in a room with one living enemy. Its
+`FrontInRoom` effect applies eight Poison, then randomly discards its single
+eligible controlled Train Steward. The 36-stage win (two plays/five EndTurns),
+dedicated check, full action-policy replay and 128-state search pass with zero
+capture failures, mismatches, unsupported transitions or pending records.
+Binary-only: 26,026 bytes, 3,126 unique nodes, SHA-256
+`04ccecc8190d07e27941aa9d16e84bae5f4c885b205930b18f93d080c9575a76`. Multiple
+living enemies, multi-card discard choices and Poison triggers are not covered.
+
 `full-battle-original-deadly-variant.mt2f` plays unchanged two-cost Deadly
 Variant on a Train Steward carrying one Debuff. Its native target-scoped
 multiplier adds five Decay and leaves the counted Debuff intact; the card is

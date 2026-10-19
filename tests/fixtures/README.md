@@ -1403,6 +1403,18 @@ failures, mismatches, unsupported transitions or pending records. Binary-only:
 eligible discard choices and their RNG ordering are not covered. Use
 `-OriginalDrain` and `--original-drain-only`.
 
+`full-battle-original-starter-frostbite-discard.mt2f` plays unchanged zero-cost
+Starter Frostbite Discard in a room with one living enemy. Its `FrontInRoom`
+effect applies eight Poison, then randomly discards its single eligible
+controlled Train Steward; the spell itself enters discard. The 36-stage native
+win (two plays/five EndTurns), dedicated check, action-policy replay and
+128-state search pass with zero capture failures, mismatches, unsupported
+transitions or pending records. Binary-only: 26,026 bytes, 3,126 unique nodes,
+SHA-256 `04ccecc8190d07e27941aa9d16e84bae5f4c885b205930b18f93d080c9575a76`.
+Multiple living enemies, multi-card discard choices and Poison triggers remain
+outside this fixture. Use `-OriginalStarterFrostbiteDiscard` and
+`--original-starter-frostbite-discard-only`.
+
 `full-battle-original-pyre-gro.mt2f` plays unchanged zero-cost PyreGro. Its
 native ordered effects reduce next-turn draw by two and add one recurring
 energy, then the original Consume trait exhausts the spell. The 37-stage native
