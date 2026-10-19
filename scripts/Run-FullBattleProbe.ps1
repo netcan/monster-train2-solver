@@ -57,6 +57,7 @@ param(
     [switch] $OriginalTitansGratitude,
     [switch] $OriginalPerfectInsanity,
     [switch] $OriginalStarterReform,
+    [switch] $OriginalRapidRaise,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -588,6 +589,7 @@ if ($OriginalFeedingFrenzy) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalTitansGratitude) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPerfectInsanity) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStarterReform) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalRapidRaise) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1169,6 +1171,7 @@ if ($OriginalFeedingFrenzy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-fe
 if ($OriginalTitansGratitude) { $environment['MT2_PROBE_MODIFIERS'] = 'original-titans-gratitude' }
 if ($OriginalPerfectInsanity) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perfect-insanity' }
 if ($OriginalStarterReform) { $environment['MT2_PROBE_MODIFIERS'] = 'original-starter-reform' }
+if ($OriginalRapidRaise) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rapid-raise' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2793,6 +2796,10 @@ if ($OriginalPerfectInsanity -and ($trace.Schema -ne 265 -or -not $trace.Origina
 if ($OriginalStarterReform -and ($trace.Schema -ne 266 -or -not $trace.OriginalStarterReformPrepared -or -not $trace.NativeWon -or
     @($trace.OriginalStarterReformCardIds).Count -ne 3)) {
     throw 'Original Starter Reform requires one matched play and a sole controlled Exhausted Monster candidate.'
+}
+if ($OriginalRapidRaise -and ($trace.Schema -ne 267 -or -not $trace.OriginalRapidRaisePrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalRapidRaiseCardIds).Count -ne 4)) {
+    throw 'Original Rapid Raise requires one matched play and exactly two controlled Exhausted Monster candidates.'
 }
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
@@ -5791,6 +5798,17 @@ $starterReformCoverage = -not $OriginalStarterReform -or @($starterReformActions
 }).Count -eq 1
 if ($OriginalStarterReform -and ($starterReformActions.Count -ne 1 -or -not $starterReformCoverage)) {
     throw 'Original Starter Reform did not produce exactly one matched card play.'
+}
+$rapidRaiseActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '5b88c130-70b3-42cc-9903-4d245b4f946f'
+})
+$rapidRaiseCoverage = -not $OriginalRapidRaise -or @($rapidRaiseActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalRapidRaise -and ($rapidRaiseActions.Count -ne 1 -or -not $rapidRaiseCoverage)) {
+    throw 'Original Rapid Raise did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

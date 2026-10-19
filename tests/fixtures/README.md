@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-19): 570 archives (530 full battles and
+Current manifest inventory (2026-10-19): 571 archives (531 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,7 +14,7 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-569 indexed archives. Refresh/check the index with
+570 indexed archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
 `full-battle-original-attack-overrides.mt2f` captures unchanged Irontongue and
@@ -1467,6 +1467,17 @@ action-policy replay and 128-state serial/parallel search pass with zero capture
 failures, mismatches, unsupported transitions or pending records. Binary-only:
 25,366 bytes, 3,216 unique nodes, SHA-256
 `f59fa180d983d73a9b3bd7371d9b1952b9b18671d3fab4f9a55ac1b60f79d3c6`.
+
+`full-battle-original-rapid-raise.mt2f` plays unchanged zero-cost Rapid Raise
+with exactly two controlled Monsters in Exhaust. Native RandomToHand recursion
+returns both and applies Raise (+5/+5, -99 cost and Ephemeral) to each; the
+Exhaust trait consumes the spell. Random selection is unchanged, and the
+controlled two-card source pile makes the complete native result observable.
+The 37-stage native win has two plays and five EndTurns; the dedicated check,
+action-policy replay and 128-state serial/parallel search pass with zero capture
+failures, mismatches, unsupported transitions or pending records. Binary-only:
+25,743 bytes, 3,286 unique nodes, SHA-256
+`b3d5400a0a192a10be41ac0641071775c91cf473758faa4fdea1b00528643b3a`.
 
 `full-battle-original-pyre-gro.mt2f` plays unchanged zero-cost PyreGro. Its
 native ordered effects reduce next-turn draw by two and add one recurring

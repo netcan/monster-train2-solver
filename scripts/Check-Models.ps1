@@ -2110,6 +2110,13 @@ foreach ($fixturePath in $originalStarterReformFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Starter Reform checks failed ($mode): $fixturePath" }
     }
 }
+$originalRapidRaiseFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-rapid-raise.mt2f' })
+foreach ($fixturePath in $originalRapidRaiseFixtures) {
+    foreach ($mode in @('--original-rapid-raise-only', '--native-actions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Rapid Raise checks failed ($mode): $fixturePath" }
+    }
+}
 $originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })
 foreach ($fixturePath in $originalOverflowFixtures) {
     foreach ($mode in @('--original-overflow-cards-only', '--battle-search-only')) {
