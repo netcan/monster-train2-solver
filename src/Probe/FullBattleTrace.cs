@@ -808,6 +808,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalDeckSpellPrepared = OriginalDeckSpellScenario.Prepared,
                 OriginalDeckSpellIds = OriginalDeckSpellScenario.CardIds,
                 OriginalDeckSpellPileControlIds = OriginalDeckSpellScenario.PileControlIds,
+                OriginalDeepOfferingPrepared = OriginalDeepOfferingScenario.Prepared,
+                OriginalDeepOfferingCardIds = OriginalDeepOfferingScenario.CardIds,
                 GoldmancePrepared = GoldmanceScenario.Prepared,
                 GoldmanceCardIds = GoldmanceScenario.CardIds,
                 EngineUpgradePrepared = EngineUpgradeScenario.Prepared,

@@ -1297,6 +1297,16 @@ checked. Other filters and trait callbacks retain existing guards. Binary-only:
 `bc300cfad0f1e656b365a2c155efbcb06cb53a3164d2a52b52244ea634233b09`.
 Use `-OriginalDeckSpell` and `--original-deck-spell-only`.
 
+`full-battle-original-deep-offering.mt2f` plays the unchanged 3-cost Deep
+Offering after summoning a Train Steward. A held Steward is discarded, five
+controlled cards are drawn, and Deep Offering exhausts. The native win has 35
+stages, eight actions and five EndTurns, with zero capture failures,
+mismatches, unsupported transitions or pending records. The dedicated checker,
+full action-policy replay and 128-state search pass. Binary-only: 24,762 bytes,
+3,381 unique nodes, SHA-256
+`b8339b60070f9a736324f645942d1e311c35b846c55952929c03b307404163de`.
+Use `-OriginalDeepOffering` and `--original-deep-offering-only`.
+
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation
 filter. Two same-floor units gain two Rage/Regen; the selected Glow Up target

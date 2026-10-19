@@ -1077,6 +1077,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDeckSpellScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalDeepOfferingScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Deep Offering fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalDeepOfferingScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoonCardUpgradesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original moon card upgrades must start on deployment turn.");
@@ -2509,6 +2515,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalStatusCardsScenario.Enabled) pendingPlay = OriginalStatusCardsScenario.Choose(decision, OriginalStatusCardsScenario.CardIds);
                 if (OriginalLazarusLeagueSpikeScenario.Enabled) pendingPlay = OriginalLazarusLeagueSpikeScenario.Choose(decision, OriginalLazarusLeagueSpikeScenario.CardIds);
                 if (OriginalDeckSpellScenario.Enabled) pendingPlay = OriginalDeckSpellScenario.Choose(decision, OriginalDeckSpellScenario.CardIds);
+                if (OriginalDeepOfferingScenario.Enabled) pendingPlay = OriginalDeepOfferingScenario.Choose(decision, OriginalDeepOfferingScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);
                 if (StewardsQuartersScenario.Enabled) pendingPlay = StewardsQuartersScenario.Choose(decision, StewardsQuartersScenario.CardIds);

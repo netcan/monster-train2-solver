@@ -682,6 +682,12 @@ X spell adds twelve forge points through its extra effective X. The 36-stage
 win (six plays/five EndTurns), sixteen immutable full chains and bounded search
 are checked. Other upgrade filters and trait callbacks retain existing guards.
 
+`full-battle-original-deep-offering.mt2f` plays unchanged Deep Offering after
+summoning a Train Steward. The original three-cost spell discards a held control,
+draws five known deck cards, and exhausts itself. The 35-stage win (eight plays,
+five EndTurns), dedicated state checker, full policy replay, and 128-state search
+are checked; each play matches and no unsupported transition is recorded.
+
 `full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
 Spike of the Legion. Card modifier resolution preserves the all-status filter.
 Proliferate adds two Rage/Regen to both same-floor units; Glow Up moves its

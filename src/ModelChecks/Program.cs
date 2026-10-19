@@ -857,6 +857,12 @@ if (args.Length == 2 && args[0] == "--original-deck-spell-only")
     OriginalDeckSpellChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-deep-offering-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalDeepOfferingChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--eclipse-chamber-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

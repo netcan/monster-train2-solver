@@ -41,6 +41,7 @@ param(
     [switch] $OriginalForgeCards,
     [switch] $OriginalStatusCards,
     [switch] $OriginalDeckSpell,
+    [switch] $OriginalDeepOffering,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -556,6 +557,7 @@ if ($OriginalRoomCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-
 if ($OriginalForgeCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeckSpell) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalDeepOffering) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1121,6 +1123,7 @@ if ($OriginalRoomCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-c
 if ($OriginalForgeCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-cards' }
 if ($OriginalStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-cards' }
 if ($OriginalDeckSpell) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deck-spell' }
+if ($OriginalDeepOffering) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deep-offering' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2682,6 +2685,10 @@ if ($Goldmance -and (-not $trace.GoldmancePrepared -or -not $trace.NativeWon -or
 if ($OriginalDeckSpell -and (-not $trace.OriginalDeckSpellPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original Great Decay requires all six unit/spell plays and a native win.'
 }
+if ($OriginalDeepOffering -and (-not $trace.OriginalDeepOfferingPrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalDeepOfferingCardIds).Count -ne 3)) {
+    throw 'Original Deep Offering requires one matched play, a controlled discard/draw witness and a native win.'
+}
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
 }
@@ -3613,6 +3620,14 @@ $brainTransferCoverage = -not $BrainTransfer -or @($brainTransferActions | Where
         @($afterSpawner.Temporary.Upgrades).Count -eq @($beforeSpawner.Temporary.Upgrades).Count + 1 -and
         -not $entry.Difference -and $entry.Predicted.Supported
 }).Count -gt 0
+$deepOfferingActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '37eaa51b-62cf-4cbc-971f-6d208fd07366'
+})
+$deepOfferingCoverage = -not $OriginalDeepOffering -or @($deepOfferingActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
 $frostChannelingActions = @($trace.Actions | Where-Object {
     $entry = $_
     $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
@@ -5391,6 +5406,8 @@ $result = [pscustomobject]@{
     TransferAttackCoverage = $transferAttackCoverage
     BrainTransferActions = $brainTransferActions.Count
     BrainTransferCoverage = $brainTransferCoverage
+    DeepOfferingActions = $deepOfferingActions.Count
+    DeepOfferingCoverage = $deepOfferingCoverage
     FrostChannelingActions = $frostChannelingActions.Count
     FrostChannelingCoverage = $frostChannelingCoverage
     TransferAbilityActions = $transferAbilityActions.Count
@@ -5482,6 +5499,9 @@ if (-not $sacrificeEffectCoverage) { throw 'Native CardEffectSacrifice was not e
 if (-not $setHealthCoverage) { throw 'Native CardEffectSetHealth did not set a living player unit to one health in a matched action.' }
 if (-not $transferAttackCoverage) { throw 'Native attack transfer did not buff a front unit and its spawner card in a matched action.' }
 if (-not $brainTransferCoverage) { throw 'Original BrainTransfer did not transfer Rage, Scorch and attack in a matched action.' }
+if ($OriginalDeepOffering -and ($deepOfferingActions.Count -ne 1 -or -not $deepOfferingCoverage)) {
+    throw 'Original Deep Offering did not produce exactly one matched card play.'
+}
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }
 if (-not $damageByUnitsKilledCoverage) { throw 'Original Shardtail effect did not sacrifice an Imp and damage an enemy in a matched action.' }
