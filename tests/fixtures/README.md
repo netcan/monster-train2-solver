@@ -1498,8 +1498,10 @@ Use `-RunCardGeneration` and `--run-card-generation-only`. Campaign save/reload
 persistence and arbitrary card/relic interactions are outside this witness.
 The 43-stage win (fourteen plays/five EndTurns), ten native generation effects,
 sixteen independent full chains and bounded search match with zero errors.
-Binary-only: 35,551 bytes/5,796 nodes, SHA-256
-`82aadda112e4018155a38abbf02c9d4567065528c753c4a65c9407af96dabe44`.
+The original stage-one play and both stage-two plays match their frozen
+definitions. Binary-only: 38,297
+bytes/6,098 nodes, SHA-256
+`cde2f32fd37a279243c93d3ef6008a4431c99957188957f67579a734463eddb0`.
 
 `full-battle-restoration-detonation.mt2f` retains four unchanged Restoration
 Detonations. Full-health and heal-immunity targets cause no damage; 15/30 actual

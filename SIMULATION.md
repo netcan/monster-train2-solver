@@ -843,7 +843,10 @@ decrement the visible deck count once. Use `-RunCardGeneration` and
 `--run-card-generation-only`. Original spell definitions remain unchanged;
 the controller, Ephemeral variants and strengthened recipients are setup
 controls. This proves the captured battle transitions, not campaign persistence
-after saving/reloading or every generated-card/relic combination.
+after saving/reloading or every generated-card/relic combination. The original
+stage-one play and both stage-two plays match their frozen definitions. The
+refreshed schema-103 archive is 38,297 bytes with 6,098 unique nodes and SHA-256
+`cde2f32fd37a279243c93d3ef6008a4431c99957188957f67579a734463eddb0`.
 
 `full-battle-restoration-detonation.mt2f` adds unchanged Restoration Detonation.
 Healing callbacks settle before actual restored HP is multiplied and the
