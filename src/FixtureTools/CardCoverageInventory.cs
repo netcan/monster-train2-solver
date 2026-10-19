@@ -288,6 +288,15 @@ internal static class CardCoverageInventory
             Text(trait, "Str") == "" && trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") &&
             Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisBattle" &&
             Strings(trait, "StatusEffectIds").SequenceEqual(new[] { "conduit" })) return true;
+        if (type == "CardTraitExhaustState" && trait.GetProperty("Int").GetInt32() == 1 &&
+            trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") &&
+            Text(trait, "Str") == "" && trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") &&
+            Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisBattle") return true;
+        if (type == "CardTraitScalingAddStatusEffect" && trait.GetProperty("Int").GetInt32() is 1 or 5 &&
+            trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") &&
+            Text(trait, "Str") == "" && trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") &&
+            Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisBattle" &&
+            Strings(trait, "StatusEffectIds").SequenceEqual(new[] { trait.GetProperty("Int").GetInt32() == 1 ? "debuff" : "poison" })) return true;
         if (type == "CardTraitScalingAdvanceMoonPhase" || type == "CardTraitScalingAddStatusEffect" && trait.GetProperty("Int").GetInt32() == 1)
             return trait.GetProperty("Int").GetInt32() == (type == "CardTraitScalingAdvanceMoonPhase" ? 0 : 1) &&
                 trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") &&

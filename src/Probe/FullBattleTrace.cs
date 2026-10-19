@@ -1000,6 +1000,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalXBanishedSpikeIds = OriginalXBanishedSpikeScenario.CardIds,
                 OriginalXLunaSpikePrepared = OriginalXLunaSpikeScenario.Prepared,
                 OriginalXLunaSpikeIds = OriginalXLunaSpikeScenario.CardIds,
+                OriginalXStygianSpikePrepared = OriginalXStygianSpikeScenario.Prepared,
+                OriginalXStygianSpikeIds = OriginalXStygianSpikeScenario.CardIds,
                 OriginalXDamageCardsPrepared = OriginalXDamageCardsScenario.Prepared,
                 OriginalXDamageCardsIds = OriginalXDamageCardsScenario.CardIds,
                 OriginalStrongMagicCardsPrepared = OriginalStrongMagicCardsScenario.Prepared,
