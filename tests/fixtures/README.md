@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-19): 581 archives (541 full battles and
+Current manifest inventory (2026-10-19): 582 archives (542 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,7 +14,7 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-580 indexed archives. Refresh/check the index with
+581 indexed archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
 `full-battle-original-attack-overrides.mt2f` captures unchanged Irontongue and
@@ -8003,4 +8003,28 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMakeItRain -Binar
 dotnet run --project src/ModelChecks -c Release -- --original-make-it-rain-only tests/fixtures/full-battle-original-make-it-rain.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-make-it-rain.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-make-it-rain.mt2f
+```
+
+### Original Deathroar
+
+`full-battle-original-deathroar.mt2f` plays the unchanged three-cost spell on a
+selected friendly Steward. The native six-effect sequence first transfers the
+room's Pyregel (effect metadata `pyregel:1`), then deals 5 damage to the selected
+unit and repeats that 5-damage effect four times against the last target. Two
+Stewards with three Pyregel each merge to six on the target, the other source
+loses its stacks, and a third Steward on the neighboring floor retains its
+three-stack control. The spell's damage reduces the selected target's health;
+the full native result also preserves the modelled status callbacks. The Instant
+battle won with four card plays and five EndTurns in 37.51 seconds; capture
+failures, mismatches, unsupported transitions and pending records were zero,
+and protected original files were unchanged. The 25,966-byte archive has 3,445
+unique nodes and SHA-256
+`26393cb57af284ef7e95aae527a351fc2d558a55f499b5d76a7a915707f08557`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalDeathroar -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-deathroar-only tests/fixtures/full-battle-original-deathroar.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-deathroar.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-deathroar.mt2f
 ```

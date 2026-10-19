@@ -1239,6 +1239,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalMakeItRainScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalDeathroarScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Deathroar fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalDeathroarScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoonCardUpgradesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original moon card upgrades must start on deployment turn.");
@@ -2698,6 +2704,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalTomeOfEvergrowthScenario.Enabled) pendingPlay = OriginalTomeOfEvergrowthScenario.Choose(decision, OriginalTomeOfEvergrowthScenario.CardIds);
                 if (OriginalTomeOfTheLostPathScenario.Enabled) pendingPlay = OriginalTomeOfTheLostPathScenario.Choose(decision, OriginalTomeOfTheLostPathScenario.CardIds);
                 if (OriginalMakeItRainScenario.Enabled) pendingPlay = OriginalMakeItRainScenario.Choose(decision, OriginalMakeItRainScenario.CardIds);
+                if (OriginalDeathroarScenario.Enabled) pendingPlay = OriginalDeathroarScenario.Choose(decision, OriginalDeathroarScenario.CardIds);
                 if (OriginalMindsOfTheirOwnScenario.Enabled) pendingPlay = OriginalMindsOfTheirOwnScenario.Choose(decision, OriginalMindsOfTheirOwnScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);

@@ -98,6 +98,7 @@ param(
     [switch] $OriginalTomeOfEvergrowth,
     [switch] $OriginalTomeOfTheLostPath,
     [switch] $OriginalMakeItRain,
+    [switch] $OriginalDeathroar,
     [switch] $OriginalCopyMorselTwice,
     [switch] $OriginalLazarusLeagueSpike,
     [switch] $OriginalTomeOfContracts,
@@ -640,6 +641,7 @@ if ($OriginalImpPressive) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $tr
 if ($OriginalTomeOfEvergrowth) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfTheLostPath) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMakeItRain) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalDeathroar) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyMorselTwice) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalLazarusLeagueSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1232,6 +1234,7 @@ if ($OriginalImpPressive) { $environment['MT2_PROBE_MODIFIERS'] = 'original-imp-
 if ($OriginalTomeOfEvergrowth) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-evergrowth' }
 if ($OriginalTomeOfTheLostPath) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-the-lost-path' }
 if ($OriginalMakeItRain) { $environment['MT2_PROBE_MODIFIERS'] = 'original-make-it-rain' }
+if ($OriginalDeathroar) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathroar' }
 if ($OriginalCopyMorselTwice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-morsel-twice' }
 if ($OriginalLazarusLeagueSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lazarus-league-spike' }
 if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
@@ -2592,6 +2595,10 @@ if ($OriginalTomeOfTheLostPath -and ($trace.Schema -ne 103 -or $trace.ModifierSc
 if ($OriginalMakeItRain -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-make-it-rain' -or
     -not $trace.OriginalMakeItRainPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3)) {
     throw 'Original Make It Rain witness lacks its two floor controls and direct damage/reward play.'
+}
+if ($OriginalDeathroar -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-deathroar' -or
+    -not $trace.OriginalDeathroarPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
+    throw 'Original Deathroar witness lacks its three controlled Stewards and direct damage/status-transfer play.'
 }
 if ($OriginalCopyMorselTwice -and ($trace.Schema -ne 250 -or $trace.ModifierScenario -ne 'original-copy-morsel-twice' -or
     -not $trace.OriginalCopyMorselTwicePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
@@ -5989,6 +5996,17 @@ $makeItRainCoverage = -not $OriginalMakeItRain -or @($makeItRainActions | Where-
 }).Count -eq 1
 if ($OriginalMakeItRain -and ($makeItRainActions.Count -ne 1 -or -not $makeItRainCoverage)) {
     throw 'Original Make It Rain did not produce exactly one matched damage/reward play.'
+}
+$deathroarActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '73da2bc8-68a5-41b2-a639-754c2a98b6fd'
+})
+$deathroarCoverage = -not $OriginalDeathroar -or @($deathroarActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalDeathroar -and ($deathroarActions.Count -ne 1 -or -not $deathroarCoverage)) {
+    throw 'Original Deathroar did not produce exactly one matched damage/status-transfer play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }
