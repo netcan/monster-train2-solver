@@ -788,6 +788,18 @@ failures, mismatches, unsupported transitions or pending records. Binary-only:
 `d24d7308ba68de04d6dfb2e8aff1180763a4896056922b72c29ff889188c0086`. Other
 room sizes and discarding multiple hand cards are not covered.
 
+`full-battle-original-titans-gratitude.mt2f` plays unchanged one-cost Titan's
+Gratitude in a room with one living enemy front target and one eligible
+controlled discard card. The native definition retains Damage(60),
+RandomDiscard(1), and the original StrongerMagicPower parameter 5. The target
+had 1 HP, so this is a lethal, health-capped hit; a full 60-HP damage result is
+not evidenced. The 35-stage win (two plays/five EndTurns), dedicated check,
+full action-policy replay and 128-state search pass with zero capture failures,
+mismatches, unsupported transitions or pending records. Binary-only: 26,343
+bytes, 3,136 unique nodes, SHA-256
+`7a4a02ecc57ef78a0473c6d0cd28e06e61344ef8031d2abedde6a6f099af64fb`. Multiple
+living enemies and multi-card discard selection are not covered.
+
 `full-battle-original-deadly-variant.mt2f` plays unchanged two-cost Deadly
 Variant on a Train Steward carrying one Debuff. Its native target-scoped
 multiplier adds five Decay and leaves the counted Debuff intact; the card is

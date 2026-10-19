@@ -54,6 +54,7 @@ param(
     [switch] $OriginalDrain,
     [switch] $OriginalStarterFrostbiteDiscard,
     [switch] $OriginalFeedingFrenzy,
+    [switch] $OriginalTitansGratitude,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -582,6 +583,7 @@ if ($OriginalDeadlyVariant) { $BranchCardMasks = $true; $Policy = 'units-spells-
 if ($OriginalDrain) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStarterFrostbiteDiscard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFeedingFrenzy) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalTitansGratitude) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1160,6 +1162,7 @@ if ($OriginalDeadlyVariant) { $environment['MT2_PROBE_MODIFIERS'] = 'original-de
 if ($OriginalDrain) { $environment['MT2_PROBE_MODIFIERS'] = 'original-drain' }
 if ($OriginalStarterFrostbiteDiscard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-starter-frostbite-discard' }
 if ($OriginalFeedingFrenzy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-feeding-frenzy' }
+if ($OriginalTitansGratitude) { $environment['MT2_PROBE_MODIFIERS'] = 'original-titans-gratitude' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2773,6 +2776,10 @@ if ($OriginalFeedingFrenzy -and ($trace.Schema -ne 263 -or -not $trace.OriginalF
     @($trace.OriginalFeedingFrenzyCardIds).Count -ne 3)) {
     throw 'Original Feeding Frenzy requires one matched play, a single enemy-room Dazed target and one discard-hand card.'
 }
+if ($OriginalTitansGratitude -and ($trace.Schema -ne 264 -or -not $trace.OriginalTitansGratitudePrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalTitansGratitudeCardIds).Count -ne 3)) {
+    throw 'Original Titan''s Gratitude requires one matched play, a single enemy-front 60-damage target and one discard candidate.'
+}
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
 }
@@ -3806,6 +3813,14 @@ $feedingFrenzyActions = @($trace.Actions | Where-Object {
     $played.DataId -eq '9ed18c87-630e-4f91-a4b6-e6126e51c3b4'
 })
 $feedingFrenzyCoverage = -not $OriginalFeedingFrenzy -or @($feedingFrenzyActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+$titansGratitudeActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '9de23f57-7471-4c57-9b2e-b47f17e5f278'
+})
+$titansGratitudeCoverage = -not $OriginalTitansGratitude -or @($titansGratitudeActions | Where-Object {
     -not $_.Difference -and $_.Predicted.Supported
 }).Count -eq 1
 $frostChannelingActions = @($trace.Actions | Where-Object {
@@ -5737,6 +5752,9 @@ if ($OriginalStarterFrostbiteDiscard -and ($starterFrostbiteDiscardActions.Count
 }
 if ($OriginalFeedingFrenzy -and ($feedingFrenzyActions.Count -ne 1 -or -not $feedingFrenzyCoverage)) {
     throw 'Original Feeding Frenzy did not produce exactly one matched card play.'
+}
+if ($OriginalTitansGratitude -and ($titansGratitudeActions.Count -ne 1 -or -not $titansGratitudeCoverage)) {
+    throw 'Original Titan''s Gratitude did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

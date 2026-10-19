@@ -1426,6 +1426,19 @@ failures, mismatches, unsupported transitions or pending records. Binary-only:
 room sizes and discarding multiple hand cards are not covered. Use
 `-OriginalFeedingFrenzy` and `--original-feeding-frenzy-only`.
 
+`full-battle-original-titans-gratitude.mt2f` plays unchanged one-cost Titan's
+Gratitude in a room with one living enemy front target and one eligible
+controlled discard card. The native definition retains Damage(60),
+RandomDiscard(1), and the original StrongerMagicPower parameter 5. This target
+had 1 HP, so the captured effect is lethal and health-capped; a full 60-HP
+damage result is not evidenced. The 35-stage native win (two plays/five
+EndTurns), dedicated check, action-policy replay and 128-state search pass with
+zero capture failures, mismatches, unsupported transitions or pending
+records. Binary-only: 26,343 bytes, 3,136 unique nodes, SHA-256
+`7a4a02ecc57ef78a0473c6d0cd28e06e61344ef8031d2abedde6a6f099af64fb`. Multiple
+living enemies and multi-card discard selection remain outside this fixture.
+Use `-OriginalTitansGratitude` and `--original-titans-gratitude-only`.
+
 `full-battle-original-pyre-gro.mt2f` plays unchanged zero-cost PyreGro. Its
 native ordered effects reduce next-turn draw by two and add one recurring
 energy, then the original Consume trait exhausts the spell. The 37-stage native
