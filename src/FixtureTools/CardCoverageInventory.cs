@@ -102,7 +102,7 @@ internal static class CardCoverageInventory
                 if (!byId.TryGetValue(id, out Card? card)) { nonCatalogActions++; continue; }
                 if (!card.Evidence.TryGetValue(archive, out Plays? plays)) card.Evidence.Add(archive, plays = new());
                 FixtureValue original = card.Definition.GetProperty("Rule");
-                bool matches = original.ValueKind == FixtureKind.Object && Equivalent(original, rule, ruleRoot: true) &&
+                bool matches = original.ValueKind == FixtureKind.Object && Equivalent(original, rule, ruleRoot: true, cardRule: true) &&
                     MatchesSourceMetadata(card.Definition, context, action.GetProperty("CardInstanceId").GetInt32());
                 (matches ? plays.Direct : plays.Other).Add(index);
             }
@@ -538,8 +538,9 @@ internal static class CardCoverageInventory
 
     // Only these root fields describe decision-context eligibility/order rather than
     // card definitions. Missing null properties are equivalent across capture schemas;
-    // missing non-null fields, effects, numbers and ordered arrays never are.
-    private static bool Equivalent(FixtureValue left, FixtureValue right, bool ruleRoot = false, bool legacyMask = false)
+    // only two omitted defaults in SpawnUnit.Modifiers have additional calibration.
+    private static bool Equivalent(FixtureValue left, FixtureValue right, bool ruleRoot = false,
+        bool legacyMask = false, bool cardRule = false, string path = "$")
     {
         if (left.ValueKind != right.ValueKind) return false;
         if (left.ValueKind == FixtureKind.Object)
@@ -549,10 +550,27 @@ internal static class CardCoverageInventory
                 !(ruleRoot && property.Name is "ForgeEligible" or "UnplayedNegativeOrder");
             var a = left.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
             var b = right.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
-            return a.Count == b.Count && a.All(pair => b.TryGetValue(pair.Key, out FixtureValue other) && Equivalent(pair.Value, other, legacyMask: legacyMask));
+            if (cardRule && path == "$.SpawnUnit.Modifiers")
+            {
+                if (a.TryGetValue("IsChampion", out FixtureValue isChampion) && isChampion.ValueKind == FixtureKind.False &&
+                    !b.ContainsKey("IsChampion"))
+                    a.Remove("IsChampion");
+                if (a.TryGetValue("StatusAttackModifiers", out FixtureValue statusAttackModifiers) &&
+                    statusAttackModifiers.ValueKind == FixtureKind.Array && statusAttackModifiers.GetArrayLength() == 0 &&
+                    !b.ContainsKey("StatusAttackModifiers"))
+                    a.Remove("StatusAttackModifiers");
+            }
+            return a.Count == b.Count && a.All(pair => b.TryGetValue(pair.Key, out FixtureValue other) &&
+                Equivalent(pair.Value, other, legacyMask: legacyMask, cardRule: cardRule, path: path + "." + pair.Key));
         }
         if (left.ValueKind == FixtureKind.Array)
-            return left.GetArrayLength() == right.GetArrayLength() && left.EnumerateArray().Zip(right.EnumerateArray()).All(pair => Equivalent(pair.First, pair.Second, legacyMask: legacyMask));
+        {
+            if (left.GetArrayLength() != right.GetArrayLength()) return false;
+            FixtureValue[] a = left.EnumerateArray().ToArray(), b = right.EnumerateArray().ToArray();
+            for (int index = 0; index < a.Length; index++)
+                if (!Equivalent(a[index], b[index], legacyMask: legacyMask, cardRule: cardRule, path: path + "[" + index + "]")) return false;
+            return true;
+        }
         if (left.ValueKind == FixtureKind.Number) return left.GetDouble() == right.GetDouble();
         return left.ContentEquals(right);
     }
@@ -602,7 +620,7 @@ internal static class CardCoverageInventory
             ("unreviewed", "Projection failed or a required primitive has no indexed transition witness; support is unknown.") })
             text.Append($"| {level} | {cards.Count(card => card.Logbook && card.Coverage == level)} | {cards.Count(card => card.Coverage == level)} | {meaning} |\n");
         text.Append("\nThese are evidence labels, not whole-card completion claims. A directly matched play proves that captured path; it does not prove every target, upgrade, relic combination, trigger or future branch. Indirect witnesses may execute an effect with no target; presence in a played chain is not a positive test of every parameter. The definition projection is conservative but is not a full raw-asset checksum.\n\n");
-        text.Append("Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge, calibrated IgnoreArmor/ExhaustState/StrongerMagicPower parameters, and PlayedCost damage scalars five/eighty with exact source parameters and runtime/declared identity. Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower covers raw Int zero/five and zero/five room power for damage/healing. The X-damage witnesses cover enemy-present zero and positive X. Imp Olate has exact source calibration and native zero/one-Imp `SubtypeInDeck` witnesses for zero/twenty-five damage. Pyreshot has an original-card play witness for its selected-floor Pyre attack, including Sweep damage and the live per-floor enemy target set. Retch has an exact original-card `RandomToHand` witness from a controlled starting Eaten pile; it does not cover how cards enter Eaten through native feeding.\n\n");
+        text.Append("Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; a missing false `SpawnUnit.Modifiers.IsChampion` and an empty `SpawnUnit.Modifiers.StatusAttackModifiers` are accepted only at those exact paths because the native action snapshot omits those defaults; other missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge, calibrated IgnoreArmor/ExhaustState/StrongerMagicPower parameters, and PlayedCost damage scalars five/eighty with exact source parameters and runtime/declared identity. Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower covers raw Int zero/five and zero/five room power for damage/healing. The X-damage witnesses cover enemy-present zero and positive X. Imp Olate has exact source calibration and native zero/one-Imp `SubtypeInDeck` witnesses for zero/twenty-five damage. Pyreshot has an original-card play witness for its selected-floor Pyre attack, including Sweep damage and the live per-floor enemy target set. Retch has an exact original-card `RandomToHand` witness from a controlled starting Eaten pile; it does not cover how cards enter Eaten through native feeding.\n\n");
         text.Append("PlayedCost status scaling is calibrated only at multiplier two/filter one with exact original source parameters. Spike of the Legion covers positive/zero X, propagatable Rage/Regeneration, unchanged armor, neighbor/floor controls and both Consume paths.\n\n");
         text.Append("CorruptionInTargetRoom damage scaling is calibrated at multiplier one, using original Echo Break at corruption zero/two/six. Original Unearthed Remains and Soul Siphon supply accumulation/fill-to-max; neighbor and selected-floor controls distinguish live selected-room state from cached/global values. Soul Siphon's negative amount with add mode fills the current maximum and also applies room-only Scorch. This witness targets friendly units; enemy-target paths need separate evidence.\n\n");
         text.Append("StatusEffectCountInTargetRoom damage scaling is calibrated only for native Monsters armor/spikes filters with scalars four/ten. Battering Ram and Bramble Lash cover zero and positive two-unit sums, enemy and outside-floor controls. These queries require current selected-room units and captured status IDs; old missing filters remain unsupported. Source descriptors retain the query team and ordered status mask separately from runtime traits.\n\n");
