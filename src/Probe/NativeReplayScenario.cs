@@ -1101,6 +1101,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalWickedBlazeScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalOfferingTokenScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Offering Token fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalOfferingTokenScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoonCardUpgradesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original moon card upgrades must start on deployment turn.");
@@ -2537,6 +2543,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalMoldedScenario.Enabled) pendingPlay = OriginalMoldedScenario.Choose(decision, OriginalMoldedScenario.CardIds);
                 if (OriginalBrokenMemoriesScenario.Enabled) pendingPlay = OriginalBrokenMemoriesScenario.Choose(decision, OriginalBrokenMemoriesScenario.CardIds);
                 if (OriginalWickedBlazeScenario.Enabled) pendingPlay = OriginalWickedBlazeScenario.Choose(decision, OriginalWickedBlazeScenario.CardIds);
+                if (OriginalOfferingTokenScenario.Enabled) pendingPlay = OriginalOfferingTokenScenario.Choose(decision, OriginalOfferingTokenScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);
                 if (StewardsQuartersScenario.Enabled) pendingPlay = StewardsQuartersScenario.Choose(decision, StewardsQuartersScenario.CardIds);

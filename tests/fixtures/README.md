@@ -1343,6 +1343,18 @@ This covers one eligible Monster and one Spell type-filter control, not multiple
 eligible target ordering or other recursion modes. Use `-OriginalWickedBlaze`
 and `--original-wicked-blaze-only`.
 
+`full-battle-original-offering-token.mt2f` plays unchanged zero-cost Offering
+Token. Its native effect order is Draw one, then ChooseDiscard; the fixture
+draws a controlled Train Steward and discards the selected Train Steward. The
+37-stage native win has two actions and five EndTurns, with zero capture
+failures, mismatches, unsupported transitions or pending records. Its
+dedicated checker, full action-policy replay and 128-state search pass. Binary-
+only: 24,881 bytes, 3,194 unique nodes, SHA-256
+`1e0e1e596dd5d470511145e31678aad4eeb8a6508b6f01c888bddd111be83d70`. This
+proves one eligible discard choice and one controlled draw; multiple eligible
+discard ordering and empty-deck behavior remain unverified. Use
+`-OriginalOfferingToken` and `--original-offering-token-only`.
+
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation
 filter. Two same-floor units gain two Rage/Regen; the selected Glow Up target

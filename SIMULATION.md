@@ -713,6 +713,14 @@ upgrade state, full policy replay, and 128-state search pass with zero unsupport
 actions. Multiple eligible Monster ordering and other recursion modes remain
 unproven.
 
+`full-battle-original-offering-token.mt2f` plays unchanged zero-cost Offering
+Token in its native Draw-one then ChooseDiscard order. One controlled Train
+Steward is drawn while the explicitly selected Train Steward is discarded.
+The 37-stage win (two plays/five EndTurns), exact pile changes, full policy
+replay and 128-state search pass with zero unsupported actions. Only one
+eligible discard and one nonempty draw-pile state are covered; selection order
+with multiple discards and empty-deck behavior remain unproven.
+
 `full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
 Spike of the Legion. Card modifier resolution preserves the all-status filter.
 Proliferate adds two Rage/Regen to both same-floor units; Glow Up moves its

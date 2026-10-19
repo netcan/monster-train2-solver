@@ -45,6 +45,7 @@ param(
     [switch] $OriginalMolded,
     [switch] $OriginalBrokenMemories,
     [switch] $OriginalWickedBlaze,
+    [switch] $OriginalOfferingToken,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -564,6 +565,7 @@ if ($OriginalDeepOffering) { $BranchCardMasks = $true; $Policy = 'units-spells-a
 if ($OriginalMolded) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenMemories) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalWickedBlaze) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalOfferingToken) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1133,6 +1135,7 @@ if ($OriginalDeepOffering) { $environment['MT2_PROBE_MODIFIERS'] = 'original-dee
 if ($OriginalMolded) { $environment['MT2_PROBE_MODIFIERS'] = 'original-molded' }
 if ($OriginalBrokenMemories) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-memories' }
 if ($OriginalWickedBlaze) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wicked-blaze' }
+if ($OriginalOfferingToken) { $environment['MT2_PROBE_MODIFIERS'] = 'original-offering-token' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2710,6 +2713,10 @@ if ($OriginalWickedBlaze -and (-not $trace.OriginalWickedBlazePrepared -or -not 
     @($trace.OriginalWickedBlazeCardIds).Count -ne 4)) {
     throw 'Original Wicked Blaze requires one matched play, controlled Exhaust targets and a native win.'
 }
+if ($OriginalOfferingToken -and ($trace.Schema -ne 255 -or -not $trace.OriginalOfferingTokenPrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalOfferingTokenCardIds).Count -ne 4)) {
+    throw 'Original Offering Token requires one matched play, controlled draw/discard cards and a native win.'
+}
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
 }
@@ -3671,6 +3678,14 @@ $wickedBlazeActions = @($trace.Actions | Where-Object {
     $played.DataId -eq 'd930a4fe-1419-4c21-9ef2-fda4e25ee90b'
 })
 $wickedBlazeCoverage = -not $OriginalWickedBlaze -or @($wickedBlazeActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+$offeringTokenActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'e2d5dbd1-3930-4a41-9631-bef04cbc3fa4'
+})
+$offeringTokenCoverage = -not $OriginalOfferingToken -or @($offeringTokenActions | Where-Object {
     -not $_.Difference -and $_.Predicted.Supported
 }).Count -eq 1
 $frostChannelingActions = @($trace.Actions | Where-Object {
@@ -5459,6 +5474,8 @@ $result = [pscustomobject]@{
     BrokenMemoriesCoverage = $brokenMemoriesCoverage
     WickedBlazeActions = $wickedBlazeActions.Count
     WickedBlazeCoverage = $wickedBlazeCoverage
+    OfferingTokenActions = $offeringTokenActions.Count
+    OfferingTokenCoverage = $offeringTokenCoverage
     FrostChannelingActions = $frostChannelingActions.Count
     FrostChannelingCoverage = $frostChannelingCoverage
     TransferAbilityActions = $transferAbilityActions.Count
@@ -5561,6 +5578,9 @@ if ($OriginalBrokenMemories -and ($brokenMemoriesActions.Count -ne 1 -or -not $b
 }
 if ($OriginalWickedBlaze -and ($wickedBlazeActions.Count -ne 1 -or -not $wickedBlazeCoverage)) {
     throw 'Original Wicked Blaze did not produce exactly one matched card play.'
+}
+if ($OriginalOfferingToken -and ($offeringTokenActions.Count -ne 1 -or -not $offeringTokenCoverage)) {
+    throw 'Original Offering Token did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }
