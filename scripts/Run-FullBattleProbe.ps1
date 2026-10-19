@@ -2487,7 +2487,7 @@ if ($OriginalRearrangeSpells -and (-not $trace.OriginalRearrangeSpellsPrepared -
 if ($OriginalMovementSpells -and (-not $trace.OriginalMovementSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 13)) {
     throw 'Original movement spell witness lacks nine unchanged originals and tracked floor/order controls.'
 }
-if ($OriginalScaledDamage -and (-not $trace.OriginalScaledDamagePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 16)) {
+if ($OriginalScaledDamage -and (-not $trace.OriginalScaledDamagePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 17)) {
     throw 'Original scaled damage witness lacks five unchanged originals and positive scaling controls.'
 }
 if ($OriginalHostileStatuses -and (-not $trace.OriginalHostileStatusesPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 18)) {

@@ -322,6 +322,10 @@ internal static class CardCoverageInventory
         if (type == "CardTraitScalingAddDamage" && trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") &&
             Text(trait, "EntryDuration") == "ThisBattle" && (value == 3 && Text(trait, "TrackedValue") == "AnyMonsterDeath" ||
                 value == 2 && Text(trait, "TrackedValue") == "TypeInDeck" && Text(trait, "QueryCardType") == "Spell")) return true;
+        if (type == "CardTraitScalingAddDamage" && value == 10 && trait.GetProperty("Int2").GetInt32() == 0 &&
+            trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") && Text(trait, "Str") == "" &&
+            trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") && Text(trait, "TrackedValue") == "AnyMonsterDeath" &&
+            Text(trait, "EntryDuration") == "ThisBattle") return true;
         // Ritual Tome and the resource spells retain unused ExhaustState parameters.
         // Native exhaustion reads play count/relics, not those source parameters.
         if (type == "CardTraitExhaustState" && trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") && Text(trait, "EntryDuration") == "ThisTurn" &&
