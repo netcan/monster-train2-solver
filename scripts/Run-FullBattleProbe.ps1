@@ -55,6 +55,7 @@ param(
     [switch] $OriginalStarterFrostbiteDiscard,
     [switch] $OriginalFeedingFrenzy,
     [switch] $OriginalTitansGratitude,
+    [switch] $OriginalPerfectInsanity,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -584,6 +585,7 @@ if ($OriginalDrain) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk
 if ($OriginalStarterFrostbiteDiscard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFeedingFrenzy) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTitansGratitude) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalPerfectInsanity) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1163,6 +1165,7 @@ if ($OriginalDrain) { $environment['MT2_PROBE_MODIFIERS'] = 'original-drain' }
 if ($OriginalStarterFrostbiteDiscard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-starter-frostbite-discard' }
 if ($OriginalFeedingFrenzy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-feeding-frenzy' }
 if ($OriginalTitansGratitude) { $environment['MT2_PROBE_MODIFIERS'] = 'original-titans-gratitude' }
+if ($OriginalPerfectInsanity) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perfect-insanity' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2779,6 +2782,10 @@ if ($OriginalFeedingFrenzy -and ($trace.Schema -ne 263 -or -not $trace.OriginalF
 if ($OriginalTitansGratitude -and ($trace.Schema -ne 264 -or -not $trace.OriginalTitansGratitudePrepared -or -not $trace.NativeWon -or
     @($trace.OriginalTitansGratitudeCardIds).Count -ne 3)) {
     throw 'Original Titan''s Gratitude requires one matched play, a single enemy-front 60-damage target and one discard candidate.'
+}
+if ($OriginalPerfectInsanity -and ($trace.Schema -ne 265 -or -not $trace.OriginalPerfectInsanityPrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalPerfectInsanityCardIds).Count -ne 2)) {
+    throw 'Original Perfect Insanity requires one matched play, six selected-room corruption and a durable upgrade target.'
 }
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
@@ -5755,6 +5762,17 @@ if ($OriginalFeedingFrenzy -and ($feedingFrenzyActions.Count -ne 1 -or -not $fee
 }
 if ($OriginalTitansGratitude -and ($titansGratitudeActions.Count -ne 1 -or -not $titansGratitudeCoverage)) {
     throw 'Original Titan''s Gratitude did not produce exactly one matched card play.'
+}
+$perfectInsanityActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '9d04efb5-8794-42a8-8282-e8ef895e6c3a'
+})
+$perfectInsanityCoverage = -not $OriginalPerfectInsanity -or @($perfectInsanityActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalPerfectInsanity -and ($perfectInsanityActions.Count -ne 1 -or -not $perfectInsanityCoverage)) {
+    throw 'Original Perfect Insanity did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

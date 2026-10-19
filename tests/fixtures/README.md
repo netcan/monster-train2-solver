@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 538 archives (498 full battles and
+Current manifest inventory (2026-10-19): 569 archives (529 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,7 +14,7 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-537 accepted archives. Refresh/check the index with
+568 indexed archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
 `full-battle-original-attack-overrides.mt2f` captures unchanged Irontongue and
@@ -1438,6 +1438,21 @@ records. Binary-only: 26,343 bytes, 3,136 unique nodes, SHA-256
 `7a4a02ecc57ef78a0473c6d0cd28e06e61344ef8031d2abedde6a6f099af64fb`. Multiple
 living enemies and multi-card discard selection remain outside this fixture.
 Use `-OriginalTitansGratitude` and `--original-titans-gratitude-only`.
+
+`full-battle-original-perfect-insanity.mt2f` plays unchanged one-cost Perfect
+Insanity after establishing six corruption in the selected room and summoning
+a controlled durable Train Steward. The native card retains Corrupt
+Restricted(6), consumes all six corruption before effects, reduces the friendly
+unit's current and maximum health by 666 through its original temporary
+Minus666Health upgrade, and enters discard. The 37-stage native win (two
+plays/five EndTurns), dedicated check, action-policy replay and 35-state
+serial/parallel search pass with zero capture failures, mismatches, unsupported
+transitions or pending records. Binary-only: 25,809 bytes, 3,109 unique nodes,
+SHA-256 `e895cf84fbb796adf05261b003d7d4234d849ada7d2065f816e8ee316f2a825f`.
+This covers one friendly target and sufficient selected-room corruption; enemy
+targets, insufficient corruption and other upgrade/relic interactions remain
+outside this fixture. Use `-OriginalPerfectInsanity` and
+`--original-perfect-insanity-only`.
 
 `full-battle-original-pyre-gro.mt2f` plays unchanged zero-cost PyreGro. Its
 native ordered effects reduce next-turn draw by two and add one recurring

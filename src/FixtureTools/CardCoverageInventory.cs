@@ -247,6 +247,13 @@ internal static class CardCoverageInventory
     private static bool CalibratedSourceTrait(FixtureValue trait, string cardId)
     {
         string type = Text(trait, "Type");
+        if (cardId == "9d04efb5-8794-42a8-8282-e8ef895e6c3a")
+            return type == "CardTraitCorruptRestricted" && trait.GetProperty("Int").GetInt32() == 6 &&
+                trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
+                !Flag(trait, "Bool") && Text(trait, "Str") == "" && trait.GetProperty("Float").GetDouble() == 0 &&
+                !Flag(trait, "Scaling") && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
+                new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag", "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
         if (cardId == "78996030-e8d1-4731-897e-ee4b809fa26c")
             return type == "CardTraitScalingUpgradeUnitAttack" && trait.GetProperty("Int").GetInt32() == 8 &&
                 trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
