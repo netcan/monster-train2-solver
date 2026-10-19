@@ -112,36 +112,38 @@ battles/7,914 actions). Native source
 protected files unchanged. Binary-only: 43,271 bytes/7,715 nodes, SHA-256
 `bbfadaf9bfd746464281f2613d8927e489ac5e7f952ac28dff250011d023cad2`.
 
-`full-battle-original-equipment-cards.mt2f` captures sixteen unchanged originals:
+`full-battle-original-equipment-cards.mt2f` captures seventeen unchanged originals:
 Exile's Diadem, Glass Cannon, Stoic Platemail, Moonlit Glaive, Potion Kit,
 Titansteel Dagger, Fortify, Bloodthirsty Blade, Heph's Hammer, Everlasting Light,
-Meat Shield, Combustible Suit, Ambient Charge, Lava Armor, Resin Blades and
-Cursed Twinblade. Exile's Diadem, Glass Cannon, Stoic Platemail and Moonlit
-Glaive share the size-three host; Potion Kit, Titansteel Dagger, Meat Shield and
-Combustible Suit share a second host. Bloodthirsty Blade, Heph's Hammer,
-Everlasting Light and Cursed Twinblade occupy the lead attacker, while Fortify,
-Lava Armor and Resin Blades use the dedicated death-control host. The unchanged
-Pyre Steward on a separate floor receives Ambient Charge. Exact costs,
+Meat Shield, Combustible Suit, Ambient Charge, Lava Armor, Resin Blades,
+Cursed Twinblade and Organ Harvester. Exile's Diadem, Glass Cannon, Stoic
+Platemail and Moonlit Glaive share the size-three host; Titansteel Dagger,
+Everlasting Light, Meat Shield and Combustible Suit share the wounded host on
+the same floor. Bloodthirsty Blade, Heph's Hammer, Cursed Twinblade and Organ
+Harvester occupy the lead attacker, while Potion Kit, Fortify, Lava Armor and
+Resin Blades use the dedicated death-control host. The unchanged Pyre Steward
+on a separate floor receives Ambient Charge. Exact costs,
 attack/current/max HP, size, statuses and Standby bindings match without
 displacement or changes to other hosts/floors. Moonlit Glaive creates its
 three-point Mageblade coefficient through the upgrade callback. Fortify installs
 its six armor stacks; the death control returns Resin Blades, exhausts Lava
 Armor and clears both bindings. The lead attacker resolves both Cursed Twinblade
-Multistrike callbacks as temporary -1 attack upgrades. Combat also positively
-witnesses Bloodthirsty Blade equipment growth, Heph's Hammer kill capacity,
-Everlasting Light attack Valor and wounded Meat Shield healing. Use
-`--original-equipment-cards-only`. Sixteen complete immutable chains, old
-original grafted equipment and Mageblade focused checks pass. Search matches 25
+Multistrike callbacks as temporary -1 attack upgrades, and gains Undying from
+Organ Harvester's positive OnKill callback. Combat also positively witnesses
+Bloodthirsty Blade equipment growth, Heph's Hammer kill capacity, Everlasting
+Light attack Valor and wounded Meat Shield healing. Use
+`--original-equipment-cards-only`. Seventeen complete immutable chains, old
+original grafted equipment and Mageblade focused checks pass. Search matches 26
 recorded decisions/31 root actions, 128/128 states and three replayed steps with
-equal serial/parallel best and zero unsupported search attempts; sixteen
-unsupported candidate attempts across recorded decisions remain guarded.
-The regenerated inventory contains 365 definition-matched identities across 546
-indexed battles/8,321 native actions. Native source
-`.probe-runs/full-battle-units-spells-and-junk-20261020-005124-b3d6ee70` won in
-116.80 seconds with 25 plays/five EndTurns and zero capture failures, mismatches,
-unsupported transitions or pending records. Binary-only: 47,442 bytes/8,940
+equal serial/parallel best and zero unsupported search attempts; eighteen
+unsupported candidate attempts across recorded decisions remain guarded. The
+regenerated inventory contains 366 definition-matched identities across 546
+indexed battles/8,322 native actions. Native source
+`.probe-runs/full-battle-units-spells-and-junk-20261020-011536-0ebcaa4e` won in
+118.73 seconds with 26 plays/five EndTurns and zero capture failures, mismatches,
+unsupported transitions or pending records. Binary-only: 49,240 bytes/9,311
 nodes, SHA-256
-`aab6a6a1b27b6e90e8d2f07fff4654149b390e71a0b2f94044b00b8b3d5f08b0`.
+`76a0e7e79ea8cdbd035b30f938f042c073de2e82ea89aaa202d3df63208c8d83`.
 
 `full-battle-original-support-spells.mt2f` captures unchanged Razorsharp Edge,
 Sharpen, Regen Potion, Remnant Pact, Machinist's Tome, Rootseeds, Perils of

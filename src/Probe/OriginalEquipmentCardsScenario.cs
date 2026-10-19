@@ -57,20 +57,21 @@ namespace MonsterTrain2Poju.Probe
                 Add("1dd23b59-fa5e-44bc-83ca-de119ede4f21"), Add("66cbbd14-f5f3-44a1-bd1c-ce98f3c13584"), Add("87c155c4-55e4-4434-a99d-1dda85d5784c"),
                 Add("e4ba411f-09b2-4a87-91f6-5f00cd742ba6"), Add("7369cb8e-f8cf-44be-8667-c699c630c063"), Add("1f352534-0895-488e-9345-481bc447a089"),
                 Add("75cfe90b-47b9-406c-b891-33564aac6677"), Add("924ad6ab-3d60-4760-b38e-78f5cf09c1d5"),
-                Add("1d2e6259-e3ef-4a6a-8894-2c12db9fd4a9"), Add("00a5ceea-8fae-4437-9cb8-3c0f2998fb2c"), Add(lethal.GetID()) };
+                Add("1d2e6259-e3ef-4a6a-8894-2c12db9fd4a9"), Add("00a5ceea-8fae-4437-9cb8-3c0f2998fb2c"),
+                Add("1d5627c9-b0b5-405e-97f4-7a5ac5b91021"), Add(lethal.GetID()) };
             foreach (CardState card in created.Skip(4)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-EQUIPMENT-CARDS-PREPARED sixteen unchanged originals; Fortify on the death-control host and Cursed Twinblade on the lead attacker.");
+            log.LogInfo("ORIGINAL-EQUIPMENT-CARDS-PREPARED seventeen unchanged originals; Potion Kit on the death-control host and Everlasting Light on the wounded same-room host.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
             if (index < 0 || index >= 4 && source.Spawn.Turn < 1) return null;
-            int host = index is >= 8 and <= 11 ? 1 : index is 12 or 13 or 18 or 19 ? 2 : index == 20 ? 3 : index is 14 or 21 or 22 ? 7 : 0;
-            int target = index is >= 8 and <= 23 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
-            int room = index is 3 or 20 ? 1 : index is 7 or 14 or 21 or 22 or 24 ? 2 : 0;
+            int host = index is >= 8 and <= 11 ? 1 : index is 13 or 17 or 18 or 19 ? 2 : index == 20 ? 3 : index is 12 or 14 or 21 or 22 ? 7 : 0;
+            int target = index is >= 8 and <= 24 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
+            int room = index is 3 or 20 ? 1 : index is 7 or 12 or 14 or 21 or 22 or 25 ? 2 : 0;
             int position = index == 3 || index == 7 ? 0 : index < 4 ? index : -1;
             var action = new PlayCardAction(ids[index], room, playerPosition: position, targetUnitId: target);
             BattleActionResult result = BattleActionModel.PlayCard(source, action);
