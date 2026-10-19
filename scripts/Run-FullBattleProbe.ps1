@@ -2667,8 +2667,8 @@ if ($OriginalBaseChampions -and (-not $trace.OriginalBaseChampionsPrepared -or -
 if ($OriginalStatusUnits -and (-not $trace.OriginalStatusUnitsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 21)) {
     throw 'Original status unit witness lacks eleven unchanged births and positive combat controls.'
 }
-if ($OriginalEquipmentCards -and (-not $trace.OriginalEquipmentCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 23)) {
-    throw 'Original equipment witness lacks fifteen unchanged cards, separate hosts and positive battle callbacks.'
+if ($OriginalEquipmentCards -and (-not $trace.OriginalEquipmentCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 24)) {
+    throw 'Original equipment witness lacks fifteen unchanged cards, separate hosts, host death and positive battle callbacks.'
 }
 if ($OriginalSupportSpells -and (-not $trace.OriginalSupportSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 27)) {
     throw 'Original support spell witness lacks thirteen unchanged originals and positive resource/healing controls.'

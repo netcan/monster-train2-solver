@@ -123,23 +123,24 @@ exact paid costs, attack/current/max HP, size, statuses and Standby host binding
 match without displacement or changes to the other hosts/floors. Moonlit Glaive
 creates its three-point Mageblade coefficient through the upgrade callback.
 The final host preserves Lava Armor's three-Pyregel OnHit and Resin Blades'
-ReturnToHand binding; the later host-death return remains a separate lifecycle
-witness. Combat positively witnesses Bloodthirsty Blade equipment growth,
+ReturnToHand binding. A later lethal control removes the host, returns Resin
+Blades to hand, exhausts Lava Armor, and clears both standby bindings. Combat
+positively witnesses Bloodthirsty Blade equipment growth,
 Heph's Hammer kill capacity, Everlasting Light attack Valor, wounded Meat Shield
 healing and Fortify postcombat armor. Use `--original-equipment-cards-only`.
 Sixteen complete immutable chains, old original grafted equipment and Mageblade
-focused checks pass. Search matches 23 recorded decisions/27 root actions,
+focused checks pass. Search matches 24 recorded decisions/31 root actions,
 128/128 states and three replayed steps with equal serial/parallel best and zero
-unsupported search attempts; twelve unsupported candidate attempts across
+unsupported search attempts; fourteen unsupported candidate attempts across
 recorded decisions remain guarded. Both added originals now have
 definition-matched native plays.
 The regenerated inventory contains 364 definition-matched identities across 546
-indexed battles/8,319 native actions. Native source
-`.probe-runs/full-battle-units-spells-and-junk-20261019-235635-50172145` won in
-101.33 seconds with 23 plays/five EndTurns and zero capture failures, mismatches,
-unsupported transitions or pending records. Binary-only: 45,421 bytes/8,216
+indexed battles/8,320 native actions. Native source
+`.probe-runs/full-battle-units-spells-and-junk-20261020-000844-e045c942` won in
+107.63 seconds with 24 plays/five EndTurns and zero capture failures, mismatches,
+unsupported transitions or pending records. Binary-only: 46,238 bytes/8,509
 nodes, SHA-256
-`2942c3bcfd391b8d4c92f8148adda39923c81924d09eca1e59772bf2390e33bc`.
+`eaf114b2d2ec693ba1f63f42d0c6eb533be688f8883334e1ba63bf135650fc07`.
 
 `full-battle-original-support-spells.mt2f` captures unchanged Razorsharp Edge,
 Sharpen, Regen Potion, Remnant Pact, Machinist's Tome, Rootseeds, Perils of

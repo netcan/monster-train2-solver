@@ -27,7 +27,7 @@ internal static class OriginalEquipmentCardsChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalEquipmentCardsIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 23 && actions.Length == 23, "Missing fifteen original equipment cards, four-slot hosts or wound/energy/enemy health controls.");
+        Require(ids.Length == 24 && actions.Length == 24, "Missing fifteen original equipment cards, four-slot hosts or wound/energy/enemy health/death controls.");
         for (int i = 8; i < 23; i++)
         {
             BattleTurnState before = actions[i].GetProperty("Before").Deserialize<BattleTurnState>()!, after = actions[i].GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -76,6 +76,20 @@ internal static class OriginalEquipmentCardsChecks
                 Json(after.Spawn.Train.Rooms.Where(room => room.RoomIndex != action.RoomIndex).Select(room => room.Units)), "Equipment attachment changed another host or floor.");
             Require(context.BattleRng.Equals(changed.BattleRng), "These equipment attachments must not consume Battle RNG.");
         }
+        BattleTurnState lethalBefore = actions[23].GetProperty("Before").Deserialize<BattleTurnState>()!,
+            lethalAfter = actions[23].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction lethalAction = actions[23].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatUnit equipmentHost = lethalBefore.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2).Units
+            .Single(unit => unit.SpawnerCardId == ids[7]);
+        CombatContext lethalContext = lethalAfter.Spawn.Train.Context!;
+        CardPileState standbyAfterDeath = lethalContext.OtherPiles!.Single(pile => pile.Name == "Standby");
+        Require(lethalAction.CardInstanceId == ids[23] && lethalAction.RoomIndex == 2 &&
+            !lethalAfter.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2).Units.Any(unit => unit.Id == equipmentHost.Id) &&
+            lethalContext.Cards.Hand.Any(card => card.InstanceId == ids[22]) &&
+            lethalContext.OtherPiles.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == ids[21]) &&
+            !standbyAfterDeath.Cards.Any(card => card.InstanceId == ids[21] || card.InstanceId == ids[22]) &&
+            !standbyAfterDeath.EquipmentConditions!.Any(condition => condition.CardId == ids[21] || condition.CardId == ids[22]),
+            "Killing the equipment host must return Resin Blades to hand and exhaust Lava Armor without stale standby bindings.");
         var firstCombat = root.GetProperty("TrainPhases").EnumerateArray().First(phase => phase.GetProperty("Turn").GetInt32() == 1 && phase.GetProperty("Kind").GetString() == "Combat");
         TrainCombatState combatBefore = firstCombat.GetProperty("Before").Deserialize<TrainCombatState>()!, combatAfter = firstCombat.GetProperty("Actual").Deserialize<TrainCombatState>()!;
         CombatUnit healerBefore = combatBefore.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[2]), healerAfter = combatAfter.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[2]);
@@ -87,7 +101,7 @@ internal static class OriginalEquipmentCardsChecks
             healerAfter.Health > healerBefore.Health && primaryAfter.Status("armor")?.Stacks >= 6,
             "Bloodthirsty Blade equipment growth, wounded Meat Shield healing and Fortify postcombat armor need positive witnesses.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-EQUIPMENT-CARDS PASS: fifteen unchanged originals, exact paid attachment/Standby bindings, attack/HP/size/statuses, separate host/floor controls, positive equipment growth/capacity/Valor/healing/armor callbacks and 16 immutable full chains.");
+        Console.WriteLine("ORIGINAL-EQUIPMENT-CARDS PASS: fifteen unchanged originals, exact attachment/Standby bindings, Resin Blades host-death return, attack/HP/size/statuses, positive equipment callbacks and 16 immutable full chains.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
