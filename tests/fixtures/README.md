@@ -7423,3 +7423,21 @@ Independent replay and the 128-state serial/parallel search pass.
 dotnet run --project src/ModelChecks -c Release -- --original-accelerated-incubation-only tests/fixtures/full-battle-original-accelerated-incubation.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-accelerated-incubation.mt2f
 ```
+
+### Original Tome of Contracts
+
+`full-battle-original-tome-of-contracts.mt2f` plays the unchanged one-cost
+Tome of Contracts after two friendly ability-bearing Stewards are deployed.
+The native card reduces the selected unit's cooldown duration from three to two,
+pays one Ember, and Exhausts. The three-play Instant battle won in 38.48 seconds
+with five EndTurns; all capture, mismatch, unsupported and pending counters were
+zero, and protected original files were unchanged. The 25,043-byte archive has
+3,014 unique nodes and SHA-256
+`468cc148abb3067821334bf407b3367429f7ea94aa98ce0d3bcc049b03d1450f`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-tome-of-contracts.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-tome-of-contracts-only tests/fixtures/full-battle-original-tome-of-contracts.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-tome-of-contracts.mt2f
+```

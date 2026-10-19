@@ -70,6 +70,7 @@ param(
     [switch] $OriginalPileDraw,
     [switch] $OriginalCardDrawPotion,
     [switch] $OriginalAcceleratedIncubation,
+    [switch] $OriginalTomeOfContracts,
     [switch] $OriginalPileRecursion,
     [switch] $OriginalScaledBuff,
     [switch] $OriginalPileStatus,
@@ -573,6 +574,7 @@ if ($OriginalEffectApplications) { $BranchCardMasks = $true; $Policy = 'units-sp
 if ($OriginalPileDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCardDrawPotion) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalAcceleratedIncubation) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPileRecursion) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledBuff) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPileStatus) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -1126,6 +1128,7 @@ if ($OriginalEffectApplications) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalPileDraw) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-draw' }
 if ($OriginalCardDrawPotion) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-potion' }
 if ($OriginalAcceleratedIncubation) { $environment['MT2_PROBE_MODIFIERS'] = 'original-accelerated-incubation' }
+if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
 if ($OriginalPileRecursion) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-recursion' }
 if ($OriginalScaledBuff) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-buff' }
 if ($OriginalPileStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-status' }
@@ -2431,6 +2434,10 @@ if ($OriginalCardDrawPotion -and ($trace.Schema -ne 247 -or $trace.ModifierScena
 if ($OriginalAcceleratedIncubation -and ($trace.ModifierScenario -ne 'original-accelerated-incubation' -or
     -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
     throw 'Original Accelerated Incubation witness lacks two control unit plays and the direct Spell play.'
+}
+if ($OriginalTomeOfContracts -and ($trace.Schema -ne 248 -or $trace.ModifierScenario -ne 'original-tome-of-contracts' -or
+    -not $trace.OriginalTomeOfContractsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
+    throw 'Original Tome of Contracts witness lacks two control unit plays and the direct Spell play.'
 }
 if ($OriginalSupportUnits -and (-not $trace.OriginalSupportUnitsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 29)) {
     throw 'Original support unit witness lacks thirteen unchanged units and positive native callback controls.'

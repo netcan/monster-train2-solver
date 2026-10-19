@@ -1305,6 +1305,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalAcceleratedIncubationScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalTomeOfContractsScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Tome of Contracts fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalTomeOfContractsScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalEffectApplicationsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original effect applications fixture must start on deployment turn.");
@@ -2371,6 +2377,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalBigDamageScenario.Choose(decision, pendingPlay, log);
                 if (OriginalAcceleratedIncubationScenario.Enabled)
                     pendingPlay = OriginalAcceleratedIncubationScenario.Choose(decision) ?? pendingPlay;
+                if (OriginalTomeOfContractsScenario.Enabled)
+                    pendingPlay = OriginalTomeOfContractsScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalEggCardScenario.Enabled)
                     pendingPlay = OriginalEggCardScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCombatTriggerBatchScenario.Enabled)

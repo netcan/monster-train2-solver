@@ -593,6 +593,12 @@ if (args.Length == 2 && args[0] == "--original-accelerated-incubation-only")
     OriginalAcceleratedIncubationChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-tome-of-contracts-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalTomeOfContractsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-effect-applications-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
