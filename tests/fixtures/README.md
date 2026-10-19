@@ -7964,3 +7964,23 @@ dotnet run --project src/ModelChecks -c Release -- --original-tome-of-evergrowth
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-tome-of-evergrowth.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-tome-of-evergrowth.mt2f
 ```
+
+### Original Tome of the Lost Path
+
+`full-battle-original-tome-of-the-lost-path.mt2f` deploys controlled original
+Train Stewards on separate floors and plays unchanged Tome of the Lost Path
+on the first. The one-cost Exhaust spell gives that unit the native
+AngelFlightAbility (cooldown 2, cooldown at spawn 0); the control floor remains
+without an ability. The Instant battle won with three card plays and five
+EndTurns in 39.09 seconds; capture failures, mismatches, unsupported
+transitions and pending records were zero, and protected original files were
+unchanged. The 27,347-byte archive has 3,643 unique nodes and SHA-256
+`6cb99cc7213b30fd84581b01357b3e3691c7664a0bb865ba7c47206ea8b7c65f`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTomeOfTheLostPath -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-tome-of-the-lost-path-only tests/fixtures/full-battle-original-tome-of-the-lost-path.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-tome-of-the-lost-path.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-tome-of-the-lost-path.mt2f
+```

@@ -96,6 +96,7 @@ param(
     [switch] $OriginalWaxenSpike,
     [switch] $OriginalImpPressive,
     [switch] $OriginalTomeOfEvergrowth,
+    [switch] $OriginalTomeOfTheLostPath,
     [switch] $OriginalCopyMorselTwice,
     [switch] $OriginalLazarusLeagueSpike,
     [switch] $OriginalTomeOfContracts,
@@ -636,6 +637,7 @@ if ($OriginalCoverOfNight) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $t
 if ($OriginalWaxenSpike) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalImpPressive) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfEvergrowth) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalTomeOfTheLostPath) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyMorselTwice) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalLazarusLeagueSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1226,6 +1228,7 @@ if ($OriginalCoverOfNight) { $environment['MT2_PROBE_MODIFIERS'] = 'original-cov
 if ($OriginalWaxenSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-waxen-spike' }
 if ($OriginalImpPressive) { $environment['MT2_PROBE_MODIFIERS'] = 'original-imp-pressive' }
 if ($OriginalTomeOfEvergrowth) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-evergrowth' }
+if ($OriginalTomeOfTheLostPath) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-the-lost-path' }
 if ($OriginalCopyMorselTwice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-morsel-twice' }
 if ($OriginalLazarusLeagueSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lazarus-league-spike' }
 if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
@@ -2578,6 +2581,10 @@ if ($OriginalImpPressive -and ($trace.Schema -ne 103 -or $trace.ModifierScenario
 if ($OriginalTomeOfEvergrowth -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-tome-of-evergrowth' -or
     -not $trace.OriginalTomeOfEvergrowthPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3)) {
     throw 'Original Tome of Evergrowth witness lacks its two floor controls and direct ability-setting play.'
+}
+if ($OriginalTomeOfTheLostPath -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-tome-of-the-lost-path' -or
+    -not $trace.OriginalTomeOfTheLostPathPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3)) {
+    throw 'Original Tome of the Lost Path witness lacks its two floor controls and direct ability-setting play.'
 }
 if ($OriginalCopyMorselTwice -and ($trace.Schema -ne 250 -or $trace.ModifierScenario -ne 'original-copy-morsel-twice' -or
     -not $trace.OriginalCopyMorselTwicePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
@@ -5953,6 +5960,17 @@ $tomeOfEvergrowthCoverage = -not $OriginalTomeOfEvergrowth -or @($tomeOfEvergrow
 }).Count -eq 1
 if ($OriginalTomeOfEvergrowth -and ($tomeOfEvergrowthActions.Count -ne 1 -or -not $tomeOfEvergrowthCoverage)) {
     throw 'Original Tome of Evergrowth did not produce exactly one matched ability-setting play.'
+}
+$tomeOfTheLostPathActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'e79f31b0-749a-4655-8af8-1fa226974edc'
+})
+$tomeOfTheLostPathCoverage = -not $OriginalTomeOfTheLostPath -or @($tomeOfTheLostPathActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalTomeOfTheLostPath -and ($tomeOfTheLostPathActions.Count -ne 1 -or -not $tomeOfTheLostPathCoverage)) {
+    throw 'Original Tome of the Lost Path did not produce exactly one matched ability-setting play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

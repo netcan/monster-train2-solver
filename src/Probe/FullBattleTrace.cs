@@ -1047,6 +1047,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalImpPressiveIds = OriginalImpPressiveScenario.CardIds,
                 OriginalTomeOfEvergrowthPrepared = OriginalTomeOfEvergrowthScenario.Prepared,
                 OriginalTomeOfEvergrowthIds = OriginalTomeOfEvergrowthScenario.CardIds,
+                OriginalTomeOfTheLostPathPrepared = OriginalTomeOfTheLostPathScenario.Prepared,
+                OriginalTomeOfTheLostPathIds = OriginalTomeOfTheLostPathScenario.CardIds,
                 OriginalPyreshotPrepared = OriginalPyreshotScenario.Prepared,
                 OriginalPyreshotIds = OriginalPyreshotScenario.CardIds,
                 OriginalRetchPrepared = OriginalRetchScenario.Prepared,
