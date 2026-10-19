@@ -2145,6 +2145,13 @@ foreach ($fixturePath in $originalFertileGroundFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Fertile Ground checks failed ($mode): $fixturePath" }
     }
 }
+$originalCoverOfNightFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-cover-of-night.mt2f' })
+foreach ($fixturePath in $originalCoverOfNightFixtures) {
+    foreach ($mode in @('--original-cover-of-night-only', '--native-actions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Cover of Night checks failed ($mode): $fixturePath" }
+    }
+}
 $originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })
 foreach ($fixturePath in $originalOverflowFixtures) {
     foreach ($mode in @('--original-overflow-cards-only', '--battle-search-only')) {

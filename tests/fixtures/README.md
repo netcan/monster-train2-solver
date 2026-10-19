@@ -7882,3 +7882,23 @@ dotnet run --project src/ModelChecks -c Release -- --original-fertile-ground-onl
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-fertile-ground.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-fertile-ground.mt2f
 ```
+
+### Original Cover of Night
+
+`full-battle-original-cover-of-night.mt2f` deploys unchanged Train Stewards on
+two floors, uses original Moonrise to set Full Moon, then casts unchanged
+Cover of Night on the first floor. Cover of Night sets New Moon, applies its
+temporary +5 attack unit upgrade and one Stealth to that floor, leaves the
+control floor unchanged, and Exhausts itself. The 39.30-second Instant battle
+won with four card plays and five EndTurns; capture failures, mismatches,
+unsupported transitions and pending records were zero, and protected original
+files were unchanged. The 28,341-byte archive has 3,814 unique nodes and
+SHA-256 `7459b07975a9139fee1c765ee09864b938166923897e993be6869067b1e0f65e`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCoverOfNight -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-cover-of-night-only tests/fixtures/full-battle-original-cover-of-night.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-cover-of-night.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-cover-of-night.mt2f
+```

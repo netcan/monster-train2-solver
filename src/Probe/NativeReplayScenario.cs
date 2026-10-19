@@ -1203,6 +1203,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalFertileGroundScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalCoverOfNightScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Cover of Night fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalCoverOfNightScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoonCardUpgradesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original moon card upgrades must start on deployment turn.");
@@ -2656,6 +2662,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalMindsOfTheirOwnScenario.Enabled) pendingPlay = OriginalMindsOfTheirOwnScenario.Choose(decision, OriginalMindsOfTheirOwnScenario.CardIds);
                 if (OriginalMetallurgyScenario.Enabled) pendingPlay = OriginalMetallurgyScenario.Choose(decision, OriginalMetallurgyScenario.CardIds);
                 if (OriginalFertileGroundScenario.Enabled) pendingPlay = OriginalFertileGroundScenario.Choose(decision, OriginalFertileGroundScenario.CardIds);
+                if (OriginalCoverOfNightScenario.Enabled) pendingPlay = OriginalCoverOfNightScenario.Choose(decision, OriginalCoverOfNightScenario.CardIds);
                 if (OriginalMindsOfTheirOwnScenario.Enabled) pendingPlay = OriginalMindsOfTheirOwnScenario.Choose(decision, OriginalMindsOfTheirOwnScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);

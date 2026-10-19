@@ -277,6 +277,14 @@ internal static class CardCoverageInventory
                 new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag",
                     "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
                     .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
+        if (cardId == "e022d66a-f794-4ff9-95a6-b3cc53f49a27" && type == "CardTraitExhaustState")
+            return trait.GetProperty("Int").GetInt32() == 0 && trait.GetProperty("Int2").GetInt32() == 0 &&
+                trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") && Text(trait, "Str") == "" &&
+                trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") &&
+                Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
+                new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag",
+                    "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
         if (type == "CardTraitSelfPurge") return true;
         if (type == "CardTraitModifyCardTriggerSlayFireCount") return Flag(trait, "Bool") &&
             Text(trait, "KillTargetTeam") == "Monsters" && Text(trait, "KillTargetSubtype") == "SubtypesData_FunGuy" &&
