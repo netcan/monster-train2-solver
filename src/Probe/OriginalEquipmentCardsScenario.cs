@@ -45,30 +45,31 @@ namespace MonsterTrain2Poju.Probe
                 var effect = new CardEffectData(effectName, null!, team); effect.Cheat_SetTargetMode(TargetMode.Room); Set(effect, "paramInt", value);
                 Set(data, "effects", new List<CardEffectData> { effect }); Register(data); return data;
             }
-            CardData primary = Host(1, 15, 1), secondary = Host(2, 5, 3), third = Host(3, 15, 1),
+            CardData primary = Host(1, 15, 1), secondary = Host(2, 5, 3), third = Host(3, 15, 1), batchHost = Host(7, 15, 1),
                 battery = Control(4, "CardEffectGainEnergy", 20, Team.Type.None), wound = Control(5, "CardEffectDamage", 30, Team.Type.Monsters),
                 health = Control(6, "CardEffectBuffMaxHealth", 50, Team.Type.Heroes);
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
-            CardState[] created = { Add(primary.GetID()), Add(secondary.GetID()), Add(third.GetID()), Add(steward.GetID()), Add(battery.GetID()), Add(wound.GetID()), Add(health.GetID()),
+            CardState[] created = { Add(primary.GetID()), Add(secondary.GetID()), Add(third.GetID()), Add(steward.GetID()), Add(battery.GetID()), Add(wound.GetID()), Add(health.GetID()), Add(batchHost.GetID()),
                 Add("217d467c-77c2-481d-b78f-57aaf3dcd4a6"), Add("567f37b4-9f93-4e55-9fcb-315b870627c3"), Add("7725a001-cc6d-4aef-89cf-19480b16c015"),
                 Add("99fed8d9-e235-4109-860f-04a0293ba821"), Add("e625aaa1-911c-43f3-8a0d-963e6a9a07bc"), Add("f1c2a098-e20d-4587-b8de-5bef315de42d"),
                 Add("1dd23b59-fa5e-44bc-83ca-de119ede4f21"), Add("66cbbd14-f5f3-44a1-bd1c-ce98f3c13584"), Add("87c155c4-55e4-4434-a99d-1dda85d5784c"),
                 Add("e4ba411f-09b2-4a87-91f6-5f00cd742ba6"), Add("7369cb8e-f8cf-44be-8667-c699c630c063"), Add("1f352534-0895-488e-9345-481bc447a089"),
-                Add("75cfe90b-47b9-406c-b891-33564aac6677") };
+                Add("75cfe90b-47b9-406c-b891-33564aac6677"), Add("924ad6ab-3d60-4760-b38e-78f5cf09c1d5"),
+                Add("1d2e6259-e3ef-4a6a-8894-2c12db9fd4a9") };
             foreach (CardState card in created.Skip(4)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-EQUIPMENT-CARDS-PREPARED thirteen unchanged originals; three four-slot hosts plus the separate-floor Pyre Steward for Ambient Charge, wounded units and surviving attack targets.");
+            log.LogInfo("ORIGINAL-EQUIPMENT-CARDS-PREPARED fifteen unchanged originals; three four-slot hosts, separate-floor Pyre Steward and a third-floor equipment host, wounded units and surviving attack targets.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
             if (index < 0 || index >= 4 && source.Spawn.Turn < 1) return null;
-            int host = index is >= 7 and <= 10 ? 1 : index is 11 or 12 or 17 or 18 ? 2 : index == 19 ? 3 : 0;
-            int target = index >= 7 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
-            int room = index == 3 || index == 19 ? 1 : 0;
-            int position = index == 3 ? 0 : index < 4 ? index : -1;
+            int host = index is >= 8 and <= 11 ? 1 : index is 12 or 13 or 18 or 19 ? 2 : index == 20 ? 3 : index is >= 21 and <= 22 ? 7 : 0;
+            int target = index >= 8 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
+            int room = index is 3 or 20 ? 1 : index >= 21 || index == 7 ? 2 : 0;
+            int position = index == 3 || index == 7 ? 0 : index < 4 ? index : -1;
             var action = new PlayCardAction(ids[index], room, playerPosition: position, targetUnitId: target);
             BattleActionResult result = BattleActionModel.PlayCard(source, action);
             if (result.Supported) return action;

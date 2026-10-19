@@ -112,28 +112,34 @@ battles/7,914 actions). Native source
 protected files unchanged. Binary-only: 43,271 bytes/7,715 nodes, SHA-256
 `bbfadaf9bfd746464281f2613d8927e489ac5e7f952ac28dff250011d023cad2`.
 
-`full-battle-original-equipment-cards.mt2f` captures thirteen unchanged originals:
+`full-battle-original-equipment-cards.mt2f` captures fifteen unchanged originals:
 Exile's Diadem, Glass Cannon, Stoic Platemail, Moonlit Glaive, Potion Kit,
 Titansteel Dagger, Fortify, Bloodthirsty Blade, Heph's Hammer, Everlasting Light,
-Meat Shield, Combustible Suit and Ambient Charge. Three four-slot hosts receive
-the first twelve items; the unchanged Pyre Steward on the separate floor receives
-Ambient Charge;
+Meat Shield, Combustible Suit, Ambient Charge, Lava Armor and Resin Blades. Three
+four-slot hosts receive the first twelve items; the unchanged
+Pyre Steward on the separate floor receives Ambient Charge, and a dedicated
+third-floor host receives Lava Armor and Resin Blades;
 exact paid costs, attack/current/max HP, size, statuses and Standby host bindings
 match without displacement or changes to the other hosts/floors. Moonlit Glaive
 creates its three-point Mageblade coefficient through the upgrade callback.
-Combat positively witnesses Bloodthirsty Blade equipment growth, Heph's Hammer
-kill capacity, Everlasting Light attack Valor, wounded Meat Shield healing and
-Fortify postcombat armor. Use `--original-equipment-cards-only`. Sixteen complete
-immutable chains, old original grafted equipment and Mageblade focused checks
-pass. Search matches twenty decisions/24 root actions, 128/128 states and
-three replayed steps with equal serial/parallel best and zero unsupported search
-attempts; eight off-policy attempts at recorded decisions remain guarded.
-The card index increases from 221 to 234 definition-matched identities with all
-previous identities retained (492 indexed battles/7,913 plays). Native source
-`.probe-runs/full-battle-units-spells-and-junk-20261019-234324-20742a9e` won in
-86.15 seconds with twenty plays/five EndTurns, four counters zero and protected
-files unchanged. Binary-only: 41,721 bytes/7,131 nodes, SHA-256
-`0593c4778a816b459839d356c3885df66cdb450da9ecc88708e1a5c541992d17`.
+The final host preserves Lava Armor's three-Pyregel OnHit and Resin Blades'
+ReturnToHand binding; the later host-death return remains a separate lifecycle
+witness. Combat positively witnesses Bloodthirsty Blade equipment growth,
+Heph's Hammer kill capacity, Everlasting Light attack Valor, wounded Meat Shield
+healing and Fortify postcombat armor. Use `--original-equipment-cards-only`.
+Sixteen complete immutable chains, old original grafted equipment and Mageblade
+focused checks pass. Search matches 23 recorded decisions/27 root actions,
+128/128 states and three replayed steps with equal serial/parallel best and zero
+unsupported search attempts; twelve unsupported candidate attempts across
+recorded decisions remain guarded. Both added originals now have
+definition-matched native plays.
+The regenerated inventory contains 364 definition-matched identities across 546
+indexed battles/8,319 native actions. Native source
+`.probe-runs/full-battle-units-spells-and-junk-20261019-235635-50172145` won in
+101.33 seconds with 23 plays/five EndTurns and zero capture failures, mismatches,
+unsupported transitions or pending records. Binary-only: 45,421 bytes/8,216
+nodes, SHA-256
+`2942c3bcfd391b8d4c92f8148adda39923c81924d09eca1e59772bf2390e33bc`.
 
 `full-battle-original-support-spells.mt2f` captures unchanged Razorsharp Edge,
 Sharpen, Regen Potion, Remnant Pact, Machinist's Tome, Rootseeds, Perils of

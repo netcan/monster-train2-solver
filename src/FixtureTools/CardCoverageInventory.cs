@@ -302,6 +302,14 @@ internal static class CardCoverageInventory
                     "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
                     .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
         if (type == "CardTraitSelfPurge") return true;
+        if (cardId == "1d2e6259-e3ef-4a6a-8894-2c12db9fd4a9" && type == "CardTraitReturnToHandEquipment")
+            return trait.GetProperty("Int").GetInt32() == 0 && trait.GetProperty("Int2").GetInt32() == 0 &&
+                trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") && Text(trait, "Str") == "" &&
+                trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") &&
+                Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
+                new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag",
+                    "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
         if (type == "CardTraitModifyCardTriggerSlayFireCount") return Flag(trait, "Bool") &&
             Text(trait, "KillTargetTeam") == "Monsters" && Text(trait, "KillTargetSubtype") == "SubtypesData_FunGuy" &&
             trait.GetProperty("Int").GetInt32() == 0 && trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
