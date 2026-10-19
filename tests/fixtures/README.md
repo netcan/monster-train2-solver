@@ -1319,6 +1319,18 @@ This covers one eligible Monster and one Spell type-filter control, not multiple
 eligible targets or other recursion modes. Use `-OriginalMolded` and
 `--original-molded-only`.
 
+`full-battle-original-broken-memories.mt2f` plays unchanged zero-cost Broken
+Memories. It returns a controlled Molded Spell from Exhaust to Draw, leaves an
+exhausted Train Steward type-filter control, and exhausts Broken Memories.
+The 37-stage native win has seven actions and five EndTurns, with zero capture
+failures, mismatches, unsupported transitions or pending records. Its dedicated
+checker, full action-policy replay and 128-state search pass. Binary-only:
+26,376 bytes, 3,472 unique nodes, SHA-256
+`c71536135737f9e2adf6fa4edf9739cc4f24a4b5570d4fe0f03e6a94950d1346`.
+This covers one eligible Spell; multiple-target ordering and other recursion
+modes remain unverified. Use `-OriginalBrokenMemories` and
+`--original-broken-memories-only`.
+
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation
 filter. Two same-floor units gain two Rage/Regen; the selected Glow Up target

@@ -697,6 +697,14 @@ actions. This is one selected-target witness; multiple eligible Monster
 ordering, other recursion modes, and additional upgrade/relic combinations
 remain unproven.
 
+`full-battle-original-broken-memories.mt2f` plays unchanged Broken Memories,
+choosing one Exhausted Spell to return to Draw while an Exhausted Monster remains
+as the native type-filter control. Its own original Exhaust trait sends it to
+Exhaust at zero cost. The 37-stage win (seven plays/five EndTurns), exact pile
+changes, full policy replay, and 128-state search pass with zero unsupported
+actions. Only one eligible Spell is present; multiple-choice ordering and other
+recursion modes remain unproven.
+
 `full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
 Spike of the Legion. Card modifier resolution preserves the all-status filter.
 Proliferate adds two Rage/Regen to both same-floor units; Glow Up moves its

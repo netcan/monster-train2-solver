@@ -869,6 +869,12 @@ if (args.Length == 2 && args[0] == "--original-molded-only")
     OriginalMoldedChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-broken-memories-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalBrokenMemoriesChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--eclipse-chamber-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
