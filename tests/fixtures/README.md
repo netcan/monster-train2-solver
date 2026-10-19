@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-19): 571 archives (531 full battles and
+Current manifest inventory (2026-10-19): 572 archives (532 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,7 +14,7 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-570 indexed archives. Refresh/check the index with
+571 indexed archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
 `full-battle-original-attack-overrides.mt2f` captures unchanged Irontongue and
@@ -1478,6 +1478,16 @@ action-policy replay and 128-state serial/parallel search pass with zero capture
 failures, mismatches, unsupported transitions or pending records. Binary-only:
 25,743 bytes, 3,286 unique nodes, SHA-256
 `b3d5400a0a192a10be41ac0641071775c91cf473758faa4fdea1b00528643b3a`.
+
+`full-battle-original-spawning-pods.mt2f` seeds one Horde Funguy with the
+already-covered Eager Conscript, then plays unchanged 2-cost Spawning Pods.
+The native subtype-filtered target remains the same unit and receives four
+additional Horde (one to five stacks); the original Exhaust trait consumes the
+spell. The 37-stage native win has three plays and five EndTurns; the dedicated
+check, action-policy replay and 128-state serial/parallel search pass with zero
+capture failures, mismatches, unsupported transitions or pending records.
+Binary-only: 28,234 bytes, 3,779 unique nodes, SHA-256
+`534183357451a13147273755e4051561b3477820ef4df1c7575268e9f028fb36`.
 
 `full-battle-original-pyre-gro.mt2f` plays unchanged zero-cost PyreGro. Its
 native ordered effects reduce next-turn draw by two and add one recurring

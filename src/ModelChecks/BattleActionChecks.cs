@@ -647,6 +647,8 @@ internal static class BattleActionChecks
             chooser = source => OriginalStarterReformChecks.Choose(source, fixture.GetProperty("OriginalStarterReformCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalRapidRaisePrepared", out var originalRapidRaisePrepared) && originalRapidRaisePrepared.GetBoolean())
             chooser = source => OriginalRapidRaiseChecks.Choose(source, fixture.GetProperty("OriginalRapidRaiseCardIds").Deserialize<int[]>()!);
+        if (fixture.TryGetProperty("ModifierScenario", out var originalSpawningPodsScenario) && originalSpawningPodsScenario.GetString() == "original-spawning-pods")
+            chooser = source => OriginalSpawningPodsChecks.Choose(source, OriginalSpawningPodsChecks.CardIds(fixture));
         if (fixture.TryGetProperty("GoldmancePrepared", out var goldmancePrepared) && goldmancePrepared.GetBoolean())
             chooser = source => GoldmanceChecks.Choose(source, fixture.GetProperty("GoldmanceCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("EngineUpgradePrepared", out var engineUpgradePrepared) && engineUpgradePrepared.GetBoolean())

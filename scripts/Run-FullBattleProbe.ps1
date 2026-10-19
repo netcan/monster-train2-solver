@@ -88,6 +88,7 @@ param(
     [switch] $OriginalCardDrawPotion,
     [switch] $OriginalAcceleratedIncubation,
     [switch] $OriginalEagerConscript,
+    [switch] $OriginalSpawningPods,
     [switch] $OriginalCopyMorselTwice,
     [switch] $OriginalLazarusLeagueSpike,
     [switch] $OriginalTomeOfContracts,
@@ -620,6 +621,7 @@ if ($OriginalPileDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-j
 if ($OriginalCardDrawPotion) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalAcceleratedIncubation) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEagerConscript) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSpawningPods) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyMorselTwice) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalLazarusLeagueSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1202,6 +1204,7 @@ if ($OriginalPileDraw) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-dr
 if ($OriginalCardDrawPotion) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-potion' }
 if ($OriginalAcceleratedIncubation) { $environment['MT2_PROBE_MODIFIERS'] = 'original-accelerated-incubation' }
 if ($OriginalEagerConscript) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eager-conscript' }
+if ($OriginalSpawningPods) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spawning-pods' }
 if ($OriginalCopyMorselTwice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-morsel-twice' }
 if ($OriginalLazarusLeagueSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lazarus-league-spike' }
 if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
@@ -2522,6 +2525,10 @@ if ($OriginalAcceleratedIncubation -and ($trace.ModifierScenario -ne 'original-a
 if ($OriginalEagerConscript -and ($trace.Schema -ne 249 -or $trace.ModifierScenario -ne 'original-eager-conscript' -or
     -not $trace.OriginalEagerConscriptPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
     throw 'Original Eager Conscript witness lacks its control unit and both direct Spell plays.'
+}
+if ($OriginalSpawningPods -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-spawning-pods' -or
+    -not $trace.NativeWon -or @($trace.Actions).Count -ne 3)) {
+    throw 'Original Spawning Pods witness lacks its controlled Horde target and direct card play.'
 }
 if ($OriginalCopyMorselTwice -and ($trace.Schema -ne 250 -or $trace.ModifierScenario -ne 'original-copy-morsel-twice' -or
     -not $trace.OriginalCopyMorselTwicePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
@@ -5809,6 +5816,17 @@ $rapidRaiseCoverage = -not $OriginalRapidRaise -or @($rapidRaiseActions | Where-
 }).Count -eq 1
 if ($OriginalRapidRaise -and ($rapidRaiseActions.Count -ne 1 -or -not $rapidRaiseCoverage)) {
     throw 'Original Rapid Raise did not produce exactly one matched card play.'
+}
+$spawningPodsActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '7c772030-474d-414c-939d-9581c6a70741'
+})
+$spawningPodsCoverage = -not $OriginalSpawningPods -or @($spawningPodsActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalSpawningPods -and ($spawningPodsActions.Count -ne 1 -or -not $spawningPodsCoverage)) {
+    throw 'Original Spawning Pods did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }
