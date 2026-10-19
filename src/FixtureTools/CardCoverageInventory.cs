@@ -432,11 +432,14 @@ internal static class CardCoverageInventory
         if (trait.GetProperty("Float").GetDouble() != 0 || Flag(trait, "Scaling")) return false;
         if (type == "CardTraitScalingAddEffectApplications") return value == 1 && Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitScalingBuffDamage") return value == 4 && Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn";
-        if (cardId is "fbf7e58a-9369-49d8-ba1a-782fbcaf6498" or "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8" &&
+        if (cardId is "fbf7e58a-9369-49d8-ba1a-782fbcaf6498" or "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8" or "37a1de5d-4e3b-428a-9b83-006f1bf4dbce" &&
             type == "CardTraitShowCardTargets")
             return value == 0 && trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
                 !Flag(trait, "Bool") && Text(trait, "Str") == "" && Text(trait, "TrackedValue") == "SubtypeInDeck" &&
                 Text(trait, "EntryDuration") == "ThisTurn" && Text(trait, "SpecificCardDataId") == "" &&
+                (cardId != "37a1de5d-4e3b-428a-9b83-006f1bf4dbce" ||
+                 new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag", "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null)) &&
                 Text(trait, "StatusQueryTeam") == "" && !Strings(trait, "StatusQueryStatuses").Any() && !Strings(trait, "StatusEffectIds").Any();
         if (type == "CardTraitShowCardTargets") return value == 0 && Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitIncreaseCostOfCardsInHand") return value == 1 &&
