@@ -1431,6 +1431,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalXBanishedSpikeScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalXLunaSpikeScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original X-Luna-spike fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalXLunaSpikeScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalXDamageCardsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original X-damage fixture must start on deployment turn.");
@@ -2534,6 +2540,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalCorruptionDamageScenario.Enabled) pendingPlay = OriginalCorruptionDamageScenario.Choose(decision, OriginalCorruptionDamageScenario.CardIds);
                 if (OriginalXStatusCardsScenario.Enabled) pendingPlay = OriginalXStatusCardsScenario.Choose(decision, OriginalXStatusCardsScenario.CardIds);
                 if (OriginalXBanishedSpikeScenario.Enabled) pendingPlay = OriginalXBanishedSpikeScenario.Choose(decision, OriginalXBanishedSpikeScenario.CardIds);
+                if (OriginalXLunaSpikeScenario.Enabled) pendingPlay = OriginalXLunaSpikeScenario.Choose(decision, OriginalXLunaSpikeScenario.CardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
                 if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);

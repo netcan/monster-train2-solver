@@ -1045,6 +1045,20 @@ bytes/3,450 nodes, SHA-256
 `4140cbd74436bfb5661062366628f99dfb8e1d06c24e7dcd52d21dcd8f7664eb`.
 Use `-OriginalXBanishedSpike` and `--original-x-banished-spike-only`.
 
+`full-battle-original-x-luna-spike.mt2f` retains two unchanged original Spikes
+of the Luna Coven, played at X four and X zero on a selected ally. X four adds
+twelve Conduit; X zero adds none. Both cards enter Exhausted through the native
+ExhaustState trait, and the selected ally's attack/health and neighboring-floor
+units otherwise remain unchanged. Exact source traits, X payment, Conduit
+tracker state, target selection and immutable replay are checked. The
+four-play/seven-EndTurn Instant battle won in 53.07 seconds with all capture,
+mismatch, unsupported and pending counters at zero; protected files were
+unchanged. Search matches four decisions/six root actions, visits 128/128
+states and replays four steps with equal serial/parallel best and zero
+unsupported attempts. Binary-only: 30,230 bytes/4,277 nodes, SHA-256
+`042f0490ee5ef48de2c05979d52833f90f466be0c6a5f4b0f30aa28501696769`.
+Use `-OriginalXLunaSpike` and `--original-x-luna-spike-only`.
+
 `full-battle-original-x-damage-cards.mt2f` retains original Vent and Forever
 Consumed at X zero/three and zero/two, respectively. Zero X has two live enemies
 and leaves health/armor unchanged. Vent deals fifteen to the enemy room,
