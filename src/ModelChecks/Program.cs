@@ -605,6 +605,12 @@ if (args.Length == 2 && args[0] == "--original-eager-conscript-only")
     OriginalEagerConscriptChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-copy-morsel-twice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalCopyMorselTwiceChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-effect-applications-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

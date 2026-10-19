@@ -2818,7 +2818,7 @@ namespace MonsterTrain2Poju.Model
                         RemovePhysicalPoint(unit);
                         if (!source.Preview && context != null)
                         {
-                            if (unit.Source.Team == CombatTeam.Player && unit.Source.SpawnerCardId > 0)
+                            if (unit.Source.Team == CombatTeam.Player && unit.Source.SpawnerCardId > 0 && !DetachedSpawner(unit))
                             {
                                 CardPileState? standby = context.OtherPiles?.FirstOrDefault(pile => pile.Name == "Standby");
                                 CardToken? card = standby?.Cards.FirstOrDefault(item => item.InstanceId == unit.Source.SpawnerCardId);

@@ -7438,6 +7438,21 @@ dotnet run --project src/ModelChecks -c Release -- --original-eager-conscript-on
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-eager-conscript.mt2f
 ```
 
+### Original Copy Morsel Twice
+
+`full-battle-original-copy-morsel-twice.mt2f` plays the unchanged one-cost
+Copy Morsel Twice against an original Morsel Miner, then replays it against a
+generated Snack clone. It verifies each native effect's detached-card
+allocations, capacity-limited births, preserved combat stats, selected Snack
+identity, Ember payment and physical spawn-point allocation, followed by
+immutable replay.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-copy-morsel-twice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-copy-morsel-twice-only tests/fixtures/full-battle-original-copy-morsel-twice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-copy-morsel-twice.mt2f
+```
+
 ### Original Tome of Contracts
 
 `full-battle-original-tome-of-contracts.mt2f` plays the unchanged one-cost
