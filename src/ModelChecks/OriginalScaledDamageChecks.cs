@@ -24,7 +24,7 @@ internal static class OriginalScaledDamageChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalScaledDamageIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 20 && actions.Length == 20, "Missing original scaling spells or authored positive/zero controls.");
+        Require(ids.Length == 21 && actions.Length == 21, "Missing original scaling spells or authored positive/zero controls.");
         int consumed = 0;
         foreach (int i in Indices)
         {
@@ -37,7 +37,7 @@ internal static class OriginalScaledDamageChecks
             CombatUnit[] a = before.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray(),
                 b = after.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
             Require(a.Length == 2 && a.Select(unit => unit.Id).SequenceEqual(b.Select(unit => unit.Id)) && b.All(unit => unit.Health > 0), "Scaling controls require two surviving enemies.");
-            int expected = i switch { 9 => 0, 10 => 255, 11 => 120, 12 => 48, 13 => 78, 15 => 12, 17 => 20, _ => throw new InvalidOperationException() };
+            int expected = i switch { 9 => 0, 10 => 255, 11 => 120, 12 => 48, 13 => 84, 15 => 12, 17 => 20, _ => throw new InvalidOperationException() };
             Require(a.Sum(Effective) - b.Sum(Effective) == expected, "Exact resource/HP/attack/death/deck-type scaled damage differs at action " + i);
             if (i == 10)
             {
@@ -47,8 +47,8 @@ internal static class OriginalScaledDamageChecks
             }
             if (i == 12) Require(context.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 3, "Ancient Resonance requires positive three-Corruption scaling.");
             if (i == 13) Require(card.MaskDescriptor!.SourceTraits!.Single().QueryCardType == "Spell" &&
-                rule.Effects!.Count == 3 && context.CardRegistry!.Count(state => state.MaskDescriptor?.Definition.CardType == "Spell" && ids.Contains(state.InstanceId)) == 14,
-                "Ancient Synergy requires captured Spell query metadata and fourteen created spells; the resolving source leaves the native deck query.");
+                rule.Effects!.Count == 3 && context.CardRegistry!.Count(state => state.MaskDescriptor?.Definition.CardType == "Spell" && ids.Contains(state.InstanceId)) == 15,
+                "Ancient Synergy requires captured Spell query metadata and fifteen created spells; the resolving source leaves the native deck query.");
             if (i == 15) Require(before.Spawn.Train.Rooms[0].Units.All(unit => unit.SpawnerCardId != ids[4] && unit.SpawnerCardId != ids[5]),
                 "Positive death-count damage must follow both authored allied deaths.");
             Require(Json(before.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Player)) ==
@@ -175,9 +175,34 @@ internal static class OriginalScaledDamageChecks
             rotContext.BattleRng.Equals(rotAfter.Spawn.Train.Context!.BattleRng) &&
             Json(rotBefore.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)) == Json(rotAfter.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)),
             "Original Rot must deal 15 and add 15 Decay only to its selected character, then discard without RNG or neighbor changes.");
+        BattleTurnState reactionBefore = actions[20].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState reactionAfter = actions[20].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        CombatContext reactionContext = reactionBefore.Spawn.Train.Context!;
+        CardInstanceState reaction = reactionContext.FindCard(ids[20])!;
+        CardPlayRule reactionRule = reactionBefore.PlayRules!.Cards.Single(rule => rule.DataId == reaction.DataId);
+        CardActionEffect unstable = reactionRule.Effects![0];
+        CardActionEffect reactionDamage = reactionRule.Effects[1];
+        CombatUnit reactionTarget = reactionBefore.Spawn.Train.Rooms[0].Units.First(unit => unit.Team == CombatTeam.Enemy);
+        CombatUnit reactionTargetAfter = reactionAfter.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == reactionTarget.Id);
+        Require(reaction.DataId == "d7f93607-5e85-45fe-b764-d716c0776727" && reactionRule.AssetKey == "ExplosiveReaction" &&
+            reactionRule.Cost == 2 && reactionRule.CostType == "Default" && reactionRule.Destination == "Discard" && reactionRule.Effects.Count == 2 &&
+            unstable.Type == "AddStatus" && unstable.Target == "DropTargetCharacter" && unstable.AllowEnemy && unstable.AllowPlayer &&
+            unstable.Statuses.Single().Id == "unstable" && unstable.Statuses[0].Stacks == 25 && unstable.Statuses[0].ParamInt == 1 &&
+            reactionDamage.Type == "Damage" && reactionDamage.Target == "LastTargetedCharacters" && reactionDamage.Value == 5 &&
+            reactionDamage.AllowEnemy && reactionDamage.AllowPlayer,
+            "Original Explosive Reaction definition or ordered status/damage target metadata differs.");
+        Require(Effective(reactionTarget) - Effective(reactionTargetAfter) == 5 &&
+            (reactionTargetAfter.Status("unstable")?.Stacks ?? 0) - (reactionTarget.Status("unstable")?.Stacks ?? 0) == 25 &&
+            reactionTargetAfter.Health > 0 &&
+            Json(reactionBefore.Spawn.Train.Rooms[0].Units.Where(unit => unit.Id != reactionTarget.Id)) ==
+                Json(reactionAfter.Spawn.Train.Rooms[0].Units.Where(unit => unit.Id != reactionTarget.Id)) &&
+            reactionBefore.Energy - reactionAfter.Energy == 2 && reactionAfter.Spawn.Train.Context!.Cards.Discard.Any(card => card.InstanceId == ids[20]) &&
+            reactionContext.BattleRng.Equals(reactionAfter.Spawn.Train.Context!.BattleRng) &&
+            Json(reactionBefore.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)) == Json(reactionAfter.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)),
+            "Original Explosive Reaction must add Unstable, then deal 5 to that same target only, and discard without RNG or neighbor changes.");
         Require(consumed == 1, "Deadly Plunge must be the only Consume spell among the scaling-damage witness cards.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-SCALED-DAMAGE PASS: nine unchanged originals/ten plays, exact scaled damage, room-wide Pox and targeted Rot damage/Decay, three Corruption, thirteen TypeInDeck Spell members while Ancient Synergy resolves, zero/two allied deaths, Memento Mori +20 from AnyMonsterDeath, Power of Knowledge +20 from one exhausted Spell and 20 immutable full chains.");
+        Console.WriteLine("ORIGINAL-SCALED-DAMAGE PASS: ten unchanged originals/eleven plays, exact scaled damage, room-wide Pox and targeted Rot/Explosive Reaction status-damage chains, three Corruption, fourteen TypeInDeck Spell members while Ancient Synergy resolves, zero/two allied deaths, Memento Mori +20 from AnyMonsterDeath, Power of Knowledge +20 from one exhausted Spell and 21 immutable full chains.");
     }
     private static int Effective(CombatUnit unit) => unit.Health + (unit.Status("armor")?.Stacks ?? 0);
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
