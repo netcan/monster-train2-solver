@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class MixScenario
     {
         internal const string Name = "card-effect-mix";
+        internal const string SecretIngredientName = "original-secret-ingredient-mix";
         internal const string TinkermasterName = "original-tinkermaster-mix";
         internal const string ProgressName = "original-progress-pacemaker-mix";
         internal const string NefariousOverflowName = "original-nefarious-overflow";
@@ -32,6 +33,7 @@ namespace MonsterTrain2Poju.Probe
         private const string MonsterSpellTargetingId = "070c87f3-a48f-49d6-a288-04854ab3b0cf";
         private const string MonsterSpellWitnessId = "d9042b99-f328-4ae9-8995-1bb242a970c4";
         private const string MixologyId = "9582724d-2d5e-4349-a642-9720bbb833e9";
+        private const string SecretIngredientId = "f4cf7469-4d84-40e9-94f6-6b743973f2ad";
         private const string BlastInfusionId = "3cf25a9b-daa1-42cd-8174-eb0f59cd590f";
         private const string CopyWitnessSpellId = "03b20d75-b919-4f87-96e1-4d35cd556520";
         private const string CopyWitnessUpgradeId = "80a5edf4-6dc8-41a7-ab4e-9d0e914e0848";
@@ -54,7 +56,8 @@ namespace MonsterTrain2Poju.Probe
         private static IReadOnlyList<ElixirMixSelection> pendingSelections = Array.Empty<ElixirMixSelection>();
         private static int pendingSelectionIndex;
         internal static bool Acquired { get; private set; }
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or TinkermasterName or ProgressName or NefariousOverflowName or UncontrolledGroupName or CopyFirstSpellName or CopyFirstConsumeName or CopyConsumedCardName or MothersRemnant3Name or MonsterSpellTargetingName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or SecretIngredientName or TinkermasterName or ProgressName or NefariousOverflowName or UncontrolledGroupName or CopyFirstSpellName or CopyFirstConsumeName or CopyConsumedCardName or MothersRemnant3Name or MonsterSpellTargetingName;
+        internal static bool SecretIngredientMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == SecretIngredientName;
         internal static bool TinkermasterMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == TinkermasterName;
         internal static bool ProgressMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == ProgressName;
         internal static bool NefariousOverflowMode => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == NefariousOverflowName;
@@ -169,9 +172,16 @@ namespace MonsterTrain2Poju.Probe
             pendingSelectionIndex = 0;
             CardManager cards = managers.GetCardManager()!;
             AllGameData gameData = managers.GetSaveManager().GetAllGameData();
-            CardData definition = MonsterSpellTargetingMode ? AddMonsterSpellWitness(gameData) : CopyFirstSpellMode || CopyConsumeMode || MothersRemnant3Mode ? AddCopyWitnessSpell(gameData, CopyConsumeMode, MothersRemnant3Mode) : gameData.FindCardData(MixologyId) ??
-                throw new InvalidOperationException("Mix fixture requires original Mixology.");
-            if ((!MonsterSpellTargetingMode && !CopyFirstSpellMode && !CopyConsumeMode && !MothersRemnant3Mode && definition.GetEffects().Count(effect => effect.GetEffectStateName() == typeof(CardEffectMix).Name) != 2) ||
+            CardData definition = SecretIngredientMode
+                ? gameData.FindCardData(SecretIngredientId) ?? throw new InvalidOperationException("Secret Ingredient is missing from original card data.")
+                : MonsterSpellTargetingMode ? AddMonsterSpellWitness(gameData) : CopyFirstSpellMode || CopyConsumeMode || MothersRemnant3Mode ? AddCopyWitnessSpell(gameData, CopyConsumeMode, MothersRemnant3Mode) : gameData.FindCardData(MixologyId) ??
+                    throw new InvalidOperationException("Mix fixture requires original Mixology.");
+            CardEffectData[] definitionEffects = definition.GetEffects().ToArray();
+            bool validSecretIngredient = !SecretIngredientMode || definition.GetID() == SecretIngredientId &&
+                definition.GetCardType() == CardType.Spell && definition.GetTraits().Count == 0 && definitionEffects.Length == 1 &&
+                definitionEffects[0].GetEffectStateName() == typeof(CardEffectMix).Name && definitionEffects[0].GetParamInt() > 0;
+            if ((!SecretIngredientMode && !MonsterSpellTargetingMode && !CopyFirstSpellMode && !CopyConsumeMode && !MothersRemnant3Mode && definitionEffects.Count(effect => effect.GetEffectStateName() == typeof(CardEffectMix).Name) != 2) ||
+                !validSecretIngredient ||
                 !cards.GetBelowHandSize())
                 throw new InvalidOperationException("Mix fixture requires its original effects and a free hand slot.");
             CardPile destination = MonsterSpellTargetingMode ? CardPile.DeckPileTop : CardPile.HandPile;
@@ -204,7 +214,10 @@ namespace MonsterTrain2Poju.Probe
                 uncontrolledCarrierCardId = FullBattleTrace.Active.CardId(carrierCard);
             }
             Prepared = true;
-            log.LogInfo(MonsterSpellTargetingMode
+            log.LogInfo(SecretIngredientMode
+                ? "ORIGINAL-SECRET-INGREDIENT-PREPARED unchanged source effects=" + definitionEffects.Length +
+                    " mixAmount=" + definitionEffects[0].GetParamInt() + " traits=" + definition.GetTraits().Count + " card=" + sourceId
+                : MonsterSpellTargetingMode
                 ? "ORIGINAL-MONSTER-SPELL-TARGETING-PREPARED unchanged relic, direct 1-damage Monster-target witness card=" + sourceId
                 : MothersRemnant3Mode
                 ? "ORIGINAL-MOTHERS-REMNANT3-PREPARED unchanged relic, full-hand Draw Spell witness and same-turn control card=" + sourceId
@@ -278,6 +291,26 @@ namespace MonsterTrain2Poju.Probe
 
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
+            if (SecretIngredientMode)
+            {
+                CardToken? source = state.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.InstanceId == sourceId);
+                if (!played && source != null)
+                {
+                    CardPlayRule rule = state.PlayRules!.Cards.Single(candidate => candidate.DataId == SecretIngredientId);
+                    if (state.Energy >= rule.Cost)
+                    {
+                        ElixirMixPlan plan = ElixirMixModel.Plan(state.Spawn.Train.Context!,
+                            rule.Effects.Single(effect => effect.Type == "Mix").Value);
+                        if (!plan.Supported || plan.Amounts.Count == 0)
+                            throw new InvalidOperationException("Original Secret Ingredient has no supported native Mix draft.");
+                        ElixirMixSelection[] selections = plan.Amounts.Select((_, mixNumber) =>
+                            new ElixirMixSelection(0, mixNumber, firstOpeningChoice)).ToArray();
+                        played = true;
+                        return new PlayCardAction(sourceId, 0, mixSelections: selections);
+                    }
+                }
+                return BattleActionModel.ChooseUnitSpellAndJunkPlay(state);
+            }
             if (UncontrolledGroupMode)
             {
                 if (!played)

@@ -1053,6 +1053,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalMakeItRainIds = OriginalMakeItRainScenario.CardIds,
                 OriginalDeathroarPrepared = OriginalDeathroarScenario.Prepared,
                 OriginalDeathroarIds = OriginalDeathroarScenario.CardIds,
+                OriginalSecretIngredientPrepared = MixScenario.SecretIngredientMode && MixScenario.Prepared,
                 OriginalPyreshotPrepared = OriginalPyreshotScenario.Prepared,
                 OriginalPyreshotIds = OriginalPyreshotScenario.CardIds,
                 OriginalRetchPrepared = OriginalRetchScenario.Prepared,

@@ -8028,3 +8028,24 @@ dotnet run --project src/ModelChecks -c Release -- --original-deathroar-only tes
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-deathroar.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-deathroar.mt2f
 ```
+
+### Original Secret Ingredient
+
+`full-battle-original-secret-ingredient.mt2f` plays unchanged, trait-free
+Secret Ingredient (cost 1, one Mix effect offering two choices) and records two native
+plays, each with its selected elixir/upgrade, energy payment and resulting battle
+state. The native Instant battle won with 24 matched card plays and seven
+EndTurns; capture failures, mismatches, unsupported transitions and pending
+records were zero. Independent replay covers all 24 actions, and the focused
+check verifies the generated elixir and upgrade against the captured catalog
+and exposes both first-draft choices. Bounded serial/parallel search agrees at
+128 states, with three replayed steps; optimality is not established. The
+45,108-byte archive has 6,883 unique nodes and SHA-256
+`aacd0055db05b6b822f9f70ef37ee552be6a78d37cfe290b5ad41401381e5314`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalSecretIngredient -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-secret-ingredient-only tests/fixtures/full-battle-original-secret-ingredient.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-secret-ingredient.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-secret-ingredient.mt2f
+```

@@ -198,6 +198,7 @@ param(
     [switch] $CardRecursionUpgradeFilterChoose,
     [switch] $CardRecursionUpgradeReplacementChoose,
     [switch] $Mix,
+    [switch] $OriginalSecretIngredient,
     [switch] $OriginalTinkermasterMix,
     [switch] $OriginalProgressPacemakerMix,
     [switch] $OriginalCardTypeCostRelic,
@@ -965,6 +966,12 @@ if ($SoulSiphon) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StatusUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CardRecursion -or $CardRecursionDiscard -or $CardRecursionChoose -or $CardRecursionChooseToHand -or $CardRecursionChooseFilter -or $CardRecursionUpgrade -or $CardRecursionUpgradeToHand -or $CardRecursionUpgradeChoose -or $CardRecursionUpgradeFilterChoose -or $CardRecursionUpgradeReplacementChoose) { $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true }
 if ($MixAlternate -and $MixChoices) { throw 'Choose either -MixAlternate or -MixChoices.' }
+if ($OriginalSecretIngredient) {
+    if ($Mix -or $MixAlternate -or $MixUnstableExplosion -or $OriginalTinkermasterMix -or $OriginalProgressPacemakerMix) {
+        throw 'OriginalSecretIngredient is an isolated Mix scenario.'
+    }
+    if (-not $MixChoices) { $MixChoices = '00' }
+}
 if ($MixAlternate) { $MixChoices = '11' }
 if ($MixUnstableExplosion -and $MixChoices -and $MixChoices -ne '01') { throw 'Unstable explosion requires Mix choices 01.' }
 if ($MixUnstableExplosion) { $MixChoices = '01' }
@@ -1293,6 +1300,7 @@ if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
 if ($FrostChanneling) { $environment['MT2_PROBE_MODIFIERS'] = 'frost-channeling' }
 if ($Mix) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-mix' }
 if ($OriginalTinkermasterMix) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tinkermaster-mix' }
+if ($OriginalSecretIngredient) { $environment['MT2_PROBE_MODIFIERS'] = 'original-secret-ingredient-mix' }
 if ($OriginalPartFactory) { $environment['MT2_PROBE_MODIFIERS'] = 'original-part-factory' }
 if ($OriginalBigDamageFromManyMorsels) { $environment['MT2_PROBE_MODIFIERS'] = 'original-big-damage-many-morsels' }
 if ($OriginalEarlyDiscardEnergy) { $environment['MT2_PROBE_MODIFIERS'] = 'hand-removal'; $environment['MT2_PROBE_ORIGINAL_EARLY_DISCARD_ENERGY'] = '1' }
@@ -2599,6 +2607,10 @@ if ($OriginalMakeItRain -and ($trace.Schema -ne 103 -or $trace.ModifierScenario 
 if ($OriginalDeathroar -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-deathroar' -or
     -not $trace.OriginalDeathroarPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
     throw 'Original Deathroar witness lacks its three controlled Stewards and direct damage/status-transfer play.'
+}
+if ($OriginalSecretIngredient -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-secret-ingredient-mix' -or
+    -not $trace.OriginalSecretIngredientPrepared -or -not $trace.NativeWon)) {
+    throw 'Original Secret Ingredient witness did not prepare and complete its native Mix play.'
 }
 if ($OriginalCopyMorselTwice -and ($trace.Schema -ne 250 -or $trace.ModifierScenario -ne 'original-copy-morsel-twice' -or
     -not $trace.OriginalCopyMorselTwicePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
@@ -6007,6 +6019,17 @@ $deathroarCoverage = -not $OriginalDeathroar -or @($deathroarActions | Where-Obj
 }).Count -eq 1
 if ($OriginalDeathroar -and ($deathroarActions.Count -ne 1 -or -not $deathroarCoverage)) {
     throw 'Original Deathroar did not produce exactly one matched damage/status-transfer play.'
+}
+$secretIngredientActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'f4cf7469-4d84-40e9-94f6-6b743973f2ad'
+})
+$secretIngredientCoverage = -not $OriginalSecretIngredient -or @($secretIngredientActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -ge 1
+if ($OriginalSecretIngredient -and ($secretIngredientActions.Count -lt 1 -or -not $secretIngredientCoverage)) {
+    throw 'Original Secret Ingredient produced no matched original Mix play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }
