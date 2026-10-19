@@ -197,12 +197,12 @@ files unchanged. Binary-only: 35,454 bytes/5,517 nodes, SHA-256
 
 `full-battle-original-scaled-damage.mt2f` captures unchanged Deadly Plunge,
 Cleave, Ancient Resonance, Ancient Synergy, DamageExtinguish, Memento Mori and
-Power of Knowledge, plus Pox.
+Power of Knowledge, Pox and Rot.
 An authored 80-HP/five-armor support and two one-HP victims isolate scaling. Deadly
 Plunge deals 255 damage including armor; Cleave uses the front ally's 60 attack
 for both enemies; three Corruption produces 24 damage per enemy. Ancient
-Synergy uses twelve Spell deck members while its source is resolving, for three
-24-damage hits; thirteen spells exist before play, but the resolving source leaves
+Synergy uses thirteen Spell deck members while its source is resolving, for three
+26-damage hits; fourteen spells exist before play, but the resolving source leaves
 the native deck membership query. A raw `QueryCardType=Spell` field preserves
 that original filter, omitted for unrelated source traits. DamageExtinguish
 replaces its base damage with zero/six per enemy before/after two allied deaths;
@@ -210,15 +210,17 @@ Memento Mori deals 20 front damage from those same two deaths. Power of Knowledg
 adds 20 damage to its selected target from the one exhausted Spell, with the
 native source mask limiting the pile query to Spell definitions. Pox spends two
 Ember, deals 20 damage and applies 10 Decay to every living unit on both teams
-in the room, then exhausts. Original costs, Deadly Plunge's Consume, fixed RNG
-and friendly/neighbor-floor controls match. Use `--original-scaled-damage-only`;
-nineteen full immutable chains and the existing resource-spell checks pass.
-Search matches nineteen decisions/58 roots, 128/128 states and three replayed steps, with zero
+in the room, then exhausts. Rot spends three Ember, deals 15 damage to its chosen
+enemy and adds 15 Decay to that same LastTargetedCharacters set. Original costs,
+Deadly Plunge's Consume, fixed RNG and friendly/neighbor-floor controls match.
+Use `--original-scaled-damage-only`; twenty full immutable chains and the existing
+resource-spell checks pass. Search matches twenty decisions/58 roots, 128/128
+states and three replayed steps, with zero
 unsupported attempts and equal serial/parallel best. Source
-`.probe-runs/full-battle-units-spells-and-junk-20261019-123656-17d93c90` won in
-86.64 seconds with nineteen plays/five EndTurns, all four counters zero and
-protected files unchanged. Binary-only: 48,516 bytes/7,320 nodes, SHA-256
-`0ce70659e20bf61da217d8aac7b547ef5587296e74bea26b60eb72051040ca67`.
+`.probe-runs/full-battle-units-spells-and-junk-20261019-124240-9ae3b64f` won in
+91.62 seconds with twenty plays/five EndTurns, all four counters zero and
+protected files unchanged. Binary-only: 49,472 bytes/7,572 nodes, SHA-256
+`2b985aa35f936cd364f50c4f578aa28dad7b72ecaa9080de57e187f2f6290b80`.
 
 `full-battle-original-hostile-statuses.mt2f` captures unchanged Pyrecask, Lava
 Flow, Superheated, Gooey Flask, Echo Snare, Soul Cripple, Fracture, Sporetouch,

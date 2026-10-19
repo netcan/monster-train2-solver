@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string MementoMoriId = "c04c359c-9991-42bc-9040-bff7d3441248";
         internal const string PowerOfKnowledgeId = "f50ecee3-8bde-4100-a315-a362ff23a561";
         internal const string PoxId = "eb866e99-d16b-427a-a762-69d6b0f320f8";
+        internal const string RotId = "d27baa97-0afa-4bb4-a8e0-2af43a507e67";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -27,6 +28,7 @@ namespace MonsterTrain2Poju.Probe
             CardData mementoMori = all.FindCardData(MementoMoriId)!;
             CardData powerOfKnowledge = all.FindCardData(PowerOfKnowledgeId)!;
             CardData pox = all.FindCardData(PoxId)!;
+            CardData rot = all.FindCardData(RotId)!;
             CardEffectData mementoEffect = mementoMori.GetEffects().Single();
             if (mementoMori.name != "MementoMori" || mementoMori.GetCardType() != CardType.Spell || mementoMori.GetCost() != 3 ||
                 mementoEffect.GetEffectStateName() != "CardEffectDamage" || mementoEffect.GetTargetMode() != TargetMode.FrontInRoom ||
@@ -37,7 +39,11 @@ namespace MonsterTrain2Poju.Probe
                 powerOfKnowledge.GetTraits().Count(trait => trait.GetTraitStateName() == "CardTraitScalingAddDamage") != 1 ||
                 pox.name != "Pox" || pox.GetCardType() != CardType.Spell || pox.GetCost() != 2 || pox.GetEffects().Count != 2 ||
                 pox.GetEffects()[0].GetEffectStateName() != "CardEffectDamage" || pox.GetEffects()[0].GetTargetMode() != TargetMode.Room ||
-                pox.GetEffects()[1].GetEffectStateName() != "CardEffectAddStatusEffect" || pox.GetEffects()[1].GetTargetMode() != TargetMode.Room)
+                pox.GetEffects()[1].GetEffectStateName() != "CardEffectAddStatusEffect" || pox.GetEffects()[1].GetTargetMode() != TargetMode.Room ||
+                rot.name != "Rot" || rot.GetCardType() != CardType.Spell || rot.GetCost() != 3 || rot.GetEffects().Count != 2 ||
+                rot.GetEffects()[0].GetEffectStateName() != "CardEffectDamage" || rot.GetEffects()[0].GetTargetMode() != TargetMode.DropTargetCharacter ||
+                rot.GetEffects()[1].GetEffectStateName() != "CardEffectAddStatusEffect" ||
+                rot.GetEffects()[1].GetTargetMode() != TargetMode.LastTargetedCharacters)
                 throw new InvalidOperationException("Original scaled damage spell definitions changed.");
             Set(steward, "cost", 0); Set(anchor, "attackDamage", 60); Set(anchor, "health", 500); Set(anchor, "size", 1);
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
@@ -72,19 +78,19 @@ namespace MonsterTrain2Poju.Probe
             CardState[] created = { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(support.GetID()), Add(doomed.GetID()), Add(doomed.GetID()),
                 Add(battery.GetID()), Add(health.GetID()), Add(corruption.GetID()), Add("97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3"),
                 Add("f6434819-3b62-44e4-a82c-e344dc4c1aa0"), Add("e8e593f4-7e2d-4791-a7d4-8a6155f1a50f"),
-                Add("f2bed1d3-6b52-43d5-8b97-bfe5c90dce53"), Add("acc7bdd1-8f5b-4738-8c4a-4542792e7388"), Add(wound.GetID()), Add("97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3"), Add(MementoMoriId), Add(PowerOfKnowledgeId), Add(PoxId) };
+                Add("f2bed1d3-6b52-43d5-8b97-bfe5c90dce53"), Add("acc7bdd1-8f5b-4738-8c4a-4542792e7388"), Add(wound.GetID()), Add("97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3"), Add(MementoMoriId), Add(PowerOfKnowledgeId), Add(PoxId), Add(RotId) };
             foreach (CardState card in created.Skip(6)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-SCALED-DAMAGE-PREPARED eight unchanged originals; armor-inclusive HP, front caster attack, corruption, deck spell type, zero/two allied deaths, Memento Mori, Power of Knowledge and room-wide Pox.");
+            log.LogInfo("ORIGINAL-SCALED-DAMAGE-PREPARED nine unchanged originals; armor-inclusive HP, front caster attack, corruption, deck spell type, zero/two allied deaths, Memento Mori, Power of Knowledge, room-wide Pox and targeted Rot.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
             if (index < 0 || index >= 6 && source.Spawn.Turn < 1) return null;
             int target = index == 10 ? source.Spawn.Train.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[3]).Id :
-                index == 17 ? source.Spawn.Train.Rooms[0].Units.First(unit => unit.Team == CombatTeam.Enemy).Id : 0;
+                index is 17 or 19 ? source.Spawn.Train.Rooms[0].Units.First(unit => unit.Team == CombatTeam.Enemy).Id : 0;
             var action = new PlayCardAction(ids[index], index is 1 or 2 ? index : 0,
                 playerPosition: index < 3 ? 0 : index < 6 ? index - 2 : -1, targetUnitId: target);
             BattleActionResult result = BattleActionModel.PlayCard(source, action);
