@@ -60,7 +60,8 @@ namespace MonsterTrain2Poju.Probe
                 !OriginalUnitPhaseUpgradeScenario.Prepared &&
                 !MoonPhaseCardScenario.Enabled && !MoonPhaseAdvanceScenario.Enabled && !MoonPhaseCallbackScenario.Enabled && !CardDuplicateScenario.Stardust &&
                 !OriginalMoonPhaseHealRelicScenario.Prepared && !OriginalMoonPhaseStatusRelicScenario.Prepared &&
-                !OriginalChampionStartTurnHealScenario.Prepared && !EclipseChamberScenario.Prepared && !OriginalScaledMoonPhaseScenario.Enabled && !OriginalMoonCardUpgradesScenario.Enabled)
+                !OriginalChampionStartTurnHealScenario.Prepared && !EclipseChamberScenario.Prepared && !OriginalScaledMoonPhaseScenario.Enabled &&
+                !OriginalMoonRitualScenario.Prepared && !OriginalMoonCardUpgradesScenario.Enabled)
                 interactions.Add("Moon phase unit/card effects");
             var streams = new List<BattleRngStream>();
             foreach (RngId id in Enum.GetValues(typeof(RngId)))

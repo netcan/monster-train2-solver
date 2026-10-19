@@ -11,7 +11,9 @@ namespace MonsterTrain2Poju.Probe
     // comparisons and card upgrades continue to use their original GUIDs.
     internal static class ConduitProbe
     {
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled || PlanetariumScenario.Enabled || OriginalStrongMagicCardsScenario.Enabled || OriginalScaledMoonPhaseScenario.Enabled || OriginalSupportSpellsScenario.Enabled || OriginalXLunaSpikeScenario.Enabled;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
+            PlanetariumScenario.Enabled || OriginalStrongMagicCardsScenario.Enabled || OriginalScaledMoonPhaseScenario.Enabled ||
+            OriginalSupportSpellsScenario.Enabled || OriginalXLunaSpikeScenario.Enabled || OriginalMoonRitualScenario.Prepared;
         private static object? Modifier(CharacterState character)
         {
             var statuses = new List<CharacterState.StatusEffectStack>();

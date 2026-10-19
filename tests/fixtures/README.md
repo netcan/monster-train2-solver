@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 537 archives (497 full battles and
+Current accepted inventory (2026-10-19): 538 archives (498 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -1354,6 +1354,18 @@ only: 24,881 bytes, 3,194 unique nodes, SHA-256
 proves one eligible discard choice and one controlled draw; multiple eligible
 discard ordering and empty-deck behavior remain unverified. Use
 `-OriginalOfferingToken` and `--original-offering-token-only`.
+
+`full-battle-original-moon-ritual.mt2f` plays unchanged zero-cost Moon Ritual
+on a controlled friendly Train Steward. The native effect adds one Conduit,
+then advances the tracked Moon Phase and refreshes live-unit phase statuses.
+The 37-stage native win has two actions and five EndTurns, with zero capture
+failures, mismatches, unsupported transitions or pending records. Its focused
+checker, native action-policy replay and 26-state serial/parallel search pass.
+Binary-only: 25,076 bytes, 3,189 unique nodes, SHA-256
+`274f7444f7baf290ae41e1db74f82f6a97a2394b3dccfbac4fc9b9bccd8e6048`. One
+friendly target and one phase transition are covered; later phase cycles and
+other Conduit interactions remain outside this fixture. Use `-OriginalMoonRitual`
+and `--original-moon-ritual-only`.
 
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation

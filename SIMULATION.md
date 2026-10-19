@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 536 binary archives, including 496
+Current accepted inventory (2026-10-19): 537 binary archives, including 497
 full battles and 40 component calibrations. Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
@@ -720,6 +720,16 @@ The 37-stage win (two plays/five EndTurns), exact pile changes, full policy
 replay and 128-state search pass with zero unsupported actions. Only one
 eligible discard and one nonempty draw-pile state are covered; selection order
 with multiple discards and empty-deck behavior remain unproven.
+
+`full-battle-original-moon-ritual.mt2f` plays unchanged zero-cost Moon Ritual
+on a friendly Train Steward. It applies one Conduit before advancing the
+tracked Moon Phase and refreshing live-unit phase statuses. The 37-stage win
+(two plays/five EndTurns), native action-policy replay and bounded search match
+with zero capture failures, mismatches, unsupported transitions or pending
+records. The 25,076-byte binary archive has 3,189 unique nodes and SHA-256
+`274f7444f7baf290ae41e1db74f82f6a97a2394b3dccfbac4fc9b9bccd8e6048`.
+Only one friendly target and one phase transition are evidenced; other Conduit
+interactions and repeated phase cycles are not claimed.
 
 `full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
 Spike of the Legion. Card modifier resolution preserves the all-status filter.

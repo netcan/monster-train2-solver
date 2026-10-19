@@ -887,6 +887,12 @@ if (args.Length == 2 && args[0] == "--original-offering-token-only")
     OriginalOfferingTokenChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-moon-ritual-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalMoonRitualChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--eclipse-chamber-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
