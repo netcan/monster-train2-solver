@@ -42,6 +42,7 @@ param(
     [switch] $OriginalStatusCards,
     [switch] $OriginalDeckSpell,
     [switch] $OriginalDeepOffering,
+    [switch] $OriginalMolded,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -558,6 +559,7 @@ if ($OriginalForgeCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and
 if ($OriginalStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeckSpell) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeepOffering) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalMolded) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1124,6 +1126,7 @@ if ($OriginalForgeCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge
 if ($OriginalStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-cards' }
 if ($OriginalDeckSpell) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deck-spell' }
 if ($OriginalDeepOffering) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deep-offering' }
+if ($OriginalMolded) { $environment['MT2_PROBE_MODIFIERS'] = 'original-molded' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2689,6 +2692,10 @@ if ($OriginalDeepOffering -and (-not $trace.OriginalDeepOfferingPrepared -or -no
     @($trace.OriginalDeepOfferingCardIds).Count -ne 3)) {
     throw 'Original Deep Offering requires one matched play, a controlled discard/draw witness and a native win.'
 }
+if ($OriginalMolded -and (-not $trace.OriginalMoldedPrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalMoldedCardIds).Count -ne 4)) {
+    throw 'Original Molded requires one matched play, controlled Exhaust targets and a native win.'
+}
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
 }
@@ -3626,6 +3633,14 @@ $deepOfferingActions = @($trace.Actions | Where-Object {
     $played.DataId -eq '37eaa51b-62cf-4cbc-971f-6d208fd07366'
 })
 $deepOfferingCoverage = -not $OriginalDeepOffering -or @($deepOfferingActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+$moldedActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'dea99a2f-48c9-4246-ad44-01e84f46171e'
+})
+$moldedCoverage = -not $OriginalMolded -or @($moldedActions | Where-Object {
     -not $_.Difference -and $_.Predicted.Supported
 }).Count -eq 1
 $frostChannelingActions = @($trace.Actions | Where-Object {
@@ -5408,6 +5423,8 @@ $result = [pscustomobject]@{
     BrainTransferCoverage = $brainTransferCoverage
     DeepOfferingActions = $deepOfferingActions.Count
     DeepOfferingCoverage = $deepOfferingCoverage
+    MoldedActions = $moldedActions.Count
+    MoldedCoverage = $moldedCoverage
     FrostChannelingActions = $frostChannelingActions.Count
     FrostChannelingCoverage = $frostChannelingCoverage
     TransferAbilityActions = $transferAbilityActions.Count
@@ -5501,6 +5518,9 @@ if (-not $transferAttackCoverage) { throw 'Native attack transfer did not buff a
 if (-not $brainTransferCoverage) { throw 'Original BrainTransfer did not transfer Rage, Scorch and attack in a matched action.' }
 if ($OriginalDeepOffering -and ($deepOfferingActions.Count -ne 1 -or -not $deepOfferingCoverage)) {
     throw 'Original Deep Offering did not produce exactly one matched card play.'
+}
+if ($OriginalMolded -and ($moldedActions.Count -ne 1 -or -not $moldedCoverage)) {
+    throw 'Original Molded did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

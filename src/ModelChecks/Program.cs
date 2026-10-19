@@ -863,6 +863,12 @@ if (args.Length == 2 && args[0] == "--original-deep-offering-only")
     OriginalDeepOfferingChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-molded-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalMoldedChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--eclipse-chamber-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

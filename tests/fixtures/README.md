@@ -1307,6 +1307,18 @@ full action-policy replay and 128-state search pass. Binary-only: 24,762 bytes,
 `b8339b60070f9a736324f645942d1e311c35b846c55952929c03b307404163de`.
 Use `-OriginalDeepOffering` and `--original-deep-offering-only`.
 
+`full-battle-original-molded.mt2f` plays unchanged 1-cost Molded. It returns
+one controlled Train Steward from Exhaust to hand, leaves an exhausted Spell
+control in place, and applies the original Raise upgrade (+5/+5 and Ephemeral).
+The 34-stage native win has five actions and five EndTurns, with zero capture
+failures, mismatches, unsupported transitions or pending records. Its dedicated
+checker, full action-policy replay and 128-state search pass. Binary-only:
+25,281 bytes, 3,253 unique nodes, SHA-256
+`e044237a42a3c06dd328c7a34c5ac33bbf7493f4796e0f0196531af0a249f51e`.
+This covers one eligible Monster and one Spell type-filter control, not multiple
+eligible targets or other recursion modes. Use `-OriginalMolded` and
+`--original-molded-only`.
+
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation
 filter. Two same-floor units gain two Rage/Regen; the selected Glow Up target

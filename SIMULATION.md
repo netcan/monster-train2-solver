@@ -688,6 +688,15 @@ draws five known deck cards, and exhausts itself. The 35-stage win (eight plays,
 five EndTurns), dedicated state checker, full policy replay, and 128-state search
 are checked; each play matches and no unsupported transition is recorded.
 
+`full-battle-original-molded.mt2f` plays unchanged Molded, selecting one
+Train Steward from Exhaust while an exhausted Spell is excluded by the native
+Monster type filter. The original Raise upgrade adds +5/+5 and Ephemeral. The
+34-stage win (five plays/five EndTurns), exact selection and upgrade state,
+full policy replay, and 128-state search are checked with zero unsupported
+actions. This is one selected-target witness; multiple eligible Monster
+ordering, other recursion modes, and additional upgrade/relic combinations
+remain unproven.
+
 `full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
 Spike of the Legion. Card modifier resolution preserves the all-status filter.
 Proliferate adds two Rage/Regen to both same-floor units; Glow Up moves its
