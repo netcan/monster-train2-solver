@@ -1367,6 +1367,19 @@ friendly target and one phase transition are covered; later phase cycles and
 other Conduit interactions remain outside this fixture. Use `-OriginalMoonRitual`
 and `--original-moon-ritual-only`.
 
+`full-battle-original-self-purge-energy-gain.mt2f` plays the unchanged
+zero-cost Self-Purge Energy Gain. Its native GainEnergy(2) then Draw(1) effects
+raise energy within the captured cap, draw one controlled Train Steward, and
+exhaust the spell through its original Consume trait. The 37-stage native win
+has two card plays and five EndTurns, with zero capture failures, mismatches,
+unsupported transitions or pending records. Its focused checker, action-policy
+replay and 128-state serial/parallel search pass. Binary-only: 24,729 bytes,
+3,151 unique nodes, SHA-256
+`c1fe47c31108449270b62500581c174e31da3b17c539c973056e3f0e0b1fae03`. Only one
+controlled draw and one energy-cap state are evidenced; empty-deck and repeated
+Consume behavior are not claimed. Use `-OriginalSelfPurgeEnergyGain` and
+`--original-self-purge-energy-gain-only`.
+
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation
 filter. Two same-floor units gain two Rage/Regen; the selected Glow Up target

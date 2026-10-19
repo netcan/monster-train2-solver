@@ -47,6 +47,7 @@ param(
     [switch] $OriginalWickedBlaze,
     [switch] $OriginalOfferingToken,
     [switch] $OriginalMoonRitual,
+    [switch] $OriginalSelfPurgeEnergyGain,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -568,6 +569,7 @@ if ($OriginalBrokenMemories) { $BranchCardMasks = $true; $Policy = 'units-spells
 if ($OriginalWickedBlaze) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOfferingToken) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonRitual) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSelfPurgeEnergyGain) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1139,6 +1141,7 @@ if ($OriginalBrokenMemories) { $environment['MT2_PROBE_MODIFIERS'] = 'original-b
 if ($OriginalWickedBlaze) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wicked-blaze' }
 if ($OriginalOfferingToken) { $environment['MT2_PROBE_MODIFIERS'] = 'original-offering-token' }
 if ($OriginalMoonRitual) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-ritual' }
+if ($OriginalSelfPurgeEnergyGain) { $environment['MT2_PROBE_MODIFIERS'] = 'original-self-purge-energy-gain' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2724,6 +2727,10 @@ if ($OriginalMoonRitual -and ($trace.Schema -ne 256 -or -not $trace.OriginalMoon
     @($trace.OriginalMoonRitualCardIds).Count -ne 2)) {
     throw 'Original Moon Ritual requires one matched play, a controlled Monster target and a native win.'
 }
+if ($OriginalSelfPurgeEnergyGain -and ($trace.Schema -ne 257 -or -not $trace.OriginalSelfPurgeEnergyGainPrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalSelfPurgeEnergyGainCardIds).Count -ne 3)) {
+    throw 'Original Self-Purge Energy Gain requires one matched play, a controlled draw card and a native win.'
+}
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
 }
@@ -3701,6 +3708,14 @@ $moonRitualActions = @($trace.Actions | Where-Object {
     $played.DataId -eq 'b1fe0ba1-fcce-4764-9f4c-54b77d20b665'
 })
 $moonRitualCoverage = -not $OriginalMoonRitual -or @($moonRitualActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+$selfPurgeEnergyGainActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'd0e1fe8a-fb2a-44e0-9d9b-a3ddd7475c34'
+})
+$selfPurgeEnergyGainCoverage = -not $OriginalSelfPurgeEnergyGain -or @($selfPurgeEnergyGainActions | Where-Object {
     -not $_.Difference -and $_.Predicted.Supported
 }).Count -eq 1
 $frostChannelingActions = @($trace.Actions | Where-Object {
@@ -5493,6 +5508,8 @@ $result = [pscustomobject]@{
     OfferingTokenCoverage = $offeringTokenCoverage
     MoonRitualActions = $moonRitualActions.Count
     MoonRitualCoverage = $moonRitualCoverage
+    SelfPurgeEnergyGainActions = $selfPurgeEnergyGainActions.Count
+    SelfPurgeEnergyGainCoverage = $selfPurgeEnergyGainCoverage
     FrostChannelingActions = $frostChannelingActions.Count
     FrostChannelingCoverage = $frostChannelingCoverage
     TransferAbilityActions = $transferAbilityActions.Count
@@ -5601,6 +5618,9 @@ if ($OriginalOfferingToken -and ($offeringTokenActions.Count -ne 1 -or -not $off
 }
 if ($OriginalMoonRitual -and ($moonRitualActions.Count -ne 1 -or -not $moonRitualCoverage)) {
     throw 'Original Moon Ritual did not produce exactly one matched card play.'
+}
+if ($OriginalSelfPurgeEnergyGain -and ($selfPurgeEnergyGainActions.Count -ne 1 -or -not $selfPurgeEnergyGainCoverage)) {
+    throw 'Original Self-Purge Energy Gain did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

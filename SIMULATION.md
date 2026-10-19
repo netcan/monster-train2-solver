@@ -731,6 +731,16 @@ records. The 25,076-byte binary archive has 3,189 unique nodes and SHA-256
 Only one friendly target and one phase transition are evidenced; other Conduit
 interactions and repeated phase cycles are not claimed.
 
+`full-battle-original-self-purge-energy-gain.mt2f` plays unchanged zero-cost
+Self-Purge Energy Gain. GainEnergy(2) precedes Draw(1), energy remains within
+the captured maximum, the controlled Train Steward is drawn, and the card is
+exhausted by its original Consume trait. The 37-stage win (two plays/five
+EndTurns), dedicated check, full action-policy replay and 128-state search pass
+with zero capture failures, mismatches, unsupported transitions or pending
+records. Binary-only: 24,729 bytes, 3,151 unique nodes, SHA-256
+`c1fe47c31108449270b62500581c174e31da3b17c539c973056e3f0e0b1fae03`. Empty
+draw-pile behavior and repeated Consume plays are not covered.
+
 `full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
 Spike of the Legion. Card modifier resolution preserves the all-status filter.
 Proliferate adds two Rage/Regen to both same-floor units; Glow Up moves its
