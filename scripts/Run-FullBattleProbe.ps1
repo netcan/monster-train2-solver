@@ -90,6 +90,7 @@ param(
     [switch] $OriginalEagerConscript,
     [switch] $OriginalSpawningPods,
     [switch] $OriginalMindsOfTheirOwn,
+    [switch] $OriginalMetallurgy,
     [switch] $OriginalCopyMorselTwice,
     [switch] $OriginalLazarusLeagueSpike,
     [switch] $OriginalTomeOfContracts,
@@ -624,6 +625,7 @@ if ($OriginalAcceleratedIncubation) { $BranchCardMasks = $true; $Policy = 'units
 if ($OriginalEagerConscript) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpawningPods) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMindsOfTheirOwn) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalMetallurgy) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyMorselTwice) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalLazarusLeagueSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1208,6 +1210,7 @@ if ($OriginalAcceleratedIncubation) { $environment['MT2_PROBE_MODIFIERS'] = 'ori
 if ($OriginalEagerConscript) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eager-conscript' }
 if ($OriginalSpawningPods) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spawning-pods' }
 if ($OriginalMindsOfTheirOwn) { $environment['MT2_PROBE_MODIFIERS'] = 'original-minds-of-their-own' }
+if ($OriginalMetallurgy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-metallurgy' }
 if ($OriginalCopyMorselTwice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-morsel-twice' }
 if ($OriginalLazarusLeagueSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lazarus-league-spike' }
 if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
@@ -2536,6 +2539,10 @@ if ($OriginalSpawningPods -and ($trace.Schema -ne 103 -or $trace.ModifierScenari
 if ($OriginalMindsOfTheirOwn -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-minds-of-their-own' -or
     -not $trace.NativeWon -or @($trace.Actions).Count -ne 3)) {
     throw 'Original Minds of Their Own witness lacks its equipped unit and direct card play.'
+}
+if ($OriginalMetallurgy -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-metallurgy' -or
+    -not $trace.NativeWon -or @($trace.Actions).Count -ne 2)) {
+    throw 'Original Metallurgy witness lacks its friendly armor target, native chooser and direct card play.'
 }
 if ($OriginalCopyMorselTwice -and ($trace.Schema -ne 250 -or $trace.ModifierScenario -ne 'original-copy-morsel-twice' -or
     -not $trace.OriginalCopyMorselTwicePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
@@ -5845,6 +5852,17 @@ $mindsOfTheirOwnCoverage = -not $OriginalMindsOfTheirOwn -or @($mindsOfTheirOwnA
 }).Count -eq 1
 if ($OriginalMindsOfTheirOwn -and ($mindsOfTheirOwnActions.Count -ne 1 -or -not $mindsOfTheirOwnCoverage)) {
     throw 'Original Minds of Their Own did not produce exactly one matched card play.'
+}
+$metallurgyActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'bdfec381-a336-4b7d-b08a-c10c7ce231c0'
+})
+$metallurgyCoverage = -not $OriginalMetallurgy -or @($metallurgyActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalMetallurgy -and ($metallurgyActions.Count -ne 1 -or -not $metallurgyCoverage)) {
+    throw 'Original Metallurgy did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

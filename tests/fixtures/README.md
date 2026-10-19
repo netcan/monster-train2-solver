@@ -7841,3 +7841,23 @@ dotnet run --project src/ModelChecks -c Release -- --original-minds-of-their-own
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-minds-of-their-own.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-minds-of-their-own.mt2f
 ```
+
+### Original Metallurgy
+
+`full-battle-original-metallurgy.mt2f` deploys one controlled Train Steward
+and plays the unchanged one-cost Metallurgy. The native card adds four Armor,
+then consumes the selected original two-cost card, leaves the one-cost control
+in hand, and awards two Ember and two Forge Points. The 51.26-second Instant
+battle won with two card plays and seven EndTurns; capture failures, mismatches,
+unsupported transitions and pending records were zero, and protected original
+files were unchanged. The 33,857-byte archive has 5,050 unique nodes and
+SHA-256 `4277350a0ae3ead71edcd6a84502ea2b660c11239510ffccf272aeb0f5729627`.
+Independent replay and the 128-state serial/parallel search pass, including
+both legal hand-card selections.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMetallurgy -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-metallurgy-only tests/fixtures/full-battle-original-metallurgy.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-metallurgy.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-metallurgy.mt2f
+```
