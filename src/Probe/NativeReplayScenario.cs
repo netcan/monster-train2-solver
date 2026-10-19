@@ -1185,6 +1185,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSpawningPodsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalMindsOfTheirOwnScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Minds of Their Own fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalMindsOfTheirOwnScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoonCardUpgradesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original moon card upgrades must start on deployment turn.");
@@ -2635,6 +2641,8 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalStarterReformScenario.Enabled) pendingPlay = OriginalStarterReformScenario.Choose(decision, OriginalStarterReformScenario.CardIds);
                 if (OriginalRapidRaiseScenario.Enabled) pendingPlay = OriginalRapidRaiseScenario.Choose(decision, OriginalRapidRaiseScenario.CardIds);
                 if (OriginalSpawningPodsScenario.Enabled) pendingPlay = OriginalSpawningPodsScenario.Choose(decision, OriginalSpawningPodsScenario.CardIds);
+                if (OriginalMindsOfTheirOwnScenario.Enabled) pendingPlay = OriginalMindsOfTheirOwnScenario.Choose(decision, OriginalMindsOfTheirOwnScenario.CardIds);
+                if (OriginalMindsOfTheirOwnScenario.Enabled) pendingPlay = OriginalMindsOfTheirOwnScenario.Choose(decision, OriginalMindsOfTheirOwnScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);
                 if (StewardsQuartersScenario.Enabled) pendingPlay = StewardsQuartersScenario.Choose(decision, StewardsQuartersScenario.CardIds);

@@ -2124,6 +2124,13 @@ foreach ($fixturePath in $originalSpawningPodsFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Spawning Pods checks failed ($mode): $fixturePath" }
     }
 }
+$originalMindsOfTheirOwnFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-minds-of-their-own.mt2f' })
+foreach ($fixturePath in $originalMindsOfTheirOwnFixtures) {
+    foreach ($mode in @('--original-minds-of-their-own-only', '--native-actions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Minds of Their Own checks failed ($mode): $fixturePath" }
+    }
+}
 $originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })
 foreach ($fixturePath in $originalOverflowFixtures) {
     foreach ($mode in @('--original-overflow-cards-only', '--battle-search-only')) {

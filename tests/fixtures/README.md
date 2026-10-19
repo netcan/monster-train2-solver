@@ -7820,3 +7820,24 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-tom
 dotnet run --project src/ModelChecks -c Release -- --original-tome-of-contracts-only tests/fixtures/full-battle-original-tome-of-contracts.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-tome-of-contracts.mt2f
 ```
+
+### Original Minds of Their Own
+
+`full-battle-original-minds-of-their-own.mt2f` deploys one controlled Train
+Steward, attaches unchanged zero-cost Fortify, then plays the unchanged
+three-cost Minds of Their Own after enemies enter the room. The check verifies
+the card's equipment requirement and current-room targeting, Fortify remains
+attached, and native enemy vitality falls by exactly the equipped unit's
+attack. The 38.24-second Instant battle won with three card plays and five
+EndTurns; capture failures, mismatches, unsupported transitions and pending
+records were zero, and protected original files were unchanged. The 28,835-byte
+archive has 3,865 unique nodes and SHA-256
+`63a3b70f5291d5dc51d70773010f45a2a182883a4501767815bb46e9a1010c72`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMindsOfTheirOwn -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-minds-of-their-own-only tests/fixtures/full-battle-original-minds-of-their-own.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-minds-of-their-own.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-minds-of-their-own.mt2f
+```
