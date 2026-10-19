@@ -7453,6 +7453,19 @@ dotnet run --project src/ModelChecks -c Release -- --original-copy-morsel-twice-
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-copy-morsel-twice.mt2f
 ```
 
+### Original Lazarus League Spike
+
+`full-battle-original-lazarus-league-spike.mt2f` plays the unchanged X-cost
+Lazarus League Spike on a controlled friendly unit with four Ember. It verifies
+the exact original target/status and scaling traits, four Undying stacks,
+remaining-Ember payment, Consume routing and immutable replay.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-lazarus-league-spike.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-lazarus-league-spike-only tests/fixtures/full-battle-original-lazarus-league-spike.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-lazarus-league-spike.mt2f
+```
+
 ### Original Tome of Contracts
 
 `full-battle-original-tome-of-contracts.mt2f` plays the unchanged one-cost

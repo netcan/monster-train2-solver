@@ -1323,6 +1323,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalCopyMorselTwiceScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalLazarusLeagueSpikeScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Lazarus League Spike fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalLazarusLeagueSpikeScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalEffectApplicationsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original effect applications fixture must start on deployment turn.");
@@ -2453,6 +2459,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalRoomCardsScenario.Enabled) pendingPlay = OriginalRoomCardsScenario.Choose(decision, OriginalRoomCardsScenario.CardIds);
                 if (OriginalForgeCardsScenario.Enabled) pendingPlay = OriginalForgeCardsScenario.Choose(decision, OriginalForgeCardsScenario.CardIds);
                 if (OriginalStatusCardsScenario.Enabled) pendingPlay = OriginalStatusCardsScenario.Choose(decision, OriginalStatusCardsScenario.CardIds);
+                if (OriginalLazarusLeagueSpikeScenario.Enabled) pendingPlay = OriginalLazarusLeagueSpikeScenario.Choose(decision, OriginalLazarusLeagueSpikeScenario.CardIds);
                 if (OriginalDeckSpellScenario.Enabled) pendingPlay = OriginalDeckSpellScenario.Choose(decision, OriginalDeckSpellScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);

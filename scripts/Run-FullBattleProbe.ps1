@@ -72,6 +72,7 @@ param(
     [switch] $OriginalAcceleratedIncubation,
     [switch] $OriginalEagerConscript,
     [switch] $OriginalCopyMorselTwice,
+    [switch] $OriginalLazarusLeagueSpike,
     [switch] $OriginalTomeOfContracts,
     [switch] $OriginalPileRecursion,
     [switch] $OriginalScaledBuff,
@@ -578,6 +579,7 @@ if ($OriginalCardDrawPotion) { $BranchCardMasks = $true; $Policy = 'units-spells
 if ($OriginalAcceleratedIncubation) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEagerConscript) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyMorselTwice) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalLazarusLeagueSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPileRecursion) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledBuff) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1134,6 +1136,7 @@ if ($OriginalCardDrawPotion) { $environment['MT2_PROBE_MODIFIERS'] = 'original-c
 if ($OriginalAcceleratedIncubation) { $environment['MT2_PROBE_MODIFIERS'] = 'original-accelerated-incubation' }
 if ($OriginalEagerConscript) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eager-conscript' }
 if ($OriginalCopyMorselTwice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-morsel-twice' }
+if ($OriginalLazarusLeagueSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lazarus-league-spike' }
 if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
 if ($OriginalPileRecursion) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pile-recursion' }
 if ($OriginalScaledBuff) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-buff' }
@@ -2448,6 +2451,10 @@ if ($OriginalEagerConscript -and ($trace.Schema -ne 249 -or $trace.ModifierScena
 if ($OriginalCopyMorselTwice -and ($trace.Schema -ne 250 -or $trace.ModifierScenario -ne 'original-copy-morsel-twice' -or
     -not $trace.OriginalCopyMorselTwicePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
     throw 'Original Copy Morsel Twice witness lacks its control units and direct Spell play.'
+}
+if ($OriginalLazarusLeagueSpike -and ($trace.Schema -ne 251 -or $trace.ModifierScenario -ne 'original-lazarus-league-spike' -or
+    -not $trace.OriginalLazarusLeagueSpikePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
+    throw 'Original Lazarus League Spike witness lacks its control units and direct Spell play.'
 }
 if ($OriginalTomeOfContracts -and ($trace.Schema -ne 248 -or $trace.ModifierScenario -ne 'original-tome-of-contracts' -or
     -not $trace.OriginalTomeOfContractsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
