@@ -198,7 +198,7 @@ internal static class CardCoverageInventory
         FixtureValue[] traits = Array(definition, "Traits");
         if (traits.Any(trait => !CalibratedSourceTrait(trait))) return false;
         bool requiresRaw = traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAddDamage" or "CardTraitScalingAddStatusEffect" or "CardTraitUnpurgable" or "CardTraitIncreaseCostOfCardsInHand" or "CardTraitLimitedRange" or "CardTraitDrawInDeploymentPhase" or "CardTraitUnplayable" or "CardTraitPersistent" or "CardTraitRefine" or "CardTraitPermafrost" or "CardTraitDamageOverflow" or "CardTraitCorruptRestricted" or "CardTraitAddDamagePerStatusEffect" or "CardTraitScalingAddDamagePerCard" or "CardTraitScalingAddEnergy" or "CardTraitScalingRemoveStatusEffect" or "CardTraitScalingAddEffectApplications" or "CardTraitScalingCardDrawCountPerPile");
-        requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingBuffDamage" or "CardTraitScalingStatusEffectPerPile" or "CardTraitScalingTempCardUpgradeToCard" or "CardTraitScalingByConsumedTempCardUpgradeToCard" or "CardTraitShowCardTargets" or "CardTraitScalingAdvanceMoonPhase" or "CardTraitScalingAddCards" or "CardTraitAddCardUpgradeOnMoonPhase");
+        requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingBuffDamage" or "CardTraitScalingStatusEffectPerPile" or "CardTraitScalingTempCardUpgradeToCard" or "CardTraitScalingByConsumedTempCardUpgradeToCard" or "CardTraitShowCardTargets" or "CardTraitScalingAdvanceMoonPhase" or "CardTraitScalingAddCards" or "CardTraitAddCardUpgradeOnMoonPhase" or "CardTraitScalingFeederRules");
         requiresRaw |= traits.Any(trait => Text(trait, "Type") == "CardTraitGraftedEquipment");
         requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAdjustCapacity" or "CardTraitScalingHealTrain");
         foreach (string source in new[] { "CardInstances", "CardRegistry" })
@@ -230,6 +230,15 @@ internal static class CardCoverageInventory
                     Text(bases[index], "HandCostTargetType") != Text(traits[index], "HandCostTargetType") ||
                     Text(traits[index], "Type") == "CardTraitGraftedEquipment" &&
                     (!bases[index].TryGetProperty("GraftSevered", out FixtureValue severed) || severed.ValueKind is not (FixtureKind.True or FixtureKind.False))) return false;
+                else if (Text(traits[index], "Type") == "CardTraitScalingFeederRules" &&
+                    (!bases[index].TryGetProperty("FeedingQuery", out FixtureValue query) || query.ValueKind != FixtureKind.Object ||
+                     Text(query, "Type") != "PlayedCost" || Text(query, "Duration") != "ThisBattle" ||
+                     !query.TryGetProperty("TypeMatchDataIds", out FixtureValue typeIds) || typeIds.ValueKind != FixtureKind.Null ||
+                     Strings(query, "SubtypeMatchDataIds").Any() || !Flag(query, "SubtypeIsNone") || Text(query, "Subtype") != "SubtypesData_None" ||
+                     !query.TryGetProperty("SpecificCardDataId", out FixtureValue specific) || specific.ValueKind != FixtureKind.Null ||
+                     !query.TryGetProperty("SourceRawCost", out FixtureValue rawCost) || rawCost.ValueKind != FixtureKind.Null ||
+                     Flag(query, "VariableCost") || Text(query, "TargetTeam") != "None" || Flag(query, "CurrentCostCardModifiersOnly") ||
+                     Flag(query, "CurrentCostSourceIsSpell") || !query.TryGetProperty("StatusIds", out FixtureValue statusIds) || statusIds.ValueKind != FixtureKind.Null)) return false;
             return true;
         }
         return false; // Legacy schemas without base-trait evidence stay unverified.
@@ -260,6 +269,10 @@ internal static class CardCoverageInventory
         if (type == "CardTraitScalingAddCards")
             return trait.GetProperty("Int").GetInt32() == 1 && trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
                 Flag(trait, "Bool") && Text(trait, "Str").Length == 0 && trait.GetProperty("Float").GetDouble() == 0 && Flag(trait, "Scaling") &&
+                Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisBattle";
+        if (type == "CardTraitScalingFeederRules")
+            return trait.GetProperty("Int").GetInt32() == 2 && trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
+                !Flag(trait, "Bool") && Text(trait, "Str") == "" && trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") &&
                 Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisBattle";
         if (type == "CardTraitScalingAddStatusEffect" && trait.GetProperty("Int").GetInt32() == 1 &&
             trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") &&

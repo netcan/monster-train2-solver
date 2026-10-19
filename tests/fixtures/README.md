@@ -1548,6 +1548,20 @@ run statistics, replay and sixteen immutable branches match. Binary-only:
 Use `-ShroudSpikeFeeding` and `--forced-feeding-only`. Trait installation and
 self-overridden feeders retain separate evidence boundaries.
 
+`full-battle-original-shroud-spike.mt2f` recaptures the same original Shroud
+Spike X=0/3 witness with raw source traits. It pins the original two-repeat
+CardTraitScalingFeederRules parameters and its PlayedCost/ThisBattle query,
+Snack-only player targeting, Consume and paid-cost ownership. The three-Ember
+cast applies six feeding callbacks while the zero-Ember cast still consumes its
+meal but applies none. Its six-play/five-EndTurn Instant battle won in 56.09
+seconds with all capture, mismatch, unsupported and pending counters at zero;
+protected files were unchanged. Search matches six decisions, visits 128/128
+states and replays two steps with equal serial/parallel best and zero unsupported
+attempts. The strict checker validates source provenance and complete replay.
+Binary-only: 32,063 bytes/4,457 nodes, SHA-256
+`3fd875d8e91f30de4f2ccc2226f677485f6b6faf3c330098e0e8a7303cec6959`.
+Use `-ShroudSpikeFeeding` and `--original-shroud-spike-only`.
+
 `full-battle-tower-corruption-callbacks.mt2f` covers two Keepers on different
 floors, sequential corruption commits and notification-driven room focus before
 current-room upgrade scaling. Its 42-stage win has nineteen plays/five EndTurns

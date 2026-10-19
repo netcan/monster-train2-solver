@@ -223,7 +223,12 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-room-status-damage.mt2f',
     'full-battle-original-corruption-damage.mt2f',
     'full-battle-original-x-status-cards.mt2f',
+    'full-battle-original-x-banished-spike.mt2f',
+    'full-battle-original-x-luna-spike.mt2f',
+    'full-battle-original-x-stygian-spike.mt2f',
+    'full-battle-original-x-wurmkin-spike.mt2f',
     'full-battle-shroud-spike-feeding.mt2f',
+    'full-battle-original-shroud-spike.mt2f',
     'full-battle-original-opening-deck-spawn.mt2f',
     'full-battle-original-perkeo.mt2f',
     'full-battle-original-corrupted-angels.mt2f',
@@ -1729,9 +1734,14 @@ foreach ($fixturePath in $feedingFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Card-backed feeding checks failed ($mode): $fixturePath" }
     }
 }
-$forcedFeedingFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-forced-feeding.mt2f', 'full-battle-shroud-spike-feeding.mt2f') })
+$forcedFeedingFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-forced-feeding.mt2f', 'full-battle-shroud-spike-feeding.mt2f', 'full-battle-original-shroud-spike.mt2f') })
 foreach ($fixturePath in $forcedFeedingFixtures) {
-    foreach ($mode in @('--forced-feeding-only', '--battle-search-only')) {
+    $modes = if ((Split-Path -Leaf $fixturePath) -eq 'full-battle-original-shroud-spike.mt2f') {
+        @('--original-shroud-spike-only', '--battle-search-only')
+    } else {
+        @('--forced-feeding-only', '--battle-search-only')
+    }
+    foreach ($mode in $modes) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Forced feeding checks failed ($mode): $fixturePath" }
     }
@@ -2148,6 +2158,34 @@ foreach ($fixturePath in $originalXStatusFixtures) {
     foreach ($mode in @('--original-x-status-cards-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original X-status checks failed ($mode): $fixturePath" }
+    }
+}
+$originalXBanishedFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-x-banished-spike.mt2f' })
+foreach ($fixturePath in $originalXBanishedFixtures) {
+    foreach ($mode in @('--original-x-banished-spike-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Spike of the Banished checks failed ($mode): $fixturePath" }
+    }
+}
+$originalXLunaFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-x-luna-spike.mt2f' })
+foreach ($fixturePath in $originalXLunaFixtures) {
+    foreach ($mode in @('--original-x-luna-spike-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Spike of the Luna Coven checks failed ($mode): $fixturePath" }
+    }
+}
+$originalXStygianFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-x-stygian-spike.mt2f' })
+foreach ($fixturePath in $originalXStygianFixtures) {
+    foreach ($mode in @('--original-x-stygian-spike-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Spike of the Stygian checks failed ($mode): $fixturePath" }
+    }
+}
+$originalXWurmkinFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-x-wurmkin-spike.mt2f' })
+foreach ($fixturePath in $originalXWurmkinFixtures) {
+    foreach ($mode in @('--original-x-wurmkin-spike-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Wurmkin Spike checks failed ($mode): $fixturePath" }
     }
 }
 $originalXDamageFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-x-damage-cards.mt2f' })

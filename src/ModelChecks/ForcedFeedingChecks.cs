@@ -4,7 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class ForcedFeedingChecks
 {
-    internal static void Native(FixtureValue root)
+    internal static void Native(FixtureValue root, bool requireOriginalSource = false)
     {
         Require(root.GetProperty("ForcedFeeding").GetBoolean() && root.GetProperty("ForcedFeedingDeploymentRejected").GetBoolean() &&
             root.GetProperty("NativeWon").GetBoolean(), "Missing native forced-feeding witness.");
@@ -13,6 +13,7 @@ internal static class ForcedFeedingChecks
             Require(root.GetProperty(name).GetInt32() == 0, "Nonzero " + name);
         int positive = 0, controls = 0, survived = 0, final = 0;
         bool scalingMode = root.TryGetProperty("ShroudSpikeFeeding", out var mode) && mode.GetBoolean();
+        Require(!requireOriginalSource || scalingMode, "Original Shroud Spike source checks require the scaling scenario.");
         int scaled = 0, zeroCost = 0;
         foreach (FixtureValue row in root.GetProperty("ForcedFeedingRecords").EnumerateArray())
         {
@@ -82,11 +83,43 @@ internal static class ForcedFeedingChecks
                 int id = action.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
                 if (before.Spawn.Train.Context!.FindCard(id)?.DataId != "fecc00fd-70ef-473e-bfa1-35c221540d43") continue;
                 BattleTurnState actual = action.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CardInstanceState card = before.Spawn.Train.Context.FindCard(id)!;
+                CardMaskDescriptor mask = card.MaskDescriptor!;
+                if (requireOriginalSource || mask.SourceTraits != null)
+                {
+                    CardPlayRule rule = before.PlayRules!.Cards.Single(candidate => candidate.DataId == card.DataId);
+                    CardSourceTrait[] traits = mask.SourceTraits!.ToArray();
+                    CardSourceTrait scalingTrait = traits.Single(trait => trait.Type == "CardTraitScalingFeederRules");
+                    CardSourceTrait consumeTrait = traits.Single(trait => trait.Type == "CardTraitExhaustState");
+                    CardTraitValue scalingBase = mask.BaseTraits.Single(trait => trait.RuntimeType == "CardTraitScalingFeederRules");
+                    CardStatisticQuery query = scalingBase.FeedingQuery!;
+                    Require(card.DataId == "fecc00fd-70ef-473e-bfa1-35c221540d43" && rule.AssetKey == "ShroudSpike" &&
+                        rule.Cost == 0 && rule.CostType == "ConsumeRemainingEnergy" && rule.Effects.Count == 1 &&
+                        rule.Effects[0].Type == "FeederRules" && rule.Effects[0].Target == "DropTargetCharacter" &&
+                        !rule.Effects[0].AllowEnemy && rule.Effects[0].AllowPlayer && rule.Effects[0].Filters?.Subtype == "SubtypesData_Snack" &&
+                        mask.Definition.XCost && mask.BaseCost == 0 && traits.Length == 2 &&
+                        scalingTrait.Int == 2 && scalingTrait.Int2 == 0 && scalingTrait.Int3 == 0 && !scalingTrait.Bool && scalingTrait.Str == "" &&
+                        scalingTrait.Float == 1 && scalingTrait.Scaling && scalingTrait.TrackedValue == "PlayedCost" && scalingTrait.EntryDuration == "ThisBattle" &&
+                        consumeTrait.Int == 0 && consumeTrait.Int2 == 0 && consumeTrait.Int3 == 0 && !consumeTrait.Bool && consumeTrait.Str == "" &&
+                        consumeTrait.Float == 0 && !consumeTrait.Scaling && consumeTrait.TrackedValue == "PlayedCost" && consumeTrait.EntryDuration == "ThisBattle" &&
+                        scalingBase.DefinitionParamInt == 2 && scalingBase.ParamInt == 2 &&
+                        query.Type == "PlayedCost" && query.Duration == "ThisBattle" && query.TypeMatchDataIds == null &&
+                        query.SubtypeMatchDataIds is { Count: 0 } && query.SubtypeIsNone && query.Subtype == "SubtypesData_None" &&
+                        query.SpecificCardDataId == null && query.SourceRawCost == null && !query.VariableCost && query.TargetTeam == "None" &&
+                        !query.CurrentCostCardModifiersOnly && !query.CurrentCostSourceIsSpell && query.StatusIds == null,
+                        "Original Shroud Spike source trait, feeder target rule or paid-cost query differs.");
+                    Require(JsonSerializer.Serialize(mask.SourceTraits, ModelJson.Options) ==
+                        JsonSerializer.Serialize(actual.Spawn.Train.Context!.FindCard(id)!.MaskDescriptor!.SourceTraits, ModelJson.Options),
+                        "Shroud Spike play changed its immutable original source traits.");
+                }
                 Require(actual.Spawn.Train.Context!.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == id),
                     "Shroud Spike did not Consume after its meal.");
-                paid.Add(actual.Spawn.Train.Context.FindCard(id)!.LastPlayedCost);
+                int lastPlayedCost = actual.Spawn.Train.Context.FindCard(id)!.LastPlayedCost;
+                if (requireOriginalSource) Require(card.MaskDescriptor!.SourceTraits != null, "Original Shroud Spike capture lacks raw source traits.");
+                paid.Add(lastPlayedCost);
             }
             Require(paid.OrderBy(value => value).SequenceEqual(new[] { 0, 3 }), "Missing native X-cost payments 0 and 3.");
+            if (requireOriginalSource) Require(paid.Count == 2, "Expected exactly two original Shroud Spike source plays.");
         }
         Require(actions.Any(row => row.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms[0].Deployment &&
             !BattleActionModel.EnumerateSupportedPlays(row.GetProperty("Before").Deserialize<BattleTurnState>()!).Any(action =>
