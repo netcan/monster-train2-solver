@@ -1311,6 +1311,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalTomeOfContractsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalEagerConscriptScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Eager Conscript fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalEagerConscriptScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalEffectApplicationsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original effect applications fixture must start on deployment turn.");

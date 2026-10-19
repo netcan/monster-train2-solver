@@ -7424,6 +7424,20 @@ dotnet run --project src/ModelChecks -c Release -- --original-accelerated-incuba
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-accelerated-incubation.mt2f
 ```
 
+### Original Eager Conscript
+
+`full-battle-original-eager-conscript.mt2f` plays two unchanged, one-cost
+Eager Conscript cards in the same room. With no Horde target, the first card
+spawns a Funguy with one Horde; the second finds that unit and raises it to two
+Horde. The fixture checks both native card projections, Ember costs, discard
+routing, same-unit extension and immutable action replay.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-eager-conscript.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-eager-conscript-only tests/fixtures/full-battle-original-eager-conscript.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-eager-conscript.mt2f
+```
+
 ### Original Tome of Contracts
 
 `full-battle-original-tome-of-contracts.mt2f` plays the unchanged one-cost
