@@ -37,6 +37,11 @@ if (args.Length == 1 && args[0] == "--selection-state-pure")
     SelectionStateChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--combat-effects-pure")
+{
+    CombatEffectChecks.Run();
+    return;
+}
 
 if (args.Length == 1 && args[0] == "--conserve-ember-pure")
 {

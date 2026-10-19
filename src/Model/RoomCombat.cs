@@ -1253,6 +1253,21 @@ namespace MonsterTrain2Poju.Model
                             if (filterError != null) return filterError;
                             continue;
                         }
+                        if (effect.Type == "CardEffectAdjustDragonsHoard")
+                        {
+                            CombatContext? context = state.Context;
+                            if (context?.QueryFrame?.DragonsHoard is not int current || context.Resources?.DragonsHoardCap is not int cap ||
+                                context.EnergyState?.PyreAlive == null)
+                                return "Unit Dragon's Hoard effects require captured amount, cap and Pyre liveness.";
+                            if (cap < 0) return "Invalid Dragon's Hoard cap.";
+                            bool changes = Math.Clamp(unchecked(current + effect.Value), 0, cap) != current;
+                            bool scaledUpgrade = (context.CardRegistry ?? Array.Empty<CardInstanceState>())
+                                .Concat(context.CardInstances ?? Array.Empty<CardInstanceState>())
+                                .Any(card => card.UnitUpgradeScalingTraits?.Any(trait => trait.Query.Type == "DragonsHoardAmount") == true);
+                            if (changes && scaledUpgrade)
+                                return "Dragon's Hoard changes with resource-scaled unit upgrades require native stat refresh.";
+                            continue;
+                        }
                         if (effect.Type != "CardEffectRewardGold" && effect.Type != "CardEffectAddBattleCard")
                             return "Unmodeled effect " + effect.Type + " on " + unit.AssetKey + " trigger " +
                                 trigger.Kind + " in room " + state.RoomIndex;
@@ -3283,6 +3298,15 @@ namespace MonsterTrain2Poju.Model
                                     if (unsupportedReason != null) break;
                                 }
                                 Emit("Gold", unit, unit, reward);
+                            }
+                            else if (effect.Type == "CardEffectAdjustDragonsHoard")
+                            {
+                                if (source.Preview || context?.EnergyState?.PyreAlive != true) continue;
+                                StatisticQueryFrame frame = context.QueryFrame!;
+                                int amount = Math.Clamp(unchecked(frame.DragonsHoard!.Value + effect.Value), 0,
+                                    context.Resources!.DragonsHoardCap!.Value);
+                                if (amount != frame.DragonsHoard.Value)
+                                    context = context.WithQueryFrame(frame.With(dragonsHoard: amount));
                             }
                             else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
                                 (effect.Generation?.RequireHandSpace != true || context.Cards.Hand.Count < context.MaxHandSize)) AddCards(unit, effect);

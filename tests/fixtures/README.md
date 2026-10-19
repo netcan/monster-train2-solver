@@ -7682,28 +7682,35 @@ dotnet run --project src/ModelChecks -c Release -- --original-first-imp-bonus-on
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
 ```
 
-`full-battle-original-support-units.mt2f` captures thirteen unchanged original
-units across 29 plays and five EndTurns. It verifies native births/costs and
+`full-battle-original-support-units.mt2f` captures fourteen unchanged original
+units across 31 plays and five EndTurns. It verifies native births/costs and
 spawn triggers for Starter Imp (16 damage through armor), Hollow maximum-health
 increases that preserve current HP, Enoki's +1 Regen/+1 MaxHealth rally, and
 Welder Helper/Aggressive Imp effects. Awoken and Thorned Hollow healing,
 Husk Hermit/Alpha Fiend attack growth, Railbeater's 10-damage hit and one
 Melee Weakness, equipment growth/Valor, and Steelworker postcombat armor are
-also checked against native state. Swordmaiden's captured Equipment DrawType
-is a no-match control: the only equipment remains in hand, outside draw/discard,
-so this archive does not claim a successful native draw. Positive typed-draw
-selection remains covered by the focused pure model checks.
+also checked against native state. Alchemical Assistant is born unchanged at
+10/30 with size 2, then a captured 30-damage control kills it; its native
+OnDeath effect increases Dragon's Hoard from 2 to 3 under a cap of 4.
+Swordmaiden's captured Equipment DrawType is a no-match control: the only
+equipment remains in hand, outside draw/discard, so this archive does not claim
+a successful native draw. Positive typed-draw selection remains covered by the
+focused pure model checks.
 
-The isolated Instant native run took 226.57 seconds with preview RNG isolated;
+The isolated Instant native run took 261.13 seconds with preview RNG isolated;
 it won with CaptureFailures, Mismatches, Unsupported and Pending all zero and
-the protected original files unchanged. The 54,274-byte binary archive has
-10,502 unique nodes and SHA-256
-`378a51489ead4fc3edc05fc5b2b449a153650df43e9e39c0ebd7923b29e82643`.
-The native checks and 128-state serial/parallel search pass.
+the protected original files unchanged. The 57,607-byte binary archive has
+11,444 unique nodes and SHA-256
+`ffb264878c45ddce32190844eacf4ae79f8808fccca945aa8498c1fd9bec6800`.
+The native checks and 128-state serial/parallel search pass. The unit-trigger
+model requires captured Hoard amount, cap and Pyre liveness, and rejects a
+change if any tracked card has a Dragon's Hoard-scaled unit upgrade because
+live stat refresh is not modeled.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-support-units.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-support-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --combat-effects-pure
 dotnet run --project src/ModelChecks -c Release -- --triggered-typed-draw-pure
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-support-units.mt2f
 ```

@@ -37,6 +37,30 @@ internal static class CombatEffectChecks
         var killed = RoomCombatModel.Resolve(new RoomCombatState(0, false, [treasure, player], [], context));
         Require(killed.State!.Context!.Gold == 60 && killed.State.Units.Count == 1,
             "A killed treasure failed to reward gold exactly once.");
+        var hoardContext = new CombatContext(context.Cards, context.BattleRng, context.Gold, context.NextCardId,
+            context.MaxHandSize, queryFrame: new StatisticQueryFrame(dragonsHoard: 2),
+            energyState: new BattleEnergyState(0, 0, 0, "MonsterTurn", true),
+            relics: [], resources: new BattleResourceState(0, 0, 0, 0, context.MaxHandSize, "pyre", 0, 80, 0, 0, [], [], [], dragonsHoardCap: 4));
+        var hoardDeath = new CombatEffect("CardEffectAdjustDragonsHoard", 1, 0, "", 0, [], false);
+        var dyingAssistant = new CombatUnit(3, "assistant", CombatTeam.Player, 0, 1, 1, true, false, false, [],
+            [Trigger("OnDeath", hoardDeath)], spawnerCardId: 3);
+        var attacker = new CombatUnit(4, "attacker", CombatTeam.Enemy, 1, 5, 5, true, false, false, []);
+        RoomCombatResult hoardDeathResult = RoomCombatModel.Resolve(new RoomCombatState(0, false,
+            [dyingAssistant, attacker], [], hoardContext));
+        Require(hoardDeathResult.Supported && hoardDeathResult.State!.Units.All(unit => unit.Id != dyingAssistant.Id) &&
+            hoardDeathResult.State.Context!.QueryFrame!.DragonsHoard == 3 && hoardContext.QueryFrame!.DragonsHoard == 2,
+            "A native unit death must apply its fixed Dragon's Hoard change once without mutating the parent context: supported=" +
+            hoardDeathResult.Supported + ", reason=" + hoardDeathResult.UnsupportedReason + ", units=" + string.Join(",", hoardDeathResult.State?.Units.Select(unit => unit.AssetKey + ":" + unit.Health) ?? []) +
+            ", hoard=" + hoardDeathResult.State?.Context?.QueryFrame?.DragonsHoard + ", parent=" + hoardContext.QueryFrame!.DragonsHoard);
+        CombatContext HoardContext(int amount, bool pyreAlive) => new(context.Cards, context.BattleRng, context.Gold,
+            context.NextCardId, context.MaxHandSize, queryFrame: new StatisticQueryFrame(dragonsHoard: amount),
+            energyState: new BattleEnergyState(0, 0, 0, "MonsterTurn", pyreAlive), relics: [],
+            resources: new BattleResourceState(0, 0, 0, 0, context.MaxHandSize, "pyre", 0, 80, 0, 0, [], [], [], dragonsHoardCap: 4));
+        RoomCombatResult cappedHoard = RoomCombatModel.Resolve(new(0, false, [dyingAssistant, attacker], [], HoardContext(4, true)));
+        RoomCombatResult deadPyreHoard = RoomCombatModel.Resolve(new(0, false, [dyingAssistant, attacker], [], HoardContext(2, false)));
+        Require(cappedHoard.Supported && cappedHoard.State!.Context!.QueryFrame!.DragonsHoard == 4 &&
+            deadPyreHoard.Supported && deadPyreHoard.State!.Context!.QueryFrame!.DragonsHoard == 2,
+            "Unit Dragon's Hoard death effects must clamp at the native cap and skip when the Pyre is dead.");
         var once = new CombatTrigger("PostCombat", true, false, false, 1, [add]);
         var onceUnit = Unit(1, 0, 1, once);
         var onceRoom = new RoomCombatState(0, false, [onceUnit], [], context);
@@ -51,7 +75,7 @@ internal static class CombatEffectChecks
         string expected = JsonSerializer.Serialize(added.State);
         Parallel.For(0, 64, _ => Require(JsonSerializer.Serialize(RoomCombatModel.Resolve(source).State) == expected,
             "Parallel trigger execution differed."));
-        Console.WriteLine("EFFECT-CHECKS PASS: generated cards and RNG, gold, despawn, once triggers, train context and isolation.");
+        Console.WriteLine("EFFECT-CHECKS PASS: generated cards and RNG, gold, death Dragon's Hoard, despawn, once triggers, train context and isolation.");
     }
     private static CombatTrigger Trigger(string kind, CombatEffect effect) => new(kind, false, false, false, 1, [effect]);
     private static CombatUnit Unit(int id, int attack, int health, params CombatTrigger[] triggers) =>

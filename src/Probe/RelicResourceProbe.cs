@@ -74,13 +74,20 @@ namespace MonsterTrain2Poju.Probe
             string[] triggerEffects = cards == null ? Array.Empty<string>() : cards.GetAllCards(new List<CardState>())
                 .SelectMany(card => card.GetCardTriggers()).SelectMany(trigger => trigger.GetCardEffects())
                 .Select(effect => effect.GetEffectStateName()).ToArray();
+            // Spawned units can change save-backed resources from character triggers.
+            string[] unitTriggerEffects = cards == null ? Array.Empty<string>() : cards.GetAllCards(new List<CardState>())
+                .Select(card => card.GetSpawnCharacterData()).Where(character => character != null)
+                .SelectMany(character => character!.GetTriggers()).SelectMany(trigger => trigger.GetEffects())
+                .Select(effect => effect.GetEffectStateName()).ToArray();
             bool dragonHoardCards = cardEffects
                 .Any(effect => effect.GetCardEffect() is IDragonsHoardCardEffect ||
                     effect.GetCardEffect() is CardEffectRewardGoldPerDragonHoard) ||
-                triggerEffects.Contains("CardEffectAdjustDragonsHoard") || triggerEffects.Contains("CardEffectRewardGoldPerDragonHoard");
+                triggerEffects.Contains("CardEffectAdjustDragonsHoard") || triggerEffects.Contains("CardEffectRewardGoldPerDragonHoard") ||
+                unitTriggerEffects.Contains("CardEffectAdjustDragonsHoard") || unitTriggerEffects.Contains("CardEffectRewardGoldPerDragonHoard");
             bool trainHealCards = cardEffects.Any(effect => effect.GetCardEffect() is CardEffectHealTrain);
             runCardResourceObserved |= cardEffects.Any(effect => effect.GetCardEffect() is CardEffectAddRunCard);
-            goldRewardResourceObserved |= cardEffects.Any(effect => effect.GetCardEffect() is CardEffectRewardGold) || triggerEffects.Contains("CardEffectRewardGold");
+            goldRewardResourceObserved |= cardEffects.Any(effect => effect.GetCardEffect() is CardEffectRewardGold) ||
+                triggerEffects.Contains("CardEffectRewardGold") || unitTriggerEffects.Contains("CardEffectRewardGold");
             dragonHoardResourceObserved |= dragonHoardCards;
             trainHealResourceObserved |= trainHealCards;
             grosMichelResourceObserved |= Current(managers).Any(owner => owner.GetRelicDataID() == RelicEndCombatModel.GrosMichelId);

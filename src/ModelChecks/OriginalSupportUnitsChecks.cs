@@ -8,15 +8,15 @@ internal static class OriginalSupportUnitsChecks
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
         "61d9f4f1-80f5-416b-bf22-1836925c8ccd", "5a8399dd-a958-4317-b814-de0e2972ca3d", "a736e605-a4f4-4cc1-8eba-63cb0cf3515e",
-        "64a3fd58-b7b3-466a-be8d-78bb2b9bdea4", "d653e83e-3f70-419d-b3f9-4b920d5c9e56"];
+        "64a3fd58-b7b3-466a-be8d-78bb2b9bdea4", "d653e83e-3f70-419d-b3f9-4b920d5c9e56", "dcfdf8cc-0b0b-41e2-97a2-383fe303e617"];
     internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
     {
         int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
         if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
-        int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 28 ? 2 : 0;
-        int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is 19 or 20 ? index - 18 : -1;
-        int host = index is 21 or 22 ? 11 : index is 23 or 24 ? 12 : index == 25 ? 9 : index == 26 ? 8 : index == 27 ? 10 : 19;
-        int target = index >= 21 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
+        int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 21 or 29 ? 2 : 0;
+        int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is 19 or 20 ? index - 18 : index == 21 ? 3 : -1;
+        int host = index is 22 or 23 ? 11 : index is 24 or 25 ? 12 : index == 26 ? 9 : index == 27 ? 8 : index == 28 ? 10 : 19;
+        int target = index >= 22 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
         var action = new PlayCardAction(ids[index], room, playerPosition: position, targetUnitId: target);
         return BattleActionModel.PlayCard(source, action).Supported ? action : null;
     }
@@ -27,12 +27,12 @@ internal static class OriginalSupportUnitsChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalSupportUnitsIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 29 && actions.Length == 29, "Missing thirteen original births or positive trigger controls.");
+        Require(ids.Length == 31 && actions.Length == 31, "Missing fourteen original births or positive trigger controls.");
         BattleTurnState Before(int i) => actions[i].GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState After(int i) => actions[i].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         CombatUnit Actor(BattleTurnState state, int index) => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[index]);
         static int Stacks(CombatUnit unit, string id) => unit.Status(id)?.Stacks ?? 0;
-        for (int i = 8; i <= 20; i++)
+        for (int i = 8; i <= 21; i++)
         {
             BattleTurnState before = Before(i), after = After(i);
             CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == Originals[i - 8]);
@@ -41,6 +41,16 @@ internal static class OriginalSupportUnitsChecks
                 before.Energy - after.Energy == rule.Cost - (i == 18 ? 4 : 0) && unit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage && unit.Size == template.Size,
                 "Original support unit identity, paid cost, raw attack or size differs.");
             if (i is 11 or 12) Require(unit.Health == 25 && unit.MaxHealth == 85, "Hollow birth must add sixty maximum HP without healing current HP.");
+            if (i == 21)
+            {
+                CombatTrigger onDeath = template.Triggers.Single(trigger => trigger.Kind == "OnDeath");
+                PlayCardAction action = actions[i].GetProperty("Action").Deserialize<PlayCardAction>()!;
+                Require(action.RoomIndex == 2 && action.PlayerPosition == 3 &&
+                    rule.AssetKey == "AlchemicalAssistant" && unit.AssetKey == "MonsterAlchemicalAssistant" &&
+                    unit.Health == 30 && unit.MaxHealth == 30 && unit.Modifiers.AttackDamage == 10 && unit.Size == 2 &&
+                    onDeath.Effects.Single().Type == "CardEffectAdjustDragonsHoard" && onDeath.Effects.Single().Value == 1,
+                    "Alchemical Assistant must preserve its original 10/30 spawn and untriggered Dragon's Hoard OnDeath definition.");
+            }
         }
         Require(Stacks(Actor(After(16), 1), "armor") - Stacks(Actor(Before(16), 1), "armor") == 20,
             "Welder Helper must positively armor the existing front ally.");
@@ -63,23 +73,23 @@ internal static class OriginalSupportUnitsChecks
         CombatEffect typedDraw = Before(20).PlayRules!.Cards.Single(rule => rule.DataId == Originals[12]).SpawnUnit!.Triggers
             .SelectMany(trigger => trigger.Effects).Single(effect => effect.Action?.Type == "DrawType");
         Require(typedDraw.Action!.TypedDraw?.CardType == "Equipment" && typedDraw.Action.Value == 1 &&
-            drawBefore.Hand.Any(card => card.InstanceId == ids[28]) && !drawBefore.Draw.Concat(drawBefore.Discard).Any(card => card.InstanceId == ids[28]) &&
-            drawAfter.Hand.Any(card => card.InstanceId == ids[28]) && !drawAfter.Draw.Concat(drawAfter.Discard).Any(card => card.InstanceId == ids[28]),
+            drawBefore.Hand.Any(card => card.InstanceId == ids[29]) && !drawBefore.Draw.Concat(drawBefore.Discard).Any(card => card.InstanceId == ids[29]) &&
+            drawAfter.Hand.Any(card => card.InstanceId == ids[29]) && !drawAfter.Draw.Concat(drawAfter.Discard).Any(card => card.InstanceId == ids[29]),
             "Swordmaiden's captured equipment draw must leave unmatched hand equipment untouched when no eligible card is in deck or discard.");
-        Require(Actor(After(22), 11).Health - Actor(Before(22), 11).Health == 10 && Actor(After(22), 13).Modifiers!.AttackDamage - Actor(Before(22), 13).Modifiers!.AttackDamage == 3 &&
-            Actor(After(22), 13).MaxHealth - Actor(Before(22), 13).MaxHealth == 3, "Awoken Hollow healing must buff the weakest current-HP ally by +3/+3.");
-        Require(Actor(After(24), 12).Health - Actor(Before(24), 12).Health == 10 && Stacks(Actor(After(24), 12), "spikes") - Stacks(Actor(Before(24), 12), "spikes") == 4,
+        Require(Actor(After(23), 11).Health - Actor(Before(23), 11).Health == 10 && Actor(After(23), 13).Modifiers!.AttackDamage - Actor(Before(23), 13).Modifiers!.AttackDamage == 3 &&
+            Actor(After(23), 13).MaxHealth - Actor(Before(23), 13).MaxHealth == 3, "Awoken Hollow healing must buff the weakest current-HP ally by +3/+3.");
+        Require(Actor(After(25), 12).Health - Actor(Before(25), 12).Health == 10 && Stacks(Actor(After(25), 12), "spikes") - Stacks(Actor(Before(25), 12), "spikes") == 4,
             "Thorned Hollow must positively gain four Spikes when healed.");
-        Require(Actor(Before(25), 9).Health - Actor(After(25), 9).Health == 1 && Actor(After(25), 9).Modifiers!.AttackDamage - Actor(Before(25), 9).Modifiers!.AttackDamage == 3,
+        Require(Actor(Before(26), 9).Health - Actor(After(26), 9).Health == 1 && Actor(After(26), 9).Modifiers!.AttackDamage - Actor(Before(26), 9).Modifiers!.AttackDamage == 3,
             "Husk Hermit must gain three raw attack from the selected hit.");
-        Require(Actor(After(26), 8).Modifiers!.AttackDamage - Actor(Before(26), 8).Modifiers!.AttackDamage == 15,
+        Require(Actor(After(27), 8).Modifiers!.AttackDamage - Actor(Before(27), 8).Modifiers!.AttackDamage == 15,
             "Alpha Fiend must gain fifteen attack before its native forced attack.");
-        CombatUnit railVictimBefore = Before(27).Spawn.Train.Rooms[0].Units.Single(unit => unit.AssetKey == "ShieldGuardT1_BasicNonAttack"),
-            railVictimAfter = After(27).Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == railVictimBefore.Id);
+        CombatUnit railVictimBefore = Before(28).Spawn.Train.Rooms[0].Units.Single(unit => unit.AssetKey == "ShieldGuardT1_BasicNonAttack"),
+            railVictimAfter = After(28).Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == railVictimBefore.Id);
         Require(railVictimBefore.Health - railVictimAfter.Health == 10 && Stacks(railVictimBefore, "melee weakness") == 0 &&
             Stacks(railVictimAfter, "melee weakness") == 1,
             "Railbeater must land its native ten-damage hit and leave one Melee Weakness on the victim.");
-        BattleTurnState equipmentBefore = Before(28), equipmentAfter = After(28);
+        BattleTurnState equipmentBefore = Before(29), equipmentAfter = After(29);
         CardPlayRule equipment = equipmentBefore.PlayRules!.Cards.Single(rule => rule.DataId == "f1c2a098-e20d-4587-b8de-5bef315de42d");
         Require(Actor(equipmentAfter, 19).Modifiers!.AttackDamage - Actor(equipmentBefore, 19).Modifiers!.AttackDamage == equipment.Equipment!.Upgrades.Sum(upgrade => upgrade.Stats.Damage) + 3 &&
             Actor(equipmentAfter, 19).MaxHealth - Actor(equipmentBefore, 19).MaxHealth == 3 &&
@@ -90,8 +100,17 @@ internal static class OriginalSupportUnitsChecks
         TrainCombatState combatBefore = phase.GetProperty("Before").Deserialize<TrainCombatState>()!, combatAfter = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
         Require(combatAfter.Rooms[1].Units.Where(unit => unit.Team == CombatTeam.Player && unit.SpawnerCardId != ids[1]).All(unit =>
             Stacks(unit, "armor") - Stacks(combatBefore.Rooms[1].Units.Single(prior => prior.Id == unit.Id), "armor") == 6), "Steelworker needs positive postcombat room armor.");
+        BattleTurnState alchemicalDeathBefore = Before(30), alchemicalDeathAfter = After(30);
+        PlayCardAction alchemicalDeath = actions[30].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatContext hoardBefore = alchemicalDeathBefore.Spawn.Train.Context!, hoardAfter = alchemicalDeathAfter.Spawn.Train.Context!;
+        int amount = hoardBefore.QueryFrame!.DragonsHoard!.Value, cap = hoardBefore.Resources!.DragonsHoardCap!.Value;
+        Require(alchemicalDeath.RoomIndex == 2 && alchemicalDeath.TargetUnitId == Actor(alchemicalDeathBefore, 21).Id &&
+            alchemicalDeathBefore.PlayRules!.Cards.Single(rule => rule.DataId == "ac110058-0000-4000-8000-000000000008").Effects.Single().Value == 30 &&
+            !alchemicalDeathAfter.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.SpawnerCardId == ids[21]) &&
+            hoardBefore.EnergyState!.PyreAlive && cap == 4 && amount == 2 && hoardAfter.QueryFrame!.DragonsHoard == Math.Min(amount + 1, cap),
+            "Alchemical Assistant must be killed by the captured 30-damage control and apply its native capped Dragon's Hoard death effect.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-SUPPORT-UNITS PASS: thirteen unchanged units, positive spawn/rally/heal/hit/attack/equipment/postcombat callbacks, native no-match typed-draw control and 16 immutable full chains.");
+        Console.WriteLine("ORIGINAL-SUPPORT-UNITS PASS: fourteen unchanged units, Alchemical Assistant native spawn/death with capped Dragon's Hoard, positive spawn/rally/heal/hit/attack/equipment/postcombat callbacks, native no-match typed-draw control and 16 immutable full chains.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }
