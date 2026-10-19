@@ -1523,9 +1523,10 @@ The status-null effect accepts empty targets and changes no native state/RNG;
 the distinct `CardEffectNULL` target test and forwarding behavior are retained.
 Native 0/29/30/60-gold tests, three exact draws, two upgrade schedules, complete
 states/RNG, sixteen independent chains and bounded search are checked. The
-39-stage win has eighteen plays/five EndTurns and zero errors. Binary-only:
-31,956 bytes/4,935 nodes, SHA-256
-`f62a818287da12b6032610608afd6225f255a8dd2d7d481d0ff355c1e790aa7b`.
+39-stage win has eighteen plays/five EndTurns and zero errors. All three
+original plays match the frozen definition. Binary-only: 34,638 bytes/5,249
+nodes, SHA-256
+`111925c2c7e9c5c43f1b8953a77b7286494908a820b352d80f75e57195282a1a`.
 Use `-SoldierOfFortune` and `--soldier-of-fortune-only`. The scenario strengthens
 training recipients before the root; the original spell definition is unchanged.
 

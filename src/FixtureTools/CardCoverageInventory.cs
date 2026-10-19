@@ -420,6 +420,11 @@ internal static class CardCoverageInventory
         if (trait.GetProperty("Float").GetDouble() != 0 || Flag(trait, "Scaling")) return false;
         if (type == "CardTraitScalingAddEffectApplications") return value == 1 && Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitScalingBuffDamage") return value == 4 && Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn";
+        if (cardId == "fbf7e58a-9369-49d8-ba1a-782fbcaf6498" && type == "CardTraitShowCardTargets")
+            return value == 0 && trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
+                !Flag(trait, "Bool") && Text(trait, "Str") == "" && Text(trait, "TrackedValue") == "SubtypeInDeck" &&
+                Text(trait, "EntryDuration") == "ThisTurn" && Text(trait, "SpecificCardDataId") == "" &&
+                Text(trait, "StatusQueryTeam") == "" && !Strings(trait, "StatusQueryStatuses").Any() && !Strings(trait, "StatusEffectIds").Any();
         if (type == "CardTraitShowCardTargets") return value == 0 && Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitIncreaseCostOfCardsInHand") return value == 1 &&
             (Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "HandCostTargetType") is "Spell" or "Monster" or "TrainRoomAttachment" or "Equipment" ||

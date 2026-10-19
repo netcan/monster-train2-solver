@@ -865,6 +865,9 @@ boundaries, eighteen plays/five EndTurns, sixteen independent chains and bounded
 search are checked; the 39-stage win has zero errors. Use `-SoldierOfFortune`
 and `--soldier-of-fortune-only`. Recipient training stats are authored before
 the root; the original spell's effects, costs and traits remain unchanged.
+The refreshed schema-103 archive is 34,638 bytes with 5,249 unique nodes and
+SHA-256 `111925c2c7e9c5c43f1b8953a77b7286494908a820b352d80f75e57195282a1a`;
+all three original plays match the frozen definition.
 
 `full-battle-forced-feeding.mt2f` adds unchanged Feast to the feeding witness.
 The spell rejects deployment, permits a no-feeder cast, and consumes only its
