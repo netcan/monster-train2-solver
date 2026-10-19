@@ -627,6 +627,8 @@ internal static class BattleActionChecks
             chooser = source => OriginalMoonRitualChecks.Choose(source, fixture.GetProperty("OriginalMoonRitualCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalSelfPurgeEnergyGainPrepared", out var originalSelfPurgeEnergyGainPrepared) && originalSelfPurgeEnergyGainPrepared.GetBoolean())
             chooser = source => OriginalSelfPurgeEnergyGainChecks.Choose(source, fixture.GetProperty("OriginalSelfPurgeEnergyGainCardIds").Deserialize<int[]>()!);
+        if (fixture.TryGetProperty("OriginalSmeltedTreasurePrepared", out var originalSmeltedTreasurePrepared) && originalSmeltedTreasurePrepared.GetBoolean())
+            chooser = source => OriginalSmeltedTreasureChecks.Choose(source, fixture.GetProperty("OriginalSmeltedTreasureCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("GoldmancePrepared", out var goldmancePrepared) && goldmancePrepared.GetBoolean())
             chooser = source => GoldmanceChecks.Choose(source, fixture.GetProperty("GoldmanceCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("EngineUpgradePrepared", out var engineUpgradePrepared) && engineUpgradePrepared.GetBoolean())

@@ -741,6 +741,15 @@ records. Binary-only: 24,729 bytes, 3,151 unique nodes, SHA-256
 `c1fe47c31108449270b62500581c174e31da3b17c539c973056e3f0e0b1fae03`. Empty
 draw-pile behavior and repeated Consume plays are not covered.
 
+`full-battle-original-smelted-treasure.mt2f` plays unchanged one-cost Smelted
+Treasure on a controlled friendly Train Steward. Its native effects spend 50
+of 100 gold before adding 50 Armor. The 37-stage win (two plays/five EndTurns),
+dedicated check, full action-policy replay and 26-state search pass with zero
+capture failures, mismatches, unsupported transitions or pending records.
+Binary-only: 26,015 bytes, 3,126 unique nodes, SHA-256
+`5f2ec42a4dcdc37432d51b1bb33c42392b01d3e8eb8a566362e109dd2b2544c8`. Other
+payment values and target combinations are not covered.
+
 `full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
 Spike of the Legion. Card modifier resolution preserves the all-status filter.
 Proliferate adds two Rage/Regen to both same-floor units; Glow Up moves its

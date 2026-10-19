@@ -1380,6 +1380,18 @@ controlled draw and one energy-cap state are evidenced; empty-deck and repeated
 Consume behavior are not claimed. Use `-OriginalSelfPurgeEnergyGain` and
 `--original-self-purge-energy-gain-only`.
 
+`full-battle-original-smelted-treasure.mt2f` plays unchanged one-cost Smelted
+Treasure on a controlled friendly Train Steward. Its native ordered effects
+debit 50 gold before adding 50 Armor. The 37-stage native win has two card plays
+and five EndTurns, with zero capture failures, mismatches, unsupported
+transitions or pending records. Its focused checker, action-policy replay and
+26-state serial/parallel search pass. Binary-only: 26,015 bytes, 3,126 unique
+nodes, SHA-256
+`5f2ec42a4dcdc37432d51b1bb33c42392b01d3e8eb8a566362e109dd2b2544c8`. This
+covers one sufficient-gold state and one friendly target; other payment values
+and target combinations are not claimed. Use `-OriginalSmeltedTreasure` and
+`--original-smelted-treasure-only`.
+
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation
 filter. Two same-floor units gain two Rage/Regen; the selected Glow Up target
