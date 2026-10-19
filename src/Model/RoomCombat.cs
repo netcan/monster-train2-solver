@@ -1117,6 +1117,12 @@ namespace MonsterTrain2Poju.Model
                             if (filter != null) return filter;
                             continue;
                         }
+                        if (effect.Type == "CardEffectDrawType")
+                        {
+                            string? drawError = TriggeredTypedDrawModel.Validate(state.Context, effect);
+                            if (drawError != null) return drawError;
+                            continue;
+                        }
                         if (EnergyModel.IsNativeEffect(effect.Type) || effect.Type == "CardEffectDrawAdditionalNextTurn" || effect.Type == "CardEffectAdjustRoomCapacity" || effect.Type == "CardEffectAdjustForgePoints")
                         {
                             CardActionEffect? energy = effect.Action;
@@ -1157,6 +1163,13 @@ namespace MonsterTrain2Poju.Model
                                 return "Unmodeled triggered null-effect target forwarding.";
                             string? filter = action.Target == "Self" ? null : action.Filters?.Validate();
                             if (filter != null) return filter;
+                            continue;
+                        }
+                        if (TriggeredHealthModel.IsEffect(effect.Type))
+                        {
+                            string? healthError = TriggeredHealthModel.Validate(effect);
+                            if (healthError != null) return healthError;
+                            if (state.Context == null) return "Triggered maximum health requires shared battle context.";
                             continue;
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
@@ -3846,6 +3859,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type is "AdjustMaxHealth" or "BuffHealth" ? true :
                 action.Type == "Null" ? targets.UnitIds.Count > 0 || action.NullTargetless :
                 action.Type == "TransferAllStatusesFromUnit" ? targets.UnitIds.Count > 0 && TriggeredStatusTransferModel.Validate(action) == null :
                 action.Type == "RemoveStatus" ? StatusRemovalModel.Test(CurrentRoom(), action, targets.UnitIds) :
@@ -3853,7 +3867,7 @@ namespace MonsterTrain2Poju.Model
                 action.Type == "AdjustCapacity" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true &&
                     RoomCapacityModel.Test(context, source.RoomIndex, units.Any(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy), action.OnlyIfNoEnemies) :
                 action.Type == ForgePointsModel.Effect ? ForgePointsModel.Test(ForgePointsPyreAlive()) :
-                action.Type == "DrawNextTurn" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true :
+                action.Type is "DrawNextTurn" or "DrawType" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true :
                 EnergyModel.IsEffect(action.Type) ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true && EnergyModel.Test(context, action.Type) :
                 action.Type == "Damage" ? amount >= 0 && (action.Range == null || action.Range.Max > 0) &&
                     (action.Target != "DropTargetCharacter" || targets.UnitIds.Count > 0) :
@@ -3880,6 +3894,19 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId)
             {
                 CardActionEffect action = effect.Action!;
+                if (action.Type == "DrawType")
+                {
+                    if (source.Preview || battleWon || context?.AllScenarioBossesDead == true) return true;
+                    string? drawError = TriggeredTypedDrawModel.Validate(context, effect);
+                    if (drawError != null) { unsupportedReason = drawError; return false; }
+                    // Character trigger effects have no parent/played card. Native draws
+                    // use that null source rather than attributing them to the unit card.
+                    TypedDrawResult drawn = TypedDrawModel.Draw(context!, action.TypedDraw!, SampleActionAmount(action), 0);
+                    if (!drawn.Supported) { unsupportedReason = drawn.UnsupportedReason; return false; }
+                    context = drawn.Context;
+                    foreach (int id in drawn.DrawnCardIds) Emit("DrawType", actor, actor, id);
+                    return true;
+                }
                 if (action.Type == "AdjustPyreAttack")
                 {
                     if (source.Preview) return true;
@@ -3992,6 +4019,32 @@ namespace MonsterTrain2Poju.Model
                 }
                 int amount = action.Type == "AdjustCapacity" || action.Type == ForgePointsModel.Effect && source.Preview
                     ? action.Value : SampleActionAmount(action);
+                if (action.Type is "AdjustMaxHealth" or "BuffHealth")
+                {
+                    string? healthError = TriggeredHealthModel.Validate(effect);
+                    if (healthError != null) { unsupportedReason = healthError; return false; }
+                    foreach (int id in targets.UnitIds)
+                    {
+                        WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == id);
+                        if (target == null) continue;
+                        if (!target.Alive) { unsupportedReason = "Retained dying maximum-health targets require native calibration."; return false; }
+                        if (action.Type == "AdjustMaxHealth")
+                        {
+                            CombatUnit? changed = TriggeredHealthModel.Adjust(target.Freeze(), amount);
+                            if (changed == null) { unsupportedReason = "Maximum-health adjustment lowers maximum below current health."; return false; }
+                            target.Apply(changed);
+                        }
+                        else
+                        {
+                            RoomCombatResult changed = UnitHealthModel.Apply(CurrentRoom(), id, amount, lifetime: action.Lifetime);
+                            if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
+                            context = changed.State!.Context;
+                            foreach (CombatUnit unit in changed.State.Units) units.First(current => current.Source.Id == unit.Id).Apply(unit);
+                        }
+                        Emit(action.Type, actor, target, amount);
+                    }
+                    return true;
+                }
                 if (action.Type == "AdjustCapacity")
                 {
                     RoomCapacityResult adjusted = RoomCapacityModel.Apply(context!, source.RoomIndex, action);

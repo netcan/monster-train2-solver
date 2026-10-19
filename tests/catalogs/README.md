@@ -1,7 +1,7 @@
 # Original card definition catalog
 
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
-and component fixtures. It does not increase their 520-archive acceptance count.
+and component fixtures. It does not increase their curated acceptance count.
 
 The isolated `no-cards` run on 2026-10-19 inspected all 668 unique
 `AllGameData.GetAllCardData()` definitions from game module
@@ -23,15 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-062209-c1108340/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,810 bytes, SHA-256
-`4dc05bdeae326c25fed71a5eaf16c09a740f58c3f33f0a0dd082554531a43875`.
-The projection reflects revision `a057684`. Ancient Synergy's damage trait now
-captures `QueryCardType=Spell`, required to identify its native TypeInDeck
-filter. This is the only new raw field; all prior fields across 668 cards match.
-Null fields are omitted on unrelated source traits. Native frame 13801/13801,
-all RNG and decision state remain unchanged; the baseline won in 44.20 seconds
-with all counters zero. Greed, Golden Touch and Bonk retain their fixed
+Source: `.probe-runs/full-battle-no-cards-20261019-080544-5c85bf11/card-catalog.mt2f`.
+The committed archive is byte-identical: 95,987 bytes, SHA-256
+`4561be9d6ceccf632351f6be15a4bd4b338399230b7553458a2e291391ea4ec9`.
+The projection includes triggered maximum-health and typed-draw effects. All
+raw fields across 668 cards match the previous frozen catalog; only model
+projections change. Native frame 13109/13109, all RNG and decision state remain
+unchanged; the surrounding baseline won with all counters zero.
+Ancient Synergy retains `QueryCardType=Spell` for its native TypeInDeck filter.
+Greed, Golden Touch and Bonk retain their fixed
 card-owned resource kill effects.
 Original Surgical Strike retains its source-card self-copy and original
 temporary Ephemeral upgrade. Its source suppression trait retains `KillTargetTeam=Monsters` and

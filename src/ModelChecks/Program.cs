@@ -461,6 +461,22 @@ if (args.Length == 1 && args[0] == "--status-callback-pure")
     StatusCallbackChecks.Run();
     return;
 }
+if (args.Length == 1 && args[0] == "--triggered-typed-draw-pure")
+{
+    TriggeredTypedDrawChecks.Run();
+    return;
+}
+if (args.Length == 1 && args[0] == "--triggered-health-pure")
+{
+    TriggeredHealthChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-support-units-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalSupportUnitsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--attack-override-pure")
 {
     AttackOverrideChecks.Run();

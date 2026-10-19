@@ -1,0 +1,78 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using BepInEx.Logging;
+using HarmonyLib;
+using MonsterTrain2Poju.Model;
+
+namespace MonsterTrain2Poju.Probe
+{
+    internal static class OriginalSupportUnitsScenario
+    {
+        internal const string Name = "original-support-units";
+        internal static readonly string[] Originals = { "4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
+            "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
+            "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
+            "61d9f4f1-80f5-416b-bf22-1836925c8ccd", "5a8399dd-a958-4317-b814-de0e2972ca3d", "a736e605-a4f4-4cc1-8eba-63cb0cf3515e",
+            "64a3fd58-b7b3-466a-be8d-78bb2b9bdea4", "d653e83e-3f70-419d-b3f9-4b920d5c9e56" };
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Prepared { get; private set; }
+        internal static int[] CardIds { get; private set; } = Array.Empty<int>();
+        private static ManualLogSource? logger;
+        private static string? lastRejection;
+        internal static void Prepare(AllGameManagers managers, ManualLogSource log)
+        {
+            logger = log;
+            SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
+            Set(all.GetBalanceData(), "maxHandSize", 40);
+            CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
+            Set(steward, "cost", 0); Set(anchor, "attackDamage", 0); Set(anchor, "health", 500); Set(anchor, "size", 1);
+            foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
+            foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
+            cards.GetDrawPile().Clear();
+            CardData Control(int suffix, string effectName, int value, Team.Type team, TargetMode mode)
+            {
+                CardData data = UnityEngine.Object.Instantiate(all.GetAllCardData().First(card => card.GetCardType() == CardType.Spell));
+                data.name = "PojuSupportUnitControl" + suffix; Set(data, "id", "ac110058-0000-4000-8000-" + suffix.ToString("D12"));
+                Set(data, "cost", 0); Set(data, "costType", CardData.CostType.Default); Set(data, "targetless", mode != TargetMode.DropTargetCharacter); Set(data, "targetsRoom", true);
+                Set(data, "traits", new List<CardTraitData>()); Set(data, "startingUpgrades", new List<CardUpgradeData>());
+                Set(data, "triggers", new List<CardTriggerEffectData>()); Set(data, "effectTriggers", new List<CharacterTriggerData>());
+                var effect = new CardEffectData(effectName, null!, team); effect.Cheat_SetTargetMode(mode); Set(effect, "paramInt", value);
+                Set(data, "effects", new List<CardEffectData> { effect });
+                ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(all)).Add(data); return data;
+            }
+            CardData energy = Control(1, "CardEffectGainEnergy", 30, Team.Type.None, TargetMode.Room),
+                capacity = Control(2, "CardEffectAdjustRoomCapacity", 30, Team.Type.Monsters, TargetMode.Room),
+                enemyHealth = Control(3, "CardEffectBuffMaxHealth", 200, Team.Type.Heroes, TargetMode.Room),
+                wound = Control(4, "CardEffectDamage", 10, Team.Type.Monsters, TargetMode.DropTargetCharacter),
+                heal = Control(5, "CardEffectHeal", 10, Team.Type.Monsters, TargetMode.DropTargetCharacter),
+                hit = Control(6, "CardEffectDamage", 1, Team.Type.Monsters, TargetMode.DropTargetCharacter),
+                attack = Control(7, "CardEffectAttackWithUnit", 0, Team.Type.Monsters, TargetMode.DropTargetCharacter);
+            CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
+            CardState AddToDiscard(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.DiscardPile, false, false, animate: false);
+            CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()), Add(capacity.GetID()), Add(capacity.GetID()), Add(capacity.GetID()), Add(enemyHealth.GetID()) }
+                .Concat(Originals.Select(Add)).Concat(new[] { Add(wound.GetID()), Add(heal.GetID()), Add(wound.GetID()), Add(heal.GetID()), Add(hit.GetID()), Add(attack.GetID()), Add(attack.GetID()),
+                    AddToDiscard("f1c2a098-e20d-4587-b8de-5bef315de42d") }).ToArray();
+            foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
+            CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
+            AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
+            Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
+            log.LogInfo("ORIGINAL-SUPPORT-UNITS-PREPARED thirteen unchanged originals; positive spawn, rally, heal, hit, attack, equipment growth and unmatched typed-draw control.");
+        }
+        internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
+        {
+            int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
+            if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
+            int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 28 ? 2 : 0;
+            int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is 19 or 20 ? index - 18 : -1;
+            int host = index is 21 or 22 ? 11 : index is 23 or 24 ? 12 : index == 25 ? 9 : index == 26 ? 8 : index == 27 ? 10 : 19;
+            int target = index >= 21 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
+            var action = new PlayCardAction(ids[index], room, playerPosition: position, targetUnitId: target);
+            BattleActionResult result = BattleActionModel.PlayCard(source, action);
+            if (result.Supported) return action;
+            if (lastRejection != result.Reason) { lastRejection = result.Reason; logger?.LogInfo("ORIGINAL-SUPPORT-UNITS-REJECT index=" + index + " reason=" + result.Reason); }
+            return null;
+        }
+        private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
+    }
+}

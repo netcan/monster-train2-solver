@@ -11343,3 +11343,40 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-fro
 dotnet run --project src/ModelChecks -c Release -- --original-front-room-health-upgrade-only tests/fixtures/full-battle-original-front-room-health-upgrade.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-front-room-health-upgrade.mt2f
 ```
+
+### Original support units and typed draws
+
+`full-battle-original-support-units.mt2f` captures thirteen unchanged units in
+29 native plays. New trigger projections cover additive maximum health without
+healing, unit spawn damage and other unit-triggered effects. The original run
+proves Starter Imp's 16 damage is absorbed by front armor, Hollow births gain
+60 maximum HP while staying at 25 current HP, Amorous Enoki adds Regen and
+maximum health on later births, and healing/attack/equipment/postcombat
+callbacks match native fields. Railbeater's captured attack is 10 damage and
+leaves one Melee Weakness; it does not consume that status in the same action.
+
+Character-triggered `CardEffectDrawType` now captures its Equipment filter and
+routes through the typed-draw model. The native Swordmaiden action is a
+no-match control because the equipment card remains in hand, not in draw or
+discard; positive selection/order behavior is covered by focused pure checks,
+not claimed as a native positive draw. Full-hand, preview, blocked-draw,
+no-match and RNG/immutability branches remain guarded.
+
+The isolated Instant battle won in 226.57 seconds with preview RNG isolated,
+29 actions, five EndTurns, zero capture failures/mismatches/unsupported/pending
+records and protected files unchanged. The binary fixture has 10,502 nodes,
+54,274 bytes and SHA-256
+`378a51489ead4fc3edc05fc5b2b449a153650df43e9e39c0ebd7923b29e82643`.
+Native archive checks, pure typed-draw checks and 128-state serial/parallel
+search pass. The frozen 668-definition card catalog was refreshed after the
+typed-draw projection: all raw definition fields match, while native decision
+state, RNG and frame remained unchanged.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -CardCatalog -SkipBuild
+pwsh -NoProfile -File .probe-runs/Compare-CardCatalogs.ps1 -NewCatalog .probe-runs/full-battle-no-cards-20261019-080544-5c85bf11/card-catalog.mt2f
+pwsh -NoProfile -File scripts/Get-CardCoverageInventory.ps1
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-support-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --triggered-typed-draw-pure
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-support-units.mt2f
+```

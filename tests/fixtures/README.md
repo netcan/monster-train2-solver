@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current accepted inventory (2026-10-19): 536 archives (496 full battles and
+Current accepted inventory (2026-10-19): 537 archives (497 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,7 +14,7 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-536 accepted archives. Refresh/check the index with
+537 accepted archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
 `full-battle-original-attack-overrides.mt2f` captures unchanged Irontongue and
@@ -7331,4 +7331,30 @@ owners, sixteen campaign owners and one native no-op owner.
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-first-imp-bonus.mt2f
 dotnet run --project src/ModelChecks -c Release -- --original-first-imp-bonus-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
+```
+
+`full-battle-original-support-units.mt2f` captures thirteen unchanged original
+units across 29 plays and five EndTurns. It verifies native births/costs and
+spawn triggers for Starter Imp (16 damage through armor), Hollow maximum-health
+increases that preserve current HP, Enoki's +1 Regen/+1 MaxHealth rally, and
+Welder Helper/Aggressive Imp effects. Awoken and Thorned Hollow healing,
+Husk Hermit/Alpha Fiend attack growth, Railbeater's 10-damage hit and one
+Melee Weakness, equipment growth/Valor, and Steelworker postcombat armor are
+also checked against native state. Swordmaiden's captured Equipment DrawType
+is a no-match control: the only equipment remains in hand, outside draw/discard,
+so this archive does not claim a successful native draw. Positive typed-draw
+selection remains covered by the focused pure model checks.
+
+The isolated Instant native run took 226.57 seconds with preview RNG isolated;
+it won with CaptureFailures, Mismatches, Unsupported and Pending all zero and
+the protected original files unchanged. The 54,274-byte binary archive has
+10,502 unique nodes and SHA-256
+`378a51489ead4fc3edc05fc5b2b449a153650df43e9e39c0ebd7923b29e82643`.
+The native checks and 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-support-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-support-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --triggered-typed-draw-pure
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-support-units.mt2f
 ```
