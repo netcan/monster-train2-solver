@@ -1415,6 +1415,17 @@ Multiple living enemies, multi-card discard choices and Poison triggers remain
 outside this fixture. Use `-OriginalStarterFrostbiteDiscard` and
 `--original-starter-frostbite-discard-only`.
 
+`full-battle-original-feeding-frenzy.mt2f` plays unchanged one-cost Feeding
+Frenzy in a room with one living enemy. Its ordered effects add one Dazed, then
+discard the single eligible controlled Train Steward; the played spell also
+enters discard. The 37-stage native win (two plays/five EndTurns), dedicated
+check, action-policy replay and 128-state search pass with zero capture
+failures, mismatches, unsupported transitions or pending records. Binary-only:
+25,882 bytes, 3,155 unique nodes, SHA-256
+`d24d7308ba68de04d6dfb2e8aff1180763a4896056922b72c29ff889188c0086`. Other
+room sizes and discarding multiple hand cards are not covered. Use
+`-OriginalFeedingFrenzy` and `--original-feeding-frenzy-only`.
+
 `full-battle-original-pyre-gro.mt2f` plays unchanged zero-cost PyreGro. Its
 native ordered effects reduce next-turn draw by two and add one recurring
 energy, then the original Consume trait exhausts the spell. The 37-stage native

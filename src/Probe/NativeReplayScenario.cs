@@ -1149,6 +1149,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalStarterFrostbiteDiscardScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalFeedingFrenzyScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Feeding Frenzy fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalFeedingFrenzyScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoonCardUpgradesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original moon card upgrades must start on deployment turn.");
@@ -2593,6 +2599,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalDeadlyVariantScenario.Enabled) pendingPlay = OriginalDeadlyVariantScenario.Choose(decision, OriginalDeadlyVariantScenario.CardIds);
                 if (OriginalDrainScenario.Enabled) pendingPlay = OriginalDrainScenario.Choose(decision, OriginalDrainScenario.CardIds);
                 if (OriginalStarterFrostbiteDiscardScenario.Enabled) pendingPlay = OriginalStarterFrostbiteDiscardScenario.Choose(decision, OriginalStarterFrostbiteDiscardScenario.CardIds);
+                if (OriginalFeedingFrenzyScenario.Enabled) pendingPlay = OriginalFeedingFrenzyScenario.Choose(decision, OriginalFeedingFrenzyScenario.CardIds);
                 if (GoldmanceScenario.Enabled) pendingPlay = GoldmanceScenario.Choose(decision, GoldmanceScenario.CardIds);
                 if (EngineUpgradeScenario.Enabled) pendingPlay = EngineUpgradeScenario.Choose(decision, EngineUpgradeScenario.CardIds);
                 if (StewardsQuartersScenario.Enabled) pendingPlay = StewardsQuartersScenario.Choose(decision, StewardsQuartersScenario.CardIds);
