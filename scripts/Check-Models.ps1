@@ -454,7 +454,20 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'physical-plane-calibration.mt2f', 'card-upgrade-mask-calibration.mt2f',
     'card-modifier-overflow-calibration.mt2f', 'card-trait-composition-calibration.mt2f',
     'card-status-composition-calibration.mt2f', 'card-owned-mask-calibration.mt2f',
-    'card-upgrade-lifecycle-calibration.mt2f', 'relic-card-upgrade-calibration.mt2f', 'moon-card-upgrade-calibration.mt2f')
+    'card-upgrade-lifecycle-calibration.mt2f', 'relic-card-upgrade-calibration.mt2f', 'moon-card-upgrade-calibration.mt2f',
+    'full-battle-original-deep-offering.mt2f', 'full-battle-original-molded.mt2f',
+    'full-battle-original-broken-memories.mt2f', 'full-battle-original-wicked-blaze.mt2f',
+    'full-battle-original-offering-token.mt2f', 'full-battle-original-moon-ritual.mt2f',
+    'full-battle-original-self-purge-energy-gain.mt2f', 'full-battle-original-smelted-treasure.mt2f',
+    'full-battle-original-pyre-gro.mt2f', 'full-battle-original-deadly-variant.mt2f',
+    'full-battle-original-drain.mt2f', 'full-battle-original-starter-frostbite-discard.mt2f',
+    'full-battle-original-feeding-frenzy.mt2f', 'full-battle-original-titans-gratitude.mt2f',
+    'full-battle-original-minds-of-their-own.mt2f', 'full-battle-original-metallurgy.mt2f',
+    'full-battle-original-fertile-ground.mt2f', 'full-battle-original-cover-of-night.mt2f',
+    'full-battle-original-waxen-spike.mt2f', 'full-battle-original-imp-pressive.mt2f',
+    'full-battle-original-tome-of-evergrowth.mt2f', 'full-battle-original-tome-of-the-lost-path.mt2f',
+    'full-battle-original-rapid-raise.mt2f', 'full-battle-original-spawning-pods.mt2f',
+    'full-battle-original-make-it-rain.mt2f')
 $selectedFixtureNames = $fixtureNames
 if ($Fixture.Count -gt 0) {
     $selectedFixtureNames = @($Fixture | ForEach-Object { Split-Path -Leaf $_ })
@@ -2178,6 +2191,13 @@ foreach ($fixturePath in $originalTomeOfTheLostPathFixtures) {
     foreach ($mode in @('--original-tome-of-the-lost-path-only', '--native-actions-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Tome of the Lost Path checks failed ($mode): $fixturePath" }
+    }
+}
+$originalMakeItRainFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-make-it-rain.mt2f' })
+foreach ($fixturePath in $originalMakeItRainFixtures) {
+    foreach ($mode in @('--original-make-it-rain-only', '--native-actions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Make It Rain checks failed ($mode): $fixturePath" }
     }
 }
 $originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })

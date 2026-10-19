@@ -665,6 +665,8 @@ internal static class BattleActionChecks
             chooser = source => OriginalTomeOfEvergrowthChecks.Choose(source, OriginalTomeOfEvergrowthChecks.CardIds(fixture));
         if (fixture.TryGetProperty("ModifierScenario", out var originalTomeOfTheLostPathScenario) && originalTomeOfTheLostPathScenario.GetString() == "original-tome-of-the-lost-path")
             chooser = source => OriginalTomeOfTheLostPathChecks.Choose(source, OriginalTomeOfTheLostPathChecks.CardIds(fixture));
+        if (fixture.TryGetProperty("ModifierScenario", out var originalMakeItRainScenario) && originalMakeItRainScenario.GetString() == "original-make-it-rain")
+            chooser = source => OriginalMakeItRainChecks.Choose(source, OriginalMakeItRainChecks.CardIds(fixture));
         if (fixture.TryGetProperty("GoldmancePrepared", out var goldmancePrepared) && goldmancePrepared.GetBoolean())
             chooser = source => GoldmanceChecks.Choose(source, fixture.GetProperty("GoldmanceCardIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("EngineUpgradePrepared", out var engineUpgradePrepared) && engineUpgradePrepared.GetBoolean())

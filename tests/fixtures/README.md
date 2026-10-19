@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-19): 572 archives (532 full battles and
+Current manifest inventory (2026-10-19): 581 archives (541 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,7 +14,7 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-571 indexed archives. Refresh/check the index with
+580 indexed archives. Refresh/check the index with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
 `full-battle-original-attack-overrides.mt2f` captures unchanged Irontongue and
@@ -7983,4 +7983,24 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTomeOfTheLostPath
 dotnet run --project src/ModelChecks -c Release -- --original-tome-of-the-lost-path-only tests/fixtures/full-battle-original-tome-of-the-lost-path.mt2f
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-tome-of-the-lost-path.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-tome-of-the-lost-path.mt2f
+```
+
+### Original Make It Rain
+
+`full-battle-original-make-it-rain.mt2f` plays the unchanged, trait-free
+one-cost spell on an enemy floor after combat starts. Its native eight-effect
+sequence is NULL(3), four room hits of 5 damage, and three required 5-Gold
+payments (net -15); the separate friendly floor and played-card discard route
+remain intact. The native battle won with three card plays and five EndTurns;
+capture failures, mismatches, unsupported transitions and pending records were
+zero, and protected original files were unchanged. The 26,765-byte archive has
+3,492 unique nodes and SHA-256
+`50bfadd03c22d0670570dc75dee9c846631c379fc5c003c77f9a9d78c47205d1`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMakeItRain -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-make-it-rain-only tests/fixtures/full-battle-original-make-it-rain.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-make-it-rain.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-make-it-rain.mt2f
 ```
