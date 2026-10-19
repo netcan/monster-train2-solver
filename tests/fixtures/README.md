@@ -1074,6 +1074,20 @@ unsupported attempts. Binary-only: 30,185 bytes/4,198 nodes, SHA-256
 `db90b03fda49df96b21fa45de5b1414a3be662e945d70811f8b820f0efecc2b3`.
 Use `-OriginalXStygianSpike` and `--original-x-stygian-spike-only`.
 
+`full-battle-original-x-wurmkin-spike.mt2f` retains two unchanged original
+Wurmkin Spikes cast into the same enemy room at X three and X zero. X three adds
+eighteen Corrupt Poison to every enemy; X zero leaves it unchanged. Friendly
+units in the target room and units on other floors remain unchanged during each
+card action. Exact enemy-only target flags, status parameter, six-per-PlayedCost
+trait, X payment and immutable replay are checked. The four-play/seven-EndTurn
+Instant battle won in 52.50 seconds with all capture, mismatch, unsupported and
+pending counters at zero; protected files were unchanged. Search matches four
+decisions/14 root actions, visits 128/128 states and replays three steps with
+equal serial/parallel best and zero unsupported attempts. Binary-only: 30,396
+bytes/4,279 nodes, SHA-256
+`8113182f50887355f8e559a8a4f10f986a5a90edc8dc39bef17401e39cf9ad83`.
+Use `-OriginalXWurmkinSpike` and `--original-x-wurmkin-spike-only`.
+
 `full-battle-original-x-damage-cards.mt2f` retains original Vent and Forever
 Consumed at X zero/three and zero/two, respectively. Zero X has two live enemies
 and leaves health/armor unchanged. Vent deals fifteen to the enemy room,

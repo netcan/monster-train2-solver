@@ -115,6 +115,7 @@ param(
     [switch] $OriginalXBanishedSpike,
     [switch] $OriginalXLunaSpike,
     [switch] $OriginalXStygianSpike,
+    [switch] $OriginalXWurmkinSpike,
     [switch] $DamageByUnitsKilled,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
@@ -625,6 +626,7 @@ if ($OriginalXStatusCards) { $BranchCardMasks = $true; $Policy = 'units-spells-a
 if ($OriginalXBanishedSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXLunaSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalXStygianSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalXWurmkinSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTunedGearRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggHatchRelic) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEggTransformation) { $SpawnStatusRelics = $true; $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true }
@@ -1188,6 +1190,7 @@ if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-s
 if ($OriginalXBanishedSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-banished-spike' }
 if ($OriginalXLunaSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-luna-spike' }
 if ($OriginalXStygianSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-stygian-spike' }
+if ($OriginalXWurmkinSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-wurmkin-spike' }
 if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
@@ -2607,6 +2610,9 @@ if ($OriginalXLunaSpike -and (-not $trace.OriginalXLunaSpikePrepared -or -not $t
 }
 if ($OriginalXStygianSpike -and (-not $trace.OriginalXStygianSpikePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
     throw 'Original Spike of the Stygian scenario lacks its positive/zero X plays or completed win.'
+}
+if ($OriginalXWurmkinSpike -and (-not $trace.OriginalXWurmkinSpikePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
+    throw 'Original Wurmkin Spike scenario lacks its positive/zero X plays or completed win.'
 }
 if ($OriginalXDamageCards -and (-not $trace.OriginalXDamageCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 9)) {
     throw 'Original X-damage cards scenario lacks its original zero/positive plays or completed win.'

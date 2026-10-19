@@ -732,6 +732,12 @@ if (args.Length == 2 && args[0] == "--original-x-stygian-spike-only")
     OriginalXStygianSpikeChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-x-wurmkin-spike-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalXWurmkinSpikeChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-x-damage-cards-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

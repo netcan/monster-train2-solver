@@ -1002,6 +1002,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalXLunaSpikeIds = OriginalXLunaSpikeScenario.CardIds,
                 OriginalXStygianSpikePrepared = OriginalXStygianSpikeScenario.Prepared,
                 OriginalXStygianSpikeIds = OriginalXStygianSpikeScenario.CardIds,
+                OriginalXWurmkinSpikePrepared = OriginalXWurmkinSpikeScenario.Prepared,
+                OriginalXWurmkinSpikeIds = OriginalXWurmkinSpikeScenario.CardIds,
                 OriginalXDamageCardsPrepared = OriginalXDamageCardsScenario.Prepared,
                 OriginalXDamageCardsIds = OriginalXDamageCardsScenario.CardIds,
                 OriginalStrongMagicCardsPrepared = OriginalStrongMagicCardsScenario.Prepared,
