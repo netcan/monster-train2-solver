@@ -1331,6 +1331,18 @@ This covers one eligible Spell; multiple-target ordering and other recursion
 modes remain unverified. Use `-OriginalBrokenMemories` and
 `--original-broken-memories-only`.
 
+`full-battle-original-wicked-blaze.mt2f` plays unchanged two-cost Wicked Blaze.
+It returns a controlled Train Steward from Exhaust to hand, leaves an exhausted
+Spell filter control, and applies RaisePlusWickedBlaze (+15 attack, +5 health,
+Ephemeral). The 37-stage native win has seven actions and five EndTurns, with
+zero capture failures, mismatches, unsupported transitions or pending records.
+Its dedicated checker, full action-policy replay and 128-state search pass.
+Binary-only: 26,856 bytes, 3,529 unique nodes, SHA-256
+`5a91f643790e641db55d6b2d33f4b1020ea6e557a6c9620684bdf1f3e1062146`.
+This covers one eligible Monster and one Spell type-filter control, not multiple
+eligible target ordering or other recursion modes. Use `-OriginalWickedBlaze`
+and `--original-wicked-blaze-only`.
+
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation
 filter. Two same-floor units gain two Rage/Regen; the selected Glow Up target

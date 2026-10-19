@@ -44,6 +44,7 @@ param(
     [switch] $OriginalDeepOffering,
     [switch] $OriginalMolded,
     [switch] $OriginalBrokenMemories,
+    [switch] $OriginalWickedBlaze,
     [switch] $Goldmance,
     [switch] $EngineUpgrade,
     [switch] $StewardsQuarters,
@@ -562,6 +563,7 @@ if ($OriginalDeckSpell) { $BranchCardMasks = $true; $Policy = 'units-spells-and-
 if ($OriginalDeepOffering) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMolded) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenMemories) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalWickedBlaze) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Goldmance) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($EngineUpgrade) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($StewardsQuarters) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1130,6 +1132,7 @@ if ($OriginalDeckSpell) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deck-s
 if ($OriginalDeepOffering) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deep-offering' }
 if ($OriginalMolded) { $environment['MT2_PROBE_MODIFIERS'] = 'original-molded' }
 if ($OriginalBrokenMemories) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-memories' }
+if ($OriginalWickedBlaze) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wicked-blaze' }
 if ($Goldmance) { $environment['MT2_PROBE_MODIFIERS'] = 'goldmance' }
 if ($EngineUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'engine-upgrade' }
 if ($StewardsQuarters) { $environment['MT2_PROBE_MODIFIERS'] = 'stewards-quarters' }
@@ -2703,6 +2706,10 @@ if ($OriginalBrokenMemories -and (-not $trace.OriginalBrokenMemoriesPrepared -or
     @($trace.OriginalBrokenMemoriesCardIds).Count -ne 4)) {
     throw 'Original Broken Memories requires one matched play, controlled Exhaust targets and a native win.'
 }
+if ($OriginalWickedBlaze -and (-not $trace.OriginalWickedBlazePrepared -or -not $trace.NativeWon -or
+    @($trace.OriginalWickedBlazeCardIds).Count -ne 4)) {
+    throw 'Original Wicked Blaze requires one matched play, controlled Exhaust targets and a native win.'
+}
 if ($OriginalStatusCards -and (-not $trace.OriginalStatusCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6)) {
     throw 'Original status cards require all six unit/spell plays and a native win.'
 }
@@ -3656,6 +3663,14 @@ $brokenMemoriesActions = @($trace.Actions | Where-Object {
     $played.DataId -eq 'f954f70d-e83b-4c64-9827-89e5770a56ef'
 })
 $brokenMemoriesCoverage = -not $OriginalBrokenMemories -or @($brokenMemoriesActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+$wickedBlazeActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'd930a4fe-1419-4c21-9ef2-fda4e25ee90b'
+})
+$wickedBlazeCoverage = -not $OriginalWickedBlaze -or @($wickedBlazeActions | Where-Object {
     -not $_.Difference -and $_.Predicted.Supported
 }).Count -eq 1
 $frostChannelingActions = @($trace.Actions | Where-Object {
@@ -5442,6 +5457,8 @@ $result = [pscustomobject]@{
     MoldedCoverage = $moldedCoverage
     BrokenMemoriesActions = $brokenMemoriesActions.Count
     BrokenMemoriesCoverage = $brokenMemoriesCoverage
+    WickedBlazeActions = $wickedBlazeActions.Count
+    WickedBlazeCoverage = $wickedBlazeCoverage
     FrostChannelingActions = $frostChannelingActions.Count
     FrostChannelingCoverage = $frostChannelingCoverage
     TransferAbilityActions = $transferAbilityActions.Count
@@ -5541,6 +5558,9 @@ if ($OriginalMolded -and ($moldedActions.Count -ne 1 -or -not $moldedCoverage)) 
 }
 if ($OriginalBrokenMemories -and ($brokenMemoriesActions.Count -ne 1 -or -not $brokenMemoriesCoverage)) {
     throw 'Original Broken Memories did not produce exactly one matched card play.'
+}
+if ($OriginalWickedBlaze -and ($wickedBlazeActions.Count -ne 1 -or -not $wickedBlazeCoverage)) {
+    throw 'Original Wicked Blaze did not produce exactly one matched card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

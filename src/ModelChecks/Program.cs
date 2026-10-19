@@ -875,6 +875,12 @@ if (args.Length == 2 && args[0] == "--original-broken-memories-only")
     OriginalBrokenMemoriesChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-wicked-blaze-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalWickedBlazeChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--eclipse-chamber-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

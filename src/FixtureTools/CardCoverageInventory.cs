@@ -432,7 +432,7 @@ internal static class CardCoverageInventory
         if (trait.GetProperty("Float").GetDouble() != 0 || Flag(trait, "Scaling")) return false;
         if (type == "CardTraitScalingAddEffectApplications") return value == 1 && Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitScalingBuffDamage") return value == 4 && Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn";
-        if (cardId is "fbf7e58a-9369-49d8-ba1a-782fbcaf6498" or "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8" or "37a1de5d-4e3b-428a-9b83-006f1bf4dbce" or "dea99a2f-48c9-4246-ad44-01e84f46171e" or "f954f70d-e83b-4c64-9827-89e5770a56ef" &&
+        if (cardId is "fbf7e58a-9369-49d8-ba1a-782fbcaf6498" or "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8" or "37a1de5d-4e3b-428a-9b83-006f1bf4dbce" or "dea99a2f-48c9-4246-ad44-01e84f46171e" or "f954f70d-e83b-4c64-9827-89e5770a56ef" or "d930a4fe-1419-4c21-9ef2-fda4e25ee90b" &&
             type == "CardTraitShowCardTargets")
             return value == 0 && trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
                 !Flag(trait, "Bool") && Text(trait, "Str") == "" && Text(trait, "TrackedValue") == "SubtypeInDeck" &&

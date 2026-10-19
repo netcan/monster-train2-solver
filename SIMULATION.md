@@ -705,6 +705,14 @@ changes, full policy replay, and 128-state search pass with zero unsupported
 actions. Only one eligible Spell is present; multiple-choice ordering and other
 recursion modes remain unproven.
 
+`full-battle-original-wicked-blaze.mt2f` plays unchanged Wicked Blaze, selects
+one Exhausted Monster and leaves an Exhausted Spell as the native type-filter
+control. The selected card receives RaisePlusWickedBlaze (+15 attack, +5 health,
+Ephemeral). The 37-stage win (seven plays/five EndTurns), exact selection and
+upgrade state, full policy replay, and 128-state search pass with zero unsupported
+actions. Multiple eligible Monster ordering and other recursion modes remain
+unproven.
+
 `full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
 Spike of the Legion. Card modifier resolution preserves the all-status filter.
 Proliferate adds two Rage/Regen to both same-floor units; Glow Up moves its
