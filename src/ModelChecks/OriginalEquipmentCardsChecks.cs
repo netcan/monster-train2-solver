@@ -9,14 +9,14 @@ internal static class OriginalEquipmentCardsChecks
         "1dd23b59-fa5e-44bc-83ca-de119ede4f21", "66cbbd14-f5f3-44a1-bd1c-ce98f3c13584", "87c155c4-55e4-4434-a99d-1dda85d5784c",
         "e4ba411f-09b2-4a87-91f6-5f00cd742ba6", "7369cb8e-f8cf-44be-8667-c699c630c063", "1f352534-0895-488e-9345-481bc447a089",
         "75cfe90b-47b9-406c-b891-33564aac6677", "924ad6ab-3d60-4760-b38e-78f5cf09c1d5",
-        "1d2e6259-e3ef-4a6a-8894-2c12db9fd4a9"];
+        "1d2e6259-e3ef-4a6a-8894-2c12db9fd4a9", "00a5ceea-8fae-4437-9cb8-3c0f2998fb2c"];
     internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
     {
         int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
         if (index < 0 || index >= 4 && source.Spawn.Turn < 1) return null;
-        int host = index is >= 8 and <= 11 ? 1 : index is 12 or 13 or 18 or 19 ? 2 : index == 20 ? 3 : index is >= 21 and <= 22 ? 7 : 0;
-        int target = index >= 8 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
-        int room = index is 3 or 20 ? 1 : index >= 21 || index == 7 ? 2 : 0;
+        int host = index is >= 8 and <= 11 ? 1 : index is 12 or 13 or 18 or 19 ? 2 : index == 20 ? 3 : index is 14 or 21 or 22 ? 7 : 0;
+        int target = index is >= 8 and <= 23 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
+        int room = index is 3 or 20 ? 1 : index is 7 or 14 or 21 or 22 or 24 ? 2 : 0;
         int position = index == 3 || index == 7 ? 0 : index < 4 ? index : -1;
         var action = new PlayCardAction(ids[index], room, playerPosition: position, targetUnitId: target);
         return BattleActionModel.PlayCard(source, action).Supported ? action : null;
@@ -27,8 +27,8 @@ internal static class OriginalEquipmentCardsChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalEquipmentCardsIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 24 && actions.Length == 24, "Missing fifteen original equipment cards, four-slot hosts or wound/energy/enemy health/death controls.");
-        for (int i = 8; i < 23; i++)
+        Require(ids.Length == 25 && actions.Length == 25, "Missing sixteen original equipment cards, four-slot hosts or wound/energy/enemy health/death controls.");
+        for (int i = 8; i < 24; i++)
         {
             BattleTurnState before = actions[i].GetProperty("Before").Deserialize<BattleTurnState>()!, after = actions[i].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             var context = before.Spawn.Train.Context!; var changed = after.Spawn.Train.Context!;
@@ -57,8 +57,13 @@ internal static class OriginalEquipmentCardsChecks
                 "Moonlit Glaive must create its Mageblade attack cache through the status-added callback.");
             if (i == 20) Require(a.SpawnerCardId == ids[3] && rule.AssetKey == "AmbientCharge" && a.EquipmentCards!.Count == 0,
                 "Ambient Charge must attach to the unchanged Pyre Steward on the separate floor.");
-            if (i >= 21) Require(a.SpawnerCardId == ids[7] && action.RoomIndex == 2 && a.EquipmentCards!.Count == i - 21,
+            if (i == 14) Require(a.SpawnerCardId == ids[7] && action.RoomIndex == 2 && a.EquipmentCards!.Count == 0 &&
+                rule.AssetKey == "Fortify" && b.Status("armor")?.Stacks == 6,
+                "Fortify must add its six native armor stacks on the expendable death-control host.");
+            if (i is 21 or 22) Require(a.SpawnerCardId == ids[7] && action.RoomIndex == 2 && a.EquipmentCards!.Count == i - 20,
                 "The added originals must attach in order to their dedicated third-floor host.");
+            if (i == 23) Require(a.SpawnerCardId == ids[0] && action.RoomIndex == 0 && a.EquipmentCards!.Count == 3,
+                "Cursed Twinblade must attach within the lead attacker's native equipment limit.");
             if (i == 21)
             {
                 CombatTrigger lavaOnHit = b.Triggers.Single(trigger => trigger.Kind == "OnHit" && trigger.Origin?.EquipmentCardId == ids[i]);
@@ -71,19 +76,32 @@ internal static class OriginalEquipmentCardsChecks
             }
             if (i == 22) Require(rule.AssetKey == "ResinBlades" && returnToHand,
                 "Resin Blades must retain its native ReturnToHand equipment behavior.");
+            if (i == 23)
+            {
+                CombatTrigger cursedOnAttacking = b.Triggers.Single(trigger => trigger.Kind == "OnAttacking" && trigger.Origin?.EquipmentCardId == ids[i]);
+                CombatEffect cursedEffect = cursedOnAttacking.Effects.Single();
+                CardActionEffect cursedUpgrade = cursedEffect.UnitUpgrade!;
+                CardUpgradeModifier attackLoss = cursedUpgrade.Upgrade!;
+                Require(rule.AssetKey == "CursedTwinblade" && !returnToHand &&
+                    rule.Equipment.Upgrades.Single().Statuses.Single(status => status.Id == "multistrike").Stacks == 1 &&
+                    cursedEffect.Type == "CardEffectAddTempCardUpgradeToUnits" && cursedUpgrade.Type == "UnitUpgrade" &&
+                    cursedUpgrade.Target == "Self" && cursedUpgrade.AllowPlayer && !cursedUpgrade.AllowEnemy &&
+                    cursedUpgrade.Lifetime == "TemporaryUntilEndOfBattle" && attackLoss.Stats.Damage == -1 && attackLoss.Stats.Health == 0,
+                    "Cursed Twinblade must retain +1 Multistrike and its original per-attack -1 temporary attack trigger.");
+            }
             Require(Json(roomBefore.Units.Where(unit => unit.Id != b.Id)) == Json(roomAfter.Units.Where(unit => unit.Id != b.Id)) &&
                 Json(before.Spawn.Train.Rooms.Where(room => room.RoomIndex != action.RoomIndex).Select(room => room.Units)) ==
                 Json(after.Spawn.Train.Rooms.Where(room => room.RoomIndex != action.RoomIndex).Select(room => room.Units)), "Equipment attachment changed another host or floor.");
             Require(context.BattleRng.Equals(changed.BattleRng), "These equipment attachments must not consume Battle RNG.");
         }
-        BattleTurnState lethalBefore = actions[23].GetProperty("Before").Deserialize<BattleTurnState>()!,
-            lethalAfter = actions[23].GetProperty("Actual").Deserialize<BattleTurnState>()!;
-        PlayCardAction lethalAction = actions[23].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        BattleTurnState lethalBefore = actions[24].GetProperty("Before").Deserialize<BattleTurnState>()!,
+            lethalAfter = actions[24].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction lethalAction = actions[24].GetProperty("Action").Deserialize<PlayCardAction>()!;
         CombatUnit equipmentHost = lethalBefore.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2).Units
             .Single(unit => unit.SpawnerCardId == ids[7]);
         CombatContext lethalContext = lethalAfter.Spawn.Train.Context!;
         CardPileState standbyAfterDeath = lethalContext.OtherPiles!.Single(pile => pile.Name == "Standby");
-        Require(lethalAction.CardInstanceId == ids[23] && lethalAction.RoomIndex == 2 &&
+        Require(lethalAction.CardInstanceId == ids[24] && lethalAction.RoomIndex == 2 &&
             !lethalAfter.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2).Units.Any(unit => unit.Id == equipmentHost.Id) &&
             lethalContext.Cards.Hand.Any(card => card.InstanceId == ids[22]) &&
             lethalContext.OtherPiles.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == ids[21]) &&
@@ -93,15 +111,21 @@ internal static class OriginalEquipmentCardsChecks
         var firstCombat = root.GetProperty("TrainPhases").EnumerateArray().First(phase => phase.GetProperty("Turn").GetInt32() == 1 && phase.GetProperty("Kind").GetString() == "Combat");
         TrainCombatState combatBefore = firstCombat.GetProperty("Before").Deserialize<TrainCombatState>()!, combatAfter = firstCombat.GetProperty("Actual").Deserialize<TrainCombatState>()!;
         CombatUnit healerBefore = combatBefore.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[2]), healerAfter = combatAfter.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[2]);
-        CombatUnit primaryAfter = combatAfter.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[0]);
+        CombatUnit twinbladeHostAfter = combatAfter.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[0]);
+        int twinbladeAttackDebuffs = twinbladeHostAfter.Modifiers!.Upgrades.Count(upgrade => upgrade.AssetKey == "Minus1Attack" &&
+            upgrade.Stats.Damage == -1 && upgrade.Stats.Health == 0);
+        Require(twinbladeHostAfter.Health > 0 &&
+            twinbladeHostAfter.Triggers.Any(trigger => trigger.Kind == "OnAttacking" && trigger.Origin?.EquipmentCardId == ids[23] && trigger.HasTriggered) &&
+            twinbladeAttackDebuffs == 2,
+            "Cursed Twinblade must resolve both native multistrike callbacks as temporary -1 attack upgrades on its living host.");
         Require(combatAfter.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Player).All(unit => unit.Status("valor")?.Stacks > 0) &&
             combatAfter.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).PlayerMaximum > combatBefore.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).PlayerMaximum,
             "Everlasting Light attack Valor and Heph's Hammer kill capacity need positive native callbacks.");
         Require(combatAfter.Context.FindCard(ids[15])!.Permanent.Upgrades.Any(upgrade => upgrade.DataId == "147c2bab-6487-4b1f-9e6f-f8388dc77199") &&
-            healerAfter.Health > healerBefore.Health && primaryAfter.Status("armor")?.Stacks >= 6,
-            "Bloodthirsty Blade equipment growth, wounded Meat Shield healing and Fortify postcombat armor need positive witnesses.");
+            healerAfter.Health > healerBefore.Health,
+            "Bloodthirsty Blade equipment growth and wounded Meat Shield healing need positive witnesses.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-EQUIPMENT-CARDS PASS: fifteen unchanged originals, exact attachment/Standby bindings, Resin Blades host-death return, attack/HP/size/statuses, positive equipment callbacks and 16 immutable full chains.");
+        Console.WriteLine("ORIGINAL-EQUIPMENT-CARDS PASS: sixteen unchanged originals, Cursed Twinblade per-attack trigger, Resin Blades host-death return, positive equipment callbacks and 16 immutable full chains.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
