@@ -2138,6 +2138,13 @@ foreach ($fixturePath in $originalMetallurgyFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Metallurgy checks failed ($mode): $fixturePath" }
     }
 }
+$originalFertileGroundFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-fertile-ground.mt2f' })
+foreach ($fixturePath in $originalFertileGroundFixtures) {
+    foreach ($mode in @('--original-fertile-ground-only', '--native-actions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Fertile Ground checks failed ($mode): $fixturePath" }
+    }
+}
 $originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })
 foreach ($fixturePath in $originalOverflowFixtures) {
     foreach ($mode in @('--original-overflow-cards-only', '--battle-search-only')) {

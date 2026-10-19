@@ -7861,3 +7861,24 @@ dotnet run --project src/ModelChecks -c Release -- --original-metallurgy-only te
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-metallurgy.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-metallurgy.mt2f
 ```
+
+### Original Fertile Ground
+
+`full-battle-original-fertile-ground.mt2f` seeds one Horde with Eager
+Conscript, raises it to five with Spawning Pods, and plays unchanged
+two-cost Fertile Ground on the following turn. The exhausted Spawning Pods is
+the sole Spell in the Exhaust pile, so the original TypeInExhaustPile trait
+adds one Horde above the card's base one; the existing unit reaches seven and
+Fertile Ground Exhausts. The 53.44-second Instant battle won with four card
+plays and seven EndTurns; capture failures, mismatches, unsupported transitions
+and pending records were zero, and protected original files were unchanged.
+The 35,671-byte archive has 5,341 unique nodes and SHA-256
+`6252277dce3dbbf747468622e7ff6d020bf3e5d45dd41f10d129c69c8cba171d`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalFertileGround -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-fertile-ground-only tests/fixtures/full-battle-original-fertile-ground.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-fertile-ground.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-fertile-ground.mt2f
+```
