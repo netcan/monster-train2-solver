@@ -100,6 +100,7 @@ param(
     [switch] $OriginalMakeItRain,
     [switch] $OriginalDeathroar,
     [switch] $OriginalGreenRecruit,
+    [switch] $OriginalPrimordium,
     [switch] $OriginalCopyMorselTwice,
     [switch] $OriginalLazarusLeagueSpike,
     [switch] $OriginalTomeOfContracts,
@@ -645,6 +646,7 @@ if ($OriginalTomeOfTheLostPath) { $BranchCardMasks = $true; $PhysicalSpawnPoints
 if ($OriginalMakeItRain) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeathroar) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalGreenRecruit) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalPrimordium) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyMorselTwice) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalLazarusLeagueSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1245,6 +1247,7 @@ if ($OriginalTomeOfTheLostPath) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalMakeItRain) { $environment['MT2_PROBE_MODIFIERS'] = 'original-make-it-rain' }
 if ($OriginalDeathroar) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathroar' }
 if ($OriginalGreenRecruit) { $environment['MT2_PROBE_MODIFIERS'] = 'original-green-recruit' }
+if ($OriginalPrimordium) { $environment['MT2_PROBE_MODIFIERS'] = 'original-primordium' }
 if ($OriginalCopyMorselTwice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-morsel-twice' }
 if ($OriginalLazarusLeagueSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lazarus-league-spike' }
 if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
@@ -2614,6 +2617,10 @@ if ($OriginalDeathroar -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -
 if ($OriginalGreenRecruit -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-green-recruit' -or
     -not $trace.OriginalGreenRecruitPrepared -or -not $trace.NativeWon)) {
     throw 'Original Green Recruit witness did not complete its native Monster deployment.'
+}
+if ($OriginalPrimordium -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-primordium' -or
+    -not $trace.OriginalPrimordiumPrepared -or -not $trace.NativeWon)) {
+    throw 'Original Primordium witness did not complete its native Champion deployment.'
 }
 if ($OriginalSecretIngredient -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-secret-ingredient-mix' -or
     -not $trace.OriginalSecretIngredientPrepared -or -not $trace.NativeWon)) {
@@ -6048,6 +6055,17 @@ $greenRecruitCoverage = -not $OriginalGreenRecruit -or @($greenRecruitActions | 
 }).Count -eq 1
 if ($OriginalGreenRecruit -and ($greenRecruitActions.Count -ne 1 -or -not $greenRecruitCoverage)) {
     throw 'Original Green Recruit did not produce exactly one matched deployment.'
+}
+$primordiumActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '2e1b29f2-fbe8-47b9-8ef8-1bac4c1f1f65'
+})
+$primordiumCoverage = -not $OriginalPrimordium -or @($primordiumActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalPrimordium -and ($primordiumActions.Count -ne 1 -or -not $primordiumCoverage)) {
+    throw 'Original Primordium did not produce exactly one matched deployment.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

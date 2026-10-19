@@ -1185,6 +1185,7 @@ namespace MonsterTrain2Poju.Model
                             continue;
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
+                            effect.Type != "CardEffectAddStatsFromSelf" &&
                             effect.Type is not ("CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectBasedOnHealth"))
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type is not ("CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits"))
@@ -1215,6 +1216,20 @@ namespace MonsterTrain2Poju.Model
                             if (healError != null) return healError;
                             continue;
                         }
+                        if (effect.Type == "CardEffectAddStatsFromSelf")
+                        {
+                            CardActionEffect? action = effect.Action;
+                            if (action?.Type != "AddStatsFromSelf") return "Missing self-stat copy action definition.";
+                            if (state.Context?.CardInstances == null || unit.Modifiers == null)
+                                return "Self-stat copy requires shared battle and unit modifier state.";
+                            if (action.Target != "Self" && !new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets",
+                                "RandomInRoom", "LastAttackedCharacter", "LastSpawnedCharacter", "LastFeederCharacter" }.Contains(action.Target))
+                                return "Unmodeled self-stat copy target " + action.Target;
+                            if (action.Range != null) return "Self-stat copy range initialization is not modeled.";
+                            string? filterError = action.Target == "LastAttackedCharacter" ? null : action.Filters?.Validate();
+                            if (filterError != null) return filterError;
+                            continue;
+                        }
                         if (effect.Type == "CardEffectAddCardUpgradeToUnits" || effect.Type == "CardEffectAddTempCardUpgradeToUnits" ||
                             effect.Type == "CardEffectRemoveTempUpgradeFromUnit" || effect.Type == "CardEffectBuffEquipment")
                         {
@@ -1239,7 +1254,8 @@ namespace MonsterTrain2Poju.Model
                             continue;
                         }
                         if (effect.Type != "CardEffectRewardGold" && effect.Type != "CardEffectAddBattleCard")
-                            return "Unmodeled effect " + effect.Type;
+                            return "Unmodeled effect " + effect.Type + " on " + unit.AssetKey + " trigger " +
+                                trigger.Kind + " in room " + state.RoomIndex;
                         if (state.Context == null) return "Unit effects require shared battle context.";
                         if (effect.Type == "CardEffectRewardGold" && effect.Value < 0)
                             return "Conditional gold costs are not modeled.";
@@ -4100,6 +4116,35 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                if (action.Type == "AddStatsFromSelf")
+                {
+                    int attack = UnitAttackOverrideModel.Resolve(actor.Freeze().Statuses, actor.Source.MaxHealth) ??
+                        actor.Source.Modifiers?.AttackDamage ?? actor.Source.BaseAttack;
+                    int health = actor.Source.MaxHealth;
+                    foreach (int id in targets.UnitIds)
+                    {
+                        WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == id);
+                        if (target == null) continue;
+                        CardUpgradeMaskMetadata? maskMetadata = context?.CardRegistry?.Concat(context.CardInstances ?? Array.Empty<CardInstanceState>())
+                            .Any(card => card.MaskDescriptor != null) == true
+                            ? new CardUpgradeMaskMetadata(Array.Empty<UpgradeMaskStatus>(), false, false, false, false) : null;
+                        var stats = new CardStatModifier(attack, health);
+                        var lifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("", stats,
+                            Array.Empty<UpgradeMaskStatus>(), false, false, false, false), "", false, false,
+                            Array.Empty<CardTraitValue>(), Array.Empty<string>(), false, Array.Empty<string>(),
+                            Array.Empty<string>(), Array.Empty<CardLifecycleTrigger>());
+                        var copiedStats = new CardUpgradeModifier("", "", stats, Array.Empty<CombatStatus>(),
+                            false, false, false, 0, 0, Array.Empty<string>(), maskMetadata: maskMetadata, lifecycle: lifecycle);
+                        if (!ApplyUpgrade(target, copiedStats, "TemporaryUntilUnitDeath", false, null, 0, triggerKind, directApi: true)) return false;
+                        if (!source.Preview && target.Source.SpawnerCardId > 0 && context?.FindCard(target.Source.SpawnerCardId) is CardInstanceState spawner)
+                        {
+                            context = context.WithCard(spawner.WithModifiers(spawner.Permanent,
+                                UnitModifierModel.Add(spawner.Temporary, copiedStats)));
+                        }
+                        Emit(action.Type, actor, target, 0);
+                    }
+                    return true;
+                }
                 if (action.Type == "TransferAllStatusesFromUnit")
                 {
                     if (!targets.UnitIds.Contains(actor.Source.Id)) return true;

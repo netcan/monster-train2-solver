@@ -479,7 +479,8 @@ namespace MonsterTrain2Poju.Model
                 unit = new CombatUnit(unit.Id, unit.AssetKey, unit.Team, baseAttack,
                     health, maxHealth, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath,
                     statuses.Values.Where(status => status.Stacks > 0).ToArray(), triggers,
-                    unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, nextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules, lastFeederId: unit.LastFeederId, moonPhaseMask: unit.MoonPhaseMask);
+                    unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, nextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules,
+                    lastFeederId: unit.LastFeederId ?? (triggers.Any(trigger => trigger.Kind == "OnEaten") ? 0 : (int?)null), moonPhaseMask: unit.MoonPhaseMask);
             }
             CardActionEffect[] triggerEffects = cardUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>())
                 .Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Actions).ToArray();
