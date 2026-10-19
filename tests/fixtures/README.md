@@ -1404,6 +1404,18 @@ covers one deployment play and its persistent draw/energy state; repeated
 copies and interactions with other draw/energy modifiers are not claimed. Use
 `-OriginalPyreGro` and `--original-pyre-gro-only`.
 
+`full-battle-original-deadly-variant.mt2f` plays unchanged two-cost Deadly
+Variant on a controlled Train Steward with one Debuff. The native effect counts
+Debuff only on its selected target, scales Decay by five, preserves Debuff and
+exhausts the spell. The 37-stage native win has two card plays and five
+EndTurns, with zero capture failures, mismatches, unsupported transitions or
+pending records. Its focused checker, action-policy replay and 43-state
+serial/parallel search pass. Binary-only: 26,231 bytes, 3,146 unique nodes,
+SHA-256 `f40c5823c06065d3f7102bf498dc362d50a106114555bdf09721d10b90318e22`.
+Only one positive Debuff count on one selected friendly target is evidenced;
+zero, larger and multi-target counts are not covered. Use
+`-OriginalDeadlyVariant` and `--original-deadly-variant-only`.
+
 `full-battle-original-status-cards.mt2f` keeps original Proliferate, Glow Up and
 Spike of the Legion. Model card-modifier resolution retains the propagation
 filter. Two same-floor units gain two Rage/Regen; the selected Glow Up target

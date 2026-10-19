@@ -759,6 +759,16 @@ records. Binary-only: 25,371 bytes, 3,088 unique nodes, SHA-256
 `89d2636dba3046f16f5c91ebb967de7f4365f52aba717c5c9740d67e2a26fa76`. Repeated
 copies and combinations with other draw/energy modifiers remain untested.
 
+`full-battle-original-deadly-variant.mt2f` plays unchanged two-cost Deadly
+Variant on a Train Steward carrying one Debuff. Its native target-scoped
+multiplier adds five Decay and leaves the counted Debuff intact; the card is
+then exhausted. The 37-stage win (two plays/five EndTurns), dedicated check,
+full action-policy replay and 43-state search pass with zero capture failures,
+mismatches, unsupported transitions or pending records. Binary-only: 26,231
+bytes, 3,146 unique nodes, SHA-256
+`f40c5823c06065d3f7102bf498dc362d50a106114555bdf09721d10b90318e22`. Zero,
+larger and multi-target Debuff counts remain untested.
+
 `full-battle-original-status-cards.mt2f` plays unchanged Proliferate, Glow Up and
 Spike of the Legion. Card modifier resolution preserves the all-status filter.
 Proliferate adds two Rage/Regen to both same-floor units; Glow Up moves its
