@@ -285,6 +285,22 @@ internal static class CardCoverageInventory
                 new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag",
                     "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
                     .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
+        if (cardId == "8d291f9a-30a1-4a6d-8d9e-6dc2df4432d1" && type == "CardTraitScalingUpgradeUnitAttack")
+            return trait.GetProperty("Int").GetInt32() == 4 && trait.GetProperty("Int2").GetInt32() == 0 &&
+                trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") && Text(trait, "Str") == "" &&
+                trait.GetProperty("Float").GetDouble() == 1 && Flag(trait, "Scaling") &&
+                Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisBattle" &&
+                new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag",
+                    "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
+        if (cardId == "8d291f9a-30a1-4a6d-8d9e-6dc2df4432d1" && type == "CardTraitExhaustState")
+            return trait.GetProperty("Int").GetInt32() == 0 && trait.GetProperty("Int2").GetInt32() == 0 &&
+                trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") && Text(trait, "Str") == "" &&
+                trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") &&
+                Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisBattle" &&
+                new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag",
+                    "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
         if (type == "CardTraitSelfPurge") return true;
         if (type == "CardTraitModifyCardTriggerSlayFireCount") return Flag(trait, "Bool") &&
             Text(trait, "KillTargetTeam") == "Monsters" && Text(trait, "KillTargetSubtype") == "SubtypesData_FunGuy" &&

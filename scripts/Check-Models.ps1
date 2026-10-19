@@ -2152,6 +2152,13 @@ foreach ($fixturePath in $originalCoverOfNightFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Cover of Night checks failed ($mode): $fixturePath" }
     }
 }
+$originalWaxenSpikeFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-waxen-spike.mt2f' })
+foreach ($fixturePath in $originalWaxenSpikeFixtures) {
+    foreach ($mode in @('--original-waxen-spike-only', '--native-actions-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Waxen Spike checks failed ($mode): $fixturePath" }
+    }
+}
 $originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })
 foreach ($fixturePath in $originalOverflowFixtures) {
     foreach ($mode in @('--original-overflow-cards-only', '--battle-search-only')) {

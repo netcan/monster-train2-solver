@@ -93,6 +93,7 @@ param(
     [switch] $OriginalMetallurgy,
     [switch] $OriginalFertileGround,
     [switch] $OriginalCoverOfNight,
+    [switch] $OriginalWaxenSpike,
     [switch] $OriginalCopyMorselTwice,
     [switch] $OriginalLazarusLeagueSpike,
     [switch] $OriginalTomeOfContracts,
@@ -630,6 +631,7 @@ if ($OriginalMindsOfTheirOwn) { $BranchCardMasks = $true; $PhysicalSpawnPoints =
 if ($OriginalMetallurgy) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFertileGround) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCoverOfNight) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalWaxenSpike) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyMorselTwice) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalLazarusLeagueSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1217,6 +1219,7 @@ if ($OriginalMindsOfTheirOwn) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalMetallurgy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-metallurgy' }
 if ($OriginalFertileGround) { $environment['MT2_PROBE_MODIFIERS'] = 'original-fertile-ground' }
 if ($OriginalCoverOfNight) { $environment['MT2_PROBE_MODIFIERS'] = 'original-cover-of-night' }
+if ($OriginalWaxenSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-waxen-spike' }
 if ($OriginalCopyMorselTwice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-morsel-twice' }
 if ($OriginalLazarusLeagueSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lazarus-league-spike' }
 if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
@@ -2557,6 +2560,10 @@ if ($OriginalFertileGround -and ($trace.Schema -ne 103 -or $trace.ModifierScenar
 if ($OriginalCoverOfNight -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-cover-of-night' -or
     -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
     throw 'Original Cover of Night witness lacks its two floor controls, phase setup and direct card play.'
+}
+if ($OriginalWaxenSpike -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-waxen-spike' -or
+    -not $trace.NativeWon -or @($trace.Actions).Count -ne 3)) {
+    throw 'Original Waxen Spike witness lacks its target/control units and direct X-cost play.'
 }
 if ($OriginalCopyMorselTwice -and ($trace.Schema -ne 250 -or $trace.ModifierScenario -ne 'original-copy-morsel-twice' -or
     -not $trace.OriginalCopyMorselTwicePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -lt 3)) {
@@ -5899,6 +5906,17 @@ $coverOfNightCoverage = -not $OriginalCoverOfNight -or @($coverOfNightActions | 
 }).Count -eq 1
 if ($OriginalCoverOfNight -and ($coverOfNightActions.Count -ne 1 -or -not $coverOfNightCoverage)) {
     throw 'Original Cover of Night did not produce exactly one matched card play.'
+}
+$waxenSpikeActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq '8d291f9a-30a1-4a6d-8d9e-6dc2df4432d1'
+})
+$waxenSpikeCoverage = -not $OriginalWaxenSpike -or @($waxenSpikeActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalWaxenSpike -and ($waxenSpikeActions.Count -ne 1 -or -not $waxenSpikeCoverage)) {
+    throw 'Original Waxen Spike did not produce exactly one matched X-cost card play.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

@@ -7902,3 +7902,24 @@ dotnet run --project src/ModelChecks -c Release -- --original-cover-of-night-onl
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-cover-of-night.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-cover-of-night.mt2f
 ```
+
+### Original Waxen Spike
+
+`full-battle-original-waxen-spike.mt2f` deploys unchanged Train Stewards on
+two floors and plays unchanged Waxen Spike on the first. With four Ember
+remaining, the original X-cost trait records PlayedCost 4, gives the target
+floor's `XCostBurnoutEnhance` upgrade 16 Damage (four per Ember), and adds
+four Ephemeral; the control floor is unchanged and Waxen Spike Exhausts. The
+41.47-second Instant battle won with three card plays and six EndTurns;
+capture failures, mismatches, unsupported transitions and pending records
+were zero, and protected original files were unchanged. The 28,835-byte
+archive has 3,906 unique nodes and SHA-256
+`94edce296c0d679ed2d2dffc92ef9a4c947ca9d2358a6b1f3381e09886cb3f29`.
+Independent replay and the 128-state serial/parallel search pass.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalWaxenSpike -BinaryCapture
+dotnet run --project src/ModelChecks -c Release -- --original-waxen-spike-only tests/fixtures/full-battle-original-waxen-spike.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-waxen-spike.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-waxen-spike.mt2f
+```
