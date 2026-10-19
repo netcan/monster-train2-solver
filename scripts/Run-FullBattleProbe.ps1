@@ -102,6 +102,7 @@ param(
     [switch] $OriginalGreenRecruit,
     [switch] $OriginalPrimordium,
     [switch] $OriginalCheeryDeathcap,
+    [switch] $OriginalEnthusiasticFan,
     [switch] $OriginalCopyMorselTwice,
     [switch] $OriginalLazarusLeagueSpike,
     [switch] $OriginalTomeOfContracts,
@@ -649,6 +650,7 @@ if ($OriginalDeathroar) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
 if ($OriginalGreenRecruit) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPrimordium) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCheeryDeathcap) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalEnthusiasticFan) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyMorselTwice) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalLazarusLeagueSpike) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTomeOfContracts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1251,6 +1253,7 @@ if ($OriginalDeathroar) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathr
 if ($OriginalGreenRecruit) { $environment['MT2_PROBE_MODIFIERS'] = 'original-green-recruit' }
 if ($OriginalPrimordium) { $environment['MT2_PROBE_MODIFIERS'] = 'original-primordium' }
 if ($OriginalCheeryDeathcap) { $environment['MT2_PROBE_MODIFIERS'] = 'original-cheery-deathcap' }
+if ($OriginalEnthusiasticFan) { $environment['MT2_PROBE_MODIFIERS'] = 'original-enthusiastic-fan' }
 if ($OriginalCopyMorselTwice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-morsel-twice' }
 if ($OriginalLazarusLeagueSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lazarus-league-spike' }
 if ($OriginalTomeOfContracts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-tome-of-contracts' }
@@ -2628,6 +2631,10 @@ if ($OriginalPrimordium -and ($trace.Schema -ne 103 -or $trace.ModifierScenario 
 if ($OriginalCheeryDeathcap -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-cheery-deathcap' -or
     -not $trace.OriginalCheeryDeathcapPrepared -or -not $trace.NativeWon)) {
     throw 'Original Cheery Deathcap witness did not complete its native Monster deployment.'
+}
+if ($OriginalEnthusiasticFan -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-enthusiastic-fan' -or
+    -not $trace.OriginalEnthusiasticFanPrepared -or -not $trace.NativeWon)) {
+    throw 'Original Enthusiastic Fan witness did not complete its native Monster deployment.'
 }
 if ($OriginalSecretIngredient -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-secret-ingredient-mix' -or
     -not $trace.OriginalSecretIngredientPrepared -or -not $trace.NativeWon)) {
@@ -6084,6 +6091,17 @@ $cheeryDeathcapCoverage = -not $OriginalCheeryDeathcap -or @($cheeryDeathcapActi
 }).Count -eq 1
 if ($OriginalCheeryDeathcap -and ($cheeryDeathcapActions.Count -ne 1 -or -not $cheeryDeathcapCoverage)) {
     throw 'Original Cheery Deathcap did not produce exactly one matched deployment.'
+}
+$enthusiasticFanActions = @($trace.Actions | Where-Object {
+    $entry = $_
+    $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
+    $played.DataId -eq 'adaaaa9d-56a9-4a5f-a347-ee71d4767df5'
+})
+$enthusiasticFanCoverage = -not $OriginalEnthusiasticFan -or @($enthusiasticFanActions | Where-Object {
+    -not $_.Difference -and $_.Predicted.Supported
+}).Count -eq 1
+if ($OriginalEnthusiasticFan -and ($enthusiasticFanActions.Count -ne 1 -or -not $enthusiasticFanCoverage)) {
+    throw 'Original Enthusiastic Fan did not produce exactly one matched deployment.'
 }
 if (-not $frostChannelingCoverage) { throw 'Original FrostChanneling did not combine cross-team poison stacks in a matched action.' }
 if (-not $transferAbilityCoverage) { throw 'Native ability-user transfer did not buff its actor and spawner card in a matched action.' }

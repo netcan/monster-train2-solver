@@ -469,7 +469,8 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-rapid-raise.mt2f', 'full-battle-original-spawning-pods.mt2f',
     'full-battle-original-make-it-rain.mt2f', 'full-battle-original-deathroar.mt2f',
     'full-battle-original-secret-ingredient.mt2f', 'full-battle-original-green-recruit.mt2f',
-    'full-battle-original-primordium.mt2f', 'full-battle-original-cheery-deathcap.mt2f')
+    'full-battle-original-primordium.mt2f', 'full-battle-original-cheery-deathcap.mt2f',
+    'full-battle-original-enthusiastic-fan.mt2f')
 $selectedFixtureNames = $fixtureNames
 if ($Fixture.Count -gt 0) {
     $selectedFixtureNames = @($Fixture | ForEach-Object { Split-Path -Leaf $_ })
@@ -2235,6 +2236,13 @@ foreach ($fixturePath in $originalCheeryDeathcapFixtures) {
     foreach ($mode in @('--original-cheery-deathcap-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Cheery Deathcap checks failed ($mode): $fixturePath" }
+    }
+}
+$originalEnthusiasticFanFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-enthusiastic-fan.mt2f' })
+foreach ($fixturePath in $originalEnthusiasticFanFixtures) {
+    foreach ($mode in @('--original-enthusiastic-fan-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Enthusiastic Fan checks failed ($mode): $fixturePath" }
     }
 }
 $originalOverflowFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-overflow-cards.mt2f' })

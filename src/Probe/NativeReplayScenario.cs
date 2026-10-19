@@ -1107,6 +1107,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalCheeryDeathcapScenario.PrepareDeployment(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalEnthusiasticFanScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Enthusiastic Fan fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalEnthusiasticFanScenario.PrepareDeployment(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalBrokenMemoriesScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Broken Memories fixture must start on deployment turn.");
@@ -2700,6 +2706,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalGreenRecruitScenario.Enabled) pendingPlay = OriginalGreenRecruitScenario.Choose(decision);
                 if (OriginalPrimordiumScenario.Enabled) pendingPlay = OriginalPrimordiumScenario.Choose(decision);
                 if (OriginalCheeryDeathcapScenario.Enabled) pendingPlay = OriginalCheeryDeathcapScenario.Choose(decision);
+                if (OriginalEnthusiasticFanScenario.Enabled) pendingPlay = OriginalEnthusiasticFanScenario.Choose(decision);
                 if (OriginalBrokenMemoriesScenario.Enabled) pendingPlay = OriginalBrokenMemoriesScenario.Choose(decision, OriginalBrokenMemoriesScenario.CardIds);
                 if (OriginalWickedBlazeScenario.Enabled) pendingPlay = OriginalWickedBlazeScenario.Choose(decision, OriginalWickedBlazeScenario.CardIds);
                 if (OriginalOfferingTokenScenario.Enabled) pendingPlay = OriginalOfferingTokenScenario.Choose(decision, OriginalOfferingTokenScenario.CardIds);
