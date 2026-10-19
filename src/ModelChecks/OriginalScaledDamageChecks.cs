@@ -4,9 +4,10 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalScaledDamageChecks
 {
-    private static readonly int[] Indices = [9, 10, 11, 12, 13, 15];
+    private static readonly int[] Indices = [9, 10, 11, 12, 13, 15, 17];
     private static readonly string[] Originals = ["97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3", "f6434819-3b62-44e4-a82c-e344dc4c1aa0",
-        "e8e593f4-7e2d-4791-a7d4-8a6155f1a50f", "f2bed1d3-6b52-43d5-8b97-bfe5c90dce53", "acc7bdd1-8f5b-4738-8c4a-4542792e7388", "97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3"];
+        "e8e593f4-7e2d-4791-a7d4-8a6155f1a50f", "f2bed1d3-6b52-43d5-8b97-bfe5c90dce53", "acc7bdd1-8f5b-4738-8c4a-4542792e7388", "97d18bbe-6fa9-45a4-90a9-5a1d0ea24ca3",
+        "f50ecee3-8bde-4100-a315-a362ff23a561"];
     internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
     {
         int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
@@ -23,7 +24,7 @@ internal static class OriginalScaledDamageChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalScaledDamageIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 17 && actions.Length == 17, "Missing original scaling spells or authored positive/zero controls.");
+        Require(ids.Length == 18 && actions.Length == 18, "Missing original scaling spells or authored positive/zero controls.");
         int consumed = 0;
         foreach (int i in Indices)
         {
@@ -37,7 +38,7 @@ internal static class OriginalScaledDamageChecks
                 b = after.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
             Require(a.Length == 2 && a.Select(unit => unit.Id).SequenceEqual(b.Select(unit => unit.Id)) && b.All(unit => unit.Health > 0), "Scaling controls require two surviving enemies.");
             int Effective(CombatUnit unit) => unit.Health + (unit.Status("armor")?.Stacks ?? 0);
-            int expected = i switch { 9 => 0, 10 => 255, 11 => 120, 12 => 48, 13 => 60, 15 => 12, _ => throw new InvalidOperationException() };
+            int expected = i switch { 9 => 0, 10 => 255, 11 => 120, 12 => 48, 13 => 66, 15 => 12, 17 => 20, _ => throw new InvalidOperationException() };
             Require(a.Sum(Effective) - b.Sum(Effective) == expected, "Exact resource/HP/attack/death/deck-type scaled damage differs at action " + i);
             if (i == 10)
             {
@@ -47,8 +48,8 @@ internal static class OriginalScaledDamageChecks
             }
             if (i == 12) Require(context.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 3, "Ancient Resonance requires positive three-Corruption scaling.");
             if (i == 13) Require(card.MaskDescriptor!.SourceTraits!.Single().QueryCardType == "Spell" &&
-                rule.Effects!.Count == 3 && context.CardRegistry!.Count(state => state.MaskDescriptor?.Definition.CardType == "Spell" && ids.Contains(state.InstanceId)) == 11,
-                "Ancient Synergy requires captured Spell query metadata and eleven created spells; the resolving source leaves the native deck query.");
+                rule.Effects!.Count == 3 && context.CardRegistry!.Count(state => state.MaskDescriptor?.Definition.CardType == "Spell" && ids.Contains(state.InstanceId)) == 12,
+                "Ancient Synergy requires captured Spell query metadata and twelve created spells; the resolving source leaves the native deck query.");
             if (i == 15) Require(before.Spawn.Train.Rooms[0].Units.All(unit => unit.SpawnerCardId != ids[4] && unit.SpawnerCardId != ids[5]),
                 "Positive death-count damage must follow both authored allied deaths.");
             Require(Json(before.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Player)) ==
@@ -90,9 +91,44 @@ internal static class OriginalScaledDamageChecks
                 Json(mementoAfter.Spawn.Train.Rooms[0].Units.Where(unit => unit.Id != frontBefore.Id)) &&
             Json(mementoBefore.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)) == Json(mementoAfter.Spawn.Train.Rooms.Skip(1).Select(room => room.Units)),
             "Original Memento Mori AnyMonsterDeath scaling, target damage, payment or discard differs.");
+        BattleTurnState knowledgeBefore = actions[17].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState knowledgeAfter = actions[17].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        CombatContext knowledgeContext = knowledgeBefore.Spawn.Train.Context!;
+        CardInstanceState knowledge = knowledgeContext.FindCard(ids[17])!;
+        CardPlayRule knowledgeRule = knowledgeBefore.PlayRules!.Cards.Single(rule => rule.DataId == knowledge.DataId);
+        CardSourceTrait knowledgeSource = knowledge.MaskDescriptor!.SourceTraits!.Single();
+        ScalingDamageTrait knowledgeScaling = knowledge.DamageScalingTraits!.Single();
+        string exhaustedSpellDataId = knowledgeContext.FindCard(ids[10])!.DataId;
+        string friendlyMonsterDataId = knowledgeContext.FindCard(ids[0])!.DataId;
+        CombatUnit knowledgeTarget = knowledgeBefore.Spawn.Train.Rooms[0].Units.First(unit => unit.Team == CombatTeam.Enemy);
+        CombatUnit knowledgeTargetAfter = knowledgeAfter.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == knowledgeTarget.Id);
+        DamageScalingResult knowledgeExpected = DamageScalingModel.Apply(knowledgeContext, ids[17], ids[17], knowledgeRule.Effects!.Single().Value);
+        Require(knowledge.DataId == "f50ecee3-8bde-4100-a315-a362ff23a561" && knowledgeRule.AssetKey == "PowerOfKnowledge" &&
+            knowledgeRule.Cost == 2 && knowledgeRule.CostType == "Default" && knowledgeRule.Destination == "Discard" &&
+            knowledgeRule.Effects.Single().Type == "Damage" && knowledgeRule.Effects[0].Target == "DropTargetCharacter" &&
+            knowledgeRule.Effects[0].Value == 0 && knowledgeRule.Effects[0].AllowEnemy && knowledgeRule.Effects[0].AllowPlayer &&
+            knowledgeRule.ExternalInteractions.Count == 0 && knowledgeRule.UpgradeInteractions!.Count == 0,
+            "Original Power of Knowledge definition, target or cost differs.");
+        Require(knowledgeSource.Type == "CardTraitScalingAddDamage" && knowledgeSource.Int == 20 && knowledgeSource.Int2 == 0 && knowledgeSource.Int3 == 0 &&
+            !knowledgeSource.Bool && knowledgeSource.Str == "" && knowledgeSource.Float == 1 && knowledgeSource.Scaling &&
+            knowledgeSource.TrackedValue == "TypeInExhaustPile" && knowledgeSource.EntryDuration == "ThisBattle" &&
+            knowledgeScaling.Query.Type == "TypeInExhaustPile" && knowledgeScaling.Query.Duration == "ThisBattle" &&
+            knowledgeScaling.Query.TypeMatchDataIds!.Contains(exhaustedSpellDataId) &&
+            !knowledgeScaling.Query.TypeMatchDataIds.Contains(friendlyMonsterDataId) && knowledgeScaling.DamagePerStat == 20 &&
+            knowledgeScaling.Multiplier == 1 && !knowledgeScaling.AddToDamage,
+            "Original Power of Knowledge source trait or captured Spell-only scaling query differs.");
+        Require(
+            knowledgeContext.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == ids[10]) &&
+            StatisticQueryModel.Evaluate(knowledgeContext, knowledgeScaling.Query, ids[17]).Value == 1 &&
+            knowledgeExpected.Supported && knowledgeExpected.Damage == 20,
+            "Original Power of Knowledge TypeInExhaustPile query did not count exactly one exhausted Spell.");
+        Require(knowledgeTarget.Health - knowledgeTargetAfter.Health == 20 && knowledgeBefore.Energy - knowledgeAfter.Energy == 2 &&
+            knowledgeAfter.Spawn.Train.Context!.Cards.Discard.Any(card => card.InstanceId == ids[17]) &&
+            knowledgeBefore.Spawn.Train.Context!.BattleRng.Equals(knowledgeAfter.Spawn.Train.Context!.BattleRng),
+            "Original Power of Knowledge target damage, payment, discard or RNG differs.");
         Require(consumed == 1, "Deadly Plunge must be the only original Consume spell in this witness.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-SCALED-DAMAGE PASS: six unchanged originals/seven plays, exact armor-inclusive HP and front attack damage, three Corruption, ten runtime Spell members after source removal, zero/two allied deaths, Memento Mori +20 from AnyMonsterDeath and 17 immutable full chains.");
+        Console.WriteLine("ORIGINAL-SCALED-DAMAGE PASS: seven unchanged originals/eight plays, exact armor-inclusive HP and front attack damage, three Corruption, eleven TypeInDeck Spell members while Ancient Synergy resolves, zero/two allied deaths, Memento Mori +20 from AnyMonsterDeath, Power of Knowledge +20 from one exhausted Spell and 18 immutable full chains.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
