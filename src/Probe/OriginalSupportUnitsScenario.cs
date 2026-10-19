@@ -14,7 +14,8 @@ namespace MonsterTrain2Poju.Probe
             "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
             "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
             "61d9f4f1-80f5-416b-bf22-1836925c8ccd", "5a8399dd-a958-4317-b814-de0e2972ca3d", "a736e605-a4f4-4cc1-8eba-63cb0cf3515e",
-            "64a3fd58-b7b3-466a-be8d-78bb2b9bdea4", "d653e83e-3f70-419d-b3f9-4b920d5c9e56", "dcfdf8cc-0b0b-41e2-97a2-383fe303e617" };
+            "64a3fd58-b7b3-466a-be8d-78bb2b9bdea4", "d653e83e-3f70-419d-b3f9-4b920d5c9e56", "dcfdf8cc-0b0b-41e2-97a2-383fe303e617",
+            "69fcbe85-a5b7-4a83-bf6d-21888604d99e" };
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -59,16 +60,16 @@ namespace MonsterTrain2Poju.Probe
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
             save.SetDragonsHoardCap(4); save.SetDragonsHoardAmount(2);
-            log.LogInfo("ORIGINAL-SUPPORT-UNITS-PREPARED fourteen unchanged originals; positive spawn, rally, heal, hit, attack, equipment growth, unmatched typed-draw control and Alchemical death Hoard callback.");
+            log.LogInfo("ORIGINAL-SUPPORT-UNITS-PREPARED fifteen unchanged originals; positive spawn, rally, heal, hit, attack, equipment growth, unmatched typed-draw control, Alchemical death Hoard callback and Avenger direct-spawn boundary.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
-            int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 21 or 29 or 30 ? 2 : 0;
-            int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is 19 or 20 ? index - 18 : index == 21 ? 3 : -1;
-            int host = index is 22 or 23 ? 11 : index is 24 or 25 ? 12 : index == 26 ? 9 : index == 27 ? 8 : index == 28 ? 10 : index == 30 ? 21 : 19;
-            int target = index >= 22 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
+            int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 21 or 22 or 30 or 31 ? 2 : 0;
+            int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is >= 19 and <= 22 ? index - 18 : -1;
+            int host = index is 23 or 24 ? 11 : index is 25 or 26 ? 12 : index == 27 ? 9 : index == 28 ? 8 : index == 29 ? 10 : index == 31 ? 21 : 19;
+            int target = index >= 23 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
             var action = new PlayCardAction(ids[index], room, playerPosition: position, targetUnitId: target);
             BattleActionResult result = BattleActionModel.PlayCard(source, action);
             if (result.Supported) return action;
