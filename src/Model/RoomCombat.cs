@@ -456,7 +456,7 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "decay", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
-            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul"
+            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -1175,6 +1175,15 @@ namespace MonsterTrain2Poju.Model
                                 return "Unmodeled triggered null-effect target forwarding.";
                             string? filter = action.Target == "Self" ? null : action.Filters?.Validate();
                             if (filter != null) return filter;
+                            continue;
+                        }
+                        if (effect.Type == "CardEffectAdjustAllStatusEffects")
+                        {
+                            CardActionEffect? adjustment = effect.Action;
+                            if (adjustment?.Type != "AdjustAllStatusEffects" || adjustment.Target != "Self" || adjustment.Range != null ||
+                                adjustment.StatusAdjustmentFilter is not (0 or 1) || adjustment.Tests?.StrictTargets != false ||
+                                adjustment.Statuses.Any(status => !KnowsStatus(status.Id)) || adjustment.Value == int.MinValue)
+                                return "Unsupported triggered all-status adjustment definition.";
                             continue;
                         }
                         if (effect.Type == "CardEffectRemoveAllStatusEffects")
@@ -2118,11 +2127,18 @@ namespace MonsterTrain2Poju.Model
                     Trigger(actor, "inert", 1);
                     Emit("Inert", actor, actor, 0);
                 }
+                bool restricted = !dazed && !inert && actor.Has("restricted") && Active(actor.Statuses["restricted"]);
+                if (restricted)
+                {
+                    if (!ignoreAttackPrevention) cannotAttackOrHeal.Add(actor.Source.Id);
+                    Trigger(actor, "restricted", 1);
+                    Emit("Restricted", actor, actor, 0);
+                }
                 if (actor.Has("spark") && Active(actor.Statuses["spark"])) Trigger(actor, "spark", 1);
                 // Native queues this after attack/trigger prevention, before attack conditions.
                 // Ignored-silence triggers can run while dazed, without restoring this turn's attack.
                 FireTriggers(actor, "OnTurnBegin", canFireTriggers: !dazed);
-                if (!actor.Alive || (dazed || inert) && !ignoreAttackPrevention || !actor.Source.CanAttack || actor.Attack <= 0) return;
+                if (!actor.Alive || (dazed || inert || restricted) && !ignoreAttackPrevention || !actor.Source.CanAttack || actor.Attack <= 0) return;
                 int multistrikeExtraAttacks = actor.Statuses.TryGetValue("multistrike", out CombatStatus? multi)
                     ? CombatUnit.AdditionalAttacks(multi) : 0;
                 int strikes = actor.Attacks;
@@ -4201,6 +4217,20 @@ namespace MonsterTrain2Poju.Model
                     }
                     foreach (QueuedCharacterTrigger callback in transfer.PendingCallbacks) QueueCallback(callback);
                     foreach (CombatEvent item in transfer.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
+                    return true;
+                }
+                if (action.Type == "AdjustAllStatusEffects")
+                {
+                    foreach (int id in targets.UnitIds.Reverse())
+                    {
+                        RoomCombatResult applied = CardSpellModel.ApplyStatusAdjustment(RetainedStatusRoom(actor, targets.UnitIds),
+                            action, id, actor.Source.SpawnerCardId, actor.Has("duality"));
+                        if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
+                        context = applied.State!.Context;
+                        foreach (CombatUnit changed in applied.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);
+                        foreach (QueuedCharacterTrigger callback in applied.PendingCallbacks) QueueCallback(callback);
+                        foreach (CombatEvent item in applied.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
+                    }
                     return true;
                 }
                 if (action.Type == "Null") return true;

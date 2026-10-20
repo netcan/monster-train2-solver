@@ -130,6 +130,8 @@ namespace MonsterTrain2Poju.Probe
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
             log.LogInfo("ORIGINAL-ISOLATED-EQUIPMENT-PREPARED three separate anchor hosts, energy control and unchanged originals " + string.Join(",", equipmentIds));
+            if (equipmentIds.Contains("38552752-e647-461d-811d-2553cf74f493"))
+                log.LogInfo("ORIGINAL-RESTRICTED-STATUS nativeStage=" + managers.GetStatusEffectManager().GetStatusEffectDataById("restricted").GetPrimaryTriggerStage());
         }
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
     }

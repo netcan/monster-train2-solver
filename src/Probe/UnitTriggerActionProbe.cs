@@ -19,6 +19,8 @@ namespace MonsterTrain2Poju.Probe
 
         internal static CardActionEffect? Capture(CardEffectState state, List<string>? interactions = null)
         {
+            if (state.GetCardEffect() is CardEffectAdjustAllStatusEffects)
+                return BattleActionProbe.DescribeTriggerEffect(state.GetSourceCardEffectData(), interactions ?? new List<string>());
             if (state.GetCardEffect() is CardEffectDrawType) return TypedDraw(state.GetSourceCardEffectData(), state.GetParamInt());
             if (AbilityLifecycleProbe.Known(state.GetCardEffect().GetType().Name)) return AbilityLifecycleProbe.Capture(state);
             if (AbilityCooldownProbe.Known(state.GetCardEffect().GetType().Name)) return AbilityCooldownProbe.Describe(state.GetSourceCardEffectData(), state.GetParamInt(), state.GetParamBool());
@@ -41,6 +43,7 @@ namespace MonsterTrain2Poju.Probe
                     BattleActionProbe.Status(status.statusId, status.count)).ToArray() : null);
         }
         internal static CardActionEffect? Definition(CardEffectData effect, List<string>? interactions = null) =>
+            effect.GetEffectStateName() == "CardEffectAdjustAllStatusEffects" ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
             effect.GetEffectStateName() == "CardEffectDrawType" ? TypedDraw(effect, effect.GetParamInt()) :
             AbilityLifecycleProbe.Known(effect.GetEffectStateName()) ? AbilityLifecycleProbe.Describe(effect) :
             AbilityCooldownProbe.Known(effect.GetEffectStateName()) ? AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool()) :

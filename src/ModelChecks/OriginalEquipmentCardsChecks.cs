@@ -216,6 +216,27 @@ internal static class OriginalEquipmentCardsChecks
                 before.Spawn.Train.Context.BattleRng.Equals(after.Spawn.Train.Context.BattleRng),
                 "Original equipment attachment changed another floor or consumed Battle RNG.");
         }
+        int gauntlet = Array.IndexOf(originals, "38552752-e647-461d-811d-2553cf74f493");
+        if (gauntlet >= 0)
+        {
+            int equipmentId = ids[gauntlet + 4], hostCardId = ids[gauntlet % 3];
+            CombatUnit[] turns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms
+                    .SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == hostCardId))
+                .Where(unit => unit.Status("restricted")?.Stacks > 0).ToArray();
+            Require(turns.Select(unit => unit.Status("burst")?.Stacks ?? 0).SequenceEqual([3, 4, 5, 6]) &&
+                turns.All(unit => unit.Triggers.Single(trigger => trigger.Kind == "PostCombat" && trigger.Origin?.EquipmentCardId == equipmentId).HasTriggered),
+                "Restricted must prevent ordinary attacks while Geared Gauntlet still accumulates its native PostCombat Burst stacks.");
+        }
+        if (originals.SequenceEqual(["0780835c-250a-4144-8b0b-2b03a480206a"]))
+        {
+            CombatUnit[] turns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[0]))
+                .Where(unit => unit.EquipmentCards!.Contains(ids[4])).ToArray();
+            Require(turns.Select(unit => unit.Status("regen")?.Stacks ?? 0).SequenceEqual([3, 5, 7, 6]) &&
+                turns.All(unit => unit.Triggers.Single(trigger => trigger.Kind == "PostCombat" && trigger.Origin?.EquipmentCardId == ids[4]).HasTriggered),
+                "Loamcoat must add Regeneration then adjust its existing status stacks in native post-combat order, including terminal cleanup.");
+        }
         RecordedBattleChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-EQUIPMENT PASS: {originals.Length} unchanged paid attachments on separate native hosts and immutable full chains.");
     }

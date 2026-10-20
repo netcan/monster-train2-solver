@@ -459,6 +459,17 @@ internal static class OriginalSupportUnitsChecks
                 unitAfter.Spawn.Train.Context!.Enchantments != null,
                 "Original aura must bind its other friendly host without setting a skipped native trigger-test flag.");
         }
+        if (rule.AssetKey == "Morselmaker")
+        {
+            CombatUnit[] turns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms[unitAction.RoomIndex])
+                .Where(room => room.Units.Any(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Select(room => room.Units.Single(unit => unit.SpawnerCardId == ids[unitAction.RoomIndex])).ToArray();
+            Require(rule.Cost == 2 && template.Modifiers!.AttackDamage == 5 && template.Health == 15 && template.Size == 1 &&
+                template.Triggers.Single().Kind == "PostCombat" && template.Triggers.Single().Effects.Single().Summon != null &&
+                turns.Select(unit => unit.Modifiers!.AttackDamage).SequenceEqual([1000, 1009, 1018, 1027]),
+                "Morselmaker must retain its original birth and positively summon food that increases the friendly front host's attack on following combats.");
+        }
         if (rule.AssetKey == "FaeMoonPixie")
         {
             CombatTrigger trigger = spawnedUnit.Triggers.Single(item => item.Kind == "AfterSpawnEnchant");

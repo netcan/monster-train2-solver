@@ -9139,3 +9139,30 @@ their complete immutable chains. Both batch fixtures also have bounded search
 checks. The legacy persistent-enchantment fixture is an affected regression.
 The isolated equipment runner accepts one to thirty original IDs and stops
 early on a model preflight rejection when requested.
+
+### Original Combat Equipment and Morselmaker
+
+`full-battle-original-isolated-equipment-combat-batch.mt2f` captures unchanged
+Bogwurm's Bulk, Herzal's Hammer, Geared Gauntlet, Luna Cyclestaff and Mindcage.
+Geared Gauntlet's Restricted status runs at native OnCombatTurnInert and blocks
+ordinary attacks while its PostCombat still accumulates Burst: three, four,
+five and six stacks in the four post-deployment snapshots. Its equipment ability
+is installed but unused. Moon Cyclestaff keeps its original phase callbacks.
+
+`full-battle-original-isolated-loamcoat.mt2f` verifies its original paid
+attachment, +1 Regeneration followed by an adjustment of the existing stacks,
+and terminal cleanup. Regeneration snapshots are three, five, seven and six.
+The trigger reuses the existing card status-adjustment operation and retains
+native self targeting and test flags.
+
+`full-battle-original-isolated-morselmaker.mt2f` verifies the original 2-cost
+5/15 size-one birth and its post-combat pair of native food summons. Following
+combats positively feed the front host, whose attack snapshots are 1000, 1009,
+1018 and 1027. Callback source sorting now ignores detached preview actors that
+own neither Enchant nor Deathwish callbacks. Actual callback owners still
+require their physical positions.
+
+All three battles won with DEPTH-PASS and all four capture counters zero.
+Focused checks replay every action and EndTurn, with sixteen immutable branches.
+Affected Enchant/Deathwish component and original status-composition witnesses
+also pass; no full regression suite was run for this batch.

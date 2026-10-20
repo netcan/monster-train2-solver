@@ -179,10 +179,14 @@ namespace MonsterTrain2Poju.Model
                     foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
                     {
                         int rank = 0;
+                        // Only callback owners need physical source ordering. A
+                        // detached preview summon with no aura/Deathwish cannot
+                        // participate in this update and needs no source point.
                         // RoomState.AddCharactersToList excludes IsDead/IsDestroyed.
                         // Damage queues can retain a zero-HP actor after its point
                         // has been removed; it is not an enchantment/Deathwish source.
-                        foreach (CombatUnit unit in room.Units.Where(unit => unit.Team == team && CanCollect(unit)))
+                        foreach (CombatUnit unit in room.Units.Where(unit => unit.Team == team && CanCollect(unit) &&
+                            (state.EnchanterIds.Contains(unit.Id) || unit.Triggers.Any(trigger => DeathwishModel.CallbackKinds.Contains(trigger.Kind)))))
                         {
                             var group = state.Train.Context?.SpawnPoints?.SelectedGroup(room.RoomIndex, team);
                             int index = group == null ? rank : Array.IndexOf(group.Occupants.ToArray(), unit.Id);

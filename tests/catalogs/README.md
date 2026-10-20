@@ -23,9 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-173848-d1c67cf8/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,051 bytes, 11,611 unique nodes,
-SHA-256 `b1677be254af903ade9e795f1cc0bc0267a98eb0e0173861571deae6bf9d4912`.
+Source: `.probe-runs/full-battle-no-cards-20261020-175827-361b4993/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,163 bytes, 11,612 unique nodes,
+SHA-256 `314de31bac738b5fb20db68849f851cbcfa412376750716625386081bb6b532d`.
+The latest refresh adds Loamcoat's triggered all-status adjustment through the
+existing card-effect projection. It is the only changed Rule; all 668 raw native
+definitions are unchanged. The catalog and its surrounding baseline passed.
 Original Enchant effects retain their native test flags. Binding an aura through
 its spawn lifecycle does not set HasTriggered when its only effect has
 ShouldTest=false. Legacy evidence without these flags retains its prior behavior.

@@ -2611,6 +2611,10 @@ namespace MonsterTrain2Poju.Model
             return outcomes.Length > 1 ? "Random attack-change tests depend on the auxiliary test stream." : null;
         }
 
+        internal static RoomCombatResult ApplyStatusAdjustment(RoomCombatState state, CardActionEffect effect, int targetId,
+            int sourceCardId, bool sourceHasDuality) => ApplyOne(state, effect, state.Units.Single(unit => unit.Id == targetId),
+                sourceCardId, null, null, sourceHasDuality: sourceHasDuality);
+
         private static RoomCombatResult ApplyOne(RoomCombatState state, CardActionEffect effect, CombatUnit target,
             int sourceCardId, int? playerCapacity, int? enemyCapacity, bool deferSpawnerExhaustion = false, int? scaledDamage = null, int selfUnitId = 0,
             bool sourceHasDuality = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
