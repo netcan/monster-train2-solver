@@ -276,6 +276,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-parrafin-thug.mt2f',
     'full-battle-original-isolated-monstrosity.mt2f',
     'full-battle-original-isolated-wickless-death-trigger-batch.mt2f',
+    'full-battle-original-isolated-death-summon-batch.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
@@ -2283,6 +2284,13 @@ foreach ($fixturePath in $originalIsolatedWicklessDeathFixtures) {
     foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Wickless death-trigger batch checks failed ($mode): $fixturePath" }
+    }
+}
+$originalIsolatedDeathSummonFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-isolated-death-summon-batch.mt2f' })
+foreach ($fixturePath in $originalIsolatedDeathSummonFixtures) {
+    foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original death-summon batch checks failed ($mode): $fixturePath" }
     }
 }
 $originalAttackOverrideFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-attack-overrides.mt2f' })

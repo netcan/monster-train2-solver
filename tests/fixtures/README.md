@@ -9058,3 +9058,35 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-steelsinger.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-steelsinger.mt2f
 ```
+
+### Original Death-Summon Unit Batch
+
+`full-battle-original-isolated-death-summon-batch.mt2f` groups unchanged
+Dregs Tomb (0-cost, 0/1, size 1) and Splitter Unit (2-cost, 16/16, size 4)
+by their native character-trigger signature: `OnDeath` with
+`CardEffectSpawnMonster`, requesting two children. Selection uses
+`Rule.SpawnUnit.Triggers` from the frozen card catalog; the top-level card
+trigger summary does not include these character callbacks.
+
+The isolated scenario now captures the summon catalog when a requested unit
+has that effect and selects the first floor with enough native slots and
+capacity. Dregs Tomb plays behind the first-floor anchor; Splitter Unit plays
+behind the second-floor anchor because each floor has capacity five. The
+summon catalog includes Draff and both generations of Splitter children,
+preserving the different `IgnoreCardUpgrades` values. Both units survive all
+four post-deployment snapshots, so this fixture proves original direct play
+and captured summon definitions; it does not execute either death summon.
+
+The Instant native battle won with `DEPTH-PASS` and zero capture failures,
+mismatches, unsupported transitions or pending records. Focused checks replay
+all five plays and five EndTurns, including 16 independent immutable branches.
+Bounded serial/parallel search agrees at 128 states with three replayed steps.
+The prior Wickless batch and Consumer of Crowns search checks also pass with
+the updated placement/energy-control chooser. Archive metadata is in
+`manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitIds 'b8f0ce9f-65ef-49cd-87e5-a75dd95b7032,1fd77f47-4735-41d0-b660-66df674f1969' -FailFastOnIsolatedUnitReject
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-death-summon-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-death-summon-batch.mt2f
+```

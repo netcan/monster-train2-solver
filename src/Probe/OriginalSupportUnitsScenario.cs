@@ -47,6 +47,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static int IsolatedEnergyControlInstanceId { get; private set; }
+        internal static bool CapturesTriggeredSummons { get; private set; }
         private static ManualLogSource? logger;
         private static string? lastRejection;
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
@@ -119,6 +120,8 @@ namespace MonsterTrain2Poju.Probe
         private static void PrepareIsolatedUnits(AllGameManagers managers, ManualLogSource log, string[] unitIds, string label)
         {
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
+            CapturesTriggeredSummons = unitIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData().GetTriggers()
+                .SelectMany(trigger => trigger.GetEffects()).Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster"));
             Set(all.GetBalanceData(), "maxHandSize", 40);
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
             Set(steward, "cost", 0); Set(anchor, "attackDamage", 1000); Set(anchor, "health", 10000); Set(anchor, "size", 1);
@@ -151,7 +154,8 @@ namespace MonsterTrain2Poju.Probe
             CardIds = scheduledCards.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
-            log.LogInfo("ORIGINAL-ISOLATED-UNIT-PREPARED three safe native anchors plus one original " + label + ".");
+            log.LogInfo("ORIGINAL-ISOLATED-UNIT-PREPARED three safe native anchors plus original units " + label +
+                "; triggeredSummonCatalog=" + CapturesTriggeredSummons + ".");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
@@ -160,13 +164,31 @@ namespace MonsterTrain2Poju.Probe
             if (DivineDancerOnly || IsolatedUnitBatchOnly || IsolatedColdstrikeSirenOnly || IsolatedUnitOnly)
             {
                 int isolatedRoom = index < 3 ? index : 0;
-                int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == 0).Units.Count(unit => unit.Team == CombatTeam.Player);
+                if (index >= 3)
+                {
+                    string dataId = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
+                    CombatUnit? template = source.PlayRules!.Cards.Single(rule => rule.DataId == dataId).SpawnUnit;
+                    if (template != null)
+                        foreach (RoomPlayRule candidateRoom in source.PlayRules.Rooms.Where(candidate => candidate.Enabled && !candidate.IsPyre && !candidate.SummonBlocked).OrderBy(candidate => candidate.RoomIndex))
+                        {
+                            CombatUnit[] players = source.Spawn.Train.Rooms.Single(current => current.RoomIndex == candidateRoom.RoomIndex).Units
+                                .Where(unit => unit.Team == CombatTeam.Player).ToArray();
+                            if (players.Length < candidateRoom.PlayerSlots && players.Sum(unit => unit.Size) + template.Size <= candidateRoom.PlayerCapacity)
+                            { isolatedRoom = candidateRoom.RoomIndex; break; }
+                        }
+                }
+                int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == isolatedRoom).Units.Count(unit => unit.Team == CombatTeam.Player);
                 var isolatedAction = ids[index] == IsolatedEnergyControlInstanceId && IsolatedEnergyControlInstanceId != 0
                     ? new PlayCardAction(ids[index], isolatedRoom)
                     : new PlayCardAction(ids[index], isolatedRoom, playerPosition: isolatedPosition);
                 BattleActionResult isolatedResult = BattleActionModel.PlayCard(source, isolatedAction);
                 if (isolatedResult.Supported) return isolatedAction;
-                if (lastRejection != isolatedResult.Reason) { lastRejection = isolatedResult.Reason; logger?.LogInfo("ORIGINAL-ISOLATED-UNIT-REJECT index=" + index + " reason=" + isolatedResult.Reason); }
+                if (lastRejection != isolatedResult.Reason)
+                {
+                    lastRejection = isolatedResult.Reason;
+                    logger?.LogInfo("ORIGINAL-ISOLATED-UNIT-REJECT index=" + index + " dataId=" +
+                        source.Spawn.Train.Context!.FindCard(ids[index])!.DataId + " reason=" + isolatedResult.Reason);
+                }
                 return null;
             }
             int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 || index is 35 or 36 ? 1 :

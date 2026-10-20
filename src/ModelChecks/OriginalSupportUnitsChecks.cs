@@ -64,6 +64,8 @@ internal static class OriginalSupportUnitsChecks
     private const string WicklessBaronId = "4cf9eb1d-b852-4514-8f32-831bc38276ec";
     private const string WicklessTycoonId = "918f8345-8660-49de-a764-d16e76343abc";
     private const string SteelsingerId = "55f5945e-8cb3-4577-9207-a92c5deb78d5";
+    private const string DregsTombId = "b8f0ce9f-65ef-49cd-87e5-a75dd95b7032";
+    private const string SplitterUnitId = "1fd77f47-4735-41d0-b660-66df674f1969";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -77,8 +79,18 @@ internal static class OriginalSupportUnitsChecks
         if (ids.Length >= 4)
         {
             int roomIndex = index < 3 ? index : 0;
-            int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units.Count(unit => unit.Team == CombatTeam.Player);
-            var isolatedAction = new PlayCardAction(ids[index], roomIndex, playerPosition: isolatedPosition);
+            string dataId = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
+            CombatUnit? template = source.PlayRules!.Cards.Single(rule => rule.DataId == dataId).SpawnUnit;
+            if (index >= 3 && template != null)
+                foreach (RoomPlayRule candidateRoom in source.PlayRules.Rooms.Where(candidate => candidate.Enabled && !candidate.IsPyre && !candidate.SummonBlocked).OrderBy(candidate => candidate.RoomIndex))
+                {
+                    CombatUnit[] players = source.Spawn.Train.Rooms.Single(current => current.RoomIndex == candidateRoom.RoomIndex).Units
+                        .Where(unit => unit.Team == CombatTeam.Player).ToArray();
+                    if (players.Length < candidateRoom.PlayerSlots && players.Sum(unit => unit.Size) + template.Size <= candidateRoom.PlayerCapacity)
+                    { roomIndex = candidateRoom.RoomIndex; break; }
+                }
+            int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(room => room.RoomIndex == roomIndex).Units.Count(unit => unit.Team == CombatTeam.Player);
+            var isolatedAction = new PlayCardAction(ids[index], roomIndex, playerPosition: template == null ? -1 : isolatedPosition);
             return BattleActionModel.PlayCard(source, isolatedAction).Supported ? isolatedAction : null;
         }
         int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 || index is 35 or 36 ? 1 :
@@ -125,6 +137,14 @@ internal static class OriginalSupportUnitsChecks
                 "Isolated unit scenario must record three anchors, optional energy control, and every requested original unit birth.");
             for (int index = 0; index < expectedIds.Length; index++)
                 NativeIsolatedUnit(root, expectedIds[index], actionIndex: index + 3 + energyControlActions);
+            if (expectedIds.SequenceEqual([DregsTombId, SplitterUnitId]))
+            {
+                PlayCardAction tomb = isolatedActions[3].GetProperty("Action").Deserialize<PlayCardAction>()!;
+                PlayCardAction splitter = isolatedActions[4].GetProperty("Action").Deserialize<PlayCardAction>()!;
+                Require(energyControlActions == 0 && tomb.RoomIndex == 0 && splitter.RoomIndex == 1 &&
+                    tomb.PlayerPosition == 1 && splitter.PlayerPosition == 1,
+                    "The death-summon batch must fit unchanged units behind separate anchors at native capacity five.");
+            }
             return;
         }
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
@@ -406,11 +426,14 @@ internal static class OriginalSupportUnitsChecks
         CardPlayRule rule = unitBefore.PlayRules!.Cards.Single(item => item.DataId == expectedId);
         CombatUnit template = rule.SpawnUnit!, spawnedUnit = unitAfter.Spawn.Train.Rooms.SelectMany(item => item.Units)
             .Single(candidate => candidate.SpawnerCardId == ids[actionIndex]);
-        int appendPosition = unitBefore.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0).Units.Count(candidate => candidate.Team == CombatTeam.Player);
+        RoomCombatState targetRoom = unitBefore.Spawn.Train.Rooms.Single(item => item.RoomIndex == unitAction.RoomIndex);
+        RoomPlayRule targetRule = unitBefore.PlayRules.Rooms.Single(item => item.RoomIndex == unitAction.RoomIndex);
+        int appendPosition = targetRoom.Units.Count(candidate => candidate.Team == CombatTeam.Player);
         bool juggernautXCost = expectedId == JuggernautId;
         bool healthAdjustedOnSpawn = expectedId == SteelsingerId;
-        Require(unitCard.DataId == expectedId && unitAction.RoomIndex == 0 && unitAction.PlayerPosition == appendPosition &&
-            unitAction.TargetUnitId == 0 && unitBefore.PlayRules.Rooms.Single(item => item.RoomIndex == 0).PlayerSlots > appendPosition &&
+        Require(unitCard.DataId == expectedId && unitAction.RoomIndex is >= 0 and < 3 && unitAction.PlayerPosition == appendPosition &&
+            unitAction.TargetUnitId == 0 && targetRule.Enabled && !targetRule.IsPyre && !targetRule.SummonBlocked && targetRule.PlayerSlots > appendPosition &&
+            targetRoom.Units.Where(unit => unit.Team == CombatTeam.Player).Sum(unit => unit.Size) + template.Size <= targetRule.PlayerCapacity &&
             unitBefore.Energy >= rule.Cost && (juggernautXCost ? unitBefore.Energy == 3 && unitAfter.Energy == 0 : unitBefore.Energy - unitAfter.Energy == rule.Cost) &&
             rule.Effect == "SpawnMonster" &&
             !string.IsNullOrEmpty(rule.AssetKey) && (expectedAsset == null || rule.AssetKey == expectedAsset) &&
@@ -418,6 +441,49 @@ internal static class OriginalSupportUnitsChecks
             (juggernautXCost || spawnedUnit.Health == template.Health && (healthAdjustedOnSpawn || spawnedUnit.MaxHealth == template.MaxHealth) &&
                 spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage),
             expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
+        if (expectedId is DregsTombId or SplitterUnitId)
+        {
+            bool tomb = expectedId == DregsTombId;
+            CombatTrigger death = template.Triggers.Single();
+            CombatEffect effect = death.Effects.Single();
+            TriggeredSummonRule summon = effect.Summon!;
+            var context = unitBefore.Spawn.Train.Context!;
+            TriggeredSummonCatalog catalog = context.SummonCatalog!;
+            string childId = tomb ? "e7213f58-a8ee-4429-85cc-ae50004e45ee" : "2018db82-8270-48df-a069-1e9bd7803b24";
+            SummonUnitDefinition child = catalog.Units.Single(unit => unit.CharacterId == childId);
+            CombatUnit[] turnUnits = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == (tomb ? "DregsTomb" : "SplitterUnit") && rule.Cost == (tomb ? 0 : 2) &&
+                template.AssetKey == (tomb ? "RemnantHost" : "MonsterSplitterLarge") &&
+                template.Modifiers!.AttackDamage == (tomb ? 0 : 16) && template.Health == (tomb ? 1 : 16) &&
+                template.MaxHealth == template.Health && template.Size == (tomb ? 1 : 4) &&
+                rule.ExternalInteractions.Count == 0 && death.Kind == "OnDeath" && !death.HasTriggered &&
+                effect.Type == "CardEffectSpawnMonster" && effect.Value == 2 && summon.Count == 2 &&
+                summon.CharacterId == childId && summon.IgnoreCardUpgrades == tomb && summon.AdditionalCharacterId == "" &&
+                summon.Pool.Count == 0 && summon.Upgrade == null && summon.FirstSpawnedUnitId == 0 &&
+                context.SpawnPoints != null && context.NextUnitId > 0 && context.StatusRules.Any(status => status.Id == "cardless") &&
+                child.ExternalInteractions.Count == 0 && child.Unit.AssetKey == (tomb ? "Draff" : "MonsterSplitterMedium") &&
+                child.Unit.Modifiers!.AttackDamage == (tomb ? 15 : 8) && child.Unit.Health == (tomb ? 5 : 8) &&
+                child.Unit.Size == (tomb ? 1 : 2) && turnUnits.Length == 4 &&
+                turnUnits.All(unit => unit.Health == template.Health && unit.MaxHealth == template.MaxHealth &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "OnDeath").HasTriggered),
+                "Original death-summon units require unchanged births, complete child definitions and explicitly untriggered OnDeath boundaries.");
+            if (!tomb)
+            {
+                TriggeredSummonRule secondGeneration = child.Unit.Triggers.Single(trigger => trigger.Kind == "OnDeath").Effects.Single().Summon!;
+                SummonUnitDefinition smallest = catalog.Units.Single(unit => unit.CharacterId == secondGeneration.CharacterId);
+                Require(secondGeneration.CharacterId == "ea008872-27fa-4e05-9c8e-2fdcb7928257" &&
+                    secondGeneration.Count == 2 && !secondGeneration.IgnoreCardUpgrades &&
+                    smallest.Unit.AssetKey == "MonsterSplitterSmall" && smallest.Unit.Modifiers!.AttackDamage == 5 &&
+                    smallest.Unit.Health == 5 && smallest.Unit.Size == 1 && smallest.ExternalInteractions.Count == 0,
+                    "Splitter's captured summon catalog must close over the medium-to-small second generation.");
+            }
+            Console.WriteLine("ORIGINAL-DEATH-SUMMON-UNIT PASS: " + rule.AssetKey +
+                " native birth retained the two-child OnDeath definition and closed summon catalog; OnDeath remained untriggered.");
+        }
         if (expectedId == SteelsingerId)
         {
             CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
