@@ -9,8 +9,8 @@ internal static class OriginalSupportUnitsChecks
     private const string BattleDancerId = "a0b051b2-7898-454a-8bd8-300b72b99c93";
     private const string HeroInTrainingId = "57ffb1c3-0728-4254-ab35-7e34adab459f";
     private const string DivineDancerId = "a1e9a37b-504a-4a04-99e2-6d933727b427";
-    private static readonly string[] IsolatedUnitBatchIds = ["276fdd51-4bb8-4810-9bbf-cb663522b70f"];
-    private static readonly string[] IsolatedUnitBatchAssets = ["BrandedWarrior"];
+    private const string BrandedWarriorId = "276fdd51-4bb8-4810-9bbf-cb663522b70f";
+    private const string ColdstrikeSirenId = "ff11e59c-d696-4aea-b626-432574508f40";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -47,7 +47,12 @@ internal static class OriginalSupportUnitsChecks
         }
         if (root.GetProperty("ModifierScenario").GetString() == "original-isolated-unit-batch")
         {
-            NativeIsolatedUnitBatch(root);
+            NativeIsolatedUnit(root, BrandedWarriorId, "BrandedWarrior");
+            return;
+        }
+        if (root.GetProperty("ModifierScenario").GetString() == "original-isolated-coldstrike-siren")
+        {
+            NativeIsolatedUnit(root, ColdstrikeSirenId, "ColdstrikeSiren");
             return;
         }
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
@@ -285,14 +290,14 @@ internal static class OriginalSupportUnitsChecks
         RecordedBattleChecks.Native(root);
         Console.WriteLine("ORIGINAL-DIVINE-DANCER PASS: native 7/14 size-2 birth in an available room slot; captured five-Armor room OnShift remains untriggered.");
     }
-    private static void NativeIsolatedUnitBatch(FixtureValue root)
+    private static void NativeIsolatedUnit(FixtureValue root, string expectedId, string expectedAsset)
     {
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
-            root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed isolated original unit batch witness.");
+            root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed isolated original unit witness.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalSupportUnitsIds").Deserialize<int[]>()!;
         FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 4 && actions.Length == 4, "Isolated Apex Imp witness needs three anchors and one direct unit birth.");
+        Require(ids.Length == 4 && actions.Length == 4, "Isolated unit witness needs three anchors and one direct unit birth.");
         BattleTurnState Before(int index) => actions[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState After(int index) => actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         for (int index = 0; index < 3; index++)
@@ -305,25 +310,22 @@ internal static class OriginalSupportUnitsChecks
                 before.Energy - after.Energy == 0 && unit.AssetKey == "TrainStewardBig" && unit.Health == 10000 &&
                 unit.Modifiers!.AttackDamage == 1000 && unit.Size == 1, "Isolated unit batch anchor control changed.");
         }
-        for (int index = 0; index < IsolatedUnitBatchIds.Length; index++)
-        {
-            int actionIndex = index + 3;
-            BattleTurnState before = Before(actionIndex), after = After(actionIndex);
-            PlayCardAction action = actions[actionIndex].GetProperty("Action").Deserialize<PlayCardAction>()!;
-            CardInstanceState card = before.Spawn.Train.Context!.FindCard(ids[actionIndex])!;
-            CardPlayRule rule = before.PlayRules!.Cards.Single(item => item.DataId == IsolatedUnitBatchIds[index]);
-            CombatUnit template = rule.SpawnUnit!, unit = after.Spawn.Train.Rooms.SelectMany(item => item.Units)
-                .Single(candidate => candidate.SpawnerCardId == ids[actionIndex]);
-            int appendPosition = before.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0).Units.Count(candidate => candidate.Team == CombatTeam.Player);
-            Require(card.DataId == IsolatedUnitBatchIds[index] && action.RoomIndex == 0 && action.PlayerPosition == appendPosition &&
-                action.TargetUnitId == 0 && before.PlayRules.Rooms.Single(item => item.RoomIndex == 0).PlayerSlots > appendPosition &&
-                before.Energy >= rule.Cost && before.Energy - after.Energy == rule.Cost && rule.Cost > 0 && rule.Effect == "SpawnMonster" &&
-                rule.AssetKey == IsolatedUnitBatchAssets[index] && unit.AssetKey == template.AssetKey && unit.Size == template.Size &&
-                unit.Health == template.Health && unit.MaxHealth == template.MaxHealth && unit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage,
-                IsolatedUnitBatchAssets[index] + " must preserve its captured original card identity, paid spawn and native birth template.");
-        }
+        int actionIndex = 3;
+        BattleTurnState unitBefore = Before(actionIndex), unitAfter = After(actionIndex);
+        PlayCardAction unitAction = actions[actionIndex].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CardInstanceState unitCard = unitBefore.Spawn.Train.Context!.FindCard(ids[actionIndex])!;
+        CardPlayRule rule = unitBefore.PlayRules!.Cards.Single(item => item.DataId == expectedId);
+        CombatUnit template = rule.SpawnUnit!, spawnedUnit = unitAfter.Spawn.Train.Rooms.SelectMany(item => item.Units)
+            .Single(candidate => candidate.SpawnerCardId == ids[actionIndex]);
+        int appendPosition = unitBefore.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0).Units.Count(candidate => candidate.Team == CombatTeam.Player);
+        Require(unitCard.DataId == expectedId && unitAction.RoomIndex == 0 && unitAction.PlayerPosition == appendPosition &&
+            unitAction.TargetUnitId == 0 && unitBefore.PlayRules.Rooms.Single(item => item.RoomIndex == 0).PlayerSlots > appendPosition &&
+            unitBefore.Energy >= rule.Cost && unitBefore.Energy - unitAfter.Energy == rule.Cost && rule.Cost > 0 && rule.Effect == "SpawnMonster" &&
+            rule.AssetKey == expectedAsset && spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Size == template.Size &&
+            spawnedUnit.Health == template.Health && spawnedUnit.MaxHealth == template.MaxHealth && spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage,
+            expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-ISOLATED-UNIT-BATCH PASS: native Branded Warrior birth matched its captured original spawn template.");
+        Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedAsset + " birth matched its captured original spawn template.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

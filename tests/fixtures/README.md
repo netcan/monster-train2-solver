@@ -7774,6 +7774,24 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-unit-batch.mt2f
 ```
 
+### Original Coldstrike Siren
+
+`full-battle-original-isolated-coldstrike-siren.mt2f` isolates an unchanged
+Coldstrike Siren with three zero-cost Steward anchors. Its direct play pays the
+captured native cost and the initial spawn identity and stats match the original
+rule. The 37.72-second Instant run won with zero capture failures, mismatches,
+unsupported stages or pending records. Four native plays span five EndTurns;
+the 26,483-byte archive has 3,506 unique nodes and SHA-256
+`fd3023558ecd7df249279f79236b141625f229a64f813d3e9575842b8f5666ce`.
+Dedicated replay and a 128-state serial/parallel search pass; all four
+decisions match, with 12 root actions and zero unsupported attempts.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedColdstrikeSiren -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-coldstrike-siren.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-coldstrike-siren.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
