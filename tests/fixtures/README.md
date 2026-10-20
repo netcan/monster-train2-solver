@@ -9010,3 +9010,18 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-frozen-totem.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-frozen-totem.mt2f
 ```
+
+### Original Royal Whelp
+
+`full-battle-original-isolated-royal-whelp.mt2f` plays the unchanged Royal
+Whelp after three safe anchors. Its original card identity and trigger-free
+spawn definition match through the direct play; the Instant battle won with
+zero capture failures, mismatches, unsupported transitions or pending
+records. Focused replay and bounded serial/parallel search agree at 128 states
+with three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 198fb647-d5fc-4fb4-912c-cb8e64789412
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-royal-whelp.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-royal-whelp.mt2f
+```
