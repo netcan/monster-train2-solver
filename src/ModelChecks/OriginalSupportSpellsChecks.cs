@@ -314,6 +314,25 @@ internal static class OriginalSupportSpellsChecks
             Require(expected.All(positive.Contains), "Each contextual attack rule needs a positive independent native getter witness.");
             if (expected.Length > 0) Console.WriteLine($"UNIT-SELF-ATTACK PASS: {queries} exact native queries across {expected.Length} positive scaling rules.");
         }
+        foreach (string egg in originals.Where(id => id is "27b0fdda-5dc4-4280-a510-fe51e550e3fb" or "07448181-5b6f-404a-88ff-cb4d8ac8a3b1"))
+        {
+            string parent = egg == "27b0fdda-5dc4-4280-a510-fe51e550e3fb" ? "MonsterBogChrysalis" : "MonsterBogdeepCocoon";
+            string child = parent == "MonsterBogChrysalis" ? "MonsterBogFly" : "MonsterBogWurmling";
+            var birth = root.GetProperty("TriggeredSummons").EnumerateArray().Single(record =>
+                record.GetProperty("Kind").GetString() == "OnHatched" && record.GetProperty("ActorBefore").GetProperty("AssetKey").GetString() == parent);
+            CombatUnit actor = birth.GetProperty("ActorBefore").Deserialize<CombatUnit>()!;
+            RoomCombatState before = birth.GetProperty("Before").Deserialize<RoomCombatState>()!,
+                after = birth.GetProperty("After").Deserialize<RoomCombatState>()!;
+            CombatUnit[] children = after.Units.Where(unit => before.Units.All(old => old.Id != unit.Id)).ToArray();
+            Require(birth.GetProperty("Completed").GetBoolean() && birth.GetProperty("Error").ValueKind == FixtureKind.Null &&
+                after.Units.All(unit => unit.Id != actor.Id) && children.Length == (child == "MonsterBogFly" ? 2 : 1) &&
+                children.All(unit => unit.AssetKey == child && unit.Status("cardless")?.Stacks == 1) &&
+                after.Context!.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == actor.SpawnerCardId) &&
+                root.GetProperty("Turns").EnumerateArray().SelectMany(turn => turn.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms)
+                    .SelectMany(room => room.Units).Any(unit => unit.Id == actor.Id && unit.Health > 0 && unit.Status("hatch")?.Stacks > 0 &&
+                        unit.SacrificeCardId == unit.SpawnerCardId && unit.DeathState?.IsSacrifice == false),
+                "Hatching needs positive original-parent exhaustion, exact cardless children and the preview's shared sacrifice-card reference.");
+        }
         RecordedBattleChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }

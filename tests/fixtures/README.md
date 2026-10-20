@@ -9380,3 +9380,17 @@ gates these additions; raw attack stays normalized separately from live queries.
 Native tracked-Gold queries also refresh the post-ClearCards deck statistics
 cache. All native failure counters are zero, with settled victory, DEPTH-PASS,
 sixteen independent full replay chains and bounded serial/parallel search.
+
+`full-battle-original-isolated-bog-hatching.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-200155-5218512b`.
+Unchanged Bog Chrysalis and Bogdeep Cocoon run alongside three independent
+anchors with four current/permanent room Corruption. Their native Hatch
+callbacks sacrifice the original parents into Exhausted and produce exactly
+two cardless Bog Flies and one cardless 90-attack Bog Wurmling. The focused
+checker also requires an earlier living, positive-Hatch parent whose shared
+SacrificeCard reference was written by preview, while primary HP/IsSacrifice
+were restored. SacrificeCard is outside native PrimaryStateInformation.
+The full native battle has settled victory, DEPTH-PASS and zero failure
+counters, with sixteen immutable replay branches and bounded search parity.
+Bog Wurmling's original CostTypeNonPlayable stays explicit: its positive
+generated-unit witness does not establish a direct hand play.

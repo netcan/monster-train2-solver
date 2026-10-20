@@ -32,6 +32,7 @@ namespace MonsterTrain2Poju.Model
                     source.EnemySlotsPerRoom, context), preview: true, testRng: context.IsolatedBattlePreview == true ? context.BattleRng : originalWorld.TestRng);
             }
             var overwrittenSummons = new HashSet<(int UnitId, int TriggerId, int EffectIndex)>();
+            var sacrificeCards = new Dictionary<int, int>();
             int firstPreviewId = context.NextUnitId ?? int.MaxValue;
             int firstPreviewCardId = context.NextCardId;
             bool previewBirth = false;
@@ -57,15 +58,23 @@ namespace MonsterTrain2Poju.Model
             {
                 previewBirth |= after?.NextUnitId > firstPreviewId;
                 foreach (CombatUnit unit in units)
-                for (int triggerIndex = 0; triggerIndex < unit.Triggers.Count; triggerIndex++)
-                for (int effectIndex = 0; effectIndex < unit.Triggers[triggerIndex].Effects.Count; effectIndex++)
-                    if (unit.Triggers[triggerIndex].Effects[effectIndex].Summon?.FirstSpawnedUnitId >= firstPreviewId)
-                        overwrittenSummons.Add((unit.Id, unit.Triggers[triggerIndex].StateId ?? triggerIndex, effectIndex));
+                {
+                    // SacrificeCard lives outside CharacterState.PrimaryStateInformation.
+                    // Preview cancellation restores HP and IsSacrifice, but keeps this reference.
+                    if (unit.SacrificeCardId is int cardId) sacrificeCards[unit.Id] = cardId;
+                    for (int triggerIndex = 0; triggerIndex < unit.Triggers.Count; triggerIndex++)
+                    for (int effectIndex = 0; effectIndex < unit.Triggers[triggerIndex].Effects.Count; effectIndex++)
+                        if (unit.Triggers[triggerIndex].Effects[effectIndex].Summon?.FirstSpawnedUnitId >= firstPreviewId)
+                            overwrittenSummons.Add((unit.Id, unit.Triggers[triggerIndex].StateId ?? triggerIndex, effectIndex));
+                }
             }
-            CombatUnit RestorePrimaryEffects(CombatUnit unit) => overwrittenSummons.Count == 0 ? unit :
-                unit.WithTriggers(unit.Triggers.Select((trigger, index) => trigger.WithEffects(trigger.Effects.Select((effect, effectIndex) =>
+            CombatUnit RestorePrimaryEffects(CombatUnit unit)
+            {
+                if (sacrificeCards.TryGetValue(unit.Id, out int cardId)) unit = unit.WithSacrifice(cardId, markSacrifice: false);
+                return overwrittenSummons.Count == 0 ? unit : unit.WithTriggers(unit.Triggers.Select((trigger, index) => trigger.WithEffects(trigger.Effects.Select((effect, effectIndex) =>
                     effect.Summon != null && overwrittenSummons.Contains((unit.Id, trigger.StateId ?? index, effectIndex))
                         ? effect.WithSummon(effect.Summon.WithFirstSpawned(0)) : effect).ToArray())).ToArray());
+            }
             // Native UI preview runs only the player pre-discard phase, once before all rooms.
             TrainCombatResult preDiscard = TrainCombatModel.EndTurnPreHandDiscard(previewTrain, CombatTeam.Player);
             if (!preDiscard.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
