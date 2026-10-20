@@ -9788,3 +9788,24 @@ unsupported/pending counters. Each has five EndTurns, sixteen immutable replay
 branches and a 128-state bounded search with zero unsupported attempts and equal
 serial/parallel results. Related original room-card, relic attachment and first
 room replication chains retain their focused replays.
+
+`full-battle-original-isolated-weapons-cache.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-002942-9aa42fec`.
+Unchanged Weapons Cache binds an OnSpawn callback to a later original Dreg.
+It allocates one next-draw upgrade object, draws the eligible original
+Bloodthirsty Blade from the deck, and applies the authored temporary cost -2.
+A same-definition Blade already in hand and all Torch controls receive no
+upgrade. Native reference allocation and the card-effect queue clearing match.
+`full-battle-original-isolated-weapons-cache-empty.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-003035-0c015f62`.
+The later original Formless Child admits the same callback with no equipment
+available, draws nothing and clears the allocated upgrade at the card boundary.
+Its subsequent empty-pile death recursion exhausts its own spawner once.
+Triggered draws use the null native source card. Queued upgrades use captured
+branch card metadata when combat has no play-rule catalog; unknown card data
+and nonzero triggered gold costs remain guarded. Unused shared editor upgrade
+fields on CardEffectDrawType are ignored because its native iterator never
+reads them. Both captures have DEPTH-PASS, settled wins and zero failure counters.
+Both six-play/five-EndTurn chains pass sixteen immutable branches and bounded
+128-state searches with zero unsupported attempts and equal serial/parallel
+results. Existing typed-draw and Prism Retrieval chains retain focused replays.

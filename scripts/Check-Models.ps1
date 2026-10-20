@@ -348,6 +348,8 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-room-trigger-gold.mt2f',
     'full-battle-original-isolated-room-trigger-spawn-upgrade.mt2f',
     'full-battle-original-isolated-room-trigger-replacement.mt2f',
+    'full-battle-original-isolated-weapons-cache.mt2f',
+    'full-battle-original-isolated-weapons-cache-empty.mt2f',
     'full-battle-original-isolated-heal-cost.mt2f',
     'full-battle-original-isolated-heal-cost-other-floor.mt2f',
     'full-battle-original-isolated-room-rage.mt2f',
@@ -2467,7 +2469,8 @@ $remainingOriginalSpellFixtures = @($fixtures | Where-Object { (Split-Path -Leaf
     'full-battle-original-isolated-room-trigger-rage.mt2f', 'full-battle-original-isolated-room-trigger-valor.mt2f',
     'full-battle-original-isolated-room-trigger-healing.mt2f', 'full-battle-original-isolated-room-trigger-spikes.mt2f',
     'full-battle-original-isolated-room-trigger-energy.mt2f', 'full-battle-original-isolated-room-trigger-gold.mt2f',
-    'full-battle-original-isolated-room-trigger-spawn-upgrade.mt2f', 'full-battle-original-isolated-room-trigger-replacement.mt2f') })
+    'full-battle-original-isolated-room-trigger-spawn-upgrade.mt2f', 'full-battle-original-isolated-room-trigger-replacement.mt2f',
+    'full-battle-original-isolated-weapons-cache.mt2f', 'full-battle-original-isolated-weapons-cache-empty.mt2f') })
 foreach ($fixturePath in $remainingOriginalSpellFixtures) {
     foreach ($mode in @('--original-support-spells-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

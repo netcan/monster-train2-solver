@@ -23,10 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-002418-6a34a5f8/card-catalog.mt2f`.
-The committed archive is byte-identical: 98,969 bytes, 12,006 unique nodes,
-SHA-256 `e534c7b46e8133214175a642e727e3657f8b7e8b31de5e9fe020c32da58eebf7`.
-The latest refresh captures native room upgrade trigger definitions, filters,
+Source: `.probe-runs/full-battle-no-cards-20261021-002904-cbc323ff/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,103 bytes, 12,028 unique nodes,
+SHA-256 `4d9ac63cf5117a631f97ec22ed9336acaf94b913dd6b220055b8dc980aee4458`.
+The latest refresh captures Weapons Cache's triggered next-draw upgrade and
+typed draw. Only this projection changes; all other 667 definitions are identical.
+The preceding refresh captures native room upgrade trigger definitions, filters,
 traits, replacement references, unhealed health and room ability identities.
 Exactly seven model projections change: Boiler Room, Awakening Thicket,
 Sacrificial Chamber, Bloodsoaked Arena, Rage Room, Reanimation Lab and

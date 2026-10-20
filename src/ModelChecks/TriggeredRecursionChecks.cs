@@ -41,10 +41,13 @@ internal static class TriggeredRecursionChecks
                 .Select(card => card.InstanceId).ToArray();
             if (eligible.Length == 0)
             {
-                Require(id == Infery && nextPile.Cards.Count == oldPile.Cards.Count &&
-                    nextContext.Cards.Hand.Count == oldContext.Cards.Hand.Count - 1,
-                    "Empty-pile OnSpawn recursion must produce no card while still completing the unit play.");
-                Console.WriteLine("ORIGINAL-TRIGGERED-RECURSION PASS: native Infery empty-pile control.");
+                Require(id == Infery ? nextPile.Cards.Count == oldPile.Cards.Count &&
+                    nextContext.Cards.Hand.Count == oldContext.Cards.Hand.Count - 1 :
+                    nextPile.Cards.Count == oldPile.Cards.Count + 1 && nextPile.Cards.Count(card => card.InstanceId == spawner) == 1 &&
+                    nextContext.Cards.Hand.All(card => card.InstanceId != spawner) &&
+                    nextContext.CardRegistry!.All(card => card.Temporary.Upgrades.All(upgrade => upgrade.DataId != "828772f2-d8d3-4021-a8ae-bfa934c04679")),
+                    "Empty-pile recursion must produce no card; the dying Child then exhausts its own spawner exactly once.");
+                Console.WriteLine($"ORIGINAL-TRIGGERED-RECURSION PASS: native {id} empty-pile control.");
                 continue;
             }
             int[] restored = eligible.Where(cardId => nextPile.Cards.All(card => card.InstanceId != cardId)).ToArray();

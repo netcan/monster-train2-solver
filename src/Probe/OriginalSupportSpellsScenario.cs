@@ -203,6 +203,13 @@ namespace MonsterTrain2Poju.Probe
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
                 .Concat(spellIds.Select(Add)).ToArray();
+            if (spellIds.Contains("e221f8ac-7b5f-4485-a4d1-dedd22f61466") && spellIds.Contains("63a48bad-07da-4687-bfef-2f7c6653af5e"))
+            {
+                for (int equipment = 0; equipment < 2; equipment++)
+                    cards.AddNewCard(all.FindCardData("66cbbd14-f5f3-44a1-bd1c-ce98f3c13584")!, CardPile.DeckPileTop, false, false, animate: false);
+                for (int spellControl = 0; spellControl < 14; spellControl++)
+                    cards.AddNewCard(all.FindCardData("f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b")!, CardPile.DeckPileTop, false, false, animate: false);
+            }
             foreach (string damageGrowth in spellIds.Where(id => id is "3f974014-72f2-407e-a8c1-28ba5b273cfa" or "f29d063b-cb41-44ee-8118-4db66b6f8195"))
                 Add(damageGrowth); // Same-definition, unplayed exclusion control for source-only growth.
             foreach (string ephemeral in spellIds.Where(id => all.FindCardData(id)!.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitEphemeral")))

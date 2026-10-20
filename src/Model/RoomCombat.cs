@@ -1168,6 +1168,15 @@ namespace MonsterTrain2Poju.Model
                             if (recursionError != null) return recursionError;
                             continue;
                         }
+                        if (effect.Type == "CardEffectAddTempCardUpgradeToNextDrawnCard")
+                        {
+                            if (state.Context?.Cards.NextDrawUpgrades == null || state.Context.Cards.NextUpgradeReferenceId == null ||
+                                effect.Action is not { Type: "ScheduleNextDrawUpgrade", NextDrawUpgrade: not null, RequiredGold: 0 } nextDraw)
+                                return "Triggered next-draw upgrades require the captured queue, reference allocation and a zero-cost payload.";
+                            if (nextDraw.NextDrawUpgrade.Upgrade.ExternalInteractions.Count > 0)
+                                return string.Join("; ", nextDraw.NextDrawUpgrade.Upgrade.ExternalInteractions);
+                            continue;
+                        }
                         if (effect.Type == "CardEffectDrawType")
                         {
                             string? drawError = TriggeredTypedDrawModel.Validate(state.Context, effect);
@@ -4016,6 +4025,7 @@ namespace MonsterTrain2Poju.Model
                     bool valid;
                     if (action.Type == "UpgradeDeckSpells") valid = !source.Preview && !battleWon && context?.AllScenarioBossesDead != true;
                     else if (action.Type == "Recursion") valid = true; // Native TestEffect delegates to the unconditional base for RequiresRoomInHand=false.
+                    else if (action.Type == "ScheduleNextDrawUpgrade") valid = true;
                     else if (action.Type == "SpawnOrStatus") valid = SpawnOrStatusCanApply(actor, action, trigger.Kind);
                     else
                     {
@@ -4246,6 +4256,12 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId)
             {
                 CardActionEffect action = effect.Action!;
+                if (action.Type == "ScheduleNextDrawUpgrade")
+                {
+                    if (!source.Preview && !battleWon && context?.AllScenarioBossesDead != true)
+                        context = NextDrawUpgradeModel.Schedule(context!, action.NextDrawUpgrade!);
+                    return true;
+                }
                 if (action.Type == "Recursion")
                 {
                     if (source.Preview || battleWon || context?.AllScenarioBossesDead == true) return true;

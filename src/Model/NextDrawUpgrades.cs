@@ -147,9 +147,9 @@ namespace MonsterTrain2Poju.Model
             {
                 CardInstanceState? card = context.FindCard(id);
                 CardPlayRule? definition = definitions?.Cards.FirstOrDefault(rule => rule.DataId == card?.DataId);
-                if (card == null || definition == null)
+                if (card == null || definition == null && (definitions != null || card.MaskDescriptor == null))
                 { error = "Missing next-draw card instance or definition."; return source; }
-                var interactions = definition.UpgradeInteractions ?? definition.ExternalInteractions;
+                var interactions = definition?.UpgradeInteractions ?? definition?.ExternalInteractions ?? Array.Empty<string>();
                 if (interactions.Count > 0)
                 { error = string.Join("; ", interactions); return source; }
                 if (card.ExternalInteractions.Count > 0)
