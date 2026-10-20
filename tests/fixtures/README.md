@@ -8518,3 +8518,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-rubble-raiser.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-rubble-raiser.mt2f
 ```
+
+### Original Nightingale
+
+`full-battle-original-isolated-nightingale.mt2f` plays the unchanged 1-cost
+Nightingale and records its 10/5 size-2 Nightshadow with two starting Stealth.
+The native timeline applies the `Nightingale_Upgrade` +2 Multistrike effect as
+Moonshade begins, removes it when Moonshade is lost, then applies it again on a
+later Moonshade transition. The Instant battle won with zero capture failures,
+mismatches, unsupported transitions or pending records. Focused replay and
+bounded serial/parallel search agree at 128 states, with three replayed steps;
+archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 7775c5b5-eed9-4864-9976-9c86896becc1
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-nightingale.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-nightingale.mt2f
+```

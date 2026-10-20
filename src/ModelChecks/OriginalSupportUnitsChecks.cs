@@ -34,6 +34,7 @@ internal static class OriginalSupportUnitsChecks
     private const string WeldlingId = "acb9a1cb-f6fc-40df-b287-fc82b8df156b";
     private const string HostguardId = "c682012e-b5fc-4f75-9cb4-f6ade997b72f";
     private const string RubbleRaiserId = "e2ed318d-754c-41b8-8df6-0a6af221e54e";
+    private const string NightingaleId = "7775c5b5-eed9-4864-9976-9c86896becc1";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -582,6 +583,53 @@ internal static class OriginalSupportUnitsChecks
                 upgrade.Upgrade.Stats.Damage == 3 && upgrade.Upgrade.Stats.Health == 3 && !onEaten.HasTriggered &&
                 !spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnEaten").HasTriggered && spawnedUnit.LastFeederId == 0,
                 "Rubble Raiser must preserve its native zero-cost 0/1 Snack birth and exact inactive OnEaten energy/LastFeeder upgrade definition.");
+        }
+        if (expectedId == NightingaleId)
+        {
+            CombatTrigger onMoonShade = template.Triggers.Single(trigger => trigger.Kind == "OnMoonShade");
+            CombatTrigger onMoonshadeLost = template.Triggers.Single(trigger => trigger.Kind == "OnMoonshadeLost");
+            CardActionEffect addUpgrade = onMoonShade.Effects.Single().UnitUpgrade!;
+            CardActionEffect removeUpgrade = onMoonshadeLost.Effects.Single().UnitUpgrade!;
+            FixtureValue[] turnRows = root.GetProperty("Turns").EnumerateArray().ToArray();
+            BattleTurnState[] actualTurns = turnRows.Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+            CombatUnit[] unitTurns = actualTurns.Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex])).Where(unit => unit != null).Select(unit => unit!).ToArray();
+            bool HasUpgrade(CombatUnit unit) => unit.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade");
+            bool addedOnMoonShade = turnRows.Any(row =>
+            {
+                BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatUnit? beforeUnit = before.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]);
+                CombatUnit? afterUnit = after.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]);
+                return beforeUnit != null && afterUnit != null && !HasUpgrade(beforeUnit) && HasUpgrade(afterUnit) &&
+                    afterUnit.Triggers.Single(trigger => trigger.Kind == "OnMoonShade").HasTriggered;
+            });
+            bool removedOnMoonshadeLost = turnRows.Any(row =>
+            {
+                BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatUnit? beforeUnit = before.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]);
+                CombatUnit? afterUnit = after.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]);
+                return beforeUnit != null && afterUnit != null && HasUpgrade(beforeUnit) && !HasUpgrade(afterUnit) &&
+                    afterUnit.Triggers.Single(trigger => trigger.Kind == "OnMoonshadeLost").HasTriggered;
+            });
+            Require(rule.AssetKey == "Nightingale" && template.AssetKey == "MonsterNightshadow" && rule.Cost == 1 &&
+                template.Modifiers!.AttackDamage == 10 && template.Health == 5 && template.MaxHealth == 5 && template.Size == 2 &&
+                template.Status("stealth")?.Stacks == 2 && !onMoonShade.Once && !onMoonshadeLost.Once &&
+                onMoonShade.Effects.Single().Type == "CardEffectAddTempCardUpgradeToUnits" &&
+                addUpgrade is { Type: "UnitUpgrade", Target: "Self", Lifetime: "TemporaryUntilUnitDeath" } &&
+                addUpgrade.Upgrade is { DataId: "ed61942e-8c6c-400d-a61f-3d60e792a085", AssetKey: "Nightingale_Upgrade" } &&
+                addUpgrade.Upgrade.Statuses.Single() is { Id: "multistrike", Stacks: 2, ParamInt: 2 } &&
+                onMoonshadeLost.Effects.Single().Type == "CardEffectRemoveTempUpgradeFromUnit" &&
+                removeUpgrade is { Type: "RemoveUnitUpgrade", Target: "Self", Lifetime: "TemporaryUntilEndOfBattle" } &&
+                removeUpgrade.Upgrade?.DataId == addUpgrade.Upgrade.DataId &&
+                unitTurns.Length == 4 && unitTurns.Select(HasUpgrade).SequenceEqual([true, false, true, true]) &&
+                addedOnMoonShade && removedOnMoonshadeLost,
+                "Nightingale must preserve its native 1-cost Nightshadow birth and execute the +2 Multistrike moonshade add/remove callbacks across repeated phases.");
         }
         if (expectedId == HostguardId)
         {
