@@ -10,16 +10,25 @@ namespace MonsterTrain2Poju.Probe
     internal static class NullTargetlessScenario
     {
         internal const string Name = "null-targetless";
-        private static readonly (string CardId, string CardKey)[] Originals =
+        internal const string OriginalScourgesName = "original-null-scourges";
+        private static readonly (string CardId, string CardKey)[] LegacyOriginals =
         {
             ("62cc5532-5fa0-4e66-9fec-85be573af359", "ScourgeT1"),
             ("21038774-c0a4-413c-ab7e-27e458228e5f", "SelfPurgeBlight")
         };
+        private static readonly (string CardId, string CardKey)[] RemainingOriginals =
+        {
+            ("2785cc8e-d0e8-46c0-84ab-9c1d602525d4", "ScourgeT2"),
+            ("fbf74ec4-2781-4b99-b6f7-b7d75236da60", "ScourgeT3"),
+            ("4d1f27af-3122-4a08-87e3-5ef5a14ced94", "Scourge_SoulSavior")
+        };
+        private static (string CardId, string CardKey)[] Originals =>
+            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == OriginalScourgesName ? RemainingOriginals : LegacyOriginals;
         private static readonly HashSet<string> played = new HashSet<string>(StringComparer.Ordinal);
         private static readonly HashSet<string> observed = new HashSet<string>(StringComparer.Ordinal);
         private static int scenarioActionId;
         private static ManualLogSource? logger;
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or OriginalScourgesName;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {

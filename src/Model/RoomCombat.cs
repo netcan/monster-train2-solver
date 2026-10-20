@@ -4010,12 +4010,13 @@ namespace MonsterTrain2Poju.Model
                 if (points == null || points.GroupCount == 0) return false;
                 bool dyingMonster = triggerKind == "OnDeath" && actor.Source.Team == CombatTeam.Player && !actor.Alive &&
                     actor.Source.IsPyre == false && actor.Source.IsBoss != true;
-                return dyingMonster || points.Occupants[0] == 0;
+                // Native ignores capacity here and inserts at the front, moving
+                // existing occupants when any physical slot is available.
+                return dyingMonster || points.Occupants.Any(id => id == 0);
             }
 
             private bool ApplyTriggeredSpawnOrStatus(WorkingUnit actor, CardActionEffect action, string triggerKind)
             {
-                if (source.Preview) return true;
                 if (!SpawnOrStatusCanApply(actor, action, triggerKind))
                     return unsupportedReason == null && action.Tests?.CancelSubsequent != true;
                 if (action.Statuses.Count == 0 || action.SpawnFallbackUnit == null)

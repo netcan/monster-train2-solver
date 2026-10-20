@@ -9166,3 +9166,24 @@ All three battles won with DEPTH-PASS and all four capture counters zero.
 Focused checks replay every action and EndTurn, with sixteen immutable branches.
 Affected Enchant/Deathwish component and original status-composition witnesses
 also pass; no full regression suite was run for this batch.
+
+### Original Cluster Colonel and Remaining Scourges
+
+`full-battle-original-isolated-cluster-colonel.mt2f` captures the unchanged
+2-cost 10/5 size-two Colonel with ten Armor. Its PostCombat spawns native Horde
+in front of occupied friendly positions and subsequently grows that Horde.
+Horde snapshots are four, seven, eleven and seven after combat losses and gains.
+Spawn-or-status now admits front insertion when another physical slot is free,
+and runs in combat previews. Preview birth cleanup clears the shared last-spawned
+reference. The earlier spawn-or-status fixture remains an affected regression.
+
+`full-battle-original-null-scourges.mt2f` captures unchanged Scourge T2, Scourge
+T3 and Soul Savior Scourge. Each spends one Energy, resolves native NULL with
+zero targets in an empty floor and self-purges. The original unplayed effects
+remain in their definitions but are not executed by these immediately played
+cards. The native battle wins after 23 plays and seven EndTurns. Run with
+`scripts/Run-FullBattleProbe.ps1 -OriginalNullScourges`.
+
+Both battles have DEPTH-PASS and zero capture failures, mismatches, unsupported
+transitions or pending records. Focused checks replay their full immutable
+chains; bounded searches compare serial and parallel results.

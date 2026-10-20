@@ -170,6 +170,7 @@ param(
     [switch] $NullForwarding,
     [switch] $NullTriggers,
     [switch] $NullTargetless,
+    [switch] $OriginalNullScourges,
     [switch] $OriginalTrample,
     [switch] $OriginalSpellShield,
     [switch] $ChooseDiscard,
@@ -977,6 +978,7 @@ if ($CardEffectKill -and $CardEffectKillSubtype) { throw 'Choose either -CardEff
 if ($CardEffectKill -or $CardEffectKillSubtype) { $Policy = 'units-spells-and-junk' }
 if ($NullForwarding) { $Policy = 'units-spells-and-junk' }
 if ($NullTriggers) { $Policy = 'units-spells-and-junk' }
+if ($OriginalNullScourges) { $NullTargetless = $true; $BranchCardMasks = $true }
 if ($NullTargetless) { $Policy = 'units-spells-and-junk' }
 if ($OriginalTrample) { $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellShield) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1373,6 +1375,7 @@ if ($CardEffectKill -or $CardEffectKillSubtype) {
 if ($NullForwarding) { $environment['MT2_PROBE_MODIFIERS'] = 'null-forwarding' }
 if ($NullTriggers) { $environment['MT2_PROBE_MODIFIERS'] = 'null-triggers' }
 if ($NullTargetless) { $environment['MT2_PROBE_MODIFIERS'] = 'null-targetless' }
+if ($OriginalNullScourges) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-scourges' }
 if ($OriginalTrample) { $environment['MT2_PROBE_MODIFIERS'] = 'original-trample' }
 if ($OriginalSpellShield) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-shield' }
 if ($ChooseDiscard) { $environment['MT2_PROBE_MODIFIERS'] = 'card-effect-choose-discard' }
@@ -1660,13 +1663,15 @@ if ($NullTriggers -and ($trace.ModifierScenario -ne 'null-triggers' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-TRIGGER-TEST actor=MonsterChampionLunaCoven2 targets=0 result=False' -Quiet))) {
     throw 'Original null-trigger target tests did not run in the native battle.'
 }
-if ($NullTargetless -and ($trace.ModifierScenario -ne 'null-targetless' -or
-    -not (Select-String -LiteralPath $unityLog -Pattern 'NULL-TARGETLESS-PREPARED originals=ScourgeT1,SelfPurgeBlight' -Quiet) -or
-    @(@('ScourgeT1', 'SelfPurgeBlight') | Where-Object {
+$nullOriginalKeys = if ($OriginalNullScourges) { @('ScourgeT2', 'ScourgeT3', 'Scourge_SoulSavior') } else { @('ScourgeT1', 'SelfPurgeBlight') }
+$nullOriginalScenario = if ($OriginalNullScourges) { 'original-null-scourges' } else { 'null-targetless' }
+if ($NullTargetless -and ($trace.ModifierScenario -ne $nullOriginalScenario -or
+    -not (Select-String -LiteralPath $unityLog -Pattern ('NULL-TARGETLESS-PREPARED originals=' + ($nullOriginalKeys -join ',')) -Quiet) -or
+    @($nullOriginalKeys | Where-Object {
         -not (Select-String -LiteralPath $unityLog -Pattern "NULL-TARGETLESS-PLAY original=$_ room=0" -Quiet) -or
         -not (Select-String -LiteralPath $unityLog -Pattern "NULL-TARGETLESS-TEST original=$_ targets=0 result=True" -Quiet)
     }).Count -ne 0 -or
-    @($trace.Actions | Where-Object ScenarioAction).Count -ne 2)) {
+    @($trace.Actions | Where-Object ScenarioAction).Count -ne $nullOriginalKeys.Count)) {
     throw 'Original targetless null effects did not resolve in the native battle.'
 }
 if ($OriginalTrample -and ($trace.ModifierScenario -ne 'original-trample' -or

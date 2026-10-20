@@ -459,6 +459,17 @@ internal static class OriginalSupportUnitsChecks
                 unitAfter.Spawn.Train.Context!.Enchantments != null,
                 "Original aura must bind its other friendly host without setting a skipped native trigger-test flag.");
         }
+        if (rule.AssetKey == "ClusterColonel")
+        {
+            RoomCombatState[] turns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms[unitAction.RoomIndex])
+                .Where(room => room.Units.Any(unit => unit.SpawnerCardId == ids[actionIndex])).ToArray();
+            Require(rule.Cost == 2 && template.Modifiers!.AttackDamage == 10 && template.Health == 5 && template.Size == 2 &&
+                template.Status("armor")?.Stacks == 10 && unitAfter.Spawn.Train.Context!.LastSpawnedUnitId == 0 &&
+                turns.Select(room => room.Units.Single(unit => unit.AssetKey == "MonsterFunguy").Status("horde")!.Stacks).SequenceEqual([4, 7, 11, 7]) &&
+                turns.All(room => room.Units.Single(unit => unit.SpawnerCardId == ids[actionIndex]).Triggers.Single().HasTriggered),
+                "Cluster Colonel must retain its original birth, preview-created reference cleanup and positive post-combat Horde spawn/growth.");
+        }
         if (rule.AssetKey == "Morselmaker")
         {
             CombatUnit[] turns = root.GetProperty("Turns").EnumerateArray()
