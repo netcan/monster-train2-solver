@@ -19,6 +19,13 @@ internal static class OriginalSupportUnitsChecks
     {
         int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
         if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
+        if (ids.Length == 4)
+        {
+            int roomIndex = index < 3 ? index : 0;
+            int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units.Count(unit => unit.Team == CombatTeam.Player);
+            var isolatedAction = new PlayCardAction(ids[index], roomIndex, playerPosition: isolatedPosition);
+            return BattleActionModel.PlayCard(source, isolatedAction).Supported ? isolatedAction : null;
+        }
         int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 || index is 35 or 36 ? 1 :
             index is 6 or 19 or 20 or 21 or 22 or 30 or 31 or 32 or 33 or 34 ? 2 : 0;
         int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is >= 19 and <= 22 ? index - 18 :
@@ -31,6 +38,11 @@ internal static class OriginalSupportUnitsChecks
     }
     internal static void Native(FixtureValue root)
     {
+        if (root.GetProperty("ModifierScenario").GetString() == "original-divine-dancer")
+        {
+            NativeDivineDancer(root);
+            return;
+        }
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed original support unit witness.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
@@ -223,6 +235,48 @@ internal static class OriginalSupportUnitsChecks
             "Divine Dancer remains an explicit coverage gap: its original 7/14 definition is captured, but the native witness has no free room slot to spawn it.");
         RecordedBattleChecks.Native(root);
         Console.WriteLine("ORIGINAL-SUPPORT-UNITS PASS: twenty unchanged units, Alchemical Assistant native spawn/death with capped Dragon's Hoard, Avenger OnHit, Blighted/Prosperity Totem CardSpellPlayed and Battle Dancer/Hero in Training OnShift boundaries, explicit Divine Dancer room-slot gap, positive spawn/rally/heal/hit/attack/equipment/postcombat callbacks, native no-match typed-draw control and 16 immutable full chains.");
+    }
+    private static void NativeDivineDancer(FixtureValue root)
+    {
+        Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
+            root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed isolated Divine Dancer witness.");
+        foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
+        int[] ids = root.GetProperty("OriginalSupportUnitsIds").Deserialize<int[]>()!;
+        FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
+        Require(ids.Length == 4 && actions.Length == 4, "Isolated Divine Dancer witness needs three anchor controls and one original birth.");
+        BattleTurnState Before(int index) => actions[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState After(int index) => actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        for (int index = 0; index < 3; index++)
+        {
+            BattleTurnState before = Before(index), after = After(index);
+            PlayCardAction action = actions[index].GetProperty("Action").Deserialize<PlayCardAction>()!;
+            CardInstanceState card = before.Spawn.Train.Context!.FindCard(ids[index])!;
+            CombatUnit unit = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(candidate => candidate.SpawnerCardId == ids[index]);
+            Require(card.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678" && action.RoomIndex == index && action.PlayerPosition == 0 &&
+                before.Energy - after.Energy == 0 && unit.AssetKey == "TrainStewardBig" && unit.Health == 10000 &&
+                unit.Modifiers!.AttackDamage == 1000 && unit.Size == 1, "Isolated Divine Dancer anchor control changed.");
+        }
+        BattleTurnState beforeDancer = Before(3), afterDancer = After(3);
+        PlayCardAction dancerAction = actions[3].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CardPlayRule dancerRule = beforeDancer.PlayRules!.Cards.Single(rule => rule.DataId == DivineDancerId);
+        CombatUnit template = dancerRule.SpawnUnit!, dancer = afterDancer.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .Single(unit => unit.SpawnerCardId == ids[3]);
+        CombatTrigger shift = template.Triggers.Single(trigger => trigger.Kind == "OnShift"), actualShift = dancer.Triggers.Single(trigger => trigger.Kind == "OnShift");
+        CardActionEffect effect = shift.Effects.Single().Action!;
+        RoomCombatState room = beforeDancer.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
+        int position = room.Units.Count(unit => unit.Team == CombatTeam.Player);
+        Require(beforeDancer.Spawn.Train.Context!.FindCard(ids[3])!.DataId == DivineDancerId &&
+            dancerAction.RoomIndex == 0 && dancerAction.PlayerPosition == position && dancerAction.TargetUnitId == 0 &&
+            beforeDancer.PlayRules!.Rooms.Single(item => item.RoomIndex == 0).PlayerSlots > position &&
+            beforeDancer.Energy - afterDancer.Energy == dancerRule.Cost && dancerRule.AssetKey == "DivineDancer" &&
+            template.AssetKey == "MonsterDivineDancer" && template.Health == 14 && template.MaxHealth == 14 &&
+            template.Modifiers!.AttackDamage == 7 && template.Size == 2 && dancer.AssetKey == "MonsterDivineDancer" &&
+            dancer.Health == 14 && dancer.MaxHealth == 14 && dancer.Modifiers!.AttackDamage == 7 && dancer.Size == 2 &&
+            (dancer.Status("armor")?.Stacks ?? 0) == 0 && effect.Type == "AddStatus" && effect.Target == "Room" &&
+            effect.Statuses.Single().Id == "armor" && effect.Statuses.Single().Stacks == 5 && !shift.HasTriggered && !actualShift.HasTriggered,
+            "Divine Dancer must preserve its original 7/14 size-2 birth and captured, untriggered five-Armor room OnShift callback.");
+        RecordedBattleChecks.Native(root);
+        Console.WriteLine("ORIGINAL-DIVINE-DANCER PASS: native 7/14 size-2 birth in an available room slot; captured five-Armor room OnShift remains untriggered.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

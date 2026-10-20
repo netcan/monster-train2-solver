@@ -10,6 +10,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalSupportUnitsScenario
     {
         internal const string Name = "original-support-units";
+        internal const string DivineDancerName = "original-divine-dancer";
         internal static readonly string[] Originals = { "4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
             "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
             "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -21,7 +22,8 @@ namespace MonsterTrain2Poju.Probe
         private const string BattleDancerId = "a0b051b2-7898-454a-8bd8-300b72b99c93";
         private const string HeroInTrainingId = "57ffb1c3-0728-4254-ab35-7e34adab459f";
         private const string DivineDancerId = "a1e9a37b-504a-4a04-99e2-6d933727b427";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        private static bool DivineDancerOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == DivineDancerName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || DivineDancerOnly;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         private static ManualLogSource? logger;
@@ -29,6 +31,7 @@ namespace MonsterTrain2Poju.Probe
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             logger = log;
+            if (DivineDancerOnly) { PrepareDivineDancer(managers, log); return; }
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
             Set(all.GetBalanceData(), "maxHandSize", 40);
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
@@ -69,10 +72,36 @@ namespace MonsterTrain2Poju.Probe
             save.SetDragonsHoardCap(4); save.SetDragonsHoardAmount(2);
             log.LogInfo("ORIGINAL-SUPPORT-UNITS-PREPARED twenty unchanged originals; positive spawn, rally, heal, hit, attack, equipment growth, unmatched typed-draw control, Alchemical death Hoard callback, Avenger OnHit, two CardSpellPlayed, Battle Dancer/Hero in Training OnShift and Divine Dancer full-room boundary.");
         }
+        private static void PrepareDivineDancer(AllGameManagers managers, ManualLogSource log)
+        {
+            SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
+            Set(all.GetBalanceData(), "maxHandSize", 40);
+            CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
+            Set(steward, "cost", 0); Set(anchor, "attackDamage", 1000); Set(anchor, "health", 10000); Set(anchor, "size", 1);
+            foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
+            foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
+            cards.GetDrawPile().Clear();
+            CardState[] created = new[] { cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false),
+                cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false),
+                cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false),
+                cards.AddNewCard(all.FindCardData(DivineDancerId)!, CardPile.HandPile, false, false, animate: false) };
+            var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); created[3].AddTemporaryTrait(freeze, managers.GetCoreManagers());
+            CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
+            AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
+            Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
+            log.LogInfo("ORIGINAL-DIVINE-DANCER-PREPARED three safe native anchor controls and one original 7/14 Divine Dancer in an empty room.");
+        }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
+            if (DivineDancerOnly)
+            {
+                int isolatedRoom = index < 3 ? index : 0;
+                int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == 0).Units.Count(unit => unit.Team == CombatTeam.Player);
+                var isolatedAction = new PlayCardAction(ids[index], isolatedRoom, playerPosition: isolatedPosition);
+                return BattleActionModel.PlayCard(source, isolatedAction).Supported ? isolatedAction : null;
+            }
             int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 || index is 35 or 36 ? 1 :
                 index is 6 or 19 or 20 or 21 or 22 or 30 or 31 or 32 or 33 or 34 ? 2 : 0;
             int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is >= 19 and <= 22 ? index - 18 :

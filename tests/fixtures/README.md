@@ -7710,8 +7710,10 @@ so the captured state is 11/11; its two-Buff OnShift callback remains
 untriggered. Divine Dancer's original 7/14, size-2 definition and five-Armor
 room OnShift callback are captured, but the card remains unplayed: the target
 room has reached its seven-player spawn-slot limit after Hero in Training.
-No native Divine Dancer birth or resolved callback is claimed; it remains a
-coverage gap for a separate empty-room witness.
+This combined route does not claim a Divine Dancer birth or resolved callback.
+Its native birth is covered separately in
+`full-battle-original-divine-dancer.mt2f`; that isolated witness also leaves
+the callback untriggered.
 Swordmaiden's captured Equipment DrawType is a no-match control: the only
 equipment remains in hand, outside draw/discard, so this archive does not claim
 a successful native draw. Positive typed-draw selection remains covered by the
@@ -7733,6 +7735,25 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --combat-effects-pure
 dotnet run --project src/ModelChecks -c Release -- --triggered-typed-draw-pure
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-support-units.mt2f
+```
+
+### Original Divine Dancer
+
+`full-battle-original-divine-dancer.mt2f` isolates one original Divine Dancer
+with three controlled Steward anchors so its 7/14, size-2, cost-1 native birth
+has an open room slot. Its OnShift callback adds five Armor to the room, but no
+shift occurs and no resolved Armor application is claimed. The 38.04-second
+Instant run won with zero capture failures, mismatches, unsupported stages or
+pending records. Four native plays span five EndTurns; the 26,201-byte archive
+has 3,470 unique nodes and SHA-256
+`c170c6c7d402b5388e67b6c36752454858bb8034123639dc873e2d3cb0dbba98`.
+Dedicated native replay and a 128-state serial/parallel search both pass; all
+four decisions match, with 12 root actions and zero unsupported attempts.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalDivineDancer -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-divine-dancer.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-divine-dancer.mt2f
 ```
 
 ### Original Alloyed Construct fuel
