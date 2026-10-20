@@ -459,6 +459,18 @@ internal static class OriginalSupportUnitsChecks
                 unitAfter.Spawn.Train.Context!.Enchantments != null,
                 "Original aura must bind its other friendly host without setting a skipped native trigger-test flag.");
         }
+        if (rule.AssetKey == "Glareminder")
+        {
+            BattleTurnState[] turns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+            Require(rule.Cost == 2 && template.Modifiers!.AttackDamage == 15 && template.Health == 30 && template.Size == 2 &&
+                turns.Length == 5 && turns.Select((turn, index) => turn.Spawn.Train.Context!.RoomCapacities!
+                    .All(room => room.Corruption == index)).All(equal => equal) &&
+                turns.Skip(1).All(turn => turn.Spawn.Train.Rooms[unitAction.RoomIndex].Units
+                    .Single(unit => unit.SpawnerCardId == ids[actionIndex]).Triggers
+                    .Single(trigger => trigger.Kind == "EndTurnPreHandDiscard").HasTriggered),
+                "Glareminder must add one native corruption to every floor before hand discard, with a captured full room world.");
+        }
         if (rule.AssetKey == "ClusterColonel")
         {
             RoomCombatState[] turns = root.GetProperty("Turns").EnumerateArray()

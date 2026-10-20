@@ -237,6 +237,18 @@ internal static class OriginalEquipmentCardsChecks
                 turns.All(unit => unit.Triggers.Single(trigger => trigger.Kind == "PostCombat" && trigger.Origin?.EquipmentCardId == ids[4]).HasTriggered),
                 "Loamcoat must add Regeneration then adjust its existing status stacks in native post-combat order, including terminal cleanup.");
         }
+        if (originals.SequenceEqual(["fccd2d4d-8751-4d7b-bd0a-e66f7586b275"]))
+        {
+            BattleTurnState[] turns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+            Require(turns.Select(turn => turn.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption ?? -1)
+                .SequenceEqual([0, 2, 4, 4, 7]) && turns.All(turn => turn.Spawn.Train.Context!.RoomCapacities!
+                    .Where(room => room.RoomIndex != 0).All(room => room.Corruption == 0)),
+                "Forgotten Trade must add native OnHit corruption to its host floor without changing other floors.");
+            CombatUnit host = turns[^1].Spawn.Train.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[0]);
+            Require(host.Triggers.Any(trigger => trigger.Kind == "OnHit" && trigger.Origin?.EquipmentCardId == ids[4] && trigger.HasTriggered),
+                "Forgotten Trade needs a positive native equipment OnHit callback.");
+        }
         RecordedBattleChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-EQUIPMENT PASS: {originals.Length} unchanged paid attachments on separate native hosts and immutable full chains.");
     }

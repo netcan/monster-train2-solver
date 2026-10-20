@@ -9187,3 +9187,23 @@ cards. The native battle wins after 23 plays and seven EndTurns. Run with
 Both battles have DEPTH-PASS and zero capture failures, mismatches, unsupported
 transitions or pending records. Focused checks replay their full immutable
 chains; bounded searches compare serial and parallel results.
+
+### Original Triggered Corruption
+
+`full-battle-original-isolated-glareminder.mt2f` preserves the original 2-cost
+15/30 size-two Glareminder and its ability. EndTurnPreHandDiscard adds one
+corruption to every floor, including the Pyre: completed-turn snapshots are
+zero, one, two, three and four on each floor. Its captured full room world
+validates callback presence before tower adjustments.
+
+`full-battle-original-isolated-forgotten-trade.mt2f` attaches unchanged Forgotten
+Trade to a control host. Native OnHit corruption snapshots on that floor are
+zero, two, four, four and seven; other floors remain zero. This also retains
+the original Scorch callback. Additional corruption unit/relic callbacks remain
+guarded rather than silently skipped. Neither fixture exercises ability use.
+
+Source profiles are `.probe-runs/full-battle-units-spells-and-junk-20261020-181631-a680b9c8`
+and `.probe-runs/full-battle-units-spells-and-junk-20261020-181033-f28188a2`.
+Both native battles win with DEPTH-PASS, settled terminal effects and all four
+failure counters zero. Focused checks retain full immutable replay branches
+and bounded serial/parallel search.

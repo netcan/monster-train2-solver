@@ -124,7 +124,8 @@ namespace MonsterTrain2Poju.Probe
             CapturesTriggeredSummons = unitIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData().GetTriggers()
                 .SelectMany(trigger => trigger.GetEffects()).Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster"));
             CapturesEnchantments = unitIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData().GetTriggers()
-                .SelectMany(trigger => trigger.GetEffects()).Any(effect => effect.GetEffectStateName() == "CardEffectEnchant"));
+                .SelectMany(trigger => trigger.GetEffects()).Any(effect => effect.GetEffectStateName() == "CardEffectEnchant" ||
+                    effect.GetEffectStateName() == "CardEffectAdjustCorruption" && effect.GetTargetMode() == TargetMode.Tower));
             Set(all.GetBalanceData(), "maxHandSize", 40);
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
             Set(steward, "cost", 0); Set(anchor, "attackDamage", 1000); Set(anchor, "health", 10000); Set(anchor, "size", 1);

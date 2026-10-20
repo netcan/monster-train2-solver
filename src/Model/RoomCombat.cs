@@ -1177,6 +1177,15 @@ namespace MonsterTrain2Poju.Model
                             if (filter != null) return filter;
                             continue;
                         }
+                        if (effect.Type == "CardEffectAdjustCorruption")
+                        {
+                            CardActionEffect? corruption = effect.Action;
+                            if (corruption?.Type != "AdjustCorruption" || corruption.Target is not ("Room" or "Tower"))
+                                return "Triggered corruption requires its native room or tower definition.";
+                            string? corruptionError = RoomCorruptionModel.Validate(state.Context, corruption);
+                            if (corruptionError != null) return corruptionError;
+                            continue;
+                        }
                         if (effect.Type == "CardEffectAdjustAllStatusEffects")
                         {
                             CardActionEffect? adjustment = effect.Action;
@@ -3793,6 +3802,8 @@ namespace MonsterTrain2Poju.Model
 
             private CardTargets TriggerTargets(WorkingUnit actor, CardActionEffect action, bool testing, WorkingUnit? overrideTarget = null, int lastSpawnedOverrideUnitId = 0)
             {
+                // This native effect selects rooms directly and never consumes character targets.
+                if (action.Type == "AdjustCorruption") return new CardTargets(Array.Empty<int>());
                 if (action.Target == "Pyre")
                     return new CardTargets(units.Where(unit => unit.Source.IsPyre).Take(1)
                         .Select(unit => unit.Source.Id).ToArray());
@@ -3960,6 +3971,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type == "AdjustCorruption" ? RoomCorruptionModel.Test(CurrentRoom(), action) :
                 action.Type is "AdjustMaxHealth" or "BuffHealth" ? true :
                 action.Type == "Null" ? targets.UnitIds.Count > 0 || action.NullTargetless :
                 action.Type == "TransferAllStatusesFromUnit" ? targets.UnitIds.Count > 0 && TriggeredStatusTransferModel.Validate(action) == null :
@@ -4113,6 +4125,26 @@ namespace MonsterTrain2Poju.Model
                     if (!drawn.Supported) { unsupportedReason = drawn.UnsupportedReason; return false; }
                     context = drawn.Context;
                     foreach (int id in drawn.DrawnCardIds) Emit("DrawType", actor, actor, id);
+                    return true;
+                }
+                if (action.Type == "AdjustCorruption")
+                {
+                    RoomCombatState room = CurrentRoom();
+                    if (!RoomCorruptionModel.Test(room, action)) return action.Tests?.CancelSubsequent != true;
+                    RoomCombatState[] floors = new[] { room };
+                    if (action.Target == "Tower")
+                    {
+                        if (context?.Enchantments == null)
+                        { unsupportedReason = "Tower corruption requires complete captured rooms for callback validation."; return false; }
+                        floors = context.Enchantments.Rooms.Select(other => other.RoomIndex == source.RoomIndex ? room :
+                            new RoomCombatState(other.RoomIndex, other.Deployment, other.Units, other.ExternalInteractions, context, source.Preview)).ToArray();
+                        if (context.RoomCapacities!.Any(capacity => !floors.Any(floor => floor.RoomIndex == capacity.RoomIndex)))
+                        { unsupportedReason = "Tower corruption is missing a captured floor."; return false; }
+                    }
+                    var train = new TrainCombatState(floors, Array.Empty<EnemyMovement>(), 1, context);
+                    RoomCorruptionResult changed = RoomCorruptionModel.Apply(train, source.RoomIndex, action);
+                    if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
+                    context = changed.Context;
                     return true;
                 }
                 if (action.Type == "AdjustPyreAttack")
