@@ -165,6 +165,11 @@ namespace MonsterTrain2Poju.Probe
                 .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
                 .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets))
                 .Select(target => target.UnitId).Concat(enchanters).ToHashSet();
+            if (RoomDeathEffectProbe.RequiresBirthWorld(trace))
+            {
+                referenced.UnionWith(BattleSpawnPointProbe.Capture(trace).Groups.SelectMany(group => group.Occupants));
+                referenced.UnionWith(trace.KnownUnits.Where(actor => actor.SpawnedInPreviewMode).Select(trace.UnitId));
+            }
             retained = retained.Where(actor => referenced.Contains(actor.Unit.Id)).ToList();
             AllGameManagers managers = AllGameManagers.Instance!;
             RoomManager rooms = managers.GetRoomManager()!;

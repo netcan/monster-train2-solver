@@ -386,7 +386,7 @@ namespace MonsterTrain2Poju.Probe
                 observedCards = projection.KnownCards.Count(); observedUnits = identities.Count;
                 int decisionStart = BattleSpawnPointProbe.Decisions.Count;
                 otherPiles = CaptureOtherPiles();
-                enchantments = EnchantmentBattleScenario.Prepared || OriginalSupportUnitsScenario.CapturesEnchantments
+                enchantments = EnchantmentBattleScenario.Prepared || OriginalSupportUnitsScenario.CapturesEnchantments || RoomDeathEffectProbe.RequiresBirthWorld(this)
                     ? EnchantmentBattleScenario.CaptureWorld(this) : null;
                 abilityCache = AbilityCardProbe.Capture(this);
                 bonusDraw = BonusDrawProbe.Capture(cards, this);
@@ -1556,6 +1556,7 @@ namespace MonsterTrain2Poju.Probe
                 UnitRoomStatusQueries = UnitRoomStatusProbe.Records,
                 UnitRoomTriggerCountQueries = UnitRoomTriggerCountProbe.Records,
                 TriggeredTrainHeals = TriggeredTrainHealProbe.Records,
+                RoomDeathEffects = RoomDeathEffectProbe.Records,
                 TriggeredTrainHealTests = TriggeredTrainHealProbe.Tests,
                 StatusRegistryCalibration = StatusRegistryCalibration.Samples,
                 RelicSpawnStatuses = RelicSpawnStatusProbe.Records,

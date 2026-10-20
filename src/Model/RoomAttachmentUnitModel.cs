@@ -294,7 +294,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState[] rooms = train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                 room.RoomIndex == changed.RoomIndex ? changed.Units : room.Units, room.ExternalInteractions,
                 context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
-            return new TrainCombatState(rooms, train.Movement, train.EnemySlotsPerRoom, context);
+            return EnchantmentWorldModel.Rebase(new TrainCombatState(rooms, train.Movement, train.EnemySlotsPerRoom, context));
         }
 
         private static RoomAttachmentUnitSyncResult Fail(string error) => new(null, error);

@@ -198,7 +198,8 @@ namespace MonsterTrain2Poju.Probe
                         " status=" + effect.GetUseStatusEffectStackMultiplier() + " health=" + effect.GetUseHealthMissingStackMultiplier() +
                         " magic=" + effect.GetUseMagicPowerMultiplier());
             CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()
-                .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true);
+                .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true) ||
+                spellIds.Contains("e1a39d88-4a77-4399-98b2-0b81f44fe6a8");
             CapturesBump = spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectBump"));
             bool hatchControls = spellIds.Contains("27b0fdda-5dc4-4280-a510-fe51e550e3fb") ||
                 spellIds.Contains("07448181-5b6f-404a-88ff-cb4d8ac8a3b1");

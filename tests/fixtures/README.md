@@ -9918,6 +9918,21 @@ that combat search's terminal boundary. Existing Stasis and equipment combat
 batch chains still pass. Other unit-source copy destinations/counts remain
 guarded pending independent native witnesses.
 
+`full-battle-original-isolated-infectory.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-023638-8b44b22f`.
+Unchanged Infectory and Eager Conscript witness two first cardless Funguy births,
+one same-identity Horde increment and three excluded Funguy deaths. Room death
+effects use the authored exclusion filter, have no parent card and skip Pyres
+and dead bosses. Preview births allocate native identities before callbacks;
+physical occupants and preview-born objects remain available after leaving live
+rooms. Births may replace a dead physical occupant. Enemy births and cross-floor
+attachment changes synchronize the shared world; despawns retain native HP.
+DEPTH-PASS records a settled victory with zero capture/mismatch/unsupported/
+pending counters. Six plays and five EndTurns pass sixteen immutable complete
+native replay branches; a 128-state search has zero unsupported attempts and
+equal serial/parallel best. The existing queued enchantment-summon component
+fixture also passes. Other room death effect compositions remain guarded.
+
 `full-battle-original-isolated-unit-grafts.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-020742-2b140829`.
 Five unchanged originals (Sanguine Assistant, Twisted Assistant, Pufferflesh,

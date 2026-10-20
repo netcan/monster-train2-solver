@@ -3473,7 +3473,7 @@ namespace MonsterTrain2Poju.Model
                                 Store(retained.Fired(effects));
                                 if (remaining <= 0 && unit.Alive)
                                 {
-                                    unit.Despawned = true; unit.Health = 0; RemovePhysicalPoint(unit); Emit("Despawn", unit, unit, 0);
+                                    unit.Despawned = true; RemovePhysicalPoint(unit); Emit("Despawn", unit, unit, 0);
                                     if (!source.Preview && context?.Statistics != null && unit.Source.Team == CombatTeam.Player && !DeferSpawner(unit))
                                         context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
                                             requireTrackedCard: context.CardInstances?.Count == 0));
@@ -3530,6 +3530,16 @@ namespace MonsterTrain2Poju.Model
                     if (remainingTriggerIndex >= 0) Store(unit.Triggers[remainingTriggerIndex].Fired(unit.Triggers[remainingTriggerIndex].Effects));
                 }
                 if (unsupportedReason == null && !ApplyRelicUnitUpgradeTriggers(unit, kind, paramInt, paramInt2)) return;
+                if (unsupportedReason == null && kind == "OnDeath" && !unit.Source.IsPyre &&
+                    (unit.Alive || unit.Source.IsBoss != true && !unit.Source.EndsBattleOnDeath))
+                    foreach (RoomCapacityAttachmentState attachment in context?.RoomCapacities?
+                        .FirstOrDefault(room => room.RoomIndex == source.RoomIndex)?.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
+                    {
+                        RoomDeathEffectRule? rule = attachment.DeathEffect;
+                        if (rule == null || source.Deployment && rule.DisallowedInDeployment || !RoomDeathEffectModel.Matches(rule, unit.Freeze(), context)) continue;
+                        foreach (CardActionEffect effect in rule.Effects)
+                            if (!ApplyTriggeredSpawnOrStatus(unit, effect, kind, fromRoomModifier: true)) return;
+                    }
                 if (unsupportedReason == null && kind == "OnQueuedStatusEffectToAdd" && paramString != null &&
                     units.Any(owner => owner.InRoom && owner.Alive && owner.Source.Id == paramInt2 &&
                         owner.Source.Modifiers?.RoomStatuses?.Any(rule => rule.Type == UnitRoomStatusModel.QueuedStatus && rule.StatusId == paramString) == true))
@@ -4228,7 +4238,8 @@ namespace MonsterTrain2Poju.Model
                 return dyingMonster || points.Occupants.Any(id => id == 0);
             }
 
-            private bool ApplyTriggeredSpawnOrStatus(WorkingUnit actor, CardActionEffect action, string triggerKind, int sourceCardIdOverride = 0)
+            private bool ApplyTriggeredSpawnOrStatus(WorkingUnit actor, CardActionEffect action, string triggerKind, int sourceCardIdOverride = 0,
+                bool fromRoomModifier = false)
             {
                 if (!SpawnOrStatusCanApply(actor, action, triggerKind))
                     return unsupportedReason == null && action.Tests?.CancelSubsequent != true;
@@ -4236,7 +4247,7 @@ namespace MonsterTrain2Poju.Model
                 { unsupportedReason = "Triggered spawn-or-status requires its status and fallback unit definitions."; return false; }
 
                 CombatStatus status = action.Statuses[0];
-                int statusSourceCardId = sourceCardIdOverride > 0 ? sourceCardIdOverride : actor.Source.SpawnerCardId;
+                int statusSourceCardId = fromRoomModifier ? 0 : sourceCardIdOverride > 0 ? sourceCardIdOverride : actor.Source.SpawnerCardId;
                 if (action.Statuses.Count > 1)
                 {
                     RngDraw draw = context!.BattleRng.Range(0, action.Statuses.Count);

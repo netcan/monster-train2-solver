@@ -224,6 +224,7 @@ namespace MonsterTrain2Poju.Model
                     original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds);
                 RoomCombatState? attached = RoomAttachmentUnitModel.ApplyToNewCharacter(attachmentRoom, unit.Id, out error);
                 if (error != null || attached == null) return error ?? "Room attachment enemy-birth synchronization failed.";
+                attached = EnchantmentWorldModel.Sync(attached);
                 context = attached.Context; rooms[index] = attached.Units.ToList();
                 if (context?.QueryFrame?.MoonPhase is int moon &&
                     MoonPhaseStatusModel.IsTracking(context, rooms.SelectMany(room => room)))

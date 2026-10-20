@@ -21,8 +21,8 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
 | direct-native-play | 542 | 548 | No captured projection guards; at least one successful native play has the same captured definition projection. |
-| mechanism-only | 9 | 89 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
-| partial | 12 | 20 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
+| mechanism-only | 10 | 90 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
+| partial | 11 | 19 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 11 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
 
@@ -90,7 +90,7 @@ Across all classifications, 548 identities (542 logbook) have at least one defin
 - [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 702 full battles and 9171 native actions whose captured prediction is supported, actual state exists and difference is null. 625 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 703 full battles and 9177 native actions whose captured prediction is supported, actual state exists and difference is null. 626 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 
@@ -98,7 +98,7 @@ Counts are per logbook identity and can overlap. Conditional upgrade/discard gua
 
 | Guard | Logbook identities |
 | --- | ---: |
-| Unmodeled mixed room attachment payload | 6 |
+| Unmodeled mixed room attachment payload | 5 |
 | Card traits | 3 |
 | CardTraitTreasure hand discard callback/routing | 3 |
 | Upgrade trait CardTraitTreasure | 3 |

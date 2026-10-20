@@ -92,7 +92,8 @@ namespace MonsterTrain2Poju.Model
             if (!nextUnitId.HasValue || source.Units.Any(unit => unit.UnitId <= 0 || unit.UnitId >= nextUnitId.Value) ||
                 source.Units.Select(unit => unit.UnitId).Distinct().Count() != source.Units.Count ||
                 source.Groups.Select(group => (group.RoomIndex, group.Team, group.PreviewCopyId)).Distinct().Count() != source.Groups.Count)
-                return "Invalid retained physical identities or missing shared counter.";
+                return "Invalid retained physical identities or missing shared counter: next=" + nextUnitId +
+                    ", retained=" + string.Join(",", source.Units.Select(unit => unit.UnitId)) + ".";
             if (source.NextPreviewCopyId <= 0 || source.Groups.Any(group => group.PreviewCopyId >= source.NextPreviewCopyId))
                 return "Invalid copied point identity counter.";
             var ids = source.Units.Select(unit => unit.UnitId).ToHashSet();
@@ -127,13 +128,15 @@ namespace MonsterTrain2Poju.Model
                 if (references.Any(unit => unit.UnitId == newUnit.Id)) return Reject("A birth reused a retained physical identity.");
                 references = references.Append(new UnitSpawnPointState(newUnit.Id, null, null, spawnedInPreview: room.Preview)).ToArray();
             }
-            var known = room.Units.Concat(newUnit == null ? Array.Empty<CombatUnit>() : new[] { newUnit })
+            var known = (room.Context?.Enchantments?.RetainedUnits.Select(actor => actor.Unit) ?? Array.Empty<CombatUnit>())
+                .Concat(room.Units).Concat(newUnit == null ? Array.Empty<CombatUnit>() : new[] { newUnit })
                 .GroupBy(unit => unit.Id).ToDictionary(group => group.Key, group => group.Last());
             SpawnPointGroupState? group = source.SelectedGroup(room.RoomIndex, team);
             if (group == null) return Reject("Missing physical spawn point group.");
             if (operation == "Compact" || operation == "ShiftOccupants")
                 foreach (int id in group.Occupants.Where(id => id != 0))
-                    if (!known.ContainsKey(id)) return Reject("Physical shift requires its retained occupant's combat state.");
+                    if (!known.ContainsKey(id)) return Reject("Physical shift requires its retained occupant's combat state: unit=" + id +
+                        ", room=" + room.RoomIndex + ", preview=" + room.Preview + ".");
             var world = new SpawnPointWorld(room.Preview, source.Groups, references.Select(reference =>
             {
                 known.TryGetValue(reference.UnitId, out CombatUnit? unit);
@@ -215,8 +218,15 @@ namespace MonsterTrain2Poju.Model
                 if (!moved.Supported) return moved;
                 state = moved.State!;
             }
-            if (state.SelectedGroup(room.RoomIndex, unit.Team)!.Occupants[position] != 0)
-                return Reject("Physical birth point is still occupied after insertion shifting.");
+            int occupantId = state.SelectedGroup(room.RoomIndex, unit.Team)!.Occupants[position];
+            if (occupantId != 0)
+            {
+                CombatUnit? occupant = room.Units.Concat(room.Context?.Enchantments?.RetainedUnits.Select(actor => actor.Unit)
+                    ?? Array.Empty<CombatUnit>()).FirstOrDefault(actor => actor.Id == occupantId);
+                if (occupant == null || occupant.Health > 0 && occupant.DeathState?.IsDespawned != true &&
+                    occupant.DeathState?.IsDestroyed != true)
+                    return Reject("Physical birth point is still occupied after insertion shifting: unit=" + occupantId + ".");
+            }
             var placed = Apply(state, room, "Set", unit.Team, unit.Id,
                 target: new SpawnPointReference(room.RoomIndex, unit.Team, position, group.PreviewCopyId), newUnit: unit);
             if (placed.Supported && source.ActiveCopies.Count > 0)

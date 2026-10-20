@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-020535-029e6ca8/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,729 bytes, 12,119 unique nodes,
-SHA-256 `85dc29cd11bec827d2f07dcc92235a8fd7b3c899695d7abbb1807484c6d49093`.
-The latest refresh captures the authored equipment/birth rules of Sanguine
+Source: `.probe-runs/full-battle-no-cards-20261021-022858-0b144e83/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,878 bytes, 12,131 unique nodes,
+SHA-256 `27f49116ec225f0779ec372db39466ac6b6f2c5b43517991902cda7dd9a40751`.
+The latest refresh captures Infectory's authored room death effect and Funguy
+exclusion filter. Only this projection changes after normalizing absent/null
+DeathEffect fields on room attachments; the other 667 are identical.
+The preceding refresh captures the authored equipment/birth rules of Sanguine
 Assistant, Twisted Assistant, Pufferflesh, Erratic Assistant and Double-Edged
 Bearer. Only these five projections change after normalizing absent/null Graft
 fields on existing unit modifier descriptors; the other 663 are identical.

@@ -28,7 +28,10 @@ namespace MonsterTrain2Poju.Probe
                 rawSize, unit.GetEquipmentLimit(), unit.GetCanBeHealed(), unit.GetIsClone(),
                 upgrades.Select(upgrade =>
                 {
-                    bool roomAttachmentUpgrade = roomAttachmentUpgrades.Contains(upgrade.GetCardUpgradeDataId());
+                    bool roomAttachmentUpgrade = roomAttachmentUpgrades.Contains(upgrade.GetCardUpgradeDataId()) ||
+                        Enumerable.Range(0, AllGameManagers.Instance!.GetRoomManager()!.GetNumRooms()).Any(index =>
+                            AllGameManagers.Instance.GetRoomManager()!.GetRoom(index).Attachments.Any(attachment =>
+                                attachment.UpgradeStates.Any(entry => ReferenceEquals(entry.Item1, upgrade))));
                     return FullBattleTrace.Active?.CaptureAppliedUpgrade(upgrade, roomAttachmentUpgrade) ??
                         CardModifierProbe.Upgrade(upgrade, rejectFilters: false, filtersAlreadyApplied: true,
                             roomAttachmentUnitUpgrade: roomAttachmentUpgrade);

@@ -67,6 +67,12 @@ namespace MonsterTrain2Poju.Model
                     .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
                     .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets))
                     .Select(target => target.UnitId).Concat(world.EnchanterIds).ToHashSet();
+                if (RoomDeathEffectModel.RequiresBirthWorld(source.Context))
+                {
+                    referenced.UnionWith(source.Context!.SpawnPoints?.Groups.SelectMany(group => group.Occupants) ?? Array.Empty<int>());
+                    referenced.UnionWith(source.Context.SpawnPoints?.Units.Where(unit => unit.SpawnedInPreview)
+                        .Select(unit => unit.UnitId) ?? Array.Empty<int>());
+                }
                 retained = retained.Where(actor => referenced.Contains(actor.Unit.Id)).Select(actor =>
                     new EnchantmentRetainedUnit(actor.Unit, actor.Unit.DeathState?.IsDestroyed == true ? -1 : actor.RoomIndex, actor.Preview)).ToList();
             }

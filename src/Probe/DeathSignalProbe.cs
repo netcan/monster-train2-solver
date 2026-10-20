@@ -27,8 +27,10 @@ namespace MonsterTrain2Poju.Probe
             return new UnitDeathState(actor.HasFinishedDying, actor.IsBeingRemoved(), listener,
                 pending == null ? null : pending.Source == null ? 0 : FullBattleTrace.Active!.CardId(pending.Source),
                 actor.IsSacrifice, once && !permanent,
-                OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? (bool)AccessTools.Property(typeof(CharacterState), "FiredDespawnEvent").GetValue(actor) : (bool?)null,
-                OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? actor.IsDestroyed : (bool?)null);
+                OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ||
+                    FullBattleTrace.Active != null && RoomDeathEffectProbe.RequiresBirthWorld(FullBattleTrace.Active) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? (bool)AccessTools.Property(typeof(CharacterState), "FiredDespawnEvent").GetValue(actor) : (bool?)null,
+                OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ||
+                    FullBattleTrace.Active != null && RoomDeathEffectProbe.RequiresBirthWorld(FullBattleTrace.Active) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? actor.IsDestroyed : (bool?)null);
         }
         [HarmonyPatch(typeof(CharacterState), "CheckForDeath")]
         private static class CheckPatch
