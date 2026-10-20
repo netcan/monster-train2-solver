@@ -8501,3 +8501,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hostguard.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hostguard.mt2f
 ```
+
+### Original Rubble Raiser
+
+`full-battle-original-isolated-rubble-raiser.mt2f` plays unchanged, zero-cost
+Rubble Raiser and records its native 0/1 size-1 Snack birth. Its captured
+OnEaten callback gains one energy and adds the temporary `RubbleMorselTrigger`
++3/+3 upgrade to `LastFeederCharacter`; no feeder is recorded in this witness,
+so neither callback effect is claimed as positively executed. The native
+battle won with zero capture failures, mismatches, unsupported transitions or
+pending records. Focused replay and bounded serial/parallel search agree at
+128 states, with three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId e2ed318d-754c-41b8-8df6-0a6af221e54e
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-rubble-raiser.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-rubble-raiser.mt2f
+```

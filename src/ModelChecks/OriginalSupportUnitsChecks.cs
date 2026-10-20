@@ -33,6 +33,7 @@ internal static class OriginalSupportUnitsChecks
     private const string ShatteredShellId = "57985d47-d8ac-46be-8545-20a51209fc4f";
     private const string WeldlingId = "acb9a1cb-f6fc-40df-b287-fc82b8df156b";
     private const string HostguardId = "c682012e-b5fc-4f75-9cb4-f6ade997b72f";
+    private const string RubbleRaiserId = "e2ed318d-754c-41b8-8df6-0a6af221e54e";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -565,6 +566,23 @@ internal static class OriginalSupportUnitsChecks
                 upgrade.Upgrade.Stats.Health == 0 && remainsUntriggered,
                 "Reforming Ooze must preserve its native 1-cost 7/15 size-2 Undying birth and inactive permanent self +6 Attack OnReanimated upgrade.");
         }
+        if (expectedId == RubbleRaiserId)
+        {
+            CombatTrigger onEaten = template.Triggers.Single(trigger => trigger.Kind == "OnEaten");
+            CombatEffect energyEffect = onEaten.Effects.Single(effect => effect.Type == "CardEffectGainEnergy");
+            CombatEffect upgradeEffect = onEaten.Effects.Single(effect => effect.Type == "CardEffectAddTempCardUpgradeToUnits");
+            CardActionEffect energy = energyEffect.Action!;
+            CardActionEffect upgrade = upgradeEffect.UnitUpgrade!;
+            Require(rule.AssetKey == "RubbleRaiser" && template.AssetKey == "MorselRubbleRaiser" && rule.Cost == 0 &&
+                template.Modifiers!.AttackDamage == 0 && template.Health == 1 && template.MaxHealth == 1 && template.Size == 1 &&
+                template.Subtypes.Contains("SubtypesData_Snack") && !onEaten.Once && onEaten.Effects.Count == 2 &&
+                energyEffect.Value == 1 && energy is { Type: "GainEnergy", Target: "Room", Value: 1 } &&
+                upgrade.Type == "UnitUpgrade" && upgrade.Target == "LastFeederCharacter" && upgrade.Lifetime == "TemporaryUntilEndOfBattle" &&
+                upgrade.Upgrade is { DataId: "ae726e44-0b89-4455-9835-bfa55d2ef6fe", AssetKey: "RubbleMorselTrigger" } &&
+                upgrade.Upgrade.Stats.Damage == 3 && upgrade.Upgrade.Stats.Health == 3 && !onEaten.HasTriggered &&
+                !spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnEaten").HasTriggered && spawnedUnit.LastFeederId == 0,
+                "Rubble Raiser must preserve its native zero-cost 0/1 Snack birth and exact inactive OnEaten energy/LastFeeder upgrade definition.");
+        }
         if (expectedId == HostguardId)
         {
             CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
@@ -783,6 +801,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-WELDLING PASS: original 2-cost 6/3 Machine birth; two native PostCombat transitions add +3 Armor to the front ally with an unchanged control.");
         else if (expectedId == HostguardId)
             Console.WriteLine("ORIGINAL-HOSTGUARD PASS: original 3-cost 25/60 size-3 birth; native OnSpawn exposes/resets the cooldown-3 ability, which remains unused.");
+        else if (expectedId == RubbleRaiserId)
+            Console.WriteLine("ORIGINAL-RUBBLE-RAISER PASS: original zero-cost 0/1 Snack birth and exact inactive OnEaten +1 energy/LastFeeder +3/+3 upgrade definition.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
