@@ -48,6 +48,7 @@ internal static class OriginalSupportUnitsChecks
     private const string SpikedriverFactoryId = "acf2b858-7dc9-492f-b01c-cbb8278fd43a";
     private const string ScrivenerId = "c2baee0e-4bc6-4da6-8330-71f5a299133e";
     private const string BanishedChamp2Id = "27340034-9ee7-4535-bb63-2e0bd8c321fb";
+    private const string PyreborneChamp1Id = "7488b439-316c-4a13-8897-90de239b6250";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -503,6 +504,10 @@ internal static class OriginalSupportUnitsChecks
             CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
                 "Banished Champion 2", "BanishedChamp2", "MonsterBanishedChampion2", 0, 4, 6, 2, 2,
                 "dc3337da-96a6-469b-88fc-561c588dc3bb");
+        if (expectedId == PyreborneChamp1Id)
+            CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
+                "Pyreborne Champion 1", "PyreborneChamp1", "MonsterChampionPyreborne1", 0, 15, 20, 3, 3,
+                "c12a58a4-0bae-4120-9921-f93d91b20bcb");
         if (expectedId == EelGorgonId)
         {
             CombatTrigger postCombat = template.Triggers.Single(trigger => trigger.Kind == "PostCombat");

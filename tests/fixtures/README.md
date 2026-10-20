@@ -8759,3 +8759,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-banished-champ2.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-banished-champ2.mt2f
 ```
+
+### Original Pyreborne Champion 1
+
+`full-battle-original-isolated-pyreborne-champ1.mt2f` plays the unchanged
+zero-cost 15/20 size-3 Pyreborne Champion 1. Its native OnSpawn callback exposes
+the cooldown-3 ability, which remains available but unused in all four
+post-deployment snapshots. This covers direct play, birth and unactivated
+ability lifecycle only; the ability effect itself is not exercised. The Instant
+battle won with zero capture failures, mismatches, unsupported transitions or
+pending records. Focused replay and bounded serial/parallel search agree at 128
+states, with three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 7488b439-316c-4a13-8897-90de239b6250
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-pyreborne-champ1.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-pyreborne-champ1.mt2f
+```
