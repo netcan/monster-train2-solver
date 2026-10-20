@@ -482,6 +482,11 @@ internal static class OriginalSupportUnitsChecks
                 turns.All(room => room.Units.Single(unit => unit.SpawnerCardId == ids[actionIndex]).Triggers.Single().HasTriggered),
                 "Cluster Colonel must retain its original birth, preview-created reference cleanup and positive post-combat Horde spawn/growth.");
         }
+        if (rule.AssetKey == "FaeMeddler")
+            Require(rule.Cost == 1 && template.Modifiers!.AttackDamage == 6 && template.Health == 3 &&
+                unitBefore.MoonPhase == "Full" && unitAfter.MoonPhase == "New" && spawnedUnit.Triggers
+                    .Any(trigger => trigger.Kind == "OnSpawn" && trigger.HasTriggered) && template.Ability?.CardCreation?.ActivatesMoonTracking == true,
+                "Fae Meddler must keep its native 6/3 birth, activate its spawn phase advance and retain the moon-aware ability creation definition.");
         if (rule.AssetKey == "LunarPriestess")
         {
             BattleTurnState[] turns = root.GetProperty("Turns").EnumerateArray()

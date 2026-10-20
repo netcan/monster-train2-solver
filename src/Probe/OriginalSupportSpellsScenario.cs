@@ -71,15 +71,20 @@ namespace MonsterTrain2Poju.Probe
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
             if (IsolatedIds != null)
             {
+                string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
+                    .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
+                IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+                if (replayKind != null) candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
                 PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
-                    playerPosition: index < 3 ? 0 : -1) : BattleActionModel.EnumerateSupportedPlays(source, ids[index])
-                    .FirstOrDefault(action => action.CardInstanceId == ids[index]);
+                    playerPosition: index < 3 ? 0 : -1) : candidates.FirstOrDefault();
                 BattleActionResult? isolatedResult = chosen == null ? null : BattleActionModel.PlayCard(source, chosen);
                 if (isolatedResult?.Supported == true) return chosen;
                 string rejection = index + ":" + source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
                 if (lastRejection != rejection)
                 { lastRejection = rejection; logger?.LogInfo("ORIGINAL-ISOLATED-SPELL-REJECT index=" + index + " dataId=" + source.Spawn.Train.Context.FindCard(ids[index])!.DataId +
-                    " reason=" + (isolatedResult?.Reason ?? "No supported enumerated play.")); }
+                    " reason=" + (isolatedResult?.Reason ?? string.Join("; ", BattleActionModel.EnumerateActions(source, ids[index]).UnsupportedAttempts.Select(attempt => attempt.Reason).Distinct()) +
+                        " default=" + BattleActionModel.PlayCard(source, new PlayCardAction(ids[index], 0)).Reason)); }
                 return null;
             }
             int target = index is >= 8 and <= 16 or >= 23 ? source.Spawn.Train.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[0]).Id : 0;
@@ -92,8 +97,8 @@ namespace MonsterTrain2Poju.Probe
         private static void PrepareIsolated(AllGameManagers managers, ManualLogSource log, string[] spellIds)
         {
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
-            if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() != CardType.Spell))
-                throw new InvalidOperationException("Isolated spell IDs must name one to thirty native spell definitions.");
+            if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster)))
+                throw new InvalidOperationException("Isolated spell IDs must name one to thirty native spell, equipment or supporting monster definitions.");
             Set(all.GetBalanceData(), "maxHandSize", 40);
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
             Set(steward, "cost", 0); Set(anchor, "attackDamage", 1000); Set(anchor, "health", 10000); Set(anchor, "size", 1);

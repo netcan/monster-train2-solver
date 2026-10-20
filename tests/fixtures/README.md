@@ -9274,3 +9274,20 @@ HasMoonPhaseCardEffect predicate. Activation is calibrated during Combat;
 other phase boundaries retain an explicit guard for native reset callbacks.
 The source is `.probe-runs/full-battle-units-spells-and-junk-20261020-184323-f8442fd6`:
 native DEPTH-PASS, settled victory and all four failure counters zero.
+
+### Original Replicator Ray and refreshed Fae Meddler
+
+`full-battle-original-isolated-replicator-ray.mt2f` captures unchanged Bogwurm's
+Bulk followed by Replicator Ray. The spell removes the host's equipment first,
+then creates a physical clone with a fresh spawner card, matching current HP
+and attack and carrying no equipment. Isolated spell batches also accept
+supporting native equipment/monsters. Explicit `-PhysicalSpawnPoints` selects
+physical birth capture; this mode omits the separate Conduit capture boundary.
+Trigger-replay witnesses prefer actors that actually have the requested trigger.
+The profile is `.probe-runs/full-battle-units-spells-and-junk-20261020-185003-0057c9c3`.
+
+`full-battle-original-isolated-fae-meddler.mt2f` refreshes the unchanged 6/3
+unit's positive Full-to-New OnSpawn transition with its moon-aware ability
+creation metadata. Earlier archives remain immutable. Its profile is
+`.probe-runs/full-battle-units-spells-and-junk-20261020-184833-3c51dd43`.
+Both native runs have DEPTH-PASS, settled victories and all failure counters zero.

@@ -15,9 +15,13 @@ internal static class OriginalSupportSpellsChecks
         if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
         if (isolated)
         {
+            string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
+                .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
+            IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            if (replayKind != null) candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
             PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
-                playerPosition: index < 3 ? 0 : -1) : BattleActionModel.EnumerateSupportedPlays(source, ids[index])
-                .FirstOrDefault(action => action.CardInstanceId == ids[index]);
+                playerPosition: index < 3 ? 0 : -1) : candidates.FirstOrDefault();
             return chosen != null && BattleActionModel.PlayCard(source, chosen).Supported ? chosen : null;
         }
         int target = index is >= 8 and <= 16 or >= 23 ? source.Spawn.Train.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[0]).Id : 0;
@@ -146,10 +150,21 @@ internal static class OriginalSupportSpellsChecks
                     "Isolated spell energy control differs.");
                 continue;
             }
-            Require(card.DataId == originals[i - 4] && rule.CardType == "Spell" && rule.ExternalInteractions.Count == 0 &&
+            Require(card.DataId == originals[i - 4] && rule.CardType is "Spell" or "Equipment" or "Monster" && rule.ExternalInteractions.Count == 0 &&
                 after.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == 1 &&
                 before.Energy >= after.Energy, "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            if (rule.AssetKey == "ReplicatorRay")
+            {
+                CombatUnit oldHost = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId),
+                    newHost = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId);
+                CombatUnit clone = after.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit =>
+                    unit.Modifiers?.IsClone == true && !before.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(old => old.Id == unit.Id));
+                Require(oldHost.EquipmentCards?.Count == 1 && newHost.EquipmentCards?.Count == 0 && clone.EquipmentCards?.Count == 0 &&
+                    clone.Attack == newHost.Attack && clone.Health == newHost.Health && clone.SpawnerCardId != newHost.SpawnerCardId &&
+                    after.Spawn.Train.Context!.SpawnPoints != null,
+                    "Replicator Ray must remove the original equipment before making a fresh-spawner, unequipped physical clone.");
+            }
             if (rule.AssetKey == "CarCollapse")
             {
                 RoomCapacityState oldRoom = before.Spawn.Train.Context.RoomCapacities!.Single(room => room.RoomIndex == action.RoomIndex),
