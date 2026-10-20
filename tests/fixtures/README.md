@@ -7888,6 +7888,21 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-crucible-collector.mt2f
 ```
 
+### Original Crucible Warden
+
+`full-battle-original-isolated-crucible-warden.mt2f` records an unchanged
+Crucible Warden behind three zero-cost Steward anchors. Its original cost-1,
+20/30, size-2 birth matches; the captured `OnFeed` callback adds one Damage
+Shield to itself. The 38.79-second native Instant run won with zero capture
+failures, mismatches, unsupported transitions or pending captures. No feed
+occurred, so the callback is definition-only evidence here.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId abae9cd1-d180-41cb-956c-5cf09cf85fa9 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-crucible-warden.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-crucible-warden.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
