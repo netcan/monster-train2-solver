@@ -7949,6 +7949,22 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-parrafin-enforcer.mt2f
 ```
 
+### Original Sycophant
+
+`full-battle-original-isolated-sycophant.mt2f` records an unchanged Sycophant
+behind three zero-cost Steward anchors. Its original cost-1, 10/25, size-2 birth
+matches; the native `OnAttacking` trigger fires once and retains its
+LastAttackedCharacter +8 Pyregel definition (one damage per stack). No Pyregel
+remains in the ending snapshot, so a lasting target-status result is not claimed.
+The 38.34-second native Instant run won with zero capture failures, mismatches,
+unsupported transitions or pending captures.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 6d2053e9-1a6a-4862-b348-76a92a92ea83 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-sycophant.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-sycophant.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
