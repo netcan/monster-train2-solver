@@ -1177,6 +1177,15 @@ namespace MonsterTrain2Poju.Model
                                 return string.Join("; ", nextDraw.NextDrawUpgrade.Upgrade.ExternalInteractions);
                             continue;
                         }
+                        if (effect.Type == "CardEffectFloorRearrange")
+                        {
+                            if (state.Context?.SpawnPoints == null || effect.Action is not
+                                { Type: "FloorRearrange", Target: "Self", Value: 0, Range: null })
+                                return "Triggered floor rearrangement requires its original self/front payload and physical positions.";
+                            if (state.Units.Any(actor => actor.Triggers.Any(trigger => trigger.Kind is "OnShift" or "OnSentry")))
+                                return "Triggered floor rearrangement with movement callbacks is not calibrated.";
+                            continue;
+                        }
                         if (effect.Type == "CardEffectDrawType")
                         {
                             string? drawError = TriggeredTypedDrawModel.Validate(state.Context, effect);
@@ -4494,6 +4503,19 @@ namespace MonsterTrain2Poju.Model
                     return unsupportedReason == null;
                 }
                 if (action.Type == "Null") return true;
+                if (action.Type == "FloorRearrange")
+                {
+                    if (targets.UnitIds.Count == 0) return true;
+                    RoomCombatResult moved = CardSpellModel.ApplyRearrangement(CurrentRoom(), action, targets.UnitIds[0]);
+                    if (!moved.Supported) { unsupportedReason = moved.UnsupportedReason; return false; }
+                    MergeSummon(moved);
+                    WorkingUnit target = units.Single(unit => unit.Source.Id == targets.UnitIds[0]);
+                    // Native centers both teams before returning, including dead
+                    // occupants retained by this exchange but absent from CurrentRoom.
+                    if (!target.Has("immobile") && context!.SpawnPoints!.Units.Single(unit => unit.UnitId == target.Source.Id).OuterBoss != true &&
+                        !CenterAfterSummon()) return false;
+                    return UpdateEnchantments();
+                }
                 if (AbilityCooldownModel.IsEffect(action.Type) || action.Type is "RemoveStatus" or "RemoveAllStatusEffects" || AbilityLifecycleModel.IsEffect(action.Type))
                 {
                     bool removeStatus = action.Type is "RemoveStatus" or "RemoveAllStatusEffects";

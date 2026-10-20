@@ -9809,3 +9809,15 @@ reads them. Both captures have DEPTH-PASS, settled wins and zero failure counter
 Both six-play/five-EndTurn chains pass sixteen immutable branches and bounded
 128-state searches with zero unsupported attempts and equal serial/parallel
 results. Existing typed-draw and Prism Retrieval chains retain focused replays.
+
+`full-battle-original-isolated-imprisoned-zephyr.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-004239-6760a002`.
+The unchanged room installs self/front OnAttacking callbacks on the existing
+Steward and a later original Dreg. The rear Dreg moves to the front in the same
+exchange; other floors retain their positions. Native centering cleans up dead
+enemy occupants and their last-known physical points before the next attack.
+The capture has DEPTH-PASS, a settled win and zero failure counters. Its six-play,
+five-EndTurn chain passes sixteen immutable branches and a 128-state bounded
+search with zero unsupported attempts and equal serial/parallel results.
+Existing original rearrangement spells retain their focused nineteen-play replay.
+Triggered movement with OnShift/OnSentry callbacks remains explicitly guarded.

@@ -23,10 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-002904-cbc323ff/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,103 bytes, 12,028 unique nodes,
-SHA-256 `4d9ac63cf5117a631f97ec22ed9336acaf94b913dd6b220055b8dc980aee4458`.
-The latest refresh captures Weapons Cache's triggered next-draw upgrade and
+Source: `.probe-runs/full-battle-no-cards-20261021-003831-d1f4dbcb/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,252 bytes, 12,040 unique nodes,
+SHA-256 `a84e58161c6ffb6d7413001d5973926739dfddeadf0f51a47361570d6d3f11a1`.
+The latest refresh captures Imprisoned Zephyr's self/front attack-triggered
+floor rearrangement. Only this projection changes; the other 667 are identical.
+The preceding refresh captures Weapons Cache's triggered next-draw upgrade and
 typed draw. Only this projection changes; all other 667 definitions are identical.
 The preceding refresh captures native room upgrade trigger definitions, filters,
 traits, replacement references, unhealed health and room ability identities.

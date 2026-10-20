@@ -2646,6 +2646,9 @@ namespace MonsterTrain2Poju.Model
             int sourceCardId, bool sourceHasDuality) => ApplyOne(state, effect, state.Units.Single(unit => unit.Id == targetId),
                 sourceCardId, null, null, sourceHasDuality: sourceHasDuality);
 
+        internal static RoomCombatResult ApplyRearrangement(RoomCombatState state, CardActionEffect effect, int targetId) =>
+            ApplyOne(state, effect, state.Units.Single(unit => unit.Id == targetId), 0, null, null);
+
         private static RoomCombatResult ApplyOne(RoomCombatState state, CardActionEffect effect, CombatUnit target,
             int sourceCardId, int? playerCapacity, int? enemyCapacity, bool deferSpawnerExhaustion = false, int? scaledDamage = null, int selfUnitId = 0,
             bool sourceHasDuality = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,

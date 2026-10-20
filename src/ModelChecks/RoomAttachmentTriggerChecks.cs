@@ -44,11 +44,34 @@ internal static class RoomAttachmentTriggerChecks
                 "627f12a8-081e-437d-8a54-a20d719163b7" => turns.Any(turn => turn.Spawn.Train.Context!.Gold > after.Spawn.Train.Context.Gold),
                 "08001aa4-2e9d-42da-9ba7-ff4b0fd5ce80" => turns.Any(turn => turn.Energy > 3),
                 "e221f8ac-7b5f-4485-a4d1-dedd22f61466" => NextDraw(root, attachment),
+                "f73bc157-ef23-4641-a938-ecd31945ca28" => Rearranged(root, attachment),
                 _ => false
             };
             Require(positive, "Room attachment needs a positive native callback: " + id);
             Console.WriteLine($"ORIGINAL-ROOM-TRIGGERS PASS: {attachment.AssetKey}, keyed callback installation, floor/team controls and positive native effect.");
         }
+    }
+
+    private static bool Rearranged(FixtureValue root, RoomCapacityAttachmentState attachment)
+    {
+        foreach (FixtureValue row in root.GetProperty("Stages").EnumerateArray())
+        {
+            if (row.GetProperty("Kind").GetString() != "Exchange") continue;
+            RoomCombatState before = row.GetProperty("Before").Deserialize<RoomCombatState>()!, after = row.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            if (before.RoomIndex != 0) continue;
+            CombatUnit[] players = before.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Health > 0).ToArray();
+            CombatUnit? dreg = players.SingleOrDefault(unit => unit.AssetKey == "Dreg");
+            if (dreg == null || players.Length != 2) continue;
+            Require(players[1].Id == dreg.Id && after.Units.Where(unit => unit.Team == CombatTeam.Player).First().Id == dreg.Id &&
+                after.Units.Single(unit => unit.Id == dreg.Id).Triggers.Any(trigger => trigger.Kind == "OnAttacking" &&
+                    trigger.Origin?.UpgradeId == attachment.AttachmentId && trigger.HasTriggered),
+                "Imprisoned Zephyr must move the rear attacking Dreg to the front in the same exchange.");
+            Require(after.Context!.SpawnPoints!.Units.Where(unit => unit.Current?.RoomIndex is 1 or 2).All(unit =>
+                before.Context!.SpawnPoints!.Units.Any(old => old.UnitId == unit.UnitId && old.Current?.Index == unit.Current!.Index)),
+                "Triggered rearrangement must preserve positions on other floors.");
+            return true;
+        }
+        return false;
     }
 
     private static bool NextDraw(FixtureValue root, RoomCapacityAttachmentState attachment)
