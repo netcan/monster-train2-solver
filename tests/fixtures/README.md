@@ -9042,3 +9042,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-consumer-of-crowns.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-consumer-of-crowns.mt2f
 ```
+
+### Original Steelsinger
+
+`full-battle-original-isolated-steelsinger.mt2f` plays the unchanged 3-cost
+20/40 size-4 Steelsinger after three safe anchors. Its native `OnSpawn`
+increases maximum health by 80 without healing; the permanent +3 Attack
+`OnHeal` upgrade remains untriggered in all four turn snapshots. The Instant
+battle won with zero capture failures, mismatches, unsupported transitions or
+pending records. Focused replay and bounded serial/parallel search agree at
+128 states with three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 55f5945e-8cb3-4577-9207-a92c5deb78d5
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-steelsinger.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-steelsinger.mt2f
+```

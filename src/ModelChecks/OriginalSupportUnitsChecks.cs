@@ -63,6 +63,7 @@ internal static class OriginalSupportUnitsChecks
     private const string MonstrosityId = "5336f488-1e09-40a5-97bc-5a5fde3c5e55";
     private const string WicklessBaronId = "4cf9eb1d-b852-4514-8f32-831bc38276ec";
     private const string WicklessTycoonId = "918f8345-8660-49de-a764-d16e76343abc";
+    private const string SteelsingerId = "55f5945e-8cb3-4577-9207-a92c5deb78d5";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -407,15 +408,40 @@ internal static class OriginalSupportUnitsChecks
             .Single(candidate => candidate.SpawnerCardId == ids[actionIndex]);
         int appendPosition = unitBefore.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0).Units.Count(candidate => candidate.Team == CombatTeam.Player);
         bool juggernautXCost = expectedId == JuggernautId;
+        bool healthAdjustedOnSpawn = expectedId == SteelsingerId;
         Require(unitCard.DataId == expectedId && unitAction.RoomIndex == 0 && unitAction.PlayerPosition == appendPosition &&
             unitAction.TargetUnitId == 0 && unitBefore.PlayRules.Rooms.Single(item => item.RoomIndex == 0).PlayerSlots > appendPosition &&
             unitBefore.Energy >= rule.Cost && (juggernautXCost ? unitBefore.Energy == 3 && unitAfter.Energy == 0 : unitBefore.Energy - unitAfter.Energy == rule.Cost) &&
             rule.Effect == "SpawnMonster" &&
             !string.IsNullOrEmpty(rule.AssetKey) && (expectedAsset == null || rule.AssetKey == expectedAsset) &&
             spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Size == template.Size &&
-            (juggernautXCost || spawnedUnit.Health == template.Health && spawnedUnit.MaxHealth == template.MaxHealth &&
+            (juggernautXCost || spawnedUnit.Health == template.Health && (healthAdjustedOnSpawn || spawnedUnit.MaxHealth == template.MaxHealth) &&
                 spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage),
             expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
+        if (expectedId == SteelsingerId)
+        {
+            CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CombatEffect maxHealthEffect = onSpawn.Effects.Single();
+            CombatTrigger onHeal = template.Triggers.Single(trigger => trigger.Kind == "OnHeal");
+            CardActionEffect attackUpgrade = onHeal.Effects.Single().UnitUpgrade!;
+            CombatTrigger actualOnSpawn = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CombatTrigger actualOnHeal = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnHeal");
+            CombatUnit[] turnUnits = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "Steelsinger" && rule.Cost == 3 && template.AssetKey == "MonsterSteelsinger" &&
+                template.Modifiers!.AttackDamage == 20 && template.Health == 40 && template.MaxHealth == 40 && template.Size == 4 &&
+                maxHealthEffect.Type == "CardEffectAdjustMaxHealth" && maxHealthEffect.Action is { Type: "AdjustMaxHealth", Target: "Self", Value: 80 } &&
+                actualOnSpawn.HasTriggered && spawnedUnit.Health == 40 && spawnedUnit.MaxHealth == 120 &&
+                onHeal.Effects.Single().Type == "CardEffectAddCardUpgradeToUnits" &&
+                attackUpgrade is { Type: "UnitUpgrade", Target: "Self", Lifetime: "Permanent", ScaleUpgrade: true } &&
+                attackUpgrade.Upgrade is { AssetKey: "Plus3AttackScalable" } && attackUpgrade.Upgrade.Stats.Damage == 3 &&
+                !actualOnHeal.HasTriggered && turnUnits.Length > 0 && turnUnits.All(unit => !unit.Triggers.Single(trigger => trigger.Kind == "OnHeal").HasTriggered),
+                "Steelsinger must retain its original 3-cost 20/40 size-4 birth, gain exactly 80 maximum HP on spawn, and preserve its unused permanent +3 OnHeal upgrade.");
+            Console.WriteLine("ORIGINAL-STEELSINGER PASS: native 20/40 size-4 birth gained 80 maximum HP on spawn; permanent +3 OnHeal upgrade remained untriggered.");
+        }
         if (expectedId == MonstrosityId)
         {
             CombatTrigger death = template.Triggers.Single(trigger => trigger.Kind == "OnAnyUnitDeathOnFloor");
