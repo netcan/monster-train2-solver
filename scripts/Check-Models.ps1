@@ -271,6 +271,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-enchantrelle.mt2f',
     'full-battle-original-isolated-feeder-damage-enemies.mt2f',
     'full-battle-original-isolated-lady-of-the-reformed.mt2f',
+    'full-battle-original-isolated-feeder-permanent-attack-boost.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
@@ -2243,6 +2244,13 @@ foreach ($fixturePath in $originalIsolatedLadyOfTheReformedFixtures) {
     foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Lady of the Reformed checks failed ($mode): $fixturePath" }
+    }
+}
+$originalIsolatedFeederPermanentAttackBoostFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-isolated-feeder-permanent-attack-boost.mt2f' })
+foreach ($fixturePath in $originalIsolatedFeederPermanentAttackBoostFixtures) {
+    foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Feeder Permanent Attack Boost checks failed ($mode): $fixturePath" }
     }
 }
 $originalAttackOverrideFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-attack-overrides.mt2f' })

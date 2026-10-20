@@ -8909,3 +8909,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-lady-of-the-reformed.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-lady-of-the-reformed.mt2f
 ```
+
+### Original Feeder Permanent Attack Boost
+
+`full-battle-original-isolated-feeder-permanent-attack-boost.mt2f` plays the
+unchanged 2-cost 0/35 size-3 Feeder Permanent Attack Boost. Its `OnFeed`
+callback specifies a permanent, scalable +2 attack self-upgrade, but no feed
+occurs in the witness, so the upgrade remains unapplied in four later
+snapshots. The Instant battle won with zero capture failures, mismatches,
+unsupported transitions or pending records. Focused replay and bounded
+serial/parallel search agree at 128 states, with three replayed steps; archive
+metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId ed072114-b62e-4f61-8892-adf775d5a34c
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-feeder-permanent-attack-boost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-feeder-permanent-attack-boost.mt2f
+```

@@ -57,6 +57,7 @@ internal static class OriginalSupportUnitsChecks
     private const string EnchantrelleId = "658321b4-08bd-443c-b4e1-b8a8931d3299";
     private const string FeederDamageEnemiesUnitId = "aa94ef0c-0fd8-4d42-992f-25345d3717b5";
     private const string LadyOfTheReformedId = "5ac22130-17f1-4f8e-967f-a2d3b71ef7ca";
+    private const string FeederPermanentAttackBoostId = "ed072114-b62e-4f61-8892-adf775d5a34c";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -566,6 +567,31 @@ internal static class OriginalSupportUnitsChecks
                 lastPresentTurn >= 0 && turnStates.Skip(lastPresentTurn + 1).All(state => InTurn(state) == null),
                 "Lady of the Reformed must preserve its 1-cost 10/40 size-2 Ephemeral-3 birth, native 2/1 decay snapshots, and inactive Ephemeral-gated OnHit callback.");
             Console.WriteLine("ORIGINAL-LADY-OF-THE-REFORMED PASS: native 1-cost 10/40 size-2 birth; Ephemeral fell 3 to 2 to 1 before the unit disappeared, while its gated OnHit callback stayed inactive.");
+        }
+        if (expectedId == FeederPermanentAttackBoostId)
+        {
+            CombatTrigger onFeed = template.Triggers.Single(trigger => trigger.Kind == "OnFeed");
+            CombatEffect triggerEffect = onFeed.Effects.Single();
+            CardActionEffect permanentUpgrade = triggerEffect.UnitUpgrade!;
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "FeederPermanentAttackBoost" && rule.Cost == 2 && template.AssetKey == "MonsterEpicure" &&
+                template.Modifiers!.AttackDamage == 0 && template.Health == 35 && template.MaxHealth == 35 && template.Size == 3 &&
+                template.Ability == null && onFeed.SkipDuringDeployment == true &&
+                triggerEffect.Type == "CardEffectAddCardUpgradeToUnits" &&
+                permanentUpgrade is { Type: "UnitUpgrade", Target: "Self", Lifetime: "Permanent", ScaleUpgrade: true } &&
+                permanentUpgrade.Upgrade is { DataId: "5a22121e-80f7-447c-85b3-1582994457ad", AssetKey: "Plus2AttackScalable" } &&
+                permanentUpgrade.Upgrade.Stats.Damage == 2 && permanentUpgrade.Upgrade.Stats.Health == 0 &&
+                spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Health == 35 && spawnedUnit.MaxHealth == 35 &&
+                spawnedUnit.Modifiers!.AttackDamage == 0 && spawnedUnit.Size == 3 && spawnedUnit.Modifiers.Upgrades!.Count == 0 &&
+                !onFeed.HasTriggered && unitTurns.Length == 4 && unitTurns.All(unit => unit.Health == 35 &&
+                    unit.MaxHealth == 35 && unit.Modifiers!.AttackDamage == 0 && unit.Size == 3 &&
+                    unit.Modifiers.Upgrades!.Count == 0 && !unit.Triggers.Single(trigger => trigger.Kind == "OnFeed").HasTriggered),
+                "Feeder Permanent Attack Boost must retain its original 2-cost 0/35 size-3 birth and inactive permanent scalable +2 attack OnFeed upgrade.");
+            Console.WriteLine("ORIGINAL-FEEDER-PERMANENT-ATTACK-BOOST PASS: native 2-cost 0/35 size-3 birth; permanent scalable +2 attack OnFeed upgrade remained inactive across four snapshots.");
         }
         if (expectedId == JuggernautId)
         {
