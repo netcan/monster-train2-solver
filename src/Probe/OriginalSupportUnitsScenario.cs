@@ -29,7 +29,17 @@ namespace MonsterTrain2Poju.Probe
         private static bool DivineDancerOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == DivineDancerName;
         private static bool IsolatedUnitBatchOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == IsolatedUnitBatchName;
         private static bool IsolatedColdstrikeSirenOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == IsolatedColdstrikeSirenName;
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || DivineDancerOnly || IsolatedUnitBatchOnly || IsolatedColdstrikeSirenOnly;
+        private static string? IsolatedUnitId
+        {
+            get
+            {
+                const string prefix = "original-isolated-unit:";
+                string? modifiers = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+                return modifiers != null && modifiers.StartsWith(prefix, StringComparison.Ordinal) ? modifiers.Substring(prefix.Length) : null;
+            }
+        }
+        private static bool IsolatedUnitOnly => IsolatedUnitId != null && Guid.TryParseExact(IsolatedUnitId, "D", out _);
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || DivineDancerOnly || IsolatedUnitBatchOnly || IsolatedColdstrikeSirenOnly || IsolatedUnitOnly;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         private static ManualLogSource? logger;
@@ -40,6 +50,7 @@ namespace MonsterTrain2Poju.Probe
             if (DivineDancerOnly) { PrepareDivineDancer(managers, log); return; }
             if (IsolatedUnitBatchOnly) { PrepareIsolatedUnits(managers, log, IsolatedUnitBatchIds, "Branded Warrior"); return; }
             if (IsolatedColdstrikeSirenOnly) { PrepareIsolatedUnits(managers, log, IsolatedColdstrikeSirenIds, "Coldstrike Siren"); return; }
+            if (IsolatedUnitOnly) { PrepareIsolatedUnits(managers, log, new[] { IsolatedUnitId! }, IsolatedUnitId!); return; }
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
             Set(all.GetBalanceData(), "maxHandSize", 40);
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
@@ -120,7 +131,7 @@ namespace MonsterTrain2Poju.Probe
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
-            if (DivineDancerOnly || IsolatedUnitBatchOnly || IsolatedColdstrikeSirenOnly)
+            if (DivineDancerOnly || IsolatedUnitBatchOnly || IsolatedColdstrikeSirenOnly || IsolatedUnitOnly)
             {
                 int isolatedRoom = index < 3 ? index : 0;
                 int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == 0).Units.Count(unit => unit.Team == CombatTeam.Player);

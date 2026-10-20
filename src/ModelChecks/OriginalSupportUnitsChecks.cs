@@ -52,7 +52,16 @@ internal static class OriginalSupportUnitsChecks
         }
         if (root.GetProperty("ModifierScenario").GetString() == "original-isolated-coldstrike-siren")
         {
-            NativeIsolatedUnit(root, ColdstrikeSirenId, "ColdstrikeSiren");
+            NativeIsolatedUnit(root, ColdstrikeSirenId);
+            return;
+        }
+        string? isolatedUnitScenario = root.GetProperty("ModifierScenario").GetString();
+        const string isolatedUnitPrefix = "original-isolated-unit:";
+        if (isolatedUnitScenario?.StartsWith(isolatedUnitPrefix, StringComparison.Ordinal) == true)
+        {
+            string expectedId = isolatedUnitScenario[isolatedUnitPrefix.Length..];
+            Require(Guid.TryParseExact(expectedId, "D", out _), "Isolated unit scenario did not identify an original card UUID.");
+            NativeIsolatedUnit(root, expectedId);
             return;
         }
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
@@ -290,7 +299,7 @@ internal static class OriginalSupportUnitsChecks
         RecordedBattleChecks.Native(root);
         Console.WriteLine("ORIGINAL-DIVINE-DANCER PASS: native 7/14 size-2 birth in an available room slot; captured five-Armor room OnShift remains untriggered.");
     }
-    private static void NativeIsolatedUnit(FixtureValue root, string expectedId, string expectedAsset)
+    private static void NativeIsolatedUnit(FixtureValue root, string expectedId, string? expectedAsset = null)
     {
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed isolated original unit witness.");
@@ -321,11 +330,12 @@ internal static class OriginalSupportUnitsChecks
         Require(unitCard.DataId == expectedId && unitAction.RoomIndex == 0 && unitAction.PlayerPosition == appendPosition &&
             unitAction.TargetUnitId == 0 && unitBefore.PlayRules.Rooms.Single(item => item.RoomIndex == 0).PlayerSlots > appendPosition &&
             unitBefore.Energy >= rule.Cost && unitBefore.Energy - unitAfter.Energy == rule.Cost && rule.Cost > 0 && rule.Effect == "SpawnMonster" &&
-            rule.AssetKey == expectedAsset && spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Size == template.Size &&
+            !string.IsNullOrEmpty(rule.AssetKey) && (expectedAsset == null || rule.AssetKey == expectedAsset) &&
+            spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Size == template.Size &&
             spawnedUnit.Health == template.Health && spawnedUnit.MaxHealth == template.MaxHealth && spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage,
             expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedAsset + " birth matched its captured original spawn template.");
+        Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

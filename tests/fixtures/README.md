@@ -7792,6 +7792,23 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-coldstrike-siren.mt2f
 ```
 
+### Original Coldsting Siren
+
+`full-battle-original-isolated-coldsting-siren.mt2f` uses the reusable UUID-targeted
+isolated-unit probe to play an unchanged Coldsting Siren after three zero-cost
+Steward anchors. The native run won in 38.33 seconds with zero capture failures,
+mismatches, unsupported stages or pending records. Four plays span five EndTurns;
+the 26,551-byte archive contains 3,517 unique nodes and has SHA-256
+`0845fb0468379e92256cb17f30643703e2168166e0dedc1282d71c5df1b86f5b`.
+Dedicated replay and search pass: all four decisions match, with 16 independent
+immutable branches and 128 serial/parallel search states.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId ca84a9e5-f167-49d1-91cc-ba662d3c1dc4 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-coldsting-siren.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-coldsting-siren.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
