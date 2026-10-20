@@ -9294,6 +9294,14 @@ Both native runs have DEPTH-PASS, settled victories and all failure counters zer
 
 ### Original death-trigger, sacrifice/draw and direct room recursion spells
 
+`full-battle-original-isolated-frostpiercer.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-191851-0593a13d`.
+The unchanged equipment records four positive OnAttackingBeforeDamage callbacks:
+the captured 1,005 attack damage produces 502 Poison before target HP changes,
+even when the target has less HP than the attack. Each callback and the full
+battle match independently; DEPTH-PASS, settled victory and all failure counters
+are zero. Its separate native status capture preserves overkill targets.
+
 Four unchanged originals have settled native victories, DEPTH-PASS and zero
 capture/mismatch/unsupported/pending counters:
 

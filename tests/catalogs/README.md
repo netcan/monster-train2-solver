@@ -23,10 +23,11 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-184429-9bb675ea/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,157 bytes, 11,619 unique nodes,
-SHA-256 `1eb4d82212e32b6b2124d765f2ddc80577fef99c102bdf36c188f1bcf58a341a`.
-The latest refresh adds native HasMoonPhaseCardEffect to nested card-creation
+Source: `.probe-runs/full-battle-no-cards-20261020-191851-699c2786/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,166 bytes, 11,622 unique nodes,
+SHA-256 `0f49aac66bb9268a3a18149d81ef10b2bb173e33bc8adf3db214c01192b75816`.
+The latest refresh projects Frostpiercer's last-attack-damage status action.
+The preceding refresh adds native HasMoonPhaseCardEffect to nested card-creation
 rules so generation can activate player moon tracking. Sixty-four Rules have
 the new nullable field; all 668 raw native definitions are unchanged.
 The preceding refresh omits discard-copy upgrades when source modifiers are not

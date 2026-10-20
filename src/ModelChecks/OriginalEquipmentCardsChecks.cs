@@ -216,6 +216,32 @@ internal static class OriginalEquipmentCardsChecks
                 before.Spawn.Train.Context.BattleRng.Equals(after.Spawn.Train.Context.BattleRng),
                 "Original equipment attachment changed another floor or consumed Battle RNG.");
         }
+        if (originals.SequenceEqual(["db758e27-67e0-48cf-9c08-ea5796bad5ba"]))
+        {
+            var records = root.GetProperty("TriggeredStatuses").EnumerateArray().ToArray();
+            Require(records.Length == 4, "Frostpiercer requires four positive pre-damage native callbacks.");
+            foreach (var record in records)
+            {
+                RoomCombatState before = record.GetProperty("Before").Deserialize<RoomCombatState>()!,
+                    actual = record.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+                CombatUnit[] retained = record.GetProperty("BeforeUnits").Deserialize<CombatUnit[]>()!,
+                    changed = record.GetProperty("ActualUnits").Deserialize<CombatUnit[]>()!;
+                CombatEffect effect = record.GetProperty("Effect").Deserialize<CombatEffect>()!;
+                int actorId = record.GetProperty("ActorId").GetInt32(), targetId = record.GetProperty("Targets")[0].GetInt32();
+                CombatUnit oldTarget = retained.Single(unit => unit.Id == targetId), newTarget = changed.Single(unit => unit.Id == targetId);
+                Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Interactions").GetArrayLength() == 0 &&
+                    effect.Type == "CardEffectAddStatusEffectPerLastAttackDamage" && effect.Action?.Value == 2 &&
+                    effect.Action.Statuses.Single().Id == "poison" && before.Context!.Statistics!.LastAttackDamageDealt == 1005 &&
+                    newTarget.Status("poison")?.Stacks == 502 && oldTarget.Health == newTarget.Health && oldTarget.Health < 1005 &&
+                    before.Context.BattleRng.Equals(actual.Context!.BattleRng),
+                    "Frostpiercer must use the full pre-damage attack statistic, truncate 1005/2, and apply poison before changing target HP without RNG draws.");
+                RoomCombatState scope = before.WithUnits(before.Units.Concat(retained.Where(unit => before.Units.All(live => live.Id != unit.Id))).ToArray());
+                RoomCombatResult predicted = TriggeredStatusModel.Apply(scope, actorId, effect, [targetId], record.GetProperty("SourceCardId").GetInt32());
+                Require(predicted.Supported && Json(predicted.State!.Context) == Json(actual.Context) &&
+                    changed.All(unit => Json(predicted.State.Units.Single(item => item.Id == unit.Id)) == Json(unit)),
+                    "Independent Frostpiercer status application differs from the native retained-target capture.");
+            }
+        }
         int gauntlet = Array.IndexOf(originals, "38552752-e647-461d-811d-2553cf74f493");
         if (gauntlet >= 0)
         {

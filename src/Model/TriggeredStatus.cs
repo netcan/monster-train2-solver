@@ -36,6 +36,8 @@ namespace MonsterTrain2Poju.Model
                 return null;
             }
             if (effect.StatusScaling?.HealthChoicePercent != null) return "Health-dependent status metadata on another effect.";
+            if (effect.Type == "CardEffectAddStatusEffectPerLastAttackDamage" && action.Range != null)
+                return "Last-attack status scaling does not use an integer range.";
             if (action.Tests?.StrictTargets == true || action.Target == "DropTargetCharacter")
             {
                 if (action.Statuses.Any(status => status.Stackable == null)) return "Strict status legality requires stackability definitions.";
@@ -87,8 +89,11 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "CardEffectAddStatusEffectBasedOnHealth")
                 return ApplyHealthChoice(source, actor, effect, targetIds, sourceCardId);
             bool perSelfAttack = effect.Type == "CardEffectAddStatusEffectPerSelfAttack";
+            bool perLastAttack = effect.Type == "CardEffectAddStatusEffectPerLastAttackDamage";
+            if (perLastAttack && source.Context.Statistics == null)
+                return Unsupported("Last-attack status scaling requires captured battle statistics.");
             if (source.Preview && source.Context.IsolatedBattlePreview != true &&
-                (!perSelfAttack && (action.Range != null || action.Value != 0) ||
+                (!perSelfAttack && !perLastAttack && (action.Range != null || action.Value != 0) ||
                     action.Statuses.Count > 1 || CardTargetModel.IsRandom(action.Target)))
                 return Unsupported("Randomized status previews require the explicit isolated preview RNG protocol.");
             CombatContext context = source.Context;
@@ -128,8 +133,10 @@ namespace MonsterTrain2Poju.Model
                     RelicStatusAttackModel.AdditionalAttack(actor.Modifiers?.StatusAttackModifiers, actor.Team, actor.Statuses) + mageblade + pyre));
                 status = status.WithStacks(attack / divisor);
             }
-            int chance = perSelfAttack ? 0 : action.Value;
-            if (!perSelfAttack && action.Range != null)
+            if (perLastAttack)
+                status = status.WithStacks(context.Statistics!.LastAttackDamageDealt / (action.Value == 0 ? 1 : action.Value));
+            int chance = perSelfAttack || perLastAttack ? 0 : action.Value;
+            if (!perSelfAttack && !perLastAttack && action.Range != null)
             {
                 RngDraw draw = action.Range.Sample(context.BattleRng); context = context.WithBattleRng(draw.State); chance = draw.Value;
             }

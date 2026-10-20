@@ -299,6 +299,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-scrap-for-parts.mt2f',
     'full-battle-original-isolated-hallowed-halls.mt2f',
     'full-battle-original-isolated-hallowed-halls-capacity.mt2f',
+    'full-battle-original-isolated-frostpiercer.mt2f',
     'full-battle-original-null-scourges.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
@@ -2351,7 +2352,7 @@ foreach ($fixturePath in $originalStatusUnitFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original status unit checks failed ($mode): $fixturePath" }
     }
 }
-$originalEquipmentCardFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-equipment-cards.mt2f', 'full-battle-original-isolated-equipment-phase-batch.mt2f', 'full-battle-original-isolated-equipment-combat-batch.mt2f', 'full-battle-original-isolated-loamcoat.mt2f', 'full-battle-original-isolated-forgotten-trade.mt2f', 'full-battle-original-isolated-windblade.mt2f', 'full-battle-original-isolated-shield-of-wyngh.mt2f') })
+$originalEquipmentCardFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-equipment-cards.mt2f', 'full-battle-original-isolated-equipment-phase-batch.mt2f', 'full-battle-original-isolated-equipment-combat-batch.mt2f', 'full-battle-original-isolated-loamcoat.mt2f', 'full-battle-original-isolated-forgotten-trade.mt2f', 'full-battle-original-isolated-windblade.mt2f', 'full-battle-original-isolated-shield-of-wyngh.mt2f', 'full-battle-original-isolated-frostpiercer.mt2f') })
 foreach ($fixturePath in $originalEquipmentCardFixtures) {
     foreach ($mode in @('--original-equipment-cards-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
