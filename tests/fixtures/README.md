@@ -7934,6 +7934,21 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-deathcapped-prophet.mt2f
 ```
 
+### Original Parrafin Enforcer
+
+`full-battle-original-isolated-parrafin-enforcer.mt2f` records an unchanged
+Parrafin Enforcer behind three zero-cost Steward anchors. Its original cost-1,
+15/25, size-2 birth matches; native combat records one positive `OnAttacking`
+callback with the captured room +3 `buff` effect. The 38.41-second native
+Instant run won with zero capture failures, mismatches, unsupported transitions
+or pending captures.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId b9788a77-50da-4654-acfa-960c23649984 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-parrafin-enforcer.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-parrafin-enforcer.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and

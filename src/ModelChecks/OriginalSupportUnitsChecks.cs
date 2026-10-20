@@ -18,6 +18,7 @@ internal static class OriginalSupportUnitsChecks
     private const string CrucibleWardenId = "abae9cd1-d180-41cb-956c-5cf09cf85fa9";
     private const string MakeshiftGolemId = "92084a94-6cc6-4af3-9a7d-de61ec7d161c";
     private const string DeathcappedProphetId = "ec522dfa-0b0d-41a9-860d-1a18fae0efb6";
+    private const string ParrafinEnforcerId = "b9788a77-50da-4654-acfa-960c23649984";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -420,6 +421,20 @@ internal static class OriginalSupportUnitsChecks
                 unitBefore.DrawPerTurn == unitAfter.DrawPerTurn,
                 "Deathcapped Prophet must preserve its native 1-cost 3/8 size-1 birth and inactive CardMonsterPlayed +1 DrawNextTurn definition.");
         }
+        if (expectedId == ParrafinEnforcerId)
+        {
+            CombatTrigger onAttacking = template.Triggers.Single(trigger => trigger.Kind == "OnAttacking");
+            CombatEffect buff = onAttacking.Effects.Single();
+            bool triggeredInNativeTurn = root.GetProperty("Turns").EnumerateArray().Any(row =>
+                row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                    unit.SpawnerCardId == ids[actionIndex] && unit.Triggers.Single(trigger => trigger.Kind == "OnAttacking") is
+                        { HasTriggered: true, FireCount: 1 }));
+            Require(rule.AssetKey == "ParrafinEnforcer" && template.AssetKey == "ParrafinEnforcer" &&
+                rule.Cost == 1 && template.Health == 25 && template.MaxHealth == 25 && template.Modifiers.AttackDamage == 15 && template.Size == 2 &&
+                buff.Type == "CardEffectAddStatusEffect" && buff.Action is { Type: "AddStatus", Target: "Room" } &&
+                buff.Action.Statuses.Single() is { Id: "buff", Stacks: 3 } && triggeredInNativeTurn,
+                "Parrafin Enforcer must preserve its native 1-cost 15/25 size-2 birth and positively trigger OnAttacking room +3 buff once.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
@@ -435,6 +450,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-MAKESHIFT-GOLEM PASS: original 1-cost 12/12 size-2 birth and captured OnDeath room +12 Armor; the unit survived, so the trigger remained inactive.");
         else if (expectedId == DeathcappedProphetId)
             Console.WriteLine("ORIGINAL-DEATHCAPPED-PROPHET PASS: original 1-cost 3/8 size-1 birth and captured CardMonsterPlayed +1 DrawNextTurn; no later monster play occurred, so the trigger remained inactive.");
+        else if (expectedId == ParrafinEnforcerId)
+            Console.WriteLine("ORIGINAL-PARRAFIN-ENFORCER PASS: original 1-cost 15/25 size-2 birth and a positive single OnAttacking room +3 buff callback.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
