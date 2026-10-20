@@ -901,9 +901,9 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RoomCombatResult ApplyDirectUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
-            bool remove, string upgradeId, int? anonymousRemovalIndex, bool deferCallbacks = false, int equipmentSourceCardId = 0, bool captureAllDispatches = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            bool remove, string upgradeId, int? anonymousRemovalIndex, bool deferCallbacks = false, int equipmentSourceCardId = 0, bool captureAllDispatches = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool allowDyingTarget = false)
         {
-            string? error = Validate(state);
+            string? error = Validate(state, allowDyingTarget ? targetId : (int?)null);
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing direct upgrade target.");
             var callbacks = new List<QueuedCharacterTrigger>();
@@ -2850,8 +2850,6 @@ namespace MonsterTrain2Poju.Model
                 bool immediateHarvest = false, bool doNotFullyRemove = false, bool returnSpawnerAfterQueue = false)
             {
                 if (target.DeathFinished) return;
-                if (target.Source.Modifiers?.TroopAura != null)
-                { unsupportedReason = "Troop aura owner-death cleanup needs a native witness."; return; }
                 if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: false));
@@ -3407,6 +3405,13 @@ namespace MonsterTrain2Poju.Model
             private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget, WorkingUnit? dyingCharacter, int triggerCount, int lastSpawnedOverrideUnitId,
                 int paramInt2 = 0, string? paramString = null, int? exclusiveTriggerStateId = null)
             {
+                if (kind == "OnDeath" && paramInt != 1 && !unit.Despawned && unit.Source.Modifiers?.TroopAura != null)
+                {
+                    RoomCombatResult cleanup = TroopAuraModel.OwnerKilled(CurrentRoom(), unit.Freeze());
+                    if (!cleanup.Supported) { unsupportedReason = cleanup.UnsupportedReason; return; }
+                    ImportEnchantmentRoom(cleanup.State!);
+                    foreach (var callback in cleanup.PendingCallbacks) QueueCallback(callback);
+                }
                 if (traceAllDispatches || unit.Triggers.Any(trigger => trigger.Kind == kind))
                     dispatches.Add(new CharacterTriggerDispatch(unit.Source.Id, kind, dyingCharacter?.Source.Id ?? 0, triggerCount,
                         paramInt, paramInt2, paramString, overrideTarget?.Source.Id ?? 0, lastSpawnedOverrideUnitId, exclusiveTriggerStateId));

@@ -94,9 +94,9 @@ namespace MonsterTrain2Poju.Model
         // a freshly constructed anonymous descriptor reverses stats but leaves the list entry.
         public static RoomCombatResult ApplyDirect(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
             bool remove = false, string upgradeId = "", int? anonymousRemovalIndex = null,
-            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool allowDyingTarget = false)
             => RoomCombatModel.ApplyDirectUnitUpgrade(source, targetId, upgrade, remove, upgradeId, anonymousRemovalIndex,
-                refreshPyre: refreshPyre);
+                refreshPyre: refreshPyre, allowDyingTarget: allowDyingTarget);
 
         internal static RoomCombatResult ApplyDirectDeferred(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)

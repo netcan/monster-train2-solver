@@ -136,6 +136,9 @@ namespace MonsterTrain2Poju.Probe
                 if (played == "b67ca7bf-bd65-4d98-ae53-26397de1e355")
                     candidates = candidates.Where(action => source.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == action.TargetUnitId &&
                         unit.Team == CombatTeam.Player && unit.Status("horde")?.Stacks > 0));
+                if (played == "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b")
+                    candidates = candidates.Where(action => source.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == action.TargetUnitId &&
+                        unit.AssetKey == "MonsterSquadLeader"));
             }
             if (index >= 4 && IsolatedIds.Contains("13876e8d-b111-429d-acdb-2e095fda897e"))
             {
@@ -309,6 +312,11 @@ namespace MonsterTrain2Poju.Probe
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
                 .Concat(spellIds.Select(Add)).ToArray();
             JackInTheBoxProbe.Prepare(managers, created, spellIds);
+            if (spellIds.Contains(TroopAuraProbe.CardId) && spellIds.Contains("f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b"))
+            {
+                var fragile = new CardUpgradeState(); fragile.Setup(); fragile.SetAdditionalHP(-9);
+                created.Single(card => card.GetCardDataID() == TroopAuraProbe.CardId).ApplyPermanentUpgrade(fragile, save);
+            }
             if (spellIds.Contains("37eaa51b-62cf-4cbc-971f-6d208fd07366"))
                 foreach (string treasure in spellIds.Where(id => all.FindCardData(id)!.GetTraits()
                     .Any(trait => trait.GetTraitStateName() == IndirectSpellModel.TreasureTrait)))

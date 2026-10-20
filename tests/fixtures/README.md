@@ -9975,10 +9975,22 @@ cached target. Upgrade identities remain specific to each aura owner. Native
 DEPTH-PASS has a settled win and zero capture/mismatch/unsupported/pending
 counters. Nine plays and five EndTurns pass sixteen immutable replay branches.
 The 128-state search matches nine recorded decisions and serial/parallel best
-results, with three guarded search attempts involving invalid living-unit
-state. One recorded-decision alternative is also outside the supported domain.
-Owner death and composition with ordinary enchantment sources remain guarded
-pending native witnesses rather than being silently approximated.
+results with zero unsupported attempts after retained dying-target upgrades
+were calibrated. Composition with ordinary enchantment sources remains guarded
+pending native source-order witnesses.
+
+The Squad Leader `-owner-death` and `-last-troop` controls come from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-045734-36e341c3`
+and `050000-11394cee`. The first gives the original owner a permanent minus-nine
+health upgrade; original Torch kills it while a living Funguy keeps its sole
+Horde stack and loses only that owner's attack upgrade and Trample. The second
+uses original Mushroom Cloud to remove the last Horde troop. Its removal
+callback still reverses the upgrade on the retained dying target before the
+order handler clears the dead target cache. Both native battles have settled
+DEPTH-PASS wins and zero failure counters; seven plays/five EndTurns each pass
+sixteen immutable replay branches and 128-state searches with zero unsupported
+attempts and equal serial/parallel best. Dying-target admission is explicit at the
+direct upgrade API and leaves ordinary living-target validation in place.
 
 `full-battle-original-isolated-echo-vault.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-042641-01e9949d`.

@@ -104,7 +104,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (!room.Units.Any(unit => unit.Id == targetId)) room = room.WithUnits(room.Units.Concat(new[] { retained }).ToArray());
                     RoomCombatResult changed = UnitModifierModel.ApplyDirect(room.WithContext(room.Context?.WithEnchantments(null)),
-                        targetId, upgrade, kind == "OnTroopRemoved", upgrade.DataId);
+                        targetId, upgrade, kind == "OnTroopRemoved", upgrade.DataId, allowDyingTarget: true);
                     if (!changed.Supported) return changed;
                     callbacks.AddRange(changed.PendingCallbacks);
                     retained = changed.State!.Units.Concat(changed.RetainedUnits).First(unit => unit.Id == targetId);
@@ -114,6 +114,33 @@ namespace MonsterTrain2Poju.Model
             return new RoomCombatResult(EnchantmentWorldModel.Sync(room, new[] { retained }), RoomOutcome.Exchanged, 0,
                 new List<CombatEvent>(), pendingCallbacks: callbacks, retainedUnits: new[] { retained });
         }
+        internal static RoomCombatResult OwnerKilled(RoomCombatState source, CombatUnit owner)
+        {
+            TroopAuraState rule = owner.Modifiers!.TroopAura!;
+            RoomCombatState room = source.WithContext(source.Context?.WithEnchantments(null));
+            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            CardUpgradeModifier upgrade = rule.Upgrade.WithRuntimeIdentity(Key(owner.Id));
+            foreach (int id in source.Units.Where(unit => Matches(unit, rule)).Select(unit => unit.Id))
+            {
+                foreach (CombatStatus status in rule.Statuses)
+                {
+                    RoomCombatResult removed = StatusRemovalModel.Remove(room, id, status.Id, status.Stacks);
+                    if (!removed.Supported) return removed;
+                    room = removed.State!; callbacks.AddRange(removed.PendingCallbacks);
+                }
+                int count = room.Units.Single(unit => unit.Id == id).Status("horde")?.Stacks ?? 0;
+                for (int index = 0; index < count; index++)
+                {
+                    RoomCombatResult removed = UnitModifierModel.ApplyDirect(room, id, upgrade, true, upgrade.DataId);
+                    if (!removed.Supported) return removed;
+                    room = removed.State!; callbacks.AddRange(removed.PendingCallbacks);
+                }
+            }
+            room = room.WithContext(room.Context?.WithEnchantments(source.Context?.Enchantments));
+            return new RoomCombatResult(EnchantmentWorldModel.Sync(room, new[] { owner }), RoomOutcome.Exchanged, 0,
+                new List<CombatEvent>(), pendingCallbacks: callbacks, retainedUnits: new[] { owner });
+        }
+
         private static TrainCombatState Replace(TrainCombatState source, RoomCombatState room) => new TrainCombatState(
             source.Rooms.Select(old => old.RoomIndex == room.RoomIndex ? room : old.WithContext(room.Context)).ToArray(),
             source.Movement, source.EnemySlotsPerRoom, room.Context);
