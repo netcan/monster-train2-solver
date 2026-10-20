@@ -58,6 +58,7 @@ internal static class OriginalSupportUnitsChecks
     private const string FeederDamageEnemiesUnitId = "aa94ef0c-0fd8-4d42-992f-25345d3717b5";
     private const string LadyOfTheReformedId = "5ac22130-17f1-4f8e-967f-a2d3b71ef7ca";
     private const string FeederPermanentAttackBoostId = "ed072114-b62e-4f61-8892-adf775d5a34c";
+    private const string ZealotId = "071d7448-0be6-4a40-860c-ede856a42228";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -592,6 +593,31 @@ internal static class OriginalSupportUnitsChecks
                     unit.Modifiers.Upgrades!.Count == 0 && !unit.Triggers.Single(trigger => trigger.Kind == "OnFeed").HasTriggered),
                 "Feeder Permanent Attack Boost must retain its original 2-cost 0/35 size-3 birth and inactive permanent scalable +2 attack OnFeed upgrade.");
             Console.WriteLine("ORIGINAL-FEEDER-PERMANENT-ATTACK-BOOST PASS: native 2-cost 0/35 size-3 birth; permanent scalable +2 attack OnFeed upgrade remained inactive across four snapshots.");
+        }
+        if (expectedId == ZealotId)
+        {
+            CombatTrigger onTurnBegin = template.Triggers.Single(trigger => trigger.Kind == "OnTurnBegin");
+            CardActionEffect pyregel = onTurnBegin.Effects.Single().Action!;
+            BattleTurnState[] turnStates = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+            CombatUnit[] unitTurns = turnStates.SelectMany(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units))
+                .Where(unit => unit.SpawnerCardId == ids[actionIndex]).ToArray();
+            bool noEnemyPyregel = turnStates.All(state => state.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
+                .Where(unit => unit.Team != CombatTeam.Player).All(unit => unit.Status("pyregel") == null));
+            Require(rule.AssetKey == "Zealot" && rule.Cost == 3 && template.AssetKey == "MonsterZealot" &&
+                template.Modifiers!.AttackDamage == 10 && template.Health == 20 && template.MaxHealth == 20 && template.Size == 2 &&
+                template.Status("sweep") is { Stacks: 1 } && template.Ability == null &&
+                onTurnBegin.SkipDuringDeployment == true && onTurnBegin.Effects.Single().Type == "CardEffectAddStatusEffect" &&
+                pyregel is { Type: "AddStatus", Target: "Room", AllowEnemy: true, AllowPlayer: false } &&
+                pyregel.Statuses.Single() is { Id: "pyregel", Stacks: 5, ParamInt: 1, ExcludeMonsterPropagation: true } &&
+                spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Health == 20 && spawnedUnit.MaxHealth == 20 &&
+                spawnedUnit.Modifiers!.AttackDamage == 10 && spawnedUnit.Size == 2 && spawnedUnit.Status("sweep") is { Stacks: 1 } &&
+                unitTurns.Length == 4 && unitTurns.All(unit => unit.Health == 20 && unit.MaxHealth == 20 &&
+                    unit.Modifiers!.AttackDamage == 10 && unit.Size == 2 && unit.Status("sweep") is { Stacks: 1 } &&
+                    unit.Triggers.Single(trigger => trigger.Kind == "OnTurnBegin") is { HasTriggered: true, FireCount: 1 }) &&
+                noEnemyPyregel,
+                "Zealot must preserve its original 3-cost 10/20 size-2 Sweep birth and one native OnTurnBegin Pyregel definition; no enemy Pyregel application was observed.");
+            Console.WriteLine("ORIGINAL-ZEALOT PASS: native 3-cost 10/20 size-2 Sweep birth; OnTurnBegin fired once, but Pyregel was absent from all observed enemy snapshots.");
         }
         if (expectedId == JuggernautId)
         {

@@ -2035,6 +2035,7 @@
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-isolated-unit-batch.mt2f"	"0"	"3"	""	"0,1,2"
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-isolated-votivary.mt2f"	"0"	"3"	""	"0,1,2"
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-isolated-weldling.mt2f"	"0"	"3"	""	"0,1,2"
+"d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-isolated-zealot.mt2f"	"0"	"3"	""	"0,1,2"
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-judges-scales.mt2f"	"2"	"0"	"1,2"	""
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-kill-attack.mt2f"	"0"	"2"	""	"0,1"
 "d14a50f3-728d-43e1-87f0-ef1b013f6678"	"TrainStewardShield"	"full-battle-original-kill-copy.mt2f"	"0"	"1"	""	"0"
@@ -2717,4 +2718,5 @@
 "0e50f7bc-c7c4-46b5-98a4-33d32194d7b8"	"WurmkinEtchings"	"full-battle-card-recursion.mt2f"	"1"	"0"	"0"	""
 "83c87c23-39a9-4c92-a6d0-3f640c35534d"	"WurmkinSpike"	"full-battle-original-x-wurmkin-spike.mt2f"	"2"	"0"	"2,3"	""
 "11c9415e-3316-4e86-8a38-fe61f7e43cbd"	"WynghsRadiance"	"full-battle-original-rearrange-spells.mt2f"	"2"	"0"	"16,17"	""
+"071d7448-0be6-4a40-860c-ede856a42228"	"Zealot"	"full-battle-original-isolated-zealot.mt2f"	"1"	"0"	"3"	""
 "56468ba5-86b6-49be-ba30-02baf7ffd6dd"	"ZoneOfSilence"	"full-battle-zone-of-silence.mt2f"	"2"	"0"	"2,4"	""

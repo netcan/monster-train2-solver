@@ -8926,3 +8926,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-feeder-permanent-attack-boost.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-feeder-permanent-attack-boost.mt2f
 ```
+
+### Original Zealot
+
+`full-battle-original-isolated-zealot.mt2f` plays the unchanged 3-cost 10/20
+size-2 Zealot with Sweep 1. Its `OnTurnBegin` callback fired once and carries
+an enemy-room Pyregel 5 definition, but Pyregel was absent from all observed
+enemy snapshots; applying that status is not claimed as covered. The Instant
+battle won with zero capture failures, mismatches, unsupported transitions or
+pending records. Focused replay and bounded serial/parallel search agree at
+128 states, with three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 071d7448-0be6-4a40-860c-ede856a42228
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-zealot.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-zealot.mt2f
+```
