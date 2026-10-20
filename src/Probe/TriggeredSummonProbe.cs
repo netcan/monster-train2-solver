@@ -65,7 +65,8 @@ namespace MonsterTrain2Poju.Probe
         internal static readonly List<DamageRecord> Damages = new List<DamageRecord>();
         internal static bool Enabled => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").StartsWith("triggered-summon", StringComparison.Ordinal) ||
             SpawnStatusRelicScenario.OriginalEggTransformation || OriginalEggCardScenario.Enabled ||
-            EnchantmentBattleScenario.ChildSummons || OriginalSupportUnitsScenario.CapturesTriggeredSummons;
+            EnchantmentBattleScenario.ChildSummons || OriginalSupportUnitsScenario.CapturesTriggeredSummons ||
+            OriginalSupportSpellsScenario.CapturesTriggeredSummons;
         private static string Register(CharacterData? unit)
         {
             if (unit == null) return "";

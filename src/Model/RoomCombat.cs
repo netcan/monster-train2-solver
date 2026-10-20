@@ -972,6 +972,8 @@ namespace MonsterTrain2Poju.Model
                 relic.StatusDecays?.Any(rule => rule.StatusIds.Contains("buff")) == true) == true;
             foreach (CombatUnit unit in state.Units)
             {
+                string? selfAttackError = UnitSelfAttackModel.Validate(state, unit);
+                if (selfAttackError != null) return selfAttackError;
                 if (unit.RegisteredStatus("conduit") != null && !ConduitModel.Captured(state.Context))
                     return "Conduit requires captured native room/card tracker state.";
                 if (unit.Status("mageblade")?.Stacks > 0 && unit.Modifiers?.MagebladeDamagePerMagicPower == null)
@@ -1373,6 +1375,7 @@ namespace MonsterTrain2Poju.Model
                     return Math.Max(0, unchecked(Source.AttackBeforeStatuses +
                         (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") - Amount("debuff"))) +
                         RelicStatusAttackModel.AdditionalAttack(Source.Modifiers?.StatusAttackModifiers, Source.Team, Statuses.Values.ToArray()) +
+                        UnitSelfAttackModel.Additional(Source, getContext?.Invoke(), Statuses.Values) +
                         mageblade + (Source.IsPyre ? getContext?.Invoke()?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
                 }
             }
@@ -4697,6 +4700,11 @@ namespace MonsterTrain2Poju.Model
 
             private RoomCombatResult Finish(RoomOutcome outcome)
             {
+                // Native attack snapshots query tracked Gold for each attached Goldtooth.
+                // After ClearCards this getter replaces the owned-card cache with the deck.
+                if (context != null && units.Any(unit => unit.Alive && unit.InRoom &&
+                    unit.Source.Modifiers?.SelfAttackRules?.Any(rule => rule.Type == "RoomStateSelfDamagePerGoldModifier") == true))
+                    context = context.WithStatistics(context.LiveStatistics);
                 if (!source.Preview && context != null)
                     context = UnitStandbyModel.MarkDead(context, units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray());
                 var removedIds = new HashSet<int>(units.Where(unit => !unit.Alive || unit.Removed || unit.Despawned).Select(unit => unit.Source.Id));

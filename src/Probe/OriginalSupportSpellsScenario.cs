@@ -9,6 +9,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class OriginalSupportSpellsScenario
     {
+        internal static bool CapturesTriggeredSummons { get; private set; }
         internal const string Name = "original-support-spells";
         internal const string IsolatedPrefix = "original-isolated-spells:";
         internal static string[]? IsolatedIds => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is string scenario &&
@@ -100,8 +101,22 @@ namespace MonsterTrain2Poju.Probe
         private static void PrepareIsolated(AllGameManagers managers, ManualLogSource log, string[] spellIds)
         {
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
+            if (spellIds.Contains("e8f47c5d-c2d8-44e8-a443-4dca81acfa4d")) save.SetGold(250, isTotalReset: true);
             if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster)))
                 throw new InvalidOperationException("Isolated spell IDs must name one to thirty native spell, equipment or supporting monster definitions.");
+            CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()
+                .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true);
+            bool hatchControls = spellIds.Contains("27b0fdda-5dc4-4280-a510-fe51e550e3fb") ||
+                spellIds.Contains("07448181-5b6f-404a-88ff-cb4d8ac8a3b1");
+            if (hatchControls || spellIds.Contains("a524d58a-6b12-4ec4-870c-679837e234cf"))
+                for (int roomIndex = 0; roomIndex < 3; roomIndex++)
+                {
+                    RoomState room = managers.GetRoomManager()!.GetRoom(roomIndex);
+                    var corruption = room.AdjustCorruption(managers.GetCombatManager()!, managers.GetRelicManager(),
+                        hatchControls ? 4 : 3, 4, skipTriggersAndNotifications: true);
+                    while (corruption.MoveNext()) { }
+                    if (hatchControls) room.SetPermanentCorruption(4);
+                }
             Set(all.GetBalanceData(), "maxHandSize", 40);
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
             Set(steward, "cost", 0); Set(anchor, "attackDamage", 1000); Set(anchor, "health", 10000); Set(anchor, "size", 1);

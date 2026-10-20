@@ -249,9 +249,11 @@ namespace MonsterTrain2Poju.Probe
                     (character.IsAlive || character.HasStatusEffect("undying")) && character.IsMiniboss() && character.IsCompanionBoss())
                     .Select(UnitId));
             }
-            return new RoomCombatState(room.GetRoomIndex(), combat.IsPlacementPhase, units,
+            var captured = new RoomCombatState(room.GetRoomIndex(), combat.IsPlacementPhase, units,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), captureContext ? CaptureContext() : null,
                 preview: save.PreviewMode, activeCompanionBossIds: activeCompanionBossIds);
+            UnitSelfAttackProbe.Observe(captured, characters, this);
+            return captured;
         }
 
         internal CombatUnit CaptureUnit(CharacterState character, List<string>? interactions = null)
@@ -262,7 +264,7 @@ namespace MonsterTrain2Poju.Probe
             CharacterState? lastAttacker = character.GetLastAttackerCharacter();
             CombatTrigger[] triggers = CaptureTriggers(character, interactions);
             if (character.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier &&
-                !(ConduitProbe.Enabled && modifier is RoomStateConduitModifier)))
+                !(ConduitProbe.Enabled && modifier is RoomStateConduitModifier) && !UnitSelfAttackModel.Known(modifier.GetType().Name)))
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
             CardState? card = character.GetSpawnerCard();
             bool unsupportedSpawnerCardTriggers = card != null && card.GetTriggers().Any(trigger =>
@@ -304,6 +306,9 @@ namespace MonsterTrain2Poju.Probe
             UnitModifiers modifiers = UnitModifierProbe.Capture(character);
             bool attackOverride = character.HasStatusEffect("fixedattack") || character.HasStatusEffect("armorattack") || character.HasStatusEffect("equalizer");
             int baseAttack = attackOverride ? Math.Max(0, unchecked(modifiers.AttackDamage + modifiers.DamageBuff)) : character.GetAttackDamageWithoutStatusEffectBuffs();
+            if (!attackOverride)
+                baseAttack = unchecked(baseAttack - character.GetRoomStateModifiers().Where(modifier => UnitSelfAttackModel.Known(modifier.GetType().Name))
+                    .Cast<RoomStateModifierBase>().Sum(modifier => modifier.GetDynamicInt(character)));
             if (!attackOverride && modifiers.MagebladeDamagePerMagicPower is int magebladeCoefficient && character.GetCurrentRoom() is RoomState currentRoom)
             {
                 AllGameManagers managers = AllGameManagers.Instance!;
@@ -1528,6 +1533,7 @@ namespace MonsterTrain2Poju.Probe
                 DyingUpgrades = DyingUpgradeProbe.Records,
                 AttackTriggers = AttackTriggerProbe.Records,
                 TriggeredStatuses = TriggeredStatusProbe.Records,
+                UnitSelfAttackQueries = UnitSelfAttackProbe.Records,
                 StatusRegistryCalibration = StatusRegistryCalibration.Samples,
                 RelicSpawnStatuses = RelicSpawnStatusProbe.Records,
                 OriginalEquipmentGrowthEncounterComplete = OriginalEquipmentGrowthScenario.EncounterCompleteRecords,

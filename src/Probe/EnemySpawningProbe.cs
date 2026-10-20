@@ -85,7 +85,7 @@ namespace MonsterTrain2Poju.Probe
         internal static EnemyDefinition Definition(CharacterData data)
         {
             var interactions = new List<string>();
-            if (data.GetRoomModifiersData().Count > 0) interactions.Add("Spawned room modifiers");
+            if (data.GetRoomModifiersData().Any(modifier => !UnitSelfAttackModel.Known(modifier.GetRoomStateModifierClassName()))) interactions.Add("Spawned room modifiers");
             if (data.IsOuterTrainBoss()) interactions.Add("Spawned outer Boss actions");
             CombatStatus[] statuses = data.GetStartingStatusEffects().Select(status =>
             {

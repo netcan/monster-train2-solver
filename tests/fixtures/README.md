@@ -9366,3 +9366,17 @@ effects and monster card-trait/post-spawn callbacks retain explicit guards.
 Native casting treats failed Sacrifice/Recursion tests as mandatory failures;
 the Pyre-room rejection is checked even when the ordinary fail-to-cast flag is
 false. Existing pile recursion, Shroud Spike and Deathroar are affected checks.
+
+The `full-battle-original-isolated-self-attack.mt2f` witness comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-195634-055809cd`.
+Goldtooth, Lady of the House and Bog Fly retain their original definitions;
+three independent anchors, 250 starting gold and three initial room Corruption
+provide positive controls. The focused checker compares 164 independent native
+attack getters for all three rules. Goldtooth uses turn-start gold (45 attack
+until the next turn crosses 300, then 60), Lady's three/two/one Burnout gives
+40/35/30 attack, and Bog Fly gains attack from nonzero current-room Corruption.
+Zero Corruption records are retained as controls. Attached physical ownership
+gates these additions; raw attack stays normalized separately from live queries.
+Native tracked-Gold queries also refresh the post-ClearCards deck statistics
+cache. All native failure counters are zero, with settled victory, DEPTH-PASS,
+sixteen independent full replay chains and bounded serial/parallel search.

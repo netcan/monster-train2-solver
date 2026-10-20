@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Model
             int raw = unchecked(attack.Value + old.AttackDamageAdded);
             var modifiers = new UnitModifiers(raw, old.AttackDamageAdded, old.DamageBuff, old.RawSize, old.EquipmentLimit,
                 old.CanBeHealed, old.IsClone, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
-                old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion);
+                old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules);
             var pyre = new CombatUnit(livePyre.Id, livePyre.AssetKey, livePyre.Team,
                 Math.Max(0, unchecked(raw + old.DamageBuff)), livePyre.Health, livePyre.MaxHealth,
                 livePyre.CanAttack, livePyre.IsPyre, livePyre.EndsBattleOnDeath, livePyre.Statuses, livePyre.Triggers,
@@ -106,6 +106,7 @@ namespace MonsterTrain2Poju.Model
         public static int AttackDamage(CombatUnit unit, CombatContext? context) => UnitAttackOverrideModel.Resolve(unit.Statuses, unit.MaxHealth) ?? Math.Max(0,
             unchecked(unit.AttackBeforeStatuses + unit.AttackFromStatuses +
                 RelicStatusAttackModel.AdditionalAttack(unit.Modifiers?.StatusAttackModifiers, unit.Team, unit.Statuses) +
+                UnitSelfAttackModel.Additional(unit, context) +
                 (unit.IsPyre ? context?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
     }
 

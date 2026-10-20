@@ -291,6 +291,29 @@ internal static class OriginalSupportSpellsChecks
                     "Original generation must positively allocate a native pool card and omit unreachable discard-copy upgrade branches.");
             }
         }
+        if (root.TryGetProperty("UnitSelfAttackQueries", out var attackQueries))
+        {
+            var positive = new HashSet<string>();
+            int queries = 0;
+            foreach (var record in attackQueries.EnumerateArray())
+            {
+                RoomCombatState room = record.GetProperty("Room").Deserialize<RoomCombatState>()!;
+                foreach (var query in record.GetProperty("Attacks").EnumerateArray())
+                {
+                    CombatUnit unit = room.Units.Single(actor => actor.Id == query.GetProperty("UnitId").GetInt32());
+                    Require(RelicResourceModel.AttackDamage(unit, room.Context) == query.GetProperty("Attack").GetInt32(),
+                        "Native contextual attack getter differs: " + unit.AssetKey);
+                    if (query.GetProperty("Attack").GetInt32() > unit.Attack)
+                        foreach (UnitSelfAttackRule modifier in unit.Modifiers!.SelfAttackRules!) positive.Add(modifier.Type);
+                    queries++;
+                }
+            }
+            var expected = actions.SelectMany(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms)
+                .SelectMany(room => room.Units).SelectMany(unit => unit.Modifiers?.SelfAttackRules ?? Array.Empty<UnitSelfAttackRule>())
+                .Select(rule => rule.Type).Distinct().ToArray();
+            Require(expected.All(positive.Contains), "Each contextual attack rule needs a positive independent native getter witness.");
+            if (expected.Length > 0) Console.WriteLine($"UNIT-SELF-ATTACK PASS: {queries} exact native queries across {expected.Length} positive scaling rules.");
+        }
         RecordedBattleChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }

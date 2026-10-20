@@ -23,10 +23,14 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-191851-699c2786/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,166 bytes, 11,622 unique nodes,
-SHA-256 `0f49aac66bb9268a3a18149d81ef10b2bb173e33bc8adf3db214c01192b75816`.
-The latest refresh projects Frostpiercer's last-attack-damage status action.
+Source: `.probe-runs/full-battle-no-cards-20261020-195426-5ffb6574/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,995 bytes, 11,694 unique nodes,
+SHA-256 `a751f52fd1db37b647c7aca9750103e374752ef98280a55fee0d1b6248d9d765`.
+The latest refresh projects Goldtooth, Lady of the House and Bog Fly's contextual
+self attack rules. Unit modifier descriptors gain a nullable field. Independent
+native character room-modifier definitions expose all fourteen such originals
+for signature-based scheduling; all 668 existing raw card definitions are unchanged.
+The preceding refresh projects Frostpiercer's last-attack-damage status action.
 The preceding refresh adds native HasMoonPhaseCardEffect to nested card-creation
 rules so generation can activate player moon tracking. Sixty-four Rules have
 the new nullable field; all 668 raw native definitions are unchanged.

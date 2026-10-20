@@ -55,6 +55,9 @@ namespace MonsterTrain2Poju.Probe
                     return new { CardDataId = item.card.GetID(), TraitIndex = item.index,
                         Upgrade = CardModifierProbe.Upgrade(upgrade) };
                 }).ToArray();
+            var characterRoomModifiers = cards.Where(card => card.GetSpawnCharacterData()?.GetRoomModifiersData().Count > 0)
+                .Select(card => new { CardDataId = card.GetID(), Character = card.GetSpawnCharacterData().GetAssetKey(),
+                    Modifiers = card.GetSpawnCharacterData().GetRoomModifiersData().Select(RuleCatalogProbe.RoomModifier).ToArray() }).ToArray();
             JObject afterRng = RngStates();
             bool unchanged = JToken.DeepEquals(before, JToken.FromObject(trace.CaptureDecision()));
             if (!unchanged || UnityEngine.Time.frameCount != frame || !JToken.DeepEquals(beforeRng, afterRng))
@@ -65,7 +68,8 @@ namespace MonsterTrain2Poju.Probe
                 BranchCardMasksEnabled = CardBranchMaskProbe.Enabled,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = beforeRng, RngAfter = afterRng,
-                DecisionUnchanged = unchanged, Cards = entries, MoonPhaseUpgradeDefinitions = moonUpgrades
+                DecisionUnchanged = unchanged, Cards = entries, MoonPhaseUpgradeDefinitions = moonUpgrades,
+                CharacterRoomModifierDefinitions = characterRoomModifiers
             }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "card-catalog.mt2f")))
                 document.Write(output);
