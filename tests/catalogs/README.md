@@ -23,15 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-120709-f7624fae/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,152 bytes, 11,610 unique nodes,
-SHA-256 `81eafe5b0cf6b4b9cb1121ca1f2080787b4b338b1a1a3c201e450cbc1552e456`.
-The latest refresh preserves the owning Spell CardData type in static unit-ability
-scaling queries. Kinhost Carapace's two traits and Pyreblooded's ability trait now
-retain native `CurrentCostSourceIsSpell=true`. The 668-definition native catalog
-pass kept decision state, RNG and frame unchanged; its surrounding baseline won
-with zero capture failures, mismatches, unsupported transitions and pending
-records.
+Source: `.probe-runs/full-battle-no-cards-20261020-122158-b99598b2/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,109 bytes, 11,610 unique nodes,
+SHA-256 `5f5d966077e32f785d708b0b9bd9ea93cfc71bb717249d56b563681b0093b290`.
+Static unit-ability scaling queries preserve the owning Spell CardData type.
+Kinhost Carapace's two UnitUpgrade traits, Pyreblooded's UnitUpgrade trait and
+Railgun's StatusScaling trait retain native `CurrentCostSourceIsSpell=true`.
+The 668-definition native catalog pass kept decision state, RNG and frame
+unchanged; its surrounding baseline won with zero capture failures, mismatches,
+unsupported transitions and pending records.
 An earlier refresh captured unit-trigger `CardEffectRemoveAllStatusEffects`
 actions through the existing status-removal projection. Its only `Rule`
 projection changes were Green Recruit, Eel Gorgon and Cluster Colonel; native raw

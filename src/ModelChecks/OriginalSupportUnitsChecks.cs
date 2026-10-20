@@ -43,6 +43,7 @@ internal static class OriginalSupportUnitsChecks
     private const string PyrebloodedId = "e962f77b-d5bc-441b-be79-8cb3207d8a42";
     private const string KinhostCarapaceId = "8fcb523c-690f-44cb-887d-7112795a50a1";
     private const string MeathookId = "6c070dfb-65b7-4955-a651-999990fd0c90";
+    private const string RailgunId = "9b8f9080-0001-4994-bf1f-cf8bb247222f";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -468,6 +469,19 @@ internal static class OriginalSupportUnitsChecks
             CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
                 "Meathook", "Meathook", "MonsterMeathook", 1, 25, 15, 2, 2,
                 "a7dac277-0718-442d-8903-e21187ff56e6");
+        }
+        if (expectedId == RailgunId)
+        {
+            CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
+                "Railgun", "Railgun", "MonsterRailgun", 1, 20, 5, 2, 1,
+                "15e01480-4faf-429e-ad21-71190a3d3106");
+            ScalingStatusTrait abilityScaling = template.Ability!.CardCreation!.StatusScalingTraits!.Single();
+            Require(abilityScaling.StacksPerStat == 1 && !abilityScaling.OnlyWhenSourceZero && abilityScaling.Filter == 0 &&
+                abilityScaling.StatusIds.SequenceEqual(["burst"]) && abilityScaling.Query.Type == "PlayedCost" &&
+                abilityScaling.Query.Duration == "ThisTurn" && abilityScaling.Query.SourceRawCost == 0 &&
+                abilityScaling.Query.VariableCost && abilityScaling.Query.CurrentCostCardModifiersOnly &&
+                abilityScaling.Query.CurrentCostSourceIsSpell,
+                "Railgun's inactive unit ability must preserve its native +1 Burst-per-PlayedCost query with the Spell source flag.");
         }
         if (expectedId == EelGorgonId)
         {

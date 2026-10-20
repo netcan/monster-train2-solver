@@ -8673,3 +8673,21 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-meathook.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-meathook.mt2f
 ```
+
+### Original Railgun
+
+`full-battle-original-isolated-railgun.mt2f` plays the unchanged 1-cost 20/5
+size-2 Railgun. Its native OnSpawn callback exposes the cooldown-1 ability,
+which remains available but unused in all four post-deployment snapshots. The
+ability definition retains its +1 Burst per PlayedCost query with the native
+Spell-source flag. This covers direct play, birth and unactivated ability
+lifecycle only; the ability effect itself is not exercised. The Instant battle
+won with zero capture failures, mismatches, unsupported transitions or pending
+records. Focused replay and bounded serial/parallel search agree at 128 states,
+with three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 9b8f9080-0001-4994-bf1f-cf8bb247222f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-railgun.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-railgun.mt2f
+```

@@ -18,14 +18,16 @@ namespace MonsterTrain2Poju.Probe
             ScalingStatusTrait[] traits = card.GetTraits().Where(data => data.GetTraitStateName() == "CardTraitScalingAddStatusEffect").Select(data =>
             {
                 var trait = new CardTraitScalingAddStatusEffect(); trait.Setup(data, CardState.None);
-                return Definition(trait, card.GetCost(), card.GetCostType() == CardData.CostType.ConsumeRemainingEnergy);
+                return Definition(trait, card.GetCost(), card.GetCostType() == CardData.CostType.ConsumeRemainingEnergy,
+                    card.GetCardType() == CardType.Spell);
             }).ToArray();
             return traits.Length == 0 ? null : traits;
         }
-        private static ScalingStatusTrait Definition(CardTraitScalingAddStatusEffect trait, int rawCost, bool variable)
+        private static ScalingStatusTrait Definition(CardTraitScalingAddStatusEffect trait, int rawCost, bool variable,
+            bool? currentCostSourceIsSpell = null)
         {
             var definitions = AllGameManagers.Instance!.GetStatusEffectManager().GetAllStatusEffectsData().GetStatusEffectData();
-            return new ScalingStatusTrait(DamageScalingProbe.Query(trait.StatValueData, rawCost, variable), trait.GetParamInt(), trait.GetParamBool(),
+            return new ScalingStatusTrait(DamageScalingProbe.Query(trait.StatValueData, rawCost, variable, currentCostSourceIsSpell), trait.GetParamInt(), trait.GetParamBool(),
                 trait.GetParamInt2(), trait.GetParamStatusEffects().Select(status => status.statusId).ToArray(),
                 definitions.Where(status => status.IsPropagatable() && !status.GetExcludeHeroPropagation()).Select(status => status.GetStatusId()).ToArray(),
                 definitions.Where(status => status.IsPropagatable() && !status.GetExcludeMonsterPropagation()).Select(status => status.GetStatusId()).ToArray());
