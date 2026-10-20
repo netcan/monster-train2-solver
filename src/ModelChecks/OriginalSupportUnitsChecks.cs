@@ -29,6 +29,7 @@ internal static class OriginalSupportUnitsChecks
     private const string PlagueDoctorId = "34909c50-4cba-41fa-8b33-64c1e463691c";
     private const string HulkingMassId = "a0c52fd5-e77f-43ec-b9f7-2ebf7e3ac8ac";
     private const string ReformingOozeId = "357a72e3-935c-4946-9e5a-6449482641c1";
+    private const string MoltenEncasementId = "b20aaea2-cf9e-4475-aac3-abba7a0bed7e";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -561,6 +562,24 @@ internal static class OriginalSupportUnitsChecks
                 upgrade.Upgrade.Stats.Health == 0 && remainsUntriggered,
                 "Reforming Ooze must preserve its native 1-cost 7/15 size-2 Undying birth and inactive permanent self +6 Attack OnReanimated upgrade.");
         }
+        if (expectedId == MoltenEncasementId)
+        {
+            CombatTrigger onDeath = template.Triggers.Single(trigger => trigger.Kind == "OnDeath");
+            CombatEffect stealthEffect = onDeath.Effects.Single();
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "MoltenEncasement" && template.AssetKey == "MoltenEncasement" && rule.Cost == 1 &&
+                template.Modifiers!.AttackDamage == 0 && template.Health == 1 && template.MaxHealth == 1 && template.Size == 1 &&
+                template.Subtypes.Contains("SubtypesData_Tomb") && stealthEffect.Type == "CardEffectAddStatusEffect" &&
+                stealthEffect.Action is { Type: "AddStatus", Target: "Room", AllowEnemy: false, AllowPlayer: true } &&
+                stealthEffect.Action.Statuses.Single() is { Id: "stealth", Stacks: 2, RemoveWhenTriggered: true } &&
+                !onDeath.HasTriggered && unitTurns.Length == 4 && unitTurns.All(unit => unit.Health == 1 &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "OnDeath").HasTriggered) && spawnedUnit.Status("stealth") == null,
+                "Molten Encasement must preserve its native 1-cost 0/1 Tomb birth and inactive OnDeath room +2 Stealth definition.");
+        }
         if (expectedId == AstrologerId)
         {
             CombatTrigger phaseShift = template.Triggers.Single(trigger => trigger.Kind == "OnMoonPhaseShift");
@@ -671,6 +690,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-BLOATED-WHELP PASS: original 1-cost 4/1 Whelp birth; native OnSpawn grants ability availability and resets cooldown, while its cooldown-1 ability remains unused.");
         else if (expectedId == FaeMeddlerId)
             Console.WriteLine("ORIGINAL-FAE-MEDDLER PASS: original 1-cost 6/3 birth and positive OnSpawn phase advance 2 to 1; cooldown-2 unit ability remains outside this action witness.");
+        else if (expectedId == MoltenEncasementId)
+            Console.WriteLine("ORIGINAL-MOLTEN-ENCASEMENT PASS: original 1-cost 0/1 Tomb birth and inactive OnDeath room +2 Stealth definition; no death occurred.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }

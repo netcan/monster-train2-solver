@@ -8429,3 +8429,22 @@ dotnet run --project src/ModelChecks -c Release -- --original-green-recruit-only
 dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-green-recruit.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-green-recruit.mt2f
 ```
+
+### Original Molten Encasement
+
+`full-battle-original-molten-encasement.mt2f` plays the unchanged one-cost
+0/1 Tomb unit in an available room slot. The captured original definition has
+an `OnDeath` callback that adds two Stealth to friendly room units; Molten
+Encasement survived all four post-deployment turn snapshots, so callback
+execution is not covered. The native battle won with zero capture failures, mismatches,
+unsupported transitions or pending records. Focused checks verify the exact
+birth and inactive callback definition; bounded serial/parallel search agrees
+at 128 states, with three replayed steps. The archive is 27,902 bytes, has
+3,736 unique nodes and SHA-256
+`fcb20b7a3e0ded18b1c107a6c16f783a4a2263374688beb832dd81cb924a5e51`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId b20aaea2-cf9e-4475-aac3-abba7a0bed7e
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-molten-encasement.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-molten-encasement.mt2f
+```
