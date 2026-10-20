@@ -278,6 +278,9 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-wickless-death-trigger-batch.mt2f',
     'full-battle-original-isolated-death-summon-batch.mt2f',
     'full-battle-original-isolated-conduit-moon-batch.mt2f',
+    'full-battle-original-isolated-enchant-batch.mt2f',
+    'full-battle-original-isolated-fae-moon-pixie.mt2f',
+    'full-battle-original-isolated-equipment-phase-batch.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
@@ -2287,7 +2290,7 @@ foreach ($fixturePath in $originalIsolatedWicklessDeathFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Wickless death-trigger batch checks failed ($mode): $fixturePath" }
     }
 }
-$originalIsolatedDeathSummonFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-isolated-death-summon-batch.mt2f', 'full-battle-original-isolated-conduit-moon-batch.mt2f') })
+$originalIsolatedDeathSummonFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-isolated-death-summon-batch.mt2f', 'full-battle-original-isolated-conduit-moon-batch.mt2f', 'full-battle-original-isolated-enchant-batch.mt2f', 'full-battle-original-isolated-fae-moon-pixie.mt2f') })
 foreach ($fixturePath in $originalIsolatedDeathSummonFixtures) {
     foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
@@ -2322,7 +2325,7 @@ foreach ($fixturePath in $originalStatusUnitFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original status unit checks failed ($mode): $fixturePath" }
     }
 }
-$originalEquipmentCardFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-equipment-cards.mt2f' })
+$originalEquipmentCardFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-equipment-cards.mt2f', 'full-battle-original-isolated-equipment-phase-batch.mt2f') })
 foreach ($fixturePath in $originalEquipmentCardFixtures) {
     foreach ($mode in @('--original-equipment-cards-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

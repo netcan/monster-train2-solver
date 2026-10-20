@@ -9114,3 +9114,28 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -SkipBuild -OriginalIsolat
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-conduit-moon-batch.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-conduit-moon-batch.mt2f
 ```
+
+### Original Enchant and Equipment Batches
+
+`full-battle-original-isolated-enchant-batch.mt2f` plays unchanged Deathmetal
+Hymnist, Punkrock Reveler and Upbeat Warbler on separate floors. Each enchants
+the other friendly host with Multistrike, Trample or Ambush. Their native
+ShouldTest=false effects bind through the spawn lifecycle without setting
+HasTriggered. This does not cover all three auras combined on one floor.
+`full-battle-original-isolated-fae-moon-pixie.mt2f` separately verifies the
+original Conduit-three birth plus Conduit-three enchantment, producing two
+active contributors and room power six. This witness uses logical positions.
+
+`full-battle-original-isolated-equipment-phase-batch.mt2f` plays unchanged
+Cursed Dragonstaff, Dusk Mantle, Glutton's Maw, Old Growth, Penitent's Bloodsuit
+and Penitent's Deathsuit. Three separate host controls have sufficient native
+equipment slots; a distinct zero-cost spell supplies Energy. Original equipment
+costs, upgrades, callbacks and standby bindings are retained. Hosts survive and
+do not shift in this witness; untriggered callbacks remain explicit boundaries.
+
+All three native battles won with DEPTH-PASS and zero capture failures,
+mismatches, unsupported transitions and pending records. Focused checks replay
+their complete immutable chains. Both batch fixtures also have bounded search
+checks. The legacy persistent-enchantment fixture is an affected regression.
+The isolated equipment runner accepts one to thirty original IDs and stops
+early on a model preflight rejection when requested.

@@ -86,7 +86,9 @@ internal static class OriginalSupportUnitsChecks
                 {
                     CombatUnit[] players = source.Spawn.Train.Rooms.Single(current => current.RoomIndex == candidateRoom.RoomIndex).Units
                         .Where(unit => unit.Team == CombatTeam.Player).ToArray();
-                    if (players.Length < candidateRoom.PlayerSlots && players.Sum(unit => unit.Size) + template.Size <= candidateRoom.PlayerCapacity)
+                    bool alreadyEnchanted = template.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null) &&
+                        players.Any(unit => unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null));
+                    if (!alreadyEnchanted && players.Length < candidateRoom.PlayerSlots && players.Sum(unit => unit.Size) + template.Size <= candidateRoom.PlayerCapacity)
                     { roomIndex = candidateRoom.RoomIndex; break; }
                 }
             int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(room => room.RoomIndex == roomIndex).Units.Count(unit => unit.Team == CombatTeam.Player);
@@ -442,6 +444,35 @@ internal static class OriginalSupportUnitsChecks
             (juggernautXCost || spawnedUnit.Health == template.Health && (healthAdjustedOnSpawn || spawnedUnit.MaxHealth == template.MaxHealth) &&
                 spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage),
             expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
+        if (rule.AssetKey is "DeathmetalHymnist" or "PunkrockReveler" or "UpbeatWarbler")
+        {
+            string statusId = rule.AssetKey == "DeathmetalHymnist" ? "multistrike" : rule.AssetKey == "PunkrockReveler" ? "trample" : "ambush";
+            CombatTrigger trigger = spawnedUnit.Triggers.Single(item => item.Kind == "AfterSpawnEnchant");
+            EnchantmentRule aura = trigger.Effects.Single().Enchantment!;
+            CombatUnit anchor = unitAfter.Spawn.Train.Rooms.Single(room => room.RoomIndex == unitAction.RoomIndex).Units
+                .Single(unit => unit.SpawnerCardId == ids[unitAction.RoomIndex]);
+            Require(rule.Cost == (rule.AssetKey == "DeathmetalHymnist" ? 4 : 1) && template.Health == 2 &&
+                template.Modifiers!.AttackDamage == 2 && template.Size == 1 && aura.Targeting.Tests?.ShouldTest == false &&
+                !trigger.HasTriggered && aura.Bound && aura.State.PrimaryTargets.Single().UnitId == anchor.Id &&
+                aura.State.PrimaryTargets.Single().IsEnchanted && aura.State.CachedStatus?.Id == statusId &&
+                anchor.Status(statusId)?.Stacks == 1 && spawnedUnit.Status(statusId) == null &&
+                unitAfter.Spawn.Train.Context!.Enchantments != null,
+                "Original aura must bind its other friendly host without setting a skipped native trigger-test flag.");
+        }
+        if (rule.AssetKey == "FaeMoonPixie")
+        {
+            CombatTrigger trigger = spawnedUnit.Triggers.Single(item => item.Kind == "AfterSpawnEnchant");
+            EnchantmentRule aura = trigger.Effects.Single().Enchantment!;
+            CombatUnit anchor = unitAfter.Spawn.Train.Rooms.Single(room => room.RoomIndex == unitAction.RoomIndex).Units
+                .Single(unit => unit.SpawnerCardId == ids[unitAction.RoomIndex]);
+            RoomMagicPower power = unitAfter.Spawn.Train.Context!.MagicPower!.Single(room => room.RoomIndex == unitAction.RoomIndex && room.Team == CombatTeam.Player);
+            Require(rule.Cost == 1 && template.Health == 3 && template.Modifiers!.AttackDamage == 3 && template.Size == 1 &&
+                template.Status("conduit")?.Stacks == 3 && spawnedUnit.Status("conduit")?.Stacks == 3 && anchor.Status("conduit")?.Stacks == 3 &&
+                trigger.HasTriggered && aura.Targeting.Tests?.ShouldTest == true && aura.Bound &&
+                aura.State.PrimaryTargets.Single().UnitId == anchor.Id && power.Value == 6 &&
+                power.Conduit!.Units.Count(unit => unit.Active && unit.Power == 3) == 2,
+                "Fae Moon Pixie must contribute its own Conduit three and enchant the other friendly host for a total room power of six.");
+        }
         if (rule.AssetKey == "MagicPowerAcolyte")
         {
             RoomMagicPower power = unitAfter.Spawn.Train.Context!.MagicPower!.Single(room => room.RoomIndex == unitAction.RoomIndex && room.Team == CombatTeam.Player);

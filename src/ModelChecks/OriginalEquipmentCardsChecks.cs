@@ -11,10 +11,19 @@ internal static class OriginalEquipmentCardsChecks
         "75cfe90b-47b9-406c-b891-33564aac6677", "924ad6ab-3d60-4760-b38e-78f5cf09c1d5",
         "1d2e6259-e3ef-4a6a-8894-2c12db9fd4a9", "00a5ceea-8fae-4437-9cb8-3c0f2998fb2c",
         "1d5627c9-b0b5-405e-97f4-7a5ac5b91021"];
-    internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
+    internal static PlayCardAction? Choose(BattleTurnState source, int[] ids, bool isolated = false)
     {
         int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
         if (index < 0 || index >= 4 && source.Spawn.Turn < 1) return null;
+        if (isolated)
+        {
+            if (index >= 3 && source.Spawn.Turn < 1) return null;
+            int floor = index < 3 ? index : index == 3 ? 0 : (index - 4) % 3;
+            int targetId = index < 4 ? 0 : source.Spawn.Train.Rooms.Single(room => room.RoomIndex == floor).Units
+                .Single(unit => unit.SpawnerCardId == ids[floor]).Id;
+            var isolatedAction = new PlayCardAction(ids[index], floor, playerPosition: index < 3 ? 0 : -1, targetUnitId: targetId);
+            return BattleActionModel.PlayCard(source, isolatedAction).Supported ? isolatedAction : null;
+        }
         int host = index is >= 8 and <= 11 ? 1 : index is 13 or 17 or 18 or 19 ? 2 : index == 20 ? 3 : index is 12 or 14 or 21 or 22 ? 7 : 0;
         int target = index is >= 8 and <= 24 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
         int room = index is 3 or 20 ? 1 : index is 7 or 12 or 14 or 21 or 22 or 25 ? 2 : 0;
@@ -24,6 +33,11 @@ internal static class OriginalEquipmentCardsChecks
     }
     internal static void Native(FixtureValue root)
     {
+        if (root.GetProperty("ModifierScenario").GetString()?.StartsWith("original-isolated-equipment:", StringComparison.Ordinal) == true)
+        {
+            NativeIsolated(root);
+            return;
+        }
         Require(root.GetProperty("OriginalEquipmentCardsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed original equipment card witness.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalEquipmentCardsIds").Deserialize<int[]>()!;
@@ -147,6 +161,63 @@ internal static class OriginalEquipmentCardsChecks
             "Bloodthirsty Blade equipment growth and wounded Meat Shield healing need positive witnesses.");
         RecordedBattleChecks.Native(root);
         Console.WriteLine("ORIGINAL-EQUIPMENT-CARDS PASS: seventeen unchanged originals, Organ Harvester OnKill Undying, Cursed Twinblade per-attack trigger, Resin Blades host-death return and 17 immutable full chains.");
+    }
+    private static void NativeIsolated(FixtureValue root)
+    {
+        Require(root.GetProperty("OriginalEquipmentCardsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
+            root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed isolated equipment witness.");
+        foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
+        string[] originals = root.GetProperty("ModifierScenario").GetString()!["original-isolated-equipment:".Length..].Split(',');
+        int[] ids = root.GetProperty("OriginalEquipmentCardsIds").Deserialize<int[]>()!;
+        var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
+        Require(originals.Length is > 0 and <= 30 && originals.Distinct().Count() == originals.Length &&
+            originals.All(id => Guid.TryParseExact(id, "D", out _)) && ids.Length == originals.Length + 4 && actions.Length == ids.Length,
+            "Isolated equipment batch must include three hosts, one energy control and every requested original.");
+        for (int i = 0; i < actions.Length; i++)
+        {
+            BattleTurnState before = actions[i].GetProperty("Before").Deserialize<BattleTurnState>()!,
+                after = actions[i].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            PlayCardAction action = actions[i].GetProperty("Action").Deserialize<PlayCardAction>()!;
+            CardInstanceState card = before.Spawn.Train.Context!.FindCard(ids[i])!;
+            CardPlayRule rule = before.PlayRules!.Cards.Single(item => item.DataId == card.DataId);
+            Require(action.CardInstanceId == ids[i], "Equipment batch action order differs.");
+            if (i < 3)
+            {
+                CombatUnit host = after.Spawn.Train.Rooms[i].Units.Single(unit => unit.SpawnerCardId == ids[i]);
+                Require(action.RoomIndex == i && action.PlayerPosition == 0 && action.TargetUnitId == 0 && rule.Cost == 0 &&
+                    card.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678" && host.Health == 10000 && host.Size == 1 &&
+                    host.Modifiers!.AttackDamage == 1000 && host.Modifiers.EquipmentLimit == (originals.Length + 2) / 3,
+                    "Isolated equipment host control changed.");
+                continue;
+            }
+            if (i == 3)
+            {
+                CardActionEffect gain = rule.Effects.Single();
+                Require(card.DataId == "ac110053-0000-4000-8000-000000000099" && rule.CardType == "Spell" && rule.Cost == 0 &&
+                    action.RoomIndex == 0 && action.TargetUnitId == 0 && action.PlayerPosition == -1 &&
+                    gain.Type == "GainEnergy" && gain.Value > 0 && after.Energy - before.Energy == gain.Value,
+                    "Isolated equipment energy control differs.");
+                continue;
+            }
+            int floor = (i - 4) % 3;
+            CombatUnit a = before.Spawn.Train.Rooms[floor].Units.Single(unit => unit.SpawnerCardId == ids[floor]),
+                b = after.Spawn.Train.Rooms[floor].Units.Single(unit => unit.Id == a.Id);
+            CardPileState standby = after.Spawn.Train.Context!.OtherPiles!.Single(pile => pile.Name == "Standby");
+            Require(card.DataId == originals[i - 4] && rule.CardType == "Equipment" && rule.Equipment != null &&
+                rule.ExternalInteractions.Count == 0 && before.Energy - after.Energy == rule.Cost && action.RoomIndex == floor &&
+                action.TargetUnitId == a.Id && action.PlayerPosition == -1 &&
+                b.EquipmentCards!.SequenceEqual(a.EquipmentCards!.Append(ids[i])) &&
+                standby.Cards.Any(token => token.InstanceId == ids[i]) && standby.EquipmentConditions!.Any(condition =>
+                    condition.CardId == ids[i] && condition.HostUnitId == b.Id && condition.ReturnToHand == rule.Equipment.ReturnToHand),
+                "Original equipment identity, paid attachment or native standby binding differs: " + rule.AssetKey);
+            Require(Json(before.Spawn.Train.Rooms.Where(room => room.RoomIndex != floor).Select(room => room.Units)) ==
+                Json(after.Spawn.Train.Rooms.Where(room => room.RoomIndex != floor).Select(room => room.Units)) &&
+                before.Spawn.Train.Context.BattleRng.Equals(after.Spawn.Train.Context.BattleRng),
+                "Original equipment attachment changed another floor or consumed Battle RNG.");
+        }
+        RecordedBattleChecks.Native(root);
+        Console.WriteLine($"ORIGINAL-ISOLATED-EQUIPMENT PASS: {originals.Length} unchanged paid attachments on separate native hosts and immutable full chains.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

@@ -23,9 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-122158-b99598b2/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,109 bytes, 11,610 unique nodes,
-SHA-256 `5f5d966077e32f785d708b0b9bd9ea93cfc71bb717249d56b563681b0093b290`.
+Source: `.probe-runs/full-battle-no-cards-20261020-173848-d1c67cf8/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,051 bytes, 11,611 unique nodes,
+SHA-256 `b1677be254af903ade9e795f1cc0bc0267a98eb0e0173861571deae6bf9d4912`.
+Original Enchant effects retain their native test flags. Binding an aura through
+its spawn lifecycle does not set HasTriggered when its only effect has
+ShouldTest=false. Legacy evidence without these flags retains its prior behavior.
 Static unit-ability scaling queries preserve the owning Spell CardData type.
 Kinhost Carapace's two UnitUpgrade traits, Pyreblooded's UnitUpgrade trait and
 Railgun's StatusScaling trait retain native `CurrentCostSourceIsSpell=true`.

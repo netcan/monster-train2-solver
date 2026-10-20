@@ -48,6 +48,7 @@ namespace MonsterTrain2Poju.Probe
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static int IsolatedEnergyControlInstanceId { get; private set; }
         internal static bool CapturesTriggeredSummons { get; private set; }
+        internal static bool CapturesEnchantments { get; private set; }
         private static ManualLogSource? logger;
         private static string? lastRejection;
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
@@ -122,6 +123,8 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
             CapturesTriggeredSummons = unitIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData().GetTriggers()
                 .SelectMany(trigger => trigger.GetEffects()).Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster"));
+            CapturesEnchantments = unitIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData().GetTriggers()
+                .SelectMany(trigger => trigger.GetEffects()).Any(effect => effect.GetEffectStateName() == "CardEffectEnchant"));
             Set(all.GetBalanceData(), "maxHandSize", 40);
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
             Set(steward, "cost", 0); Set(anchor, "attackDamage", 1000); Set(anchor, "health", 10000); Set(anchor, "size", 1);
@@ -173,7 +176,9 @@ namespace MonsterTrain2Poju.Probe
                         {
                             CombatUnit[] players = source.Spawn.Train.Rooms.Single(current => current.RoomIndex == candidateRoom.RoomIndex).Units
                                 .Where(unit => unit.Team == CombatTeam.Player).ToArray();
-                            if (players.Length < candidateRoom.PlayerSlots && players.Sum(unit => unit.Size) + template.Size <= candidateRoom.PlayerCapacity)
+                            bool alreadyEnchanted = template.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null) &&
+                                players.Any(unit => unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null));
+                            if (!alreadyEnchanted && players.Length < candidateRoom.PlayerSlots && players.Sum(unit => unit.Size) + template.Size <= candidateRoom.PlayerCapacity)
                             { isolatedRoom = candidateRoom.RoomIndex; break; }
                         }
                 }

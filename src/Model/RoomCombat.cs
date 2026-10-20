@@ -3840,10 +3840,18 @@ namespace MonsterTrain2Poju.Model
 
             private bool ActionTriggerPassesTest(WorkingUnit actor, CombatTrigger trigger, int lastSpawnedOverrideUnitId)
             {
-                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null || effect.Action != null || effect.Summon != null)) return true;
+                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null || effect.Action != null || effect.Summon != null || effect.Enchantment != null)) return true;
                 bool passed = trigger.Effects.Count == 0;
                 foreach (CombatEffect effect in trigger.Effects)
                 {
+                    if (effect.Enchantment != null)
+                    {
+                        // Native Enchant auras bind during initialization. An
+                        // effect with ShouldTest=false does not admit its trigger
+                        // or mark HasTriggered when the ordinary queue visits it.
+                        if (effect.Enchantment.Targeting.Tests?.ShouldTest != false) passed = true;
+                        continue;
+                    }
                     if (effect.Summon != null)
                     {
                         if (!effect.Summon.Tests.ShouldTest) continue;

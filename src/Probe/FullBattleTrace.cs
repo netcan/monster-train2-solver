@@ -367,7 +367,8 @@ namespace MonsterTrain2Poju.Probe
                 observedCards = projection.KnownCards.Count(); observedUnits = identities.Count;
                 int decisionStart = BattleSpawnPointProbe.Decisions.Count;
                 otherPiles = CaptureOtherPiles();
-                enchantments = EnchantmentBattleScenario.Prepared ? EnchantmentBattleScenario.CaptureWorld(this) : null;
+                enchantments = EnchantmentBattleScenario.Prepared || OriginalSupportUnitsScenario.CapturesEnchantments
+                    ? EnchantmentBattleScenario.CaptureWorld(this) : null;
                 abilityCache = AbilityCardProbe.Capture(this);
                 bonusDraw = BonusDrawProbe.Capture(cards, this);
                 spawnPoints = BattleSpawnPointProbe.Enabled ? BattleSpawnPointProbe.Capture(this) : null;

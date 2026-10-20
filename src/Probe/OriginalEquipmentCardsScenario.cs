@@ -10,7 +10,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalEquipmentCardsScenario
     {
         internal const string Name = "original-equipment-cards";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal const string IsolatedPrefix = "original-isolated-equipment:";
+        internal static string[]? IsolatedIds => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is string scenario &&
+            scenario.StartsWith(IsolatedPrefix, StringComparison.Ordinal) ? scenario.Substring(IsolatedPrefix.Length).Split(',') : null;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || IsolatedIds != null;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         private static ManualLogSource? logger;
@@ -18,6 +21,7 @@ namespace MonsterTrain2Poju.Probe
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             logger = log;
+            if (IsolatedIds is string[] isolated) { PrepareIsolated(managers, log, isolated); return; }
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
             Set(all.GetBalanceData(), "maxHandSize", 30);
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
@@ -67,6 +71,24 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
+            if (IsolatedIds != null)
+            {
+                int next = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
+                if (next < 0 || next >= 3 && source.Spawn.Turn < 1) return null;
+                int floor = next < 3 ? next : next == 3 ? 0 : (next - 4) % 3;
+                int targetId = next < 4 ? 0 : source.Spawn.Train.Rooms.Single(room => room.RoomIndex == floor).Units
+                    .Single(unit => unit.SpawnerCardId == ids[floor]).Id;
+                var isolatedAction = new PlayCardAction(ids[next], floor, playerPosition: next < 3 ? 0 : -1, targetUnitId: targetId);
+                BattleActionResult isolatedResult = BattleActionModel.PlayCard(source, isolatedAction);
+                if (isolatedResult.Supported) return isolatedAction;
+                if (lastRejection != isolatedResult.Reason)
+                {
+                    lastRejection = isolatedResult.Reason;
+                    logger?.LogInfo("ORIGINAL-ISOLATED-EQUIPMENT-REJECT index=" + next + " dataId=" +
+                        source.Spawn.Train.Context!.FindCard(ids[next])!.DataId + " reason=" + isolatedResult.Reason);
+                }
+                return null;
+            }
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
             if (index < 0 || index >= 4 && source.Spawn.Turn < 1) return null;
             int host = index is >= 8 and <= 11 ? 1 : index is 13 or 17 or 18 or 19 ? 2 : index == 20 ? 3 : index is 12 or 14 or 21 or 22 ? 7 : 0;
@@ -78,6 +100,36 @@ namespace MonsterTrain2Poju.Probe
             if (result.Supported) return action;
             if (lastRejection != result.Reason) { lastRejection = result.Reason; logger?.LogInfo("ORIGINAL-EQUIPMENT-CARDS-REJECT index=" + index + " reason=" + result.Reason); }
             return null;
+        }
+        private static void PrepareIsolated(AllGameManagers managers, ManualLogSource log, string[] equipmentIds)
+        {
+            SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
+            if (equipmentIds.Length == 0 || equipmentIds.Length > 30 || equipmentIds.Any(id => all.FindCardData(id)?.GetCardType() != CardType.Equipment))
+                throw new InvalidOperationException("Isolated equipment IDs must name one to thirty native equipment definitions.");
+            Set(all.GetBalanceData(), "maxHandSize", 40);
+            CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
+            Set(steward, "cost", 0); Set(anchor, "attackDamage", 1000); Set(anchor, "health", 10000); Set(anchor, "size", 1);
+            Set(anchor, "equipmentLimit", (equipmentIds.Length + 2) / 3);
+            foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
+            foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
+            cards.GetDrawPile().Clear();
+            CardData energy = UnityEngine.Object.Instantiate(all.GetAllCardData().First(card => card.GetCardType() == CardType.Spell));
+            energy.name = "PojuIsolatedEquipmentEnergy"; Set(energy, "id", "ac110053-0000-4000-8000-000000000099");
+            Set(energy, "cost", 0); Set(energy, "costType", CardData.CostType.Default); Set(energy, "targetless", true); Set(energy, "targetsRoom", true);
+            Set(energy, "traits", new List<CardTraitData>()); Set(energy, "startingUpgrades", new List<CardUpgradeData>());
+            Set(energy, "triggers", new List<CardTriggerEffectData>()); Set(energy, "effectTriggers", new List<CharacterTriggerData>());
+            var gain = new CardEffectData("CardEffectGainEnergy", null!, Team.Type.None); gain.Cheat_SetTargetMode(TargetMode.Room);
+            Set(gain, "paramInt", Math.Max(1, equipmentIds.Sum(id => all.FindCardData(id)!.GetCost()) - 3));
+            Set(energy, "effects", new List<CardEffectData> { gain });
+            ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(all)).Add(energy);
+            CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
+            CardState[] created = Enumerable.Range(0, 3).Select(_ => Add(steward.GetID())).Append(Add(energy.GetID()))
+                .Concat(equipmentIds.Select(Add)).ToArray();
+            foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
+            CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
+            AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
+            Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
+            log.LogInfo("ORIGINAL-ISOLATED-EQUIPMENT-PREPARED three separate anchor hosts, energy control and unchanged originals " + string.Join(",", equipmentIds));
         }
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
     }
