@@ -769,7 +769,8 @@ internal static class BattleActionChecks
             chooser = source => OriginalEquipmentCardsChecks.Choose(source, fixture.GetProperty("OriginalEquipmentCardsIds").Deserialize<int[]>()!,
                 fixture.GetProperty("ModifierScenario").GetString()?.StartsWith("original-isolated-equipment:", StringComparison.Ordinal) == true);
         if (fixture.TryGetProperty("OriginalSupportSpellsPrepared", out var originalSupportSpellsPrepared) && originalSupportSpellsPrepared.GetBoolean())
-            chooser = source => OriginalSupportSpellsChecks.Choose(source, fixture.GetProperty("OriginalSupportSpellsIds").Deserialize<int[]>()!);
+            chooser = source => OriginalSupportSpellsChecks.Choose(source, fixture.GetProperty("OriginalSupportSpellsIds").Deserialize<int[]>()!,
+                fixture.GetProperty("ModifierScenario").GetString()?.StartsWith("original-isolated-spells:", StringComparison.Ordinal) == true);
         if (fixture.TryGetProperty("OriginalRearrangeSpellsPrepared", out var originalRearrangeSpellsPrepared) && originalRearrangeSpellsPrepared.GetBoolean())
             chooser = source => OriginalRearrangeSpellsChecks.Choose(source, fixture.GetProperty("OriginalRearrangeSpellsIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalMovementSpellsPrepared", out var originalMovementSpellsPrepared) && originalMovementSpellsPrepared.GetBoolean())

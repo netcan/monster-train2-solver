@@ -1063,7 +1063,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         // Unsupported attempts are kept separate from legal actions so callers can detect an incomplete search frontier.
-        public static BattleActionEnumeration EnumerateActions(BattleTurnState source)
+        public static BattleActionEnumeration EnumerateActions(BattleTurnState source, int? onlyCardId = null)
         {
             var actions = new List<SupportedActionCandidate>();
             var unsupported = new List<UnsupportedActionAttempt>();
@@ -1080,7 +1080,7 @@ namespace MonsterTrain2Poju.Model
             foreach (RoomPlayRule room in source.PlayRules.Rooms)
                 if (!source.Spawn.Train.Rooms.Any(state => state.RoomIndex == room.RoomIndex))
                     unsupported.Add(new UnsupportedActionAttempt(null, "Missing room state for room " + room.RoomIndex + "."));
-            foreach (CardToken card in source.Spawn.Train.Context.Cards.Hand)
+            foreach (CardToken card in source.Spawn.Train.Context.Cards.Hand.Where(card => !onlyCardId.HasValue || card.InstanceId == onlyCardId))
             foreach (RoomPlayRule room in source.PlayRules.Rooms)
             {
                 if (!source.Spawn.Train.Rooms.Any(state => state.RoomIndex == room.RoomIndex)) continue;
@@ -1282,7 +1282,8 @@ namespace MonsterTrain2Poju.Model
             }
         }
 
-        public static IReadOnlyList<PlayCardAction> EnumerateSupportedPlays(BattleTurnState source) => EnumerateActions(source).SupportedActions;
+        public static IReadOnlyList<PlayCardAction> EnumerateSupportedPlays(BattleTurnState source, int? onlyCardId = null) =>
+            EnumerateActions(source, onlyCardId).SupportedActions;
 
         public static PlayCardAction? ChooseUnitAndJunkPlay(BattleTurnState source)
             => ChoosePlay(source, false);

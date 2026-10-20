@@ -10,7 +10,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalSupportSpellsScenario
     {
         internal const string Name = "original-support-spells";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal const string IsolatedPrefix = "original-isolated-spells:";
+        internal static string[]? IsolatedIds => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is string scenario &&
+            scenario.StartsWith(IsolatedPrefix, StringComparison.Ordinal) ? scenario.Substring(IsolatedPrefix.Length).Split(',') : null;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || IsolatedIds != null;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         private static ManualLogSource? logger;
@@ -18,6 +21,7 @@ namespace MonsterTrain2Poju.Probe
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             logger = log;
+            if (IsolatedIds is string[] isolated) { PrepareIsolated(managers, log, isolated); return; }
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
             Set(all.GetBalanceData(), "maxHandSize", 30); save.SetDragonsHoardCap(4); save.SetDragonsHoardAmount(3);
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
@@ -65,12 +69,54 @@ namespace MonsterTrain2Poju.Probe
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
+            if (IsolatedIds != null)
+            {
+                PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
+                    playerPosition: index < 3 ? 0 : -1) : BattleActionModel.EnumerateSupportedPlays(source, ids[index])
+                    .FirstOrDefault(action => action.CardInstanceId == ids[index]);
+                BattleActionResult? isolatedResult = chosen == null ? null : BattleActionModel.PlayCard(source, chosen);
+                if (isolatedResult?.Supported == true) return chosen;
+                string rejection = index + ":" + source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
+                if (lastRejection != rejection)
+                { lastRejection = rejection; logger?.LogInfo("ORIGINAL-ISOLATED-SPELL-REJECT index=" + index + " dataId=" + source.Spawn.Train.Context.FindCard(ids[index])!.DataId +
+                    " reason=" + (isolatedResult?.Reason ?? "No supported enumerated play.")); }
+                return null;
+            }
             int target = index is >= 8 and <= 16 or >= 23 ? source.Spawn.Train.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[0]).Id : 0;
             var action = new PlayCardAction(ids[index], index is 2 or 22 ? 1 : 0, playerPosition: index < 3 ? (index == 1 ? 1 : 0) : -1, targetUnitId: target);
             BattleActionResult result = BattleActionModel.PlayCard(source, action);
             if (result.Supported) return action;
             if (lastRejection != result.Reason) { lastRejection = result.Reason; logger?.LogInfo("ORIGINAL-SUPPORT-SPELLS-REJECT index=" + index + " reason=" + result.Reason); }
             return null;
+        }
+        private static void PrepareIsolated(AllGameManagers managers, ManualLogSource log, string[] spellIds)
+        {
+            SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
+            if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() != CardType.Spell))
+                throw new InvalidOperationException("Isolated spell IDs must name one to thirty native spell definitions.");
+            Set(all.GetBalanceData(), "maxHandSize", 40);
+            CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();
+            Set(steward, "cost", 0); Set(anchor, "attackDamage", 1000); Set(anchor, "health", 10000); Set(anchor, "size", 1);
+            foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
+            foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
+            cards.GetDrawPile().Clear();
+            CardData energy = UnityEngine.Object.Instantiate(all.GetAllCardData().First(card => card.GetCardType() == CardType.Spell));
+            energy.name = "PojuIsolatedSpellEnergy"; Set(energy, "id", "ac110052-0000-4000-8000-000000000099");
+            Set(energy, "cost", 0); Set(energy, "costType", CardData.CostType.Default); Set(energy, "targetless", true); Set(energy, "targetsRoom", true);
+            Set(energy, "traits", new List<CardTraitData>()); Set(energy, "startingUpgrades", new List<CardUpgradeData>());
+            Set(energy, "triggers", new List<CardTriggerEffectData>()); Set(energy, "effectTriggers", new List<CharacterTriggerData>());
+            var gain = new CardEffectData("CardEffectGainEnergy", null!, Team.Type.None); gain.Cheat_SetTargetMode(TargetMode.Room);
+            Set(gain, "paramInt", Math.Max(1, spellIds.Sum(id => all.FindCardData(id)!.GetCost()) - 3));
+            Set(energy, "effects", new List<CardEffectData> { gain });
+            ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(all)).Add(energy);
+            CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
+            CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
+                .Concat(spellIds.Select(Add)).ToArray();
+            foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
+            CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
+            AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
+            Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
+            log.LogInfo("ORIGINAL-ISOLATED-SPELLS-PREPARED three native anchor controls, energy and unchanged originals " + string.Join(",", spellIds));
         }
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
     }

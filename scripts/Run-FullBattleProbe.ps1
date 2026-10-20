@@ -129,6 +129,7 @@ param(
     [switch] $OriginalMovementSpells,
     [switch] $OriginalRearrangeSpells,
     [switch] $OriginalSupportSpells,
+    [string[]] $OriginalIsolatedSpellIds = @(),
     [switch] $OriginalEquipmentCards,
     [string[]] $OriginalIsolatedEquipmentIds = @(),
     [switch] $OriginalStatusUnits,
@@ -718,6 +719,13 @@ if ($OriginalIsolatedEquipmentIds.Count -gt 0) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk'
 }
 if ($OriginalSupportSpells) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalIsolatedSpellIds.Count -gt 0) {
+    $OriginalIsolatedSpellIds = @($OriginalIsolatedSpellIds | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ })
+    if ($OriginalIsolatedSpellIds.Count -eq 0 -or $OriginalIsolatedSpellIds.Count -gt 30 -or
+        @($OriginalIsolatedSpellIds | Where-Object { $_ -notmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }).Count -gt 0 -or
+        @($OriginalIsolatedSpellIds | Select-Object -Unique).Count -ne $OriginalIsolatedSpellIds.Count) { throw 'Isolated spell IDs must be one to thirty distinct native card UUIDs.' }
+    $BranchCardMasks = $true; $Policy = 'units-spells-and-junk'
+}
 if ($OriginalRearrangeSpells) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMovementSpells) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledDamage) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -1328,6 +1336,7 @@ if ($OriginalStatusUnits) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stat
 if ($OriginalEquipmentCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-equipment-cards' }
 if ($OriginalIsolatedEquipmentIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-equipment:' + ($OriginalIsolatedEquipmentIds -join ',') }
 if ($OriginalSupportSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-support-spells' }
+if ($OriginalIsolatedSpellIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',') }
 if ($OriginalRearrangeSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rearrange-spells' }
 if ($OriginalMovementSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-movement-spells' }
 if ($OriginalScaledDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-damage' }
@@ -1555,8 +1564,8 @@ if ($GenerationPermanentConsume) { $environment['MT2_PROBE_MODIFIERS'] = 'genera
 $originalBefore = Get-OriginalSignature
 $unityLog = Join-Path $profile 'unity-scenario.log'
 $nativeTimer = [System.Diagnostics.Stopwatch]::StartNew()
-if ($FailFastOnIsolatedUnitReject -and -not $OriginalIsolatedUnitId -and $OriginalIsolatedUnitIds.Count -eq 0 -and $OriginalIsolatedEquipmentIds.Count -eq 0) {
-    throw 'FailFastOnIsolatedUnitReject requires an isolated original unit ID.'
+if ($FailFastOnIsolatedUnitReject -and -not $OriginalIsolatedUnitId -and $OriginalIsolatedUnitIds.Count -eq 0 -and $OriginalIsolatedEquipmentIds.Count -eq 0 -and $OriginalIsolatedSpellIds.Count -eq 0) {
+    throw 'FailFastOnIsolatedUnitReject requires isolated original card IDs.'
 }
 if ($SpawnOrStatus) {
     $environment.MT2_PROBE_MODIFIERS = 'spawn-or-status'
@@ -1587,7 +1596,7 @@ $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
 Write-Output "FULL-BATTLE-RUN pid=$($process.Id) worker=$NativeWorker policy=$Policy profile=$profile"
 while (-not $process.WaitForExit(250)) {
     if ($FailFastOnIsolatedUnitReject -and (Test-Path -LiteralPath $unityLog) -and
-        (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-ISOLATED-(UNIT|EQUIPMENT)-REJECT' -Quiet)) {
+        (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-ISOLATED-(UNIT|EQUIPMENT|SPELL)-REJECT' -Quiet)) {
         $process.Kill()
         $process.WaitForExit()
         throw "Isolated card model preflight rejected a requested card; native run stopped early; inspect $unityLog"
@@ -2756,6 +2765,10 @@ if ($OriginalIsolatedEquipmentIds.Count -gt 0 -and ($trace.ModifierScenario -ne 
 }
 if ($OriginalSupportSpells -and (-not $trace.OriginalSupportSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 27)) {
     throw 'Original support spell witness lacks thirteen unchanged originals and positive resource/healing controls.'
+}
+if ($OriginalIsolatedSpellIds.Count -gt 0 -and ($trace.ModifierScenario -ne ('original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',')) -or
+    -not $trace.OriginalSupportSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (4 + $OriginalIsolatedSpellIds.Count))) {
+    throw 'Isolated spell batch lacks three hosts, energy and every requested original spell play.'
 }
 if ($OriginalRearrangeSpells -and (-not $trace.OriginalRearrangeSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 19)) {
     throw 'Original rearrange spell witness lacks eleven unchanged originals and positive composition controls.'

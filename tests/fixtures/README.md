@@ -9208,6 +9208,29 @@ Both native battles win with DEPTH-PASS, settled terminal effects and all four
 failure counters zero. Focused checks retain full immutable replay branches
 and bounded serial/parallel search.
 
+### Original Generation Spell Batch
+
+`full-battle-original-isolated-generation-spells.mt2f` plays unchanged Add Thorns
+Potion, Armament Drive, Ember Cache, Gem Trove, Grovel, Imp in a Box, Packed
+Morsels and Starter Random Food. Each positively allocates a native pool card;
+the complete battle has twelve plays, five EndTurns, DEPTH-PASS and all four
+failure counters zero. Source is
+`.probe-runs/full-battle-units-spells-and-junk-20261020-183158-1cd59f34`.
+
+The isolated spell runner accepts one to thirty UUIDs with
+`-OriginalIsolatedSpellIds`; three independent anchor controls and one distinct
+Energy control retain original spell costs, traits, effects and native pools.
+This mode uses logical positions, matching its Conduit capture boundary.
+Single-card action enumeration avoids evaluating unrelated hand cards while
+choosing a witness. It preserves the ordinary all-card search entry point.
+Focused checks replay sixteen immutable chains; bounded search and the older
+permanent-Consume generation witness cover the affected paths. Conditional
+upgrades for copies into DiscardPile remain guarded when actually reachable.
+
+`scripts/Compare-ProbeState.ps1 -Archive <trace> -Collection Turns` reports the
+first structural model/native state difference. `-Index` selects a particular
+record and `-MaxDifferences` limits output, avoiding repeated whole-trace exports.
+
 ### Original Windblade and Shield of Wyngh
 
 `full-battle-original-isolated-windblade.mt2f` captures unchanged Windblade.

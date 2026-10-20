@@ -9,10 +9,17 @@ internal static class OriginalSupportSpellsChecks
         "4ca4ed47-9867-4004-acf0-171c3282751f", "ac110052-0000-4000-8000-000000000008", "297c2618-1a10-4367-8b7c-d068a6c5b3f4",
         "3c96e9b7-bdfb-4784-88f7-4b01bd58b4b7", "1754dece-cf0b-455e-b9ca-d238134d7762", "c354dd2c-0087-4eae-82d9-d4ab17b15f19",
         "996a0953-168a-44b9-bb90-5e46cbbb3e09", "7f3dcb62-e418-4120-861c-02f8372173ce", "7f3dcb62-e418-4120-861c-02f8372173ce"];
-    internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
+    internal static PlayCardAction? Choose(BattleTurnState source, int[] ids, bool isolated = false)
     {
         int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
         if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
+        if (isolated)
+        {
+            PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
+                playerPosition: index < 3 ? 0 : -1) : BattleActionModel.EnumerateSupportedPlays(source, ids[index])
+                .FirstOrDefault(action => action.CardInstanceId == ids[index]);
+            return chosen != null && BattleActionModel.PlayCard(source, chosen).Supported ? chosen : null;
+        }
         int target = index is >= 8 and <= 16 or >= 23 ? source.Spawn.Train.Rooms[0].Units.Single(unit => unit.SpawnerCardId == ids[0]).Id : 0;
         var action = new PlayCardAction(ids[index], index is 2 or 22 ? 1 : 0, playerPosition: index < 3 ? (index == 1 ? 1 : 0) : -1, targetUnitId: target);
         return BattleActionModel.PlayCard(source, action).Supported ? action : null;
@@ -34,6 +41,8 @@ internal static class OriginalSupportSpellsChecks
     }
     internal static void Native(FixtureValue root)
     {
+        if (root.GetProperty("ModifierScenario").GetString()?.StartsWith("original-isolated-spells:", StringComparison.Ordinal) == true)
+        { NativeIsolated(root); return; }
         Steelguard();
         Require(root.GetProperty("OriginalSupportSpellsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed original support spell witness.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
@@ -101,6 +110,58 @@ internal static class OriginalSupportSpellsChecks
         }
         RecordedBattleChecks.Native(root);
         Console.WriteLine("ORIGINAL-SUPPORT-SPELLS PASS: thirteen unchanged originals/fourteen plays, exact unit stats/status upgrades, next-turn draw/energy, positive healing, Conduit overheal, corruption armor/permanence, Hoard Pyre healing, positive/zero X capacity and Steelguard damage controls; 16 full immutable chains.");
+    }
+    private static void NativeIsolated(FixtureValue root)
+    {
+        Require(root.GetProperty("OriginalSupportSpellsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
+            root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed isolated spell witness.");
+        foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
+        string[] originals = root.GetProperty("ModifierScenario").GetString()!["original-isolated-spells:".Length..].Split(',');
+        int[] ids = root.GetProperty("OriginalSupportSpellsIds").Deserialize<int[]>()!;
+        var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
+        Require(originals.Length is > 0 and <= 30 && originals.Distinct().Count() == originals.Length &&
+            originals.All(id => Guid.TryParseExact(id, "D", out _)) && ids.Length == originals.Length + 4 && actions.Length == ids.Length,
+            "Isolated spell batch must contain its exact controls and distinct original identities.");
+        for (int i = 0; i < actions.Length; i++)
+        {
+            BattleTurnState before = actions[i].GetProperty("Before").Deserialize<BattleTurnState>()!,
+                after = actions[i].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            PlayCardAction action = actions[i].GetProperty("Action").Deserialize<PlayCardAction>()!;
+            CardInstanceState card = before.Spawn.Train.Context!.FindCard(ids[i])!;
+            CardPlayRule rule = before.PlayRules!.Cards.Single(item => item.DataId == card.DataId);
+            Require(action.CardInstanceId == ids[i], "Isolated spell action order differs.");
+            if (i < 3)
+            {
+                CombatUnit host = after.Spawn.Train.Rooms[i].Units.Single(unit => unit.SpawnerCardId == ids[i]);
+                Require(action.RoomIndex == i && action.PlayerPosition == 0 && rule.Cost == 0 &&
+                    card.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678" && host.Health == 10000 &&
+                    host.Size == 1 && host.Modifiers!.AttackDamage == 1000, "Isolated spell host differs.");
+                continue;
+            }
+            if (i == 3)
+            {
+                Require(card.DataId == "ac110052-0000-4000-8000-000000000099" && rule.Cost == 0 &&
+                    rule.Effects.Single().Type == "GainEnergy" && after.Energy - before.Energy == rule.Effects.Single().Value,
+                    "Isolated spell energy control differs.");
+                continue;
+            }
+            Require(card.DataId == originals[i - 4] && rule.CardType == "Spell" && rule.ExternalInteractions.Count == 0 &&
+                after.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == 1 &&
+                before.Energy >= after.Energy, "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
+            CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            if (generators.Length > 0)
+            {
+                CombatContext changed = after.Spawn.Train.Context!;
+                Require(changed.NextCardId > before.Spawn.Train.Context.NextCardId &&
+                    changed.CardRegistry!.Any(added => added.InstanceId >= before.Spawn.Train.Context.NextCardId &&
+                        generators.Any(generator => generator.Pool.Any(creation => creation.DataId == added.DataId))) &&
+                    generators.All(generator => generator.CopyModifiers && generator.Destination == "DiscardPile" || generator.DiscardCopyUpgrades.Count == 0),
+                    "Original generation must positively allocate a native pool card and omit unreachable discard-copy upgrade branches.");
+            }
+        }
+        RecordedBattleChecks.Native(root);
+        Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

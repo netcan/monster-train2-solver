@@ -23,13 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-182236-9ea09cc2/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,063 bytes, 11,618 unique nodes,
-SHA-256 `11ca3fdec53cf6be34160332f187bed2d5158b484d22ffba38676f4de9521baf`.
-The latest refresh adds Shield of Wyngh's triggered HP damage and Windblade's
-trigger replay. Only these two Rules changed; all 668 raw native definitions
-are unchanged. The catalog and its surrounding baseline passed. Earlier
-triggered corruption and status-adjustment projections are retained.
+Source: `.probe-runs/full-battle-no-cards-20261020-183245-65d9cf3c/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,090 bytes, 11,618 unique nodes,
+SHA-256 `4855438fda020c7bd4e04cfdea6833f0707d07ee82e176d7da9a30f16d2e8a24`.
+The latest refresh omits discard-copy upgrades when source modifiers are not
+copied or the destination is not DiscardPile. Both native generation iterators
+only inspect these upgrades inside those two conditions. Twenty-two Rules
+changed, with all 668 raw native definitions unchanged. Pandemic, Contagious
+and Spreading Spores retain their full discard-copy upgrade payloads and guards.
+The catalog and surrounding baseline passed; earlier callback projections remain.
 Original Enchant effects retain their native test flags. Binding an aura through
 its spawn lifecycle does not set HasTriggered when its only effect has
 ShouldTest=false. Legacy evidence without these flags retains its prior behavior.

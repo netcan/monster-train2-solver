@@ -70,8 +70,12 @@ namespace MonsterTrain2Poju.Probe
                 if (pool.Count == 0) interactions.Add("Class filtering leaves an invalid empty generated pool");
             }
             CardUpgradeModifier? optional = data.GetParamCardUpgradeData() == null ? null : Upgrade(data.GetParamCardUpgradeData()!);
-            var discard = AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetCardUpgradesOnAddCardToDiscardPile()
-                .Select(item => new DiscardGenerationUpgrade(item.UpgradeToCheck == null ? "" : item.UpgradeToCheck.GetID(), Upgrade(item.UpgradeToAdd))).ToArray();
+            // Both native generation iterators consult these upgrades only while copying
+            // a source card's modifiers into DiscardPile. Other destinations cannot use them.
+            var discard = data.GetCopyModifiersFromSource() && (CardPile)data.GetParamInt() == CardPile.DiscardPile
+                ? AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetCardUpgradesOnAddCardToDiscardPile()
+                    .Select(item => new DiscardGenerationUpgrade(item.UpgradeToCheck == null ? "" : item.UpgradeToCheck.GetID(), Upgrade(item.UpgradeToAdd))).ToArray()
+                : Array.Empty<DiscardGenerationUpgrade>();
             return new CardGenerationRule(((CardPile)data.GetParamInt()).ToString(), data.GetAdditionalParamInt(),
                 pool.Select(Creation).ToArray(), data.GetEffectStateName() == "CardEffectAddBattleCard" && data.GetParamBool2(),
                 data.GetParamBool(), data.GetCopyModifiersFromSource(), data.GetIgnoreTempModifiersFromSource(), optional, discard, interactions,
