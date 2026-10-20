@@ -41,6 +41,7 @@ internal static class OriginalSupportUnitsChecks
     private const string SteadfastCrusaderId = "075a061c-480c-4873-8f9f-88cf836eec27";
     private const string TrufflesId = "9a63e469-ae29-4199-ae41-4060ecd92853";
     private const string PyrebloodedId = "e962f77b-d5bc-441b-be79-8cb3207d8a42";
+    private const string KinhostCarapaceId = "8fcb523c-690f-44cb-887d-7112795a50a1";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -446,6 +447,20 @@ internal static class OriginalSupportUnitsChecks
                 abilityScaling.Query.CurrentCostCardModifiersOnly && abilityScaling.Query.CurrentCostSourceIsSpell &&
                 abilityScaling.Query.StatusIds?.SequenceEqual(["pyregel"]) == true,
                 "Pyreblooded's inactive unit ability must retain the native +1 Damage-per-pyregel scaling query and Spell source flag.");
+        }
+        if (expectedId == KinhostCarapaceId)
+        {
+            CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
+                "Kinhost Carapace", "KinhostCarapace", "MonsterKinhostCarapace", 2, 10, 10, 3, 2,
+                "b1d96383-909d-4df1-8942-297454910820");
+            ScalingUnitUpgradeTrait[] abilityScaling = template.Ability!.CardCreation!.UnitUpgradeScalingTraits!.ToArray();
+            bool MatchesCorruptionScaling(ScalingUnitUpgradeTrait trait, string stat) => trait.Stat == stat &&
+                trait.AmountPerStat == 2 && trait.Restriction == 0 && trait.Query.Type == "CorruptionInTargetRoom" &&
+                trait.Query.Duration == "ThisTurn" && trait.Query.CurrentCostCardModifiersOnly &&
+                trait.Query.CurrentCostSourceIsSpell;
+            Require(abilityScaling.Length == 2 && abilityScaling.Count(trait => MatchesCorruptionScaling(trait, "Damage")) == 1 &&
+                abilityScaling.Count(trait => MatchesCorruptionScaling(trait, "Health")) == 1,
+                "Kinhost Carapace's inactive ability must retain its native +2 Damage and Health per Corruption queries with Spell-source flags.");
         }
         if (expectedId == EelGorgonId)
         {
