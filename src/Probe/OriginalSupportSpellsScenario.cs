@@ -86,6 +86,11 @@ namespace MonsterTrain2Poju.Probe
                 if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f29d063b-cb41-44ee-8118-4db66b6f8195")
                     candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                         .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.Health <= 5));
+                if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "cc374cb3-1675-4deb-93bc-53e30b2045fe")
+                    candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .Any(unit => unit.Id == action.TargetUnitId && unit.Health + (unit.Status("armor")?.Stacks ?? 0) <= 10 &&
+                            (IsolatedIds.Contains("0c8ff108-478c-4c1c-9c49-f6a297b4e0d8")
+                                ? unit.Team == CombatTeam.Player && unit.Status("horde")?.Stacks > 0 : unit.Team == CombatTeam.Enemy)));
                 if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
                     candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                         .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
@@ -118,6 +123,11 @@ namespace MonsterTrain2Poju.Probe
         private static void PrepareIsolated(AllGameManagers managers, ManualLogSource log, string[] spellIds)
         {
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
+            if (spellIds.Contains("ff002cdc-e448-4004-b445-0ed380808911"))
+            {
+                save.SetForgePoints(0); save.SetForgeToggleActive(true);
+                Set(managers.GetPlayerManager(), "isForgeTrackingActive", true);
+            }
             if (spellIds.Contains("e8f47c5d-c2d8-44e8-a443-4dca81acfa4d")) save.SetGold(250, isTotalReset: true);
             if (spellIds.Contains("e90fc0e0-b383-48a9-bb10-d8aaa1518531") || spellIds.Contains("f3406a6d-69f0-46e8-8db9-d829db017716"))
                 save.Cheat_SetTowerHP(save.GetMaxTowerHP() - 10);

@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
             bool supportedKill = data.GetTrigger() == CardTriggerType.OnKill && interactions.Count == 0 &&
                 (nativeEffects.Count == 1 && effects.Length == 0 && nativeActions[0].Type == "BuffSourceSpellDamage" ||
                  nativeEffects.Count == 0 && effects.Length == 1 && effects[0].GetEffectStateName() is "CardEffectGainEnergy" or "CardEffectAddBattleCard" or "CardEffectAddUpgradedCopy" or
-                    "CardEffectRewardGold" or "CardEffectAdjustDragonsHoard" or "CardEffectAdjustForgePoints" or "CardEffectAdjustCorruption");
+                    "CardEffectRewardGold" or "CardEffectAdjustDragonsHoard" or "CardEffectAdjustForgePoints" or "CardEffectAdjustCorruption" or "CardEffectSpawnMonsterOrAddStatusEffect");
             if (data.GetTrigger().ToString() != "OnCast" && !conversion && !supportedKill) interactions.Add("Unsupported card upgrade trigger " + data.GetTrigger());
             return new CardLifecycleTrigger(data.GetTrigger().ToString(), data.GetDescriptionKey(),
                 nativeEffects.Select(effect => TypeNameCache.GetType(effect.cardTriggerEffect).Name)

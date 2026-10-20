@@ -61,8 +61,9 @@ namespace MonsterTrain2Poju.Model
             int position, bool isCardless, CombatStatus? cardlessStatus)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, false);
         internal static UnitBirthResult SpawnWithStatus(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
-            int position, CombatStatus cardlessStatus, SpawnStatusApplication cardStatus)
-            => SpawnCore(source, definition, spawnerCardId, position, true, cardlessStatus, null, null, true,
+            int position, CombatStatus cardlessStatus, SpawnStatusApplication cardStatus,
+            IReadOnlyList<CombatUnit>? positionActors = null)
+            => SpawnCore(source, definition, spawnerCardId, position, true, cardlessStatus, null, positionActors, true,
                 cardStatus: cardStatus);
         internal static UnitBirthResult SpawnClone(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus, bool selectedSlot,
@@ -95,7 +96,7 @@ namespace MonsterTrain2Poju.Model
                 definition.Effects, definition.UpgradeInteractions, definition.HandDiscardInteractions, definition.HandConsumeInteractions,
                 definition.CostType, definition.Equipment, definition.Ability, definition.Summon, definition.CardType, definition.IsAnyAbility,
                 definition.CanPlayInEngineRoom, definition.OnCastEffects, definition.OnUnplayedNegativeEffects,
-                definition.UnplayedNegativeOrder, definition.HasUnsupportedUnplayedTriggers, definition.ForgeEligible, definition.HasKillTriggers);
+                definition.UnplayedNegativeOrder, definition.HasUnsupportedUnplayedTriggers, definition.ForgeEligible, definition.HasKillTriggers, definition.OnForgeEffects);
             CardPlayRule resolved = card == null ? birthDefinition.WithSpawn(initialized) : CardModifierModel.Resolve(birthDefinition.WithSpawn(initialized), card);
             if (resolved.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", resolved.ExternalInteractions));
             CombatUnit template = resolved.SpawnUnit!;

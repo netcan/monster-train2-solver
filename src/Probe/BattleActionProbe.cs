@@ -176,6 +176,7 @@ namespace MonsterTrain2Poju.Probe
         {
             var interactions = new List<string>();
             var onCastEffects = new List<CardActionEffect>();
+            var onForgeEffects = new List<CardActionEffect>();
             var onUnplayedNegativeEffects = new List<CardActionEffect>();
             bool hasUnsupportedUnplayedTriggers = false;
             int? unplayedNegativeOrder = unplayedOrder != null && unplayedOrder.TryGetValue(data.GetID(), out int triggerOrder)
@@ -201,6 +202,17 @@ namespace MonsterTrain2Poju.Probe
                     CardKillTriggerModel.Supported(CardUpgradeLifecycleProbe.TriggerDefinition(trigger)))
                 {
                     // Resolved inside native damage/death, rather than at OnCast.
+                }
+                else if (triggerType == "OnForge" && data.GetCardType() == CardType.Equipment &&
+                    trigger.GetCardEffects().Count == 1 && trigger.GetCardEffects()[0].GetEffectStateName() == "CardEffectAddUpgradeToCurrentCard" &&
+                    trigger.GetCardEffects()[0].GetAdditionalParamInt1() == 1 &&
+                    trigger.GetCardEffects()[0].GetParamCardUpgradeData() is CardUpgradeData forgeUpgrade && forgeUpgrade.CanScaleUpgradeToSingleInstance())
+                {
+                    var upgradeState = new CardUpgradeState(); upgradeState.Setup(forgeUpgrade);
+                    CardUpgradeModifier upgrade = CardModifierProbe.Upgrade(upgradeState);
+                    onForgeEffects.Add(new CardActionEffect("UpgradeSource", "Self", 1, false, false,
+                        Array.Empty<CombatStatus>(), upgrade, "Permanent", scaleUpgrade: true));
+                    interactions.AddRange(upgrade.ExternalInteractions);
                 }
                 else if (triggerType == "OnUnplayedNegative")
                 {
@@ -314,7 +326,8 @@ namespace MonsterTrain2Poju.Probe
                     .GetType(effect.GetEffectStateName())!)!).CanPlayInEngineRoom), onCastEffects: onCastEffects,
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, unplayedNegativeOrder: unplayedNegativeOrder,
                 hasUnsupportedUnplayedTriggers: hasUnsupportedUnplayedTriggers, forgeEligible: forgeEligible,
-                hasKillTriggers: data.GetCardTriggers().Any(trigger => trigger.GetTrigger() == CardTriggerType.OnKill));
+                hasKillTriggers: data.GetCardTriggers().Any(trigger => trigger.GetTrigger() == CardTriggerType.OnKill),
+                onForgeEffects: onForgeEffects.Count == 0 ? null : onForgeEffects);
         }
 
         private static bool SupportedSpellEffect(CardEffectData effect) =>
@@ -681,7 +694,7 @@ namespace MonsterTrain2Poju.Probe
                 rule.UpgradeInteractions, rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType,
                 rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility, rule.CanPlayInEngineRoom, rule.OnCastEffects,
                 rule.OnUnplayedNegativeEffects, rule.UnplayedNegativeOrder, rule.HasUnsupportedUnplayedTriggers,
-                rule.ForgeEligible, rule.HasKillTriggers);
+                rule.ForgeEligible, rule.HasKillTriggers, rule.OnForgeEffects);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

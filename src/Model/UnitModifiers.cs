@@ -248,8 +248,11 @@ namespace MonsterTrain2Poju.Model
                     statuses = target.Statuses.ToDictionary(status => status.Id);
                 }
                 if (!partial)
-                    foreach (CombatStatus status in upgrade.Statuses)
+                    for (int statusIndex = 0; statusIndex < upgrade.Statuses.Count; statusIndex++)
                     {
+                        CombatStatus status = upgrade.Statuses[statusIndex];
+                        bool permanentStatus = upgrade.MaskMetadata?.Statuses.Count == upgrade.Statuses.Count &&
+                            upgrade.MaskMetadata.Statuses[statusIndex].Id == status.Id && upgrade.MaskMetadata.Statuses[statusIndex].FromPermanentUpgrade;
                         // Upgrade stacks go through AddStatusEffectStacks, not the direct
                         // addition API: zero is ignored and negative stacks are removals.
                         if (!remove && status.Stacks == 0) continue;
@@ -257,10 +260,11 @@ namespace MonsterTrain2Poju.Model
                         bool removingStatus = remove || status.Stacks < 0;
                         if (removingStatus && existing == null && target.RegisteredStatus(status.Id) == null) continue;
                         if (!removingStatus && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
-                        if (!removingStatus && (status.Id is "conduit" or "mageblade" || nextModifiers.DamageBuffFromStatusEffects.HasValue ||
+                        if (!removingStatus && (permanentStatus || status.Id is "conduit" or "mageblade" || nextModifiers.DamageBuffFromStatusEffects.HasValue ||
                             state.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0) == true))
                         {
-                            RoomCombatResult appliedStatus = StatusApplicationModel.ApplyRetained(Stage(), targetId, status, 0);
+                            RoomCombatResult appliedStatus = StatusApplicationModel.ApplyRetained(Stage(), targetId, status, 0,
+                                fromPermanentUpgrade: permanentStatus);
                             if (!appliedStatus.Supported) return appliedStatus;
                             state = appliedStatus.State!; statusCallbacks.AddRange(appliedStatus.PendingCallbacks);
                             Refresh(state.Units.Single(unit => unit.Id == targetId));

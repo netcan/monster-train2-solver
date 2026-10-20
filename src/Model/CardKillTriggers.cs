@@ -24,6 +24,10 @@ namespace MonsterTrain2Poju.Model
                  trigger.Effects.SequenceEqual(new[] { "CardEffectAdjustForgePoints" }) && effect.Type == ForgePointsModel.Effect)) return true;
             if (trigger.Effects.SequenceEqual(new[] { "CardEffectAdjustCorruption" }))
                 return effect.Type == "AdjustCorruption" && effect.Target == "Room" && effect.Value > 0 && effect.CorruptionAdd == true;
+            if (trigger.Effects.SequenceEqual(new[] { "CardEffectSpawnMonsterOrAddStatusEffect" }))
+                return effect.Type == "SpawnOrStatus" && effect.Target == "Room" && effect.SpawnFallbackUnit != null &&
+                    effect.Statuses.Count == 1 && effect.Statuses[0].Id == "horde" && effect.Statuses[0].Stacks > 0 &&
+                    effect.Filters?.Subtype == "SubtypesData_Horde";
             if (trigger.Effects.SequenceEqual(new[] { "CardEffectAddUpgradedCopy" }))
                 // This native effect ignores the character target list and copies playedCard.
                 return effect.Type == "GenerateUpgradedCopy" && effect.Target == "LastTargetedCharacters" && generation != null &&
@@ -68,7 +72,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static CombatContext Apply(CombatContext context, CardInstanceState card, bool preview, bool deployment,
             int attackerUnitId, CombatUnit dying, System.Collections.Generic.IReadOnlyList<CombatUnit> activeUnits,
-            Func<CombatContext, RelicPyreAttackRefreshResult> refreshGold, RoomCombatState selectedRoom, out string? error)
+            Func<CombatContext, RelicPyreAttackRefreshResult> refreshGold, RoomCombatState selectedRoom,
+            Func<CombatContext, CardActionEffect, (CombatContext? Context, string? Error)> applySpawnOrStatus, out string? error)
         {
             error = Validate(card);
             if (error != null) return context;
@@ -97,7 +102,13 @@ namespace MonsterTrain2Poju.Model
                     if (context.EnergyState?.PyreAlive == null) { error = "Card OnKill resources require captured Pyre liveness."; return context; }
                     if (context.EnergyState.PyreAlive == false) continue;
                 }
-                if (effect.Type == "BuffSourceSpellDamage")
+                if (effect.Type == "SpawnOrStatus")
+                {
+                    var applied = applySpawnOrStatus(context, effect);
+                    if (applied.Context == null) { error = applied.Error ?? "Card OnKill spawn-or-status failed."; return context; }
+                    context = applied.Context;
+                }
+                else if (effect.Type == "BuffSourceSpellDamage")
                 {
                     CardInstanceState current = context.FindCard(card.InstanceId) ?? card;
                     context = context.WithCard(current.WithModifiers(current.Permanent.WithAdditionalDamage(effect.Value), current.Temporary));

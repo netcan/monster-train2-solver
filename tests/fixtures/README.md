@@ -9490,3 +9490,37 @@ are captured separately from ordinary CardEffect callbacks. Preview execution
 remains suppressed, and uncalibrated native callback types stay guarded.
 The battle has six plays, five EndTurns, a settled victory, zero failure counters,
 sixteen immutable branches and serial/parallel search parity over 128 states.
+
+`full-battle-original-isolated-boilerplate-forged.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-210911-8dc52630`.
+Original Starter Forge supplies two Forge Points. Boilerplate spends both,
+adds a permanent four-armor upgrade to itself before equipping, and grants
+that armor alongside the default temporary forge armor to its native host.
+The permanent-status source flag is retained and passed through the existing
+relic status-stack/deferred-addition model. Other uncalibrated permanent
+starting-status upgrades remain guarded. The paired zero-point control,
+`full-battle-original-isolated-boilerplate-zero.mt2f`, comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-211112-bdf8e32f` and
+equips without adding a permanent upgrade or armor. This covers direct automatic
+forging; selection-driven forge effects and repeated accumulation need witnesses.
+
+`full-battle-original-isolated-inhale-birth.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-211050-28861bdc`.
+Inhale kills an original enemy and its OnKill effect creates one native cardless
+unit with two Horde. `full-battle-original-isolated-inhale-existing.mt2f` comes
+from `.probe-runs/full-battle-units-spells-and-junk-20261020-211221-38949bf3`:
+Fertile Ground first creates a Horde target, so Inhale adds two Horde to that
+unit without another birth. Both paths reuse the calibrated character-trigger
+spawn-or-status flow with the played spell as their status source. These four
+battles have settled victories, DEPTH-PASS, zero failure counters, sixteen
+immutable branches and search parity. Focused original forge and Horde-upgrade
+fixtures also pass; no full regression was run for this batch.
+
+`full-battle-original-isolated-inhale-friendly-death.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-211731-b755041f`.
+Eager Conscript creates a Horde unit which Inhale then kills. Its OnKill
+callback spawns a replacement before final death removal. The birth shift
+receives the dying unit's retained physical identity/state, preventing a
+missing-occupant rejection. Native full-state replay matches sixteen branches;
+both this and the existing-Horde fixture now search 128 states with zero
+unsupported attempts and identical serial/parallel results.

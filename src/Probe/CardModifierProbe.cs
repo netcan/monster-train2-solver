@@ -223,7 +223,11 @@ namespace MonsterTrain2Poju.Probe
             if (!roomAttachmentUnitUpgrade && upgrade.GetRoomModifierUpgrades().Count > 0) interactions.Add("Upgrade room modifiers");
             if (!filtersAlreadyApplied && upgrade.GetFilters().Count > 0) interactions.Add("Upgrade card filters");
             if (upgrade.GetUpgradesToRemove().Count > 0) interactions.Add("Upgrade replacements");
-            if (upgrade.GetStatusEffectUpgrades().Any(status => status.fromPermanentUpgrade)) interactions.Add("Separate permanent starting-status application group");
+            bool boilerplateArmor = CardBranchMaskProbe.Enabled && upgrade.GetCardUpgradeDataId() == "29ec3d1a-190f-4aef-a9f3-3ce696c7fd09" &&
+                upgrade.GetStatusEffectUpgrades().Count == 1 && upgrade.GetStatusEffectUpgrades()[0].statusId == "armor" &&
+                upgrade.GetStatusEffectUpgrades()[0].fromPermanentUpgrade;
+            if (!boilerplateArmor && upgrade.GetStatusEffectUpgrades().Any(status => status.fromPermanentUpgrade))
+                interactions.Add("Separate permanent starting-status application group");
             CardUpgradeData? copyDefinition = AllGameManagers.Instance?.GetSaveManager()?.GetAllGameData()
                 .FindCardUpgradeData(upgrade.GetCardUpgradeDataId());
             return new CardUpgradeModifier(ConduitProbe.Normalize(upgrade.GetCardUpgradeDataId()), upgrade.GetAssetName(),

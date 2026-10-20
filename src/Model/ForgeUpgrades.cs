@@ -69,6 +69,20 @@ namespace MonsterTrain2Poju.Model
             var modifiers = new CardModifiers(card.Temporary.Offsets, temporary,
                 card.Temporary.PersistentHealth, card.Temporary.ExternalInteractions);
             CardInstanceState changed = card.WithModifiers(card.Permanent, modifiers).WithLastForgedAmount(forgePoints);
+            foreach (CardActionEffect effect in cardRule.OnForgeEffects ?? Array.Empty<CardActionEffect>())
+            {
+                CardUpgradeModifier? upgrade = effect.Upgrade;
+                if (effect.Type != "UpgradeSource" || effect.Target != "Self" || effect.Lifetime != "Permanent" ||
+                    effect.Value != 1 || !effect.ScaleUpgrade || upgrade == null || upgrade.Unique ||
+                    CardModifierModel.UpgradeInteractions(upgrade).Any() ||
+                    !new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
+                        .All(stat => upgrade.Stats.Value(stat) == 0) ||
+                    upgrade.Statuses.Count != 1 || upgrade.Statuses[0].Id != "armor" || upgrade.Statuses[0].Stacks <= 0)
+                    return Unsupported("Uncalibrated OnForge source upgrade; only permanent fixed armor per Forge Point is supported.");
+                // Native accumulates a scalable existing instance only when this
+                // invocation spends more than one point; one point appends a new upgrade.
+                changed = changed.WithPermanentUpgrade(upgrade.WithSharedReference(null).WithForgePoints(forgePoints), forgePoints > 1);
+            }
             string? cardError = CardModifierModel.UnsupportedReason(changed);
             if (cardError != null) return Unsupported("Forged card: " + cardError);
             return new ForgeUpgradeModelResult(source.WithCard(changed).WithQueryFrame(frame.With(forgePoints: 0)));

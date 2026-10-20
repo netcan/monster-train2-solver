@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Model
                 cardType: original.CardType, isAnyAbility: original.IsAnyAbility, canPlayInEngineRoom: original.CanPlayInEngineRoom,
                 onCastEffects: original.OnCastEffects, onUnplayedNegativeEffects: original.OnUnplayedNegativeEffects,
                 unplayedNegativeOrder: original.UnplayedNegativeOrder, hasUnsupportedUnplayedTriggers: original.HasUnsupportedUnplayedTriggers,
-                forgeEligible: original.ForgeEligible, hasKillTriggers: original.HasKillTriggers);
+                forgeEligible: original.ForgeEligible, hasKillTriggers: original.HasKillTriggers, onForgeEffects: original.OnForgeEffects);
         }
         internal CardMaskDescriptor Mask(CardMaskDescriptor descriptor)
         {

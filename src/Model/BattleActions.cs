@@ -194,6 +194,7 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string>? HandDiscardInteractions { get; }
         public IReadOnlyList<string>? HandConsumeInteractions { get; }
         public IReadOnlyList<CardActionEffect> OnCastEffects { get; }
+        public IReadOnlyList<CardActionEffect>? OnForgeEffects { get; }
         public IReadOnlyList<CardActionEffect> OnUnplayedNegativeEffects { get; }
         public int? UnplayedNegativeOrder { get; }
         public bool HasUnsupportedUnplayedTriggers { get; }
@@ -209,7 +210,8 @@ namespace MonsterTrain2Poju.Model
             CardAbilityRule? ability = null, UnitSummonRule? summon = null, string? cardType = null, bool? isAnyAbility = null,
             bool? canPlayInEngineRoom = null, IReadOnlyList<CardActionEffect>? onCastEffects = null,
             IReadOnlyList<CardActionEffect>? onUnplayedNegativeEffects = null, int? unplayedNegativeOrder = null,
-            bool hasUnsupportedUnplayedTriggers = false, bool? forgeEligible = null, bool hasKillTriggers = false)
+            bool hasUnsupportedUnplayedTriggers = false, bool? forgeEligible = null, bool hasKillTriggers = false,
+            IReadOnlyList<CardActionEffect>? onForgeEffects = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
             Equipment = equipment; Ability = ability; CardType = cardType; IsAnyAbility = isAnyAbility; CanPlayInEngineRoom = canPlayInEngineRoom;
@@ -217,6 +219,7 @@ namespace MonsterTrain2Poju.Model
             Summon = summon;
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
             OnCastEffects = Array.AsReadOnly((onCastEffects ?? Array.Empty<CardActionEffect>()).ToArray());
+            OnForgeEffects = onForgeEffects == null ? null : Array.AsReadOnly(onForgeEffects.ToArray());
             OnUnplayedNegativeEffects = Array.AsReadOnly((onUnplayedNegativeEffects ?? Array.Empty<CardActionEffect>()).ToArray());
             UnplayedNegativeOrder = unplayedNegativeOrder;
             HasUnsupportedUnplayedTriggers = hasUnsupportedUnplayedTriggers;
@@ -229,11 +232,11 @@ namespace MonsterTrain2Poju.Model
         internal CardPlayRule WithSpawn(CombatUnit unit) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
             unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon,
             CardType, IsAnyAbility, CanPlayInEngineRoom, OnCastEffects, OnUnplayedNegativeEffects, UnplayedNegativeOrder,
-            HasUnsupportedUnplayedTriggers, ForgeEligible, HasKillTriggers);
+            HasUnsupportedUnplayedTriggers, ForgeEligible, HasKillTriggers, OnForgeEffects);
         internal CardPlayRule WithForgeEligibility(bool? eligible) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
             SpawnUnit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon,
             CardType, IsAnyAbility, CanPlayInEngineRoom, OnCastEffects, OnUnplayedNegativeEffects, UnplayedNegativeOrder,
-            HasUnsupportedUnplayedTriggers, eligible, HasKillTriggers);
+            HasUnsupportedUnplayedTriggers, eligible, HasKillTriggers, OnForgeEffects);
     }
 
     public sealed class ForgeUpgradeModifier

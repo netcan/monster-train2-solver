@@ -2571,7 +2571,12 @@ namespace MonsterTrain2Poju.Model
                     context = CardKillTriggerModel.Apply(context, killSource, source.Preview, source.Deployment,
                         actor?.Source.Id ?? 0, target.Freeze(), units.Select(unit => unit.Freeze()).Concat(
                             context.Enchantments?.Rooms.SelectMany(room => room.Units) ?? Array.Empty<CombatUnit>()).ToArray(),
-                        RefreshGold, CurrentRoom(), out string? killError);
+                        RefreshGold, CurrentRoom(), (current, effect) =>
+                        {
+                            context = current;
+                            bool applied = ApplyTriggeredSpawnOrStatus(target, effect, "OnKill", sourceCardId);
+                            return (applied ? context : null, unsupportedReason);
+                        }, out string? killError);
                     if (killError != null) { unsupportedReason = killError; return; }
                 }
                 if (!target.Alive && !target.DeathFinished)
@@ -4076,14 +4081,14 @@ namespace MonsterTrain2Poju.Model
                 if (SpawnOrStatusTargets(actor, action).Length > 0) return true;
                 SpawnPointGroupState? points = context.SpawnPoints.SelectedGroup(source.RoomIndex, CombatTeam.Player);
                 if (points == null || points.GroupCount == 0) return false;
-                bool dyingMonster = triggerKind == "OnDeath" && actor.Source.Team == CombatTeam.Player && !actor.Alive &&
+                bool dyingMonster = triggerKind is "OnDeath" or "OnKill" && actor.Source.Team == CombatTeam.Player && !actor.Alive &&
                     actor.Source.IsPyre == false && actor.Source.IsBoss != true;
                 // Native ignores capacity here and inserts at the front, moving
                 // existing occupants when any physical slot is available.
                 return dyingMonster || points.Occupants.Any(id => id == 0);
             }
 
-            private bool ApplyTriggeredSpawnOrStatus(WorkingUnit actor, CardActionEffect action, string triggerKind)
+            private bool ApplyTriggeredSpawnOrStatus(WorkingUnit actor, CardActionEffect action, string triggerKind, int sourceCardIdOverride = 0)
             {
                 if (!SpawnOrStatusCanApply(actor, action, triggerKind))
                     return unsupportedReason == null && action.Tests?.CancelSubsequent != true;
@@ -4091,6 +4096,7 @@ namespace MonsterTrain2Poju.Model
                 { unsupportedReason = "Triggered spawn-or-status requires its status and fallback unit definitions."; return false; }
 
                 CombatStatus status = action.Statuses[0];
+                int statusSourceCardId = sourceCardIdOverride > 0 ? sourceCardIdOverride : actor.Source.SpawnerCardId;
                 if (action.Statuses.Count > 1)
                 {
                     RngDraw draw = context!.BattleRng.Range(0, action.Statuses.Count);
@@ -4101,7 +4107,7 @@ namespace MonsterTrain2Poju.Model
                 if (targets.Length > 0)
                 {
                     RoomCombatResult applied = StatusApplicationModel.ApplyRetained(RetainedStatusRoom(actor,
-                        new[] { targets[0].Id }), targets[0].Id, status, actor.Source.SpawnerCardId,
+                        new[] { targets[0].Id }), targets[0].Id, status, statusSourceCardId,
                         fromEffectType: "CardEffectSpawnMonsterOrAddStatusEffect",
                         allowStackModifiers: !action.DisallowStatusStackModifiers);
                     if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
@@ -4125,12 +4131,13 @@ namespace MonsterTrain2Poju.Model
                     propagatable: status.Propagatable.HasValue ? false : null,
                     excludeHeroPropagation: status.ExcludeHeroPropagation.HasValue ? false : null,
                     excludeMonsterPropagation: status.ExcludeMonsterPropagation.HasValue ? false : null);
-                var additional = new SpawnStatusApplication(status, actor.Source.SpawnerCardId, !action.DisallowStatusStackModifiers,
+                var additional = new SpawnStatusApplication(status, statusSourceCardId, !action.DisallowStatusStackModifiers,
                     "CardEffectSpawnMonsterOrAddStatusEffect");
-                bool canFreeDyingActor = triggerKind == "OnDeath" && actor.Source.Team == CombatTeam.Player && !actor.Alive &&
+                bool canFreeDyingActor = triggerKind is "OnDeath" or "OnKill" && actor.Source.Team == CombatTeam.Player && !actor.Alive &&
                     actor.Source.IsPyre == false && actor.Source.IsBoss != true && context!.SpawnPoints!.Units
                         .FirstOrDefault(unit => unit.UnitId == actor.Source.Id)?.Current != null;
-                UnitBirthResult born = UnitBirthModel.SpawnWithStatus(CurrentRoom(), definition, 0, 0, cardless, additional);
+                UnitBirthResult born = UnitBirthModel.SpawnWithStatus(CurrentRoom(), definition, 0, 0, cardless, additional,
+                    positionActors: units.Where(unit => unit.InRoom && !unit.Removed).Select(unit => unit.Freeze()).ToArray());
                 if (!born.Supported && canFreeDyingActor)
                 {
                     RemovePhysicalPoint(actor);

@@ -28,6 +28,11 @@ internal static class OriginalSupportSpellsChecks
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f29d063b-cb41-44ee-8118-4db66b6f8195")
                 candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.Health <= 5));
+            if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "cc374cb3-1675-4deb-93bc-53e30b2045fe")
+                candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId && unit.Health + (unit.Status("armor")?.Stacks ?? 0) <= 10 &&
+                        (ids.Any(id => source.Spawn.Train.Context!.FindCard(id)?.DataId == "0c8ff108-478c-4c1c-9c49-f6a297b4e0d8")
+                            ? unit.Team == CombatTeam.Player && unit.Status("horde")?.Stacks > 0 : unit.Team == CombatTeam.Enemy)));
             if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
                 candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
@@ -218,6 +223,47 @@ internal static class OriginalSupportSpellsChecks
                     after.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy) <
                         before.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy),
                     "Shadesplitter must positively kill a native enemy and roll its original weighted Morsel pool through the Room-targeted OnKill effect.");
+            }
+            if (rule.AssetKey == "Boilerplate")
+            {
+                CombatContext oldContext = before.Spawn.Train.Context!, newContext = after.Spawn.Train.Context!;
+                CardInstanceState changed = newContext.FindCard(card.InstanceId)!;
+                int points = oldContext.QueryFrame!.ForgePoints!.Value;
+                CombatUnit oldTarget = before.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Id == action.TargetUnitId),
+                    newTarget = after.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Id == action.TargetUnitId);
+                Require(rule.OnForgeEffects?.Count == 1 && rule.OnForgeEffects[0].Upgrade!.MaskMetadata!.Statuses.Single().FromPermanentUpgrade &&
+                    changed.LastForgedAmount == points && newContext.QueryFrame!.ForgePoints == 0 &&
+                    newTarget.EquipmentCards!.Contains(card.InstanceId), "Boilerplate must preserve its native forge callback and equip ownership.");
+                if (points > 0)
+                {
+                    CardUpgradeModifier armor = changed.Permanent.Upgrades.Single(upgrade => upgrade.AssetKey == "Boilerplate_ArmorUpgrade");
+                    int temporaryArmor = changed.Temporary.Upgrades.SelectMany(upgrade => upgrade.Statuses)
+                        .Where(status => status.Id == "armor").Sum(status => status.Stacks);
+                    Require(points == 2 && armor.Statuses.Single().Stacks == 2 * points &&
+                        armor.MaskMetadata!.Statuses.Single().FromPermanentUpgrade &&
+                        (newTarget.Status("armor")?.Stacks ?? 0) - (oldTarget.Status("armor")?.Stacks ?? 0) == 2 * points + temporaryArmor,
+                        "Two native Forge Points must permanently add four armor, then apply it with the temporary forge armor on equip.");
+                }
+                else Require(changed.Permanent.Upgrades.Count == card.Permanent.Upgrades.Count &&
+                    (newTarget.Status("armor")?.Stacks ?? 0) == (oldTarget.Status("armor")?.Stacks ?? 0),
+                    "Zero-point Boilerplate must equip without firing its growth callback.");
+            }
+            if (rule.AssetKey == "Inhale")
+            {
+                RoomCombatState oldRoom = before.Spawn.Train.Rooms[action.RoomIndex], newRoom = after.Spawn.Train.Rooms[action.RoomIndex];
+                int oldHorde = oldRoom.Units.Where(unit => unit.Team == CombatTeam.Player).Sum(unit => unit.Status("horde")?.Stacks ?? 0),
+                    newHorde = newRoom.Units.Where(unit => unit.Team == CombatTeam.Player).Sum(unit => unit.Status("horde")?.Stacks ?? 0);
+                CombatUnit victim = oldRoom.Units.Single(unit => unit.Id == action.TargetUnitId);
+                bool friendly = victim.Team == CombatTeam.Player;
+                int retainedHorde = oldHorde - (friendly ? victim.Status("horde")?.Stacks ?? 0 : 0);
+                Require(card.MaskDescriptor!.KillTriggers!.Single().Effects.SequenceEqual(new[] { "CardEffectSpawnMonsterOrAddStatusEffect" }) &&
+                    newRoom.Units.All(unit => unit.Id != action.TargetUnitId) && newHorde - retainedHorde == 2 &&
+                    newRoom.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Status("horde")?.Stacks >= 2),
+                    "Inhale must kill its native target and positively grant two Horde through its separate card kill callback.");
+                Require(newRoom.Units.Count(unit => unit.Team == CombatTeam.Player) - oldRoom.Units.Count(unit => unit.Team == CombatTeam.Player) ==
+                    (retainedHorde == 0 ? 1 : 0) - (friendly ? 1 : 0) && (retainedHorde != 0 || newRoom.Units.Any(unit =>
+                        unit.Status("horde")?.Stacks == 2 && unit.Status("cardless")?.Stacks == 1)),
+                    "Inhale must spawn one cardless unit only when no existing Horde target is available.");
             }
             if (rule.AssetKey is "SubsumingBlade" or "FanningTheFlame")
             {

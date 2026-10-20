@@ -23,10 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-210103-2cb5518b/card-catalog.mt2f`.
-The committed archive is byte-identical: 97,791 bytes, 11,813 unique nodes,
-SHA-256 `a53f1818ad8b4c5120ae2e674cb31474126efccbc47a8f0761f9a548c1df139c`.
-The latest refresh captures independent native card-trigger type, amount,
+Source: `.probe-runs/full-battle-no-cards-20261020-211232-c56ed4b3/card-catalog.mt2f`.
+The committed archive is byte-identical: 98,108 bytes, 11,821 unique nodes,
+SHA-256 `d18d12d38a205088888336cde462a2ed7dfe2ebfcee7f2521394b57a6ac2c3eb`.
+The latest refresh projects Inhale's OnKill spawn-or-status callback and
+Boilerplate's permanent armor per Forge Point. Rules gain nullable OnForgeEffects;
+apart from that schema field, only these two Rules changed. All 668 raw native
+card definitions remain identical. The permanent-status flag stays captured;
+only the calibrated original Boilerplate armor upgrade leaves its former guard.
+The preceding refresh captures independent native card-trigger type, amount,
 persistence and upgrade fields, plus projected original OnKill definitions.
 Fanning the Flame and Subsuming Blade gain source-only permanent damage growth;
 only these two Rules changed, with all 668 raw card definitions unchanged.
