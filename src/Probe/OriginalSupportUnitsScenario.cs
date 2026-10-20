@@ -19,6 +19,8 @@ namespace MonsterTrain2Poju.Probe
         private const string BlightedTotemId = "21ad4f07-1568-4461-8be4-6fb2670bd90d";
         private const string ProsperityTotemId = "21567cc4-f684-48db-b377-b8289729dedc";
         private const string BattleDancerId = "a0b051b2-7898-454a-8bd8-300b72b99c93";
+        private const string HeroInTrainingId = "57ffb1c3-0728-4254-ab35-7e34adab459f";
+        private const string DivineDancerId = "a1e9a37b-504a-4a04-99e2-6d933727b427";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -58,23 +60,26 @@ namespace MonsterTrain2Poju.Probe
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()), Add(capacity.GetID()), Add(capacity.GetID()), Add(capacity.GetID()), Add(enemyHealth.GetID()) }
                 .Concat(Originals.Select(Add)).Concat(new[] { Add(wound.GetID()), Add(heal.GetID()), Add(wound.GetID()), Add(heal.GetID()), Add(hit.GetID()), Add(attack.GetID()), Add(attack.GetID()),
                     AddToDiscard("f1c2a098-e20d-4587-b8de-5bef315de42d"), Add(killAlchemical.GetID()) })
-                .Append(Add(BlightedTotemId)).Append(Add(ProsperityTotemId)).Append(Add(BattleDancerId)).ToArray();
+                .Append(Add(BlightedTotemId)).Append(Add(ProsperityTotemId)).Append(Add(BattleDancerId))
+                .Append(Add(HeroInTrainingId)).Append(Add(DivineDancerId)).ToArray();
             foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
             save.SetDragonsHoardCap(4); save.SetDragonsHoardAmount(2);
-            log.LogInfo("ORIGINAL-SUPPORT-UNITS-PREPARED eighteen unchanged originals; positive spawn, rally, heal, hit, attack, equipment growth, unmatched typed-draw control, Alchemical death Hoard callback, Avenger OnHit boundary, two CardSpellPlayed boundaries and Battle Dancer OnShift boundary.");
+            log.LogInfo("ORIGINAL-SUPPORT-UNITS-PREPARED twenty unchanged originals; positive spawn, rally, heal, hit, attack, equipment growth, unmatched typed-draw control, Alchemical death Hoard callback, Avenger OnHit, two CardSpellPlayed, Battle Dancer/Hero in Training OnShift and Divine Dancer full-room boundary.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
-            int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 21 or 22 or 30 or 31 or 32 or 33 or 34 ? 2 : 0;
+            int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 || index is 35 or 36 ? 1 :
+                index is 6 or 19 or 20 or 21 or 22 or 30 or 31 or 32 or 33 or 34 ? 2 : 0;
             int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is >= 19 and <= 22 ? index - 18 :
-                index is 32 or 33 or 34 ? source.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2).Units.Count(unit => unit.Team == CombatTeam.Player) : -1;
+                index is 32 or 33 or 34 or 35 or 36 ? source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == room).Units.Count(unit => unit.Team == CombatTeam.Player) : -1;
             int host = index is 23 or 24 ? 11 : index is 25 or 26 ? 12 : index == 27 ? 9 : index == 28 ? 8 : index == 29 ? 10 : index == 31 ? 21 : 19;
-            int target = index >= 23 && index != 32 && index != 33 && index != 34 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
+            int target = index >= 23 && index != 32 && index != 33 && index != 34 && index != 35 && index != 36
+                ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
             var action = new PlayCardAction(ids[index], room, playerPosition: position, targetUnitId: target);
             BattleActionResult result = BattleActionModel.PlayCard(source, action);
             if (result.Supported) return action;

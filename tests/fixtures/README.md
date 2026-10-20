@@ -7682,8 +7682,8 @@ dotnet run --project src/ModelChecks -c Release -- --original-first-imp-bonus-on
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
 ```
 
-`full-battle-original-support-units.mt2f` captures eighteen unchanged original
-units across 35 plays and five EndTurns. It verifies native births/costs and
+`full-battle-original-support-units.mt2f` captures twenty unchanged original
+units across 36 plays and five EndTurns. It verifies native births/costs and
 spawn triggers for Starter Imp (16 damage through armor), Hollow maximum-health
 increases that preserve current HP, Enoki's +1 Regen/+1 MaxHealth rally, and
 Welder Helper/Aggressive Imp effects. Awoken and Thorned Hollow healing,
@@ -7704,18 +7704,25 @@ untriggered. Neither callback's resolved effect is claimed.
 Battle Dancer is born unchanged at 7/14, size 2 and cost 1. Its captured
 OnShift callback grants itself three Valor, but the final play causes no shift;
 the callback remains untriggered and its status application is not claimed.
+Hero in Training is born from its original 10/10, size-2, cost-1 definition.
+Earlier Amorous Enoki Rally gives the played unit +1 MaxHealth and one Regen,
+so the captured state is 11/11; its two-Buff OnShift callback remains
+untriggered. Divine Dancer's original 7/14, size-2 definition and five-Armor
+room OnShift callback are captured, but the card remains unplayed: the target
+room has reached its seven-player spawn-slot limit after Hero in Training.
+No native Divine Dancer birth or resolved callback is claimed; it remains a
+coverage gap for a separate empty-room witness.
 Swordmaiden's captured Equipment DrawType is a no-match control: the only
 equipment remains in hand, outside draw/discard, so this archive does not claim
 a successful native draw. Positive typed-draw selection remains covered by the
 focused pure model checks.
 
-The isolated Instant native run took 384.23 seconds with preview RNG isolated;
-it won with CaptureFailures, Mismatches, Unsupported and Pending all zero and
-the protected original files unchanged. The 61,633-byte binary archive has
-13,069 unique nodes and SHA-256
-`d301778bb0ff3ba0300b8066647c96106bf7960b55bb63ffd9101a3590c7e467`.
-The native checks pass, and a 128-state serial/parallel search matches all 35
-recorded decisions with 80 root actions. The unit-trigger
+The isolated Instant native run took 438.70 seconds with preview RNG isolated;
+it won with CaptureFailures, Mismatches, Unsupported and Pending all zero. The
+64,019-byte binary archive has 13,687 unique nodes and SHA-256
+`c1a68d8a2a493e701541d58e4f450fc1c9b19556b6134033e0e6a0237f21823d`.
+The native checks pass, and a 128-state serial/parallel search matches all 36
+recorded decisions with 86 root actions. The unit-trigger
 model requires captured Hoard amount, cap and Pyre liveness, and rejects a
 change if any tracked card has a Dragon's Hoard-scaled unit upgrade because
 live stat refresh is not modeled.

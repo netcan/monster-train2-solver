@@ -7,6 +7,8 @@ internal static class OriginalSupportUnitsChecks
     private const string BlightedTotemId = "21ad4f07-1568-4461-8be4-6fb2670bd90d";
     private const string ProsperityTotemId = "21567cc4-f684-48db-b377-b8289729dedc";
     private const string BattleDancerId = "a0b051b2-7898-454a-8bd8-300b72b99c93";
+    private const string HeroInTrainingId = "57ffb1c3-0728-4254-ab35-7e34adab459f";
+    private const string DivineDancerId = "a1e9a37b-504a-4a04-99e2-6d933727b427";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -17,11 +19,13 @@ internal static class OriginalSupportUnitsChecks
     {
         int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
         if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
-        int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 ? 1 : index is 6 or 19 or 20 or 21 or 22 or 30 or 31 or 32 or 33 or 34 ? 2 : 0;
+        int room = index < 3 ? index : index == 5 || index is >= 14 and <= 18 || index is 35 or 36 ? 1 :
+            index is 6 or 19 or 20 or 21 or 22 or 30 or 31 or 32 or 33 or 34 ? 2 : 0;
         int position = index < 3 ? 0 : index is >= 8 and <= 13 ? index - 7 : index is >= 14 and <= 18 ? index - 13 : index is >= 19 and <= 22 ? index - 18 :
-            index is 32 or 33 or 34 ? source.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2).Units.Count(unit => unit.Team == CombatTeam.Player) : -1;
+            index is 32 or 33 or 34 or 35 or 36 ? source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == room).Units.Count(unit => unit.Team == CombatTeam.Player) : -1;
         int host = index is 23 or 24 ? 11 : index is 25 or 26 ? 12 : index == 27 ? 9 : index == 28 ? 8 : index == 29 ? 10 : index == 31 ? 21 : 19;
-        int target = index >= 23 && index != 32 && index != 33 && index != 34 ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
+        int target = index >= 23 && index != 32 && index != 33 && index != 34 && index != 35 && index != 36
+            ? source.Spawn.Train.Rooms.SelectMany(floor => floor.Units).Single(unit => unit.SpawnerCardId == ids[host]).Id : 0;
         var action = new PlayCardAction(ids[index], room, playerPosition: position, targetUnitId: target);
         return BattleActionModel.PlayCard(source, action).Supported ? action : null;
     }
@@ -32,7 +36,7 @@ internal static class OriginalSupportUnitsChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalSupportUnitsIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 35 && actions.Length == 35, "Missing eighteen original births or positive trigger controls.");
+        Require(ids.Length == 37 && actions.Length == 36, "Missing twenty original births or positive trigger controls.");
         BattleTurnState Before(int i) => actions[i].GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState After(int i) => actions[i].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         CombatUnit Actor(BattleTurnState state, int index) => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[index]);
@@ -179,8 +183,46 @@ internal static class OriginalSupportUnitsChecks
             valorEffect.Statuses.Single().Id == "valor" && valorEffect.Statuses.Single().Stacks == 3 &&
             !shiftTrigger.HasTriggered && !actualShiftTrigger.HasTriggered,
             "Battle Dancer must preserve its original 7/14 size-2 spawn and captured, untriggered three-Valor OnShift callback.");
+        BattleTurnState heroBefore = Before(35), heroAfter = After(35);
+        PlayCardAction heroAction = actions[35].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CardPlayRule heroRule = heroBefore.PlayRules!.Cards.Single(rule => rule.DataId == HeroInTrainingId);
+        CombatUnit heroTemplate = heroRule.SpawnUnit!, hero = Actor(heroAfter, 35);
+        CombatTrigger heroShift = heroTemplate.Triggers.Single(trigger => trigger.Kind == "OnShift");
+        CombatTrigger actualHeroShift = hero.Triggers.Single(trigger => trigger.Kind == "OnShift");
+        CardActionEffect buffEffect = heroShift.Effects.Single().Action!;
+        RoomCombatState heroRoom = heroBefore.Spawn.Train.Rooms.Single(room => room.RoomIndex == 1);
+        int heroAppendPosition = heroRoom.Units.Count(unit => unit.Team == CombatTeam.Player);
+        Require(heroBefore.Spawn.Train.Context!.FindCard(ids[35])!.DataId == HeroInTrainingId &&
+            heroAction.RoomIndex == 1 && heroAction.PlayerPosition == heroAppendPosition && heroAction.TargetUnitId == 0 &&
+            heroBefore.Energy - heroAfter.Energy == heroRule.Cost && heroRule.AssetKey == "HeroInTraining" &&
+            heroTemplate.Health == 10 && heroTemplate.MaxHealth == 10 && heroTemplate.Modifiers!.AttackDamage == 10 && heroTemplate.Size == 2 &&
+            hero.AssetKey == "MonsterHeroInTraining" && hero.Health == 11 && hero.MaxHealth == 11 &&
+            hero.Modifiers!.AttackDamage == 10 && hero.Size == 2 && Stacks(hero, "regen") == 1 && Stacks(hero, "buff") == 0 &&
+            buffEffect.Type == "AddStatus" && buffEffect.Target == "Self" &&
+            buffEffect.Statuses.Single().Id == "buff" && buffEffect.Statuses.Single().Stacks == 2 &&
+            !heroShift.HasTriggered && !actualHeroShift.HasTriggered,
+            "Hero in Training must preserve its original 10/10 size-2 spawn and captured, untriggered two-buff OnShift callback.");
+        BattleTurnState afterHero = After(35);
+        CardInstanceState divineCard = afterHero.Spawn.Train.Context!.FindCard(ids[36])!;
+        CardPlayRule divineRule = Before(35).PlayRules!.Cards.Single(rule => rule.DataId == DivineDancerId);
+        CombatTrigger divineShift = divineRule.SpawnUnit!.Triggers.Single(trigger => trigger.Kind == "OnShift");
+        CardActionEffect armorEffect = divineShift.Effects.Single().Action!;
+        RoomCombatState divineRoom = afterHero.Spawn.Train.Rooms.Single(room => room.RoomIndex == 1);
+        int divineAppendPosition = divineRoom.Units.Count(unit => unit.Team == CombatTeam.Player);
+        BattleActionResult divineAttempt = BattleActionModel.PlayCard(afterHero,
+            new PlayCardAction(ids[36], 1, playerPosition: divineAppendPosition));
+        Require(divineCard.DataId == DivineDancerId && afterHero.Spawn.Train.Context.Cards.Hand.Any(card => card.InstanceId == ids[36]) &&
+            afterHero.Spawn.Train.Context.Statistics!.Value(ids[36], "TimesPlayed", "ThisBattle") == 0 &&
+            !afterHero.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.SpawnerCardId == ids[36]) &&
+            divineRule.AssetKey == "DivineDancer" && divineRule.SpawnUnit is { AssetKey: "MonsterDivineDancer", Health: 14, MaxHealth: 14, Size: 2 } divineTemplate &&
+            divineTemplate.Modifiers!.AttackDamage == 7 && divineRoom.Units.Count(unit => unit.Team == CombatTeam.Player) ==
+                afterHero.PlayRules!.Rooms.Single(room => room.RoomIndex == 1).PlayerSlots &&
+            armorEffect.Type == "AddStatus" && armorEffect.Target == "Room" &&
+            armorEffect.Statuses.Single().Id == "armor" && armorEffect.Statuses.Single().Stacks == 5 &&
+            !divineShift.HasTriggered && !divineAttempt.Supported && divineAttempt.Reason == "The room cannot accept this unit's size or another spawn slot.",
+            "Divine Dancer remains an explicit coverage gap: its original 7/14 definition is captured, but the native witness has no free room slot to spawn it.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-SUPPORT-UNITS PASS: eighteen unchanged units, Alchemical Assistant native spawn/death with capped Dragon's Hoard, Avenger OnHit, Blighted/Prosperity Totem CardSpellPlayed and Battle Dancer OnShift boundaries, positive spawn/rally/heal/hit/attack/equipment/postcombat callbacks, native no-match typed-draw control and 16 immutable full chains.");
+        Console.WriteLine("ORIGINAL-SUPPORT-UNITS PASS: twenty unchanged units, Alchemical Assistant native spawn/death with capped Dragon's Hoard, Avenger OnHit, Blighted/Prosperity Totem CardSpellPlayed and Battle Dancer/Hero in Training OnShift boundaries, explicit Divine Dancer room-slot gap, positive spawn/rally/heal/hit/attack/equipment/postcombat callbacks, native no-match typed-draw control and 16 immutable full chains.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }
