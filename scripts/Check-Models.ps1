@@ -261,6 +261,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-silent-sentinel.mt2f',
     'full-battle-original-isolated-spikedriver-factory.mt2f',
     'full-battle-original-isolated-scrivener.mt2f',
+    'full-battle-original-isolated-banished-champ2.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
@@ -2163,6 +2164,13 @@ foreach ($fixturePath in $originalIsolatedScrivenerFixtures) {
     foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Scrivener checks failed ($mode): $fixturePath" }
+    }
+}
+$originalIsolatedBanishedChamp2Fixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-isolated-banished-champ2.mt2f' })
+foreach ($fixturePath in $originalIsolatedBanishedChamp2Fixtures) {
+    foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Banished Champion 2 checks failed ($mode): $fixturePath" }
     }
 }
 $originalAttackOverrideFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-attack-overrides.mt2f' })
