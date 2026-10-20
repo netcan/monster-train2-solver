@@ -7756,6 +7756,24 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-divine-dancer.mt2f
 ```
 
+### Original Branded Warrior
+
+`full-battle-original-isolated-unit-batch.mt2f` isolates an unchanged Branded
+Warrior with three zero-cost Steward anchors. The direct play pays its captured
+native cost and its birth identity and initial stats match the original spawn
+rule. The 38.01-second Instant run won with zero capture failures, mismatches,
+unsupported stages or pending records. Four native plays span five EndTurns;
+the 26,893-byte archive has 3,568 unique nodes and SHA-256
+`ad04fa7f33f729c9f957e64d7f086c92615c407499d8b8011a900b65e1ee4dea`.
+Dedicated replay and a 128-state serial/parallel search pass; all four
+decisions match, with 12 root actions and zero unsupported attempts.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitBatch -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-unit-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-unit-batch.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
