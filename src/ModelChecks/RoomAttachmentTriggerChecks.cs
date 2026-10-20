@@ -23,6 +23,7 @@ internal static class RoomAttachmentTriggerChecks
             RoomCapacityState capacity = after.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == action.RoomIndex);
             RoomCapacityAttachmentState attachment = capacity.Attachments!.Single();
             CardUpgradeModifier upgrade = attachment.CharacterUpgrades!.Single();
+            if (attachment.SpellUpgrade != null) continue; // Dedicated spell tracker assertions cover this identity owner.
             Require(attachment.AttachmentId == RoomAttachmentTriggerIdentity.Key(id, action.RoomIndex, capacity.AttachmentsAddedFromCards!.Value) && upgrade.TriggerUpgrades!.Count > 0,
                 "Native card-created room callbacks require their canonical attachment creation key.");
             foreach (RoomCombatState room in after.Spawn.Train.Rooms)

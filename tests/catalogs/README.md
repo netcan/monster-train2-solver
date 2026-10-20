@@ -23,11 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-012848-ade797d0/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,571 bytes, 12,077 unique nodes,
-SHA-256 `a20ba39cb75e6b43d26c7fe828a5bf3a0d9ce17a6c083a78c54de9a6dd9ec188`.
-The latest refresh captures Mitosis Cap's unit-source card generation and
-equipment character filters. Only this projection changes; the other 667 are identical.
+Source: `.probe-runs/full-battle-no-cards-20261021-013731-681cee3b/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,458 bytes, 12,092 unique nodes,
+SHA-256 `6d6ea230beb49562cfa9346039eb56c54b7a9ebfde4b988c6ef5d64c1603e0e3`.
+The latest refresh captures Enchanted Chamber's magical-power upgrade and
+tracker descriptor. Only this projection changes; after normalizing the new
+nullable attachment field, the other 667 projections are identical.
 The preceding refresh captures Stasis Crystal's native status-scaled PostCombat
 upgrade. Only this projection changes; the other 667 are identical.
 The preceding refresh captures Copy Morsels' native unit birth-copy modifier.

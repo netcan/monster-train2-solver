@@ -9917,3 +9917,19 @@ serial/parallel results. The encounter callback is checked separately from
 that combat search's terminal boundary. Existing Stasis and equipment combat
 batch chains still pass. Other unit-source copy destinations/counts remain
 guarded pending independent native witnesses.
+
+`full-battle-original-isolated-enchanted-chamber.mt2f` and its `-replacement`
+control come from `.probe-runs/full-battle-units-spells-and-junk-20261021-013926-666f1317`
+and `013926-156d9c2c`. Unchanged Enchanted Chamber adds fifteen magic power
+to its floor for both teams. Its native private tracker applies one temporary
+upgrade to each eligible hand card while the floor is selected, scaling both
+damage and healing to seventy-five for Attuned. Original Torch deals eighteen
+damage to its control host; original Restore heals up to nineteen. Cosmic Bolt
+casts on another floor without this room's upgrade; selecting the room again
+restores tracking. Fight Club replacement clears the tracker, temporary
+upgrades and floor magic power. The attachment's combined team mask does not
+match the native single-team unit-damage query, so it adds no unit attack damage.
+Both captures have DEPTH-PASS, settled wins and zero failure counters. Nine/ten
+plays and five EndTurns pass sixteen immutable branches and 128-state searches
+with zero unsupported attempts and equal serial/parallel results. Existing
+Conduit and Hall of Mirrors chains remain the affected regression scope.

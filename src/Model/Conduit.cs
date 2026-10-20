@@ -106,6 +106,7 @@ namespace MonsterTrain2Poju.Model
         }
         internal static CombatContext Select(CombatContext context, int? before, int? after)
         {
+            context = RoomSpellUpgradeModel.Select(context, before, after);
             if (!Captured(context) || before == after) return context;
             foreach (var room in context.MagicPower!.ToArray())
             foreach (var unit in room.Conduit!.Units)
@@ -128,6 +129,7 @@ namespace MonsterTrain2Poju.Model
         }
         internal static CombatContext Updated(CombatContext context, int cardId)
         {
+            context = RoomSpellUpgradeModel.Updated(context, cardId);
             context = Drawn(context, [cardId]);
             if (!Captured(context)) return context;
             foreach (var room in context.MagicPower!.Where(room => room.RoomIndex == context.QueryFrame?.SelectedRoomIndex).ToArray())
@@ -140,6 +142,7 @@ namespace MonsterTrain2Poju.Model
         }
         internal static CombatContext Drawn(CombatContext context, IEnumerable<int> cards)
         {
+            context = RoomSpellUpgradeModel.Drawn(context, cards);
             if (!Captured(context)) return context;
             int? selected = context.QueryFrame?.SelectedRoomIndex;
             foreach (var room in context.MagicPower!.Where(room => room.RoomIndex == selected).ToArray())
@@ -149,6 +152,7 @@ namespace MonsterTrain2Poju.Model
         }
         internal static CombatContext Discarded(CombatContext context, int cardId)
         {
+            context = RoomSpellUpgradeModel.Discarded(context, cardId);
             if (!Captured(context)) return context;
             foreach (var room in context.MagicPower!.Where(room => room.RoomIndex == context.QueryFrame?.SelectedRoomIndex).ToArray())
             foreach (var unit in room.Conduit!.Units.Where(unit => unit.Cards.Contains(cardId)))

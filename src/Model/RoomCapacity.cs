@@ -23,12 +23,14 @@ namespace MonsterTrain2Poju.Model
         public RoomPreCombatRule? PreCombat { get; }
         public IReadOnlyList<RoomStatusStackRule>? StatusStackBonuses { get; }
         public string? SpawnCopySubtype { get; }
+        public RoomSpellUpgradeState? SpellUpgrade { get; }
         public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
             IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
             bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "", int spellCostDelta = 0,
             RoomMoonPhaseRule? moonPhase = null, int energyPerTurnDelta = 0, IReadOnlyList<CardUpgradeMaskRule>? characterFilters = null,
             RoomPostCombatRule? postCombat = null, RoomPreCombatRule? preCombat = null,
-            IReadOnlyList<RoomStatusStackRule>? statusStackBonuses = null, string? spawnCopySubtype = null)
+            IReadOnlyList<RoomStatusStackRule>? statusStackBonuses = null, string? spawnCopySubtype = null,
+            RoomSpellUpgradeState? spellUpgrade = null)
         {
             DataId = dataId; AssetKey = assetKey; AttachmentId = attachmentId; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
             CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
@@ -39,7 +41,12 @@ namespace MonsterTrain2Poju.Model
             PreCombat = preCombat;
             StatusStackBonuses = statusStackBonuses == null ? null : Array.AsReadOnly(statusStackBonuses.ToArray());
             SpawnCopySubtype = spawnCopySubtype;
+            SpellUpgrade = spellUpgrade;
         }
+        internal RoomCapacityAttachmentState WithSpellUpgrade(RoomSpellUpgradeState value) =>
+            new RoomCapacityAttachmentState(DataId, AssetKey, AttachmentType, CapacityDelta, CharacterUpgrades,
+                AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
+                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, value);
     }
 
     public sealed class RoomCapacityState
@@ -98,6 +105,8 @@ namespace MonsterTrain2Poju.Model
         public static string? Validate(CombatContext? context)
         {
             if (context?.RoomCapacities == null) return "Missing captured room capacity state.";
+            string? spellError = RoomSpellUpgradeModel.ValidateContext(context);
+            if (spellError != null) return spellError;
             return context.RoomCapacities.Any(room => room.RoomIndex < 0 || room.PlayerMaximum < 0 || room.EnemyMaximum < 0 || room.Corruption < 0 || room.AttachmentsAddedFromCards < 0) ||
                 context.RoomCapacities.Select(room => room.RoomIndex).Distinct().Count() != context.RoomCapacities.Count ||
                 context.RoomCapacities.Any(room => room.Attachments?.Any(attachment => string.IsNullOrEmpty(attachment.DataId) ||
@@ -107,6 +116,7 @@ namespace MonsterTrain2Poju.Model
                     ValidateCharacterFilters(attachment.CharacterFilters) != null ||
                     attachment.StatusStackBonuses?.Any(rule => rule.StatusId != "pyregel" || rule.Amount != 3) == true ||
                     attachment.SpawnCopySubtype is not (null or "") ||
+                    attachment.SpellUpgrade != null && RoomSpellUpgradeModel.Validate(attachment.SpellUpgrade) != null ||
                     attachment.MoonPhase != null && RoomMoonPhaseModel.Validate(attachment.MoonPhase) != null ||
                     attachment.PostCombat != null && (attachment.MoonPhase != null || RoomPostCombatModel.Validate(attachment.PostCombat) != null) ||
                     attachment.PreCombat != null && (attachment.MoonPhase != null || attachment.PostCombat != null || RoomPreCombatModel.Validate(attachment.PreCombat) != null) ||
@@ -155,7 +165,7 @@ namespace MonsterTrain2Poju.Model
                 selected.Corruption, attachments.Concat(new[] { attachment }).ToArray(),
                 selected.MaxCorruption, selected.PermanentCorruption,
                 attachmentsAddedFromCards);
-            return new RoomCapacityResult(context.WithRoomCapacities(context.RoomCapacities!
+            return new RoomCapacityResult(RoomSpellUpgradeModel.Replace(context, context.RoomCapacities!
                 .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray()), attachment.CapacityDelta);
         }
         internal static bool Test(CombatContext? context, int room, bool enemiesPresent, bool onlyIfNoEnemies) =>

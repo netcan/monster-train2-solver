@@ -26,6 +26,7 @@ namespace MonsterTrain2Poju.Probe
         private static object Tracker(object modifier) => AccessTools.Field(modifier.GetType(), "_cardsWeHaveModified").GetValue(modifier);
         internal static string Normalize(string id)
         {
+            id = RoomSpellUpgradeProbe.Normalize(id);
             if (!Enabled || FullBattleTrace.Active == null) return id;
             var trace = FullBattleTrace.Active;
             foreach (var character in trace.KnownUnits)
