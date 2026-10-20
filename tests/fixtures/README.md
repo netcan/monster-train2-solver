@@ -8995,3 +8995,18 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-wickless-death-trigger-batch.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-wickless-death-trigger-batch.mt2f
 ```
+
+### Original Frozen Totem
+
+`full-battle-original-isolated-frozen-totem.mt2f` plays the unchanged Frozen
+Totem after three safe anchors. Its original card identity and native spawn
+definition match through the direct play; the Instant battle won with zero
+capture failures, mismatches, unsupported transitions or pending records.
+Focused replay and bounded serial/parallel search agree at 128 states with
+three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 174fefa4-95ec-40cf-9116-fcb954c6dc4c
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-frozen-totem.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-frozen-totem.mt2f
+```
