@@ -36,13 +36,14 @@ namespace MonsterTrain2Poju.Probe
                 int rawCost = (int)AccessTools.Field(typeof(CardState), "cost").GetValue(card);
                 var state = new CardInstanceState(cardId(card), card.GetCardDataID(),
                     Modifiers(card.GetCardStateModifiers(), CardBranchMaskProbe.Enabled && data.GetEffects().Any(effect =>
-                        effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")), Modifiers(card.GetTemporaryCardStateModifiers()),
+                        effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard"), captureGraft: UnitGraftProbe.Known(data.GetID())), Modifiers(card.GetTemporaryCardStateModifiers()),
                     card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions,
                     Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card), RoomCapacityProbe.Traits(card),
                     FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card), RawPlayedRoomUnits(card),
                     forgeCountScalingTraits: ForgeCountScalingTraits(card),
                     rawCostOverride: rawCost == data.GetCost() ? null : rawCost, canBeCopied: card.CanBeCopied(),
-                    trainHealScalingTraits: TrainHealScalingTraits(card));
+                    trainHealScalingTraits: TrainHealScalingTraits(card), graftedEquipmentCardId: UnitGraftProbe.Known(data.GetID()) &&
+                        card.GetCardStateModifiers().GraftedEquipmentCardState is CardState graft ? cardId(graft) : (int?)null);
                 CardPlayRule definition = BattleActionProbe.Definition(data);
                 CardPlayRule rule = CardModifierModel.Resolve(definition, state);
                 int handCost = rule.Cost;
@@ -71,10 +72,21 @@ namespace MonsterTrain2Poju.Probe
                 // CardState's displayed attack excludes an upgrade's DamageBuff;
                 // that field only contributes after CharacterState applies it.
                 int cardAttack = rule.SpawnUnit?.BaseAttack ?? 0;
+                int cardHealth = rule.SpawnUnit?.Health ?? 0;
                 if (definition.SpawnUnit != null && state.Permanent.Upgrades.Concat(state.Temporary.Upgrades).Any(upgrade => upgrade.DamageBuff != 0))
                     cardAttack = CardModifierModel.UpgradedStat(definition.SpawnUnit.BaseAttack, "Damage", true, state.Permanent, state.Temporary);
+                if (definition.SpawnUnit?.Modifiers?.Graft != null && !card.IsGraftSevered() &&
+                    card.TryGetGraftedEquipment(out CardState grafted, managers.GetSaveManager()))
+                {
+                    EquipmentDefinition gear = BattleActionProbe.Definition(managers.GetSaveManager().GetAllGameData().FindCardData(grafted.GetCardDataID())!).Equipment!;
+                    CardModifiers permanent = Modifiers(grafted.GetCardStateModifiers()), temporary = Modifiers(grafted.GetTemporaryCardStateModifiers());
+                    int damage = CardModifierModel.UpgradedStat(gear.Upgrades.Sum(upgrade => upgrade.Stats.Damage), "Damage", false, permanent, temporary);
+                    int health = CardModifierModel.UpgradedStat(gear.Upgrades.Sum(upgrade => upgrade.Stats.Health), "Health", false, permanent, temporary);
+                    cardAttack = CardModifierModel.UpgradedStat(definition.SpawnUnit.BaseAttack + damage, "Damage", true, state.Permanent, state.Temporary);
+                    cardHealth = CardModifierModel.UpgradedStat(definition.SpawnUnit.Health + health, "Health", true, state.Permanent, state.Temporary);
+                }
                 if (data.GetCardType() == CardType.Monster && rule.SpawnUnit != null && (card.GetSize() != rule.SpawnUnit.Size ||
-                    card.GetTotalAttackDamage() != cardAttack || (int)Math.Round(card.GetHealth()) != rule.SpawnUnit.Health))
+                    card.GetTotalAttackDamage() != cardAttack || (int)Math.Round(card.GetHealth()) != cardHealth))
                     interactions.Add("Unmodeled unit card statistics");
                 if (rule.Effect == "Spell")
                 {
@@ -87,7 +99,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId), state.ForgeCountScalingTraits, state.RawCostOverride, card.CanBeCopied(), state.TrainHealScalingTraits);
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId), state.ForgeCountScalingTraits, state.RawCostOverride, card.CanBeCopied(), state.TrainHealScalingTraits, state.GraftedEquipmentCardId);
             }).OrderBy(card => card.InstanceId).ToArray();
         }
 
@@ -140,7 +152,7 @@ namespace MonsterTrain2Poju.Probe
             return traits.Length == 0 ? null : traits;
         }
 
-        internal static CardModifiers Modifiers(CardStateModifiers modifiers, bool captureEmptyBox = false, int boxDepth = 0)
+        internal static CardModifiers Modifiers(CardStateModifiers modifiers, bool captureEmptyBox = false, int boxDepth = 0, bool captureGraft = false)
         {
             int Field(string name) => (int)AccessTools.Field(typeof(CardStateModifiers), name).GetValue(modifiers);
             var interactions = new List<string>();
@@ -159,7 +171,7 @@ namespace MonsterTrain2Poju.Probe
                     }).ToArray());
                 }
             }
-            if (modifiers.GraftedEquipmentCardState != null || Field("graftedEquipmentCardStateId") != -1) interactions.Add("Grafted equipment");
+            if (!captureGraft && (modifiers.GraftedEquipmentCardState != null || Field("graftedEquipmentCardStateId") != -1)) interactions.Add("Grafted equipment");
             int savedBoxCount = ((ICollection)AccessTools.Field(typeof(CardStateModifiers), "boxedCardStateIds").GetValue(modifiers)).Count;
             BoxedCardState[]? contents = null;
             if (modifiers.BoxedCardStates.Count > 0 || savedBoxCount > 0 || captureEmptyBox)

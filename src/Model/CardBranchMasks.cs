@@ -43,6 +43,8 @@ namespace MonsterTrain2Poju.Model
             KillTriggers = killTriggers == null ? null : Array.AsReadOnly(killTriggers.ToArray()); }
         internal CardMaskDescriptor WithBaseTraits(IReadOnlyList<CardTraitValue> traits) => new CardMaskDescriptor(
             Definition, BaseCost, traits, AuthoredCastEffects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements, SourceTraits, KillTriggers);
+        internal CardMaskDescriptor WithGraft(bool graft) => new CardMaskDescriptor(
+            Definition, BaseCost, BaseTraits, AuthoredCastEffects, Purified, graft, TemporaryTraits, PermanentReplacements, SourceTraits, KillTriggers);
         internal CardMaskDescriptor WithAuthoredCastEffects(IReadOnlyList<string> effects) => new CardMaskDescriptor(
             Definition, BaseCost, BaseTraits, effects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements, SourceTraits, KillTriggers);
     }

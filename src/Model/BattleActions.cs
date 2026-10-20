@@ -693,6 +693,10 @@ namespace MonsterTrain2Poju.Model
                         startingApplications: initialStatuses, enqueue: null, moonPhase: AdvanceFromSpawn, relicBirthEffect: ApplySummonDamage,
                         relicCharacterEffect: ApplyCharacterRelics);
                     if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
+                    RoomCombatResult grafted = UnitGraftModel.Apply(spawnTriggers.State!, spawned.Id);
+                    if (!grafted.Supported) return Unsupported(grafted.UnsupportedReason!);
+                    spawnTriggers = new RoomCombatResult(grafted.State, grafted.Outcome, 0,
+                        spawnTriggers.Events.Concat(grafted.Events).ToList());
                     if (RoomSpawnCopyModel.Active(spawnTriggers.State!))
                     {
                         var copyFrame = new TrainCombatState(train.Rooms.Select(room => room.RoomIndex == target.RoomIndex ? spawnTriggers.State! :

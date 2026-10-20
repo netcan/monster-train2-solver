@@ -55,6 +55,8 @@ namespace MonsterTrain2Poju.Probe
             var definitions = nativeCards.Select(card => card.GetCardDataID()).Concat(spawn.Waves.SelectMany(wave => wave.Candidates)
                 .SelectMany(group => group.Units).Concat(spawn.Treasures).SelectMany(unit => unit.Unit.Triggers)
                 .SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)).Distinct().ToArray();
+            definitions = definitions.Concat(nativeCards.Select(card => card.GetSpawnCharacterData()?.GetGraftedEquipment())
+                .Where(card => card != null).Select(card => card!.GetID())).Distinct().ToArray();
             definitions = definitions.Concat(nativeCards.SelectMany(card => card.GetCardStateModifiers().BoxedCardStates)
                 .Select(card => card.GetCardDataID())).Distinct().ToArray();
             definitions = definitions.Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
@@ -263,7 +265,8 @@ namespace MonsterTrain2Poju.Probe
                 CharacterData? unit = effect.GetParamCharacterData();
                 CharacterData[] pool = effect.GetParamCharacterDataPool()?.ToArray() ?? Array.Empty<CharacterData>();
                 if (unit == null && pool.Length == 0 ||
-                    effect.GetTargetMode() != TargetMode.Room || selfPurge)
+                    effect.GetTargetMode() != TargetMode.Room && !(data.GetID() == "d105aac6-843e-43eb-b1b0-098302e7a09a" &&
+                        effect.GetTargetMode() == TargetMode.DropTargetCharacter) || selfPurge)
                     interactions.Add("Additional/modified unit spawn");
                 CardData? fallback = !effect.GetParamBool() || unit == null ? null : Fallback(unit);
                 CardData? primarySource = effect.GetParamBool() ? fallback : data;
@@ -679,12 +682,11 @@ namespace MonsterTrain2Poju.Probe
         {
             EnemyDefinition definition = EnemySpawningProbe.Definition(unit);
             interactions.AddRange(definition.ExternalInteractions);
-            if (unit.GetGraftedEquipment() != null) interactions.Add("Grafted equipment");
             CombatUnit source = definition.Unit;
             UnitModifiers? m = source.Modifiers;
             var modifiers = m == null ? null : new UnitModifiers(m.AttackDamage, m.AttackDamageAdded, m.DamageBuff,
                 m.RawSize, m.EquipmentLimit, m.CanBeHealed, m.IsClone, m.Upgrades, m.HealthFromUpgrades, matchesSource,
-                m.DamageBuffFromStatusEffects, m.MagebladeDamagePerMagicPower, m.StatusAttackModifiers, m.IsChampion, m.SelfAttackRules, m.RoomResources, m.RoomStatuses, m.RoomTriggerCounts, m.SpawnCopySubtype);
+                m.DamageBuffFromStatusEffects, m.MagebladeDamagePerMagicPower, m.StatusAttackModifiers, m.IsChampion, m.SelfAttackRules, m.RoomResources, m.RoomStatuses, m.RoomTriggerCounts, m.SpawnCopySubtype, m.Graft);
             return new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
                 source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
                 statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: modifiers, isBoss: source.IsBoss,

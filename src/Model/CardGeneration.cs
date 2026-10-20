@@ -156,6 +156,7 @@ namespace MonsterTrain2Poju.Model
             if (source.NextCardId <= 0 || source.NextCardId == int.MaxValue || source.CardRegistry.Any(card => card.InstanceId >= source.NextCardId))
                 return Unsupported("Invalid detached card identity allocation.");
             if (copying.DataId != creation.DataId) return Unsupported("Detached clone definition differs from its source.");
+            if (copying.GraftedEquipmentCardId.HasValue) return Unsupported("Grafted source-card cloning requires its independent graft identity transition.");
             if (CardGraftedEquipmentModel.Present(copying)) return Unsupported("Grafted equipment cloning requires native private-state calibration.");
             if (copying.Permanent.MergedEquipment != null) return Unsupported("Merged equipment cloning requires separate native calibration.");
             string? error = CardModifierModel.UnsupportedReason(copying);
@@ -327,6 +328,7 @@ namespace MonsterTrain2Poju.Model
                 if (copying?.Permanent.MergedEquipment != null) return Unsupported("Merged equipment copying requires separate native calibration.");
                 if (copying != null)
                 {
+                    if (copying.GraftedEquipmentCardId.HasValue) return Unsupported("Grafted source-card copying requires its independent graft identity transition.");
                     if (CardGraftedEquipmentModel.Present(copying)) return Unsupported("Grafted equipment copying requires native private-state calibration.");
                     error = CardModifierModel.UnsupportedReason(copying);
                     if (error != null) return Unsupported(error);
@@ -451,6 +453,7 @@ namespace MonsterTrain2Poju.Model
                 .Any(stat => modifiers.Offsets.Value(stat) != 0);
         private static string? CopyabilityError(CardInstanceState card)
         {
+            if (card.GraftedEquipmentCardId.HasValue) return "Grafted source-card copying requires its independent graft identity transition.";
             if (CardGraftedEquipmentModel.Present(card)) return "Grafted equipment copying requires native private-state calibration.";
             if (!card.CanBeCopied.HasValue) return "Copy generation requires captured CardState.CanBeCopied state.";
             if (card.MaskDescriptor == null) return "Copy generation requires branch-owned source traits.";

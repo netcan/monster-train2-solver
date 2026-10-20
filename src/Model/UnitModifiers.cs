@@ -22,6 +22,7 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<UnitRoomStatusRule>? RoomStatuses { get; }
         public IReadOnlyList<TriggerCountModifier>? RoomTriggerCounts { get; }
         public string? SpawnCopySubtype { get; }
+        public UnitGraftRule? Graft { get; }
         public bool SpawnerMatchesDefinition { get; }
         public IReadOnlyList<CardUpgradeModifier> Upgrades { get; }
         public IReadOnlyList<StatisticCount> HealthFromUpgrades { get; }
@@ -31,7 +32,7 @@ namespace MonsterTrain2Poju.Model
             int? magebladeDamagePerMagicPower = null, IReadOnlyList<RelicStatusAttackModifier>? statusAttackModifiers = null,
             bool? isChampion = null, IReadOnlyList<UnitSelfAttackRule>? selfAttackRules = null,
             IReadOnlyList<UnitRoomResourceRule>? roomResources = null, IReadOnlyList<UnitRoomStatusRule>? roomStatuses = null,
-            IReadOnlyList<TriggerCountModifier>? roomTriggerCounts = null, string? spawnCopySubtype = null)
+            IReadOnlyList<TriggerCountModifier>? roomTriggerCounts = null, string? spawnCopySubtype = null, UnitGraftRule? graft = null)
         {
             AttackDamage = attackDamage; AttackDamageAdded = attackDamageAdded; DamageBuff = damageBuff; IsChampion = isChampion; RawSize = rawSize;
             EquipmentLimit = equipmentLimit; CanBeHealed = canBeHealed; IsClone = isClone; Upgrades = Array.AsReadOnly(upgrades.ToArray());
@@ -45,17 +46,18 @@ namespace MonsterTrain2Poju.Model
             RoomStatuses = roomStatuses == null ? null : Array.AsReadOnly(roomStatuses.ToArray());
             RoomTriggerCounts = roomTriggerCounts == null ? null : Array.AsReadOnly(roomTriggerCounts.ToArray());
             SpawnCopySubtype = spawnCopySubtype;
+            Graft = graft;
         }
         internal UnitModifiers WithStatusDamage(int amount) => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition, amount,
-            MagebladeDamagePerMagicPower, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype);
+            MagebladeDamagePerMagicPower, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft);
         internal UnitModifiers WithMagebladeDamage(int amount) => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition,
-            DamageBuffFromStatusEffects, amount, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype);
+            DamageBuffFromStatusEffects, amount, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft);
         internal UnitModifiers ResetStartingStatusCaches() => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition,
             DamageBuffFromStatusEffects.HasValue ? 0 : (int?)null,
-            MagebladeDamagePerMagicPower.HasValue ? 0 : (int?)null, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype);
+            MagebladeDamagePerMagicPower.HasValue ? 0 : (int?)null, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft);
     }
 
     public static class UnitModifierModel
@@ -177,7 +179,7 @@ namespace MonsterTrain2Poju.Model
                 var statuses = target.Statuses.ToDictionary(status => status.Id);
                 var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition, modifiers.DamageBuffFromStatusEffects,
-                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers, modifiers.IsChampion, modifiers.SelfAttackRules, modifiers.RoomResources, modifiers.RoomStatuses, modifiers.RoomTriggerCounts, modifiers.SpawnCopySubtype);
+                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers, modifiers.IsChampion, modifiers.SelfAttackRules, modifiers.RoomResources, modifiers.RoomStatuses, modifiers.RoomTriggerCounts, modifiers.SpawnCopySubtype, modifiers.Graft);
                 var statusCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
                 RoomCombatResult? healthFailure = null;
                 ChangeHealth(sign * upgrade.Stats.Health, !(remove && upgrade.Stats.Health > 0), !remove || upgrade.Stats.Health < 0);
@@ -225,7 +227,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition, nextModifiers.DamageBuffFromStatusEffects,
-                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers, modifiers.IsChampion, modifiers.SelfAttackRules, modifiers.RoomResources, modifiers.RoomStatuses, modifiers.RoomTriggerCounts, modifiers.SpawnCopySubtype);
+                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers, modifiers.IsChampion, modifiers.SelfAttackRules, modifiers.RoomResources, modifiers.RoomStatuses, modifiers.RoomTriggerCounts, modifiers.SpawnCopySubtype, modifiers.Graft);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
                     Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, nextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState, bumpRules: target.BumpRules, lastFeederId: target.LastFeederId, moonPhaseMask: target.MoonPhaseMask);

@@ -9918,6 +9918,25 @@ that combat search's terminal boundary. Existing Stasis and equipment combat
 batch chains still pass. Other unit-source copy destinations/counts remain
 guarded pending independent native witnesses.
 
+`full-battle-original-isolated-unit-grafts.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-020742-2b140829`.
+Five unchanged originals (Sanguine Assistant, Twisted Assistant, Pufferflesh,
+Erratic Assistant and Double-Edged Bearer) attach their authored grafts after
+birth triggers and before enchant/rally. Source-unit and equipment card IDs
+remain independent; the owned equipment enters Standby with its host condition.
+Card display validation includes graft weapon stats without adding them twice
+at birth. Automatic grafting adds the native unit marker; unrelated controls
+retain their equipment and statuses. Host-death returns choose hand/deck before
+severing, retaining the native host reference until canonical decision cleanup.
+Erratic Assistant's DropTargetCharacter spawn signature uses the same native
+selected-slot birth routine. Native DEPTH-PASS has zero capture/mismatch/
+unsupported/pending counters, with five independent equipment comparisons.
+Nine plays and five EndTurns pass sixteen immutable replay branches and a
+128-state search with zero unsupported attempts and equal serial/parallel best.
+The existing five-original grafted-equipment replacement/removal/death/reset
+fixture also passes. Triggered/generated/cloned graft births, already equipped
+graft duplication and added graft traits remain guarded pending native evidence.
+
 `full-battle-original-isolated-ethereal-seelie.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-014856-507727f2`.
 Unchanged Ethereal Seelie keeps its five authored Conduit stacks at birth.

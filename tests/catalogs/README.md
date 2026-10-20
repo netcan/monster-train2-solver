@@ -23,10 +23,14 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-014609-b72ae2d6/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,531 bytes, 12,095 unique nodes,
-SHA-256 `9c734fdf248045647e7895fdc465aa4e2bfa07a58db95059bd2d60343ee68c0d`.
-The latest refresh captures Ethereal Seelie's queued room status modifier.
+Source: `.probe-runs/full-battle-no-cards-20261021-020535-029e6ca8/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,729 bytes, 12,119 unique nodes,
+SHA-256 `85dc29cd11bec827d2f07dcc92235a8fd7b3c899695d7abbb1807484c6d49093`.
+The latest refresh captures the authored equipment/birth rules of Sanguine
+Assistant, Twisted Assistant, Pufferflesh, Erratic Assistant and Double-Edged
+Bearer. Only these five projections change after normalizing absent/null Graft
+fields on existing unit modifier descriptors; the other 663 are identical.
+The preceding refresh captures Ethereal Seelie's queued room status modifier.
 Only this projection changes; the other 667 projections are identical.
 The preceding refresh captures Stasis Crystal's native status-scaled PostCombat
 upgrade. Only this projection changes; the other 667 are identical.

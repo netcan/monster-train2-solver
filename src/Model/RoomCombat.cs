@@ -456,7 +456,7 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "decay", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
-            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted"
+            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -917,7 +917,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RoomCombatResult ApplyEquipment(RoomCombatState state, int targetId, int cardId, BattlePlayRules definitions, bool remove = false,
-            bool deferAbilityCallbacks = false, bool deferCallbacks = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            bool deferAbilityCallbacks = false, bool deferCallbacks = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            bool grafted = false)
         {
             string? error = Validate(state);
             CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
@@ -927,7 +928,7 @@ namespace MonsterTrain2Poju.Model
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Repeated raw attachment of the same equipment object is not modeled.");
             var callbacks = new List<QueuedCharacterTrigger>();
             var result = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: remove || deferCallbacks ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null,
-                resetPreviewTriggers: false, deferAbilityCallbacks: deferAbilityCallbacks, refreshPyre: refreshPyre).Equipment(targetId, cardId, definitions, remove);
+                resetPreviewTriggers: false, deferAbilityCallbacks: deferAbilityCallbacks, refreshPyre: refreshPyre).Equipment(targetId, cardId, definitions, remove, grafted);
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks);
         }
 
@@ -1870,7 +1871,7 @@ namespace MonsterTrain2Poju.Model
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
-            internal RoomCombatResult Equipment(int targetId, int cardId, BattlePlayRules definitions, bool remove)
+            internal RoomCombatResult Equipment(int targetId, int cardId, BattlePlayRules definitions, bool remove, bool grafted)
             {
                 WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
                 if (remove)
@@ -1902,6 +1903,15 @@ namespace MonsterTrain2Poju.Model
                             QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, unit.Freeze(), "OnEquipmentAddedToAny"));
                     }
                     QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(), "OnEquipmentAdded"));
+                    if (grafted && target.Count("unit_grafted_equipment") == 0)
+                    {
+                        CombatStatus? status = context!.StatusRules.FirstOrDefault(value => value.Id == "unit_grafted_equipment");
+                        if (status == null) { unsupportedReason = "Grafted birth requires its native marker status."; return Finish(RoomOutcome.Unsupported); }
+                        RoomCombatResult applied = StatusApplicationModel.ApplyRetained(CurrentRoom(), targetId, status.WithStacks(1), 0);
+                        if (!applied.Supported) return applied;
+                        ImportEnchantmentRoom(applied.State!);
+                        foreach (QueuedCharacterTrigger callback in applied.PendingCallbacks) QueueCallback(callback);
+                    }
                     context = context!.WithCard((context.FindCard(cardId) ?? card!).WithEquippedUnit(targetId));
                     if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 }
@@ -1939,6 +1949,9 @@ namespace MonsterTrain2Poju.Model
                             EquipmentUpgradeKey(cardId, definitions), index < 0 ? (int?)null : index)) return false;
                     }
                     SetEquipment(target, target.Source.EquipmentCards.Where(id => id != cardId).ToArray());
+                    if (target.Count("unit_grafted_equipment") > 0 && !target.Source.EquipmentCards.Any(id =>
+                        context!.FindCard(id) is CardInstanceState remaining && CardGraftedEquipmentModel.Present(remaining)))
+                        RemoveStatus(target, "unit_grafted_equipment", 1);
                     QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, target.Freeze(), "OnEquipmentRemoved"));
                 }
                 CardInstanceState? card = context?.FindCard(cardId);

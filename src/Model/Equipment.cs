@@ -103,7 +103,7 @@ namespace MonsterTrain2Poju.Model
             CardInstanceState? instance = context.FindCard(card.InstanceId);
             bool intactGraft = instance?.MaskDescriptor?.BaseTraits.Any(trait => trait.RuntimeType == CardGraftedEquipmentModel.Trait && trait.GraftSevered == false) == true;
             if (instance != null && CardGraftedEquipmentModel.Present(instance))
-                context = context.WithCard(CardGraftedEquipmentModel.SetSevered(instance, true).WithEquippedUnit(0));
+                context = context.WithCard(CardGraftedEquipmentModel.SetSevered(instance, true));
             if (condition.ReturnToHand || intactGraft)
                 cards = new CardCycleState(cards.Hand.Count < context.MaxHandSize ? new[] { card }.Concat(cards.Hand).ToArray() : cards.Hand,
                     cards.Hand.Count < context.MaxHandSize ? cards.Draw : cards.Draw.Concat(new[] { card }).ToArray(), cards.Discard,

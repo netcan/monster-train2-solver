@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
             public int UnitId { get; set; }
             public int CardId { get; set; }
             public bool Remove { get; set; }
+            public bool Grafted { get; set; }
             public bool Completed { get; set; }
             public bool DeferAbilityCallbacks { get; set; }
             public bool QueueRunning { get; set; }
@@ -25,7 +26,7 @@ namespace MonsterTrain2Poju.Probe
             public string? UnsupportedReason { get; set; }
         }
         internal static readonly List<Record> Records = new List<Record>();
-        private static IEnumerator Wrap(IEnumerator native, CharacterState host, CardState? card, bool remove)
+        private static IEnumerator Wrap(IEnumerator native, CharacterState host, CardState? card, bool remove, bool grafted = false)
         {
             FullBattleTrace? trace = FullBattleTrace.Active;
             Record? record = null; RoomCombatResult? predicted = null; RoomState? room = null;
@@ -35,12 +36,12 @@ namespace MonsterTrain2Poju.Probe
                 {
                     room = host.GetCurrentRoom();
                     var decision = trace.CaptureDecision();
-                    record = new Record { UnitId = trace.UnitId(host), CardId = card == null ? 0 : trace.CardId(card), Remove = remove,
+                    record = new Record { UnitId = trace.UnitId(host), CardId = card == null ? 0 : trace.CardId(card), Remove = remove, Grafted = grafted,
                         Before = trace.Capture(room), Definitions = decision.PlayRules!,
                         DeferAbilityCallbacks = AllGameManagers.Instance.GetReplayManager().IsCardPlaying() || AllGameManagers.Instance.GetCombatManager()!.IsRunningTriggerQueue,
                         QueueRunning = AllGameManagers.Instance.GetCombatManager()!.IsRunningTriggerQueue };
                     Records.Add(record);
-                    predicted = RoomCombatModel.ApplyEquipment(record.Before, record.UnitId, record.CardId, record.Definitions, remove, record.DeferAbilityCallbacks, record.QueueRunning);
+                    predicted = RoomCombatModel.ApplyEquipment(record.Before, record.UnitId, record.CardId, record.Definitions, remove, record.DeferAbilityCallbacks, record.QueueRunning, grafted: grafted);
                     record.UnsupportedReason = predicted.UnsupportedReason;
                 }
                 catch (Exception error) { trace.CaptureFailure(error); }
@@ -57,7 +58,7 @@ namespace MonsterTrain2Poju.Probe
         }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.AddEquipment))]
         private static class AddPatch
-        { private static void Postfix(CharacterState __instance, CardState equipmentCard, ref IEnumerator __result) => __result = Wrap(__result, __instance, equipmentCard, false); }
+        { private static void Postfix(CharacterState __instance, CardState equipmentCard, bool grafted, ref IEnumerator __result) => __result = Wrap(__result, __instance, equipmentCard, false, grafted); }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.RemoveEquipment))]
         private static class RemovePatch
         { private static void Postfix(CharacterState __instance, CardState equipmentCard, ref IEnumerator __result) => __result = Wrap(__result, __instance, equipmentCard, true); }
