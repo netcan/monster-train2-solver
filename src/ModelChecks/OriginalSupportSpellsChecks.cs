@@ -676,6 +676,7 @@ internal static class OriginalSupportSpellsChecks
                 "Unplayed Ephemeral must override Freeze and purge each control exactly once during natural hand discard.");
         }
         UnitRoomStatusChecks.Native(root, originals);
+        ConditionalUnitUpgradeChecks.Native(root, originals);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);

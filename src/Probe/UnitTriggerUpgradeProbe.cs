@@ -8,7 +8,8 @@ namespace MonsterTrain2Poju.Probe
     internal static class UnitTriggerUpgradeProbe
     {
         internal static bool Known(string type) => type == "CardEffectAddCardUpgradeToUnits" ||
-            type == "CardEffectAddTempCardUpgradeToUnits" || type == "CardEffectRemoveTempUpgradeFromUnit" || type == "CardEffectBuffEquipment";
+            type == "CardEffectAddTempCardUpgradeToUnits" || type == "CardEffectRemoveTempUpgradeFromUnit" || type == "CardEffectBuffEquipment" ||
+            type == "CardEffectAddCardUpgradeToUnitsOnMoonPhase" || type == "CardEffectAddCardUpgradeToUnitsPerDragonsHoard";
 
         internal static CardActionEffect? Capture(CardEffectState effect, List<string> interactions) =>
             Definition(effect.GetSourceCardEffectData(), interactions);
@@ -19,13 +20,15 @@ namespace MonsterTrain2Poju.Probe
             // AddCardUpgradeToUnits and its temporary subclass never read the
             // shared editor scaling/copy/subtype fields. Target filters remain
             // independent and are captured below; range initialization is stateful.
-            bool ignoresSharedFields = effect.GetEffectStateName() is "CardEffectAddCardUpgradeToUnits" or "CardEffectAddTempCardUpgradeToUnits";
+            bool moon = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsOnMoonPhase";
+            bool hoard = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerDragonsHoard";
+            bool ignoresSharedFields = moon || hoard || effect.GetEffectStateName() is "CardEffectAddCardUpgradeToUnits" or "CardEffectAddTempCardUpgradeToUnits";
             if (effect.GetUseIntRange() || !ignoresSharedFields && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
                 effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
                 effect.GetUseMagicPowerMultiplier() || !effect.GetParamSubtype().IsNone))
                 interactions.Add("Unmodeled triggered unit upgrade parameters");
             bool equipment = effect.GetEffectStateName() == "CardEffectBuffEquipment";
-            bool scaleUpgrade = (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" || equipment) && effect.GetParamBool();
+            bool scaleUpgrade = (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" || hoard || equipment) && effect.GetParamBool();
             CardUpgradeModifier? upgrade = null;
             if (effect.GetParamCardUpgradeData() == null) interactions.Add("Missing triggered unit upgrade definition");
             else
@@ -39,7 +42,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.AddRange(upgrade.ExternalInteractions);
             }
             var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
-            string type = equipment ? "BuffEquipment" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
+            string type = moon ? "UnitUpgradeOnMoonPhase" : hoard ? "UnitUpgradePerHoard" : equipment ? "BuffEquipment" : effect.GetEffectStateName() == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade";
             return new CardActionEffect(type, effect.GetTargetMode().ToString(), effect.GetParamInt(),
                 effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
                 Array.Empty<CombatStatus>(), upgrade, equipment ? "TemporaryUntilUnitDeath" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString(),

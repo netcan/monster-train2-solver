@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-233223-8f259988/card-catalog.mt2f`.
-The committed archive is byte-identical: 98,078 bytes, 11,847 unique nodes,
-SHA-256 `415ba963d21bc006ba4a10ade6c131d3b5916dd36f3ffc875868c09e0783efd2`.
-The latest refresh captures Vinemother's native temporary Sting upgrade and
+Source: `.probe-runs/full-battle-no-cards-20261020-234059-1108d0b1/card-catalog.mt2f`.
+The committed archive is byte-identical: 98,090 bytes, 11,862 unique nodes,
+SHA-256 `a1d2ffbbbd63e05715fd9667baefb0517a8f676a66035d1f26759800c65ce7c1`.
+The latest refresh captures Greed Dragon's Hoard upgrade and Shadeguard's
+Moon-phase upgrade. Exactly these two card projections change; all other 666
+decoded card definitions remain identical.
+The preceding refresh captures Vinemother's native temporary Sting upgrade and
 OnlyStings filter. Only Vinemother's card projection changes; the other 667
 decoded card definitions remain identical.
 The preceding refresh captures Deranged Brute, Shard Channeler and Lead Songbird's

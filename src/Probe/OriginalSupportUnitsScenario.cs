@@ -121,6 +121,8 @@ namespace MonsterTrain2Poju.Probe
         private static void PrepareIsolatedUnits(AllGameManagers managers, ManualLogSource log, string[] unitIds, string label)
         {
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
+            if (unitIds.Contains("0060b286-4716-49e0-9714-3fd7811b9f72"))
+            { save.SetDragonsHoardCap(4); save.SetDragonsHoardAmount(2); }
             if (unitIds.Any(id => id is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "4e517f8b-3caa-4a2c-98ba-ebee99075eed"))
             {
                 save.SetForgePoints(0); save.SetForgeToggleActive(true);

@@ -181,6 +181,7 @@ internal static class OriginalSupportUnitsChecks
                     "The death-summon batch must fit unchanged units behind separate anchors at native capacity five.");
             }
             if (expectedIds.Contains("8917df91-1517-4490-abd1-b58a065807fe")) VinemotherChecks.Native(root);
+            ConditionalUnitUpgradeChecks.Native(root, expectedIds);
             RecordedBattleChecks.Native(root);
             return;
         }
@@ -469,6 +470,7 @@ internal static class OriginalSupportUnitsChecks
         if (expectedId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4") appendPosition = 0;
         bool juggernautXCost = expectedId == JuggernautId;
         bool healthAdjustedOnSpawn = expectedId == SteelsingerId;
+        int hoardBirthBonus = expectedId == "0060b286-4716-49e0-9714-3fd7811b9f72" ? unitBefore.Spawn.Train.Context!.QueryFrame!.DragonsHoard!.Value * 10 : 0;
         Require(unitCard.DataId == expectedId && unitAction.RoomIndex is >= 0 and < 3 && unitAction.PlayerPosition == appendPosition &&
             unitAction.TargetUnitId == 0 && targetRule.Enabled && !targetRule.IsPyre && !targetRule.SummonBlocked && targetRule.PlayerSlots > appendPosition &&
             targetRoom.Units.Where(unit => unit.Team == CombatTeam.Player).Sum(unit => unit.Size) + template.Size <= targetRule.PlayerCapacity &&
@@ -476,8 +478,8 @@ internal static class OriginalSupportUnitsChecks
             rule.Effect == "SpawnMonster" &&
             !string.IsNullOrEmpty(rule.AssetKey) && (expectedAsset == null || rule.AssetKey == expectedAsset) &&
             spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Size == template.Size &&
-            (juggernautXCost || spawnedUnit.Health == template.Health && (healthAdjustedOnSpawn || spawnedUnit.MaxHealth == template.MaxHealth) &&
-                spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage),
+            (juggernautXCost || spawnedUnit.Health == template.Health + hoardBirthBonus && (healthAdjustedOnSpawn || spawnedUnit.MaxHealth == template.MaxHealth + hoardBirthBonus) &&
+                spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage + hoardBirthBonus),
             expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
         if (rule.AssetKey is "DeathmetalHymnist" or "PunkrockReveler" or "UpbeatWarbler")
         {

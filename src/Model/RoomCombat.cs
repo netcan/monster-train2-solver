@@ -1306,11 +1306,17 @@ namespace MonsterTrain2Poju.Model
                             continue;
                         }
                         if (effect.Type == "CardEffectAddCardUpgradeToUnits" || effect.Type == "CardEffectAddTempCardUpgradeToUnits" ||
-                            effect.Type == "CardEffectRemoveTempUpgradeFromUnit" || effect.Type == "CardEffectBuffEquipment")
+                            effect.Type == "CardEffectRemoveTempUpgradeFromUnit" || effect.Type == "CardEffectBuffEquipment" ||
+                            effect.Type is "CardEffectAddCardUpgradeToUnitsOnMoonPhase" or "CardEffectAddCardUpgradeToUnitsPerDragonsHoard")
                         {
                             CardActionEffect? action = effect.UnitUpgrade;
-                            if (action?.Upgrade == null || action.Type != (effect.Type == "CardEffectBuffEquipment" ? "BuffEquipment" : effect.Type == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade"))
+                            if (action?.Upgrade == null || action.Type != (effect.Type == "CardEffectAddCardUpgradeToUnitsOnMoonPhase" ? "UnitUpgradeOnMoonPhase" :
+                                effect.Type == "CardEffectAddCardUpgradeToUnitsPerDragonsHoard" ? "UnitUpgradePerHoard" : effect.Type == "CardEffectBuffEquipment" ? "BuffEquipment" : effect.Type == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade"))
                                 return "Missing triggered unit upgrade definition.";
+                            if (action.Type == "UnitUpgradeOnMoonPhase" && (action.Value is < 0 or > 3 || state.Context?.QueryFrame?.MoonPhase is not (1 or 2)))
+                                return "Moon-dependent unit upgrades require a captured phase and a calibrated mask.";
+                            if (action.Type == "UnitUpgradePerHoard" && state.Context?.QueryFrame?.DragonsHoard == null)
+                                return "Hoard-dependent unit upgrades require the current Hoard amount.";
                             if (state.Context?.CardInstances == null || unit.Modifiers == null)
                                 return "Triggered unit upgrades require unit and card modifier state.";
                             if (effect.Type == "CardEffectBuffEquipment" && unit.EquipmentCards == null)
@@ -4005,10 +4011,13 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                int repeats = action.Type == "UnitUpgradePerHoard" ? Math.Max(0, context!.QueryFrame!.DragonsHoard!.Value) * targets.UnitIds.Count : 1;
+                for (int repetition = 0; repetition < repeats; repetition++)
                 foreach (int targetId in targets.UnitIds)
                 {
                     WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == targetId && (unit.Alive || action.Target == "Self" && unit == actor || action.Target == "LastAttackedCharacter"));
                     if (target == null) continue;
+                    if (action.Type == "UnitUpgradeOnMoonPhase" && !UpgradeMoonMatches(action, target)) continue;
                     if (action.Type == "BuffEquipment")
                     {
                         if (!ApplyTriggeredEquipmentBuff(actor, target, action, kind, parentEquipmentId)) return false;
@@ -4051,7 +4060,12 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }
 
+            private bool UpgradeMoonMatches(CardActionEffect action, WorkingUnit unit) => action.Value == 0 ||
+                (RoomMoonPhaseModel.Effective(context, unit.RoomIndex, context!.QueryFrame!.MoonPhase!.Value) & action.Value) != 0;
+
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type == "UnitUpgradePerHoard" ? targets.UnitIds.Count > 0 && context?.QueryFrame?.DragonsHoard > 0 :
+                action.Type == "UnitUpgradeOnMoonPhase" ? targets.UnitIds.Any(id => units.Any(unit => unit.Source.Id == id && UpgradeMoonMatches(action, unit))) :
                 action.Type == "HealTrain" ? context?.EnergyState?.PyreAlive == true &&
                     (!source.Preview || context.RoomCapacities?.Any(room => room.RoomIndex == source.RoomIndex && room.IsPyre) == true) :
                 action.Type == "PlayUnitTrigger" ? true :

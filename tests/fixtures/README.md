@@ -9686,3 +9686,22 @@ through sixteen immutable branches. Bounded search has zero unsupported
 attempts and equal serial/parallel results; the original Great Decay deck
 upgrade fixture retains its focused replay. Exhausted-pile membership and
 Vinemother's unused unit ability are not positive claims of this fixture.
+
+`full-battle-original-isolated-greed-dragon.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-233912-d36acb10`;
+`full-battle-original-isolated-greed-dragon-zero.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-234040-0b3b41fb`;
+`full-battle-original-isolated-shadeguard.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-233912-b31573cd`.
+Unchanged Greed Dragon's OnSpawn applies two separate native +10/+10 upgrades
+at Hoard two, producing 40/55; Hoard zero leaves it 20/35 and does not fire the
+trigger. Unchanged Shadeguard's PostCombat applies its +10/+15 upgrade once
+under New Moon, with two opposite-phase controls. The terminal victory skips
+the callback. The shared upgrade pipeline preserves per-target upgrade objects
+and native lifetimes; phase matching uses the current target room's mask.
+These fixtures calibrate the authored Self targets. Multi-target Hoard loops
+and room phase-mask combinations need their separate positive witnesses.
+All three battles finish with DEPTH-PASS, settled victories and zero capture/
+mismatch/unsupported/pending counters. Focused replay covers sixteen immutable
+branches each; bounded search has no unsupported attempts and equal serial/
+parallel results.
