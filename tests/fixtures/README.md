@@ -7830,6 +7830,26 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-eel-gorgon.mt2f
 ```
 
+### Original Entombed Explosive
+
+`full-battle-original-isolated-entombed-explosive.mt2f` records an unchanged
+Entombed Explosive behind three zero-cost Steward anchors. It pays the original
+cost 1 and preserves the native 0/1, size-1 birth and captured OnDeath definition
+(`Damage 65` to `FrontInRoom`). The 38.74-second native Instant battle won with
+zero capture failures, mismatches, unsupported stages or pending records; four
+plays span five EndTurns. The 27,882-byte archive contains 3,728 unique nodes and
+has SHA-256
+`5446cd92d81e5f92e8dbf4adcf096427ad6e9ad2e4f9697efb8b9c9fbb449d6b`.
+Replay and search pass: four decisions match, 16 immutable branches and 128
+serial/parallel states. The protected unit remained at 1 HP, so its native death
+damage definition was captured but did not trigger in this encounter.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 9a8943a3-d6a6-454b-91d4-d6d08dd6fd81 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-entombed-explosive.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-entombed-explosive.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and

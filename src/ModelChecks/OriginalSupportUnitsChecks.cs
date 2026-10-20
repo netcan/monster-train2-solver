@@ -12,6 +12,7 @@ internal static class OriginalSupportUnitsChecks
     private const string BrandedWarriorId = "276fdd51-4bb8-4810-9bbf-cb663522b70f";
     private const string ColdstrikeSirenId = "ff11e59c-d696-4aea-b626-432574508f40";
     private const string EelGorgonId = "eaaae54e-58ed-4926-b5bb-a0b36404c4b7";
+    private const string EntombedExplosiveId = "9a8943a3-d6a6-454b-91d4-d6d08dd6fd81";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -346,9 +347,22 @@ internal static class OriginalSupportUnitsChecks
                         RemoveHalfStatusEffects: false, Range: null } && effect.Action.Statuses.Count == 0),
                 "Eel Gorgon must retain its native 10/5 size-2 birth and self-only PostCombat cleanse definitions for Positive, Negative and Persistent statuses.");
         }
+        if (expectedId == EntombedExplosiveId)
+        {
+            CombatTrigger onDeath = template.Triggers.Single(trigger => trigger.Kind == "OnDeath");
+            CombatEffect damage = onDeath.Effects.Single();
+            Require(rule.AssetKey == "EntombedExplosive" && template.AssetKey == "MonsterTombExploding" &&
+                rule.Cost == 1 && template.Health == 1 && template.MaxHealth == 1 && template.Modifiers.AttackDamage == 0 && template.Size == 1 &&
+                damage.Type == "CardEffectDamage" && damage.Value == 65 && damage.Action is { Type: "Damage", Target: "FrontInRoom", Value: 65,
+                    AllowEnemy: true, AllowPlayer: false, Range: null } && damage.Action.Statuses.Count == 0 &&
+                !onDeath.HasTriggered && spawnedUnit.Health == 1 && !spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnDeath").HasTriggered,
+                "Entombed Explosive must preserve its native 1-cost 0/1 birth and untriggered 65 FrontInRoom OnDeath damage definition.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
+        else if (expectedId == EntombedExplosiveId)
+            Console.WriteLine("ORIGINAL-ENTOMBED-EXPLOSIVE PASS: original 1-cost 0/1 birth and captured 65 FrontInRoom OnDeath damage; the protected unit survived, so damage did not trigger.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
