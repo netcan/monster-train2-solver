@@ -9394,3 +9394,23 @@ The full native battle has settled victory, DEPTH-PASS and zero failure
 counters, with sixteen immutable replay branches and bounded search parity.
 Bog Wurmling's original CostTypeNonPlayable stays explicit: its positive
 generated-unit witness does not establish a direct hand play.
+
+`full-battle-original-isolated-dante.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-200938-68249fc7`.
+Unchanged Dante generates one permanent Candle into Draw on spawn, updates
+permanent deck membership, advances Battle RNG and then gets one Multistrike
+from the newly present Blight. Character-trigger AddRunCard shares the existing
+permanent generation model, skips preview, and retains its native ability to
+apply after the boss dies. Unused status-effect card pools are not serialized
+as generation inputs. The checker requires this positive generation ordering.
+
+`full-battle-original-isolated-balmabello.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-200839-dc49d9de`.
+The unchanged Ritual of Battle applies twelve Rage to original Balmabello;
+Scrap for Parts sacrifices that unit. Its native death callback removes the
+source buffs and copies all twelve stacks to the surviving same-floor anchor,
+preserving other-floor controls. The deterministic friendly-copy rule uses
+native dictionary status order, positive visible statuses excluding Horde,
+and reversed target order. Existing Pyregel/Decay distribution paths keep
+their own gates. Both battles have settled native victories, DEPTH-PASS,
+zero failure counters, sixteen immutable replay branches and search parity.

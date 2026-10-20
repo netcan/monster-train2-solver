@@ -80,6 +80,10 @@ namespace MonsterTrain2Poju.Probe
                 if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
                     candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                         .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
+                if (index >= 4 && IsolatedIds.Contains("75ce6859-dd29-4c88-a67a-5159a753f2db") &&
+                    source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey is "RitualOfBattle" or "ScrapForParts")
+                    candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .Any(unit => unit.Id == action.TargetUnitId && unit.AssetKey == "MonsterBalmabello"));
                 PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
                     playerPosition: index < 3 ? 0 : -1) : candidates.FirstOrDefault();
                 BattleActionResult? isolatedResult = chosen == null ? null : BattleActionModel.PlayCard(source, chosen);

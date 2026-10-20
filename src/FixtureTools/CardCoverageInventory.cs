@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "a751f52fd1db37b647c7aca9750103e374752ef98280a55fee0d1b6248d9d765";
+    private const string CatalogHash = "ac9ef511de49813ad18a366b75f669a37245668f506a3ab1ca75d97b191a92d6";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -247,6 +247,14 @@ internal static class CardCoverageInventory
     private static bool CalibratedSourceTrait(FixtureValue trait, string cardId)
     {
         string type = Text(trait, "Type");
+        if (cardId == "5afcb98c-e53a-4f70-b2f8-70b21bf2303c")
+            return type == "CardTraitScalingAddStatusEffect" && trait.GetProperty("Int").GetInt32() == 1 &&
+                trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
+                !Flag(trait, "Bool") && Text(trait, "Str") == "" && trait.GetProperty("Float").GetDouble() == 0 &&
+                !Flag(trait, "Scaling") && Text(trait, "TrackedValue") == "TypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
+                Strings(trait, "StatusEffectIds").SequenceEqual(new[] { "multistrike" }) &&
+                new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag", "SpecificCardDataId", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
         if (cardId == "c6484604-b077-43ce-84a4-0179d2f36352")
             return type == "CardTraitShowCardTargets" && trait.GetProperty("Int").GetInt32() == 0 &&
                 trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&

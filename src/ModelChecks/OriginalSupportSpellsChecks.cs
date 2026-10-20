@@ -23,6 +23,10 @@ internal static class OriginalSupportSpellsChecks
             if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
                 candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
+            if (index >= 4 && ids.Any(id => source.Spawn.Train.Context!.FindCard(id)?.DataId == "75ce6859-dd29-4c88-a67a-5159a753f2db") &&
+                source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey is "RitualOfBattle" or "ScrapForParts")
+                candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId && unit.AssetKey == "MonsterBalmabello"));
             PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
                 playerPosition: index < 3 ? 0 : -1) : candidates.FirstOrDefault();
             return chosen != null && BattleActionModel.PlayCard(source, chosen).Supported ? chosen : null;
@@ -158,6 +162,18 @@ internal static class OriginalSupportSpellsChecks
                 (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
                 "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            if (rule.AssetKey == "DanteTheDependable")
+            {
+                CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;
+                CombatUnit dante = after.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.SpawnerCardId == ids[i]);
+                CardToken candle = changed.Cards.Draw.Single();
+                Require(old.Cards.Draw.Count == 0 && candle.InstanceId == old.NextCardId && changed.NextCardId == old.NextCardId + 1 &&
+                    candle.DataId == "913694e9-bace-4480-8691-24f699ae583e" && changed.Statistics!.DeckCards!.Contains(candle.InstanceId) &&
+                    !old.Statistics!.DeckCards!.Contains(candle.InstanceId) && dante.Status("multistrike")?.Stacks == 1 &&
+                    dante.Triggers.Single(trigger => trigger.Kind == "OnSpawn").Effects.Single(effect => effect.Type == "CardEffectAddRunCard").Generation?.Permanent == true &&
+                    !old.BattleRng.Equals(changed.BattleRng),
+                    "Dante must add one permanent Candle to Draw before computing positive Multistrike from its new Blight count.");
+            }
             if (rule.AssetKey == "IntentOnDeath")
             {
                 CombatUnit oldTarget = before.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Id == action.TargetUnitId),
@@ -185,17 +201,30 @@ internal static class OriginalSupportSpellsChecks
                 CombatUnit victim = before.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Id == action.TargetUnitId);
                 CardToken drawn = before.Spawn.Train.Context!.Cards.Draw.Single();
                 CardInstanceState upgraded = after.Spawn.Train.Context!.FindCard(drawn.InstanceId)!;
-                Require(victim.EquipmentCards?.Count == 1 && after.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != victim.Id) &&
+                Require((victim.EquipmentCards?.Count == 1 || victim.AssetKey == "MonsterBalmabello" && originals.Contains("75ce6859-dd29-4c88-a67a-5159a753f2db")) &&
+                    after.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != victim.Id) &&
                     after.Spawn.Train.Context.Cards.Hand.Any(token => token.InstanceId == drawn.InstanceId) && after.Spawn.Train.Context.Cards.Draw.Count == 0 &&
                     upgraded.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ScrapForParts_Upgrade" && upgrade.Stats.Damage == 40 && upgrade.Stats.Cost == -99) &&
                     after.Spawn.Train.Context.Cards.NextDrawUpgrades?.Count == 0,
-                    "Scrap for Parts must sacrifice the equipped host, positively draw the waiting unit, apply forty attack/free cost, and clear its upgrade queue.");
+                    "Scrap for Parts must sacrifice its authored host, positively draw the waiting unit, apply forty attack/free cost, and clear its upgrade queue.");
                 if (originals.Contains("fea8a847-88a1-4d77-b34d-83dcb3199d79"))
                     Require(after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Purged").Cards.Any(token => token.InstanceId == victim.SpawnerCardId) &&
                         after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.All(token => token.InstanceId != victim.SpawnerCardId) &&
                         after.Spawn.Train.Context.Statistics!.Value(victim.SpawnerCardId, "TimesExhausted") ==
                             before.Spawn.Train.Context.Statistics!.Value(victim.SpawnerCardId, "TimesExhausted"),
                         "Void Arms must purge its dying host's card before standby exhaustion and preserve the zero exhaustion count.");
+            }
+            if (rule.AssetKey == "ScrapForParts" && originals.Contains("75ce6859-dd29-4c88-a67a-5159a753f2db"))
+            {
+                CombatUnit victim = before.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Id == action.TargetUnitId);
+                Require(victim.AssetKey == "MonsterBalmabello" && victim.Status("buff")?.Stacks == 12 &&
+                    after.Spawn.Train.Rooms[action.RoomIndex].Units.All(unit => unit.Id != victim.Id) &&
+                    before.Spawn.Train.Rooms[action.RoomIndex].Units.Where(unit => unit.Team == CombatTeam.Player && unit.Id != victim.Id)
+                        .All(unit => after.Spawn.Train.Rooms[action.RoomIndex].Units.Single(changed => changed.Id == unit.Id).Status("buff")?.Stacks ==
+                            (unit.Status("buff")?.Stacks ?? 0) + 12) &&
+                    before.Spawn.Train.Rooms.Where(room => room.RoomIndex != action.RoomIndex).SelectMany(room => room.Units)
+                        .Where(unit => unit.Team == CombatTeam.Player).All(unit => Json(unit) == Json(after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(changed => changed.Id == unit.Id))),
+                    "Balmabello must positively copy all twelve Rage stacks to surviving floor allies on death and preserve other-floor controls.");
             }
             if (rule.AssetKey == "SacrificialRessurection")
             {

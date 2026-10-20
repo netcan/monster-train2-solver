@@ -1319,13 +1319,13 @@ namespace MonsterTrain2Poju.Model
                                 return "Dragon's Hoard changes with resource-scaled unit upgrades require native stat refresh.";
                             continue;
                         }
-                        if (effect.Type != "CardEffectRewardGold" && effect.Type != "CardEffectAddBattleCard")
+                        if (effect.Type is not ("CardEffectRewardGold" or "CardEffectAddBattleCard" or "CardEffectAddRunCard"))
                             return "Unmodeled effect " + effect.Type + " on " + unit.AssetKey + " trigger " +
                                 trigger.Kind + " in room " + state.RoomIndex;
                         if (state.Context == null) return "Unit effects require shared battle context.";
                         if (effect.Type == "CardEffectRewardGold" && effect.Value < 0)
                             return "Conditional gold costs are not modeled.";
-                        if (effect.Type == "CardEffectAddBattleCard" &&
+                        if (effect.Type is "CardEffectAddBattleCard" or "CardEffectAddRunCard" &&
                             (effect.Generation == null && effect.CardPool.Count == 0 || !new[] { "DeckPile", "DeckPileTop", "DeckPileRandom",
                                 "HandPile", "DiscardPile" }.Contains(effect.Destination)))
                             return "Unmodeled generated card destination or empty pool.";
@@ -3377,7 +3377,8 @@ namespace MonsterTrain2Poju.Model
                                 if (amount != frame.DragonsHoard.Value)
                                     context = context.WithQueryFrame(frame.With(dragonsHoard: amount));
                             }
-                            else if (effect.Type == "CardEffectAddBattleCard" && !source.Preview && !battleWon && context != null && context.AllScenarioBossesDead != true &&
+                            else if (effect.Type is "CardEffectAddBattleCard" or "CardEffectAddRunCard" && !source.Preview && context != null &&
+                                (effect.Type == "CardEffectAddRunCard" || !battleWon && context.AllScenarioBossesDead != true) &&
                                 (effect.Generation?.RequireHandSpace != true || context.Cards.Hand.Count < context.MaxHandSize)) AddCards(unit, effect);
                         }
                         if (effects.Length > 0 && context?.TriggerCounts?.ReplayHistory is BattleTriggerHistory history && history.CapturedKinds.Contains(kind))

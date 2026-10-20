@@ -140,16 +140,17 @@ namespace MonsterTrain2Poju.Probe
                     (effect.GetParamBool() || effect.GetAdditionalParamInt() != 0))
                     interactions.Add("Unmodeled triggered null-effect forwarding or targeting");
                 // AddStatusEffect never reads these shared editor fields (Void Excavator retains an unused upgrade).
-                if (effect.GetEffectStateName() is not ("CardEffectAddBattleCard" or "CardEffectAddStatusEffect") && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
+                if (effect.GetEffectStateName() is not ("CardEffectAddBattleCard" or "CardEffectAddRunCard" or "CardEffectAddStatusEffect") && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
                     effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectSpawnMonster")) interactions.Add("Spawned effect modifiers");
                 var pool = new List<CardData>();
-                CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
-                    AllGameManagers.Instance!.GetRelicManager(), ref pool);
+                if (effect.GetEffectStateName() is "CardEffectAddBattleCard" or "CardEffectAddRunCard")
+                    CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
+                        AllGameManagers.Instance!.GetRelicManager(), ref pool);
                 return new CombatEffect(effect.GetEffectStateName(), AbilityLifecycleProbe.Known(effect.GetEffectStateName()) ? 0 : effect.GetEffectStateName() is "CardEffectHeal" or "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" ? Math.Max(0, effect.GetParamInt()) : effect.GetParamInt(),
                     effect.GetEffectStateName() == "CardEffectDespawnCharacter" ? Math.Max(1, effect.GetParamInt()) : 0,
                     ((CardPile)effect.GetParamInt()).ToString(), effect.GetAdditionalParamInt(),
                     pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
-                    effect.GetEffectStateName() == "CardEffectAddBattleCard" ? CardGenerationProbe.Definition(effect) : null,
+                    effect.GetEffectStateName() is "CardEffectAddBattleCard" or "CardEffectAddRunCard" ? CardGenerationProbe.Definition(effect) : null,
                     UnitTriggerUpgradeProbe.Definition(effect, interactions), UnitTriggerActionProbe.Definition(effect, interactions),
                     effect.GetEffectStateName() is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect),
                     TriggeredSummonProbe.Definition(effect), EnchantmentCombatProbe.Definition(effect));

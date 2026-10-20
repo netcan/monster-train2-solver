@@ -214,7 +214,7 @@ namespace MonsterTrain2Poju.Model
             // decrement the private counter below zero; canonicalize only those equivalent states.
             Counter = type == "CardEffectDespawnCharacter" ? Math.Max(1, counter) : counter;
             // Only generated-card effects interpret this parameter as a pile destination.
-            Destination = type == "CardEffectAddBattleCard" ? destination : ""; Count = count;
+            Destination = type is "CardEffectAddBattleCard" or "CardEffectAddRunCard" ? destination : ""; Count = count;
             CardPool = Array.AsReadOnly(cardPool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
             Generation = generation; UnitUpgrade = unitUpgrade; Action = action; DamageStatusMultiplier = damageStatusMultiplier; StatusScaling = statusScaling; Summon = summon;
             Enchantment = enchantment;

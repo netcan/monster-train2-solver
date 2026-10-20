@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-195426-5ffb6574/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,995 bytes, 11,694 unique nodes,
-SHA-256 `a751f52fd1db37b647c7aca9750103e374752ef98280a55fee0d1b6248d9d765`.
-The latest refresh projects Goldtooth, Lady of the House and Bog Fly's contextual
+Source: `.probe-runs/full-battle-no-cards-20261020-200938-0957a8c6/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,740 bytes, 11,702 unique nodes,
+SHA-256 `ac9ef511de49813ad18a366b75f669a37245668f506a3ab1ca75d97b191a92d6`.
+The latest refresh projects Dante's permanent OnSpawn card generation. Its unused
+AddStatus card pool is omitted exactly as in runtime capture. Only Dante's Rule
+changed; all 668 raw native card definitions remain identical.
+The preceding refresh projects Goldtooth, Lady of the House and Bog Fly's contextual
 self attack rules. Unit modifier descriptors gain a nullable field. Independent
 native character room-modifier definitions expose all fourteen such originals
 for signature-based scheduling; all 668 existing raw card definitions are unchanged.
