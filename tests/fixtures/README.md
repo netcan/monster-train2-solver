@@ -7850,6 +7850,25 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-entombed-explosive.mt2f
 ```
 
+### Original Overworked Assistant
+
+`full-battle-original-isolated-overworked-assistant.mt2f` records an unchanged
+zero-cost Overworked Assistant alongside three paid-zero Steward controls. The
+native 3/9, size-1 birth matches; its `CardSpellPlayed` +4 Unstable trigger is
+captured and remains inactive because this probe plays no spells. The 37.62-second
+Instant battle won with zero capture failures, mismatches, unsupported stages or
+pending records; four plays span five EndTurns. The 26,368-byte archive has 3,478
+unique nodes and SHA-256
+`a378197b07c335a39833f08bcf2c1ac3e93dd5d9347f6c8ccbfaaac2864d798d`.
+Replay and search pass: four decisions match, 16 immutable branches and 128
+serial/parallel states. This does not claim a positive Unstable trigger witness.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId f4a5935a-ea84-41b8-944f-7d08cd228a58 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-overworked-assistant.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-overworked-assistant.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
