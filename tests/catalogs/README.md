@@ -23,10 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-011038-dcde769a/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,231 bytes, 12,066 unique nodes,
-SHA-256 `67f415910cd75bb400a2e7d309d9291c19fdad96a367dfe86bf9327e499547eb`.
-The latest refresh captures Copy Morsels' native unit birth-copy modifier.
+Source: `.probe-runs/full-battle-no-cards-20261021-011554-850e14a5/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,498 bytes, 12,071 unique nodes,
+SHA-256 `70d32c2491fe2c34b90daea716087ccfb8b17bd2e18d43ebfe935da8bec99cbb`.
+The latest refresh captures Stasis Crystal's native status-scaled PostCombat
+upgrade. Only this projection changes; the other 667 are identical.
+The preceding refresh captures Copy Morsels' native unit birth-copy modifier.
 Only this projection changes after normalizing absent/null SpawnCopySubtype
 fields on existing unit modifier descriptors; the other 667 are identical.
 The preceding refresh captures Hall of Mirrors' native room birth-copy modifier.

@@ -171,10 +171,11 @@ internal static class OriginalEquipmentCardsChecks
         string[] originals = root.GetProperty("ModifierScenario").GetString()!["original-isolated-equipment:".Length..].Split(',');
         int[] ids = root.GetProperty("OriginalEquipmentCardsIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
+        bool stasis = originals.SequenceEqual(["764f9b75-daf1-4deb-a6a2-f09964fb5296"]);
         Require(originals.Length is > 0 and <= 30 && originals.Distinct().Count() == originals.Length &&
-            originals.All(id => Guid.TryParseExact(id, "D", out _)) && ids.Length == originals.Length + 4 && actions.Length == ids.Length,
+            originals.All(id => Guid.TryParseExact(id, "D", out _)) && ids.Length == originals.Length + 4 && actions.Length == ids.Length + (stasis ? 1 : 0),
             "Isolated equipment batch must include three hosts, one energy control and every requested original.");
-        for (int i = 0; i < actions.Length; i++)
+        for (int i = 0; i < ids.Length; i++)
         {
             BattleTurnState before = actions[i].GetProperty("Before").Deserialize<BattleTurnState>()!,
                 after = actions[i].GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -297,6 +298,7 @@ internal static class OriginalEquipmentCardsChecks
             Require(host.Triggers.Any(trigger => trigger.Kind == "OnHit" && trigger.Origin?.EquipmentCardId == ids[4] && trigger.HasTriggered),
                 "Forgotten Trade needs a positive native equipment OnHit callback.");
         }
+        if (stasis) StasisCrystalChecks.Native(root, ids);
         RecordedBattleChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-EQUIPMENT PASS: {originals.Length} unchanged paid attachments on separate native hosts and immutable full chains.");
     }

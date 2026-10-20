@@ -9884,3 +9884,18 @@ EndTurns replay across sixteen immutable branches; the 128-state search has
 zero unsupported attempts and equal serial/parallel results. Existing Hall
 copy and replacement chains still pass. Generated/triggered/repeated births
 through duplicating modifiers retain explicit native-phase guards.
+
+`full-battle-original-isolated-stasis-crystal.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-012102-730bdcf1`.
+Unchanged Stasis Crystal grants Untouchable and its original ability to a
+control host. Untouchable prevents the host's own attack as well as ordinary
+targeting. Its native PostCombat callback applies one +20 attack/+20 maximum
+health upgrade, including a battle-lifetime spawner upgrade. On the next turn,
+the original ability removes Untouchable and itself, preserving that growth.
+Three later PostCombat callbacks execute with zero status stacks and add no
+upgrades. Other floor hosts keep their original attack. The capture has
+DEPTH-PASS, a settled win and zero failure counters; six plays and five EndTurns
+pass sixteen immutable replay branches and a 128-state search with zero
+unsupported attempts and equal serial/parallel results. The existing paid
+status-scaled upgrade fixture also passes. Triggered status-scaled upgrades
+currently require a captured self target; other target layouts remain guarded.

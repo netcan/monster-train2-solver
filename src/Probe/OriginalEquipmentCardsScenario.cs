@@ -74,6 +74,12 @@ namespace MonsterTrain2Poju.Probe
             if (IsolatedIds != null)
             {
                 int next = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
+                if (next < 0 && IsolatedIds.SequenceEqual(new[] { "764f9b75-daf1-4deb-a6a2-f09964fb5296" }) && source.Spawn.Turn >= 2)
+                {
+                    CombatUnit stasisHost = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units.Single(unit => unit.SpawnerCardId == ids[0]);
+                    if (stasisHost.Status("untouchable") != null)
+                        return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action => action.ActivatorUnitId == stasisHost.Id);
+                }
                 if (next < 0 || next >= 3 && source.Spawn.Turn < 1) return null;
                 int floor = next < 3 ? next : next == 3 ? 0 : (next - 4) % 3;
                 int targetId = next < 4 ? 0 : source.Spawn.Train.Rooms.Single(room => room.RoomIndex == floor).Units

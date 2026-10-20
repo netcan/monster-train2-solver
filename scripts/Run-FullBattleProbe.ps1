@@ -2768,8 +2768,10 @@ if ($OriginalStatusUnits -and (-not $trace.OriginalStatusUnitsPrepared -or -not 
 if ($OriginalEquipmentCards -and (-not $trace.OriginalEquipmentCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 26)) {
     throw 'Original equipment witness lacks seventeen unchanged cards, attack triggers, host death and positive battle callbacks.'
 }
+$stasisAbilityActionCount = if ($OriginalIsolatedEquipmentIds.Count -eq 1 -and
+    $OriginalIsolatedEquipmentIds[0] -eq '764f9b75-daf1-4deb-a6a2-f09964fb5296') { 1 } else { 0 }
 if ($OriginalIsolatedEquipmentIds.Count -gt 0 -and ($trace.ModifierScenario -ne ('original-isolated-equipment:' + ($OriginalIsolatedEquipmentIds -join ',')) -or
-    -not $trace.OriginalEquipmentCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (4 + $OriginalIsolatedEquipmentIds.Count))) {
+    -not $trace.OriginalEquipmentCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (4 + $OriginalIsolatedEquipmentIds.Count + $stasisAbilityActionCount))) {
     throw 'Isolated original equipment batch lacks three hosts, its energy control and every requested original equipment play.'
 }
 if ($OriginalSupportSpells -and (-not $trace.OriginalSupportSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 27)) {

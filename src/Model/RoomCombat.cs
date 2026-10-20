@@ -1356,16 +1356,19 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (effect.Type == "CardEffectAddCardUpgradeToUnits" || effect.Type == "CardEffectAddTempCardUpgradeToUnits" ||
                             effect.Type == "CardEffectRemoveTempUpgradeFromUnit" || effect.Type == "CardEffectBuffEquipment" ||
-                            effect.Type is "CardEffectAddCardUpgradeToUnitsOnMoonPhase" or "CardEffectAddCardUpgradeToUnitsPerDragonsHoard")
+                            effect.Type is "CardEffectAddCardUpgradeToUnitsOnMoonPhase" or "CardEffectAddCardUpgradeToUnitsPerDragonsHoard" or "CardEffectAddCardUpgradeToUnitsPerStatusEffect")
                         {
                             CardActionEffect? action = effect.UnitUpgrade;
                             if (action?.Upgrade == null || action.Type != (effect.Type == "CardEffectAddCardUpgradeToUnitsOnMoonPhase" ? "UnitUpgradeOnMoonPhase" :
-                                effect.Type == "CardEffectAddCardUpgradeToUnitsPerDragonsHoard" ? "UnitUpgradePerHoard" : effect.Type == "CardEffectBuffEquipment" ? "BuffEquipment" : effect.Type == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade"))
+                                effect.Type == "CardEffectAddCardUpgradeToUnitsPerDragonsHoard" ? "UnitUpgradePerHoard" :
+                                effect.Type == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" ? "UnitUpgradePerStatus" : effect.Type == "CardEffectBuffEquipment" ? "BuffEquipment" : effect.Type == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade"))
                                 return "Missing triggered unit upgrade definition.";
                             if (action.Type == "UnitUpgradeOnMoonPhase" && (action.Value is < 0 or > 3 || state.Context?.QueryFrame?.MoonPhase is not (1 or 2)))
                                 return "Moon-dependent unit upgrades require a captured phase and a calibrated mask.";
                             if (action.Type == "UnitUpgradePerHoard" && state.Context?.QueryFrame?.DragonsHoard == null)
                                 return "Hoard-dependent unit upgrades require the current Hoard amount.";
+                            if (action.Type == "UnitUpgradePerStatus" && (action.Target != "Self" || action.Statuses.Count == 0))
+                                return "Triggered status-scaled upgrades require one self target and captured status identities.";
                             if (state.Context?.CardInstances == null || unit.Modifiers == null)
                                 return "Triggered unit upgrades require unit and card modifier state.";
                             if (effect.Type == "CardEffectBuffEquipment" && unit.EquipmentCards == null)
@@ -2269,11 +2272,13 @@ namespace MonsterTrain2Poju.Model
                     Trigger(actor, "restricted", 1);
                     Emit("Restricted", actor, actor, 0);
                 }
+                bool untouchable = actor.Has("untouchable") && Active(actor.Statuses["untouchable"]);
+                if (untouchable && !ignoreAttackPrevention) cannotAttackOrHeal.Add(actor.Source.Id);
                 if (actor.Has("spark") && Active(actor.Statuses["spark"])) Trigger(actor, "spark", 1);
                 // Native queues this after attack/trigger prevention, before attack conditions.
                 // Ignored-silence triggers can run while dazed, without restoring this turn's attack.
                 FireTriggers(actor, "OnTurnBegin", canFireTriggers: !dazed);
-                if (!actor.Alive || (dazed || inert || restricted) && !ignoreAttackPrevention || !actor.Source.CanAttack || actor.Attack <= 0) return;
+                if (!actor.Alive || (dazed || inert || restricted || untouchable) && !ignoreAttackPrevention || !actor.Source.CanAttack || actor.Attack <= 0) return;
                 int multistrikeExtraAttacks = actor.Statuses.TryGetValue("multistrike", out CombatStatus? multi)
                     ? CombatUnit.AdditionalAttacks(multi) : 0;
                 int strikes = actor.Attacks;
@@ -4069,7 +4074,8 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
-                int repeats = action.Type == "UnitUpgradePerHoard" ? Math.Max(0, context!.QueryFrame!.DragonsHoard!.Value) * targets.UnitIds.Count : 1;
+                int repeats = action.Type == "UnitUpgradePerHoard" ? Math.Max(0, context!.QueryFrame!.DragonsHoard!.Value) * targets.UnitIds.Count :
+                    action.Type == "UnitUpgradePerStatus" ? Math.Max(0, action.Statuses.Sum(status => actor.Count(status.Id))) : 1;
                 for (int repetition = 0; repetition < repeats; repetition++)
                 foreach (int targetId in targets.UnitIds)
                 {
