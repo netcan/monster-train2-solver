@@ -867,6 +867,10 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "AttachRoomCapacity")
                 {
+                    if (effect.RoomAttachment?.CorruptionModifier != null &&
+                        (state.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded")) ||
+                         state.Context!.Relics?.Any(relic => relic.EffectTypes.Any(type => type.Contains("Corruption"))) == true))
+                        return UnsupportedTrain("Room attachment corruption callbacks require an independent native witness.");
                     IReadOnlyList<RoomCapacityState>? before = state.Context!.RoomCapacities;
                     RoomCapacityResult attachment = RoomCapacityModel.Attach(state.Context!, roomIndex, effect.RoomAttachment!);
                     if (!attachment.Supported) return UnsupportedTrain(attachment.UnsupportedReason!);

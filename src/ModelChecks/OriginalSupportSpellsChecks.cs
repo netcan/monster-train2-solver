@@ -187,9 +187,10 @@ internal static class OriginalSupportSpellsChecks
             originals.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60");
         Require(originals.Length is > 0 and <= 30 && originals.Distinct().Count() == originals.Length &&
             originals.All(id => Guid.TryParseExact(id, "D", out _)) && ids.Length == originals.Length + (returnedRecast ? 5 : 4) &&
-            (!returnedRecast || ids[^1] == ids[4]) && actions.Length == ids.Length,
+            (!returnedRecast || ids[^1] == ids[4]) && actions.Length >= ids.Length && actions.Skip(ids.Length)
+                .All(row => row.GetProperty("Action").Deserialize<PlayCardAction>()!.ActivatorRoomIndex.HasValue),
             "Isolated spell batch must contain its exact controls and distinct original identities.");
-        for (int i = 0; i < actions.Length; i++)
+        for (int i = 0; i < ids.Length; i++)
         {
             BattleTurnState before = actions[i].GetProperty("Before").Deserialize<BattleTurnState>()!,
                 after = actions[i].GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -715,6 +716,7 @@ internal static class OriginalSupportSpellsChecks
         FoodSpawnChecks.Native(root, originals);
         StatusSynergyChecks.Native(root, originals);
         TreasureDiscardChecks.Native(root, originals);
+        RoomAbilityChecks.Native(root, originals);
         if (originals.Contains("7018bb02-2ec2-4b4f-95d0-7bafce95d97d")) CrucibleStewardChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }

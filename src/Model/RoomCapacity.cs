@@ -25,13 +25,16 @@ namespace MonsterTrain2Poju.Model
         public string? SpawnCopySubtype { get; }
         public RoomSpellUpgradeState? SpellUpgrade { get; }
         public RoomDeathEffectRule? DeathEffect { get; }
+        public RoomAbilityState? Ability { get; }
+        public RoomAttachmentCorruption? CorruptionModifier { get; }
         public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
             IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
             bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "", int spellCostDelta = 0,
             RoomMoonPhaseRule? moonPhase = null, int energyPerTurnDelta = 0, IReadOnlyList<CardUpgradeMaskRule>? characterFilters = null,
             RoomPostCombatRule? postCombat = null, RoomPreCombatRule? preCombat = null,
             IReadOnlyList<RoomStatusStackRule>? statusStackBonuses = null, string? spawnCopySubtype = null,
-            RoomSpellUpgradeState? spellUpgrade = null, RoomDeathEffectRule? deathEffect = null)
+            RoomSpellUpgradeState? spellUpgrade = null, RoomDeathEffectRule? deathEffect = null,
+            RoomAbilityState? ability = null, RoomAttachmentCorruption? corruptionModifier = null)
         {
             DataId = dataId; AssetKey = assetKey; AttachmentId = attachmentId; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
             CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
@@ -44,11 +47,16 @@ namespace MonsterTrain2Poju.Model
             SpawnCopySubtype = spawnCopySubtype;
             SpellUpgrade = spellUpgrade;
             DeathEffect = deathEffect;
+            Ability = ability; CorruptionModifier = corruptionModifier;
         }
         internal RoomCapacityAttachmentState WithSpellUpgrade(RoomSpellUpgradeState value) =>
             new RoomCapacityAttachmentState(DataId, AssetKey, AttachmentType, CapacityDelta, CharacterUpgrades,
                 AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
-                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, value, DeathEffect);
+                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, value, DeathEffect, Ability, CorruptionModifier);
+        internal RoomCapacityAttachmentState WithAbility(RoomAbilityState value) =>
+            new RoomCapacityAttachmentState(DataId, AssetKey, AttachmentType, CapacityDelta, CharacterUpgrades,
+                AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
+                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, SpellUpgrade, DeathEffect, value, CorruptionModifier);
     }
 
     public sealed class RoomCapacityState
@@ -120,6 +128,7 @@ namespace MonsterTrain2Poju.Model
                     attachment.SpawnCopySubtype is not (null or "") ||
                     attachment.SpellUpgrade != null && RoomSpellUpgradeModel.Validate(attachment.SpellUpgrade) != null ||
                     attachment.DeathEffect != null && RoomDeathEffectModel.Validate(attachment.DeathEffect) != null ||
+                    attachment.Ability != null && (attachment.Ability.DataId.Length == 0 || attachment.Ability.Cooldown < 0 || attachment.Ability.CooldownAfterActivated < 0 || attachment.Ability.Creation.DataId != attachment.Ability.DataId) ||
                     attachment.MoonPhase != null && RoomMoonPhaseModel.Validate(attachment.MoonPhase) != null ||
                     attachment.PostCombat != null && (attachment.MoonPhase != null || RoomPostCombatModel.Validate(attachment.PostCombat) != null) ||
                     attachment.PreCombat != null && (attachment.MoonPhase != null || attachment.PostCombat != null || RoomPreCombatModel.Validate(attachment.PreCombat) != null) ||
@@ -164,12 +173,31 @@ namespace MonsterTrain2Poju.Model
             int maximum = selected.PlayerMaximum;
             if (previous != null) maximum = AdjustedMaximum(maximum, unchecked(-previous.CapacityDelta));
             maximum = AdjustedMaximum(maximum, attachment.CapacityDelta);
+            int? corruption = selected.Corruption;
+            int? maxCorruption = selected.MaxCorruption;
+            if (previous?.CorruptionModifier != null || attachment.CorruptionModifier != null)
+            {
+                if (maxCorruption == null || corruption == null) return new RoomCapacityResult(null, 0, "Corruption attachment requires its captured values.");
+                foreach (var change in new[] { (previous?.CorruptionModifier, -1), (attachment.CorruptionModifier, 1) })
+                    if (change.Item1 != null)
+                    {
+                        maxCorruption = Math.Max(0, unchecked(maxCorruption.Value + change.Item1.Maximum * change.Item2));
+                        corruption = Math.Max(0, unchecked(corruption.Value + change.Item1.Current * change.Item2));
+                    }
+            }
             var changed = new RoomCapacityState(roomIndex, maximum, selected.EnemyMaximum, selected.IsPyre,
-                selected.Corruption, attachments.Concat(new[] { attachment }).ToArray(),
-                selected.MaxCorruption, selected.PermanentCorruption,
+                corruption, attachments.Concat(new[] { attachment }).ToArray(),
+                maxCorruption, selected.PermanentCorruption,
                 attachmentsAddedFromCards);
-            return new RoomCapacityResult(RoomSpellUpgradeModel.Replace(context, context.RoomCapacities!
-                .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray()), attachment.CapacityDelta);
+            context = RoomSpellUpgradeModel.Replace(context, context.RoomCapacities!
+                .Select(room => room.RoomIndex == roomIndex ? changed : room).ToArray());
+            if (attachment.Ability != null)
+            {
+                AbilityCardResult cache = AbilityCardModel.Get(context, attachment.Ability.Creation);
+                if (!cache.Supported) return new RoomCapacityResult(null, 0, cache.UnsupportedReason);
+                context = cache.Context!;
+            }
+            return new RoomCapacityResult(context, attachment.CapacityDelta);
         }
         internal static bool Test(CombatContext? context, int room, bool enemiesPresent, bool onlyIfNoEnemies) =>
             context?.RoomCapacities?.FirstOrDefault(item => item.RoomIndex == room)?.IsPyre == false && (!onlyIfNoEnemies || !enemiesPresent);

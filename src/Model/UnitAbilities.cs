@@ -20,20 +20,28 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Duplicate ability play definitions.");
             if (action.PlayerPosition != -1)
                 return Illegal("A unit ability does not accept a summon position.");
-            RoomCombatState? actorRoom = train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == action.ActivatorUnitId));
+            bool roomAbility = action.ActivatorRoomIndex.HasValue;
+            if (roomAbility && action.ActivatorUnitId != 0) return Illegal("An ability has exactly one room or unit activator.");
+            RoomCombatState? actorRoom = roomAbility ? train.Rooms.FirstOrDefault(room => room.RoomIndex == action.ActivatorRoomIndex)
+                : train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == action.ActivatorUnitId));
             CombatUnit? actor = actorRoom?.Units.FirstOrDefault(unit => unit.Id == action.ActivatorUnitId);
-            if (actor == null || actor.Health <= 0 || actor.Ability?.HasAbility != true) return Illegal("The selected unit has no live ability.");
-            if (actor.Ability.Resolving || actor.Status("silenced") != null || actor.Status("muted") != null)
+            RoomAbilityState? roomState = roomAbility ? context.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == action.ActivatorRoomIndex)
+                ?.Attachments?.FirstOrDefault(attachment => attachment.Ability != null)?.Ability : null;
+            if (roomAbility ? roomState == null || actorRoom == null : actor == null || actor.Health <= 0 || actor.Ability?.HasAbility != true)
+                return Illegal("The selected activator has no live ability.");
+            int actorId = actor?.Id ?? 0;
+            if (!roomAbility && (actor!.Ability!.Resolving || actor.Status("silenced") != null || actor.Status("muted") != null))
                 return Illegal("The unit ability is disabled.");
             string? error = TrainCombatModel.Validate(train) ?? StatisticQueryFrame.ValidateDecision(source);
             if (error != null) return Unsupported(error);
             if (source.Spawn.NextUnitId <= 0 || train.Rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Id <= 0 || unit.Id >= source.Spawn.NextUnitId || unit.Size < 0))
                 return Unsupported("Invalid ability unit identity allocation or size.");
-            if (actor.Status("cooldown") != null) return Illegal("The unit ability is cooling down.");
+            if (roomAbility ? roomState!.Cooldown > 0 : actor!.Status("cooldown") != null) return Illegal("The ability is cooling down.");
             if (actorRoom!.Deployment || source.Spawn.Turn == 0) return Illegal("Unit abilities cannot activate during deployment.");
-            CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == actor.Ability.DataId);
-            if (rule?.Ability?.Kind != "Unit") return Unsupported("Missing unit ability definition or availability metadata.");
+            string abilityId = roomAbility ? roomState!.DataId : actor!.Ability!.DataId;
+            CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == abilityId);
+            if (rule?.Ability?.Kind != (roomAbility ? "Room" : "Unit")) return Unsupported("Missing ability definition or availability metadata.");
             if (!rule.Ability.CanPlayWhenHandFull && context.Cards.Hand.Count >= context.MaxHandSize) return Illegal("The ability requires hand space.");
             if (!rule.Ability.CanTargetOtherFloors && action.RoomIndex != actorRoom.RoomIndex) return Illegal("The ability cannot target another floor.");
             RoomPlayRule? selectedRule = source.PlayRules.Rooms.FirstOrDefault(room => room.RoomIndex == action.RoomIndex);
@@ -44,12 +52,19 @@ namespace MonsterTrain2Poju.Model
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
             if (RelicModel.AbilitiesTriggerIncant(context) && (rule.CardType != "Spell" || rule.IsAnyAbility != true))
                 return Unsupported("Unit ability Incant requires captured Spell/ability classification.");
-            if (actor.Ability.CardCreation == null) return Unsupported("Missing ability card creation state.");
-            AbilityCardResult cache = AbilityCardModel.Get(context, actor.Ability.CardCreation);
+            CardCreationRule? creation = roomAbility ? roomState!.Creation : actor!.Ability!.CardCreation;
+            if (creation == null) return Unsupported("Missing ability card creation state.");
+            AbilityCardResult cache = AbilityCardModel.Get(context, creation);
             if (!cache.Supported) return Unsupported(cache.UnsupportedReason!);
             if (cache.Card!.InstanceId != action.CardInstanceId) return Illegal("The action does not use this unit's cached ability card.");
             context = cache.Context!.WithOtherPiles(source.OtherPiles);
             rule = CardModifierModel.Resolve(rule, cache.Card);
+            // The native pulley effect derives its displacement from the activating room.
+            CardActionEffect[] effects = rule.Effects.Select(effect => effect.Type == "RoomAbilityBumpToCurrentRoom" && roomAbility
+                ? new CardActionEffect("Bump", effect.Target, actorRoom!.RoomIndex - action.RoomIndex,
+                    effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, tests: effect.Tests, filters: effect.Filters) : effect).ToArray();
+            if (roomAbility && rule.Effects.Any(effect => effect.Type == "RoomAbilityBumpToCurrentRoom") && actorRoom!.RoomIndex == action.RoomIndex)
+                return Illegal("The pulley cannot pull a target already on its own floor.");
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
             if (CardSpellModel.RequiresUnitTarget(rule.Effects))
             {
@@ -73,7 +88,7 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return Unsupported(error);
             train = CardSpellModel.WithContext(train, context);
             SpellCastCheck cast = rule.Effect == "Null" ? new SpellCastCheck(true, battleRngAfterTests: context.BattleRng) :
-                CardSpellModel.TestPlay(train, action.RoomIndex, rule.Effects, action.TargetUnitId, source.PlayRules, actor.Id, action.TargetSpawnPointIndex);
+                CardSpellModel.TestPlay(train, action.RoomIndex, effects, action.TargetUnitId, source.PlayRules, actorId, action.TargetSpawnPointIndex);
             if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
             if (!cast.CanPlay) return Illegal("The ability failed its casting test.");
             RoomCombatState? selectedRoomState = train.Rooms.FirstOrDefault(room => room.RoomIndex == action.RoomIndex);
@@ -89,9 +104,10 @@ namespace MonsterTrain2Poju.Model
             if (!paidWithPyre)
                 context = context.WithStatistics(context.Statistics?.WithPlayedCost(cache.Card.InstanceId, paid))
                     .WithCard(cache.Card.WithPlayedCost(paid));
-            context = context.WithAbilityActivator(actor.Id)
+            context = context.WithAbilityActivator(actorId)
                 .WithQueryFrame(context.QueryFrame?.With(energy: source.Energy - energyPaid));
-            train = Resolving(CardSpellModel.WithContext(pyreCost.State, context), actor.Id, true);
+            if (roomAbility) context = RoomAbilityModel.ChangeCooldown(context, action.ActivatorRoomIndex);
+            train = roomAbility ? CardSpellModel.WithContext(pyreCost.State, context) : Resolving(CardSpellModel.WithContext(pyreCost.State, context), actorId, true);
             RoomOutcome outcome = RoomOutcome.Exchanged;
             if (pyreCost.Callbacks.Count > 0)
             {
@@ -101,7 +117,7 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(paidCallbacks.Outcome)) outcome = paidCallbacks.Outcome;
             }
             // Only MonsterManager (the player's units) receives the pre-own callback.
-            if (actor.Team == CombatTeam.Player)
+            if (actor?.Team == CombatTeam.Player)
             {
                 TrainCombatResult before = OwnTrigger(train, actor.Id, "OnPreOwnAbilityActivated");
                 if (!before.Supported) return Unsupported(before.UnsupportedReason!);
@@ -115,8 +131,8 @@ namespace MonsterTrain2Poju.Model
                 train = CardSpellModel.WithContext(train, train.Context.WithCard(
                     train.Context.FindCard(cache.Card.InstanceId)!.WithPlayedRoomUnits(cachedUnits)));
             TrainSpellResult applied = rule.Effect == "Null" ? new TrainSpellResult(train, RoomOutcome.Exchanged, Array.Empty<CombatEvent>()) :
-                CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.Effects, action.TargetUnitId, cache.Card.InstanceId,
-                    source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actor.Id, action.TargetSpawnPointIndex);
+                CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, effects, action.TargetUnitId, cache.Card.InstanceId,
+                    source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actorId, action.TargetSpawnPointIndex);
             if (!applied.Supported) return Unsupported(applied.UnsupportedReason!);
             train = applied.State!; if (Terminal(applied.Outcome)) outcome = applied.Outcome;
             context = train.Context!;
@@ -126,13 +142,13 @@ namespace MonsterTrain2Poju.Model
             train = CardSpellModel.WithContext(train, context);
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
             {
-                TrainCombatResult after = CardPlayedTriggerModel.Ability(train, team, cachedUnits, actor.Id,
+                TrainCombatResult after = CardPlayedTriggerModel.Ability(train, team, cachedUnits, actorId,
                     team == CombatTeam.Player ? applied.PendingCallbacks : null);
                 if (!after.Supported) return Unsupported(after.UnsupportedReason!);
                 train = after.State!; if (Terminal(after.Outcome)) outcome = after.Outcome;
             }
             // Native clears resolving and played-cost queries after both team queues.
-            train = Resolving(train, actor.Id, false);
+            if (!roomAbility) train = Resolving(train, actorId, false);
             context = train.Context!;
             context = context.WithStatistics(context.Statistics?.WithPlayedCost(cache.Card.InstanceId, null));
             context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));

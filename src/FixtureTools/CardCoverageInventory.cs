@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "ff6b11aa96113dfc9c464dfc91d04aadc3da8544bd34907b665d3b43b33a04b5";
+    private const string CatalogHash = "fac3bf2624c3e776d9132115a7eb1df6c6eb3534b32be434aed0e22c9810f831";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -128,9 +128,15 @@ internal static class CardCoverageInventory
             bool unsupported = Strings(rule, "ExternalInteractions").Any(value => value.StartsWith("Unimplemented play effect ", StringComparison.Ordinal));
             if (Flag(card.Definition, "IsRoomAbility"))
             {
-                unsupported = true;
-                card.Gaps.Add("room-ability-activation-not-modeled");
+                if (!rule.TryGetProperty("Ability", out FixtureValue ability) || Text(ability, "Kind") != "Room")
+                { unsupported = true; card.Gaps.Add("room-ability-activation-not-modeled"); }
+                else if (card.DirectPlays == 0) card.Gaps.Add("room-ability-needs-native-activation-witness");
             }
+            foreach (FixtureValue effect in Array(rule, "Effects"))
+                if (effect.TryGetProperty("RoomAttachment", out FixtureValue attachment) && attachment.ValueKind == FixtureKind.Object &&
+                    attachment.TryGetProperty("Ability", out FixtureValue roomAbility) && roomAbility.ValueKind == FixtureKind.Object &&
+                    (!byId.TryGetValue(Text(roomAbility, "DataId"), out Card? abilityCard) || abilityCard.DirectPlays == 0))
+                    card.Gaps.Add("room-ability-needs-native-activation-witness");
             if (Flag(card.Definition, "IsUnitAbility") && pipeline != "Spell" && !(pipeline == "Null" && Array(rule, "Effects").Length == 0))
             {
                 unsupported = true;

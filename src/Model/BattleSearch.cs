@@ -325,7 +325,7 @@ namespace MonsterTrain2Poju.Model
             {
                 PlayCardAction? action = attempt.Action;
                 string key = action == null ? "-" : string.Join(",", action.CardInstanceId, action.RoomIndex,
-                    action.PlayerPosition, action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex);
+                    action.PlayerPosition, action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex, action.ActivatorRoomIndex);
                 if (action != null && action.RecursionSelections.Count > 0)
                     key += "|" + string.Join(";", action.RecursionSelections.Select(selection =>
                         selection.EffectIndex + ":" + string.Join(",", selection.CardInstanceIds)));

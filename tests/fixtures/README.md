@@ -9918,6 +9918,24 @@ that combat search's terminal boundary. Existing Stasis and equipment combat
 batch chains still pass. Other unit-source copy destinations/counts remain
 guarded pending independent native witnesses.
 
+`full-battle-original-isolated-room-skills.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-034457-de4fb2f0`.
+Unchanged Assembly Room and Echo Bloom are attached to different native floors.
+Their original cached skills activate three times, positively copying a front
+unit then descending the copy and adding four Corruption. A moving clone drops
+the source room's upgrade and acquires its destination room's upgrade. Skill
+cards stay outside deck ownership and card piles; native costs, instance cache
+identities, six cooldown decrements and cooling rejection are checked explicitly.
+DEPTH-PASS records a settled win with zero capture/mismatch/unsupported/pending
+counters. Nine plays/five EndTurns pass sixteen immutable replay branches and
+a 128-state search with zero unsupported attempts and equal serial/parallel
+results. Existing movement, unit-copy and ability-Incant checks pass. The old
+`full-battle-ability-activation.mt2f` skill checker fails identically before this
+change at its forced Pyre attack (Boss HP 80 predicted versus 125 native); this
+pre-existing discrepancy is not covered by the room-skill acceptance. Attachment
+corruption with unit/relic CorruptionAdded callbacks remains explicitly guarded.
+The other two room skills require their separate positive movement witnesses.
+
 `full-battle-original-isolated-treasure-discard.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-033225-e831f7ce`.
 Unchanged Crypt Builder, Guardian Amulet and Titanstooth each pay three Ember

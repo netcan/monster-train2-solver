@@ -295,6 +295,7 @@ namespace MonsterTrain2Poju.Model
         public int PlayerPosition { get; }
         public int TargetUnitId { get; }
         public int ActivatorUnitId { get; }
+        public int? ActivatorRoomIndex { get; }
         // Spawn-point index selected by effects that move an existing unit to a room location.
         public int TargetSpawnPointIndex { get; }
         public IReadOnlyList<CardRecursionSelection> RecursionSelections { get; }
@@ -302,9 +303,10 @@ namespace MonsterTrain2Poju.Model
         public PlayCardAction(int cardInstanceId, int roomIndex, int playerPosition = -1, int targetUnitId = 0,
             int activatorUnitId = 0, int targetSpawnPointIndex = -1,
             IReadOnlyList<CardRecursionSelection>? recursionSelections = null,
-            IReadOnlyList<ElixirMixSelection>? mixSelections = null)
+            IReadOnlyList<ElixirMixSelection>? mixSelections = null, int? activatorRoomIndex = null)
         { CardInstanceId = cardInstanceId; RoomIndex = roomIndex; PlayerPosition = playerPosition; TargetUnitId = targetUnitId;
             ActivatorUnitId = activatorUnitId; TargetSpawnPointIndex = targetSpawnPointIndex;
+            ActivatorRoomIndex = activatorRoomIndex;
             RecursionSelections = Array.AsReadOnly((recursionSelections ?? Array.Empty<CardRecursionSelection>()).ToArray());
             MixSelections = Array.AsReadOnly((mixSelections ?? Array.Empty<ElixirMixSelection>()).ToArray()); }
     }
@@ -352,7 +354,7 @@ namespace MonsterTrain2Poju.Model
     {
         public static BattleActionResult PlayCard(BattleTurnState source, PlayCardAction action)
         {
-            if (action.ActivatorUnitId != 0)
+            if (action.ActivatorUnitId != 0 || action.ActivatorRoomIndex.HasValue)
             {
                 int currentRoom = source.Spawn.Train.Context?.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom;
                 if (currentRoom >= 0 && currentRoom != action.RoomIndex &&
@@ -1197,6 +1199,9 @@ namespace MonsterTrain2Poju.Model
             BattleActionEnumeration abilities = UnitAbilityModel.EnumerateActivations(source);
             actions.AddRange(abilities.SupportedCandidates);
             unsupported.AddRange(abilities.UnsupportedAttempts);
+            BattleActionEnumeration roomAbilities = RoomAbilityModel.EnumerateActivations(source);
+            actions.AddRange(roomAbilities.SupportedCandidates);
+            unsupported.AddRange(roomAbilities.UnsupportedAttempts);
             return new BattleActionEnumeration(actions, unsupported);
 
             void Attempt(PlayCardAction action)
@@ -1229,7 +1234,7 @@ namespace MonsterTrain2Poju.Model
                 if (choiceIndex == choiceEffects.Length)
                 {
                     var chosen = new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
-                        action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex, selections);
+                        action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex, selections, activatorRoomIndex: action.ActivatorRoomIndex);
                     foreach (PlayCardAction branch in EnumerateMixChoices(source, chosen, rule)) yield return branch;
                     yield break;
                 }
@@ -1303,7 +1308,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
                         action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex,
-                        action.RecursionSelections, choices);
+                        action.RecursionSelections, choices, action.ActivatorRoomIndex);
                     yield break;
                 }
                 CardActionEffect effect = rule.Effects[effectIndex];
@@ -1313,7 +1318,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
                         action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex,
-                        action.RecursionSelections, choices);
+                        action.RecursionSelections, choices, action.ActivatorRoomIndex);
                     yield break;
                 }
                 foreach (PlayCardAction branch in ExpandMix(0, plan.Context!)) yield return branch;
@@ -1352,7 +1357,7 @@ namespace MonsterTrain2Poju.Model
                         else
                             yield return new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
                             action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex,
-                            action.RecursionSelections, choices);
+                            action.RecursionSelections, choices, action.ActivatorRoomIndex);
                         choices.RemoveAt(choices.Count - 1);
                     }
                 }

@@ -402,7 +402,7 @@ namespace MonsterTrain2Poju.Model
             train = ascended.State!;
             spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
             if (Terminal(ascended.Outcome)) return Finish(ascended.Outcome, 0, source.MoonPhase);
-            train = WithContext(train, EnergyModel.SetPhase(train.Context!, "EndMonsterTurn"), spawn.Turn == 0);
+            train = WithContext(train, RoomAbilityModel.ChangeCooldown(EnergyModel.SetPhase(train.Context!, "EndMonsterTurn")), spawn.Turn == 0);
             spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
             if (spawn.Turn > 0)
             {

@@ -29,6 +29,6 @@ namespace MonsterTrain2Poju.Model
                 value.CharacterUpgrades, value.AffectsHeroes, value.AffectsMonsters, value.IgnoreBosses,
                 Key(value.DataId, roomIndex, ordinal), value.SpellCostDelta, value.MoonPhase, value.EnergyPerTurnDelta,
                 value.CharacterFilters, value.PostCombat, value.PreCombat, value.StatusStackBonuses, value.SpawnCopySubtype,
-                value.SpellUpgrade?.WithIdentity("room-spell:" + Key(value.DataId, roomIndex, ordinal)), value.DeathEffect);
+                value.SpellUpgrade?.WithIdentity("room-spell:" + Key(value.DataId, roomIndex, ordinal)), value.DeathEffect, value.Ability, value.CorruptionModifier);
     }
 }

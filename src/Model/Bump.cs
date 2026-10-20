@@ -203,6 +203,9 @@ namespace MonsterTrain2Poju.Model
                     Order();
                 }
             }
+            RoomAttachmentUnitSyncResult attachments = RoomAttachmentUnitModel.SynchronizeMovement(source, state);
+            if (!attachments.Supported) return Fail(attachments.UnsupportedReason!);
+            state = attachments.State!;
             foreach (var move in moved)
             {
                 if (move.ForcedBossMove) continue;

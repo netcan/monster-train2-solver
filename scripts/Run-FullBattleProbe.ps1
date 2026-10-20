@@ -2780,8 +2780,9 @@ if ($OriginalSupportSpells -and (-not $trace.OriginalSupportSpellsPrepared -or -
 $returnedCorruptRecastCount = if ($OriginalIsolatedSpellIds.Count -gt 0 -and
     $OriginalIsolatedSpellIds[0] -eq 'bae01a8c-25dd-4a08-b08a-5f17a5f3f52a' -and
     $OriginalIsolatedSpellIds -contains '6a3633b6-4ecc-43b1-bb56-548f56cf1d60') { 1 } else { 0 }
+$isolatedRoomAbilityCount = @($trace.Actions | Where-Object { $null -ne $_.Action.ActivatorRoomIndex }).Count
 if ($OriginalIsolatedSpellIds.Count -gt 0 -and ($trace.ModifierScenario -ne ('original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',')) -or
-    -not $trace.OriginalSupportSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (4 + $OriginalIsolatedSpellIds.Count + $returnedCorruptRecastCount))) {
+    -not $trace.OriginalSupportSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (4 + $OriginalIsolatedSpellIds.Count + $returnedCorruptRecastCount + $isolatedRoomAbilityCount))) {
     throw 'Isolated spell batch lacks three hosts, energy and every requested original spell play.'
 }
 if ($OriginalRearrangeSpells -and (-not $trace.OriginalRearrangeSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 19)) {

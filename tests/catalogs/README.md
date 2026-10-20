@@ -23,10 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-032648-b6d21f15/card-catalog.mt2f`.
-The committed archive is byte-identical: 100,111 bytes, 12,138 unique nodes,
-SHA-256 `ff6b11aa96113dfc9c464dfc91d04aadc3da8544bd34907b665d3b43b33a04b5`.
-The latest refresh recognizes the captured Treasure trait for Crypt Builder,
+Source: `.probe-runs/full-battle-no-cards-20261021-034102-061ebda8/card-catalog.mt2f`.
+The committed archive is byte-identical: 100,225 bytes, 12,187 unique nodes,
+SHA-256 `fac3bf2624c3e776d9132115a7eb1df6c6eb3534b32be434aed0e22c9810f831`.
+The latest refresh captures four room ability attachments and their four skill
+definitions, including native cooldown/creation and Echo Bloom's corruption
+modifier. Only these eight projections change after normalizing absent/null
+Ability and CorruptionModifier fields; the other 660 are identical. Runtime
+activation requires its own accepted native witness in the inventory.
+The preceding refresh recognizes the captured Treasure trait for Crypt Builder,
 Guardian Amulet and Titanstooth. Only these three projections change; the other
 665 are identical. Strict definition matching is unchanged.
 The preceding refresh explicitly captures the fresh birth lifecycle of Infectory's

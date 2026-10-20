@@ -213,7 +213,7 @@ namespace MonsterTrain2Poju.Probe
             if (rejectFilters && upgrade.GetFilters().Count > 0) interactions.Add("Filtered bonus-draw upgrade");
             CardUpgradeData? source = upgrade.GetSourceCardUpgradeData();
             bool refresh = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
-            if (upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade room ability");
+            if (!roomAttachmentUnitUpgrade && upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade room ability");
             CardLifecycleUpgrade lifecycle = CardUpgradeLifecycleProbe.Definition(upgrade);
             bool discardCleanup = CardBranchMaskProbe.Enabled && upgrade.GetAssetName() is
                 "CopyOnPlayTraitUpgradeNoEphemeral" or "RemoveEphemeral" or "StardustInvocation_Upgrade_NoEphemeral";

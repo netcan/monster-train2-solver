@@ -3123,6 +3123,22 @@ namespace MonsterTrain2Poju.Probe
                 (ChooseDiscardScenario.Enabled && ChooseDiscardScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
             if (MixScenario.Enabled) MixScenario.Expect(action);
+            if (action.ActivatorRoomIndex.HasValue)
+            {
+                RoomState owner = managers.GetRoomManager()!.GetRoom(action.ActivatorRoomIndex.Value);
+                TrainRoomAttachmentState attachment = owner.Attachments.First(item => item.IsActive && item.HasRoomAbility);
+                CardData ability = attachment.UpgradeStates.Select(upgrade => upgrade.Item2.GetRoomAbilityUpgrade()).First(item => item != null);
+                CardState cached = UnitOrRoomAbilityCardStateCache.Instance.Get(ability, managers.GetRelicManager(), managers.GetSaveManager());
+                SpawnPoint? target = action.TargetUnitId == 0 ? null : FullBattleTrace.Active!.KnownUnits
+                    .Single(unit => FullBattleTrace.Active.UnitId(unit) == action.TargetUnitId).GetSpawnPoint();
+                FullBattleTrace.Active!.BeginCardPlay(action, scenarioAction: scenarioPrelude);
+                if (attachment.CurrentAbilityCooldown > 0 || !cards.PlayAnyCard(cached, out var roomAbilityError,
+                    null, target, ignoreCost: false, discardCard: false, fromDirectPlay: true, roomThatActivatedAbility: owner))
+                    throw new InvalidOperationException("Native room ability activation failed.");
+                attachment.SetAbilityCooldown();
+                log.LogInfo("DEPTH-POLICY-ROOM-ABILITY card=" + action.CardInstanceId + " owner=" + action.ActivatorRoomIndex.Value);
+                pendingPlay = null; Enter(Stage.PlayingCard, 30f); return;
+            }
             if (action.ActivatorUnitId > 0)
             {
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);

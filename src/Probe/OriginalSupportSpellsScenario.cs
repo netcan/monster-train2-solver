@@ -74,6 +74,8 @@ namespace MonsterTrain2Poju.Probe
                 IsolatedIds.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60") &&
                 source.Spawn.Train.Context!.Statistics!.Value(ids[^1], "TimesPlayed", "ThisBattle") == 1)
                 index = ids.Length - 1; // Recast the actual returned recipient after the original choice.
+            if (index < 0 && IsolatedIds?.Any(RoomAbilitiesScenarioCard) == true)
+                return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action => action.ActivatorRoomIndex.HasValue);
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
             if (IsolatedIds?.FirstOrDefault() == "93759003-bb97-44e4-9ef6-472c55bee2d9" && index >= 4 &&
                 source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "6bc6afc8-a113-4f03-b090-d4436f41d822" && source.Spawn.Turn < 2)
@@ -83,6 +85,12 @@ namespace MonsterTrain2Poju.Probe
                 string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
                     .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            if (index >= 4 && RoomAbilitiesScenarioCard(source.Spawn.Train.Context!.FindCard(ids[index])!.DataId))
+            {
+                string roomCard = source.Spawn.Train.Context.FindCard(ids[index])!.DataId;
+                int floor = roomCard == "e3f252bc-ed72-4b8d-8e7a-bb9e07d449ed" ? 0 : roomCard == "8d65e688-d93d-4bfa-975d-8c5f046fe2db" ? 2 : 1;
+                candidates = candidates.Where(action => action.RoomIndex == floor);
+            }
             if (index >= 4 && IsolatedIds.Contains("a83756a0-7264-47d1-a661-d8ab2420fe29"))
             {
                 string armorCard = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
@@ -222,8 +230,9 @@ namespace MonsterTrain2Poju.Probe
                         " magic=" + effect.GetUseMagicPowerMultiplier());
             CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()
                 .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true) ||
-                spellIds.Contains("e1a39d88-4a77-4399-98b2-0b81f44fe6a8") || spellIds.Contains("6d6c72ab-890b-4275-bb52-2544befbc12b");
+                spellIds.Contains("e1a39d88-4a77-4399-98b2-0b81f44fe6a8") || spellIds.Contains("6d6c72ab-890b-4275-bb52-2544befbc12b") || spellIds.Contains("9d18f2c2-1141-494d-943c-6ea6e13ff509");
             CapturesBump = spellIds.Contains(RoomPreCombatProbe.SirenSongId) || spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectBump"));
+            CapturesBump |= spellIds.Any(RoomAbilitiesScenarioCard);
             if (spellIds.Contains("37eaa51b-62cf-4cbc-971f-6d208fd07366") && spellIds.Any(id =>
                 all.FindCardData(id)!.GetTraits().Any(trait => trait.GetTraitStateName() == IndirectSpellModel.TreasureTrait)))
                 foreach (CharacterData enemy in all.GetAllCharacterData().Where(unit => unit.GetAssetKey() is "ShieldGuardT1_BasicNonAttack" or "MageT1_Junker"))
@@ -341,6 +350,7 @@ namespace MonsterTrain2Poju.Probe
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
             log.LogInfo("ORIGINAL-ISOLATED-SPELLS-PREPARED three native anchor controls, energy and unchanged originals " + string.Join(",", spellIds));
         }
+        internal static bool RoomAbilitiesScenarioCard(string id) => id is "8d65e688-d93d-4bfa-975d-8c5f046fe2db" or "8fbd9c3b-f027-4fdb-9a14-1ddae9c24d60" or "9d18f2c2-1141-494d-943c-6ea6e13ff509" or "e3f252bc-ed72-4b8d-8e7a-bb9e07d449ed";
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
     }
 }

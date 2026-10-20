@@ -13,7 +13,7 @@ namespace MonsterTrain2Poju.Probe
         {
             "CardEffectNULL", "CardEffectAddStatusEffectNull", "CardEffectFeederRules", "CardEffectFreezeCard", "CardEffectDuplicateCardInHand", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectAttackTargetsWithSelfUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
             "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown",
-            "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment",
+            "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment", "CardEffectRoomAbilityBumpToCurrentRoom",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
             "CardEffectAdjustDragonsHoard", "CardEffectRewardGoldPerDragonHoard",
             "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectTransferAttackFromUnit", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
@@ -123,6 +123,8 @@ namespace MonsterTrain2Poju.Probe
                 bool? forgeEligible = nativeCardsByDataId.TryGetValue(id, out CardState? nativeCard)
                     ? CardForgeHelper.IsCardOfInterest(nativeCard, managers.GetCoreManagers()) : CardGenerationProbe.ForgeEligibility(data);
                 CardPlayRule rule = Definition(data, unplayedOrder, forgeEligible); reachable.Add(id, rule);
+                foreach (string ability in rule.Effects.Where(effect => effect.RoomAttachment?.Ability != null)
+                    .Select(effect => effect.RoomAttachment!.Ability!.DataId)) pending.Enqueue(ability);
                 // Include every weighted OnKill pool member before the first roll,
                 // so generated-card legality/search does not depend on its outcome.
                 foreach (CardEffectData effect in data.GetCardTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnKill)
@@ -326,7 +328,7 @@ namespace MonsterTrain2Poju.Probe
             return new CardPlayRule(data.GetID(), data.name, data.GetCost(), kind, destination, template,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), spellEffects, upgradeInteractions,
                 HandInteractions(data, false), HandInteractions(data, true), data.GetCostType().ToString(), equipment,
-                data.IsUnitAbility() ? new CardAbilityRule("Unit", data.CanAbilityTargetOtherFloors(),
+                data.IsUnitAbility() || data.IsRoomAbility() ? new CardAbilityRule(data.IsRoomAbility() ? "Room" : "Unit", data.CanAbilityTargetOtherFloors(),
                     data.GetEffects().All(effect => ((ICardEffect)Activator.CreateInstance(typeof(CardState).Assembly
                         .GetType(effect.GetEffectStateName())!)!).CanPlayWhenHandFull)) : null, summon,
                 data.GetCardType().ToString(), data.IsUnitAbility() || data.IsRoomAbility(),
@@ -406,7 +408,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Unmodeled room-status transfer targets or status pool");
             // These native iterators read their own count/status parameters rather
             // than the inherited spell scaling fields or ParamSubtype.
-            if (effect.GetEffectStateName() is not ("CardEffectDamagePerHp" or "CardEffectAddBattleCard" or "CardEffectAddStatusEffectPerOtherEffect") &&
+            if (effect.GetEffectStateName() is not ("CardEffectDamagePerHp" or "CardEffectAddBattleCard" or "CardEffectAddStatusEffectPerOtherEffect" or "CardEffectBump" or "CardEffectRoomAbilityBumpToCurrentRoom") &&
                 (effect.GetUseStatusEffectStackMultiplier() && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" ||
                 effect.GetUseHealthMissingStackMultiplier() || effect.GetUseMagicPowerMultiplier() ||
                 effect.GetEffectStateName() != "CardEffectSacrifice" && effect.GetEffectStateName() != "CardEffectKill" &&
@@ -430,6 +432,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
                 effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
                 effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
+                effect.GetEffectStateName() == "CardEffectRoomAbilityBumpToCurrentRoom" ? "RoomAbilityBumpToCurrentRoom" :
                 effect.GetEffectStateName() == "CardEffectUnitAbilityTeleport" ? "AbilityTeleport" :
                 effect.GetEffectStateName() == "CardEffectAttackWithUnit" ? "AttackWithUnit" :
                 effect.GetEffectStateName() == "CardEffectAttackTargetsWithSelfUnit" ? "AttackTargetsWithSelfUnit" :
@@ -653,7 +656,7 @@ namespace MonsterTrain2Poju.Probe
             RoomSpellUpgradeState? spellUpgrade = RoomSpellUpgradeProbe.Rule(modifiers, interactions);
             RoomDeathEffectRule? deathEffect = RoomDeathEffectProbe.Rule(modifiers, interactions);
             CardUpgradeMaskRule[] characterFilters = upgrade.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
-            bool supported = (moon != null || post != null || pre != null || modifiers.Length == capacities.Length + spellCosts.Length + energies.Length + modifiers.Count(RoomStatusStackProbe.Known) + modifiers.Count(RoomSpawnCopyProbe.Known) + modifiers.Count(RoomSpellUpgradeProbe.Known) + modifiers.Count(RoomDeathEffectProbe.Known) && capacities.Length <= 1 && spellCosts.Length <= 1 &&
+            bool supported = (moon != null || post != null || pre != null || modifiers.Length == capacities.Length + spellCosts.Length + energies.Length + modifiers.Count(RoomStatusStackProbe.Known) + modifiers.Count(RoomSpawnCopyProbe.Known) + modifiers.Count(RoomSpellUpgradeProbe.Known) + modifiers.Count(RoomDeathEffectProbe.Known) + modifiers.Count(RoomAbilityProbe.IsCorruption) && capacities.Length <= 1 && spellCosts.Length <= 1 &&
                 energies.Length <= 1 && energies.All(modifier => modifier.GetParamInt() == 1)) &&
                 upgrade.GetAttackDamageBuff() == 0 && upgrade.GetAdditionalHP() == 0 &&
                 (upgrade.GetAdditionalUnhealedHP() == 0 || card.GetID() == "57921ae8-ca98-4a3b-a659-5e741d2e904a" && upgrade.GetAdditionalUnhealedHP() == 20) && upgrade.GetCostReduction() == 0 && upgrade.GetAdditionalSize() == 0 &&
@@ -661,7 +664,7 @@ namespace MonsterTrain2Poju.Probe
                 upgrade.GetTraitDataUpgrades().Count == 0 && upgrade.GetRemoveTraitUpgrades().Count == 0 &&
                 (upgrade.GetTriggerUpgrades().Count == 0 || RoomAttachmentTriggerIdentity.Known(card.GetID())) && upgrade.GetCardTriggerUpgrades().Count == 0 &&
                 upgrade.GetUpgradesToRemove().Count == 0 && RoomCapacityModel.ValidateCharacterFilters(characterFilters) == null &&
-                upgrade.GetUnitAbilityUpgrade() == null && upgrade.GetRoomAbilityUpgrade() == null && !upgrade.IsUnique();
+                upgrade.GetUnitAbilityUpgrade() == null && !upgrade.IsUnique();
             if (!supported)
             {
                 interactions.Add("Unmodeled mixed room attachment payload");
@@ -674,7 +677,8 @@ namespace MonsterTrain2Poju.Probe
                 affectsMonsters: effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
                 ignoreBosses: effect.GetTargetIgnoreBosses(), moonPhase: moon, spellCostDelta: spellCosts.Sum(modifier => modifier.GetParamInt()),
                 energyPerTurnDelta: energies.Sum(modifier => modifier.GetParamInt()), characterFilters: characterFilters, postCombat: post, preCombat: pre, statusStackBonuses: statusStacks,
-                spawnCopySubtype: spawnCopySubtype, spellUpgrade: spellUpgrade, deathEffect: deathEffect);
+                spawnCopySubtype: spawnCopySubtype, spellUpgrade: spellUpgrade, deathEffect: deathEffect,
+                ability: RoomAbilityProbe.Definition(definition), corruptionModifier: RoomAbilityProbe.Corruption(modifiers));
         }
 
         private static CardData? Fallback(CharacterData unit) => AllGameManagers.Instance!.GetSaveManager().GetAllGameData()
