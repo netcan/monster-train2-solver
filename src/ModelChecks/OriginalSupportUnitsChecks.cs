@@ -14,6 +14,7 @@ internal static class OriginalSupportUnitsChecks
     private const string EelGorgonId = "eaaae54e-58ed-4926-b5bb-a0b36404c4b7";
     private const string EntombedExplosiveId = "9a8943a3-d6a6-454b-91d4-d6d08dd6fd81";
     private const string OverworkedAssistantId = "f4a5935a-ea84-41b8-944f-7d08cd228a58";
+    private const string CrucibleCollectorId = "e27358a6-e42f-410b-be76-75dfbf2bfab4";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -370,6 +371,17 @@ internal static class OriginalSupportUnitsChecks
                 !spawnedUnit.Triggers.Single(trigger => trigger.Kind == "CardSpellPlayed").HasTriggered && spawnedUnit.Status("unstable") == null,
                 "Overworked Assistant must preserve its native zero-cost 3/9 spawn and untriggered CardSpellPlayed +4 Unstable definition.");
         }
+        if (expectedId == CrucibleCollectorId)
+        {
+            CombatTrigger onFeed = template.Triggers.Single(trigger => trigger.Kind == "OnFeed");
+            CombatEffect lifesteal = onFeed.Effects.Single();
+            Require(rule.AssetKey == "CrucibleCollector" && template.AssetKey == "MonsterDrainingHunter" &&
+                rule.Cost == 1 && template.Health == 35 && template.MaxHealth == 35 && template.Modifiers.AttackDamage == 30 && template.Size == 2 &&
+                lifesteal.Type == "CardEffectAddStatusEffect" && lifesteal.Action is { Type: "AddStatus", Target: "Self" } &&
+                lifesteal.Action.Statuses.Single() is { Id: "lifesteal", Stacks: 1 } && !onFeed.HasTriggered &&
+                !spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnFeed").HasTriggered && spawnedUnit.Status("lifesteal") == null,
+                "Crucible Collector must preserve its native 1-cost 30/35 size-2 birth and untriggered OnFeed +1 Lifesteal definition.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
@@ -377,6 +389,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-ENTOMBED-EXPLOSIVE PASS: original 1-cost 0/1 birth and captured 65 FrontInRoom OnDeath damage; the protected unit survived, so damage did not trigger.");
         else if (expectedId == OverworkedAssistantId)
             Console.WriteLine("ORIGINAL-OVERWORKED-ASSISTANT PASS: original zero-cost 3/9 birth and captured CardSpellPlayed +4 Unstable; no spell was played, so the trigger remained inactive.");
+        else if (expectedId == CrucibleCollectorId)
+            Console.WriteLine("ORIGINAL-CRUCIBLE-COLLECTOR PASS: original 1-cost 30/35 size-2 birth and captured OnFeed +1 Lifesteal; no feed occurred, so the trigger remained inactive.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }

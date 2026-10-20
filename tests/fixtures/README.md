@@ -7869,6 +7869,25 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-overworked-assistant.mt2f
 ```
 
+### Original Crucible Collector
+
+`full-battle-original-isolated-crucible-collector.mt2f` records an unchanged
+Crucible Collector behind three zero-cost Steward anchors. Its original cost-1,
+30/35, size-2 birth matches; the captured `OnFeed` callback grants one Lifesteal
+to itself. The 38.10-second native Instant run won with zero capture failures,
+mismatches, unsupported stages or pending records. Four plays span five EndTurns;
+the 26,239-byte archive has 3,474 unique nodes and SHA-256
+`3651081e6def86a59bbf91445f2c022e77cedbc9bb4d17f35fad3a38f0d4eaa9`.
+Dedicated replay and search pass: four decisions match, 16 immutable branches and
+128 serial/parallel states. No morsel was fed in this encounter, so the callback
+definition is captured but its status addition is not a positive trigger witness.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId e27358a6-e42f-410b-be76-75dfbf2bfab4 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-crucible-collector.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-crucible-collector.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
