@@ -8725,3 +8725,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-spikedriver-factory.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-spikedriver-factory.mt2f
 ```
+
+### Original Scrivener
+
+`full-battle-original-isolated-scrivener.mt2f` plays the unchanged 2-cost 15/8
+size-1 Scrivener. Its native OnSpawn callback exposes the cooldown-2 ability,
+which remains available but unused in all four post-deployment snapshots. This
+covers direct play, birth and unactivated ability lifecycle only; the ability
+effect itself is not exercised. The Instant battle won with zero capture
+failures, mismatches, unsupported transitions or pending records. Focused replay
+and bounded serial/parallel search agree at 128 states, with three replayed
+steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId c2baee0e-4bc6-4da6-8330-71f5a299133e
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-scrivener.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-scrivener.mt2f
+```
