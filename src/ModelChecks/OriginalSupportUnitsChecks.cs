@@ -31,6 +31,7 @@ internal static class OriginalSupportUnitsChecks
     private const string ReformingOozeId = "357a72e3-935c-4946-9e5a-6449482641c1";
     private const string MoltenEncasementId = "b20aaea2-cf9e-4475-aac3-abba7a0bed7e";
     private const string ShatteredShellId = "57985d47-d8ac-46be-8545-20a51209fc4f";
+    private const string WeldlingId = "acb9a1cb-f6fc-40df-b287-fc82b8df156b";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -563,6 +564,36 @@ internal static class OriginalSupportUnitsChecks
                 upgrade.Upgrade.Stats.Health == 0 && remainsUntriggered,
                 "Reforming Ooze must preserve its native 1-cost 7/15 size-2 Undying birth and inactive permanent self +6 Attack OnReanimated upgrade.");
         }
+        if (expectedId == WeldlingId)
+        {
+            CombatTrigger postCombat = template.Triggers.Single(trigger => trigger.Kind == "PostCombat");
+            CombatEffect armorEffect = postCombat.Effects.Single();
+            CardActionEffect armor = armorEffect.Action!;
+            FixtureValue[] turnRows = root.GetProperty("Turns").EnumerateArray().ToArray();
+            BattleTurnState[] actualTurns = turnRows.Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+            CombatUnit[] unitTurns = actualTurns.Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex])).Where(unit => unit != null).Select(unit => unit!).ToArray();
+            int StewardArmor(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Single(unit => unit.SpawnerCardId == ids[0]).Status("armor")?.Stacks ?? 0;
+            bool armorGainedTwice = new[] { 1, 3 }.All(index =>
+            {
+                BattleTurnState before = turnRows[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState after = turnRows[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                return StewardArmor(after) - StewardArmor(before) == 3;
+            });
+            BattleTurnState unchangedBefore = turnRows[2].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState unchangedAfter = turnRows[2].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            Require(rule.AssetKey == "Weldling" && template.AssetKey == "MonsterWeldling" && rule.Cost == 2 &&
+                template.Modifiers!.AttackDamage == 6 && template.Health == 3 && template.MaxHealth == 3 && template.Size == 1 &&
+                template.Subtypes.Contains("SubtypesData_Machine") && !postCombat.Once && postCombat.SkipDuringDeployment is true &&
+                !postCombat.HasTriggered && armorEffect.Type == "CardEffectAddStatusEffectPerSelfAttack" && armorEffect.Value == 2 &&
+                armorEffect.Count == 3 && armor is { Type: "AddStatus", Target: "FrontInRoom", AllowEnemy: false, AllowPlayer: true } &&
+                armor.Statuses.Single() is { Id: "armor", Stacks: 0, ParamInt: 1, RemoveWhenTriggered: true, RemoveDuringDeployment: true } &&
+                unitTurns.Length == 4 && unitTurns.All(unit => unit.Health == 3 && unit.Modifiers!.AttackDamage == 6 &&
+                    unit.Triggers.Single(trigger => trigger.Kind == "PostCombat").HasTriggered) && armorGainedTwice &&
+                StewardArmor(unchangedBefore) == StewardArmor(unchangedAfter),
+                "Weldling must preserve its native 2-cost 6/3 Machine birth and show two +3 FrontInRoom armor gains with an unchanged control.");
+        }
         if (expectedId == ShatteredShellId)
         {
             CombatTrigger onKill = template.Triggers.Single(trigger => trigger.Kind == "OnKill");
@@ -720,6 +751,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-MOLTEN-ENCASEMENT PASS: original 1-cost 0/1 Tomb birth and inactive OnDeath room +2 Stealth definition; no death occurred.");
         else if (expectedId == ShatteredShellId)
             Console.WriteLine("ORIGINAL-SHATTERED-SHELL PASS: original 1-cost 3/10 size-2 birth; two native OnKill events add +3 Attack each and no further upgrades occur.");
+        else if (expectedId == WeldlingId)
+            Console.WriteLine("ORIGINAL-WELDLING PASS: original 2-cost 6/3 Machine birth; two native PostCombat transitions add +3 Armor to the front ally with an unchanged control.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }

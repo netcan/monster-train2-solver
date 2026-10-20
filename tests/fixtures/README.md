@@ -8467,3 +8467,21 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-shattered-shell.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-shattered-shell.mt2f
 ```
+
+### Original Weldling
+
+`full-battle-original-isolated-weldling.mt2f` plays the unchanged 2-cost
+6/3 size-1 Machine unit. Its native PostCombat definition adds Armor to the
+friendly `FrontInRoom` target. The original front Train Steward gains three
+Armor on two captured transitions, with an unchanged middle control; the final
+native cleanup removes the Armor, which is not attributed to the callback. The
+Instant battle won with zero capture failures, mismatches, unsupported
+transitions or pending records. Focused replay and bounded serial/parallel
+search agree at 128 states, with three replayed steps. Archive hash and node
+count are recorded in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId acb9a1cb-f6fc-40df-b287-fc82b8df156b
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-weldling.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-weldling.mt2f
+```
