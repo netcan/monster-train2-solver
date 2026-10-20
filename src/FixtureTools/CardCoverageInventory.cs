@@ -214,7 +214,7 @@ internal static class CardCoverageInventory
         if (traits.Any(trait => !CalibratedSourceTrait(trait, Text(definition, "Id")))) return false;
         bool requiresRaw = traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAddDamage" or "CardTraitScalingAddStatusEffect" or "CardTraitUnpurgable" or "CardTraitIncreaseCostOfCardsInHand" or "CardTraitLimitedRange" or "CardTraitDrawInDeploymentPhase" or "CardTraitUnplayable" or "CardTraitPersistent" or "CardTraitRefine" or "CardTraitPermafrost" or "CardTraitDamageOverflow" or "CardTraitCorruptRestricted" or "CardTraitAddDamagePerStatusEffect" or "CardTraitScalingAddDamagePerCard" or "CardTraitScalingAddEnergy" or "CardTraitScalingRemoveStatusEffect" or "CardTraitScalingAddEffectApplications" or "CardTraitScalingCardDrawCountPerPile");
         requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingBuffDamage" or "CardTraitScalingStatusEffectPerPile" or "CardTraitScalingTempCardUpgradeToCard" or "CardTraitScalingByConsumedTempCardUpgradeToCard" or "CardTraitShowCardTargets" or "CardTraitScalingAdvanceMoonPhase" or "CardTraitScalingAddCards" or "CardTraitAddCardUpgradeOnMoonPhase" or "CardTraitScalingFeederRules");
-        requiresRaw |= traits.Any(trait => Text(trait, "Type") == "CardTraitGraftedEquipment");
+        requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitGraftedEquipment" or "CardTraitTreasure");
         requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAdjustCapacity" or "CardTraitScalingHealTrain");
         foreach (string source in new[] { "CardInstances", "CardRegistry" })
         foreach (FixtureValue instance in Array(context, source))
@@ -559,6 +559,9 @@ internal static class CardCoverageInventory
              Text(trait, "TrackedValue") == "AnyCharacter" && Text(trait, "HandCostTargetType") == "Monster") && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitDrawInDeploymentPhase") return value == 0 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
             trait.TryGetProperty("DeploymentDrawFlag", out FixtureValue drawFlag) && drawFlag.ValueKind == FixtureKind.False;
+        if (type == "CardTraitTreasure") return value == 0 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
+            new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag", "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
         if (type is "CardTraitUnpurgable" or "CardTraitLimitedRange" or "CardTraitPermafrost" or "CardTraitGraftedEquipment" or "CardTraitEphemeral") return value == 0 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitDamageOverflow") return value == 2 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitCorruptRestricted") return value is 1 or 2 or 3 or 5 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
