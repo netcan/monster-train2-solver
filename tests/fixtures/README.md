@@ -8942,3 +8942,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-zealot.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-zealot.mt2f
 ```
+
+### Original Parrafin Thug
+
+`full-battle-original-isolated-parrafin-thug.mt2f` plays the unchanged 1-cost
+40/10 size-2 Parrafin Thug. Its native `OnKill` callback rewarded exactly 30
+gold on the first attributable kill (50 to 80) and changed the captured trigger
+from inactive to fired. A later gold increase also includes other reward
+sources and is not attributed here. The Instant battle won with zero capture
+failures, mismatches, unsupported transitions or pending records. Focused
+replay and bounded serial/parallel search agree at 128 states, with three
+replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId a2bc0531-4037-418b-a30b-9189cc580adf
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-parrafin-thug.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-parrafin-thug.mt2f
+```

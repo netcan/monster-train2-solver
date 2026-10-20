@@ -59,6 +59,7 @@ internal static class OriginalSupportUnitsChecks
     private const string LadyOfTheReformedId = "5ac22130-17f1-4f8e-967f-a2d3b71ef7ca";
     private const string FeederPermanentAttackBoostId = "ed072114-b62e-4f61-8892-adf775d5a34c";
     private const string ZealotId = "071d7448-0be6-4a40-860c-ede856a42228";
+    private const string ParrafinThugId = "a2bc0531-4037-418b-a30b-9189cc580adf";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -618,6 +619,36 @@ internal static class OriginalSupportUnitsChecks
                 noEnemyPyregel,
                 "Zealot must preserve its original 3-cost 10/20 size-2 Sweep birth and one native OnTurnBegin Pyregel definition; no enemy Pyregel application was observed.");
             Console.WriteLine("ORIGINAL-ZEALOT PASS: native 3-cost 10/20 size-2 Sweep birth; OnTurnBegin fired once, but Pyregel was absent from all observed enemy snapshots.");
+        }
+        if (expectedId == ParrafinThugId)
+        {
+            CombatTrigger onKill = template.Triggers.Single(trigger => trigger.Kind == "OnKill");
+            BattleTurnState[] turnStates = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+            CombatUnit? InTurn(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]);
+            bool paidThirtyGoldOnKill = root.GetProperty("Turns").EnumerateArray().Any(row =>
+            {
+                BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatUnit? prior = InTurn(before), current = InTurn(after);
+                int goldBefore = row.GetProperty("Before").GetProperty("Spawn").GetProperty("Train").GetProperty("Context").GetProperty("Gold").GetInt32();
+                int goldAfter = row.GetProperty("Actual").GetProperty("Spawn").GetProperty("Train").GetProperty("Context").GetProperty("Gold").GetInt32();
+                return prior != null && current != null && goldBefore == 50 && goldAfter == 80 &&
+                    !prior.Triggers.Single(trigger => trigger.Kind == "OnKill").HasTriggered &&
+                    current.Triggers.Single(trigger => trigger.Kind == "OnKill").HasTriggered;
+            });
+            CombatUnit[] unitTurns = turnStates.Select(InTurn).Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "ParrafinThug" && rule.Cost == 1 && template.AssetKey == "ParaffinThug" &&
+                template.Modifiers!.AttackDamage == 40 && template.Health == 10 && template.MaxHealth == 10 &&
+                template.Size == 2 && template.Ability == null && onKill.Effects.Single() is { Type: "CardEffectRewardGold", Value: 30 } &&
+                spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Modifiers!.AttackDamage == 40 &&
+                spawnedUnit.Health == 10 && spawnedUnit.MaxHealth == 10 && spawnedUnit.Size == 2 &&
+                paidThirtyGoldOnKill && unitTurns.Length == 4 && unitTurns.All(unit => unit.Health == 10 &&
+                    unit.MaxHealth == 10 && unit.Modifiers!.AttackDamage == 40 && unit.Size == 2 &&
+                    unit.Triggers.Single(trigger => trigger.Kind == "OnKill").HasTriggered),
+                "Parrafin Thug must retain its original 1-cost 40/10 size-2 birth and positively reward its first native OnKill with exactly 30 gold.");
+            Console.WriteLine("ORIGINAL-PARRAFIN-THUG PASS: native 1-cost 40/10 size-2 birth; first OnKill changed gold 50 to 80 for the captured +30 reward.");
         }
         if (expectedId == JuggernautId)
         {
