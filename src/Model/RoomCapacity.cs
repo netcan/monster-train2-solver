@@ -133,6 +133,11 @@ namespace MonsterTrain2Poju.Model
             RoomCapacityAttachmentState[] attachments = selected.Attachments?.ToArray() ?? Array.Empty<RoomCapacityAttachmentState>();
             int? attachmentsAddedFromCards = selected.AttachmentsAddedFromCards.HasValue
                 ? unchecked(selected.AttachmentsAddedFromCards.Value + 1) : null;
+            if (RoomAttachmentTriggerIdentity.Known(attachment.DataId))
+            {
+                if (attachmentsAddedFromCards == null) return new RoomCapacityResult(null, 0, "Room trigger attachments require a captured per-floor creation ordinal.");
+                attachment = RoomAttachmentTriggerIdentity.Bind(attachment, roomIndex, attachmentsAddedFromCards.Value);
+            }
             RoomCapacityAttachmentState? previous = attachments.FirstOrDefault(item => item.AttachmentType == 0);
             if (previous != null)
                 attachments = attachments.Where(item => !ReferenceEquals(item, previous)).ToArray();

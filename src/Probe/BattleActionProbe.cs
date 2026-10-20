@@ -642,10 +642,10 @@ namespace MonsterTrain2Poju.Probe
             bool supported = (moon != null || post != null || pre != null || modifiers.Length == capacities.Length + spellCosts.Length + energies.Length && capacities.Length <= 1 && spellCosts.Length <= 1 &&
                 energies.Length <= 1 && energies.All(modifier => modifier.GetParamInt() == 1)) &&
                 upgrade.GetAttackDamageBuff() == 0 && upgrade.GetAdditionalHP() == 0 &&
-                upgrade.GetAdditionalUnhealedHP() == 0 && upgrade.GetCostReduction() == 0 && upgrade.GetAdditionalSize() == 0 &&
+                (upgrade.GetAdditionalUnhealedHP() == 0 || card.GetID() == "57921ae8-ca98-4a3b-a659-5e741d2e904a" && upgrade.GetAdditionalUnhealedHP() == 20) && upgrade.GetCostReduction() == 0 && upgrade.GetAdditionalSize() == 0 &&
                 upgrade.GetAdditionalEquipmentLimit() == 0 && upgrade.GetStatusEffectUpgrades().All(status => RoomCapacityModel.SupportsCharacterStatus(status.statusId, status.count) && !status.fromPermanentUpgrade) &&
                 upgrade.GetTraitDataUpgrades().Count == 0 && upgrade.GetRemoveTraitUpgrades().Count == 0 &&
-                upgrade.GetTriggerUpgrades().Count == 0 && upgrade.GetCardTriggerUpgrades().Count == 0 &&
+                (upgrade.GetTriggerUpgrades().Count == 0 || RoomAttachmentTriggerIdentity.Known(card.GetID())) && upgrade.GetCardTriggerUpgrades().Count == 0 &&
                 upgrade.GetUpgradesToRemove().Count == 0 && RoomCapacityModel.ValidateCharacterFilters(characterFilters) == null &&
                 upgrade.GetUnitAbilityUpgrade() == null && upgrade.GetRoomAbilityUpgrade() == null && !upgrade.IsUnique();
             if (!supported)

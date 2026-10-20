@@ -170,7 +170,22 @@ namespace MonsterTrain2Poju.Probe
                 Damage = state.GetAttackDamage(),
                 Health = state.GetAdditionalHP(),
                 Size = state.GetAdditionalSize(),
+                DamageBuff = state.GetAttackDamageBuff(),
+                UnhealedHealth = state.GetAdditionalUnhealedHP(),
+                CostReduction = state.GetCostReduction(),
+                EquipmentLimit = state.GetAdditionalEquipmentLimit(),
+                Unique = state.IsUnique(),
+                AddedTraits = state.GetTraitDataUpgrades().Select(trait => trait.GetTraitStateName()).ToArray(),
+                RemovedTraits = state.GetRemoveTraitUpgrades(),
+                ReplacedUpgrades = state.GetUpgradesToRemove().Select(item => item.GetID()).ToArray(),
+                CharacterFilters = state.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray(),
                 Statuses = state.GetStatusEffectUpgrades(),
+                CharacterTriggers = state.GetTriggerUpgrades().Select(trigger => new
+                {
+                    Kind = trigger.GetTrigger().ToString(),
+                    Effects = trigger.GetEffects().Select(Effect).ToArray()
+                }).ToArray(),
+                RoomAbility = state.GetRoomAbilityUpgrade()?.GetID(),
                 RoomModifiers = upgrade.GetRoomModifierUpgrades().Select(RoomModifier).ToArray()
             };
         }

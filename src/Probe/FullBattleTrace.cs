@@ -189,8 +189,18 @@ namespace MonsterTrain2Poju.Probe
             CharacterState? unit = card.EquippedCharacter;
             return unit == null || normalizeDestroyedAttacker && (unit.IsDestroyed || !unit.IsAlive) ? 0 : UnitId(unit);
         }
+        private readonly Dictionary<string, string> roomAttachmentTriggerKeys = new Dictionary<string, string>();
         internal string UpgradeKey(string nativeKey)
         {
+            RoomManager? rooms = AllGameManagers.Instance?.GetRoomManager();
+            if (rooms != null)
+                for (int index = 0; index < rooms.GetNumRooms(); index++)
+                    foreach (TrainRoomAttachmentState attachment in rooms.GetRoom(index).Attachments)
+                        if (attachment.CardState != null && RoomAttachmentTriggerIdentity.Known(attachment.CardState.GetCardDataID()) &&
+                            !roomAttachmentTriggerKeys.ContainsKey(attachment.Guid))
+                            roomAttachmentTriggerKeys.Add(attachment.Guid, RoomAttachmentTriggerIdentity.Key(
+                                attachment.CardState.GetCardDataID(), index, rooms.GetRoom(index).NumRoomAttachmentsAddedFromCard));
+            if (roomAttachmentTriggerKeys.TryGetValue(nativeKey, out string key)) return key;
             // CardState.GetID() is the definition ID, shared by its copies.
             return nativeKey;
         }

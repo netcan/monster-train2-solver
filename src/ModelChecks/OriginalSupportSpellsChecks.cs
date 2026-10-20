@@ -190,7 +190,7 @@ internal static class OriginalSupportSpellsChecks
                 continue;
             }
             bool recast = returnedRecast && i == ids.Length - 1;
-            Require(card.DataId == originals[recast ? 0 : i - 4] && rule.CardType is "Spell" or "Equipment" or "Monster" or "Junk" && rule.ExternalInteractions.Count == 0 &&
+            Require(card.DataId == originals[recast ? 0 : i - 4] && rule.CardType is "Spell" or "Equipment" or "Monster" or "Junk" or "TrainRoomAttachment" && rule.ExternalInteractions.Count == 0 &&
                 after.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == (recast ? 2 : 1) &&
                 (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
                 "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
@@ -678,6 +678,7 @@ internal static class OriginalSupportSpellsChecks
         UnitRoomStatusChecks.Native(root, originals);
         ConditionalUnitUpgradeChecks.Native(root, originals);
         TriggeredRecursionChecks.Native(root, originals);
+        RoomAttachmentTriggerChecks.Native(root);
         if (originals.Contains("7018bb02-2ec2-4b4f-95d0-7bafce95d97d")) CrucibleStewardChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }

@@ -59,10 +59,10 @@ namespace MonsterTrain2Poju.Probe
                     bool supported = interactions.Count == 0 && (phase != null || post != null || pre != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length + energyModifiers.Length) &&
                         capacityModifiers.Length <= 1 && spellCostModifiers.Length <= 1 && energyModifiers.Length <= 1 && energyModifiers.All(modifier => modifier.GetParamInt() == 1) &&
                         state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
-                        state.GetAdditionalUnhealedHP() == 0 && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
+                        (state.GetAdditionalUnhealedHP() == 0 || attachment.CardState?.GetCardDataID() == "57921ae8-ca98-4a3b-a659-5e741d2e904a" && state.GetAdditionalUnhealedHP() == 20) && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
                         state.GetAdditionalEquipmentLimit() == 0 && state.GetStatusEffectUpgrades().All(status => RoomCapacityModel.SupportsCharacterStatus(status.statusId, status.count) && !status.fromPermanentUpgrade) &&
                         state.GetTraitDataUpgrades().Count == 0 && state.GetRemoveTraitUpgrades().Count == 0 &&
-                        (attachment.CardState == null || state.GetTriggerUpgrades().Count == 0) && state.GetCardTriggerUpgrades().Count == 0 &&
+                        (attachment.CardState == null || state.GetTriggerUpgrades().Count == 0 || RoomAttachmentTriggerIdentity.Known(attachment.CardState.GetCardDataID())) && state.GetCardTriggerUpgrades().Count == 0 &&
                         state.GetUpgradesToRemove().Count == 0 && RoomCapacityModel.ValidateCharacterFilters(filters) == null &&
                         state.GetUnitAbilityUpgrade() == null && state.GetRoomAbilityUpgrade() == null && !state.IsUnique();
                     if (!supported) return null;
@@ -80,7 +80,7 @@ namespace MonsterTrain2Poju.Probe
                 result.Add(new RoomCapacityAttachmentState(dataId, assetKey, (int)attachment.AttachType, delta,
                     characterUpgrades, attachment.TrainSide.HasFlag(Team.Type.Heroes),
                     attachment.TrainSide.HasFlag(Team.Type.Monsters), ignoreBosses,
-                    attachment.CardState == null ? attachment.Guid : "", spellCostDelta, moon,
+                    attachment.CardState == null ? attachment.Guid : RoomAttachmentTriggerIdentity.Known(dataId) ? FullBattleTrace.Active!.UpgradeKey(attachment.Guid) : "", spellCostDelta, moon,
                     attachment.UpgradeStates.SelectMany(item => item.Item2.GetRoomModifierUpgrades())
                         .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").Sum(modifier => modifier.GetParamInt()), characterFilters, postCombat, preCombat));
             }

@@ -75,6 +75,9 @@ namespace MonsterTrain2Poju.Probe
                 source.Spawn.Train.Context!.Statistics!.Value(ids[^1], "TimesPlayed", "ThisBattle") == 1)
                 index = ids.Length - 1; // Recast the actual returned recipient after the original choice.
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
+            if (IsolatedIds?.FirstOrDefault() == "93759003-bb97-44e4-9ef6-472c55bee2d9" && index >= 4 &&
+                source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "6bc6afc8-a113-4f03-b090-d4436f41d822" && source.Spawn.Turn < 2)
+                return null; // Observe Rage callbacks before replacing their originating attachment.
             if (IsolatedIds != null)
             {
                 string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
@@ -155,7 +158,7 @@ namespace MonsterTrain2Poju.Probe
             if (spellIds.Contains("e8f47c5d-c2d8-44e8-a443-4dca81acfa4d")) save.SetGold(250, isTotalReset: true);
             if (spellIds.Contains("e90fc0e0-b383-48a9-bb10-d8aaa1518531") || spellIds.Contains("f3406a6d-69f0-46e8-8db9-d829db017716"))
                 save.Cheat_SetTowerHP(save.GetMaxTowerHP() - 10);
-            if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster or CardType.Junk)))
+            if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster or CardType.Junk or CardType.TrainRoomAttachment)))
                 throw new InvalidOperationException("Isolated spell IDs must name one to thirty native playable card definitions.");
             foreach (string id in spellIds)
                 foreach (CardEffectData effect in all.FindCardData(id)!.GetEffects())

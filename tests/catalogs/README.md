@@ -23,10 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-000534-fdb379b3/card-catalog.mt2f`.
-The committed archive is byte-identical: 98,458 bytes, 11,875 unique nodes,
-SHA-256 `fe6f2c8fcd7bf8e7634a7716a675cd17965bca17e5010d36f5bcf74770d4d787`.
-The latest refresh captures Formless Child and Enlightened Infery's native
+Source: `.probe-runs/full-battle-no-cards-20261021-002418-6a34a5f8/card-catalog.mt2f`.
+The committed archive is byte-identical: 98,969 bytes, 12,006 unique nodes,
+SHA-256 `e534c7b46e8133214175a642e727e3657f8b7e8b31de5e9fe020c32da58eebf7`.
+The latest refresh captures native room upgrade trigger definitions, filters,
+traits, replacement references, unhealed health and room ability identities.
+Exactly seven model projections change: Boiler Room, Awakening Thicket,
+Sacrificial Chamber, Bloodsoaked Arena, Rage Room, Reanimation Lab and
+Electricity Chamber. All other 661 model projections remain identical.
+The preceding refresh captures Formless Child and Enlightened Infery's native
 character-triggered recursion payloads. Only these two projections change;
 all other 666 decoded card definitions stay identical.
 The preceding refresh captures Crucible Steward's native source-attack damage

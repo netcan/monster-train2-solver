@@ -9758,3 +9758,33 @@ counters zero. Each has five plays, five EndTurns and sixteen immutable replay
 branches. Both bounded searches have zero unsupported attempts and equal serial/
 parallel results in 128 states. Existing upgraded and original pile recursion
 chains retain their focused replays.
+
+The original room trigger batch uses unchanged cards and these isolated native
+captures, under `.probe-runs/full-battle-units-spells-and-junk-`:
+
+| Fixture suffix after `full-battle-original-isolated-` | Source run suffix | Native positive |
+| --- | --- | --- |
+| room-trigger-rage | 20261021-001804-8aadcd30 | Rage Room OnAttacking/OnHit Rage gains |
+| room-trigger-valor | 20261021-001935-75f8f22b | Bloodsoaked Arena OnKill Valor and armor |
+| room-trigger-healing | 20261021-002109-3a71e2cb | Awakening Thicket unhealed +20 maximum health and PostCombat healing |
+| room-trigger-spikes | 20261021-002109-032c5009 | Electricity Chamber later original Dreg spawn gains 8 Spikes |
+| room-trigger-energy | 20261021-002205-8f9d9c74 | Boiler Room native deaths grant energy for the next turn |
+| room-trigger-gold | 20261021-002209-087da2bb | Sacrificial Chamber native deaths grant gold |
+| room-trigger-spawn-upgrade | 20261021-002300-fcd3c654 | Reanimation Lab later original Dreg spawn gains its temporary upgrade |
+| room-trigger-replacement | 20261021-002304-3e462e14 | Rage callbacks execute before Fight Club replaces the attachment; keyed callbacks are removed |
+
+Native attachment Guids for this family are canonically represented by the
+original card identity, room and per-room creation ordinal. Native bindings
+retain a mapping after replacement; model branches allocate the same stable
+key without consuming RNG. Relic-created attachment identities are unchanged.
+Existing and later units receive the captured trigger upgrades through the
+same immutable unit-upgrade path. Other floors and unaffected teams are checked.
+Awakening Thicket's native +20 unhealed health is admitted explicitly.
+The two birth fixtures calibrate OnSpawn; separate reanimation activations and
+cross-floor movement through these attachments need further positive witnesses.
+The catalog retains the remaining mixed-payload guards, including room abilities.
+All eight captures have DEPTH-PASS, settled victories and zero capture/mismatch/
+unsupported/pending counters. Each has five EndTurns, sixteen immutable replay
+branches and a 128-state bounded search with zero unsupported attempts and equal
+serial/parallel results. Related original room-card, relic attachment and first
+room replication chains retain their focused replays.
