@@ -871,6 +871,8 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatUnit dead in source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Where(unit => unit.SpawnerCardId > 0 && !alive.Contains(unit.Id)))
                 {
+                    if (train.Rooms.SelectMany(room => room.Units).Any(unit => unit.SpawnerCardId == dead.SpawnerCardId && alive.Contains(unit.Id)))
+                        continue;
                     CombatUnit? removed = retainedSpellUnits.FirstOrDefault(unit => unit.Id == dead.Id);
                     if (removed?.DeathState?.IsDespawned == true && removed.DeathState.IsDestroyed == true &&
                         !removed.DeathState.HasFinishedDying && removed.Health > 0) continue;

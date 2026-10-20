@@ -9291,3 +9291,30 @@ unit's positive Full-to-New OnSpawn transition with its moon-aware ability
 creation metadata. Earlier archives remain immutable. Its profile is
 `.probe-runs/full-battle-units-spells-and-junk-20261020-184833-3c51dd43`.
 Both native runs have DEPTH-PASS, settled victories and all failure counters zero.
+
+### Original death-trigger, sacrifice/draw and direct room recursion spells
+
+Four unchanged originals have settled native victories, DEPTH-PASS and zero
+capture/mismatch/unsupported/pending counters:
+
+| Fixture suffix | Native profile suffix | Positive transition |
+| --- | --- | --- |
+| `intent-on-death` | `20261020-190130-0b2c81c6` | Entombed Explosive fires death damage while alive; death/listener flags stay unchanged. |
+| `cannibalize` | `20261020-190308-f3cd722a` | The friendly victim enters Exhausted and three native Morsels are created. |
+| `scrap-for-parts` | `20261020-190722-b02779fa` | The equipped victim dies; typed draw gives the waiting unit forty attack and free cost. |
+| `hallowed-halls` | `20261020-190802-4ced037f` | The victim returns in a fresh 1,005/10,005 body with Ephemeral, using the original source card and a replaced Standby condition. |
+
+Names use `full-battle-original-isolated-<suffix>.mt2f`; profiles use
+`.probe-runs/full-battle-units-spells-and-junk-<suffix>`. Typed-draw preparation
+adds six independent anchor cards to Draw: five enter the first hand and one
+remains available for a positive typed draw. Upgrade reference/queue capture
+is enabled for isolated spell batches. Generated and drawn cards are not extra
+policy plays. The queued upgrade is cleared after the source spell completes.
+
+Room recursion follows native shuffled candidate order, checks used capacity
+strictly greater than the maximum before each birth, and binds each restored
+card to its new unit. The current fixture calibrates one restored unit. Relic
+effects and monster card-trait/post-spawn callbacks retain explicit guards.
+Native casting treats failed Sacrifice/Recursion tests as mandatory failures;
+the Pyre-room rejection is checked even when the ordinary fail-to-cast flag is
+false. Existing pile recursion, Shroud Spike and Deathroar are affected checks.

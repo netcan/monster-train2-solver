@@ -110,7 +110,8 @@ namespace MonsterTrain2Poju.Model
                         source.Rooms.SelectMany(item => item.Units).Any(unit => unit.Id == sourceAttackUnitId)) &&
                         PassesTest(tested, testCount, source.Context!.AllScenarioBossesDead == true, source.Context, room.Preview, room,
                             PyreAlive(source, fullTrain), sourceCardId) && PassesTargetSubtype(source, effect, targets);
-                if (!valid && effect.Tests?.FailToCast == true) return new SpellCastCheck(false, battleRngAfterTests: testingRng);
+                if (!valid && (effect.Tests?.FailToCast == true || effect.Type is "Sacrifice" or "Recursion"))
+                    return new SpellCastCheck(false, battleRngAfterTests: testingRng);
                 passed |= valid;
             }
             return new SpellCastCheck(passed, battleRngAfterTests: testingRng);
@@ -581,6 +582,16 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "Recursion")
                 {
+                    if (effect.Recursion?.SelectionMode == "RandomToRoomUntilCapacityFull")
+                    {
+                        if (!fullTrain || callbacks.Count > 0) return UnsupportedTrain("Room recursion requires the full train after pending death callbacks settle.");
+                        TrainSpellResult restored = RoomRecursionModel.Apply(state, roomIndex, effect, definitions, sourceCardId);
+                        if (!restored.Supported) return restored;
+                        state = restored.State!; events.AddRange(restored.Events);
+                        if (restored.Outcome != RoomOutcome.Exchanged) outcome = restored.Outcome;
+                        piles = state.Context!.OtherPiles?.ToArray(); positions = CardTargetModel.Positions(state);
+                        continue;
+                    }
                     IReadOnlyList<int>? selectedCardIds = recursionSelections?.FirstOrDefault(selection =>
                         selection.EffectIndex == index)?.CardInstanceIds;
                     StatisticQueryResult drawCount = CardPileDrawModel.Adjust(state.Context!, sourceCardId, effect.Value, forRecursion: true);
@@ -611,7 +622,7 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "PlayUnitTrigger")
                 {
                     // CombatManager.QueueTrigger rejects OnEaten during deployment.
-                    if (state.Rooms.Single(room => room.RoomIndex == collectionRoom).Deployment) continue;
+                    if (effect.UnitTriggerKind == "OnEaten" && state.Rooms.Single(room => room.RoomIndex == collectionRoom).Deployment) continue;
                     var pending = targets.UnitIds.Select(id => {
                         RoomCombatState room = state.Rooms.Single(item => item.Units.Any(unit => unit.Id == id));
                         return new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex,
@@ -2189,8 +2200,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "PlayUnitTrigger")
                 {
-                    if (effect.UnitTriggerKind != "OnEaten" || effect.Range != null)
-                        return "Unit-trigger cards require the calibrated fixed OnEaten payload.";
+                    if (effect.UnitTriggerKind is not ("OnEaten" or "OnDeath") || effect.Range != null)
+                        return "Unit-trigger cards require a calibrated fixed OnEaten or OnDeath payload.";
                     continue;
                 }
                 if (effect.Type == "HealRelative")
@@ -2422,7 +2433,8 @@ namespace MonsterTrain2Poju.Model
                 case "HealTrain": return count > 0;
                 case "Sacrifice": return count > 0;
                 case "Kill": return effect.Tests?.MustHaveValidTargets != true || count > 0;
-                case "Recursion": return count > 0 &&
+                case "Recursion": return effect.Recursion?.SelectionMode == "RandomToRoomUntilCapacityFull" ?
+                    room != null && !room.Units.Any(unit => unit.IsPyre) : count > 0 &&
                     (effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck" || effect.Value > 0);
                 case "AddStatus":
                 case "MultiplyStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" || count > 0;

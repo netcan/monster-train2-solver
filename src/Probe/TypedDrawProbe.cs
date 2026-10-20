@@ -17,7 +17,7 @@ namespace MonsterTrain2Poju.Probe
         private static Record? current;
         private static readonly Dictionary<CardUpgradeState, int> sharedReferences = new Dictionary<CardUpgradeState, int>();
         private static int nextUpgradeReferenceId = 1;
-        private static bool TrackReferences => Enabled || SoldierOfFortuneScenario.Enabled || OriginalDrawUpgradeScalingScenario.Enabled || OriginalDiscardDrawScenario.Enabled || OriginalCorruptedAngelsScenario.CostOrder != null;
+        private static bool TrackReferences => Enabled || SoldierOfFortuneScenario.Enabled || OriginalDrawUpgradeScalingScenario.Enabled || OriginalDiscardDrawScenario.Enabled || OriginalCorruptedAngelsScenario.CostOrder != null || OriginalSupportSpellsScenario.IsolatedIds != null;
         internal static int? NextUpgradeReferenceId => TrackReferences ? nextUpgradeReferenceId : (int?)null;
         internal static int? SharedReferenceId(CardUpgradeState upgrade) => TrackReferences && sharedReferences.TryGetValue(upgrade, out int id) ? id : (int?)null;
         private static bool Recording => (Enabled && TypedDrawScenario.Prepared || SoldierOfFortuneScenario.Prepared || OriginalDrawUpgradeScalingScenario.Prepared || OriginalDiscardDrawScenario.Prepared) && FullBattleTrace.Active != null &&
@@ -41,7 +41,7 @@ namespace MonsterTrain2Poju.Probe
         {
             var queue = (IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextDrawnTempCardUpgrades").GetValue(cards);
             NextDrawUpgradeRule[] values = queue.Select(UpgradeRule).ToArray();
-            return values.Length == 0 && !Enabled && !SoldierOfFortuneScenario.Enabled && !OriginalDrawUpgradeScalingScenario.Enabled && !OriginalDiscardDrawScenario.Enabled ? null : values;
+            return values.Length == 0 && !Enabled && !SoldierOfFortuneScenario.Enabled && !OriginalDrawUpgradeScalingScenario.Enabled && !OriginalDiscardDrawScenario.Enabled && OriginalSupportSpellsScenario.IsolatedIds == null ? null : values;
         }
 
         internal sealed class Record

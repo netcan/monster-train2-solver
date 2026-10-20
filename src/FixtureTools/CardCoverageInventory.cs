@@ -247,6 +247,13 @@ internal static class CardCoverageInventory
     private static bool CalibratedSourceTrait(FixtureValue trait, string cardId)
     {
         string type = Text(trait, "Type");
+        if (cardId == "c6484604-b077-43ce-84a4-0179d2f36352")
+            return type == "CardTraitShowCardTargets" && trait.GetProperty("Int").GetInt32() == 0 &&
+                trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
+                !Flag(trait, "Bool") && Text(trait, "Str").Length == 0 && trait.GetProperty("Float").GetDouble() == 0 &&
+                !Flag(trait, "Scaling") && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
+                new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag", "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
         if (cardId is "7a01774e-1e0f-4551-8691-cd0dd2f372ea" or "70911970-988b-4535-b46e-e6aa3987fb6c")
         {
             bool collapse = cardId == "7a01774e-1e0f-4551-8691-cd0dd2f372ea";

@@ -88,6 +88,8 @@ namespace MonsterTrain2Poju.Model
             UnityRng battleRng, CardActionEffect effect, BattlePlayRules? definitions, int sourceCardId, int maxHandSize,
             IReadOnlyList<int>? selectedCardIds = null, IReadOnlyList<CardInstanceState>? cardRegistry = null, int? drawCount = null)
         {
+            if (effect.Recursion?.SelectionMode == "RandomToRoomUntilCapacityFull")
+                return new CardRecursionResult(null, null, null, "Room recursion requires the complete train birth transition.");
             IReadOnlyList<int> eligible = EligibleCards(cards, otherPiles, effect, definitions, sourceCardId,
                 out string? error, cardRegistry);
             if (error != null) return new CardRecursionResult(null, null, null, error);
@@ -228,7 +230,7 @@ namespace MonsterTrain2Poju.Model
             if (rule == null) return "Missing native card-recursion definition.";
             if (rule.SelectionMode != "ChooseToHand" && rule.SelectionMode != "ChooseToDeck" &&
                 rule.SelectionMode != "RandomToHand" && rule.SelectionMode != "RandomToDeck" &&
-                rule.SelectionMode != "RandomToHandWithUpgrades")
+                rule.SelectionMode != "RandomToHandWithUpgrades" && rule.SelectionMode != "RandomToRoomUntilCapacityFull")
                 return "Unmodeled card-recursion selection mode " + rule.SelectionMode + ".";
             if (rule.HasCardFilter && rule.CardFilter == null) return "Card recursion requires its native card-filter definition.";
             if (!rule.HasCardFilter && rule.CardFilter != null) return "Card recursion has unexpected card-filter metadata.";

@@ -3168,10 +3168,20 @@ namespace MonsterTrain2Poju.Probe
                 CharacterState target = units.Single(unit => FullBattleTrace.Active!.UnitId(unit) == action.TargetUnitId);
                 drop = target.GetSpawnPoint();
             }
+            int selectedBeforeTest = managers.GetRoomManager()!.GetSelectedRoom();
             if (!cards.CanPlayHandCard(cards.GetHand()[index], action.RoomIndex, drop, null, null, out var error))
                 throw new InvalidOperationException("The native game rejected a modeled legal play: " + error);
+            int selectedAfterTest = managers.GetRoomManager()!.GetSelectedRoom();
             FullBattleTrace.Active!.BeginCardPlay(action, scenarioAction: scenarioPrelude);
-            if (!cards.PlayCard(index, drop, ref error)) throw new InvalidOperationException("Policy card play failed: " + error);
+            int selectedAfterCapture = managers.GetRoomManager()!.GetSelectedRoom();
+            if (!cards.PlayCard(index, drop, ref error))
+            {
+                CardState rejected = cards.GetHand()[index];
+                throw new InvalidOperationException("Policy card play failed: " + error + " card=" + rejected.GetCardDataID() +
+                    " targetless=" + rejected.GetTargetless() + " targetsRoom=" + rejected.GetTargetsRoom() +
+                    " roomBeforeTest=" + selectedBeforeTest + " roomAfterTest=" + selectedAfterTest + " roomAfterCapture=" + selectedAfterCapture +
+                    " selectedRoom=" + managers.GetRoomManager()!.GetSelectedRoom() + " drop=" + (drop == null ? "null" : drop.ToString()));
+            }
             if (OriginalAddSnackOnKillScenario.Enabled) OriginalAddSnackOnKillScenario.MarkPolicyActionPlayed();
             if (OriginalFinalEndingArtifactScenario.Enabled) OriginalFinalEndingArtifactScenario.MarkPolicyActionPlayed();
             if (OriginalBalatroEventYorickScenario.Enabled) OriginalBalatroEventYorickScenario.MarkPolicyActionPlayed();

@@ -294,6 +294,10 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-generation-spells.mt2f',
     'full-battle-original-isolated-damage-capacity-spells.mt2f',
     'full-battle-original-isolated-replicator-ray.mt2f',
+    'full-battle-original-isolated-intent-on-death.mt2f',
+    'full-battle-original-isolated-cannibalize.mt2f',
+    'full-battle-original-isolated-scrap-for-parts.mt2f',
+    'full-battle-original-isolated-hallowed-halls.mt2f',
     'full-battle-original-null-scourges.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
@@ -2365,6 +2369,15 @@ foreach ($fixturePath in $originalSupportSpellFixtures) {
     foreach ($mode in @('--original-support-spells-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original support spell checks failed ($mode): $fixturePath" }
+    }
+}
+$remainingOriginalSpellFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @(
+    'full-battle-original-isolated-intent-on-death.mt2f', 'full-battle-original-isolated-cannibalize.mt2f',
+    'full-battle-original-isolated-scrap-for-parts.mt2f', 'full-battle-original-isolated-hallowed-halls.mt2f') })
+foreach ($fixturePath in $remainingOriginalSpellFixtures) {
+    foreach ($mode in @('--original-support-spells-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Remaining original spell checks failed ($mode): $fixturePath" }
     }
 }
 $originalRearrangeSpellFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-rearrange-spells.mt2f' })

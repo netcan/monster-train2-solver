@@ -154,6 +154,47 @@ internal static class OriginalSupportSpellsChecks
                 after.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == 1 &&
                 before.Energy >= after.Energy, "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            if (rule.AssetKey == "IntentOnDeath")
+            {
+                CombatUnit oldTarget = before.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Id == action.TargetUnitId),
+                    newTarget = after.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Id == action.TargetUnitId);
+                Require(oldTarget.Health > 0 && newTarget.Health == oldTarget.Health &&
+                    newTarget.Triggers.Any(trigger => trigger.Kind == "OnDeath" && trigger.HasTriggered) &&
+                    Json(newTarget.DeathState) == Json(oldTarget.DeathState) &&
+                    after.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy) <
+                        before.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy),
+                    "Intent on Death must positively fire a living unit's death damage without changing its death lifecycle flags.");
+            }
+            if (rule.AssetKey == "Cannibalize")
+            {
+                CombatUnit victim = before.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Id == action.TargetUnitId);
+                Require(after.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != victim.Id) &&
+                    after.Spawn.Train.Context!.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == victim.SpawnerCardId) &&
+                    after.Spawn.Train.Context.NextCardId - before.Spawn.Train.Context!.NextCardId == 3,
+                    "Cannibalize must sacrifice its real friendly target into Exhausted and generate three native Morsels.");
+            }
+            if (rule.AssetKey == "ScrapForParts")
+            {
+                CombatUnit victim = before.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Id == action.TargetUnitId);
+                CardToken drawn = before.Spawn.Train.Context!.Cards.Draw.Single();
+                CardInstanceState upgraded = after.Spawn.Train.Context!.FindCard(drawn.InstanceId)!;
+                Require(victim.EquipmentCards?.Count == 1 && after.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != victim.Id) &&
+                    after.Spawn.Train.Context.Cards.Hand.Any(token => token.InstanceId == drawn.InstanceId) && after.Spawn.Train.Context.Cards.Draw.Count == 0 &&
+                    upgraded.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ScrapForParts_Upgrade" && upgrade.Stats.Damage == 40 && upgrade.Stats.Cost == -99) &&
+                    after.Spawn.Train.Context.Cards.NextDrawUpgrades?.Count == 0,
+                    "Scrap for Parts must sacrifice the equipped host, positively draw the waiting unit, apply forty attack/free cost, and clear its upgrade queue.");
+            }
+            if (rule.AssetKey == "HallowedHalls")
+            {
+                CombatUnit victim = before.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Team == CombatTeam.Player);
+                CombatUnit restored = after.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Team == CombatTeam.Player);
+                CardPileState standby = after.Spawn.Train.Context!.OtherPiles!.Single(pile => pile.Name == "Standby");
+                Require(victim.Id != restored.Id && victim.SpawnerCardId == restored.SpawnerCardId && restored.Attack == 1005 && restored.Health == 10005 &&
+                    restored.Status("ephemeral")?.Stacks == 1 && standby.UnitConditions!.Single(binding => binding.CardId == victim.SpawnerCardId).HostUnitId == restored.Id &&
+                    after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.All(token => token.InstanceId != restored.SpawnerCardId) &&
+                    !BattleActionModel.PlayCard(before, new PlayCardAction(ids[i], before.PlayRules!.Rooms.Single(room => room.IsPyre).RoomIndex)).Supported,
+                    "Hallowed Halls must resurrect into a fresh body, retain the upgraded source card in Standby with its new host, and reject the Pyre room.");
+            }
             if (rule.AssetKey == "ReplicatorRay")
             {
                 CombatUnit oldHost = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId),

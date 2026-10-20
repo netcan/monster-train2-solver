@@ -2031,7 +2031,8 @@ namespace MonsterTrain2Poju.Model
                     if (!blockedDeath) FireTriggers(actor, queued.Kind, canFireTriggers: queued.CanFireTriggers, fromQueue: true, paramInt: queued.ParamInt,
                         overrideTarget: overridden, dyingCharacter: dying, triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId,
                         exclusiveTriggerStateId: queued.ExclusiveTriggerStateId, paramInt2: queued.ParamInt2);
-                    if (queued.Kind == "OnDeath" && queued.ParamInt != 1 && actor.Source.DeathState != null)
+                    if (queued.Kind == "OnDeath" && queued.ParamInt != 1 && actor.Source.DeathState != null &&
+                        (queued.RemovalLifecycle || queued.Unit.Health <= 0))
                         actor.Apply(actor.Freeze().WithDeathState(new UnitDeathState(true, true, false,
                             isSacrifice: actor.Source.DeathState.IsSacrifice, statisticsListenerOnce: actor.Source.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null)));
                     queued.Unit = actor.Freeze();
