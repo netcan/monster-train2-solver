@@ -1246,6 +1246,10 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState? firstRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == (selfAttack ? selfUnitId : targets.UnitIds[0])));
                     if (!effect.UseSelectedRoom && firstRoom == null) continue;
                     int attackRoom = !selfAttack && effect.UseSelectedRoom ? roomIndex : firstRoom!.RoomIndex;
+                    // GameEffectHelper focuses the Pyre's room before applying
+                    // the iterator, while keeping its selectedRoom parameter.
+                    if (!selfAttack && effect.UseSelectedRoom && effect.Target == "Pyre")
+                        attackRoom = firstRoom!.RoomIndex;
                     foreach (int actorId in selfAttack ? new[] { selfUnitId } : targets.UnitIds)
                     {
                         CombatUnit? actor = state.Rooms.SelectMany(item => item.Units).FirstOrDefault(unit => unit.Id == actorId);

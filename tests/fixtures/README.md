@@ -9930,11 +9930,22 @@ DEPTH-PASS records a settled win with zero capture/mismatch/unsupported/pending
 counters. Nine plays/five EndTurns pass sixteen immutable replay branches and
 a 128-state search with zero unsupported attempts and equal serial/parallel
 results. Existing movement, unit-copy and ability-Incant checks pass. The old
-`full-battle-ability-activation.mt2f` skill checker fails identically before this
-change at its forced Pyre attack (Boss HP 80 predicted versus 125 native); this
-pre-existing discrepancy is not covered by the room-skill acceptance. Attachment
+`full-battle-ability-activation.mt2f` Pyre attack discrepancy is resolved by the
+separate native effect-entry observations below. Attachment
 corruption with unit/relic CorruptionAdded callbacks remains explicitly guarded.
 The other two room skills have separate positive movement witnesses below.
+
+`full-battle-ability-activation-pyre-focus.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-045705-48e5bccf`.
+Two actual Pyre-attack effect entries observe room three selected, a Pyre target
+on room three, and unchanged room-zero effect parameters. GameEffectHelper
+temporarily focuses the Pyre room before CardEffectAttackWithUnit reads it,
+then restores the parameter room. The model therefore runs that attack in the
+Pyre room, preserving the room-zero boss's native health. Suppressed Pyre focus
+remains explicitly guarded. The fresh native capture has a settled DEPTH-PASS
+win and zero failure counters. Seventeen plays/five EndTurns pass sixteen full
+immutable replay branches; both activations also pass thirty-two independent
+branches. The original older ability-activation fixture passes again.
 
 `full-battle-original-isolated-jack-in-the-box.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-044856-d24d770f`;

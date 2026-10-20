@@ -533,6 +533,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-sentry.mt2f', 'full-battle-sentry-lethal.mt2f',
     'full-battle-ability-cooldown.mt2f', 'full-battle-ability-cache.mt2f',
     'full-battle-ability-activation.mt2f', 'full-battle-ability-activation-x.mt2f',
+    'full-battle-ability-activation-pyre-focus.mt2f',
     'full-battle-ability-activation-lethal.mt2f',
     'full-battle-unit-ability-teleport.mt2f',
     'full-battle-spawn-or-status.mt2f',
@@ -1875,6 +1876,10 @@ foreach ($fixturePath in $originalCorruptedAngelsFixtures) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Corrupted Angels checks failed ($mode): $fixturePath" }
     }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-ability-activation-pyre-focus.mt2f' })) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- '--unit-ability-native-only' $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Native Pyre attack focus checks failed: $fixturePath" }
 }
 $extendedMechanicFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -in @('full-battle-tower-corruption-callbacks.mt2f', 'full-battle-null-unit-ability.mt2f', 'full-battle-removed-status-upgrade-scaling.mt2f')

@@ -1554,6 +1554,7 @@ namespace MonsterTrain2Poju.Probe
                 AttackTriggers = AttackTriggerProbe.Records,
                 TriggeredStatuses = TriggeredStatusProbe.Records,
                 UnitSelfAttackQueries = UnitSelfAttackProbe.Records,
+                UnitAttackFocus = UnitAttackFocusProbe.Records,
                 UnitRoomStatusQueries = UnitRoomStatusProbe.Records,
                 UnitRoomTriggerCountQueries = UnitRoomTriggerCountProbe.Records,
                 TriggeredTrainHeals = TriggeredTrainHealProbe.Records,

@@ -191,6 +191,25 @@ internal static class UnitAbilityChecks
                 attacks[1].UseSelectedRoom,
                 "The native ability fixture did not capture both unit-turn effects and their equipment/room parameters.");
             Console.WriteLine("NATIVE-ATTACK-WITH-UNIT-COVERAGE PASS: Self and Pyre targets, equipment gate and selected-room parameters.");
+            if (fixture.TryGetProperty("UnitAttackFocus", out FixtureValue focus))
+            {
+                FixtureValue[] rows = focus.EnumerateArray().ToArray();
+                if (rows.Length > 0)
+                {
+                    FixtureValue[] pyres = rows.Where(row => row.GetProperty("TargetMode").GetString() == "Pyre").ToArray();
+                    Require(pyres.Length == 2 && rows.All(row => row.GetProperty("Completed").GetBoolean()) &&
+                        pyres.All(row => row.GetProperty("SelectedRoom").GetInt32() == 3 &&
+                            row.GetProperty("ParameterRoom").GetInt32() == 0 &&
+                            row.GetProperty("TargetRooms").EnumerateArray().Single().GetInt32() == 3),
+                        "Native Pyre attack must observe transient Pyre-floor focus while preserving its original effect parameter room.");
+                    Console.WriteLine("NATIVE-PYRE-ATTACK-FOCUS PASS: two native effect-entry observations, floor three focus with floor zero parameters.");
+                    foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+                        Require(fixture.GetProperty(key).GetInt32() == 0, "Nonzero focused native capture counter: " + key);
+                    Require(fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("TerminalEffectsSettled").GetBoolean(),
+                        "Focused native ability battle did not finish and settle.");
+                    RecordedBattleChecks.Native(fixture);
+                }
+            }
         }
         int selfHeals = 0, zero = 0, positive = 0, terminal = 0, kills = 0;
         foreach (var sample in samples)

@@ -377,6 +377,9 @@ namespace MonsterTrain2Poju.Probe
             if (effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")
                 return new CardActionEffect("Unbox", "None", 0, false, false, Array.Empty<CombatStatus>(),
                     tests: new CardEffectTests(true, false, false, false, false));
+            if (effect.GetEffectStateName() == "CardEffectAttackWithUnit" && effect.GetTargetMode() == TargetMode.Pyre &&
+                effect.GetParamBool2() && effect.GetShouldSuppressPyreRoomFocus())
+                interactions.Add("Pyre attacks with suppressed room focus require native calibration.");
             if (effect.GetEffectStateName() is "CardEffectMix" or "CardEffectMixRandom")
                 return new CardActionEffect(effect.GetEffectStateName() == "CardEffectMix" ? "Mix" : "MixRandom", "None", effect.GetParamInt(), false, false,
                     Array.Empty<CombatStatus>(), tests: new CardEffectTests(true, false, false, false, true));
