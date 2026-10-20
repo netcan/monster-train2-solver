@@ -148,8 +148,11 @@ internal static class OriginalSupportSpellsChecks
         string[] originals = root.GetProperty("ModifierScenario").GetString()!["original-isolated-spells:".Length..].Split(',');
         int[] ids = root.GetProperty("OriginalSupportSpellsIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
+        bool returnedRecast = originals.FirstOrDefault() == "bae01a8c-25dd-4a08-b08a-5f17a5f3f52a" &&
+            originals.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60");
         Require(originals.Length is > 0 and <= 30 && originals.Distinct().Count() == originals.Length &&
-            originals.All(id => Guid.TryParseExact(id, "D", out _)) && ids.Length == originals.Length + 4 && actions.Length == ids.Length,
+            originals.All(id => Guid.TryParseExact(id, "D", out _)) && ids.Length == originals.Length + (returnedRecast ? 5 : 4) &&
+            (!returnedRecast || ids[^1] == ids[4]) && actions.Length == ids.Length,
             "Isolated spell batch must contain its exact controls and distinct original identities.");
         for (int i = 0; i < actions.Length; i++)
         {
@@ -174,11 +177,45 @@ internal static class OriginalSupportSpellsChecks
                     "Isolated spell energy control differs.");
                 continue;
             }
-            Require(card.DataId == originals[i - 4] && rule.CardType is "Spell" or "Equipment" or "Monster" or "Junk" && rule.ExternalInteractions.Count == 0 &&
-                after.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == 1 &&
+            bool recast = returnedRecast && i == ids.Length - 1;
+            Require(card.DataId == originals[recast ? 0 : i - 4] && rule.CardType is "Spell" or "Equipment" or "Monster" or "Junk" && rule.ExternalInteractions.Count == 0 &&
+                after.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == (recast ? 2 : 1) &&
                 (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
                 "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            bool corruptUpgradeBatch = originals.Contains("4e8b6d4c-ee6b-46e7-8804-b94489af371d") ||
+                originals.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60");
+            if (rule.AssetKey is "BoundingEchoes" or "ReturnedSoul")
+            {
+                CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;
+                CardInstanceState recipient = old.CardInstances!.Single(item => item.DataId == "bae01a8c-25dd-4a08-b08a-5f17a5f3f52a"),
+                    upgraded = changed.FindCard(recipient.InstanceId)!;
+                bool returned = rule.AssetKey == "ReturnedSoul";
+                string upgradeKey = returned ? "WurmReturnEnhanceCorrupt" : "WurmEnhanceCorrupt";
+                Require(upgraded.Temporary.Upgrades.Count(upgrade => upgrade.AssetKey == upgradeKey) == 1 &&
+                    CardExhaustModel.RefreshTraits(upgraded).CombinedTraits!.Count(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == 1 &&
+                    Json(upgraded.Permanent) == Json(recipient.Permanent) &&
+                    changed.Cards.Hand.Any(token => token.InstanceId == recipient.InstanceId) &&
+                    (returned ? old.Cards.Discard.Any(token => token.InstanceId == recipient.InstanceId) &&
+                        CardExhaustModel.HasConsume(upgraded) : old.Cards.Hand.Any(token => token.InstanceId == recipient.InstanceId)),
+                    "Original Corrupt upgrade must reach the existing hand/discard recipient, with Returned Soul also installing temporary Consume.");
+            }
+            if (corruptUpgradeBatch && CardExhaustModel.RefreshTraits(card).CombinedTraits!.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait))
+            {
+                CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;
+                BattleResourceState resources = old.Resources!;
+                Require(resources.CorruptionPerCorruptTrait == 1 &&
+                    resources.WithVisibleDeckCount(resources.VisibleDeckCount).CorruptionPerCorruptTrait == 1 &&
+                    resources.WithPyreModifiedBaseAttack(resources.PyreModifiedBaseAttack).CorruptionPerCorruptTrait == 1 &&
+                    resources.WithBasePyreMaxHealth(resources.BasePyreMaxHealth).CorruptionPerCorruptTrait == 1 &&
+                    CardExhaustModel.RefreshTraits(card).CombinedTraits!.Count(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == 1 &&
+                    changed.RoomCapacities!.All(room => room.Corruption == old.RoomCapacities!.Single(previous => previous.RoomIndex == room.RoomIndex).Corruption +
+                        (room.RoomIndex == action.RoomIndex ? 1 : 0)) &&
+                    Json(changed.FindCard(card.InstanceId)!.Permanent) == Json(card.Permanent) &&
+                    (!originals.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60") ||
+                        changed.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == card.InstanceId)),
+                    "The upgraded original spell must add exactly the captured Corrupt amount on its played floor, preserving other rooms and permanent upgrades.");
+            }
             if (rule.AssetKey is "SilverInk" or "MagicPowerHand")
             {
                 CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;

@@ -53,6 +53,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool trainHealResourceObserved;
         private static bool grosMichelResourceObserved;
         private static bool pileDrawResourceObserved;
+        private static bool corruptTraitResourceObserved;
 
         private static RelicState[] Current(AllGameManagers managers)
         {
@@ -94,11 +95,15 @@ namespace MonsterTrain2Poju.Probe
             trainHealResourceObserved |= trainHealCards;
             grosMichelResourceObserved |= Current(managers).Any(owner => owner.GetRelicDataID() == RelicEndCombatModel.GrosMichelId);
             pileDrawResourceObserved |= cards?.GetAllCards(new List<CardState>()).Any(card => card.GetTraitStates().Any(trait => trait is CardTraitScalingCardDrawCountPerPile || trait is CardTraitScalingStatusEffectPerPile)) == true;
+            corruptTraitResourceObserved |= cards?.GetAllCards(new List<CardState>()).Any(card =>
+                card.GetTraitStates().Any(trait => trait is CardTraitCorruptState)) == true ||
+                cardEffects.Any(effect => effect.GetParamCardUpgradeData()?.GetTraitDataUpgrades()
+                    .Any(trait => trait.GetTraitStateName() == CardCorruptStateModel.Trait) == true);
             if (!RelicProbe.HasReplayHistory(managers) && !OriginalResourceRelicBatchScenario.Enabled && !PyreResourceRefreshScenario.Enabled && !OriginalFloorCapacityRelicScenario.Enabled &&
                 !OriginalMoonPhaseEnergyRelicScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
                 !OriginalStartCombatHoardScenario.Enabled && !OriginalStartCombatHoardScenario.Acquired &&
                 !OriginalFirstCardCostScenario.Enabled &&
-                !grosMichelResourceObserved && !pileDrawResourceObserved &&
+                !grosMichelResourceObserved && !pileDrawResourceObserved && !corruptTraitResourceObserved &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect => RelicResourceModel.IsEffect(effect.GetType().Name))) &&
                 !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved && !goldRewardResourceObserved)
                 return null;
@@ -120,7 +125,7 @@ namespace MonsterTrain2Poju.Probe
                     .GetRule(MutableRules.Condition.GoldRewardMultiplier, 1f),
                 baseFloorCapacity: balance.GetCharacterCapacityPerFloor(), dragonsHoardCap: save.GetDragonsHoardCap(),
                 towerHealingDisabled: save.GetRelicModifiedRules().GetTowerHealingDisabled(),
-                visibleDeckCount: save.GetVisibleDeckCount());
+                visibleDeckCount: save.GetVisibleDeckCount(), corruptionPerCorruptTrait: save.GetNumCorruptionAddedPerTraitCorrupt());
         }
 
         internal static RelicResourceEffect Definition(IRelicEffect effect, int index, AllGameManagers managers)

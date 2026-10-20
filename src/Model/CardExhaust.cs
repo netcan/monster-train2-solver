@@ -48,6 +48,8 @@ namespace MonsterTrain2Poju.Model
         public static bool HasConsume(CardInstanceState card) => RefreshTraits(card).CombinedTraits?.Any(trait => trait.RuntimeType == Trait) == true;
         internal static string? PermanentUpgradeError(CardInstanceState card, CardUpgradeModifier upgrade)
         {
+            if (upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true)
+                return "Permanent Corrupt State installation requires separate native calibration.";
             CardTraitValue[] markers = upgrade.Lifecycle?.AddedTraits.Where(trait => trait.RuntimeType is "CardTraitDistinct" or "CardTraitEphemeral").ToArray() ?? Array.Empty<CardTraitValue>();
             if (markers.Length > 0 && (card.MaskDescriptor == null || markers.Any(trait => trait.StackMode != 0)))
                 return "Permanent Distinct/Ephemeral installation requires captured traits and a non-stacking definition.";

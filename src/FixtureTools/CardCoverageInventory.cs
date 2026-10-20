@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "37edb635ceca4cbcc5dc89ff982b1b5742521fc312a9b7eed84e028c0deeb940";
+    private const string CatalogHash = "f2a915a2f0644e5d74cc5636a0c6bac59799b21b2108762b28291d1d90157c15";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -270,7 +270,8 @@ internal static class CardCoverageInventory
                 Strings(trait, "StatusEffectIds").SequenceEqual(new[] { "multistrike" }) &&
                 new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag", "SpecificCardDataId", "MoonPhaseUpgrade" }
                     .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
-        if (cardId == "c6484604-b077-43ce-84a4-0179d2f36352")
+        if (cardId == "c6484604-b077-43ce-84a4-0179d2f36352" ||
+            cardId == "6a3633b6-4ecc-43b1-bb56-548f56cf1d60" && type == "CardTraitShowCardTargets")
             return type == "CardTraitShowCardTargets" && trait.GetProperty("Int").GetInt32() == 0 &&
                 trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
                 !Flag(trait, "Bool") && Text(trait, "Str").Length == 0 && trait.GetProperty("Float").GetDouble() == 0 &&
@@ -459,7 +460,7 @@ internal static class CardCoverageInventory
                 trait.GetProperty("Int3").GetInt32() == (type == "CardTraitExhaustState" ? 30 : 15) && Flag(trait, "Bool") == (type != "CardTraitExhaustState") &&
                 Text(trait, "Str").Length == 0 && trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") &&
                 Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
-        if (cardId == "135cf22d-6d1b-47ee-b48e-e8f7b47e5750" && type == "CardTraitDistinct")
+        if (cardId is "135cf22d-6d1b-47ee-b48e-e8f7b47e5750" or "6a3633b6-4ecc-43b1-bb56-548f56cf1d60" && type == "CardTraitDistinct")
             return trait.GetProperty("Int").GetInt32() == 0 && trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
                 !Flag(trait, "Bool") && Text(trait, "Str") == "" && Text(trait, "TrackedValue") == "SubtypeInDeck" &&
                 Text(trait, "EntryDuration") == "ThisTurn" && Text(trait, "SpecificCardDataId") == "" &&

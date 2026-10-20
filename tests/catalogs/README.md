@@ -23,10 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-213037-f9e7fb4d/card-catalog.mt2f`.
-The committed archive is byte-identical: 97,965 bytes, 11,815 unique nodes,
-SHA-256 `37edb635ceca4cbcc5dc89ff982b1b5742521fc312a9b7eed84e028c0deeb940`.
-The latest refresh removes Awoken's Rail Spike's obsolete hand-discard guard.
+Source: `.probe-runs/full-battle-no-cards-20261020-214338-7c78703d/card-catalog.mt2f`.
+The committed archive is byte-identical: 97,887 bytes, 11,814 unique nodes,
+SHA-256 `f2a915a2f0644e5d74cc5636a0c6bac59799b21b2108762b28291d1d90157c15`.
+The latest refresh projects Bounding Echoes and Returned Soul's temporary Corrupt
+trait upgrades. Exactly those two Rules change; all 668 raw definitions match.
+The preceding refresh removes Awoken's Rail Spike's obsolete hand-discard guard.
 Its played-cost draw and draw blocking remain validated by CardDiscardDrawModel;
 only its Rule changes and all 668 raw card definitions stay identical.
 The preceding refresh removes obsolete hand-discard guards for branch-owned

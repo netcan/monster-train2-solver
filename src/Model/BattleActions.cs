@@ -551,20 +551,27 @@ namespace MonsterTrain2Poju.Model
             int nextUnitId = source.Spawn.NextUnitId;
             string? identityError = UnitIdentityModel.Validate(context, train.Rooms.SelectMany(room => room.Units), nextUnitId);
             if (identityError != null) return Unsupported(identityError);
-            string? DrainPyrePaymentCallbacks()
+            string? RunBeforePlayCallbacks()
             {
-                if (pyreCost.Callbacks.Count == 0) return null;
+                if (pyreCost.Callbacks.Count > 0)
+                {
+                    train = CardSpellModel.WithContext(train, context);
+                    TrainCombatResult drained = RelicPayCardCostWithPyreHealthModel.DrainCallbacks(train, pyreCost);
+                    if (!drained.Supported) return drained.UnsupportedReason;
+                    train = drained.State!; context = train.Context!;
+                    if (drained.Outcome != RoomOutcome.Exchanged) outcome = drained.Outcome;
+                }
+                RoomCorruptionResult corrupt = CardCorruptStateModel.BeforePlay(CardSpellModel.WithContext(train, context),
+                    context.FindCard(card.InstanceId), rule, action.RoomIndex);
+                if (!corrupt.Supported) return corrupt.UnsupportedReason;
+                context = corrupt.Context!;
                 train = CardSpellModel.WithContext(train, context);
-                TrainCombatResult drained = RelicPayCardCostWithPyreHealthModel.DrainCallbacks(train, pyreCost);
-                if (!drained.Supported) return drained.UnsupportedReason;
-                train = drained.State!; context = train.Context!;
-                if (drained.Outcome != RoomOutcome.Exchanged) outcome = drained.Outcome;
                 target = train.Rooms.First(room => room.RoomIndex == action.RoomIndex);
                 return null;
             }
             if (rule.Effect == "SpawnMonster")
             {
-                string? callbackError = DrainPyrePaymentCallbacks();
+                string? callbackError = RunBeforePlayCallbacks();
                 if (callbackError != null) return Unsupported(callbackError);
                 if (action.TargetUnitId != 0) return Illegal("A summon takes a spawn position, not a unit target.");
                 CombatUnit? template = rule.SpawnUnit;
@@ -727,7 +734,7 @@ namespace MonsterTrain2Poju.Model
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
                 context = context.WithBattleRng(cast.BattleRngAfterTests!.Value);
                 train = CardSpellModel.WithContext(train, context);
-                string? callbackError = DrainPyrePaymentCallbacks();
+                string? callbackError = RunBeforePlayCallbacks();
                 if (callbackError != null) return Unsupported(callbackError);
                 TrainCombatState spellInput = CardSpellModel.WithContext(train, context);
                 if (playingInstance != null)
@@ -759,7 +766,7 @@ namespace MonsterTrain2Poju.Model
             else if (action.PlayerPosition != -1) return Illegal("A no-target card does not take a summon position.");
             else
             {
-                string? callbackError = DrainPyrePaymentCallbacks();
+                string? callbackError = RunBeforePlayCallbacks();
                 if (callbackError != null) return Unsupported(callbackError);
             }
 

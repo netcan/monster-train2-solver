@@ -76,6 +76,8 @@ internal static class BattleSearchChecks
             new BattleSearchOptions(maxNodes, maxTurns, maxDegreeOfParallelism: 1));
         BattleSearchResult search = BattleSearchModel.Minimize(searchRoot, Score,
             new BattleSearchOptions(maxNodes, maxTurns, maxDegreeOfParallelism: 4));
+        foreach (var group in search.UnsupportedAttempts.GroupBy(attempt => attempt.Reason).Take(5))
+            Console.WriteLine("NATIVE-SEARCH-BOUNDARY count=" + group.Count() + " reason=" + group.Key);
         Require(search.BestState != null && search.Score.HasValue && search.Steps.Count > 0,
             "Bounded search returned no result from the native battle decision state.");
         string Path(BattleSearchResult result) => string.Join("|", result.Steps.Select(step => step.IsEndTurn ? "EndTurn" :

@@ -26,11 +26,12 @@ namespace MonsterTrain2Poju.Model
         public int? DragonsHoardCap { get; }
         public bool? TowerHealingDisabled { get; }
         public int VisibleDeckCount { get; }
+        public int? CorruptionPerCorruptTrait { get; }
         public BattleResourceState(int baseEnergy, int deploymentExtraEnergy, int baseDraw, int maxEnergy, int maxHandSize,
             string pyreDataId, int pyreBaseAttack, int basePyreMaxHealth, int pyrePersistentDamage, int pyreModifiedBaseAttack,
             IReadOnlyList<int> upgradeAttack, IReadOnlyList<int> upgradeHealth, IReadOnlyList<string> mutatorIds,
             float goldRewardMultiplier = 1f, int? baseFloorCapacity = null, int? dragonsHoardCap = null,
-            bool? towerHealingDisabled = null, int visibleDeckCount = 0)
+            bool? towerHealingDisabled = null, int visibleDeckCount = 0, int? corruptionPerCorruptTrait = null)
         {
             BaseEnergy = baseEnergy; DeploymentExtraEnergy = deploymentExtraEnergy; BaseDraw = baseDraw;
             MaxEnergy = maxEnergy; MaxHandSize = maxHandSize; PyreDataId = pyreDataId; PyreBaseAttack = pyreBaseAttack;
@@ -41,21 +42,22 @@ namespace MonsterTrain2Poju.Model
             DragonsHoardCap = dragonsHoardCap;
             TowerHealingDisabled = towerHealingDisabled;
             VisibleDeckCount = visibleDeckCount;
+            CorruptionPerCorruptTrait = corruptionPerCorruptTrait;
             UpgradeAttack = Array.AsReadOnly(upgradeAttack.ToArray()); UpgradeHealth = Array.AsReadOnly(upgradeHealth.ToArray());
             MutatorIds = Array.AsReadOnly(mutatorIds.ToArray());
         }
         internal BattleResourceState WithPyreModifiedBaseAttack(int value) => new(BaseEnergy, DeploymentExtraEnergy,
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
             value, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity, DragonsHoardCap,
-            TowerHealingDisabled, VisibleDeckCount);
+            TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait);
         internal BattleResourceState WithVisibleDeckCount(int value) => new(BaseEnergy, DeploymentExtraEnergy,
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
             PyreModifiedBaseAttack, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity,
-            DragonsHoardCap, TowerHealingDisabled, value);
+            DragonsHoardCap, TowerHealingDisabled, value, CorruptionPerCorruptTrait);
         internal BattleResourceState WithBasePyreMaxHealth(int value) => new(BaseEnergy, DeploymentExtraEnergy,
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, value, PyrePersistentDamage,
             PyreModifiedBaseAttack, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity,
-            DragonsHoardCap, TowerHealingDisabled, VisibleDeckCount);
+            DragonsHoardCap, TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait);
     }
 
     public sealed class RelicPileStartTurnRule

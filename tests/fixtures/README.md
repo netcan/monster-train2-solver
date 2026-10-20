@@ -9553,3 +9553,23 @@ blocking and next-turn reset match the existing focused checker. Eleven plays,
 five EndTurns and sixteen immutable branches pass with settled victory and
 zero failure counters. Existing source, hand-cap, shuffle and relic boundaries
 remain as documented by the original discard-draw fixture.
+
+`full-battle-original-isolated-bounding-corrupt.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-214740-35ee3e1e`.
+Unchanged Bounding Echoes temporarily installs Corrupt on Starter Dreg and
+Cosmic Bolt. Both then positively add the captured mutable-rule amount on
+their played floor, before the summon or spell effects. Other floors and
+permanent modifiers remain unchanged; Bounding Echoes consumes normally.
+
+`full-battle-original-isolated-returned-corrupt.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-215512-8863e5a6`.
+Cosmic Bolt is played, selected from Discard by unchanged Returned Soul,
+and played again with its temporary Corrupt and Consume upgrades. The energy
+control consumes to leave one eligible native choice, avoiding a selection UI
+while retaining the actual card lifecycle and original definitions.
+Both battles have seven plays, five EndTurns, sixteen immutable branches,
+settled victories, DEPTH-PASS and zero failure counters. Focused bounded search
+has zero unsupported attempts, with equal serial/parallel results. Ordinary
+spells and Monsters are calibrated; equipment, abilities, permanent Corrupt
+installation, positive Corrupt Restricted combinations and existing unmodeled
+corruption listener combinations remain explicitly guarded.

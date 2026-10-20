@@ -70,6 +70,10 @@ namespace MonsterTrain2Poju.Probe
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
+            if (index < 0 && IsolatedIds?.FirstOrDefault() == "bae01a8c-25dd-4a08-b08a-5f17a5f3f52a" &&
+                IsolatedIds.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60") &&
+                source.Spawn.Train.Context!.Statistics!.Value(ids[^1], "TimesPlayed", "ThisBattle") == 1)
+                index = ids.Length - 1; // Recast the actual returned recipient after the original choice.
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
             if (IsolatedIds != null)
             {
@@ -78,6 +82,9 @@ namespace MonsterTrain2Poju.Probe
                 IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
                 if (replayKind != null) candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
+                if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "6a3633b6-4ecc-43b1-bb56-548f56cf1d60")
+                    candidates = candidates.OrderByDescending(action => action.RecursionSelections.Any(selection =>
+                        selection.CardInstanceIds.Any(id => source.Spawn.Train.Context!.FindCard(id)?.DataId == "bae01a8c-25dd-4a08-b08a-5f17a5f3f52a")));
                 if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f3406a6d-69f0-46e8-8db9-d829db017716")
                     candidates = candidates.OrderByDescending(action => action.RoomIndex == 2 && action.PlayerPosition == 1);
                 if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463")
@@ -104,6 +111,11 @@ namespace MonsterTrain2Poju.Probe
                         .Any(unit => unit.Id == action.TargetUnitId && unit.AssetKey == "MonsterDeathsDancer"));
                 PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
                     playerPosition: index < 3 ? 0 : -1) : candidates.FirstOrDefault();
+                if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "6a3633b6-4ecc-43b1-bb56-548f56cf1d60")
+                    UnityEngine.Debug.Log("ORIGINAL-CORRUPT-CHOICE hand=" + string.Join(",", source.Spawn.Train.Context.Cards.Hand.Select(card => card.InstanceId)) +
+                        " discard=" + string.Join(",", source.Spawn.Train.Context.Cards.Discard.Select(card => card.InstanceId)) +
+                        " draw=" + string.Join(",", source.Spawn.Train.Context.Cards.Draw.Select(card => card.InstanceId)) +
+                        " selected=" + string.Join(",", chosen?.RecursionSelections.SelectMany(selection => selection.CardInstanceIds) ?? Array.Empty<int>()));
                 BattleActionResult? isolatedResult = chosen == null ? null : BattleActionModel.PlayCard(source, chosen);
                 if (isolatedResult?.Supported == true) return chosen;
                 string rejection = index + ":" + source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
@@ -156,7 +168,12 @@ namespace MonsterTrain2Poju.Probe
             CardData energy = UnityEngine.Object.Instantiate(all.GetAllCardData().First(card => card.GetCardType() == CardType.Spell));
             energy.name = "PojuIsolatedSpellEnergy"; Set(energy, "id", "ac110052-0000-4000-8000-000000000099");
             Set(energy, "cost", 0); Set(energy, "costType", CardData.CostType.Default); Set(energy, "targetless", true); Set(energy, "targetsRoom", true);
-            Set(energy, "traits", new List<CardTraitData>()); Set(energy, "startingUpgrades", new List<CardUpgradeData>());
+            var energyTraits = new List<CardTraitData>();
+            if (spellIds.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60"))
+            {
+                var consume = new CardTraitData(); consume.Setup("CardTraitExhaustState"); energyTraits.Add(consume);
+            }
+            Set(energy, "traits", energyTraits); Set(energy, "startingUpgrades", new List<CardUpgradeData>());
             Set(energy, "triggers", new List<CardTriggerEffectData>()); Set(energy, "effectTriggers", new List<CharacterTriggerData>());
             var gain = new CardEffectData("CardEffectGainEnergy", null!, Team.Type.None); gain.Cheat_SetTargetMode(TargetMode.Room);
             Set(gain, "paramInt", Math.Max(1, spellIds.Sum(id => all.FindCardData(id)!.GetCost()) - 3));
@@ -197,6 +214,9 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardState ephemeral in created.Skip(4).Where(card => card.HasTrait<CardTraitEphemeral>()))
                 cards.MoveCardFromHandToTopOfDeck(ephemeral); // Native first-turn draw keeps requested plays out of deployment discard.
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
+            if (spellIds.FirstOrDefault() == "bae01a8c-25dd-4a08-b08a-5f17a5f3f52a" &&
+                spellIds.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60"))
+                CardIds = CardIds.Concat(new[] { CardIds[4] }).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
             log.LogInfo("ORIGINAL-ISOLATED-SPELLS-PREPARED three native anchor controls, energy and unchanged originals " + string.Join(",", spellIds));
