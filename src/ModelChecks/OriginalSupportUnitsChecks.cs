@@ -5,6 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class OriginalSupportUnitsChecks
 {
     private const string AstrologerId = "4b50aa70-8918-40f0-8efd-c66ce78bbf52";
+    private const string SnottyWhelpId = "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16";
     private const string BlightedTotemId = "21ad4f07-1568-4461-8be4-6fb2670bd90d";
     private const string ProsperityTotemId = "21567cc4-f684-48db-b377-b8289729dedc";
     private const string BattleDancerId = "a0b051b2-7898-454a-8bd8-300b72b99c93";
@@ -584,6 +585,30 @@ internal static class OriginalSupportUnitsChecks
                 upgrade.Upgrade.Stats.Damage == 5 && phaseAttacks.SequenceEqual([10, 15, 20, 20]) && phaseCallbacksFired,
                 "Astrologer must retain its native 1-cost 5/10 size-2 birth and three positive +5 Attack OnMoonPhaseShift callbacks followed by a no-shift control.");
         }
+        if (expectedId == SnottyWhelpId)
+        {
+            CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CombatTrigger spawnedOnSpawn = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CombatEffect availableEffect = onSpawn.Effects.Single(effect => effect.Action?.Type == "AddStatus");
+            CombatEffect resetEffect = onSpawn.Effects.Single(effect => effect.Action?.Type == "ResetCooldown");
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "SnottyWhelp" && template.AssetKey == "MonsterSneezyWhelp" && rule.Cost == 1 &&
+                template.Modifiers!.AttackDamage == 4 && template.Health == 1 && template.MaxHealth == 1 && template.Size == 1 &&
+                template.Subtypes.SequenceEqual(["SubtypesData_Whelp"]) && template.Status("unit_ability")?.Stacks == 1 &&
+                !onSpawn.Once && onSpawn.IgnoreSilence && onSpawn.Effects.Count == 2 && spawnedOnSpawn.HasTriggered &&
+                availableEffect.Action is { Target: "Self" } && availableEffect.Action.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
+                resetEffect.Type == "CardEffectResetCooldown" && resetEffect.Action is { Target: "Self" } &&
+                spawnedUnit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                spawnedUnit.Ability is { DataId: "f3c7769a-4f9b-43cf-aacd-cf32c14e3082", Cooldown: 2, HasAbility: true } &&
+                unitTurns.Length == 4 && unitTurns.All(unit => unit.Ability is { Cooldown: 2, HasAbility: true } &&
+                    unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
+                "Snotty Whelp must preserve its native 1-cost 4/1 Whelp birth, fire OnSpawn to expose its cooldown-2 ability, and leave that ability unused in the captured turns.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
@@ -615,6 +640,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-REFORMING-OOZE PASS: original 1-cost 7/15 size-2 Undying birth; its permanent self +6 Attack OnReanimated upgrade remained inactive.");
         else if (expectedId == AstrologerId)
             Console.WriteLine("ORIGINAL-ASTROLOGER PASS: original 1-cost 5/10 size-2 birth and three native +5 Attack OnMoonPhaseShift upgrades, then a no-shift control.");
+        else if (expectedId == SnottyWhelpId)
+            Console.WriteLine("ORIGINAL-SNOTTY-WHELP PASS: original 1-cost 4/1 Whelp birth; native OnSpawn grants ability availability and resets cooldown, while its cooldown-2 ability remains unused.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
