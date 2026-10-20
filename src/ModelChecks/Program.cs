@@ -2556,6 +2556,13 @@ if (args.Length == 2 && args[0] == "--native-actions-only")
     BattleActionChecks.Native(actionDocument.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--recorded-chain-diagnose")
+{
+    using var chainDocument = ModelJson.ReadFixture(args[1]);
+    RecordedBattleChecks.Native(chainDocument.RootElement);
+    Console.WriteLine("RECORDED-CHAIN-DIAGNOSTIC: capture counters are not acceptance checks; require a fresh passing native capture before curation.");
+    return;
+}
 if (args.Length == 2 && args[0] == "--choose-discard-only")
 {
     using var choiceDocument = ModelJson.ReadFixture(args[1]);
