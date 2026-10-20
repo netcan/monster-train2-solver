@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-031958-17ce59d2/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,845 bytes, 12,144 unique nodes,
-SHA-256 `a1cfbca29c8238a2ec02729730fe12d39414f1f187f5c920668e9f2b986f30b9`.
-The latest refresh explicitly captures the fresh birth lifecycle of Infectory's
+Source: `.probe-runs/full-battle-no-cards-20261021-032648-b6d21f15/card-catalog.mt2f`.
+The committed archive is byte-identical: 100,111 bytes, 12,138 unique nodes,
+SHA-256 `ff6b11aa96113dfc9c464dfc91d04aadc3da8544bd34907b665d3b43b33a04b5`.
+The latest refresh recognizes the captured Treasure trait for Crypt Builder,
+Guardian Amulet and Titanstooth. Only these three projections change; the other
+665 are identical. Strict definition matching is unchanged.
+The preceding refresh explicitly captures the fresh birth lifecycle of Infectory's
 fallback template, matching its accepted native witness. Only this projection
 changes; the other 667 are identical. Strict definition matching is unchanged.
 The preceding refresh captures Apex Imp's status synergy and empty birth counter

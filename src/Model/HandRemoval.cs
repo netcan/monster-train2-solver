@@ -25,7 +25,8 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<int>? pendingExhaustedCards = null, bool exhaustionRunsTriggerQueue = false,
             IReadOnlyList<int>? selectedCardIds = null, string? effectCounterType = "CardEffectDiscardHand",
             bool triggeredByCard = true, bool placement = false, bool preview = false,
-            Func<CombatContext, HandRemovalResult>? onExhausted = null)
+            Func<CombatContext, HandRemovalResult>? onExhausted = null,
+            Func<CombatContext, int, HandRemovalResult>? onTreasure = null)
         {
             if (source.Cards.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.Cards.ExternalInteractions));
             CardToken[] handTargets = mode == 0 || mode == 1
@@ -108,7 +109,17 @@ namespace MonsterTrain2Poju.Model
                     if (!suppression.Supported) return Unsupported(suppression.UnsupportedReason!);
                     context = suppression.Context;
                     CardInstanceState? instance = context.FindCard(token.InstanceId);
-                    if (instance != null) context = context.WithCard(instance.OnDiscard(false));
+                    if (IndirectSpellModel.IsTreasure(instance))
+                    {
+                        // Native promotes a card-triggered Treasure discard to wasPlayed before trait callbacks.
+                        if (triggeredByCard) context = context.WithCard(instance!.WithPlayCount(unchecked(instance.PlayCount + 1)));
+                        if (onTreasure == null) return Unsupported("Treasure discard requires the complete-train indirect cast callback.");
+                        HandRemovalResult cast = onTreasure(context.WithOtherPiles(piles), token.InstanceId);
+                        if (!cast.Supported) return cast;
+                        context = cast.Context!; piles = cast.OtherPiles?.ToArray();
+                        context = context.WithCard(context.FindCard(token.InstanceId)!.OnDiscard(false));
+                    }
+                    else if (instance != null) context = context.WithCard(instance.OnDiscard(false));
                     context = ConduitModel.Discarded(context, token.InstanceId);
                     CheckStandby(0);
                     if (callbackError != null) return Unsupported(callbackError);

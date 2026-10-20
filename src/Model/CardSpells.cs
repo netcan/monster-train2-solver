@@ -297,6 +297,18 @@ namespace MonsterTrain2Poju.Model
             var retained = new Dictionary<int, CombatUnit>();
             int lastSacrificedUnitId = 0;
             string? routingError = null;
+            HandRemovalResult Treasure(CombatContext context, int cardId)
+            {
+                if (definitions == null || callbacks.Count > 0 || pendingDeadRooms.Count > 0)
+                    return new HandRemovalResult(null, null, Array.Empty<CardToken>(), 0,
+                        "Treasure casting requires complete definitions and a settled preceding effect queue.");
+                TrainSpellResult cast = IndirectSpellModel.Apply(WithContext(state, context), cardId, definitions);
+                if (!cast.Supported) return new HandRemovalResult(null, null, Array.Empty<CardToken>(), 0, cast.UnsupportedReason);
+                state = cast.State!;
+                events.AddRange(cast.Events);
+                if (cast.Outcome != RoomOutcome.Exchanged) outcome = cast.Outcome;
+                return new HandRemovalResult(state.Context, state.Context!.OtherPiles, Array.Empty<CardToken>(), 0);
+            }
             RelicPyreAttackRefreshResult Refresh(CombatContext context, bool placement)
             {
                 if (!fullTrain && refreshPyre != null)
@@ -1018,7 +1030,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     bool placement = state.Rooms.Single(room => room.RoomIndex == roomIndex).Deployment;
                     HandRemovalResult discarded = RandomDiscardModel.Apply(state.Context!, effect.Value, sourceCardId,
-                        index, definitions, piles, placement, state.Context!.IsolatedBattlePreview == true);
+                        index, definitions, piles, placement, state.Context!.IsolatedBattlePreview == true, onTreasure: Treasure);
                     if (!discarded.Supported) return UnsupportedTrain(discarded.UnsupportedReason!);
                     state = WithContext(state, discarded.Context!);
                     piles = discarded.OtherPiles?.ToArray() ?? piles;
@@ -1045,7 +1057,7 @@ namespace MonsterTrain2Poju.Model
                             events.AddRange(fired.RoomResults.SelectMany(result => result.Events));
                             if (fired.Outcome != RoomOutcome.Exchanged) outcome = fired.Outcome;
                             return new HandRemovalResult(state.Context!, state.Context!.OtherPiles, Array.Empty<CardToken>(), 0);
-                        });
+                        }, onTreasure: Treasure);
                     if (!removed.Supported) return UnsupportedTrain(removed.UnsupportedReason!);
                     piles = removed.OtherPiles?.ToArray();
                     state = WithContext(state, removed.Context!);

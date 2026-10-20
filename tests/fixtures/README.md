@@ -9918,6 +9918,23 @@ that combat search's terminal boundary. Existing Stasis and equipment combat
 batch chains still pass. Other unit-source copy destinations/counts remain
 guarded pending independent native witnesses.
 
+`full-battle-original-isolated-treasure-discard.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-033225-e831f7ce`.
+Unchanged Crypt Builder, Guardian Amulet and Titanstooth each pay three Ember
+for a direct play. Original Deep Offering then discards five further Treasure
+instances, casting all five for no extra Ember. Native damage, rearrangement,
+Sap and Frostbite match the complete immutable state. Card-triggered Treasure
+discard increments both local and global play histories once without changing
+the last paid cost; no second discard occurs. Twenty-one end-turn hand-discard
+observations provide non-cast controls. Test enemy health is raised to 500 to
+keep the original effects positive; the four original player definitions are
+unchanged. DEPTH-PASS records a settled victory and zero capture/mismatch/
+unsupported/pending counters. Eight plays/five EndTurns pass sixteen immutable
+replay branches and a 128-state search with zero unsupported attempts and equal
+serial/parallel results. Existing original discard/draw and random Frostbite
+discard checks pass. Additional indirect-cast relic/card callbacks, manually
+targeted effects and unsettled preceding effect queues remain guarded.
+
 `full-battle-original-isolated-status-synergy.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-031604-20fa33b8`.
 Unchanged Apex Imp converts its five OnSpawn Armor to five Rage. Original Enflame

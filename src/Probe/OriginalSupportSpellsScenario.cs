@@ -224,6 +224,10 @@ namespace MonsterTrain2Poju.Probe
                 .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true) ||
                 spellIds.Contains("e1a39d88-4a77-4399-98b2-0b81f44fe6a8") || spellIds.Contains("6d6c72ab-890b-4275-bb52-2544befbc12b");
             CapturesBump = spellIds.Contains(RoomPreCombatProbe.SirenSongId) || spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectBump"));
+            if (spellIds.Contains("37eaa51b-62cf-4cbc-971f-6d208fd07366") && spellIds.Any(id =>
+                all.FindCardData(id)!.GetTraits().Any(trait => trait.GetTraitStateName() == IndirectSpellModel.TreasureTrait)))
+                foreach (CharacterData enemy in all.GetAllCharacterData().Where(unit => unit.GetAssetKey() is "ShieldGuardT1_BasicNonAttack" or "MageT1_Junker"))
+                    Set(enemy, "health", 500); // Positive direct and indirect effects share living test enemies.
             bool hatchControls = spellIds.Contains("27b0fdda-5dc4-4280-a510-fe51e550e3fb") ||
                 spellIds.Contains("07448181-5b6f-404a-88ff-cb4d8ac8a3b1");
             if (hatchControls || spellIds.Contains("a524d58a-6b12-4ec4-870c-679837e234cf") || spellIds.Contains("ae114dc4-d08f-4909-a2ad-d99215661463"))
@@ -258,6 +262,13 @@ namespace MonsterTrain2Poju.Probe
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
                 .Concat(spellIds.Select(Add)).ToArray();
+            if (spellIds.Contains("37eaa51b-62cf-4cbc-971f-6d208fd07366"))
+                foreach (string treasure in spellIds.Where(id => all.FindCardData(id)!.GetTraits()
+                    .Any(trait => trait.GetTraitStateName() == IndirectSpellModel.TreasureTrait)))
+                {
+                    Add(treasure); // Discarded by the original Deep Offering for an indirect cast.
+                    cards.AddNewCard(all.FindCardData(treasure)!, CardPile.DeckPileTop, false, false, animate: false);
+                }
             if (spellIds.Contains(RoomPreCombatProbe.SirenSongId))
             {
                 // Keep lower-floor enemies alive long enough to reach the native

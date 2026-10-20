@@ -345,6 +345,11 @@ namespace MonsterTrain2Poju.Model
         internal CardInstanceState WithPlayedCost(int cost) => new CardInstanceState(InstanceId, DataId,
             Permanent, Temporary, cost, LastForgedAmount, PlayCount, ExternalInteractions,
             EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState, ForgeCountScalingTraits, RawCostOverride, CanBeCopied, TrainHealScalingTraits, GraftedEquipmentCardId);
+        internal CardInstanceState WithPlayCount(int count) => new CardInstanceState(InstanceId, DataId,
+            Permanent, Temporary, LastPlayedCost, LastForgedAmount, count, ExternalInteractions,
+            EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits,
+            EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState,
+            ForgeCountScalingTraits, RawCostOverride, CanBeCopied, TrainHealScalingTraits, GraftedEquipmentCardId);
         public CardInstanceState OnDiscard(bool played, int? cost = null, bool suppressConsume = false)
         {
             CardMoonUpgradeResult moon = CardMoonUpgradeModel.Update(this, 1, reset: true);
