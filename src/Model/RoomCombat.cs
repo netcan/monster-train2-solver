@@ -1316,7 +1316,7 @@ namespace MonsterTrain2Poju.Model
                             continue;
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
-                            effect.Type != "CardEffectAddStatsFromSelf" &&
+                            effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect") &&
                             effect.Type is not ("CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type is not ("CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits"))
@@ -1398,14 +1398,26 @@ namespace MonsterTrain2Poju.Model
                             if (state.Context?.OtherPiles == null) return "Unit-card purge requires captured native piles.";
                             continue;
                         }
-                        if (effect.Type == "CardEffectAdjustDragonsHoard")
+                        if (effect.Type == "CardEffectRemoveEquipment")
                         {
+                            if (effect.Action?.Type != "RemoveEquipment" || effect.Action.Target != "Self" ||
+                                state.Context?.SummonCatalog == null || unit.EquipmentCards == null)
+                                return "Triggered equipment removal requires its self target, equipment catalog and bindings.";
+                            continue;
+                        }
+                        if (effect.Type is "CardEffectAdjustDragonsHoard" or "CardEffectAdjustDragonsHoardPerStatusEffect")
+                        {
+                            bool perStatus = effect.Type == "CardEffectAdjustDragonsHoardPerStatusEffect";
+                            if (perStatus && (effect.Action?.Type != "HoardPerStatus" || effect.Action.Target != "Self" ||
+                                effect.Action.Statuses.Count != 1 || effect.Action.Statuses[0].Id != "captured_soul" || effect.Action.Statuses[0].Stacks <= 0))
+                                return "Uncalibrated status-scaled Hoard award.";
                             CombatContext? context = state.Context;
                             if (context?.QueryFrame?.DragonsHoard is not int current || context.Resources?.DragonsHoardCap is not int cap ||
                                 context.EnergyState?.PyreAlive == null)
                                 return "Unit Dragon's Hoard effects require captured amount, cap and Pyre liveness.";
                             if (cap < 0) return "Invalid Dragon's Hoard cap.";
-                            bool changes = Math.Clamp(unchecked(current + effect.Value), 0, cap) != current;
+                            int award = perStatus ? (unit.Status("captured_soul")?.Stacks ?? 0) / effect.Action!.Statuses[0].Stacks : effect.Value;
+                            bool changes = Math.Clamp(unchecked(current + award), 0, cap) != current;
                             bool scaledUpgrade = (context.CardRegistry ?? Array.Empty<CardInstanceState>())
                                 .Concat(context.CardInstances ?? Array.Empty<CardInstanceState>())
                                 .Any(card => card.UnitUpgradeScalingTraits?.Any(trait => trait.Query.Type == "DragonsHoardAmount") == true);
@@ -4176,6 +4188,7 @@ namespace MonsterTrain2Poju.Model
                 (RoomMoonPhaseModel.Effective(context, unit.RoomIndex, context!.QueryFrame!.MoonPhase!.Value) & action.Value) != 0;
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type == "RemoveEquipment" ? targets.UnitIds.Any(id => units.Any(unit => unit.Source.Id == id && unit.Source.EquipmentCards?.Count > 0)) :
                 action.Type == "DamagePerSourceAttack" ? targets.UnitIds.Count > 0 :
                 action.Type == "UnitUpgradePerHoard" ? targets.UnitIds.Count > 0 && context?.QueryFrame?.DragonsHoard > 0 :
                 action.Type == "UnitUpgradeOnMoonPhase" ? targets.UnitIds.Any(id => units.Any(unit => unit.Source.Id == id && UpgradeMoonMatches(action, unit))) :
@@ -4474,6 +4487,31 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                if (action.Type == "RemoveEquipment")
+                {
+                    var definitions = new BattlePlayRules(context!.SummonCatalog!.Rooms, context.SummonCatalog.Cards
+                        .Where(card => card.Equipment != null).Select(card => new CardPlayRule(card.Creation.DataId,
+                            "", 0, "Equipment", "Standby", null, Array.Empty<string>(), equipment: card.Equipment)).ToArray());
+                    foreach (int id in targets.UnitIds)
+                    {
+                        WorkingUnit target = units.Single(unit => unit.Source.Id == id);
+                        foreach (int gearId in target.Source.EquipmentCards!.Reverse().ToArray())
+                            if (!RemoveEquipment(target, gearId, definitions)) return false;
+                    }
+                    return true;
+                }
+                if (action.Type == "HoardPerStatus")
+                {
+                    if (source.Preview || context?.EnergyState?.PyreAlive != true) return true;
+                    // Native uses ParamInt only in the notification; the actual
+                    // save award is the integer quotient of the collected stacks.
+                    int award = targets.UnitIds.Sum(id => units.Single(unit => unit.Source.Id == id).Count(action.Statuses[0].Id)) /
+                        action.Statuses[0].Stacks;
+                    StatisticQueryFrame frame = context.QueryFrame!;
+                    context = context.WithQueryFrame(frame.With(dragonsHoard: Math.Clamp(unchecked(frame.DragonsHoard!.Value + award),
+                        0, context.Resources!.DragonsHoardCap!.Value)));
+                    return true;
+                }
                 if (action.Type == "AddStatsFromSelf")
                 {
                     int attack = UnitAttackOverrideModel.Resolve(actor.Freeze().Statuses, actor.Source.MaxHealth) ??

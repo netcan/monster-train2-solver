@@ -13,7 +13,8 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "original-equipment-growth-relics";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
-        internal static bool CaptureEncounterComplete => Prepared || UnitCardCopyProbe.Enabled || OriginalSupportSpellsScenario.IsolatedIds?.Contains("f3406a6d-69f0-46e8-8db9-d829db017716") == true;
+        internal static bool CaptureEncounterComplete => Prepared || UnitCardCopyProbe.Enabled || OriginalSupportSpellsScenario.IsolatedIds?.Any(id =>
+            id is "f3406a6d-69f0-46e8-8db9-d829db017716" or "bee94cde-06f4-4bee-b616-8d1116fbb803") == true;
         internal const string GearId = "fc119000-0000-4000-8000-000000000391";
         internal const string WoundId = "fc119000-0000-4000-8000-000000000393";
         internal const string HealId = "fc119000-0000-4000-8000-000000000394";

@@ -9918,6 +9918,20 @@ that combat search's terminal boundary. Existing Stasis and equipment combat
 batch chains still pass. Other unit-source copy destinations/counts remain
 guarded pending independent native witnesses.
 
+`full-battle-original-isolated-equipment-consumption.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-025634-beb0e439`.
+Unchanged Hydra-Armed Horror converts Bloodthirsty Blade into one Multistrike,
+removing the weapon and its stat upgrades. The detached card stays in Standby
+until native removal processing. An independently equipped Soulsmelter collects
+five souls and awards one Dragon's Hoard at encounter completion. The model uses
+the integer quotient of captured souls and the authored status denominator;
+native ParamInt affects the notification rather than the actual award.
+The dedicated check compares the complete encounter-completion train state.
+DEPTH-PASS records a settled victory with zero capture/mismatch/unsupported/
+pending counters. Seven plays/five EndTurns pass sixteen immutable full replay
+branches and a 128-state search; existing grafted-equipment attachment/removal
+checks pass. Other status-quotient compositions remain guarded.
+
 `full-battle-original-isolated-siren-song.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-024806-e259a5e6`.
 Unchanged Siren Song respects its native Limited Range and attaches on floor 2.

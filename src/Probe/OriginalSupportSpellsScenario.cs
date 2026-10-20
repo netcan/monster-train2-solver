@@ -85,6 +85,12 @@ namespace MonsterTrain2Poju.Probe
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == RoomPreCombatProbe.SirenSongId)
                 candidates = candidates.Where(action => action.RoomIndex == 2);
+            if (index >= 4 && IsolatedIds.Contains("6d6c72ab-890b-4275-bb52-2544befbc12b") &&
+                source.PlayRules.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).Equipment != null)
+                candidates = candidates.Where(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId &&
+                        (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "bee94cde-06f4-4bee-b616-8d1116fbb803"
+                            ? unit.SpawnerCardId == ids[0] : unit.AssetKey == "MonsterHydraArmedHorror")));
             if (index >= 4 && IsolatedIds.Contains("02258ff7-457e-4de6-88cf-faff348801d7"))
             {
                 string played = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
@@ -201,7 +207,7 @@ namespace MonsterTrain2Poju.Probe
                         " magic=" + effect.GetUseMagicPowerMultiplier());
             CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()
                 .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true) ||
-                spellIds.Contains("e1a39d88-4a77-4399-98b2-0b81f44fe6a8");
+                spellIds.Contains("e1a39d88-4a77-4399-98b2-0b81f44fe6a8") || spellIds.Contains("6d6c72ab-890b-4275-bb52-2544befbc12b");
             CapturesBump = spellIds.Contains(RoomPreCombatProbe.SirenSongId) || spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectBump"));
             bool hatchControls = spellIds.Contains("27b0fdda-5dc4-4280-a510-fe51e550e3fb") ||
                 spellIds.Contains("07448181-5b6f-404a-88ff-cb4d8ac8a3b1");

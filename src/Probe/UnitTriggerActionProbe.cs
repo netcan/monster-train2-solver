@@ -19,6 +19,10 @@ namespace MonsterTrain2Poju.Probe
 
         internal static CardActionEffect? Capture(CardEffectState state, List<string>? interactions = null)
         {
+            if (state.GetCardEffect() is CardEffectAdjustDragonsHoardPerStatusEffect)
+                return HoardPerStatus(state.GetSourceCardEffectData());
+            if (state.GetCardEffect() is CardEffectRemoveEquipment)
+                return BattleActionProbe.DescribeTriggerEffect(state.GetSourceCardEffectData(), interactions ?? new List<string>());
             if (state.GetCardEffect() is CardEffectAdjustAllStatusEffects or CardEffectAdjustCorruption or CardEffectPlayUnitTrigger or CardEffectDamagePerHp or CardEffectHealTrain or CardEffectAddTempCardUpgradeToSpellsInDeck or CardEffectDamagePerSourceAttack or CardEffectRecursion or CardEffectAddTempCardUpgradeToNextDrawnCard or CardEffectFloorRearrange)
                 return BattleActionProbe.DescribeTriggerEffect(state.GetSourceCardEffectData(), interactions ?? new List<string>());
             if (state.GetCardEffect() is CardEffectDrawType) return TypedDraw(state.GetSourceCardEffectData(), state.GetParamInt());
@@ -44,6 +48,8 @@ namespace MonsterTrain2Poju.Probe
                     BattleActionProbe.Status(status.statusId, status.count)).ToArray() : null);
         }
         internal static CardActionEffect? Definition(CardEffectData effect, List<string>? interactions = null) =>
+            effect.GetEffectStateName() == "CardEffectAdjustDragonsHoardPerStatusEffect" ? HoardPerStatus(effect) :
+            effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
             effect.GetEffectStateName() is "CardEffectAdjustAllStatusEffects" or "CardEffectAdjustCorruption" or "CardEffectPlayUnitTrigger" or "CardEffectDamagePerHp" or "CardEffectHealTrain" or "CardEffectAddTempCardUpgradeToSpellsInDeck" or "CardEffectDamagePerSourceAttack" or "CardEffectRecursion" or "CardEffectAddTempCardUpgradeToNextDrawnCard" or "CardEffectFloorRearrange" ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
             effect.GetEffectStateName() == "CardEffectDrawType" ? TypedDraw(effect, effect.GetParamInt()) :
             AbilityLifecycleProbe.Known(effect.GetEffectStateName()) ? AbilityLifecycleProbe.Describe(effect) :
@@ -59,6 +65,11 @@ namespace MonsterTrain2Poju.Probe
             // Effect states have no parent card; native damage/heal getters still clamp endpoints.
             Describe(effect, Numeric(effect, effect.GetParamInt()), effect.GetUseIntRange() ?
                 new CardEffectRange(Numeric(effect, effect.GetParamMinInt()), Numeric(effect, effect.GetParamMaxInt()), effect.GetParamMultiplier()) : null);
+        private static CardActionEffect HoardPerStatus(CardEffectData effect) => new CardActionEffect(
+            "HoardPerStatus", effect.GetTargetMode().ToString(), effect.GetParamInt(),
+            effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
+            effect.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray());
+
         internal static TriggeredStatusScaling? Scaling(CardEffectState effect) => effect.GetCardEffect() is CardEffectAddStatusEffectBasedOnHealth ?
             new TriggeredStatusScaling(healthChoicePercent: effect.GetParamInt(), healthChoiceAbove: effect.GetParamBool()) : effect.GetCardEffect() is CardEffectAddStatusEffect ?
             new TriggeredStatusScaling(effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,

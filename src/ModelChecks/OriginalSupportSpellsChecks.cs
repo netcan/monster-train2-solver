@@ -20,6 +20,12 @@ internal static class OriginalSupportSpellsChecks
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "8ccceee7-0eb9-4aa0-9268-ff83b6f6c54e")
                 candidates = candidates.Where(action => action.RoomIndex == 2);
+            if (index >= 4 && ids.Any(id => source.Spawn.Train.Context!.FindCard(id)?.DataId == "6d6c72ab-890b-4275-bb52-2544befbc12b") &&
+                source.PlayRules.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).Equipment != null)
+                candidates = candidates.Where(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId &&
+                        (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "bee94cde-06f4-4bee-b616-8d1116fbb803"
+                            ? unit.SpawnerCardId == ids[0] : unit.AssetKey == "MonsterHydraArmedHorror")));
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId is
                 "2ed78ce2-13c3-4e82-963f-99c9ea12d0f0" or "175a7730-7a1c-4da1-97b8-d799e7570396" or "98276338-b18f-4ffa-83a2-9501c2741f03" &&
                 ids.Any(id => source.Spawn.Train.Context.FindCard(id)?.DataId is "3cb0976c-7cf5-4470-bb5a-7eacfb404e9a" or "1362aa8c-d7b4-49b9-a4f7-268f47de4aa6" or "a5b05b40-45be-41ea-8c56-dd18f3feb1b4"))
@@ -690,6 +696,7 @@ internal static class OriginalSupportSpellsChecks
         UnitGraftChecks.Native(root, originals);
         RoomDeathEffectChecks.Native(root, originals);
         RoomSirenSongChecks.Native(root, originals);
+        EquipmentConsumptionChecks.Native(root, originals);
         if (originals.Contains("7018bb02-2ec2-4b4f-95d0-7bafce95d97d")) CrucibleStewardChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }

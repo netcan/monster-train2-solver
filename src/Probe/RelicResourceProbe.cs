@@ -79,12 +79,15 @@ namespace MonsterTrain2Poju.Probe
             string[] unitTriggerEffects = cards == null ? Array.Empty<string>() : cards.GetAllCards(new List<CardState>())
                 .Select(card => card.GetSpawnCharacterData()).Where(character => character != null)
                 .SelectMany(character => character!.GetTriggers()).SelectMany(trigger => trigger.GetEffects())
+                .Concat(cardEffects.SelectMany(effect => effect.GetParamCardUpgradeData()?.GetCharacterTriggerUpgrades()
+                    ?? new List<CharacterTriggerData>()).SelectMany(trigger => trigger.GetEffects()))
                 .Select(effect => effect.GetEffectStateName()).ToArray();
             bool dragonHoardCards = cardEffects
                 .Any(effect => effect.GetCardEffect() is IDragonsHoardCardEffect ||
                     effect.GetCardEffect() is CardEffectRewardGoldPerDragonHoard) ||
                 triggerEffects.Contains("CardEffectAdjustDragonsHoard") || triggerEffects.Contains("CardEffectRewardGoldPerDragonHoard") ||
-                unitTriggerEffects.Contains("CardEffectAdjustDragonsHoard") || unitTriggerEffects.Contains("CardEffectRewardGoldPerDragonHoard");
+                unitTriggerEffects.Contains("CardEffectAdjustDragonsHoard") || unitTriggerEffects.Contains("CardEffectRewardGoldPerDragonHoard") ||
+                unitTriggerEffects.Contains("CardEffectAdjustDragonsHoardPerStatusEffect");
             bool trainHealCards = cardEffects.Any(effect => effect.GetCardEffect() is CardEffectHealTrain) ||
                 unitTriggerEffects.Contains("CardEffectHealTrain") || unitTriggerEffects.Contains("CardEffectPermanentlyAdjustMaxPyreHealth");
             runCardResourceObserved |= cardEffects.Any(effect => effect.GetCardEffect() is CardEffectAddRunCard) ||

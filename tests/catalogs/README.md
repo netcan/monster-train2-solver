@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-024218-03f2e4f8/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,983 bytes, 12,129 unique nodes,
-SHA-256 `c88997e5139e457967d0ceffce4529769184ce4f6b54501de903ae1cc7dabec8`.
-The latest refresh captures Siren Song's pre-combat Dazed/movement composition.
+Source: `.probe-runs/full-battle-no-cards-20261021-025416-351857f5/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,909 bytes, 12,134 unique nodes,
+SHA-256 `9452f589e504317331907c3013a66146b414bd4efc8815a7e3e9c1bca1e5dc22`.
+The latest refresh captures Hydra-Armed Horror's equipment removal and
+Soulsmelter's status-quotient encounter award. Only these two projections change;
+the other 666 are identical.
+The preceding refresh captures Siren Song's pre-combat Dazed/movement composition.
 Only this projection changes; the other 667 are identical.
 The preceding refresh captures Infectory's authored room death effect and Funguy
 exclusion filter. Only this projection changes after normalizing absent/null
