@@ -85,6 +85,8 @@ namespace MonsterTrain2Poju.Model
             if (context == null || raw == null || raw.IsPyre || raw.Size < 0 || spawnerCardId < 0 ||
                 spawnerCardId > 0 && card == null || isCardless && (cardlessStatus?.Id != "cardless" || cardlessStatus.Stacks != 1))
                 return Unsupported("Unit birth requires its template, source reference and cardless metadata.");
+            if (card?.MaskDescriptor?.Purified == true && raw.Modifiers?.RoomResources?.Count > 0)
+                return Unsupported("Purified unit room resources require separate native calibration.");
             CombatUnit initialized = AbilityLifecycleModel.InitialAtSpawn(raw, card, context, out string? error);
             if (error != null) return Unsupported(error);
             CardPlayRule birthDefinition = card == null || card.DataId == definition.DataId ||
@@ -109,7 +111,7 @@ namespace MonsterTrain2Poju.Model
                 UnitModifiers old = template.Modifiers!;
                 var cloned = new UnitModifiers(old.AttackDamage, old.AttackDamageAdded, old.DamageBuff, old.RawSize, old.EquipmentLimit,
                     old.CanBeHealed, true, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
-                    old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules);
+                    old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources);
                 template = UnitCloneModel.Copy(template, cloned, template.BaseAttack, template.Health, template.MaxHealth);
             }
             template = StatusAttackDamageModel.PrepareBirthTemplate(template, starting);

@@ -785,12 +785,12 @@ namespace MonsterTrain2Poju.Model
             return new RelicResourceResult(context, context.QueryFrame!.Energy!.Value, events: events);
         }
 
-        public static RelicResourceResult StartTurn(CombatContext source, bool deployment = false, bool preview = false)
+        public static RelicResourceResult StartTurn(CombatContext source, bool deployment = false, bool preview = false, int unitRoomEnergy = 0)
         {
             string? error = Ready(source) ?? EnergyModel.Validate(source);
             if (error != null) return Fail(error);
             CombatContext context = EnergyModel.SetPhase(source, "MonsterTurn");
-            int income = unchecked(context.Resources!.BaseEnergy + context.EnergyState!.NextTurn + context.EnergyState.EveryTurn + RoomCapacityModel.EnergyPerTurnDelta(context) +
+            int income = unchecked(context.Resources!.BaseEnergy + context.EnergyState!.NextTurn + context.EnergyState.EveryTurn + RoomCapacityModel.EnergyPerTurnDelta(context) + unitRoomEnergy +
                 (deployment ? context.Resources.DeploymentExtraEnergy : 0));
             if (deployment || income > 0) context = context.WithQueryFrame(context.QueryFrame!.With(
                 energy: Math.Min(context.Resources.MaxEnergy, unchecked(context.QueryFrame.Energy!.Value + income))));

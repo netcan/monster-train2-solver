@@ -156,6 +156,9 @@ namespace MonsterTrain2Poju.Probe
                 IsolatedEnergyControlInstanceId = FullBattleTrace.Active!.CardId(energyControl);
             }
             CardState[] units = unitIds.Select(id => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false)).ToArray();
+            if (unitIds.Contains("58ac2b3e-ad25-4620-b814-6a3a74175aa4"))
+                for (int drawControl = 0; drawControl < 14; drawControl++)
+                    cards.AddNewCard(all.FindCardData("f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b")!, CardPile.DeckPileTop, false, false, animate: false);
             foreach (CardState card in units) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             var scheduledCards = new List<CardState>(anchors);
             if (energyControl != null) scheduledCards.Add(energyControl);
@@ -189,7 +192,7 @@ namespace MonsterTrain2Poju.Probe
                         }
                 }
                 int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == isolatedRoom).Units.Count(unit => unit.Team == CombatTeam.Player);
-                if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "0e4495fc-171b-4c5e-9a1f-d1220542a6f1") isolatedPosition = 0;
+                if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4") isolatedPosition = 0;
                 var isolatedAction = ids[index] == IsolatedEnergyControlInstanceId && IsolatedEnergyControlInstanceId != 0
                     ? new PlayCardAction(ids[index], isolatedRoom)
                     : new PlayCardAction(ids[index], isolatedRoom, playerPosition: isolatedPosition);

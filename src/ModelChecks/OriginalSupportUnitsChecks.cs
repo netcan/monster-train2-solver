@@ -139,6 +139,27 @@ internal static class OriginalSupportUnitsChecks
                 "Isolated unit scenario must record three anchors, optional energy control, and every requested original unit birth.");
             for (int index = 0; index < expectedIds.Length; index++)
                 NativeIsolatedUnit(root, expectedIds[index], actionIndex: index + 3 + energyControlActions, checkBattle: false);
+            if (expectedIds.Contains("87d7cda6-1568-405f-a295-5040f378b4d3") || expectedIds.Contains("58ac2b3e-ad25-4620-b814-6a3a74175aa4"))
+            {
+                BattleTurnState[] turns = root.GetProperty("Turns").EnumerateArray()
+                    .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+                if (expectedIds.Contains("87d7cda6-1568-405f-a295-5040f378b4d3"))
+                    Require(turns.Any(turn => turn.Energy == turn.EnergyPerTurn + 2 && turn.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .Any(unit => unit.AssetKey == "MonsterEmberFurnace" && unit.Modifiers!.RoomResources?.Single() is
+                            { Type: "RoomStateEnergyModifier", Amount: 2, DisallowedInDeployment: false })),
+                        "Original Ember Forge must positively add two energy while its room modifier remains present.");
+                if (expectedIds.Contains("58ac2b3e-ad25-4620-b814-6a3a74175aa4"))
+                {
+                    Require(turns.Any(turn => turn.DrawPerTurn == 6 && turn.Spawn.Train.Context!.Cards.Hand.Count == 6 &&
+                        turn.Spawn.Train.Context.Cards.Hand.Count(card => card.DataId == "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b") >= 5 &&
+                        turn.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.AssetKey == "WildwoodCustodian" &&
+                            unit.Modifiers!.RoomResources?.Single() is { Type: "RoomStateHandSizeModifier", Amount: 1, DisallowedInDeployment: false })),
+                        "Original Wildwood Custodian must draw six actual cards, including five controls, from a nonempty deck.");
+                    Require(turns.Any(turn => turn.Spawn.Turn > 2 && turn.DrawPerTurn == 5 && turn.Spawn.Train.Context!.Cards.Hand.Count == 5 &&
+                        turn.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.AssetKey != "WildwoodCustodian")),
+                        "After Custodian dies, the next draw and the visible per-turn count must return to five.");
+                }
+            }
             foreach (string forgeId in expectedIds.Where(id => id is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "4e517f8b-3caa-4a2c-98ba-ebee99075eed"))
             {
                 BattleTurnState[] turns = root.GetProperty("Turns").EnumerateArray()
@@ -444,7 +465,7 @@ internal static class OriginalSupportUnitsChecks
         RoomCombatState targetRoom = unitBefore.Spawn.Train.Rooms.Single(item => item.RoomIndex == unitAction.RoomIndex);
         RoomPlayRule targetRule = unitBefore.PlayRules.Rooms.Single(item => item.RoomIndex == unitAction.RoomIndex);
         int appendPosition = targetRoom.Units.Count(candidate => candidate.Team == CombatTeam.Player);
-        if (expectedId == "0e4495fc-171b-4c5e-9a1f-d1220542a6f1") appendPosition = 0;
+        if (expectedId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4") appendPosition = 0;
         bool juggernautXCost = expectedId == JuggernautId;
         bool healthAdjustedOnSpawn = expectedId == SteelsingerId;
         Require(unitCard.DataId == expectedId && unitAction.RoomIndex is >= 0 and < 3 && unitAction.PlayerPosition == appendPosition &&

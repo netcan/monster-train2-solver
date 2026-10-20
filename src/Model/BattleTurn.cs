@@ -209,7 +209,7 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithQueryFrame(context.QueryFrame.With(
                     moonPhaseTrackingActive: source.MoonPhaseTrackingActive));
             train = WithContext(train, context, spawn.Turn == 0);
-            int drawPerTurn = source.DrawPerTurn;
+            int drawPerTurn = source.DrawPerTurn - UnitRoomResourceModel.Amount(source.Spawn.Train, UnitRoomResourceModel.Draw);
             if (context.Resources != null)
             {
                 RelicResourceResult resourceDraw = RelicResourceModel.GetDrawCount(context);
@@ -499,11 +499,12 @@ namespace MonsterTrain2Poju.Model
             }
             if (context.Resources != null)
             {
-                RelicResourceResult resourceEnergy = RelicResourceModel.StartTurn(context);
+                RelicResourceResult resourceEnergy = RelicResourceModel.StartTurn(context,
+                    unitRoomEnergy: UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Energy));
                 if (!resourceEnergy.Supported) return Unsupported(resourceEnergy.UnsupportedReason!);
                 context = resourceEnergy.Context!;
             }
-            else context = EnergyModel.StartTurn(context, source.EnergyPerTurn);
+            else context = EnergyModel.StartTurn(context, source.EnergyPerTurn + UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Energy));
             train = WithContext(train, context, false);
             RelicSoloUnitUpgradeResult soloUnitUpgrades = RelicSoloUnitUpgradeModel.Apply(train);
             if (!soloUnitUpgrades.Supported) return Unsupported(soloUnitUpgrades.UnsupportedReason!);
@@ -539,16 +540,17 @@ namespace MonsterTrain2Poju.Model
                 if (!count.Supported) return Unsupported(count.UnsupportedReason!);
                 context = count.Context!; drawPerTurn = count.Value;
             }
+            int roomDrawCount = Math.Max(0, unchecked(drawPerTurn + UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Draw)));
             if (context.OtherPiles != null) otherPiles = context.OtherPiles.ToArray();
             if (RelicCorruptedAngelsModel.Enabled(context))
             {
-                TypedDrawResult interleaved = RelicCorruptedAngelsModel.DrawHand(context, drawPerTurn, source.PlayRules);
+                TypedDrawResult interleaved = RelicCorruptedAngelsModel.DrawHand(context, roomDrawCount, source.PlayRules);
                 if (!interleaved.Supported) return Unsupported(interleaved.UnsupportedReason!);
                 context = interleaved.Context!;
             }
             else
             {
-                CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, drawPerTurn, context.MaxHandSize);
+                CardCycleResult drawn = CardCycleModel.DrawHand(context.Cards, roomDrawCount, context.MaxHandSize);
                 if (!drawn.Supported) return Unsupported(drawn.UnsupportedReason!);
                 var existingHand = new HashSet<int>(context.Cards.Hand.Select(card => card.InstanceId));
                 statistics = context.Statistics;
@@ -599,7 +601,7 @@ namespace MonsterTrain2Poju.Model
             if (!scorched.Supported) return Unsupported(scorched.UnsupportedReason!);
             train = scorched.State!;
             spawn = WithTrain(spawn, train, turn, spawn.Rng);
-            return Finish(RoomOutcome.Exchanged, source.EnergyPerTurn, moon);
+            return Finish(RoomOutcome.Exchanged, train.Context!.QueryFrame?.Energy ?? source.EnergyPerTurn, moon);
 
             BattleTurnResult Finish(RoomOutcome outcome, int energy, string phase)
             {
@@ -648,7 +650,8 @@ namespace MonsterTrain2Poju.Model
                         }
                     }
                 }
-                return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, drawPerTurn,
+                return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn,
+                    Math.Max(0, drawPerTurn + UnitRoomResourceModel.Amount(spawn.Train, UnitRoomResourceModel.Draw)),
                     finalContext.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, outputPlayRules,
                     source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                     selectedRoom, finalContext.QueryFrame?.MoonPhaseTrackingActive ?? source.MoonPhaseTrackingActive), outcome);

@@ -38,12 +38,15 @@ namespace MonsterTrain2Poju.Probe
                 RelicProbe.HasStatusAttackHistory(AllGameManagers.Instance!) ? (int?)AccessTools.Property(state.GetType(), "DamageBuffFromStatusEffects").GetValue(state) : null,
                 mageblade.SingleOrDefault()?.AdditionalDamagePerMagicPower, RelicProbe.StatusAttackModifiers(AllGameManagers.Instance!), unit.IsChampion(),
                 UnitSelfAttackProbe.Rules(unit.GetRoomStateModifiers().Where(modifier => UnitSelfAttackModel.Known(modifier.GetType().Name))
+                    .Cast<RoomStateModifierBase>().Select(modifier => modifier.GetRoomModifierData())),
+                UnitRoomResourceProbe.Rules(unit.GetRoomStateModifiers().Where(modifier => UnitRoomResourceModel.Known(modifier.GetType().Name))
                     .Cast<RoomStateModifierBase>().Select(modifier => modifier.GetRoomModifierData())));
         }
         internal static UnitModifiers Definition(CharacterData data) => new UnitModifiers(data.GetAttackDamage(), 0, 0,
             data.GetSize(), data.GetEquipmentLimit(), data.GetCanBeHealed(), false, System.Array.Empty<CardUpgradeModifier>(),
             damageBuffFromStatusEffects: RelicProbe.HasStatusAttackHistory(AllGameManagers.Instance!) ? 0 : (int?)null,
             statusAttackModifiers: RelicProbe.StatusAttackModifiers(AllGameManagers.Instance!), isChampion: data.IsChampion(),
-            selfAttackRules: UnitSelfAttackProbe.Rules(data.GetRoomModifiersData()));
+            selfAttackRules: UnitSelfAttackProbe.Rules(data.GetRoomModifiersData()),
+            roomResources: UnitRoomResourceProbe.Rules(data.GetRoomModifiersData()));
     }
 }

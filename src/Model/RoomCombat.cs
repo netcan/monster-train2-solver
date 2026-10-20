@@ -975,6 +975,8 @@ namespace MonsterTrain2Poju.Model
             foreach (CombatUnit unit in state.Units)
             {
                 string? selfAttackError = UnitSelfAttackModel.Validate(state, unit);
+                string? roomResourceError = UnitRoomResourceModel.Validate(unit);
+                if (roomResourceError != null) return roomResourceError;
                 if (selfAttackError != null) return selfAttackError;
                 if (unit.RegisteredStatus("conduit") != null && !ConduitModel.Captured(state.Context))
                     return "Conduit requires captured native room/card tracker state.";

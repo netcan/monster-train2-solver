@@ -9617,3 +9617,17 @@ pending counters. Focused replay covers sixteen immutable branches each;
 bounded search has zero unsupported attempts and equal serial/parallel results.
 CopyOnPlay private discard state and permanent removal of Ephemeral/CopyOnPlay
 remain explicitly guarded.
+
+`full-battle-original-isolated-unit-room-resources.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-224939-030c0f13`.
+Unchanged Ember Forge supplies two extra energy per turn while it remains in
+the train. Unchanged Wildwood Custodian is placed ahead of its anchor and
+provides one additional draw. Fourteen unchanged Torches seed a nonempty deck;
+the native second-turn hand contains six cards, including five Torches and an
+enemy-generated card. Custodian subsequently dies, so visible DrawPerTurn and
+the following hand both return to five. The model computes contributions from
+current living player units, preserving their resource definitions through
+modifier copies. Preview rooms contribute nothing; purified births retain an
+explicit guard. The battle finishes with DEPTH-PASS and zero failure counters.
+Its five plays and five EndTurns replay with sixteen immutable branches;
+bounded search has zero unsupported attempts and equal serial/parallel results.
