@@ -8875,3 +8875,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-enchantrelle.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-enchantrelle.mt2f
 ```
+
+### Original Feeder Damage Enemies
+
+`full-battle-original-isolated-feeder-damage-enemies.mt2f` plays the unchanged
+2-cost 0/50 size-3 Feeder Damage Enemies. Its captured `OnFeed` callback heals
+itself for 10 and deals 20 damage to room enemies, but no feed occurs in this
+witness, so both effects remain untriggered. The Instant battle won with zero
+capture failures, mismatches, unsupported transitions or pending records.
+Focused replay and bounded serial/parallel search agree at 128 states, with
+three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId aa94ef0c-0fd8-4d42-992f-25345d3717b5
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-feeder-damage-enemies.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-feeder-damage-enemies.mt2f
+```
