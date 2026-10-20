@@ -8859,3 +8859,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-conductor-steward.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-conductor-steward.mt2f
 ```
+
+### Original Enchantrelle
+
+`full-battle-original-isolated-enchantrelle.mt2f` plays the unchanged 3-cost
+8/8 size-2 Enchantrelle. Its captured `CardMonsterPlayed` callback adds one
+enemy-only Debuff with parameter two, but there is no later Monster play in the
+witness, so the callback remains inactive. The Instant battle won with zero
+capture failures, mismatches, unsupported transitions or pending records.
+Focused replay and bounded serial/parallel search agree at 128 states, with
+three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 658321b4-08bd-443c-b4e1-b8a8931d3299
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-enchantrelle.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-enchantrelle.mt2f
+```

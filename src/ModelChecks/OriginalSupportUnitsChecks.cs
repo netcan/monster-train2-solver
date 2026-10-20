@@ -54,6 +54,7 @@ internal static class OriginalSupportUnitsChecks
     private const string LunaCovenChamp2Id = "63eba1e1-3118-44a3-8906-c8bfbe559667";
     private const string SporelauncherId = "aa20f108-ca78-42b1-b949-55fad0f84b15";
     private const string ConductorStewardId = "52b17dc7-968f-4748-a2ea-b6c09c5c8931";
+    private const string EnchantrelleId = "658321b4-08bd-443c-b4e1-b8a8931d3299";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -488,6 +489,28 @@ internal static class OriginalSupportUnitsChecks
                     !unit.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed").HasTriggered),
                 "Conductor Steward must preserve its original 2-cost 10/10 size-2 birth, expose but not use its cooldown-3 ability, and retain an inactive temporary +5/+5 CardMonsterPlayed callback.");
             Console.WriteLine("ORIGINAL-CONDUCTOR-STEWARD PASS: native 2-cost 10/10 size-2 birth; cooldown-3 ability remained available but unused, and temporary +5/+5 CardMonsterPlayed stayed inactive across four snapshots.");
+        }
+        if (expectedId == EnchantrelleId)
+        {
+            CombatTrigger played = template.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed");
+            CardActionEffect debuff = played.Effects.Single().Action!;
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "Enchantrelle" && rule.Cost == 3 && template.AssetKey == "MonsterEnchantrelle" &&
+                template.Modifiers!.AttackDamage == 8 && template.Health == 8 && template.MaxHealth == 8 && template.Size == 2 &&
+                template.Ability == null && spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Health == 8 &&
+                spawnedUnit.MaxHealth == 8 && spawnedUnit.Modifiers!.AttackDamage == 8 && spawnedUnit.Size == 2 &&
+                played.Effects.Single().Type == "CardEffectAddStatusEffect" &&
+                debuff is { Type: "AddStatus", Target: "Room", AllowEnemy: true, AllowPlayer: false } &&
+                debuff.Statuses.Single() is { Id: "debuff", Stacks: 1, ParamInt: 2, Stackable: true, RemoveStackAtEnd: true, ExcludeMonsterPropagation: true } &&
+                !played.HasTriggered && unitTurns.Length == 4 && unitTurns.All(unit => unit.Health == 8 && unit.MaxHealth == 8 &&
+                    unit.Modifiers!.AttackDamage == 8 && unit.Size == 2 && unit.Ability == null && unit.Status("debuff") == null &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed").HasTriggered),
+                "Enchantrelle must retain its original 3-cost 8/8 size-2 birth and enemy-only CardMonsterPlayed debuff definition, which remains inactive without a later Monster play.");
+            Console.WriteLine("ORIGINAL-ENCHANTRELLE PASS: native 3-cost 8/8 size-2 birth; enemy-only CardMonsterPlayed debuff remained inactive across four snapshots.");
         }
         if (expectedId == JuggernautId)
         {
