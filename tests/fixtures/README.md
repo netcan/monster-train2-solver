@@ -8691,3 +8691,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-railgun.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-railgun.mt2f
 ```
+
+### Original Silent Sentinel
+
+`full-battle-original-isolated-silent-sentinel.mt2f` plays the unchanged 1-cost
+10/40 size-2 Silent Sentinel. Its native OnSpawn callback exposes the cooldown-3
+ability, which remains available but unused in all four post-deployment
+snapshots. This covers direct play, birth and unactivated ability lifecycle only;
+the ability effect itself is not exercised. The Instant battle won with zero
+capture failures, mismatches, unsupported transitions or pending records.
+Focused replay and bounded serial/parallel search agree at 128 states, with
+three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 4f0f249f-2a0e-4704-b8e2-8395505e6bdb
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-silent-sentinel.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-silent-sentinel.mt2f
+```
