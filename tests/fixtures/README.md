@@ -9303,6 +9303,7 @@ capture/mismatch/unsupported/pending counters:
 | `cannibalize` | `20261020-190308-f3cd722a` | The friendly victim enters Exhausted and three native Morsels are created. |
 | `scrap-for-parts` | `20261020-190722-b02779fa` | The equipped victim dies; typed draw gives the waiting unit forty attack and free cost. |
 | `hallowed-halls` | `20261020-190802-4ced037f` | The victim returns in a fresh 1,005/10,005 body with Ephemeral, using the original source card and a replaced Standby condition. |
+| `hallowed-halls-capacity` | `20261020-191331-072e72b0` | Seven shuffled candidates produce six upgraded bodies in a five-capacity room; one card remains in Exhausted. |
 
 Names use `full-battle-original-isolated-<suffix>.mt2f`; profiles use
 `.probe-runs/full-battle-units-spells-and-junk-<suffix>`. Typed-draw preparation
@@ -9310,6 +9311,11 @@ adds six independent anchor cards to Draw: five enter the first hand and one
 remains available for a positive typed draw. Upgrade reference/queue capture
 is enabled for isolated spell batches. Generated and drawn cards are not extra
 policy plays. The queued upgrade is cleared after the source spell completes.
+
+The capacity witness starts six independent anchors in native Exhausted/Standby,
+using the native move operation. Killing the played anchor creates the seventh
+candidate. The focused checker verifies the six fresh bodies, the remaining
+candidate, changed Battle RNG, and every restored card's new Standby binding.
 
 Room recursion follows native shuffled candidate order, checks used capacity
 strictly greater than the maximum before each birth, and binds each restored

@@ -187,13 +187,20 @@ internal static class OriginalSupportSpellsChecks
             if (rule.AssetKey == "HallowedHalls")
             {
                 CombatUnit victim = before.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Team == CombatTeam.Player);
-                CombatUnit restored = after.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Team == CombatTeam.Player);
+                CombatUnit[] restoredUnits = after.Spawn.Train.Rooms[action.RoomIndex].Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
+                CombatUnit? restored = restoredUnits.SingleOrDefault(unit => unit.SpawnerCardId == victim.SpawnerCardId);
                 CardPileState standby = after.Spawn.Train.Context!.OtherPiles!.Single(pile => pile.Name == "Standby");
-                Require(victim.Id != restored.Id && victim.SpawnerCardId == restored.SpawnerCardId && restored.Attack == 1005 && restored.Health == 10005 &&
-                    restored.Status("ephemeral")?.Stacks == 1 && standby.UnitConditions!.Single(binding => binding.CardId == victim.SpawnerCardId).HostUnitId == restored.Id &&
-                    after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.All(token => token.InstanceId != restored.SpawnerCardId) &&
+                int oldExhausted = before.Spawn.Train.Context!.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Count;
+                CardPileState exhausted = after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted");
+                Require(oldExhausted is 0 or 6 && restoredUnits.Length == (oldExhausted == 0 ? 1 : 6) && exhausted.Cards.Count == (oldExhausted == 0 ? 0 : 1) &&
+                    restoredUnits.All(unit => unit.Id != victim.Id && unit.Attack == 1005 && unit.Health == 10005 && unit.Status("ephemeral")?.Stacks == 1 &&
+                        standby.UnitConditions!.Single(binding => binding.CardId == unit.SpawnerCardId).HostUnitId == unit.Id &&
+                        exhausted.Cards.All(token => token.InstanceId != unit.SpawnerCardId)) &&
+                    (oldExhausted != 0 || restored != null) &&
+                    (oldExhausted == 0 || restoredUnits.Sum(unit => unit.Size) == 6 &&
+                        !after.Spawn.Train.Context.BattleRng.Equals(before.Spawn.Train.Context.BattleRng)) &&
                     !BattleActionModel.PlayCard(before, new PlayCardAction(ids[i], before.PlayRules!.Rooms.Single(room => room.IsPyre).RoomIndex)).Supported,
-                    "Hallowed Halls must resurrect into a fresh body, retain the upgraded source card in Standby with its new host, and reject the Pyre room.");
+                    "Hallowed Halls must shuffle candidates, restore fresh upgraded bodies with replaced Standby bindings, allow one capacity overflow, and reject the Pyre room.");
             }
             if (rule.AssetKey == "ReplicatorRay")
             {

@@ -120,6 +120,14 @@ namespace MonsterTrain2Poju.Probe
             if (spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectDrawType")))
                 for (int drawControl = 0; drawControl < 6; drawControl++)
                     cards.AddNewCard(steward, CardPile.DeckPile, false, false, animate: false);
+            if (spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectRecursion" &&
+                effect.GetTargetCardSelectionMode() == CardEffectData.CardSelectionMode.RandomToRoomUntilCapacityFull)))
+                for (int recursionControl = 0; recursionControl < 6; recursionControl++)
+                {
+                    CardState exhausted = Add(steward.GetID());
+                    cards.MoveToStandByPile(exhausted, wasPlayed: false, wasExhausted: true,
+                        condition: new RemoveFromStandByCondition(() => CardPile.KeepInStandBy));
+                }
             foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
