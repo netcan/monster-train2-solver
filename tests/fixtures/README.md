@@ -9723,3 +9723,17 @@ counters at zero. Six plays and five EndTurns replay through sixteen immutable
 branches. Bounded search has zero unsupported attempts and equal serial/parallel
 results. Existing original trigger relic and Astrologer native chains retain
 their focused replays.
+
+`full-battle-original-isolated-crucible-steward.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-235935-c613fa5e`.
+Unchanged Crucible Steward observes an original Rage Serum being consumed.
+Its CardExhausted callback deals its current 15 Attack to the front enemy,
+reducing that enemy's armor from 25 to 10 while leaving the other enemy intact.
+The callback uses the unit's attacker traits and native spawner attribution.
+Shared editor copy fields are ignored only for this native effect, whose
+iterator does not consume them. Unknown triggered payloads remain guarded.
+The battle has DEPTH-PASS, settled victory and all four failure counters zero.
+Six plays and five EndTurns replay through sixteen immutable branches.
+Bounded search has no unsupported attempts in its 128 states and equal serial/
+parallel results. One alternative at recorded decision roots remains guarded.
+The older First of Kin Consume observer chain also retains its focused replay.

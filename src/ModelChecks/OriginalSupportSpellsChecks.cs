@@ -677,6 +677,7 @@ internal static class OriginalSupportSpellsChecks
         }
         UnitRoomStatusChecks.Native(root, originals);
         ConditionalUnitUpgradeChecks.Native(root, originals);
+        if (originals.Contains("7018bb02-2ec2-4b4f-95d0-7bafce95d97d")) CrucibleStewardChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);

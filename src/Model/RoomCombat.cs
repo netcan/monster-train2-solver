@@ -1214,6 +1214,15 @@ namespace MonsterTrain2Poju.Model
                                 return "Triggered damage-per-HP requires fixed self HP and a captured last attacker.";
                             continue;
                         }
+                        if (effect.Type == "CardEffectDamagePerSourceAttack")
+                        {
+                            if (effect.Action is not { Type: "DamagePerSourceAttack", Target: "FrontInRoom", Value: 1, Range: null,
+                                AllowEnemy: true, AllowPlayer: false, UseCardTraits: false } attackDamage)
+                                return "Triggered source-attack damage requires its calibrated original front-enemy payload.";
+                            string? filterError = attackDamage.Filters?.Validate();
+                            if (filterError != null) return filterError;
+                            continue;
+                        }
                         if (effect.Type == "CardEffectPlayUnitTrigger")
                         {
                             CardActionEffect? replay = effect.Action;
@@ -4076,6 +4085,7 @@ namespace MonsterTrain2Poju.Model
                 (RoomMoonPhaseModel.Effective(context, unit.RoomIndex, context!.QueryFrame!.MoonPhase!.Value) & action.Value) != 0;
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type == "DamagePerSourceAttack" ? targets.UnitIds.Count > 0 :
                 action.Type == "UnitUpgradePerHoard" ? targets.UnitIds.Count > 0 && context?.QueryFrame?.DragonsHoard > 0 :
                 action.Type == "UnitUpgradeOnMoonPhase" ? targets.UnitIds.Any(id => units.Any(unit => unit.Source.Id == id && UpgradeMoonMatches(action, unit))) :
                 action.Type == "HealTrain" ? context?.EnergyState?.PyreAlive == true &&
@@ -4527,6 +4537,7 @@ namespace MonsterTrain2Poju.Model
                     return true;
                 }
                 // Native samples once after collection, including an empty Room target set.
+                if (action.Type == "DamagePerSourceAttack") amount = unchecked(amount * actor.Attack);
                 if (action.Type == "Damage" && effect.DamageStatusMultiplier != null)
                     amount = unchecked(amount * actor.Count(effect.DamageStatusMultiplier));
                 foreach (int targetId in targets.UnitIds)

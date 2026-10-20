@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "8da317bf3a783ba1fc2a8730d7293050f0e90e7e338e85242b090b090be0098b";
+    private const string CatalogHash = "62c5183709939102172383dc98d5678eb8b41eabdf1fac565537fb864c115e96";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;

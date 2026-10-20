@@ -145,7 +145,7 @@ namespace MonsterTrain2Poju.Probe
                 // These native iterators do not read shared copy/filter/upgrade
                 // fields, except generation, which captures them independently.
                 if (effect.GetEffectStateName() is not ("CardEffectAddBattleCard" or "CardEffectAddRunCard" or "CardEffectAddStatusEffect" or
-                    "CardEffectAdjustForgePoints" or "CardEffectResetCooldown" or "CardEffectAddTempCardUpgradeToSpellsInDeck") && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
+                    "CardEffectAdjustForgePoints" or "CardEffectResetCooldown" or "CardEffectAddTempCardUpgradeToSpellsInDeck" or "CardEffectDamagePerSourceAttack") && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
                     effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectSpawnMonster")) interactions.Add("Spawned effect modifiers");
                 var pool = new List<CardData>();
                 if (effect.GetEffectStateName() is "CardEffectAddBattleCard" or "CardEffectAddRunCard")

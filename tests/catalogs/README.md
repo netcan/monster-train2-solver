@@ -23,10 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-234852-57d47b22/card-catalog.mt2f`.
-The committed archive is byte-identical: 98,011 bytes, 11,866 unique nodes,
-SHA-256 `8da317bf3a783ba1fc2a8730d7293050f0e90e7e338e85242b090b090be0098b`.
-The latest refresh captures Mooncaller's native room trigger-count modifier.
+Source: `.probe-runs/full-battle-no-cards-20261020-235709-90b54337/card-catalog.mt2f`.
+The committed archive is byte-identical: 98,110 bytes, 11,866 unique nodes,
+SHA-256 `62c5183709939102172383dc98d5678eb8b41eabdf1fac565537fb864c115e96`.
+The latest refresh captures Crucible Steward's native source-attack damage
+callback. Only this projection changes; the other 667 definitions are identical.
+The preceding refresh captures Mooncaller's native room trigger-count modifier.
 Only Mooncaller's card projection changes semantically; after removing null
 RoomTriggerCounts fields, all other 667 decoded card definitions stay identical.
 The preceding refresh captures Greed Dragon's Hoard upgrade and Shadeguard's
