@@ -52,6 +52,7 @@ internal static class OriginalSupportUnitsChecks
     private const string DeathEaterId = "68a76ecf-2108-4b7f-b805-b3653cdd96bf";
     private const string LunaCovenChamp1Id = "5d2b15ed-e9b4-464a-b029-f337f2ed6cd2";
     private const string LunaCovenChamp2Id = "63eba1e1-3118-44a3-8906-c8bfbe559667";
+    private const string SporelauncherId = "aa20f108-ca78-42b1-b949-55fad0f84b15";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -434,6 +435,24 @@ internal static class OriginalSupportUnitsChecks
                     unit.Ability == null && !unit.Triggers.Single(trigger => trigger.Kind == "OnSpawn").HasTriggered),
                 "Luna Coven Champion 2 must retain its 0-cost 10/10 size-2 birth and Mageblade 2 without activating the inert OnSpawn callback.");
             Console.WriteLine("ORIGINAL-LUNA-COVEN-CHAMPION-2 PASS: native 10/10 size-2 birth retained Mageblade 2; inert OnSpawn stayed inactive across four snapshots.");
+        }
+        if (expectedId == SporelauncherId)
+        {
+            CombatTrigger played = template.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed");
+            CardActionEffect decay = played.Effects.Single().Action!;
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "Sporelauncher" && rule.Cost == 2 && template.AssetKey == "MonsterSporelauncher" &&
+                template.Modifiers!.AttackDamage == 30 && template.Health == 30 && template.MaxHealth == 30 && template.Size == 3 &&
+                played.Effects.Single().Type == "CardEffectAddStatusEffect" && decay is { Type: "AddStatus", Target: "Room", AllowEnemy: true, AllowPlayer: false } &&
+                decay.Statuses.Single() is { Id: "decay", Stacks: 2 } && unitTurns.Length == 4 &&
+                unitTurns.All(unit => unit.Health == 30 && unit.MaxHealth == 30 && unit.Modifiers!.AttackDamage == 30 && unit.Size == 3 &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed").HasTriggered),
+                "Sporelauncher must retain its original 2-cost 30/30 size-3 birth and inactive enemy-only CardMonsterPlayed Decay definition.");
+            Console.WriteLine("ORIGINAL-SPORELAUNCHER PASS: native 2-cost 30/30 size-3 birth; enemy Decay callback remained inactive in four snapshots.");
         }
         if (expectedId == JuggernautId)
         {

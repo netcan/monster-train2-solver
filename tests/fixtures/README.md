@@ -8825,3 +8825,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-luna-coven-champ2.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-luna-coven-champ2.mt2f
 ```
+
+### Original Sporelauncher
+
+`full-battle-original-isolated-sporelauncher.mt2f` plays the unchanged 2-cost
+30/30 size-3 Sporelauncher. Its `CardMonsterPlayed` definition adds 2 Decay to
+room enemies, but that callback remains untriggered in the four post-deployment
+snapshots; only original direct play and birth are covered. The Instant battle
+won with zero capture failures, mismatches, unsupported transitions or pending
+records. Focused replay and bounded serial/parallel search agree at 128 states,
+with three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId aa20f108-ca78-42b1-b949-55fad0f84b15
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-sporelauncher.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-sporelauncher.mt2f
+```
