@@ -54,10 +54,11 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState state = source; RoomOutcome outcome = RoomOutcome.Exchanged;
             RoomPlayRule[] updatedRoomRules = roomRules.ToArray();
             if (error != null) return Fail(error);
-            if (source.Context?.SpawnPoints == null || source.Rooms.Any(room => room.Preview) ||
+            bool preview = source.Rooms.All(room => room.Preview);
+            if (source.Context?.SpawnPoints == null || source.Rooms.Any(room => room.Preview != preview) ||
                 source.Rooms.Any(room => updatedRoomRules.Count(rule => rule.RoomIndex == room.RoomIndex) != 1) ||
                 updatedRoomRules.Count(rule => rule.IsPyre) != 1 || !updatedRoomRules.Last().IsPyre)
-                return Fail("Bump requires captured physical points, all room rules and a primary state.");
+                return Fail("Bump requires captured physical points, all room rules and a consistent preview state.");
             int pyre = source.Rooms.Count - 1;
             var moved = new List<(int Id, int OldRoom, int NewRoom, bool ForcedBossMove)>(); var attempted = new List<int>();
             // Native snapshots the target list, moves all actors first, then starts callbacks.
@@ -67,6 +68,9 @@ namespace MonsterTrain2Poju.Model
                 SpawnPointReference? old = state.Context!.SpawnPoints!.Units.SingleOrDefault(unit => unit.UnitId == id)?.Current;
                 if (actor == null || old == null) continue;
                 if (actor.BumpRules == null) return Fail("Missing native Bump movement properties for actor " + id);
+                if (preview && (actor.Team != CombatTeam.Enemy || actor.IsBoss == true || actor.BumpRules.OuterBoss ||
+                    actor.BumpRules.CompanionBoss || actor.Status("horde") != null))
+                    return Fail("Preview Bump is calibrated only for ordinary enemy targets.");
                 if (actor.Status("immobile") != null) { attempted.Add(id); continue; }
                 if (actor.Status("rooted") != null)
                 {
@@ -144,11 +148,12 @@ namespace MonsterTrain2Poju.Model
                     int point = recipient == 0 ? state.Context!.SpawnPoints!.FirstEmpty(floor, actor.Team) :
                         state.Context!.SpawnPoints!.Units.Single(unit => unit.UnitId == recipient).Current?.Index ?? -1;
                     if (point < 0) { blocked = true; break; }
-                    destination = new SpawnPointReference(floor, actor.Team, point);
+                    destination = new SpawnPointReference(floor, actor.Team, point,
+                        state.Context!.SpawnPoints!.SelectedGroup(floor, actor.Team)?.PreviewCopyId);
                 }
                 if (destination == null || destination.RoomIndex == old.RoomIndex ||
                     teleportGoal != null && destination.RoomIndex != teleportGoal.RoomIndex) { attempted.Add(id); continue; }
-                if (looping && !blocked) queue.Add(new RoomCombatModel.QueuedCharacterTrigger(origin!.RoomIndex, actor, "OnTrainRoomLoop"));
+                if (looping && !blocked && !preview) queue.Add(new RoomCombatModel.QueuedCharacterTrigger(origin!.RoomIndex, actor, "OnTrainRoomLoop"));
                 if (HordeMergeModel.Select(state.Rooms[destination.RoomIndex], actor) == 0)
                 {
                     var placed = BattleSpawnPointModel.Apply(state.Context!.SpawnPoints!, origin!, "Set", actor.Team, id, target: destination);
@@ -166,6 +171,7 @@ namespace MonsterTrain2Poju.Model
             // the departure and destination of another target in the same card effect.
             foreach (var move in moved)
             {
+                if (preview) continue;
                 CombatUnit actor = Get(move.Id) ?? retained.GetValueOrDefault(move.Id)!;
                 // Older captures did not observe room selection; retain that unknown field.
                 if (actor.Status("relentless") != null && state.Context?.QueryFrame is StatisticQueryFrame queryFrame &&
@@ -211,7 +217,7 @@ namespace MonsterTrain2Poju.Model
                     if (!merge.Supported) return Fail(merge.UnsupportedReason!);
                     state = merge.State!; retained[actor.Id] = actor = merge.SourceAfter!; queue.AddRange(merge.PendingCallbacks);
                 }
-                if (actor.Team == CombatTeam.Enemy)
+                if (actor.Team == CombatTeam.Enemy && !preview)
                 {
                     queue.Add(new RoomCombatModel.QueuedCharacterTrigger(FindRoom(actor.Id)?.RoomIndex ?? move.OldRoom,
                         actor, amount > 0 ? "PostAscension" : "PostDescension"));
@@ -235,6 +241,7 @@ namespace MonsterTrain2Poju.Model
             }
             foreach (int id in attempted)
             {
+                if (preview) continue;
                 CombatUnit? actor = Get(id);
                 if (actor?.Team != CombatTeam.Enemy) continue;
                 queue.Add(new RoomCombatModel.QueuedCharacterTrigger(FindRoom(id)!.RoomIndex, actor,

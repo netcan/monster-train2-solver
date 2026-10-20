@@ -83,6 +83,8 @@ namespace MonsterTrain2Poju.Probe
                 string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
                     .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == RoomPreCombatProbe.SirenSongId)
+                candidates = candidates.Where(action => action.RoomIndex == 2);
             if (index >= 4 && IsolatedIds.Contains("02258ff7-457e-4de6-88cf-faff348801d7"))
             {
                 string played = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
@@ -200,7 +202,7 @@ namespace MonsterTrain2Poju.Probe
             CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()
                 .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true) ||
                 spellIds.Contains("e1a39d88-4a77-4399-98b2-0b81f44fe6a8");
-            CapturesBump = spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectBump"));
+            CapturesBump = spellIds.Contains(RoomPreCombatProbe.SirenSongId) || spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectBump"));
             bool hatchControls = spellIds.Contains("27b0fdda-5dc4-4280-a510-fe51e550e3fb") ||
                 spellIds.Contains("07448181-5b6f-404a-88ff-cb4d8ac8a3b1");
             if (hatchControls || spellIds.Contains("a524d58a-6b12-4ec4-870c-679837e234cf") || spellIds.Contains("ae114dc4-d08f-4909-a2ad-d99215661463"))
@@ -235,6 +237,18 @@ namespace MonsterTrain2Poju.Probe
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
                 .Concat(spellIds.Select(Add)).ToArray();
+            if (spellIds.Contains(RoomPreCombatProbe.SirenSongId))
+            {
+                // Keep lower-floor enemies alive long enough to reach the native
+                // Limited Range attachment. The unchanged boss still dies promptly.
+                CardUpgradeData control = DynamicUpgradeScenario.Upgrade("PojuSirenLowerFloorControl",
+                    "ac110052-0000-4000-8000-000000000098", -990, 0, 0, 0, "", 0);
+                Set(control, "statusEffectUpgrades", new List<StatusEffectStackData>());
+                ((List<CardUpgradeData>)AccessTools.Field(typeof(AllGameData), "cardUpgradeDatas").GetValue(all)).Add(control);
+                foreach (CardState card in created.Take(2))
+                    if (!CardUpgradeHelper.TryApplyUpgradeToCard(card, null, control, true, false, managers.GetCoreManagers(), out _))
+                        throw new InvalidOperationException("Siren Song lower-floor control upgrade rejected.");
+            }
             if (spellIds.Contains("93fd40da-054d-4cc2-a8b3-da77e619a1d0") && spellIds.Contains("63a48bad-07da-4687-bfef-2f7c6653af5e"))
                 foreach (string id in new[] { "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b", "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b", "63a48bad-07da-4687-bfef-2f7c6653af5e" })
                 {

@@ -9918,6 +9918,22 @@ that combat search's terminal boundary. Existing Stasis and equipment combat
 batch chains still pass. Other unit-source copy destinations/counts remain
 guarded pending independent native witnesses.
 
+`full-battle-original-isolated-siren-song.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-024806-e259a5e6`.
+Unchanged Siren Song respects its native Limited Range and attaches on floor 2.
+The two lower-floor test anchors use a -990 Attack control upgrade so enemies
+reach that floor; the card definition is unchanged. Four enemies receive three
+Dazed before moving to the Pyre room, preserving identity and HP. Twenty-seven
+unrelated unit observations, including one boss on another floor, stay unchanged.
+The authored boss exclusion is captured; same-floor boss execution is not a
+positive witness here. Previews use copied physical groups without primary-only
+ascension callbacks or compaction. The movement phase resolves enemies already
+in the Pyre room after a pre-combat Bump. DEPTH-PASS has a settled victory and
+zero capture/mismatch/unsupported/pending counters. Five plays/five EndTurns
+pass sixteen immutable full replay branches. A 128-state search has zero
+unsupported attempts and equal serial/parallel best. Existing Inferno Room and Bump
+checks pass; preview movement remains restricted to ordinary enemy targets.
+
 `full-battle-original-isolated-infectory.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-023638-8b44b22f`.
 Unchanged Infectory and Eager Conscript witness two first cardless Funguy births,

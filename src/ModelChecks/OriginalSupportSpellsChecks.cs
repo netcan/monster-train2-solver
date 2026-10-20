@@ -18,6 +18,8 @@ internal static class OriginalSupportSpellsChecks
             string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
                 .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "8ccceee7-0eb9-4aa0-9268-ff83b6f6c54e")
+                candidates = candidates.Where(action => action.RoomIndex == 2);
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId is
                 "2ed78ce2-13c3-4e82-963f-99c9ea12d0f0" or "175a7730-7a1c-4da1-97b8-d799e7570396" or "98276338-b18f-4ffa-83a2-9501c2741f03" &&
                 ids.Any(id => source.Spawn.Train.Context.FindCard(id)?.DataId is "3cb0976c-7cf5-4470-bb5a-7eacfb404e9a" or "1362aa8c-d7b4-49b9-a4f7-268f47de4aa6" or "a5b05b40-45be-41ea-8c56-dd18f3feb1b4"))
@@ -179,7 +181,8 @@ internal static class OriginalSupportSpellsChecks
                 CombatUnit host = after.Spawn.Train.Rooms[i].Units.Single(unit => unit.SpawnerCardId == ids[i]);
                 Require(action.RoomIndex == i && action.PlayerPosition == 0 && rule.Cost == 0 &&
                     card.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678" && host.Health == 10000 &&
-                    host.Size == 1 && host.Modifiers!.AttackDamage == 1000, "Isolated spell host differs.");
+                    host.Size == 1 && host.Modifiers!.AttackDamage ==
+                        (i < 2 && originals.Contains("8ccceee7-0eb9-4aa0-9268-ff83b6f6c54e") ? 10 : 1000), "Isolated spell host differs.");
                 continue;
             }
             if (i == 3)
@@ -686,6 +689,7 @@ internal static class OriginalSupportSpellsChecks
         EtherealSeelieChecks.Native(root, originals);
         UnitGraftChecks.Native(root, originals);
         RoomDeathEffectChecks.Native(root, originals);
+        RoomSirenSongChecks.Native(root, originals);
         if (originals.Contains("7018bb02-2ec2-4b4f-95d0-7bafce95d97d")) CrucibleStewardChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }

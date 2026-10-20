@@ -23,10 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-022858-0b144e83/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,878 bytes, 12,131 unique nodes,
-SHA-256 `27f49116ec225f0779ec372db39466ac6b6f2c5b43517991902cda7dd9a40751`.
-The latest refresh captures Infectory's authored room death effect and Funguy
+Source: `.probe-runs/full-battle-no-cards-20261021-024218-03f2e4f8/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,983 bytes, 12,129 unique nodes,
+SHA-256 `c88997e5139e457967d0ceffce4529769184ce4f6b54501de903ae1cc7dabec8`.
+The latest refresh captures Siren Song's pre-combat Dazed/movement composition.
+Only this projection changes; the other 667 are identical.
+The preceding refresh captures Infectory's authored room death effect and Funguy
 exclusion filter. Only this projection changes after normalizing absent/null
 DeathEffect fields on room attachments; the other 667 are identical.
 The preceding refresh captures the authored equipment/birth rules of Sanguine

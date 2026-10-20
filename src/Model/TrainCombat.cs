@@ -285,8 +285,10 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return Unsupported(error);
             var rooms = source.Rooms.Select(room => room.Units.ToList()).ToArray();
             int pyre = rooms.Length - 1;
-            bool enteredPyre = false;
-            int lastMovementSource = -1, lastPyreEntrySource = -1;
+            // A pre-combat Bump can already have placed enemies in the Pyre room.
+            // Native movement resolves that room even without a new floor entry.
+            bool enteredPyre = rooms[pyre].Any(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0);
+            int lastMovementSource = -1, lastPyreEntrySource = enteredPyre ? pyre : -1;
             var moved = new HashSet<int>();
             var movements = source.Movement.ToDictionary(rule => rule.UnitId);
             var looped = new List<int>();
