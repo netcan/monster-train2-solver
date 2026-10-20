@@ -184,6 +184,17 @@ internal static class OriginalSupportSpellsChecks
                     after.Spawn.Train.Context.Cards.NextDrawUpgrades?.Count == 0,
                     "Scrap for Parts must sacrifice the equipped host, positively draw the waiting unit, apply forty attack/free cost, and clear its upgrade queue.");
             }
+            if (rule.AssetKey == "SacrificialRessurection")
+            {
+                CardToken[] victims = before.Spawn.Train.Context!.Cards.Hand.Where(token => token.InstanceId != ids[i]).ToArray();
+                CardToken generated = after.Spawn.Train.Context!.Cards.Hand.Single();
+                Require(victims.Length == 2 && victims.All(token => token.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678" &&
+                        after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(exhausted => exhausted.InstanceId == token.InstanceId)) &&
+                    generated.DataId == "3b74c955-fd58-4b60-81a7-e2d6a0aaa2d4" &&
+                    after.Spawn.Train.Context.NextCardId - before.Spawn.Train.Context.NextCardId == 1 &&
+                    after.Spawn.Train.Context.FindCard(generated.InstanceId)!.Temporary.Upgrades.Single().Stats.Damage == 20,
+                    "Sacrificial Resurrection must consume both independent hand controls and generate one Draff with twenty temporary attack.");
+            }
             if (rule.AssetKey == "HallowedHalls")
             {
                 CombatUnit victim = before.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.Team == CombatTeam.Player);

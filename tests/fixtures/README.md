@@ -9294,6 +9294,13 @@ Both native runs have DEPTH-PASS, settled victories and all failure counters zer
 
 ### Original death-trigger, sacrifice/draw and direct room recursion spells
 
+`full-battle-original-isolated-sacrificial-resurrection.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-192211-cf829612`.
+Two independent anchor controls remain in Hand for the unchanged spell to
+consume. Both enter Exhausted and exactly one Draff enters Hand with twenty
+temporary attack. The controls and generated card are not policy plays.
+DEPTH-PASS, settled victory and all failure counters are zero.
+
 `full-battle-original-isolated-frostpiercer.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261020-191851-0593a13d`.
 The unchanged equipment records four positive OnAttackingBeforeDamage callbacks:

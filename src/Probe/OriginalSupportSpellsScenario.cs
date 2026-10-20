@@ -117,6 +117,8 @@ namespace MonsterTrain2Poju.Probe
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
                 .Concat(spellIds.Select(Add)).ToArray();
+            if (spellIds.Contains("a27a5954-d63a-4b7c-9cff-308aa6a91314"))
+                for (int sacrificeControl = 0; sacrificeControl < 2; sacrificeControl++) Add(steward.GetID());
             if (spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectDrawType")))
                 for (int drawControl = 0; drawControl < 6; drawControl++)
                     cards.AddNewCard(steward, CardPile.DeckPile, false, false, animate: false);
