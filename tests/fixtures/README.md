@@ -7918,6 +7918,22 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-makeshift-golem.mt2f
 ```
 
+### Original Deathcapped Prophet
+
+`full-battle-original-isolated-deathcapped-prophet.mt2f` records an unchanged
+Deathcapped Prophet behind three zero-cost Steward anchors. Its original cost-1,
+3/8, size-1 birth matches; the captured `CardMonsterPlayed` callback grants
+itself one additional card next turn. The 38.86-second native Instant run won
+with zero capture failures, mismatches, unsupported transitions or pending
+captures. No later monster play occurred, and draw-per-turn stayed unchanged, so
+the callback is definition-only evidence here.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId ec522dfa-0b0d-41a9-860d-1a18fae0efb6 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-deathcapped-prophet.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-deathcapped-prophet.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and

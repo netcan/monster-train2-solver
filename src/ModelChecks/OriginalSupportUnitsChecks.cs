@@ -17,6 +17,7 @@ internal static class OriginalSupportUnitsChecks
     private const string CrucibleCollectorId = "e27358a6-e42f-410b-be76-75dfbf2bfab4";
     private const string CrucibleWardenId = "abae9cd1-d180-41cb-956c-5cf09cf85fa9";
     private const string MakeshiftGolemId = "92084a94-6cc6-4af3-9a7d-de61ec7d161c";
+    private const string DeathcappedProphetId = "ec522dfa-0b0d-41a9-860d-1a18fae0efb6";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -407,6 +408,18 @@ internal static class OriginalSupportUnitsChecks
                 template.Status("armor")?.Stacks == 12 && spawnedUnit.Status("armor")?.Stacks == 12,
                 "Makeshift Golem must preserve its native 1-cost 12/12 size-2 birth and untriggered OnDeath room +12 Armor definition.");
         }
+        if (expectedId == DeathcappedProphetId)
+        {
+            CombatTrigger monsterPlayed = template.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed");
+            CombatEffect draw = monsterPlayed.Effects.Single();
+            Require(rule.AssetKey == "DeathcappedProphet" && template.AssetKey == "MonsterDeathcappedProphet" &&
+                rule.Cost == 1 && template.Health == 8 && template.MaxHealth == 8 && template.Modifiers.AttackDamage == 3 && template.Size == 1 &&
+                draw.Type == "CardEffectDrawAdditionalNextTurn" && draw.Value == 1 &&
+                draw.Action is { Type: "DrawNextTurn", Target: "Self", Value: 1, AllowEnemy: true, AllowPlayer: true } &&
+                !monsterPlayed.HasTriggered && !spawnedUnit.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed").HasTriggered &&
+                unitBefore.DrawPerTurn == unitAfter.DrawPerTurn,
+                "Deathcapped Prophet must preserve its native 1-cost 3/8 size-1 birth and inactive CardMonsterPlayed +1 DrawNextTurn definition.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
@@ -420,6 +433,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-CRUCIBLE-WARDEN PASS: original 1-cost 20/30 size-2 birth and captured OnFeed +1 Damage Shield; no feed occurred, so the trigger remained inactive.");
         else if (expectedId == MakeshiftGolemId)
             Console.WriteLine("ORIGINAL-MAKESHIFT-GOLEM PASS: original 1-cost 12/12 size-2 birth and captured OnDeath room +12 Armor; the unit survived, so the trigger remained inactive.");
+        else if (expectedId == DeathcappedProphetId)
+            Console.WriteLine("ORIGINAL-DEATHCAPPED-PROPHET PASS: original 1-cost 3/8 size-1 birth and captured CardMonsterPlayed +1 DrawNextTurn; no later monster play occurred, so the trigger remained inactive.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
