@@ -196,6 +196,10 @@ namespace MonsterTrain2Poju.Model
         internal CardModifiers WithMergedEquipment(MergedEquipmentState merged) =>
             new(Offsets, Upgrades, PersistentHealth, ExternalInteractions, BoxedCards, merged);
         public static CardModifiers Empty() => new CardModifiers(new CardStatModifier(), Array.Empty<CardUpgradeModifier>(), 0, Array.Empty<string>());
+        internal CardModifiers WithAdditionalDamage(int damage) => new CardModifiers(new CardStatModifier(
+            unchecked(Offsets.Damage + damage), Offsets.Health, Offsets.Cost, Offsets.Heal, Offsets.Size,
+            Offsets.XCost, Offsets.EquipmentLimit, Offsets.UpgradeSlotCount), Upgrades, PersistentHealth,
+            ExternalInteractions, BoxedCards, MergedEquipment);
         internal CardModifiers OnDiscard()
         {
             var upgrades = Upgrades.ToList();

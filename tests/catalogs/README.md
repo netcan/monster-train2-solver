@@ -23,10 +23,16 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-204847-2724f8d4/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,899 bytes, 11,711 unique nodes,
-SHA-256 `5d7d28bc3efb2da23e29514fe41531eae88d1b816331eb57a1002f60cc060876`.
-The latest refresh captures Silver Ink and Magic Power Hand upgrade filters and
+Source: `.probe-runs/full-battle-no-cards-20261020-210103-2cb5518b/card-catalog.mt2f`.
+The committed archive is byte-identical: 97,791 bytes, 11,813 unique nodes,
+SHA-256 `a53f1818ad8b4c5120ae2e674cb31474126efccbc47a8f0761f9a548c1df139c`.
+The latest refresh captures independent native card-trigger type, amount,
+persistence and upgrade fields, plus projected original OnKill definitions.
+Fanning the Flame and Subsuming Blade gain source-only permanent damage growth;
+only these two Rules changed, with all 668 raw card definitions unchanged.
+Inventory promotion additionally requires the native callback payload to match
+the original catalog, preventing modified trigger parameters from counting.
+The preceding refresh captures Silver Ink and Magic Power Hand upgrade filters and
 removes the guard on unused shared fields in Death's Dancer's temporary unit
 upgrade. Only these three Rules changed; all 668 raw definitions are unchanged.
 The preceding refresh projects Shadesplitter's Room-targeted OnKill generator and

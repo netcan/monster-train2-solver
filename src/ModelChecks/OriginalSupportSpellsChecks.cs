@@ -25,6 +25,9 @@ internal static class OriginalSupportSpellsChecks
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463")
                 candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.Health + (unit.Status("armor")?.Stacks ?? 0) <= 8));
+            if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f29d063b-cb41-44ee-8118-4db66b6f8195")
+                candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.Health <= 5));
             if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
                 candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
@@ -215,6 +218,22 @@ internal static class OriginalSupportSpellsChecks
                     after.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy) <
                         before.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy),
                     "Shadesplitter must positively kill a native enemy and roll its original weighted Morsel pool through the Room-targeted OnKill effect.");
+            }
+            if (rule.AssetKey is "SubsumingBlade" or "FanningTheFlame")
+            {
+                CardLifecycleTrigger trigger = card.MaskDescriptor!.KillTriggers!.Single();
+                CardActionEffect growth = trigger.Actions.Single();
+                CardInstanceState changed = after.Spawn.Train.Context!.FindCard(card.InstanceId)!;
+                CardInstanceState control = before.Spawn.Train.Context!.CardInstances!.Single(item =>
+                    item.DataId == card.DataId && item.InstanceId != card.InstanceId);
+                Require(trigger.Effects.SequenceEqual(new[] { "CardTriggerEffectBuffSpellDamage" }) &&
+                    growth.Type == "BuffSourceSpellDamage" && growth.Lifetime == "SingleRun" && growth.Value > 0 &&
+                    changed.Permanent.Offsets.Damage - card.Permanent.Offsets.Damage == growth.Value &&
+                    Json(changed.Temporary) == Json(card.Temporary) &&
+                    Json(after.Spawn.Train.Context.FindCard(control.InstanceId)!.Permanent) == Json(control.Permanent) &&
+                    after.Spawn.Train.Rooms.Sum(room => room.Units.Count(unit => unit.Team == CombatTeam.Enemy)) <
+                        before.Spawn.Train.Rooms.Sum(room => room.Units.Count(unit => unit.Team == CombatTeam.Enemy)),
+                    "Native spell kill must grow only its source's permanent damage, leaving a same-definition control unchanged.");
             }
             if (rule.AssetKey == "RevengeOfTheDamned")
             {

@@ -38,15 +38,26 @@ namespace MonsterTrain2Poju.Probe
         {
             var interactions = new List<string>();
             CardEffectData[] effects = data.GetCardEffects().ToArray();
-            CardActionEffect[] actions = effects.Select(effect => BattleActionProbe.DescribeTriggerEffect(effect, interactions)).ToArray();
+            var nativeEffects = data.GetTriggerEffects();
+            CardActionEffect[] nativeActions = nativeEffects.Select(effect =>
+            {
+                string name = TypeNameCache.GetType(effect.cardTriggerEffect).Name;
+                if (name != "CardTriggerEffectBuffSpellDamage" || effect.persistenceMode != PersistenceMode.SingleRun || effect.paramInt <= 0)
+                    interactions.Add("Uncalibrated native card trigger " + name);
+                return new CardActionEffect(name == "CardTriggerEffectBuffSpellDamage" ? "BuffSourceSpellDamage" : "Unsupported",
+                    "Self", effect.paramInt, false, false, Array.Empty<CombatStatus>(), lifetime: effect.persistenceMode.ToString());
+            }).ToArray();
+            CardActionEffect[] actions = nativeActions.Concat(effects.Select(effect => BattleActionProbe.DescribeTriggerEffect(effect, interactions))).ToArray();
             bool conversion = data.GetTrigger().ToString() == "OnUnplayedPositive" && effects.Length == 1 &&
                 effects[0].GetEffectStateName() == "CardEffectBalatroConvertCard" && effects[0].GetParamInt() == 1;
-            bool supportedKill = data.GetTrigger() == CardTriggerType.OnKill && data.GetTriggerEffects().Count == 0 &&
-                effects.Length == 1 && effects[0].GetEffectStateName() is "CardEffectGainEnergy" or "CardEffectAddBattleCard" or "CardEffectAddUpgradedCopy" or
-                    "CardEffectRewardGold" or "CardEffectAdjustDragonsHoard" or "CardEffectAdjustForgePoints" or "CardEffectAdjustCorruption" && interactions.Count == 0;
+            bool supportedKill = data.GetTrigger() == CardTriggerType.OnKill && interactions.Count == 0 &&
+                (nativeEffects.Count == 1 && effects.Length == 0 && nativeActions[0].Type == "BuffSourceSpellDamage" ||
+                 nativeEffects.Count == 0 && effects.Length == 1 && effects[0].GetEffectStateName() is "CardEffectGainEnergy" or "CardEffectAddBattleCard" or "CardEffectAddUpgradedCopy" or
+                    "CardEffectRewardGold" or "CardEffectAdjustDragonsHoard" or "CardEffectAdjustForgePoints" or "CardEffectAdjustCorruption");
             if (data.GetTrigger().ToString() != "OnCast" && !conversion && !supportedKill) interactions.Add("Unsupported card upgrade trigger " + data.GetTrigger());
             return new CardLifecycleTrigger(data.GetTrigger().ToString(), data.GetDescriptionKey(),
-                effects.Select(effect => effect.GetEffectStateName()).ToArray(), id, actions, interactions.Distinct().ToArray(),
+                nativeEffects.Select(effect => TypeNameCache.GetType(effect.cardTriggerEffect).Name)
+                    .Concat(effects.Select(effect => effect.GetEffectStateName())).ToArray(), id, actions, interactions.Distinct().ToArray(),
                 data.GetTrigger() == CardTriggerType.OnKill ? !AllGameManagers.Instance!.GetAllGameData().GetBalanceData()
                     .GetDisallowedDeploymentPhaseCardTriggers().Contains(CardTriggerType.OnKill) : (bool?)null);
         }

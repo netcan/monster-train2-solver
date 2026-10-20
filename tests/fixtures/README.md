@@ -9478,3 +9478,15 @@ copy/scaling/subtype editor fields; their target filters remain captured and
 range initialization remains guarded. The movement witness additionally
 captures native Bump properties. All three battles have settled victories,
 DEPTH-PASS, zero failure counters, sixteen immutable branches and search parity.
+
+`full-battle-original-isolated-kill-damage-growth.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-205923-f99cde60`.
+Unchanged Subsuming Blade kills an armored enemy through Ignore Armor;
+Fanning the Flame then kills the remaining enemy. Each native OnKill callback
+adds exactly three to its source's permanent damage offset. Independent,
+unplayed copies of both definitions retain their original damage, and temporary
+modifiers stay unchanged. Native callback type, amount and SingleRun persistence
+are captured separately from ordinary CardEffect callbacks. Preview execution
+remains suppressed, and uncalibrated native callback types stay guarded.
+The battle has six plays, five EndTurns, a settled victory, zero failure counters,
+sixteen immutable branches and serial/parallel search parity over 128 states.

@@ -14,6 +14,9 @@ namespace MonsterTrain2Poju.Model
                 trigger.Actions[0].Range != null) return false;
             CardActionEffect effect = trigger.Actions[0];
             CardGenerationRule? generation = effect.Generation;
+            if (trigger.Effects.SequenceEqual(new[] { "CardTriggerEffectBuffSpellDamage" }))
+                return effect.Type == "BuffSourceSpellDamage" && effect.Target == "Self" && effect.Value > 0 &&
+                    effect.Lifetime == "SingleRun" && !effect.AllowEnemy && !effect.AllowPlayer;
             // These effects ignore the character target list, including its team flags.
             if (effect.Target == "Room" && effect.Value > 0 &&
                 (trigger.Effects.SequenceEqual(new[] { "CardEffectRewardGold" }) && effect.Type == "RewardGold" && effect.GoldCostRequired.HasValue ||
@@ -53,7 +56,7 @@ namespace MonsterTrain2Poju.Model
             var triggers = card.MaskDescriptor?.KillTriggers;
             if (triggers == null || triggers.Count == 0) return null;
             if (card.MaskDescriptor!.Definition.CardType != "Spell" || triggers.Any(trigger => !Supported(trigger)))
-                return "Uncalibrated card OnKill payload; only fixed spell resources, room corruption, hand-pool generation and temporary hand self-copies are supported.";
+                return "Uncalibrated card OnKill payload; only fixed spell resources, source damage growth, room corruption, hand-pool generation and temporary hand self-copies are supported.";
             if (triggers.Any(trigger => trigger.Actions[0].Type == "GenerateUpgradedCopy") &&
                 (descriptor!.Definition.HasStartingUpgrades != false || descriptor.Purified || descriptor.PermanentGraft || descriptor.AuthoredCastEffects.Count != 0 ||
                  descriptor.PermanentReplacements.Count != 0 || card.EffectCounters?.Count > 0 ||
@@ -94,7 +97,12 @@ namespace MonsterTrain2Poju.Model
                     if (context.EnergyState?.PyreAlive == null) { error = "Card OnKill resources require captured Pyre liveness."; return context; }
                     if (context.EnergyState.PyreAlive == false) continue;
                 }
-                if (effect.Type == "GainEnergy")
+                if (effect.Type == "BuffSourceSpellDamage")
+                {
+                    CardInstanceState current = context.FindCard(card.InstanceId) ?? card;
+                    context = context.WithCard(current.WithModifiers(current.Permanent.WithAdditionalDamage(effect.Value), current.Temporary));
+                }
+                else if (effect.Type == "GainEnergy")
                 {
                     error = EnergyModel.Validate(context);
                     if (error != null) return context;

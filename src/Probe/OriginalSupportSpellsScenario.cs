@@ -83,6 +83,9 @@ namespace MonsterTrain2Poju.Probe
                 if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463")
                     candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                         .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.Health + (unit.Status("armor")?.Stacks ?? 0) <= 8));
+                if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f29d063b-cb41-44ee-8118-4db66b6f8195")
+                    candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.Health <= 5));
                 if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
                     candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                         .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
@@ -152,6 +155,8 @@ namespace MonsterTrain2Poju.Probe
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
                 .Concat(spellIds.Select(Add)).ToArray();
+            foreach (string damageGrowth in spellIds.Where(id => id is "3f974014-72f2-407e-a8c1-28ba5b273cfa" or "f29d063b-cb41-44ee-8118-4db66b6f8195"))
+                Add(damageGrowth); // Same-definition, unplayed exclusion control for source-only growth.
             if (spellIds.Any(id => id is "6bbebe9d-a185-412b-a2a7-4db581036ed7" or "758a0b03-3af5-4a70-82e1-4bfca40e92f0"))
             {
                 Add("bae01a8c-25dd-4a08-b08a-5f17a5f3f52a"); // Native Attuned spell, retained as an independent hand control.

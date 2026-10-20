@@ -6,10 +6,11 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "5d7d28bc3efb2da23e29514fe41531eae88d1b816331eb57a1002f60cc060876";
+    private const string CatalogHash = "a53f1818ad8b4c5120ae2e674cb31474126efccbc47a8f0761f9a548c1df139c";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
+        internal FixtureValue? NativeKillTriggers;
         internal string Id => Text(Definition, "Id");
         internal string Name => Text(Definition, "AssetKey");
         internal string Type => Text(Definition, "Type");
@@ -45,6 +46,10 @@ internal static class CardCoverageInventory
             root.GetProperty("RngBefore").ContentEquals(root.GetProperty("RngAfter")), "Native catalog identity/state/RNG/frame guard failed.");
         Card[] cards = root.GetProperty("Cards").EnumerateArray().Select(value => new Card(value)).OrderBy(card => card.Name, StringComparer.Ordinal).ToArray();
         var byId = cards.ToDictionary(card => card.Id, StringComparer.Ordinal);
+        foreach (FixtureValue nativeDefinition in Array(root, "CardKillTriggerDefinitions"))
+            if (byId.TryGetValue(Text(nativeDefinition, "CardDataId"), out Card? triggered) &&
+                Array(nativeDefinition, "Triggers").Any(trigger => Strings(trigger, "Effects").Any(effect => effect.StartsWith("CardTriggerEffect", StringComparison.Ordinal))))
+                triggered.NativeKillTriggers = nativeDefinition.GetProperty("Triggers");
         Require(cards.Length == 668 && cards.Count(card => card.Logbook) == 563, "Incomplete original card or logbook catalog.");
         using (var calibration = FixtureDocument.Read(Path.Combine(fixtureDirectory, "card-upgrade-mask-calibration.mt2f")))
         {
@@ -103,7 +108,8 @@ internal static class CardCoverageInventory
                 if (!card.Evidence.TryGetValue(archive, out Plays? plays)) card.Evidence.Add(archive, plays = new());
                 FixtureValue original = card.Definition.GetProperty("Rule");
                 bool matches = original.ValueKind == FixtureKind.Object && Equivalent(original, rule, ruleRoot: true, cardRule: true) &&
-                    MatchesSourceMetadata(card.Definition, context, action.GetProperty("CardInstanceId").GetInt32());
+                    MatchesSourceMetadata(card.Definition, context, action.GetProperty("CardInstanceId").GetInt32()) &&
+                    MatchesNativeKillTriggers(card, context, action.GetProperty("CardInstanceId").GetInt32());
                 (matches ? plays.Direct : plays.Other).Add(index);
             }
             CollectUnplayedWitnesses(battle, archive, mechanisms, triggerWitnesses);
@@ -189,6 +195,15 @@ internal static class CardCoverageInventory
         foreach (FixtureValue card in Array(cycle, pile))
             if (card.GetProperty("InstanceId").GetInt32() == instanceId) return Text(card, "DataId");
         return null;
+    }
+
+    private static bool MatchesNativeKillTriggers(Card card, FixtureValue context, int instanceId)
+    {
+        if (card.NativeKillTriggers is not FixtureValue expected) return true;
+        return new[] { "CardInstances", "CardRegistry" }.SelectMany(source => Array(context, source))
+            .Where(instance => instance.GetProperty("InstanceId").GetInt32() == instanceId)
+            .Any(instance => instance.TryGetProperty("MaskDescriptor", out FixtureValue mask) &&
+                mask.ValueKind == FixtureKind.Object && mask.TryGetProperty("KillTriggers", out FixtureValue actual) && Equivalent(actual, expected));
     }
 
     private static bool MatchesSourceMetadata(FixtureValue definition, FixtureValue context, int instanceId)

@@ -185,7 +185,8 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardTriggerEffectData trigger in data.GetCardTriggers())
             {
                 string triggerType = trigger.GetTrigger().ToString();
-                if (trigger.GetTriggerEffects().Count > 0)
+                if (trigger.GetTriggerEffects().Count > 0 && !(triggerType == "OnKill" &&
+                    CardKillTriggerModel.Supported(CardUpgradeLifecycleProbe.TriggerDefinition(trigger))))
                 {
                     interactions.Add("Card triggers");
                     if (triggerType.StartsWith("OnUnplayed", StringComparison.Ordinal)) hasUnsupportedUnplayedTriggers = true;

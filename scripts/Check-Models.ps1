@@ -316,6 +316,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-filtered-hand-upgrades.mt2f',
     'full-battle-original-isolated-deaths-dancer.mt2f',
     'full-battle-original-isolated-deaths-dancer-shift.mt2f',
+    'full-battle-original-isolated-kill-damage-growth.mt2f',
     'full-battle-original-null-scourges.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
@@ -2400,7 +2401,7 @@ $remainingOriginalSpellFixtures = @($fixtures | Where-Object { (Split-Path -Leaf
     'full-battle-original-isolated-pyre-steward.mt2f', 'full-battle-original-isolated-bone-dog.mt2f',
     'full-battle-original-isolated-shadesplitter.mt2f', 'full-battle-original-isolated-revenge-of-the-damned.mt2f',
     'full-battle-original-isolated-filtered-hand-upgrades.mt2f', 'full-battle-original-isolated-deaths-dancer.mt2f',
-    'full-battle-original-isolated-deaths-dancer-shift.mt2f') })
+    'full-battle-original-isolated-deaths-dancer-shift.mt2f', 'full-battle-original-isolated-kill-damage-growth.mt2f') })
 foreach ($fixturePath in $remainingOriginalSpellFixtures) {
     foreach ($mode in @('--original-support-spells-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

@@ -58,6 +58,17 @@ namespace MonsterTrain2Poju.Probe
             var characterRoomModifiers = cards.Where(card => card.GetSpawnCharacterData()?.GetRoomModifiersData().Count > 0)
                 .Select(card => new { CardDataId = card.GetID(), Character = card.GetSpawnCharacterData().GetAssetKey(),
                     Modifiers = card.GetSpawnCharacterData().GetRoomModifiersData().Select(RuleCatalogProbe.RoomModifier).ToArray() }).ToArray();
+            var nativeCardTriggers = cards.Where(card => card.GetCardTriggers().Any(trigger => trigger.GetTriggerEffects().Count > 0))
+                .Select(card => new { CardDataId = card.GetID(), Triggers = card.GetCardTriggers().Select(trigger => new
+                {
+                    Kind = trigger.GetTrigger().ToString(), Effects = trigger.GetTriggerEffects().Select(effect => new
+                    { Type = ShinyShoe.TypeNameCache.GetType(effect.cardTriggerEffect).Name, Amount = effect.paramInt,
+                        Persistence = effect.persistenceMode.ToString(), BuffEffectType = effect.buffEffectType,
+                        UpgradeDataId = effect.paramUpgrade?.GetID() }).ToArray()
+                }).ToArray() }).ToArray();
+            var killTriggers = cards.Where(card => card.GetCardTriggers().Any(trigger => trigger.GetTrigger() == CardTriggerType.OnKill))
+                .Select(card => new { CardDataId = card.GetID(), Triggers = card.GetCardTriggers()
+                    .Where(trigger => trigger.GetTrigger() == CardTriggerType.OnKill).Select(CardUpgradeLifecycleProbe.TriggerDefinition).ToArray() }).ToArray();
             JObject afterRng = RngStates();
             bool unchanged = JToken.DeepEquals(before, JToken.FromObject(trace.CaptureDecision()));
             if (!unchanged || UnityEngine.Time.frameCount != frame || !JToken.DeepEquals(beforeRng, afterRng))
@@ -69,7 +80,8 @@ namespace MonsterTrain2Poju.Probe
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = beforeRng, RngAfter = afterRng,
                 DecisionUnchanged = unchanged, Cards = entries, MoonPhaseUpgradeDefinitions = moonUpgrades,
-                CharacterRoomModifierDefinitions = characterRoomModifiers
+                CharacterRoomModifierDefinitions = characterRoomModifiers, CardTriggerEffectDefinitions = nativeCardTriggers,
+                CardKillTriggerDefinitions = killTriggers
             }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "card-catalog.mt2f")))
                 document.Write(output);
