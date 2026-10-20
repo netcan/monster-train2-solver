@@ -140,6 +140,7 @@ param(
     [switch] $OriginalIsolatedColdstrikeSiren,
     [string] $OriginalIsolatedUnitId = '',
     [string[]] $OriginalIsolatedUnitIds = @(),
+    [switch] $FailFastOnIsolatedUnitReject,
     [switch] $OriginalFuel,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
@@ -1536,6 +1537,9 @@ if ($GenerationPermanentConsume) { $environment['MT2_PROBE_MODIFIERS'] = 'genera
 $originalBefore = Get-OriginalSignature
 $unityLog = Join-Path $profile 'unity-scenario.log'
 $nativeTimer = [System.Diagnostics.Stopwatch]::StartNew()
+if ($FailFastOnIsolatedUnitReject -and -not $OriginalIsolatedUnitId -and $OriginalIsolatedUnitIds.Count -eq 0) {
+    throw 'FailFastOnIsolatedUnitReject requires an isolated original unit ID.'
+}
 if ($SpawnOrStatus) {
     $environment.MT2_PROBE_MODIFIERS = 'spawn-or-status'
     $environment.MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'
@@ -1563,10 +1567,18 @@ $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
     -Environment $environment -WindowStyle Hidden -PassThru
 Write-Output "FULL-BATTLE-RUN pid=$($process.Id) worker=$NativeWorker policy=$Policy profile=$profile"
-if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-    $process.Kill()
-    $process.WaitForExit()
-    throw "Full battle timed out after $TimeoutSeconds seconds; profile: $profile"
+while (-not $process.WaitForExit(250)) {
+    if ($FailFastOnIsolatedUnitReject -and (Test-Path -LiteralPath $unityLog) -and
+        (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-ISOLATED-UNIT-REJECT' -Quiet)) {
+        $process.Kill()
+        $process.WaitForExit()
+        throw "Isolated unit model preflight rejected a requested card; native run stopped early; inspect $unityLog"
+    }
+    if ($nativeTimer.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+        $process.Kill()
+        $process.WaitForExit()
+        throw "Full battle timed out after $TimeoutSeconds seconds; profile: $profile"
+    }
 }
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
