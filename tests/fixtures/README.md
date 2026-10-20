@@ -8567,3 +8567,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hoard-acolyte.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hoard-acolyte.mt2f
 ```
+
+### Original HotHead
+
+`full-battle-original-isolated-hothead.mt2f` plays the unchanged 2-cost
+5/20 size-2 HotHead. Its native OnSpawn callback exposes its cooldown-2 ability;
+the ability remains available but unused in all four post-deployment snapshots.
+The Instant battle won with zero capture failures, mismatches, unsupported
+transitions or pending records. Focused replay and bounded serial/parallel
+search agree at 128 states, with three replayed steps; archive metadata is in
+`manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId ee2a1d34-f1de-43ac-a06b-f3a414c93363
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hothead.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hothead.mt2f
+```

@@ -37,6 +37,7 @@ internal static class OriginalSupportUnitsChecks
     private const string JuggernautId = "952db29f-b585-41be-bfdd-0a36b9b05010";
     private const string HoardAcolyteId = "3224dfe8-41f9-49b9-8917-3afefb67e9dd";
     private const string NightingaleId = "7775c5b5-eed9-4864-9976-9c86896becc1";
+    private const string HotHeadId = "ee2a1d34-f1de-43ac-a06b-f3a414c93363";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -416,6 +417,46 @@ internal static class OriginalSupportUnitsChecks
                     unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
                     !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
                 "Hoard Acolyte must retain its native 0-cost 5/3 birth, expose its cooldown-2 ability on spawn and leave it unused.");
+        }
+        if (expectedId == HotHeadId)
+        {
+            CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CombatTrigger onActivated = template.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated");
+            CombatTrigger availableTrigger = template.Triggers.Single(trigger => trigger.Kind == "OnUnitAbilityAvailable");
+            CombatTrigger unavailableTrigger = template.Triggers.Single(trigger => trigger.Kind == "OnUnitAbilityUnavailable");
+            CombatTrigger spawnedOnSpawn = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CardActionEffect available = onSpawn.Effects.Single(effect => effect.Action?.Type == "AddStatus").Action!;
+            CardActionEffect reset = onSpawn.Effects.Single(effect => effect.Action?.Type == "ResetCooldown").Action!;
+            CardActionEffect activatedReset = onActivated.Effects.Single().Action!;
+            CardActionEffect showAvailable = availableTrigger.Effects.Single().Action!;
+            CardActionEffect hideAvailable = unavailableTrigger.Effects.Single().Action!;
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            const string abilityId = "bd217216-3d1d-4139-9003-5d6a42f059d4";
+            Require(rule.AssetKey == "HotHead" && rule.Cost == 2 && template.AssetKey == "MonsterHotHead" &&
+                template.Modifiers!.AttackDamage == 5 && template.Health == 20 && template.MaxHealth == 20 && template.Size == 2 &&
+                template.Ability is { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
+                !onSpawn.Once && onSpawn.Effects.Count == 2 && spawnedOnSpawn.HasTriggered &&
+                available is { Type: "AddStatus", Target: "Self" } &&
+                available.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
+                reset is { Type: "ResetCooldown", Target: "Self", CooldownParameter: true } &&
+                activatedReset is { Type: "ResetCooldown", Target: "Self", CooldownParameter: false } &&
+                showAvailable is { Type: "AddStatus", Target: "Self" } &&
+                showAvailable.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
+                hideAvailable is { Type: "RemoveStatus", Target: "Self" } &&
+                hideAvailable.Statuses.Single().Id == "unit_ability_available" &&
+                spawnedUnit.Ability is { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
+                spawnedUnit.Status("unit_ability") is { Stacks: 1, ParamInt: 0 } &&
+                spawnedUnit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                unitTurns.Length == 4 && unitTurns.All(unit => unit.Ability is
+                    { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
+                    unit.Status("unit_ability") is { Stacks: 1, ParamInt: 0 } &&
+                    unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
+                "HotHead must preserve its native 2-cost 5/20 birth, expose and retain its cooldown-2 ability across four unused post-deployment snapshots, and keep availability callbacks calibrated.");
         }
         if (expectedId == EelGorgonId)
         {
