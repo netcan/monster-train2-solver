@@ -264,6 +264,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-banished-champ2.mt2f',
     'full-battle-original-isolated-pyreborne-champ1.mt2f',
     'full-battle-original-isolated-death-eater.mt2f',
+    'full-battle-original-isolated-luna-coven-champ1.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
@@ -2187,6 +2188,13 @@ foreach ($fixturePath in $originalIsolatedDeathEaterFixtures) {
     foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Death Eater checks failed ($mode): $fixturePath" }
+    }
+}
+$originalIsolatedLunaCovenChamp1Fixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-isolated-luna-coven-champ1.mt2f' })
+foreach ($fixturePath in $originalIsolatedLunaCovenChamp1Fixtures) {
+    foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Luna Coven Champion 1 checks failed ($mode): $fixturePath" }
     }
 }
 $originalAttackOverrideFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-attack-overrides.mt2f' })

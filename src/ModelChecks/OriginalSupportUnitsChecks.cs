@@ -50,6 +50,7 @@ internal static class OriginalSupportUnitsChecks
     private const string BanishedChamp2Id = "27340034-9ee7-4535-bb63-2e0bd8c321fb";
     private const string PyreborneChamp1Id = "7488b439-316c-4a13-8897-90de239b6250";
     private const string DeathEaterId = "68a76ecf-2108-4b7f-b805-b3653cdd96bf";
+    private const string LunaCovenChamp1Id = "5d2b15ed-e9b4-464a-b029-f337f2ed6cd2";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -396,6 +397,24 @@ internal static class OriginalSupportUnitsChecks
                 "Death Eater must retain its original 1-cost 0/5 birth and gain captured_soul only after same-floor unit deaths.");
             Console.WriteLine("ORIGINAL-DEATH-EATER PASS: native OnAnyUnitDeathOnFloor added captured_soul after birth (four turn stacks: " +
                 string.Join(",", soulStacks) + ").");
+        }
+        if (expectedId == LunaCovenChamp1Id)
+        {
+            CombatTrigger onDeath = template.Triggers.Single(trigger => trigger.Kind == "OnDeath");
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "LunaCovenChamp1" && rule.Cost == 0 && template.AssetKey == "MonsterChampionLunaCoven1" &&
+                template.Modifiers!.AttackDamage == 5 && template.Health == 5 && template.MaxHealth == 5 && template.Size == 2 &&
+                template.Ability == null && onDeath.Effects.Single().Type == "CardEffectNULL" &&
+                spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Health == 5 && spawnedUnit.Size == 2 &&
+                unitTurns.Length == 4 && unitTurns.All(unit => unit.AssetKey == template.AssetKey && unit.Health == 5 && unit.MaxHealth == 5 &&
+                    unit.Modifiers!.AttackDamage == 5 && unit.Size == 2 && unit.Ability == null &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "OnDeath").HasTriggered),
+                "Luna Coven Champion 1 must retain its original 0-cost 5/5 size-2 birth without activating a unit ability or OnDeath callback.");
+            Console.WriteLine("ORIGINAL-LUNA-COVEN-CHAMPION-1 PASS: native 0-cost 5/5 size-2 birth remained unchanged across four turn snapshots.");
         }
         if (expectedId == JuggernautId)
         {

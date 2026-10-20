@@ -8792,3 +8792,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-death-eater.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-death-eater.mt2f
 ```
+
+### Original Luna Coven Champion 1
+
+`full-battle-original-isolated-luna-coven-champ1.mt2f` plays the unchanged
+zero-cost 5/5 size-2 Luna Coven Champion 1. Its native unit remains at 5/5
+across four post-deployment snapshots; the captured `CardEffectNULL` OnDeath
+callback is not triggered. This covers direct play and birth only. The Instant
+battle won with zero capture failures, mismatches, unsupported transitions or
+pending records. Focused replay and bounded serial/parallel search agree at 128
+states, with three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 5d2b15ed-e9b4-464a-b029-f337f2ed6cd2
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-luna-coven-champ1.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-luna-coven-champ1.mt2f
+```
