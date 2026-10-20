@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-203153-900980c5/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,987 bytes, 11,705 unique nodes,
-SHA-256 `5928130f71d799d088c864126b31db9323770abae35c191e79b1798c5266f0d7`.
-The latest refresh projects Bone Dog's fixed positive encounter-complete Pyre
+Source: `.probe-runs/full-battle-no-cards-20261020-204011-14533b99/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,783 bytes, 11,705 unique nodes,
+SHA-256 `20f940b74715c15524500238b82b870f45e4a8156dfb7ada8f245e213948d838`.
+The latest refresh projects Shadesplitter's Room-targeted OnKill generator and
+Revenge of the Damned's OnKill corruption. Only these two Rules changed;
+all 668 raw native definitions remain identical.
+The preceding refresh projects Bone Dog's fixed positive encounter-complete Pyre
 maximum-health adjustment. Only its Rule changed; all 668 raw definitions are unchanged.
 The preceding refresh projects Pyre Steward's fixed two-HP OnKill train healing.
 Only its Rule changed; all 668 raw native definitions are unchanged.

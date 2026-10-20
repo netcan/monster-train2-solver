@@ -22,6 +22,9 @@ internal static class OriginalSupportSpellsChecks
                 .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f3406a6d-69f0-46e8-8db9-d829db017716")
                 candidates = candidates.OrderByDescending(action => action.RoomIndex == 2 && action.PlayerPosition == 1);
+            if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463")
+                candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.Health + (unit.Status("armor")?.Stacks ?? 0) <= 8));
             if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
                 candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
@@ -164,6 +167,26 @@ internal static class OriginalSupportSpellsChecks
                 (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
                 "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            if (rule.AssetKey == "StarterDamageForMorsel")
+            {
+                CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;
+                CardActionEffect generator = card.MaskDescriptor!.KillTriggers!.Single().Actions.Single();
+                CardInstanceState[] generated = changed.CardInstances!.Where(item => item.InstanceId >= old.NextCardId).ToArray();
+                Require(generator.Target == "Room" && generator.Generation?.Count == 1 && generated.Length > 0 &&
+                    generated.All(item => generator.Generation.Pool.Any(definition => definition.DataId == item.DataId)) &&
+                    changed.NextCardId == old.NextCardId + generated.Length && !old.BattleRng.Equals(changed.BattleRng) &&
+                    after.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy) <
+                        before.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy),
+                    "Shadesplitter must positively kill a native enemy and roll its original weighted Morsel pool through the Room-targeted OnKill effect.");
+            }
+            if (rule.AssetKey == "RevengeOfTheDamned")
+            {
+                int old = before.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == action.RoomIndex).Corruption!.Value,
+                    changed = after.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == action.RoomIndex).Corruption!.Value;
+                Require(old > 0 && changed > old && card.MaskDescriptor!.KillTriggers!.Single().Actions.Single().Value == 2 &&
+                    after.Spawn.Train.Rooms[action.RoomIndex].Units.All(unit => unit.Id != action.TargetUnitId),
+                    "Revenge of the Damned must kill its target and positively add two Corruption through the native cap.");
+            }
             if (rule.AssetKey == "DanteTheDependable")
             {
                 CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;

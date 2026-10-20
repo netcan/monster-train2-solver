@@ -9439,3 +9439,19 @@ model keeps this save-backed callback separate from the earlier turn boundary.
 Positive fixed increases are calibrated; negative adjustments remain guarded.
 The native battle has settled victory, DEPTH-PASS, zero failure counters,
 sixteen immutable replay branches and serial/parallel search parity.
+
+`full-battle-original-isolated-shadesplitter.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-203845-fe61bf55`.
+Its two unchanged random two-damage hits kill a native enemy and create one
+Rubble Raiser from the weighted original Morsel pool. The OnKill generator's
+Room target is retained: AddBattleCard ignores the character target list.
+New card identity, pool membership, allocation and RNG advancement are checked.
+
+`full-battle-original-isolated-revenge-of-the-damned.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-203845-936f508a`.
+The original Corrupt-Restricted spell kills an unarmored native enemy. Its
+OnKill adds two Corruption after the one-point cast cost: the selected floor
+changes from three to four. The shared corruption transition retains its
+guards for uncalibrated character and relic listeners. Both battles have
+settled native victories, DEPTH-PASS, zero failure counters, sixteen immutable
+replay branches and serial/parallel search parity.

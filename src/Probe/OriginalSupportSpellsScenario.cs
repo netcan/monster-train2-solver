@@ -79,6 +79,9 @@ namespace MonsterTrain2Poju.Probe
                     .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
                 if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f3406a6d-69f0-46e8-8db9-d829db017716")
                     candidates = candidates.OrderByDescending(action => action.RoomIndex == 2 && action.PlayerPosition == 1);
+                if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463")
+                    candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.Health + (unit.Status("armor")?.Stacks ?? 0) <= 8));
                 if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
                     candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                         .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
@@ -116,7 +119,7 @@ namespace MonsterTrain2Poju.Probe
                 .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true);
             bool hatchControls = spellIds.Contains("27b0fdda-5dc4-4280-a510-fe51e550e3fb") ||
                 spellIds.Contains("07448181-5b6f-404a-88ff-cb4d8ac8a3b1");
-            if (hatchControls || spellIds.Contains("a524d58a-6b12-4ec4-870c-679837e234cf"))
+            if (hatchControls || spellIds.Contains("a524d58a-6b12-4ec4-870c-679837e234cf") || spellIds.Contains("ae114dc4-d08f-4909-a2ad-d99215661463"))
                 for (int roomIndex = 0; roomIndex < 3; roomIndex++)
                 {
                     RoomState room = managers.GetRoomManager()!.GetRoom(roomIndex);

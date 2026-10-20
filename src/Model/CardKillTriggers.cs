@@ -19,6 +19,8 @@ namespace MonsterTrain2Poju.Model
                 (trigger.Effects.SequenceEqual(new[] { "CardEffectRewardGold" }) && effect.Type == "RewardGold" && effect.GoldCostRequired.HasValue ||
                  trigger.Effects.SequenceEqual(new[] { "CardEffectAdjustDragonsHoard" }) && effect.Type == "AdjustDragonsHoard" ||
                  trigger.Effects.SequenceEqual(new[] { "CardEffectAdjustForgePoints" }) && effect.Type == ForgePointsModel.Effect)) return true;
+            if (trigger.Effects.SequenceEqual(new[] { "CardEffectAdjustCorruption" }))
+                return effect.Type == "AdjustCorruption" && effect.Target == "Room" && effect.Value > 0 && effect.CorruptionAdd == true;
             if (trigger.Effects.SequenceEqual(new[] { "CardEffectAddUpgradedCopy" }))
                 // This native effect ignores the character target list and copies playedCard.
                 return effect.Type == "GenerateUpgradedCopy" && effect.Target == "LastTargetedCharacters" && generation != null &&
@@ -29,7 +31,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.AllowEnemy || effect.AllowPlayer) return false;
             if (trigger.Effects.SequenceEqual(new[] { "CardEffectGainEnergy" }))
                 return effect.Type == "GainEnergy" && effect.Target is "None" or "Room" && effect.Value > 0;
-            return trigger.Effects.SequenceEqual(new[] { "CardEffectAddBattleCard" }) && effect.Type == "Generate" && effect.Target == "Hand" &&
+            return trigger.Effects.SequenceEqual(new[] { "CardEffectAddBattleCard" }) && effect.Type == "Generate" && effect.Target is "Hand" or "Room" &&
                 generation != null && generation.Destination == "HandPile" && generation.Count > 0 && generation.Pool.Count > 0 &&
                 generation.ExternalInteractions.Count == 0 && generation.Permanent != true && generation.Upgrade == null &&
                 !generation.CopyModifiers && !generation.RequireCopyableSource && generation.OnlyUnequippedTargets == null;
@@ -51,7 +53,7 @@ namespace MonsterTrain2Poju.Model
             var triggers = card.MaskDescriptor?.KillTriggers;
             if (triggers == null || triggers.Count == 0) return null;
             if (card.MaskDescriptor!.Definition.CardType != "Spell" || triggers.Any(trigger => !Supported(trigger)))
-                return "Uncalibrated card OnKill payload; only fixed spell resources, hand-pool generation and temporary hand self-copies are supported.";
+                return "Uncalibrated card OnKill payload; only fixed spell resources, room corruption, hand-pool generation and temporary hand self-copies are supported.";
             if (triggers.Any(trigger => trigger.Actions[0].Type == "GenerateUpgradedCopy") &&
                 (descriptor!.Definition.HasStartingUpgrades != false || descriptor.Purified || descriptor.PermanentGraft || descriptor.AuthoredCastEffects.Count != 0 ||
                  descriptor.PermanentReplacements.Count != 0 || card.EffectCounters?.Count > 0 ||
@@ -63,7 +65,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static CombatContext Apply(CombatContext context, CardInstanceState card, bool preview, bool deployment,
             int attackerUnitId, CombatUnit dying, System.Collections.Generic.IReadOnlyList<CombatUnit> activeUnits,
-            Func<CombatContext, RelicPyreAttackRefreshResult> refreshGold, out string? error)
+            Func<CombatContext, RelicPyreAttackRefreshResult> refreshGold, RoomCombatState selectedRoom, out string? error)
         {
             error = Validate(card);
             if (error != null) return context;
@@ -97,6 +99,15 @@ namespace MonsterTrain2Poju.Model
                     error = EnergyModel.Validate(context);
                     if (error != null) return context;
                     context = EnergyModel.Apply(context, "GainEnergy", effect.Value);
+                }
+                else if (effect.Type == "AdjustCorruption")
+                {
+                    var room = new RoomCombatState(selectedRoom.RoomIndex, deployment, selectedRoom.Units,
+                        selectedRoom.ExternalInteractions, context, preview, selectedRoom.ActiveCompanionBossIds);
+                    var train = new TrainCombatState(new[] { room }, Array.Empty<EnemyMovement>(), 1, context);
+                    RoomCorruptionResult changed = RoomCorruptionModel.Apply(train, room.RoomIndex, effect);
+                    if (!changed.Supported) { error = changed.UnsupportedReason; return context; }
+                    context = changed.Context!;
                 }
                 else if (effect.Type == "RewardGold")
                 {

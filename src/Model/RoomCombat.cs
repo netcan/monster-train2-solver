@@ -2571,7 +2571,7 @@ namespace MonsterTrain2Poju.Model
                     context = CardKillTriggerModel.Apply(context, killSource, source.Preview, source.Deployment,
                         actor?.Source.Id ?? 0, target.Freeze(), units.Select(unit => unit.Freeze()).Concat(
                             context.Enchantments?.Rooms.SelectMany(room => room.Units) ?? Array.Empty<CombatUnit>()).ToArray(),
-                        RefreshGold, out string? killError);
+                        RefreshGold, CurrentRoom(), out string? killError);
                     if (killError != null) { unsupportedReason = killError; return; }
                 }
                 if (!target.Alive && !target.DeathFinished)
