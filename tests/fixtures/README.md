@@ -8656,3 +8656,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-kinhost-carapace.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-kinhost-carapace.mt2f
 ```
+
+### Original Meathook
+
+`full-battle-original-isolated-meathook.mt2f` plays the unchanged 1-cost 25/15
+size-2 Meathook. Its native OnSpawn callback exposes the cooldown-2 ability,
+which remains available but unused in all four post-deployment snapshots. This
+covers direct play, birth and unactivated ability lifecycle only; its ability's
+status effects and floor rearrangement are not exercised. The Instant battle
+won with zero capture failures, mismatches, unsupported transitions or pending
+records. Focused replay and bounded serial/parallel search agree at 128 states,
+with three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 6c070dfb-65b7-4955-a651-999990fd0c90
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-meathook.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-meathook.mt2f
+```
