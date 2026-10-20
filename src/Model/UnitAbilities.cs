@@ -43,7 +43,8 @@ namespace MonsterTrain2Poju.Model
             CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == abilityId);
             if (rule?.Ability?.Kind != (roomAbility ? "Room" : "Unit")) return Unsupported("Missing ability definition or availability metadata.");
             if (!rule.Ability.CanPlayWhenHandFull && context.Cards.Hand.Count >= context.MaxHandSize) return Illegal("The ability requires hand space.");
-            if (!rule.Ability.CanTargetOtherFloors && action.RoomIndex != actorRoom.RoomIndex) return Illegal("The ability cannot target another floor.");
+            if (!rule.Ability.CanTargetOtherFloors && action.RoomIndex != actorRoom.RoomIndex &&
+                !(roomAbility && rule.Effects.Any(effect => effect.Type == "RoomAbilityBumpToCurrentRoom"))) return Illegal("The ability cannot target another floor.");
             RoomPlayRule? selectedRule = source.PlayRules.Rooms.FirstOrDefault(room => room.RoomIndex == action.RoomIndex);
             if (selectedRule == null || !selectedRule.Enabled || train.Rooms.All(room => room.RoomIndex != action.RoomIndex))
                 return Illegal("The selected ability room does not exist or is disabled.");
@@ -60,9 +61,8 @@ namespace MonsterTrain2Poju.Model
             context = cache.Context!.WithOtherPiles(source.OtherPiles);
             rule = CardModifierModel.Resolve(rule, cache.Card);
             // The native pulley effect derives its displacement from the activating room.
-            CardActionEffect[] effects = rule.Effects.Select(effect => effect.Type == "RoomAbilityBumpToCurrentRoom" && roomAbility
-                ? new CardActionEffect("Bump", effect.Target, actorRoom!.RoomIndex - action.RoomIndex,
-                    effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, tests: effect.Tests, filters: effect.Filters) : effect).ToArray();
+            CardActionEffect[] effects = rule.Effects.Select(effect => roomAbility
+                ? RoomAbilityModel.ResolveEffect(effect, actorRoom!.RoomIndex, action.RoomIndex) : effect).ToArray();
             if (roomAbility && rule.Effects.Any(effect => effect.Type == "RoomAbilityBumpToCurrentRoom") && actorRoom!.RoomIndex == action.RoomIndex)
                 return Illegal("The pulley cannot pull a target already on its own floor.");
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
@@ -132,7 +132,8 @@ namespace MonsterTrain2Poju.Model
                     train.Context.FindCard(cache.Card.InstanceId)!.WithPlayedRoomUnits(cachedUnits)));
             TrainSpellResult applied = rule.Effect == "Null" ? new TrainSpellResult(train, RoomOutcome.Exchanged, Array.Empty<CombatEvent>()) :
                 CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, effects, action.TargetUnitId, cache.Card.InstanceId,
-                    source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actorId, action.TargetSpawnPointIndex);
+                    source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actorId, action.TargetSpawnPointIndex,
+                    abilityRoomIndex: roomAbility ? actorRoom!.RoomIndex : (int?)null);
             if (!applied.Supported) return Unsupported(applied.UnsupportedReason!);
             train = applied.State!; if (Terminal(applied.Outcome)) outcome = applied.Outcome;
             context = train.Context!;

@@ -22,6 +22,9 @@ namespace MonsterTrain2Poju.Model
     }
     public static class RoomAbilityModel
     {
+        internal static CardActionEffect ResolveEffect(CardActionEffect effect, int ownerRoom, int selectedRoom) =>
+            effect.Type == "RoomAbilityBumpToCurrentRoom" ? new CardActionEffect("Bump", effect.Target, ownerRoom - selectedRoom,
+                effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, tests: effect.Tests, filters: effect.Filters) : effect;
         internal static CombatContext ChangeCooldown(CombatContext source, int? activatedRoom = null)
         {
             if (source.RoomCapacities == null) return source;

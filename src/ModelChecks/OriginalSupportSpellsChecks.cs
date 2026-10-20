@@ -204,7 +204,8 @@ internal static class OriginalSupportSpellsChecks
                 Require(action.RoomIndex == i && action.PlayerPosition == 0 && rule.Cost == 0 &&
                     card.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678" && host.Health == 10000 &&
                     host.Size == 1 && host.Modifiers!.AttackDamage ==
-                        (i < 2 && originals.Contains("8ccceee7-0eb9-4aa0-9268-ff83b6f6c54e") ? 10 : 1000), "Isolated spell host differs.");
+                        (i < 2 && originals.Contains("8ccceee7-0eb9-4aa0-9268-ff83b6f6c54e") ? 10 :
+                         i < 2 && originals.Contains("8d65e688-d93d-4bfa-975d-8c5f046fe2db") ? 10 : 1000), "Isolated spell host differs.");
                 continue;
             }
             if (i == 3)

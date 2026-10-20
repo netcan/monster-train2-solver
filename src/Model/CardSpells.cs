@@ -134,12 +134,12 @@ namespace MonsterTrain2Poju.Model
             int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0,
             int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
-            IReadOnlyList<int>? priorTargets = null)
+            IReadOnlyList<int>? priorTargets = null, int? abilityRoomIndex = null)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
                 selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex,
                 recursionSelections: recursionSelections, onCastEffects: onCastEffects,
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections,
-                priorTargets: priorTargets, playerActionPhase: true);
+                priorTargets: priorTargets, playerActionPhase: true, abilityRoomIndex: abilityRoomIndex);
 
         internal static TrainSpellResult ApplyCachedEffects(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int sourceCardId, int selfUnitId, BattlePlayRules? definitions) =>
@@ -259,7 +259,8 @@ namespace MonsterTrain2Poju.Model
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, int targetSpawnPointIndex = -1,
             IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
-            IReadOnlyList<int>? priorTargets = null, bool playerActionPhase = false, bool resolveLiveEffects = true)
+            IReadOnlyList<int>? priorTargets = null, bool playerActionPhase = false, bool resolveLiveEffects = true,
+            int? abilityRoomIndex = null)
         {
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
@@ -345,6 +346,11 @@ namespace MonsterTrain2Poju.Model
                     effect = index < sourceEffects.Count && (effect.Type == "DamagePerSourceAttack" || effect.Type == "DamagePerHp")
                         ? sourceEffects[index] : resolvedEffects[index];
                     resolvingCard = card;
+                }
+                if (effect.Type == "RoomAbilityBumpToCurrentRoom")
+                {
+                    if (!abilityRoomIndex.HasValue) return UnsupportedTrain("Pulley movement requires its activating room.");
+                    effect = RoomAbilityModel.ResolveEffect(effect, abilityRoomIndex.Value, roomIndex);
                 }
                 if (effect.Type == "ReplayTrigger")
                 {

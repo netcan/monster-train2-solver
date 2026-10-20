@@ -9934,7 +9934,22 @@ results. Existing movement, unit-copy and ability-Incant checks pass. The old
 change at its forced Pyre attack (Boss HP 80 predicted versus 125 native); this
 pre-existing discrepancy is not covered by the room-skill acceptance. Attachment
 corruption with unit/relic CorruptionAdded callbacks remains explicitly guarded.
-The other two room skills require their separate positive movement witnesses.
+The other two room skills have separate positive movement witnesses below.
+
+`full-battle-original-isolated-room-movement-skills.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-035316-ca31adc7`.
+Unchanged Trap Chute dazes a living enemy twice and descends it two floors;
+Steel Pulley Claw pulls a remote friendly unit to its activating room. The
+dedicated pull effect supplies cross-floor targeting even though the native
+unit-only CanAbilityTargetOtherFloors query returns false for room skills.
+Its displacement is resolved after live effect reload, using the activating
+room rather than the selected target's room. Two low-floor control anchors
+have ten attack so an enemy reaches Trap Chute; original room definitions are
+unchanged. Both paid skills retain non-owned cache identities and reject reuse
+while cooling, with three native cooldown decrements. DEPTH-PASS records a
+settled victory and zero capture/mismatch/unsupported/pending counters. Eight
+plays/six EndTurns pass sixteen immutable branches and a 128-state search with
+zero unsupported attempts and equal serial/parallel results.
 
 `full-battle-original-isolated-treasure-discard.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-033225-e831f7ce`.

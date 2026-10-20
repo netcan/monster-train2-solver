@@ -75,7 +75,12 @@ namespace MonsterTrain2Poju.Probe
                 source.Spawn.Train.Context!.Statistics!.Value(ids[^1], "TimesPlayed", "ThisBattle") == 1)
                 index = ids.Length - 1; // Recast the actual returned recipient after the original choice.
             if (index < 0 && IsolatedIds?.Any(RoomAbilitiesScenarioCard) == true)
-                return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action => action.ActivatorRoomIndex.HasValue);
+                return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action => action.ActivatorRoomIndex.HasValue &&
+                    (!IsolatedIds.Contains("8d65e688-d93d-4bfa-975d-8c5f046fe2db") ||
+                     action.ActivatorRoomIndex == 2 && source.Spawn.Train.Rooms[2].Units.Any(unit => unit.Team == CombatTeam.Enemy && unit.IsBoss != true) &&
+                        source.Spawn.Train.Rooms[2].Units.All(unit => unit.Team != CombatTeam.Enemy || unit.IsBoss != true) ||
+                     action.ActivatorRoomIndex == 1 && source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .Any(unit => unit.Id == action.TargetUnitId && unit.SpawnerCardId == ids[0])));
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
             if (IsolatedIds?.FirstOrDefault() == "93759003-bb97-44e4-9ef6-472c55bee2d9" && index >= 4 &&
                 source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "6bc6afc8-a113-4f03-b090-d4436f41d822" && source.Spawn.Turn < 2)
@@ -278,7 +283,7 @@ namespace MonsterTrain2Poju.Probe
                     Add(treasure); // Discarded by the original Deep Offering for an indirect cast.
                     cards.AddNewCard(all.FindCardData(treasure)!, CardPile.DeckPileTop, false, false, animate: false);
                 }
-            if (spellIds.Contains(RoomPreCombatProbe.SirenSongId))
+            if (spellIds.Contains(RoomPreCombatProbe.SirenSongId) || spellIds.Contains("8d65e688-d93d-4bfa-975d-8c5f046fe2db"))
             {
                 // Keep lower-floor enemies alive long enough to reach the native
                 // Limited Range attachment. The unchanged boss still dies promptly.
