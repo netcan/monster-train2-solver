@@ -56,6 +56,7 @@ internal static class OriginalSupportUnitsChecks
     private const string ConductorStewardId = "52b17dc7-968f-4748-a2ea-b6c09c5c8931";
     private const string EnchantrelleId = "658321b4-08bd-443c-b4e1-b8a8931d3299";
     private const string FeederDamageEnemiesUnitId = "aa94ef0c-0fd8-4d42-992f-25345d3717b5";
+    private const string LadyOfTheReformedId = "5ac22130-17f1-4f8e-967f-a2d3b71ef7ca";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -537,6 +538,34 @@ internal static class OriginalSupportUnitsChecks
                     !unit.Triggers.Single(trigger => trigger.Kind == "OnFeed").HasTriggered),
                 "Feeder Damage Enemies must retain its original 2-cost 0/50 size-3 birth and inactive OnFeed +10 self-heal / enemy-room 20-damage definition.");
             Console.WriteLine("ORIGINAL-FEEDER-DAMAGE-ENEMIES PASS: native 2-cost 0/50 size-3 birth; OnFeed heal/damage callback remained inactive across four snapshots.");
+        }
+        if (expectedId == LadyOfTheReformedId)
+        {
+            CombatTrigger onHit = template.Triggers.Single(trigger => trigger.Kind == "OnHit");
+            CardActionEffect addEphemeral = onHit.Effects.Single().Action!;
+            BattleTurnState[] turnStates = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+            CombatUnit? InTurn(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]);
+            CombatUnit[] unitTurns = turnStates.Select(InTurn).Where(unit => unit != null).Select(unit => unit!).ToArray();
+            int[] ephemeralStacks = unitTurns.Select(unit => unit.Status("ephemeral")?.Stacks ?? 0).ToArray();
+            int lastPresentTurn = Array.FindLastIndex(turnStates, state => InTurn(state) != null);
+            Require(rule.AssetKey == "LadyOfTheReformed" && rule.Cost == 1 && template.AssetKey == "LadyOfTheReformed" &&
+                template.Modifiers!.AttackDamage == 10 && template.Health == 40 && template.MaxHealth == 40 && template.Size == 2 &&
+                template.Status("ephemeral") is { Stacks: 3, RemoveWhenTriggered: true } && template.Ability == null &&
+                onHit.Effects.Single().Type == "CardEffectAddStatusEffect" &&
+                addEphemeral is { Type: "AddStatus", Target: "Room", AllowEnemy: false, AllowPlayer: true } &&
+                addEphemeral.Filters?.RequiredStatuses.SequenceEqual(new[] { "ephemeral" }) == true &&
+                addEphemeral.Statuses.Single() is { Id: "ephemeral", Stacks: 1, RemoveWhenTriggered: true } &&
+                spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Health == 40 && spawnedUnit.MaxHealth == 40 &&
+                spawnedUnit.Modifiers!.AttackDamage == 10 && spawnedUnit.Size == 2 &&
+                spawnedUnit.Status("ephemeral") is { Stacks: 3, RemoveWhenTriggered: true } && !onHit.HasTriggered &&
+                unitTurns.Length == 2 && ephemeralStacks.SequenceEqual(new[] { 2, 1 }) &&
+                unitTurns.All(unit => unit.Health == 40 && unit.MaxHealth == 40 && unit.Modifiers!.AttackDamage == 10 &&
+                    unit.Size == 2 && !unit.Triggers.Single(trigger => trigger.Kind == "OnHit").HasTriggered) &&
+                lastPresentTurn >= 0 && turnStates.Skip(lastPresentTurn + 1).All(state => InTurn(state) == null),
+                "Lady of the Reformed must preserve its 1-cost 10/40 size-2 Ephemeral-3 birth, native 2/1 decay snapshots, and inactive Ephemeral-gated OnHit callback.");
+            Console.WriteLine("ORIGINAL-LADY-OF-THE-REFORMED PASS: native 1-cost 10/40 size-2 birth; Ephemeral fell 3 to 2 to 1 before the unit disappeared, while its gated OnHit callback stayed inactive.");
         }
         if (expectedId == JuggernautId)
         {

@@ -8891,3 +8891,21 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-feeder-damage-enemies.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-feeder-damage-enemies.mt2f
 ```
+
+### Original Lady of the Reformed
+
+`full-battle-original-isolated-lady-of-the-reformed.mt2f` plays the unchanged
+1-cost 10/40 size-2 Lady of the Reformed with three Ephemeral. Two later
+snapshots record the native Ephemeral count falling to two and then one; it is
+absent in the subsequent turn-four snapshots. Its Ephemeral-gated `OnHit`
+callback would add one Ephemeral to the room, but remains untriggered. The
+Instant battle won with zero capture failures, mismatches, unsupported
+transitions or pending records. Focused replay and bounded serial/parallel
+search agree at 128 states, with three replayed steps; archive metadata is in
+`manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 5ac22130-17f1-4f8e-967f-a2d3b71ef7ca
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-lady-of-the-reformed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-lady-of-the-reformed.mt2f
+```
