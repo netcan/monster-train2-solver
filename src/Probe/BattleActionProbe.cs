@@ -343,7 +343,8 @@ namespace MonsterTrain2Poju.Probe
             SpellEffectTypes.Contains(effect.GetEffectStateName());
         internal static bool SupportsCardActionEffect(CardEffectData effect) => SupportedSpellEffect(effect);
 
-        internal static CardActionEffect DescribeTriggerEffect(CardEffectData effect, List<string> interactions, CardData? source = null)
+        internal static CardActionEffect DescribeTriggerEffect(CardEffectData effect, List<string> interactions, CardData? source = null,
+            bool captureBirthLifecycle = false)
         {
             if (effect.GetEffectStateName() == "CardEffectBalatroConvertCard")
             {
@@ -361,10 +362,11 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Unimplemented card-trigger effect " + effect.GetEffectStateName());
                 return new CardActionEffect("Unsupported", "None", 0, false, false, Array.Empty<CombatStatus>());
             }
-            return DescribeSpellEffect(source, effect, interactions, cardTrigger: true);
+            return DescribeSpellEffect(source, effect, interactions, cardTrigger: true, captureBirthLifecycle: captureBirthLifecycle);
         }
 
-        private static CardActionEffect DescribeSpellEffect(CardData? data, CardEffectData effect, List<string> interactions, bool cardTrigger = false)
+        private static CardActionEffect DescribeSpellEffect(CardData? data, CardEffectData effect, List<string> interactions,
+            bool cardTrigger = false, bool captureBirthLifecycle = false)
         {
             if (AbilityLifecycleProbe.Known(effect.GetEffectStateName())) return AbilityLifecycleProbe.Describe(effect);
             if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) return AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool());
@@ -561,7 +563,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 CharacterData? fallback = effect.GetParamCharacterData();
                 if (fallback == null) interactions.Add("Missing spawn-or-status fallback character.");
-                else spawnFallbackUnit = SpawnTemplate(fallback, true, interactions);
+                else spawnFallbackUnit = SpawnTemplate(fallback, true, interactions, captureBirthLifecycle);
             }
             RoomCapacityAttachmentState? roomAttachment = null;
             if (type == "AttachRoomCapacity")
@@ -679,9 +681,9 @@ namespace MonsterTrain2Poju.Probe
             .GetAllCardData().FirstOrDefault(candidate => candidate != null && candidate.IsSpawnerCard() &&
                 candidate.GetSpawnCharacterData() != null && candidate.GetSpawnCharacterData()!.GetID() == unit.GetID());
 
-        internal static CombatUnit SpawnTemplate(CharacterData unit, bool matchesSource, List<string> interactions)
+        internal static CombatUnit SpawnTemplate(CharacterData unit, bool matchesSource, List<string> interactions, bool captureBirthLifecycle = false)
         {
-            EnemyDefinition definition = EnemySpawningProbe.Definition(unit);
+            EnemyDefinition definition = EnemySpawningProbe.Definition(unit, captureBirthLifecycle);
             interactions.AddRange(definition.ExternalInteractions);
             CombatUnit source = definition.Unit;
             UnitModifiers? m = source.Modifiers;

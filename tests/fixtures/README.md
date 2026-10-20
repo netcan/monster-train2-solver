@@ -9980,6 +9980,9 @@ checks pass; preview movement remains restricted to ordinary enemy targets.
 `.probe-runs/full-battle-units-spells-and-junk-20261021-023638-8b44b22f`.
 Unchanged Infectory and Eager Conscript witness two first cardless Funguy births,
 one same-identity Horde increment and three excluded Funguy deaths. Room death
+fallback definitions explicitly retain the fresh birth lifecycle flags in both
+catalog and battle captures, allowing exact original-definition indexing.
+Room death
 effects use the authored exclusion filter, have no parent card and skip Pyres
 and dead bosses. Preview births allocate native identities before callbacks;
 physical occupants and preview-born objects remain available after leaving live

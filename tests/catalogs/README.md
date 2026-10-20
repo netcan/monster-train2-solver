@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-031441-17383425/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,893 bytes, 12,140 unique nodes,
-SHA-256 `c84397294b5143676809ee8d9971de2b44d7a103aa4fe426463eb289a7ec0722`.
-The latest refresh captures Apex Imp's status synergy and empty birth counter
+Source: `.probe-runs/full-battle-no-cards-20261021-031958-17ce59d2/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,845 bytes, 12,144 unique nodes,
+SHA-256 `a1cfbca29c8238a2ec02729730fe12d39414f1f187f5c920668e9f2b986f30b9`.
+The latest refresh explicitly captures the fresh birth lifecycle of Infectory's
+fallback template, matching its accepted native witness. Only this projection
+changes; the other 667 are identical. Strict definition matching is unchanged.
+The preceding refresh captures Apex Imp's status synergy and empty birth counter
 cache. Only this projection changes after normalizing absent/null SynergizeStatuses
 fields; the other 667 are identical.
 The preceding refresh captures Morsel-Made's authored self-feeder effect. Only this

@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Probe
             if (modifiers.Length != 1) { interactions.Add("Multiple room death modifiers."); return null; }
             RoomModifierData modifier = modifiers[0];
             var result = new RoomDeathEffectRule(modifier.GetParamCardEffectData()
-                .Select(effect => BattleActionProbe.DescribeTriggerEffect(effect, interactions)).ToArray(),
+                .Select(effect => BattleActionProbe.DescribeTriggerEffect(effect, interactions, captureBirthLifecycle: true)).ToArray(),
                 modifier.GetParamCardUpgradeData()?.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray() ?? Array.Empty<CardUpgradeMaskRule>(),
                 modifier.DisallowedInDeploymentPhase);
             string? error = RoomDeathEffectModel.Validate(result);

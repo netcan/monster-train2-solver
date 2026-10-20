@@ -82,7 +82,8 @@ namespace MonsterTrain2Poju.Probe
                 pendingDestroyedUnitIds: canonicalReferences ? null : trace.PendingDestroyedUnitIds());
         }
 
-        internal static EnemyDefinition Definition(CharacterData data)
+        internal static EnemyDefinition Definition(CharacterData data) => Definition(data, false);
+        internal static EnemyDefinition Definition(CharacterData data, bool captureBirthLifecycle)
         {
             var interactions = new List<string>();
             if (data.GetRoomModifiersData().Any(modifier => !UnitSelfAttackModel.Known(modifier.GetRoomStateModifierClassName()) &&
@@ -121,9 +122,9 @@ namespace MonsterTrain2Poju.Probe
                 data.GetHealth(), data.GetHealth(), data.GetCanAttack(), false, data.IsMiniboss(), statuses, triggers.ToArray(), size: data.GetSize(),
                 statusImmunities: data.GetStatusEffectImmunities(), subtypes: data.GetSubtypes().Select(subtype => subtype.Key).ToArray(),
                 modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>(), nextTriggerId: triggers.Count, ability: ability, statusDictionary: new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>()), abilityRules: AbilityLifecycleProbe.Rules(data), hordeDefinition: new HordeBaseStats(data.GetAttackDamage(), data.GetHealth()), isSpawning: false, sacrificeCardId: 0, deathState: new UnitDeathState(false, false, true, isSacrifice: false, statisticsListenerOnce: true,
-                    isDespawned: OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ||
+                    isDespawned: captureBirthLifecycle || OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ||
                         FullBattleTrace.Active != null && RoomDeathEffectProbe.RequiresBirthWorld(FullBattleTrace.Active) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? false : (bool?)null,
-                    isDestroyed: OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ||
+                    isDestroyed: captureBirthLifecycle || OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ||
                         FullBattleTrace.Active != null && RoomDeathEffectProbe.RequiresBirthWorld(FullBattleTrace.Active) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? false : (bool?)null),
                     bumpRules: BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || OriginalReactiveUnitsScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? new UnitBumpRules(data.GetLoopsBetweenTrainFloors(), data.IsCompanionBoss(), data.IsOuterTrainBoss()) : null,
                     lastFeederId: data.GetTriggers().Any(trigger => trigger.GetTrigger() == CharacterTriggerData.Trigger.OnEaten) || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ? 0 : (int?)null, moonPhaseMask: EclipseChamberScenario.Enabled ? (int)PlayerManager.MoonPhase.None : (int?)null),
