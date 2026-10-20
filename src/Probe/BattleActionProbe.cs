@@ -19,7 +19,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectTransferAttackFromUnit", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectRemoveAllStatusEffects", "CardEffectTransferAllStatusEffectsFromUnit", "CardEffectTransferAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
-            "CardEffectAddPermanentCorruption",
+            "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase", "CardEffectUpdateMoonPhaseResource",
             "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
             "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectSetHealth", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
@@ -377,9 +377,6 @@ namespace MonsterTrain2Poju.Probe
             if (effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")
                 return new CardActionEffect("Unbox", "None", 0, false, false, Array.Empty<CombatStatus>(),
                     tests: new CardEffectTests(true, false, false, false, false));
-            if (effect.GetEffectStateName() == "CardEffectAttackWithUnit" && effect.GetTargetMode() == TargetMode.Pyre &&
-                effect.GetParamBool2() && effect.GetShouldSuppressPyreRoomFocus())
-                interactions.Add("Pyre attacks with suppressed room focus require native calibration.");
             if (effect.GetEffectStateName() is "CardEffectMix" or "CardEffectMixRandom")
                 return new CardActionEffect(effect.GetEffectStateName() == "CardEffectMix" ? "Mix" : "MixRandom", "None", effect.GetParamInt(), false, false,
                     Array.Empty<CombatStatus>(), tests: new CardEffectTests(true, false, false, false, true));
@@ -412,9 +409,9 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Unmodeled room-status transfer targets or status pool");
             // These native iterators read their own count/status parameters rather
             // than the inherited spell scaling fields or ParamSubtype.
-            if (effect.GetEffectStateName() is not ("CardEffectDamagePerHp" or "CardEffectAddBattleCard" or "CardEffectAddStatusEffectPerOtherEffect" or "CardEffectBump" or "CardEffectRoomAbilityBumpToCurrentRoom") &&
+            if (effect.GetEffectStateName() is not ("CardEffectDamagePerHp" or "CardEffectAddBattleCard" or "CardEffectFloorRearrange" or "CardEffectAddStatusEffectPerOtherEffect" or "CardEffectAddStatusToRoomScalingByCasterStatusCount" or "CardEffectAddStatusEffectPerMissingHp" or "CardEffectBump" or "CardEffectRoomAbilityBumpToCurrentRoom") &&
                 (effect.GetUseStatusEffectStackMultiplier() && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" ||
-                effect.GetUseHealthMissingStackMultiplier() || effect.GetUseMagicPowerMultiplier() ||
+                effect.GetUseHealthMissingStackMultiplier() && effect.GetEffectStateName() != "CardEffectHeal" || effect.GetUseMagicPowerMultiplier() ||
                 effect.GetEffectStateName() != "CardEffectSacrifice" && effect.GetEffectStateName() != "CardEffectKill" &&
                 effect.GetEffectStateName() != "CardEffectRecursion" && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" &&
                 effect.GetEffectStateName() != "CardEffectFeederRules" &&
@@ -484,6 +481,8 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectRecursion" ? "Recursion" :
                 effect.GetEffectStateName() == "CardEffectFloorRearrange" ? "FloorRearrange" :
                 effect.GetEffectStateName() == "CardEffectAddStatusEffectPerOtherEffect" ? "AddStatusPerOtherEffect" :
+                effect.GetEffectStateName() == "CardEffectAddStatusToRoomScalingByCasterStatusCount" ? "AddStatusPerCasterStatus" :
+                effect.GetEffectStateName() == "CardEffectAddStatusEffectPerMissingHp" ? "AddStatusPerMissingHp" :
                 effect.GetEffectStateName() == "CardEffectMultiplyStatusEffect" ? "MultiplyStatus" :
                 effect.GetEffectStateName() == "CardEffectMultiplyAllPositiveStatusEffects" ? "MultiplyAllPositiveStatusEffects" :
                 effect.GetEffectStateName() == "CardEffectAdjustAllStatusEffects" ? "AdjustAllStatusEffects" :
@@ -551,7 +550,7 @@ namespace MonsterTrain2Poju.Probe
             var statuses = new List<CombatStatus>();
             if (type == "AddStatus" || type == "HealOverheal" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" ||
                 type == "TransferAllStatuses" ||
-                type == "AddStatusPerOtherEffect" || type == "SpawnOrStatus" || type == "UnitUpgradePerStatus")
+                type == "AddStatusPerOtherEffect" || type == "AddStatusPerCasterStatus" || type == "AddStatusPerMissingHp" || type == "SpawnOrStatus" || type == "UnitUpgradePerStatus")
             {
                 if (type != "AdjustAllStatusEffects" && type != "HealOverheal" &&
                     effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
@@ -624,7 +623,9 @@ namespace MonsterTrain2Poju.Probe
                 healDamageMultiplier: type == "HealRelative" ? (int?)effect.GetAdditionalParamInt() : null,
                 unitReturn: type == "ReturnUnit" ? new UnitReturnRule(effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamBool3()) : null,
                 equipmentMerge: type == "MergeEquipment" ? EquipmentMerge(effect, interactions) : null,
-                sourceStatusMultiplier: type == "SpawnOrStatus" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null);
+                sourceStatusMultiplier: type == "SpawnOrStatus" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,
+                suppressPyreRoomFocus: type == "AttackWithUnit" && effect.GetTargetMode() == TargetMode.Pyre &&
+                    effect.GetParamBool2() && effect.GetShouldSuppressPyreRoomFocus() ? true : (bool?)null);
         }
 
         private static EquipmentMergeRule? EquipmentMerge(CardEffectData effect, List<string> interactions)

@@ -40,7 +40,7 @@ internal static class OriginalPyreshotChecks
         Require(card.DataId == CardDataId && card.MaskDescriptor!.SourceTraits!.Count == 0 && card.MaskDescriptor.BaseTraits.Count == 0 &&
             rule.AssetKey == "Pyreshot" && rule.CardType == "Spell" && rule.Cost == 3 && rule.CostType == "Default" &&
             rule.ExternalInteractions.Count == 0 && rule.UpgradeInteractions.Count == 0 &&
-            effect.Type == "AttackWithUnit" && effect.Target == "Pyre" && effect.UseSelectedRoom && !effect.RequireEquipment &&
+            effect.Type == "AttackWithUnit" && effect.Target == "Pyre" && effect.UseSelectedRoom && effect.SuppressPyreRoomFocus == true && !effect.RequireEquipment &&
             action.CardInstanceId == ids[1] && action.RoomIndex == 0 && before.Spawn.Turn >= 1 && enemiesBefore == 2 && enemiesAfter == 0 &&
             before.Energy - after.Energy == 3 && before.Spawn.Train.Context.Statistics!.Value(ids[1], "TimesPlayed", "ThisBattle") == 0 &&
             after.Spawn.Train.Context!.Statistics!.Value(ids[1], "TimesPlayed", "ThisBattle") == 1 &&

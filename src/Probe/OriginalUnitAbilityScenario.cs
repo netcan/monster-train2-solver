@@ -16,6 +16,9 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData();
             CardData ability = all.FindCardData(AbilityId!) ?? throw new InvalidOperationException("Missing original unit skill.");
             if (!ability.IsUnitAbility()) throw new InvalidOperationException("Requested definition is not a unit ability.");
+            foreach (CardEffectData effect in ability.GetEffects())
+                UnityEngine.Debug.Log("ORIGINAL-UNIT-ABILITY-EFFECT type=" + effect.GetEffectStateName() + " status=" + effect.GetUseStatusEffectStackMultiplier() +
+                    " health=" + effect.GetUseHealthMissingStackMultiplier() + " magic=" + effect.GetUseMagicPowerMultiplier() + " subtype=" + effect.GetParamSubtype().Key);
             // Only the existing control anchor changes; original skill assets stay untouched.
             AccessTools.Field(typeof(CharacterData), "unitAbility").SetValue(created[0].GetSpawnCharacterData(), ability);
             RoomState source = managers.GetRoomManager()!.GetRoom(0);

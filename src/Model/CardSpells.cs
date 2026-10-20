@@ -565,7 +565,7 @@ namespace MonsterTrain2Poju.Model
                         chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                         healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
-                        sourceStatusMultiplier: effect.SourceStatusMultiplier);
+                        sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -714,6 +714,18 @@ namespace MonsterTrain2Poju.Model
                         effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove,
                         effect.TargetSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold,
                         effect.GoldCostRequired, effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom);
+                }
+                if (effect.Type is "AddStatusPerCasterStatus" or "AddStatusPerMissingHp")
+                {
+                    CombatUnit? actor = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == selfUnitId);
+                    if (actor == null) return UnsupportedTrain("Scaled unit-skill status requires its activating unit.");
+                    if (targets.UnitIds.Count == 0) continue;
+                    CombatUnit first = state.Rooms.SelectMany(room => room.Units).First(unit => unit.Id == targets.UnitIds[0]);
+                    int count = effect.Type == "AddStatusPerCasterStatus"
+                        ? unchecked((actor.Status(effect.Statuses[1].Id)?.Stacks ?? 0) * effect.Value)
+                        : first.MaxHealth - first.Health;
+                    effect = new CardActionEffect("AddStatus", effect.Target, 0, effect.AllowEnemy, effect.AllowPlayer,
+                        new[] { effect.Statuses[0].WithStacks(count) }, tests: effect.Tests, filters: effect.Filters);
                 }
                 if (effect.Type == ForgePointsModel.Effect && selected.Preview) continue;
                 UnityRng effectRng = state.Context!.BattleRng;
@@ -1250,7 +1262,7 @@ namespace MonsterTrain2Poju.Model
                     int attackRoom = !selfAttack && effect.UseSelectedRoom ? roomIndex : firstRoom!.RoomIndex;
                     // GameEffectHelper focuses the Pyre's room before applying
                     // the iterator, while keeping its selectedRoom parameter.
-                    if (!selfAttack && effect.UseSelectedRoom && effect.Target == "Pyre")
+                    if (!selfAttack && effect.UseSelectedRoom && effect.Target == "Pyre" && effect.SuppressPyreRoomFocus != true)
                         attackRoom = firstRoom!.RoomIndex;
                     foreach (int actorId in selfAttack ? new[] { selfUnitId } : targets.UnitIds)
                     {
@@ -1927,6 +1939,15 @@ namespace MonsterTrain2Poju.Model
                 (!fullTrain || selfUnitId <= 0 || effects.Any(effect => effect.Type == "AbilityTeleport" && effect.Target is not ("Self" or "Room")) ||
                  source.Context.SpawnPoints == null))
                 return "Unit ability teleport requires its activating actor and captured train spawn points.";
+            if (effects.Any(effect => effect.Type == "FloorRearrange" && effect.Target == "Self") && selfUnitId <= 0)
+                return "Self floor rearrangement requires its activating unit.";
+            foreach (CardActionEffect scaledStatus in effects.Where(effect => effect.Type is "AddStatusPerCasterStatus" or "AddStatusPerMissingHp"))
+            {
+                if (selfUnitId <= 0 || scaledStatus.Statuses.Count < (scaledStatus.Type == "AddStatusPerCasterStatus" ? 2 : 1))
+                    return "Scaled skill statuses require a captured actor and their original status definitions.";
+                if (scaledStatus.Type == "AddStatusPerMissingHp" && scaledStatus.Target != "Self")
+                    return "Missing-HP status target ordering requires a separate multi-target witness.";
+            }
             if (!fullTrain && effects.Any(effect => CardTargetModel.IsCrossRoom(effect.Target)))
                 return "Cross-room spells require the complete train state.";
             if (fullTrain)
@@ -2295,7 +2316,7 @@ namespace MonsterTrain2Poju.Model
                         return "Mix requires a positive draft size and captured elixir state.";
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "TransferAllStatuses" &&
                     (effect.Target != "DropTargetCharacter" || effect.Statuses.Count != 1))
@@ -2320,7 +2341,8 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
                 if (effect.Type == "FloorRearrange" && effect.Target != "DropTargetCharacter" &&
-                    effect.Target != "FrontInRoom" && effect.Target != "StrongestLastTargetedCharactersRoom" && effect.Target != "LastTargetedCharacters")
+                    effect.Target != "FrontInRoom" && effect.Target != "StrongestLastTargetedCharactersRoom" && effect.Target != "LastTargetedCharacters" &&
+                    effect.Target != "Self")
                     return "Uncalibrated floor rearrangement target selector.";
                 if (effect.Type == "AdjustAllStatusEffects" && (!effect.StatusAdjustmentFilter.HasValue || effect.StatusAdjustmentFilter < 0 || effect.StatusAdjustmentFilter > 1))
                     return "Unmodeled all-status adjustment filter.";
@@ -2486,6 +2508,8 @@ namespace MonsterTrain2Poju.Model
                 case "MultiplyAllPositiveStatusEffects": return effect.Target != "DropTargetCharacter" || count > 0;
                 case "AdjustAllStatusEffects": return effect.Tests?.StrictTargets != true || count > 0;
                 case "AddStatusPerOtherEffect": return count > 0;
+                case "AddStatusPerCasterStatus": return effect.Statuses.Count >= 2 && count > 0;
+                case "AddStatusPerMissingHp": return effect.Tests?.StrictTargets != true || count > 0;
                 case "SpawnOrStatus": return count > 0 || CanSpawnFallback(context, room, effect);
                 case "FloorRearrange":
                 case "CopyUnits":
@@ -2601,7 +2625,7 @@ namespace MonsterTrain2Poju.Model
                 chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                 healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
-                sourceStatusMultiplier: effect.SourceStatusMultiplier);
+                sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

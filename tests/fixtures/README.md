@@ -10215,3 +10215,24 @@ DEPTH-PASS, settled wins and four zero failure counters. Six/eight plays,
 five EndTurns, sixteen immutable branches and bounded 128-state searches pass.
 This validates the original NULL definitions and routing; upgrading their
 contents through Mix remains covered by the existing separate Mix fixtures.
+
+`full-battle-original-savior2-ability.mt2f`, `-savior3-ability` and
+`-courage-ability` come from `20261021-053902-1525722c`,
+`20261021-054015-973230ac` and `20261021-053902-7d1ff917`.
+Each original skill moves its control activator ahead of a living ally. Savior
+first grants fifteen Valor, then converts the activating unit's current Valor
+to armor: level two targets itself, level three includes its floor ally.
+Courage converts three missing HP to three armor before healing to full,
+preserving the unaffected ally and other-floor controls. Native iterators
+ignore the inherited scaling flags captured on these custom status/movement
+effects. The original NULL/ordinary spell scaling guards remain independent.
+Six/six/seven plays, five EndTurns, sixteen immutable branches and 128-state
+serial/parallel search comparisons pass with no unsupported attempts; each
+native capture is a settled DEPTH-PASS win with four zero failure counters.
+
+The original Pyreshot archive was refreshed from `20261021-053320-1853e345`
+to capture its native suppression of Pyre room focus explicitly. It attacks
+the selected floor, kills both test enemies and takes two Spikes damage. Its
+two-play full replay and bounded search pass, while the separate unsuppressed
+Pyre-focus ability fixture still passes its floor-three focus observations,
+seventeen-play chain and thirty-two activation branches.

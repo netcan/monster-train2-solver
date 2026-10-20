@@ -16,6 +16,11 @@ internal static class OriginalUnitAbilityChecks
             CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == id);
             CardInstanceState card = before.Spawn.Train.Context!.CardRegistry.Single(card => card.InstanceId == action.CardInstanceId);
             Require(card.DataId == id && rule.Ability?.Kind == "Unit" && rule.ExternalInteractions.Count == 0, "Missing unchanged original unit skill.");
+            if (id is "4252e8ed-4f8f-474f-80be-622eb6dae7fa" or "2479c736-4463-4346-8464-d517dae23f40" or "be65a126-831e-43c1-b987-698c37edead2")
+            {
+                UnitStatusAbilityChecks.Native(before, after, action, id);
+                count++; continue;
+            }
             if (id == "8d54f68b-5660-4507-84c3-a0cf092bfbf1")
             {
                 CardGenerationRule generation = rule.Effects.Single().Generation!;
@@ -55,7 +60,7 @@ internal static class OriginalUnitAbilityChecks
             count++;
         }
         Require(count == 1, "Expected one positive original unit skill activation.");
-        if (id != "8d54f68b-5660-4507-84c3-a0cf092bfbf1")
+        if (id is "c59d1814-0e0e-414c-b82f-a71cead2951f" or "127b5582-1e59-4ce0-afdb-9ccc2d59f913" or "1b18c4ef-9df6-466d-b61e-c338800a14a6")
             Require(root.GetProperty("OriginalUnitAbilityQueries").EnumerateArray().Any(query => query.GetProperty("Allowed").GetBoolean()), "Missing native corruption eligibility query.");
         Console.WriteLine("ORIGINAL-UNIT-ABILITY PASS: " + id + "; unchanged native definition and positive skill effect.");
     }
