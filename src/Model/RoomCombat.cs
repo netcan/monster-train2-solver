@@ -494,14 +494,16 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RoomCombatResult ApplyFeeding(RoomCombatState state, CombatTeam team,
-            IReadOnlyList<int>? foodIds = null, int triggerCount = 1)
+            IReadOnlyList<int>? foodIds = null, int triggerCount = 1, int selfFeederId = 0)
         {
             string? error = Validate(state);
             if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
             if (state.Deployment || !state.Units.Any(unit => unit.Team == team && unit.Health > 0 && IsFood(unit)) ||
                 !state.Units.Any(unit => unit.Team == team && unit.Health > 0 && unit.Status("untouchable") == null && !IsFood(unit)))
                 return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
-            return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).FeedOnly(team, foodIds, triggerCount);
+            if (selfFeederId != 0 && !state.Units.Any(unit => unit.Id == selfFeederId && unit.Team == team && unit.Health > 0))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "The overridden feeder must be a captured living friendly actor.");
+            return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).FeedOnly(team, foodIds, triggerCount, selfFeederId);
         }
 
         internal static bool IsFood(CombatUnit unit) => unit.Status("inedible") == null && unit.Status("silenced") == null &&
@@ -3043,9 +3045,10 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            internal RoomCombatResult FeedOnly(CombatTeam team, IReadOnlyList<int>? foodIds = null, int triggerCount = 1)
+            internal RoomCombatResult FeedOnly(CombatTeam team, IReadOnlyList<int>? foodIds = null, int triggerCount = 1, int selfFeederId = 0)
             {
-                Feed(team, foodIds, triggerCount);
+                Feed(team, foodIds, triggerCount, units.FirstOrDefault(unit => unit.Source.Id == selfFeederId));
+                if (unsupportedReason == null && context?.SpawnPoints != null) SummonPhysical("Compact", team: team);
                 return Finish(RoomOutcome.Exchanged);
             }
 

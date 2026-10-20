@@ -109,7 +109,8 @@ namespace MonsterTrain2Poju.Model
                     : (effect.Type != "DamagePerSourceAttack" || sourceAttackUnitId > 0 &&
                         source.Rooms.SelectMany(item => item.Units).Any(unit => unit.Id == sourceAttackUnitId)) &&
                         PassesTest(tested, testCount, source.Context!.AllScenarioBossesDead == true, source.Context, room.Preview, room,
-                            PyreAlive(source, fullTrain), sourceCardId) && PassesTargetSubtype(source, effect, targets);
+                            PyreAlive(source, fullTrain), sourceCardId) && PassesTargetSubtype(source, effect, targets) &&
+                        (effect.Type != "SacrificeOrFeed" || targets.UnitIds.FirstOrDefault() != selfUnitId);
                 if (!valid && (effect.Tests?.FailToCast == true || effect.Type is "Sacrifice" or "Recursion"))
                     return new SpellCastCheck(false, battleRngAfterTests: testingRng);
                 passed |= valid;
@@ -449,7 +450,8 @@ namespace MonsterTrain2Poju.Model
                     ? UnitTeleportModel.CanPlay(state, selfUnitId, roomIndex, targetSpawnPointIndex)
                     : PassesTest(tested, testCount, bossDead, state.Context, selected.Preview,
                         state.Rooms.Single(room => room.RoomIndex == roomIndex), PyreAlive(state, fullTrain), sourceCardId) &&
-                        PassesTargetSubtype(state, effect, targets);
+                        PassesTargetSubtype(state, effect, targets) &&
+                        (effect.Type != "SacrificeOrFeed" || targets.UnitIds.FirstOrDefault() != selfUnitId);
                 if (!passes)
                 {
                     if (index == 0 && CardTargetModel.IsRandom(effect.Target) && targets.UnitIds.Count > 0 && effect.Tests?.CancelSubsequent != true &&
@@ -487,7 +489,8 @@ namespace MonsterTrain2Poju.Model
                     }
                     continue;
                 }
-                if (effect.Type == "FeederRules")
+                if (effect.Type == "FeederRules" || effect.Type == "SacrificeOrFeed" &&
+                    state.Rooms.SelectMany(room => room.Units).Any(unit => targets.UnitIds.Contains(unit.Id) && RoomCombatModel.IsFood(unit)))
                 {
                     if (targets.UnitIds.Count == 0) continue;
                     RoomCombatState feedingRoom = state.Rooms.Single(room => room.Units.Any(unit => unit.Id == targets.UnitIds[0]));
@@ -501,7 +504,8 @@ namespace MonsterTrain2Poju.Model
                     if (!repetitions.Supported) return UnsupportedTrain(repetitions.UnsupportedReason!);
                     state = WithContext(state, repetitions.Context!);
                     feedingRoom = state.Rooms.Single(room => room.RoomIndex == feedingRoom.RoomIndex);
-                    RoomCombatResult fed = RoomCombatModel.ApplyFeeding(feedingRoom, CombatTeam.Player, targets.UnitIds, repetitions.Value);
+                    RoomCombatResult fed = RoomCombatModel.ApplyFeeding(feedingRoom, CombatTeam.Player, targets.UnitIds, repetitions.Value,
+                        effect.Type == "SacrificeOrFeed" ? selfUnitId : 0);
                     if (!fed.Supported) return UnsupportedTrain(fed.UnsupportedReason!);
                     state = ReplaceRoom(state, fed.State!);
                     events.AddRange(fed.Events); callbacks.AddRange(fed.PendingCallbacks);
@@ -576,6 +580,13 @@ namespace MonsterTrain2Poju.Model
                     if (!copied.Supported) return UnsupportedTrain(copied.UnsupportedReason!);
                     state = WithContext(state, copied.Context!);
                     if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                    continue;
+                }
+                if (effect.Type == "FreezeAllCards")
+                {
+                    CardFreezeResult frozen = CardFreezeModel.ApplyAll(state.Context!, sourceCardId, effect.CardFilter);
+                    if (!frozen.Supported) return UnsupportedTrain(frozen.UnsupportedReason!);
+                    state = WithContext(state, frozen.Context!);
                     continue;
                 }
                 if (effect.Type == "FreezeCard")
@@ -1190,7 +1201,7 @@ namespace MonsterTrain2Poju.Model
                     piles = state.Context!.OtherPiles?.ToArray(); positions = CardTargetModel.Positions(state);
                     continue;
                 }
-                if (effect.Type == "Sacrifice" || effect.Type == "Kill")
+                if (effect.Type is "Sacrifice" or "Kill" or "SacrificeOrFeed")
                 {
                     if (selfUnitId > 0 && targets.UnitIds.Contains(selfUnitId))
                     {
@@ -1232,7 +1243,7 @@ namespace MonsterTrain2Poju.Model
                         if (!sacrificed.Supported) return UnsupportedTrain(sacrificed.UnsupportedReason!);
                         state = ReplaceRoom(state, sacrificed.State!);
                         retained[id] = target;
-                        if (effect.Type == "Sacrifice") lastSacrificedUnitId = id;
+                        if (effect.Type is "Sacrifice" or "SacrificeOrFeed") lastSacrificedUnitId = id;
                         events.AddRange(sacrificed.Events);
                         if (sacrificed.Outcome == RoomOutcome.BattleWon || sacrificed.Outcome == RoomOutcome.PlayerDefeated)
                             outcome = sacrificed.Outcome;
@@ -1240,6 +1251,17 @@ namespace MonsterTrain2Poju.Model
                         DrainDeaths();
                         if (routingError != null) return UnsupportedTrain(routingError);
                         focusedRoom = null;
+                    }
+                    if (effect.Type == "SacrificeOrFeed")
+                    {
+                        RoomCombatState? actorRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == selfUnitId));
+                        CombatUnit? actor = actorRoom?.Units.Single(unit => unit.Id == selfUnitId);
+                        if (actor != null)
+                        {
+                            callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(actorRoom!.RoomIndex, actor, "OnFeed"));
+                            DrainDeaths();
+                            if (routingError != null) return UnsupportedTrain(routingError);
+                        }
                     }
                     continue;
                 }
@@ -1941,6 +1963,8 @@ namespace MonsterTrain2Poju.Model
                 return "Unit ability teleport requires its activating actor and captured train spawn points.";
             if (effects.Any(effect => effect.Type == "FloorRearrange" && effect.Target == "Self") && selfUnitId <= 0)
                 return "Self floor rearrangement requires its activating unit.";
+            if (effects.Any(effect => effect.Type == "SacrificeOrFeed") && selfUnitId <= 0)
+                return "Sacrifice-or-feed requires its activating unit.";
             foreach (CardActionEffect scaledStatus in effects.Where(effect => effect.Type is "AddStatusPerCasterStatus" or "AddStatusPerMissingHp"))
             {
                 if (selfUnitId <= 0 || scaledStatus.Statuses.Count < (scaledStatus.Type == "AddStatusPerCasterStatus" ? 2 : 1))
@@ -2152,7 +2176,7 @@ namespace MonsterTrain2Poju.Model
                         return "Missing upgraded-copy source or generation rules.";
                     continue;
                 }
-                if (effect.Type is "FreezeCard" or "DuplicateCard")
+                if (effect.Type is "FreezeCard" or "FreezeAllCards" or "DuplicateCard")
                 {
                     if (source.Context?.CardRegistry == null) return "Hand-card choice requires captured card instances.";
                     continue;
@@ -2197,7 +2221,7 @@ namespace MonsterTrain2Poju.Model
                     if (removalError != null) return removalError;
                     continue;
                 }
-                if (effect.Type == "Sacrifice" && !effect.DoNotFullyRemove.HasValue)
+                if (effect.Type is "Sacrifice" or "SacrificeOrFeed" && !effect.DoNotFullyRemove.HasValue)
                     return "Missing native do-not-fully-remove sacrifice parameter.";
                 if (effect.Type == "DamageByUnitsKilled" &&
                     (effect.Target != "Room" || !effect.AllowEnemy || !effect.AllowPlayer ||
@@ -2309,7 +2333,7 @@ namespace MonsterTrain2Poju.Model
                         return "Replay requires captured OnSpawn history and a self target.";
                     continue;
                 }
-                if (effect.Type == "SwapStats" || effect.Type == "StatusNull") continue;
+                if (effect.Type is "SwapStats" or "StatusNull" or "SacrificeOrFeed") continue;
                 if (effect.Type == "Mix")
                 {
                     if (effect.Value < 1 || source.Context.MixState == null || source.Context.OtherPiles == null)
@@ -2467,7 +2491,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "AttachRoomCapacity") return !preview && !bossDead && RoomCapacityModel.TestAttachment(room, effect);
             if (effect.Type == ForgePointsModel.Effect) return ForgePointsModel.Test(pyreAlive ?? context?.EnergyState?.PyreAlive);
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
-            if (effect.Type == "FreezeCard") return !preview && !bossDead;
+            if (effect.Type is "FreezeCard" or "FreezeAllCards") return !preview && !bossDead;
             if (effect.Type == "DuplicateCard") return !preview && !bossDead && count > 0;
             if (preview && (effect.Type == "Draw" || effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade" || effect.Type == "DrawNextTurn" || effect.Type == "DiscardHand" || effect.Type == "RandomDiscard" || effect.Type == "ChooseDiscard" || effect.Type == "Generate")) return false;
             if (bossDead && !(effect.Tests?.CanPlayAfterBossDead ?? (effect.Type != "HandUpgrade" && effect.Type != "Draw" && effect.Type != "DrawType" && effect.Type != "ScheduleNextDrawUpgrade" && effect.Type != "DrawNextTurn" && effect.Type != "DiscardHand" && effect.Type != "RandomDiscard" && effect.Type != "Generate"))) return false;
@@ -2499,6 +2523,7 @@ namespace MonsterTrain2Poju.Model
                 case "SwapStats": return count > 0;
                 case "HealTrain": return count > 0;
                 case "Sacrifice": return count > 0;
+                case "SacrificeOrFeed": return count > 0;
                 case "Kill": return effect.Tests?.MustHaveValidTargets != true || count > 0;
                 case "Recursion": return effect.Recursion?.SelectionMode == "RandomToRoomUntilCapacityFull" ?
                     room != null && !room.Units.Any(unit => unit.IsPyre) : count > 0 &&
@@ -2603,7 +2628,7 @@ namespace MonsterTrain2Poju.Model
         private static bool CardOnlyPileTarget(CardActionEffect effect) =>
             effect.Type == "RandomDiscard" && effect.Target == "Hand" || effect.Type == "Recursion" ||
             effect.Type == "Generate" && effect.Target == "Hand" ||
-            effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" || CardOnlyDrawTarget(effect);
+            effect.Type is "ChooseDiscard" or "FreezeCard" or "FreezeAllCards" or "DuplicateCard" || CardOnlyDrawTarget(effect);
         private static bool CardOnlyDrawTarget(CardActionEffect effect) =>
             effect.Type == "Draw" && effect.Target == "DrawPile" ||
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&

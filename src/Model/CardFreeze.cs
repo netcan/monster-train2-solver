@@ -15,6 +15,24 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardFreezeModel
     {
+        public static CardFreezeResult ApplyAll(CombatContext source, int sourceCardId, CardUpgradeMaskRule? filter)
+        {
+            CombatContext context = source;
+            foreach (CardToken token in source.Cards.Hand)
+            {
+                CardInstanceState? card = context.FindCard(token.InstanceId);
+                if (card?.MaskDescriptor == null) return new(null, "Whole-hand freeze requires captured card traits.");
+                if (filter != null)
+                {
+                    try { if (!CardUpgradeMaskModel.FilterCard(filter, CardBranchMaskModel.Resolve(card))) continue; }
+                    catch (InvalidOperationException failure) { return new(null, failure.Message); }
+                }
+                CardFreezeResult frozen = AddTrait(context, card);
+                if (!frozen.Supported) return frozen;
+                context = frozen.Context!;
+            }
+            return new(context);
+        }
         public static IReadOnlyList<int> EligibleCards(CombatContext context, int sourceCardId, out string? error)
         {
             error = null;
@@ -43,6 +61,12 @@ namespace MonsterTrain2Poju.Model
             if (!selectedCardId.HasValue || !eligible.Contains(selectedCardId.Value))
                 return new(null, "Chosen freeze requires one eligible hand-card selection.");
             CardInstanceState card = source.FindCard(selectedCardId.Value)!;
+            return AddTrait(source, card);
+        }
+        private static CardFreezeResult AddTrait(CombatContext source, CardInstanceState card)
+        {
+            if (card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
+                upgrade.Lifecycle?.RemovedRuntimeTypes.Contains("CardTraitFreeze") == true)) return new(source);
             CardMaskDescriptor descriptor = card.MaskDescriptor!;
             CardInstanceState frozen = card.WithMaskDescriptor(new CardMaskDescriptor(descriptor.Definition, descriptor.BaseCost,
                 descriptor.BaseTraits, descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft,

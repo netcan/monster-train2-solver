@@ -38,7 +38,7 @@ internal static class RelicEatenDamageChecks
             "Native QueueTrigger must suppress OnEaten damage during deployment: " + deployment.UnsupportedReason);
         SpellCastCheck uncalibrated = CardSpellModel.TestPlay(train.Rooms[0],
             [new CardActionEffect("PlayUnitTrigger", "FrontInRoom", 0, false, true, [], unitTriggerKind: "OnFeed")], 0);
-        Require(!uncalibrated.Supported && uncalibrated.UnsupportedReason == "Unit-trigger cards require the calibrated fixed OnEaten payload.",
+        Require(!uncalibrated.Supported && uncalibrated.UnsupportedReason == "Unit-trigger cards require a calibrated fixed OnEaten or OnDeath payload.",
             "Uncalibrated card-trigger kinds must remain unsupported.");
         Require(RelicModel.Validate([new CombatRelicState("other", RelicFriendlyTriggerDamageModel.AssetKey,
             [RelicFriendlyTriggerDamageModel.Effect], resourceEffects: [effect], disallowedInPlacementPhase: false)]) != null,

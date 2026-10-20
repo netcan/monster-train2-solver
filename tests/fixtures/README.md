@@ -10236,3 +10236,25 @@ the selected floor, kills both test enemies and takes two Spikes damage. Its
 two-play full replay and bounded search pass, while the separate unsuppressed
 Pyre-focus ability fixture still passes its floor-three focus observations,
 seventeen-play chain and thirty-two activation branches.
+
+`full-battle-original-chomp-sacrifice-ability.mt2f` and
+`full-battle-original-chomp-food-ability.mt2f` preserve unchanged Chomp
+`f7126e4a-ef22-4621-b1f7-31a53e2e5870` on the isolated control anchor.
+Native runs `20261021-054903-93c478f8` and `20261021-055310-a15fc408`
+prove distinct Exhausted/Eaten destinations, a positive five-gold OnFeed
+control before the original self upgrade, and physical compaction after eating.
+The food run includes a separate nonfood ally ahead of the activator, proving
+the overridden feeder receives the food bonus. Six/seven plays, five EndTurns,
+sixteen immutable branches and both 128-state searches pass with zero
+unsupported attempts and identical serial/parallel best results.
+
+`full-battle-original-time-freeze-ability.mt2f`, native run
+`20261021-055706-d431c1fa`, preserves original PyreHeartTimeAbility
+`4dbfc527-50b2-4068-aa36-9770d4444a57` and activates it from the Pyre.
+Ordinary drawn Torch cards gain Freeze, an already frozen control gains an
+additional temporary Freeze instance, and the original Pyre-targeted effect
+removes the Pyre skill. Its native UI cache is initialized before the first
+decision, avoiding hidden allocation between recorded decisions. Six plays,
+five EndTurns and sixteen immutable replay branches pass. All three fresh
+captures finish in a settled native win with zero capture failures,
+mismatches, unsupported stages or pending stages.

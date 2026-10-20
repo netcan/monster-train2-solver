@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         private static readonly HashSet<string> SpellEffectTypes = new HashSet<string>(new[]
         {
-            "CardEffectNULL", "CardEffectAddStatusEffectNull", "CardEffectFeederRules", "CardEffectFreezeCard", "CardEffectDuplicateCardInHand", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectAttackTargetsWithSelfUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
+            "CardEffectNULL", "CardEffectAddStatusEffectNull", "CardEffectFeederRules", "CardEffectFreezeCard", "CardEffectFreezeAllCards", "CardEffectDuplicateCardInHand", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectAttackTargetsWithSelfUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
             "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown",
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment", "CardEffectRoomAbilityBumpToCurrentRoom",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
@@ -22,7 +22,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase", "CardEffectUpdateMoonPhaseResource",
             "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
-            "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectSetHealth", "CardEffectSacrifice", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
+            "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectSetHealth", "CardEffectSacrifice", "CardEffectSacrificeOrFeed", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
             "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits", "CardEffectDrawType",
@@ -36,6 +36,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly ManualLogSource log;
         private readonly List<Record> records = new List<Record>();
         private BattlePlayRules? rules;
+        private readonly HashSet<string> encounteredAbilities = new HashSet<string>(StringComparer.Ordinal);
         internal IReadOnlyList<Record> Records => records;
         internal void InvalidateRules() => rules = null;
         internal int Mismatches => records.Count(record => record.Difference != null);
@@ -61,6 +62,9 @@ namespace MonsterTrain2Poju.Probe
                 .Select(card => card.GetCardDataID())).Distinct().ToArray();
             definitions = definitions.Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
                 .Concat(spawn.Treasures).Select(unit => unit.Unit.Ability?.DataId).Where(id => !string.IsNullOrEmpty(id)).Cast<string>()).Distinct().ToArray();
+            encounteredAbilities.UnionWith(spawn.Train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Ability?.DataId)
+                .Where(id => !string.IsNullOrEmpty(id)).Cast<string>());
+            definitions = definitions.Concat(encounteredAbilities).Distinct().ToArray();
             definitions = definitions.Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
                 .Concat(spawn.Treasures).SelectMany(unit => unit.Unit.Triggers).SelectMany(trigger => trigger.Effects)
                 .Select(effect => effect.Action?.AbilityChange?.Definition?.DataId).Where(id => !string.IsNullOrEmpty(id)).Cast<string>()).Distinct().ToArray();
@@ -392,7 +396,7 @@ namespace MonsterTrain2Poju.Probe
                  effect.GetTargetMode() == TargetMode.LastDrawnCard);
             bool randomDiscardHandTarget = (effect.GetEffectStateName() == "CardEffectRandomDiscard" ||
                 effect.GetEffectStateName() == "CardEffectChooseDiscard" || effect.GetEffectStateName() == "CardEffectDuplicateCardInHand" ||
-                effect.GetEffectStateName() == "CardEffectFreezeCard") && effect.GetTargetMode() == TargetMode.Hand;
+                effect.GetEffectStateName() == "CardEffectFreezeCard" || effect.GetEffectStateName() == "CardEffectFreezeAllCards") && effect.GetTargetMode() == TargetMode.Hand;
             bool recursionCardPileTarget = effect.GetEffectStateName() == "CardEffectRecursion" &&
                 (effect.GetTargetMode() == TargetMode.Exhaust || effect.GetTargetMode() == TargetMode.Eaten || effect.GetTargetMode() == TargetMode.Discard);
             var excluded = new List<SubtypeData>(); effect.GetTargetCharacterExcludedSubtypes(excluded);
@@ -423,7 +427,9 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectNULL" ? "Null" :
                 effect.GetEffectStateName() == "CardEffectAddStatusEffectNull" ? "StatusNull" :
                 effect.GetEffectStateName() == "CardEffectFeederRules" ? "FeederRules" :
+                effect.GetEffectStateName() == "CardEffectSacrificeOrFeed" ? "SacrificeOrFeed" :
                 effect.GetEffectStateName() == "CardEffectFreezeCard" ? "FreezeCard" :
+                effect.GetEffectStateName() == "CardEffectFreezeAllCards" ? "FreezeAllCards" :
                 effect.GetEffectStateName() == "CardEffectDuplicateCardInHand" ? "DuplicateCard" :
                 effect.GetEffectStateName() == "CardEffectReturnUnitToHand" ? "ReturnUnit" :
                 effect.GetEffectStateName() == "CardEffectReplayTrigger" ? "ReplayTrigger" :
@@ -590,9 +596,9 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
                     excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()),
                 type == "Generate" ? CardGenerationProbe.Definition(effect) : generation, type == "AdjustCapacity" && effect.GetParamBool(),
-                cardFilter: type == "DuplicateCard" && effect.GetParamCardFilter() != null ? CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter()) : null,
+                cardFilter: (type == "DuplicateCard" || type == "FreezeAllCards") && effect.GetParamCardFilter() != null ? CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter()) : null,
                 copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,
-                scaleUpgrade: scaleUpgrade, doNotFullyRemove: type == "Sacrifice" ? effect.GetParamBool() : (bool?)null,
+                scaleUpgrade: scaleUpgrade, doNotFullyRemove: type == "SacrificeOrFeed" ? false : type == "Sacrifice" ? effect.GetParamBool() : (bool?)null,
                 targetSubtype: type == "DamageByUnitsKilled" ? effect.GetParamStr() :
                     (type == "Sacrifice" || type == "Kill") && !effect.GetParamSubtype().IsNone ? effect.GetParamSubtype().Key : "",
                 typedDraw: type == "DrawType" ? TypedDrawProbe.DrawRule(effect) : null,

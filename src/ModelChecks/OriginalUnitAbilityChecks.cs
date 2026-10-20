@@ -16,6 +16,41 @@ internal static class OriginalUnitAbilityChecks
             CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == id);
             CardInstanceState card = before.Spawn.Train.Context!.CardRegistry.Single(card => card.InstanceId == action.CardInstanceId);
             Require(card.DataId == id && rule.Ability?.Kind == "Unit" && rule.ExternalInteractions.Count == 0, "Missing unchanged original unit skill.");
+            if (id == "f7126e4a-ef22-4621-b1f7-31a53e2e5870")
+            {
+                CombatUnit actor = before.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == action.ActivatorUnitId);
+                CombatUnit victim = before.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == action.TargetUnitId);
+                CombatUnit changed = after.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == actor.Id);
+                Require(victim.Id != actor.Id && victim.Team == CombatTeam.Player &&
+                    after.Spawn.Train.Rooms[0].Units.All(unit => unit.Id != victim.Id) &&
+                    after.Spawn.Train.Context!.Gold == before.Spawn.Train.Context!.Gold + 5 && changed.Attack > actor.Attack,
+                    "Chomp must remove a distinct friendly target, fire its activator's positive OnFeed control and then upgrade itself.");
+                bool food = victim.Triggers.Any(trigger => trigger.Kind == "OnEaten");
+                string pile = food ? "Eaten" : "Exhausted";
+                Require(after.Spawn.Train.Context!.OtherPiles!.Any(value => value.Name == pile && value.Cards.Any(token => token.InstanceId == victim.SpawnerCardId)),
+                    "Chomp must preserve the distinct food/sacrifice destination: " + pile);
+                count++; continue;
+            }
+            if (id == "4dbfc527-50b2-4068-aa36-9770d4444a57")
+            {
+                CombatContext old = before.Spawn.Train.Context!, next = after.Spawn.Train.Context!;
+                int newlyFrozen = 0, alreadyFrozen = 0;
+                foreach (CardToken token in old.Cards.Hand)
+                {
+                    CardInstanceState original = old.CardRegistry.Single(card => card.InstanceId == token.InstanceId);
+                    CardInstanceState frozen = next.CardRegistry.Single(card => card.InstanceId == token.InstanceId);
+                    Require(CardBranchMaskModel.Resolve(frozen).Traits.Contains("CardTraitFreeze"), "Time Freeze must freeze every hand card.");
+                    Require(frozen.MaskDescriptor!.TemporaryTraits.Count(trait => trait.RuntimeType == "CardTraitFreeze") ==
+                        original.MaskDescriptor!.TemporaryTraits.Count(trait => trait.RuntimeType == "CardTraitFreeze") + 1,
+                        "Whole-hand freeze must append a new temporary trait even to an already frozen card.");
+                    if (CardBranchMaskModel.Resolve(original).Traits.Contains("CardTraitFreeze")) alreadyFrozen++;
+                    else newlyFrozen++;
+                }
+                Require(newlyFrozen >= 2 && alreadyFrozen > 0 &&
+                    after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.ActivatorUnitId).Ability?.HasAbility != true,
+                    "Time Freeze requires positive ordinary cards, an already frozen control and removal of its own skill.");
+                count++; continue;
+            }
             if (id is "4252e8ed-4f8f-474f-80be-622eb6dae7fa" or "2479c736-4463-4346-8464-d517dae23f40" or "be65a126-831e-43c1-b987-698c37edead2")
             {
                 UnitStatusAbilityChecks.Native(before, after, action, id);
