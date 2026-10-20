@@ -150,6 +150,21 @@ internal static class OriginalSupportSpellsChecks
                 after.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == 1 &&
                 before.Energy >= after.Energy, "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            if (rule.AssetKey == "CarCollapse")
+            {
+                RoomCapacityState oldRoom = before.Spawn.Train.Context.RoomCapacities!.Single(room => room.RoomIndex == action.RoomIndex),
+                    newRoom = after.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == action.RoomIndex);
+                Require(oldRoom.PlayerMaximum == 5 && newRoom.PlayerMaximum == 1 && newRoom.EnemyMaximum == oldRoom.EnemyMaximum,
+                    "Car Collapse must clamp the friendly capacity to one and preserve enemy capacity.");
+            }
+            if (rule.AssetKey == "Hammerfall")
+            {
+                CombatUnit oldHost = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId),
+                    newHost = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId);
+                Require(oldHost.Team == CombatTeam.Player && newHost.Attack - oldHost.Attack == 20 && newHost.Health == oldHost.Health &&
+                    newHost.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Hammerfall_Upgrade" && upgrade.Stats.Damage == 20),
+                    "Hammerfall must skip enemy damage on the friendly target and apply twenty attack through its native scaling upgrade.");
+            }
             if (generators.Length > 0)
             {
                 CombatContext changed = after.Spawn.Train.Context!;

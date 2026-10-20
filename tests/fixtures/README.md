@@ -9251,3 +9251,14 @@ and `.probe-runs/full-battle-units-spells-and-junk-20261020-182434-59263f54`.
 Both win with DEPTH-PASS, settled terminal effects and all four failure counters
 zero. Focused full-chain replay and bounded search accompany the fixtures;
 existing last-attacker HP damage and terminal-death damage remain affected checks.
+
+### Original Car Collapse and Hammerfall
+
+`full-battle-original-isolated-damage-capacity-spells.mt2f` captures both
+unchanged originals, three independent anchors and the distinct Energy control.
+Car Collapse reduces friendly capacity from five to the native minimum of one,
+preserving enemy capacity. Hammerfall targets an ally, skips enemy-only damage
+and applies its native scaled twenty-attack temporary upgrade without HP loss.
+The profile is `.probe-runs/full-battle-units-spells-and-junk-20261020-183659-f33ea856`:
+DEPTH-PASS, native victory, settled terminal effects and all four failure counters
+zero. Focused immutable replay and bounded search validate this fixture.
