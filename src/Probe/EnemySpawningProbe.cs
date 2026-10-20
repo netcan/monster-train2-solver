@@ -89,7 +89,7 @@ namespace MonsterTrain2Poju.Probe
             if (data.GetRoomModifiersData().Any(modifier => !UnitSelfAttackModel.Known(modifier.GetRoomStateModifierClassName()) &&
                 !UnitRoomResourceModel.Known(modifier.GetRoomStateModifierClassName()) &&
                 !UnitRoomStatusModel.Known(modifier.GetRoomStateModifierClassName()) &&
-                modifier.GetRoomStateModifierClassName() != UnitRoomTriggerCountModel.Type && !RoomSpawnCopyProbe.Known(modifier))) interactions.Add("Spawned room modifiers");
+                modifier.GetRoomStateModifierClassName() != UnitRoomTriggerCountModel.Type && modifier.GetRoomStateModifierClassName() != SentryAttackProbe.Type && !RoomSpawnCopyProbe.Known(modifier))) interactions.Add("Spawned room modifiers");
             if (data.IsOuterTrainBoss()) interactions.Add("Spawned outer Boss actions");
             CombatStatus[] statuses = data.GetStartingStatusEffects().Select(status =>
             {
@@ -126,7 +126,7 @@ namespace MonsterTrain2Poju.Probe
                         FullBattleTrace.Active != null && RoomDeathEffectProbe.RequiresBirthWorld(FullBattleTrace.Active) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? false : (bool?)null,
                     isDestroyed: captureBirthLifecycle || OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ||
                         FullBattleTrace.Active != null && RoomDeathEffectProbe.RequiresBirthWorld(FullBattleTrace.Active) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? false : (bool?)null),
-                    bumpRules: BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || OriginalReactiveUnitsScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? new UnitBumpRules(data.GetLoopsBetweenTrainFloors(), data.IsCompanionBoss(), data.IsOuterTrainBoss()) : null,
+                    bumpRules: SentryAttackProbe.Definition(data) != null || BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || OriginalReactiveUnitsScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? new UnitBumpRules(data.GetLoopsBetweenTrainFloors(), data.IsCompanionBoss(), data.IsOuterTrainBoss()) : null,
                     lastFeederId: data.GetTriggers().Any(trigger => trigger.GetTrigger() == CharacterTriggerData.Trigger.OnEaten) || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ? 0 : (int?)null, moonPhaseMask: EclipseChamberScenario.Enabled ? (int)PlayerManager.MoonPhase.None : (int?)null),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());
         }

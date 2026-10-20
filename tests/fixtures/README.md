@@ -9936,6 +9936,20 @@ pre-existing discrepancy is not covered by the room-skill acceptance. Attachment
 corruption with unit/relic CorruptionAdded callbacks remains explicitly guarded.
 The other two room skills have separate positive movement witnesses below.
 
+`full-battle-original-isolated-sentry-turret.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-040145-372d48e4`.
+Original Sentry Turret enters the middle floor behind its independent anchor.
+Original Hidden Passage moves an enemy from the bottom floor into its range.
+The turret's private OnSentry target cache then supplies one normal ten-damage
+attack, consuming enemy Armor and taking two retaliation Spikes before clearing
+its target list and attacking flag. Ordinary unit attack, death and callback
+handling is reused; movement elsewhere does not create another cached target.
+DEPTH-PASS records a settled win with all four failure counters zero. Six plays
+and five EndTurns pass sixteen immutable replay branches; 128-state search has
+zero unsupported attempts and equal serial/parallel results. Existing nineteen
+native movement-effect checks pass. Inert/restricted removal and cached remote
+or removed targets remain explicit guards pending their own native witnesses.
+
 `full-battle-original-isolated-room-movement-skills.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-035316-ca31adc7`.
 Unchanged Trap Chute dazes a living enemy twice and descends it two floors;

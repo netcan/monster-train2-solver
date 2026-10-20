@@ -1997,7 +1997,7 @@ namespace MonsterTrain2Poju.Model
                 source.EnemySlotsPerRoom, context), context);
         }
 
-        private static TrainSpellResult ApplyUnitAttackTurn(TrainCombatState source, int roomIndex, int actorId,
+        internal static TrainSpellResult ApplyUnitAttackTurn(TrainCombatState source, int roomIndex, int actorId,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult> refreshPyre, bool ignoreAttackPrevention = true, IReadOnlyList<int>? overrideTargets = null)
         {
             RoomCombatState? attackRoom = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);

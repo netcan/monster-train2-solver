@@ -323,6 +323,15 @@ Both refreshes also pass bounded search: seven native decisions each, zero
 unsupported attempts, equal serial/parallel best results and 128 explored
 states. Root action counts are 114 for Fused Weaponry and sixteen for Goldmance.
 
+The Sentry Turret refresh comes from
+`.probe-runs/full-battle-no-cards-20261021-040610-e53eaf4a/card-catalog.mt2f`
+(100444 bytes, 12198 nodes, SHA-256
+`fbb73a6ec2eb2bb511bb77333ab286e0a5194a5b2511f54369a6aedb3de7bbdf`).
+After ignoring newly absent/null Sentry fields, only Sentry Turret changes among
+668 definitions: its supported room modifier captures an empty target list,
+false attacking flag and original movement rules. Its original direct play and positive attack are checked
+separately against the native battle witness.
+
 Recreate with an otherwise unmodified sandbox scenario:
 
 ```powershell

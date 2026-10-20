@@ -254,6 +254,11 @@ namespace MonsterTrain2Poju.Model
             // Native room-order handling always runs the remaining queue, including rooted
             // player status notifications when nothing moved.
             if (!Drain()) return Fail(error!);
+            TrainCombatResult sentries = SentryAttackModel.UpdateAll(state);
+            if (!sentries.Supported) return Fail(sentries.UnsupportedReason!);
+            state = sentries.State!;
+            events.AddRange(sentries.RoomResults.SelectMany(result => result.Events));
+            if (sentries.Outcome != RoomOutcome.Exchanged) outcome = sentries.Outcome;
             return new BumpResult(state, outcome, null, events, retained.Values.ToArray(), queue, dispatched, updatedRoomRules);
 
             CombatUnit? Get(int id) => state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == id);

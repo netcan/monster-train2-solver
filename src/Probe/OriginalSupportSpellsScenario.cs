@@ -105,6 +105,13 @@ namespace MonsterTrain2Poju.Probe
                     unit.Id == action.TargetUnitId && (armorCard == "64beabe3-0260-44e2-a47a-b07192b52f25"
                         ? unit.AssetKey == "MonsterApexImp" : unit.SpawnerCardId == ids[0])));
             }
+            if (index >= 4 && IsolatedIds.Contains("a67b8f2a-f3b4-4a8c-8ced-4dc3d4394475"))
+            {
+                if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "a67b8f2a-f3b4-4a8c-8ced-4dc3d4394475")
+                    candidates = candidates.Where(action => action.RoomIndex == 1 && action.PlayerPosition == 1);
+                else candidates = candidates.Where(action => action.RoomIndex == 0 && source.Spawn.Train.Rooms[0].Units.Any(unit =>
+                    unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.IsBoss != true));
+            }
             if (index >= 4 && IsolatedIds.Contains("13876e8d-b111-429d-acdb-2e095fda897e"))
             {
                 string foodCard = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;

@@ -55,7 +55,7 @@ namespace MonsterTrain2Poju.Model
                 template = UnitCloneModel.Copy(template, new UnitModifiers(old.AttackDamage, old.AttackDamageAdded, old.DamageBuff,
                     old.RawSize, old.EquipmentLimit, old.CanBeHealed, old.IsClone, old.Upgrades, old.HealthFromUpgrades,
                     actor.Modifiers.SpawnerMatchesDefinition, old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower,
-                    old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts, old.SpawnCopySubtype, old.Graft, old.SynergizeStatuses),
+                    old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts, old.SpawnCopySubtype, old.Graft, old.SynergizeStatuses, old.Sentry),
                     template.BaseAttack, template.Health, template.MaxHealth);
             }
             var rule = new CardPlayRule(source?.DataId ?? "", template.AssetKey, 0, "SpawnMonster", "Standby", template, birth.ExternalInteractions);

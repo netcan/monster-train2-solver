@@ -20,9 +20,9 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 555 | 565 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| direct-native-play | 556 | 566 | No captured projection guards; at least one successful native play has the same captured definition projection. |
 | mechanism-only | 5 | 85 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
-| partial | 3 | 11 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
+| partial | 2 | 10 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 7 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
 
@@ -80,7 +80,7 @@ Original Bloody Moon and Antumbra Assault each add seven unchanged plays with de
 
 Original Surgical Strike adds six unchanged plays and one generated play. Native suppression requires both Monsters team and FunGuy subtype; ordinary friendly and enemy kills still copy. Piercing bypasses armor/shield, nonlethal hits do not copy, and a revived FunGuy remains suppressed. Three deterministic source-card copies preserve the original temporary Ephemeral upgrade, upgrade inheritance, allocation/RNG and played/unplayed purge. Source team/subtype metadata is required; bonus fire counts, other subtypes, starting upgrades, all-subtype relics and character-attributed kills remain guarded.
 
-Across all classifications, 565 identities (555 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Across all classifications, 566 identities (556 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 
@@ -90,7 +90,7 @@ Across all classifications, 565 identities (555 logbook) have at least one defin
 - [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 710 full battles and 9228 native actions whose captured prediction is supported, actual state exists and difference is null. 633 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 711 full battles and 9234 native actions whose captured prediction is supported, actual state exists and difference is null. 634 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 
@@ -98,7 +98,7 @@ Counts are per logbook identity and can overlap. Conditional upgrade/discard gua
 
 | Guard | Logbook identities |
 | --- | ---: |
-| Spawned room modifiers | 2 |
+| Spawned room modifiers | 1 |
 | Unmodeled mixed room attachment payload | 1 |
 
 ## Explicitly unsupported logbook entries

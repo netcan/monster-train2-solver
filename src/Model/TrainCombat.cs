@@ -690,7 +690,10 @@ namespace MonsterTrain2Poju.Model
                 rooms = updated.State!.Rooms.ToArray(); context = updated.State.Context; results.AddRange(updated.RoomResults);
                 return true;
             }, () => context, message => error = message);
-            return drained ? new TrainCombatResult(Freeze(source, rooms, context), outcome, results) : Unsupported(error ?? "Movement callback queue failed.");
+            if (!drained) return Unsupported(error ?? "Movement callback queue failed.");
+            TrainCombatResult sentries = SentryAttackModel.UpdateAll(Freeze(source, rooms, context));
+            return sentries.Supported ? new TrainCombatResult(sentries.State,
+                sentries.Outcome == RoomOutcome.Exchanged ? outcome : sentries.Outcome, results.Concat(sentries.RoomResults).ToArray()) : sentries;
         }
 
         private static void SetCompanionBosses(RoomCombatState[] rooms, IReadOnlyList<int>? ids)

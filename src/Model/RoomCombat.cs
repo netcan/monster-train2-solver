@@ -3584,6 +3584,12 @@ namespace MonsterTrain2Poju.Model
                     ImportEnchantmentRoom(applied.State!);
                     foreach (QueuedCharacterTrigger child in applied.PendingCallbacks) QueueCallback(child);
                 }
+                if (unsupportedReason == null && kind == "OnSentry" && overrideTarget != null && unit.Source.Modifiers?.Sentry != null)
+                {
+                    SentryState sentry = unit.Source.Modifiers.Sentry;
+                    unit.Apply(unit.Freeze().WithModifiers(unit.Source.Modifiers.WithSentry(new SentryState(
+                        sentry.Targets.Concat(new[] { overrideTarget.Source.Id }).Distinct().ToArray(), sentry.IsAttacking))));
+                }
                 bool Present(WorkingUnit target, string id) => target.Statuses.Any(pair =>
                     string.Equals(pair.Key, id, StringComparison.OrdinalIgnoreCase) && pair.Value.Stacks > 0);
             }
