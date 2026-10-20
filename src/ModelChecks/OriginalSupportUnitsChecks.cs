@@ -182,6 +182,7 @@ internal static class OriginalSupportUnitsChecks
             }
             if (expectedIds.Contains("8917df91-1517-4490-abd1-b58a065807fe")) VinemotherChecks.Native(root);
             ConditionalUnitUpgradeChecks.Native(root, expectedIds);
+            TriggeredRecursionChecks.Native(root, expectedIds);
             if (expectedIds.Contains("bc89dc02-3fe0-42c3-bcb0-62a0e3ae0c84")) UnitRoomTriggerCountChecks.Native(root);
             RecordedBattleChecks.Native(root);
             return;
@@ -468,7 +469,7 @@ internal static class OriginalSupportUnitsChecks
         RoomCombatState targetRoom = unitBefore.Spawn.Train.Rooms.Single(item => item.RoomIndex == unitAction.RoomIndex);
         RoomPlayRule targetRule = unitBefore.PlayRules.Rooms.Single(item => item.RoomIndex == unitAction.RoomIndex);
         int appendPosition = targetRoom.Units.Count(candidate => candidate.Team == CombatTeam.Player);
-        if (expectedId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4" or "bc89dc02-3fe0-42c3-bcb0-62a0e3ae0c84") appendPosition = 0;
+        if (expectedId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4" or "bc89dc02-3fe0-42c3-bcb0-62a0e3ae0c84" or "55a291ba-611e-4e29-93b0-08f5154ceb89") appendPosition = 0;
         bool juggernautXCost = expectedId == JuggernautId;
         bool healthAdjustedOnSpawn = expectedId == SteelsingerId;
         int hoardBirthBonus = expectedId == "0060b286-4716-49e0-9714-3fd7811b9f72" ? unitBefore.Spawn.Train.Context!.QueryFrame!.DragonsHoard!.Value * 10 : 0;

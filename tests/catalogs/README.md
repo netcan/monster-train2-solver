@@ -3,7 +3,7 @@
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
 and component fixtures. It does not increase their curated acceptance count.
 
-The isolated `no-cards` run on 2026-10-20 inspected all 668 unique
+The isolated `no-cards` run on 2026-10-21 inspected all 668 unique
 `AllGameData.GetAllCardData()` definitions from game module
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. Native predicates identify 563 logbook
 entries, 536 mastery entries, 91 unit abilities and four room abilities. These
@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-235709-90b54337/card-catalog.mt2f`.
-The committed archive is byte-identical: 98,110 bytes, 11,866 unique nodes,
-SHA-256 `62c5183709939102172383dc98d5678eb8b41eabdf1fac565537fb864c115e96`.
-The latest refresh captures Crucible Steward's native source-attack damage
+Source: `.probe-runs/full-battle-no-cards-20261021-000534-fdb379b3/card-catalog.mt2f`.
+The committed archive is byte-identical: 98,458 bytes, 11,875 unique nodes,
+SHA-256 `fe6f2c8fcd7bf8e7634a7716a675cd17965bca17e5010d36f5bcf74770d4d787`.
+The latest refresh captures Formless Child and Enlightened Infery's native
+character-triggered recursion payloads. Only these two projections change;
+all other 666 decoded card definitions stay identical.
+The preceding refresh captures Crucible Steward's native source-attack damage
 callback. Only this projection changes; the other 667 definitions are identical.
 The preceding refresh captures Mooncaller's native room trigger-count modifier.
 Only Mooncaller's card projection changes semantically; after removing null

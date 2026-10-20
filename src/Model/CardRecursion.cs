@@ -53,18 +53,20 @@ namespace MonsterTrain2Poju.Model
             {
                 if (card.InstanceId == sourceCardId) continue;
                 CardPlayRule? rule = definitions?.Cards.FirstOrDefault(item => item.DataId == card.DataId);
-                if (rule == null)
+                CardInstanceState? instance = cardRegistry?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
+                string? cardType = rule?.CardType ?? (definitions == null ? instance?.MaskDescriptor?.Definition.CardType : null);
+                IReadOnlyList<string>? subtypes = rule?.SpawnUnit?.Subtypes ?? (definitions == null ? instance?.MaskDescriptor?.Definition.Subtypes : null);
+                if (cardType == null)
                 {
                     error = "Recursion requires the captured play definition for card " + card.DataId + ".";
                     return Array.Empty<int>();
                 }
                 if (!string.IsNullOrEmpty(effect.Recursion!.CardType) && effect.Recursion.CardType != "Invalid" &&
-                    rule.CardType != effect.Recursion.CardType) continue;
-                if (effect.Recursion.Subtype.Length > 0 && rule.SpawnUnit?.Subtypes.Contains(effect.Recursion.Subtype) != true)
+                    cardType != effect.Recursion.CardType) continue;
+                if (effect.Recursion.Subtype.Length > 0 && subtypes?.Contains(effect.Recursion.Subtype) != true)
                     continue;
                 if (effect.Recursion.CardFilter != null)
                 {
-                    CardInstanceState? instance = cardRegistry?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
                     if (instance?.MaskDescriptor == null)
                     {
                         error = "Recursion card filtering requires branch-owned card mask metadata for card " + card.InstanceId + ".";

@@ -9737,3 +9737,24 @@ Six plays and five EndTurns replay through sixteen immutable branches.
 Bounded search has no unsupported attempts in its 128 states and equal serial/
 parallel results. One alternative at recorded decision roots remains guarded.
 The older First of Kin Consume observer chain also retains its focused replay.
+
+`full-battle-original-isolated-triggered-recursion.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-000830-9b374b46`.
+The original Formless Child dies naturally in front of its anchor and returns
+one of two original exhausted Dregs, granting the selected card its authored
+temporary +40 Attack upgrade. Unchanged Enlightened Infery's OnSpawn returns
+the exhausted Torch instead, leaving both Monster controls intact. Pile moves,
+selection RNG, card identities, temporary upgrades and TimesDrawn match native.
+The unit callback reuses the card recursion engine with branch-owned type and
+subtype metadata when no play-rule catalog is available during combat.
+
+`full-battle-original-isolated-triggered-recursion-empty.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-000830-fd50f04b`.
+Infery's native callback is admitted for an empty exhausted pile but draws no
+card. This preserves the unconditional native TestEffect for this payload.
+Other triggered selection modes and uncaptured source cards remain guarded.
+Both captures finish with DEPTH-PASS, settled victories and all four failure
+counters zero. Each has five plays, five EndTurns and sixteen immutable replay
+branches. Both bounded searches have zero unsupported attempts and equal serial/
+parallel results in 128 states. Existing upgraded and original pile recursion
+chains retain their focused replays.

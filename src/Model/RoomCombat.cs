@@ -1158,6 +1158,16 @@ namespace MonsterTrain2Poju.Model
                             if (deckUpgrade.Upgrade.ExternalInteractions.Count > 0) return string.Join("; ", deckUpgrade.Upgrade.ExternalInteractions);
                             continue;
                         }
+                        if (effect.Type == "CardEffectRecursion")
+                        {
+                            if (state.Context?.CardRegistry == null || state.Context.CardInstances == null ||
+                                effect.Action is not { Type: "Recursion", Target: "Exhaust", Value: 1, Range: null,
+                                    Recursion: { SelectionMode: "RandomToHand", CardType: "Monster" or "Spell", RequiresRoomInHand: false } } recursion)
+                                return "Triggered recursion requires its captured original random card-to-hand payload and source card.";
+                            string? recursionError = CardRecursionModel.Validate(recursion, state.Context.OtherPiles, state.Context.Cards);
+                            if (recursionError != null) return recursionError;
+                            continue;
+                        }
                         if (effect.Type == "CardEffectDrawType")
                         {
                             string? drawError = TriggeredTypedDrawModel.Validate(state.Context, effect);
@@ -4005,6 +4015,7 @@ namespace MonsterTrain2Poju.Model
                     if (action.Tests?.ShouldTest == false) continue;
                     bool valid;
                     if (action.Type == "UpgradeDeckSpells") valid = !source.Preview && !battleWon && context?.AllScenarioBossesDead != true;
+                    else if (action.Type == "Recursion") valid = true; // Native TestEffect delegates to the unconditional base for RequiresRoomInHand=false.
                     else if (action.Type == "SpawnOrStatus") valid = SpawnOrStatusCanApply(actor, action, trigger.Kind);
                     else
                     {
@@ -4235,6 +4246,29 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId)
             {
                 CardActionEffect action = effect.Action!;
+                if (action.Type == "Recursion")
+                {
+                    if (source.Preview || battleWon || context?.AllScenarioBossesDead == true) return true;
+                    if (actor.Source.SpawnerCardId <= 0 || context?.FindCard(actor.Source.SpawnerCardId) == null)
+                    { unsupportedReason = "Triggered recursion requires the actor's captured spawner card."; return false; }
+                    CardRecursionResult restored = CardRecursionModel.Apply(context!.Cards, context.OtherPiles,
+                        context.BattleRng, action, null, actor.Source.SpawnerCardId, context.MaxHandSize,
+                        cardRegistry: context.CardRegistry);
+                    if (!restored.Supported) { unsupportedReason = restored.UnsupportedReason; return false; }
+                    BattleStatistics? statistics = context.Statistics;
+                    foreach (int id in restored.RestoredCardIds.Where(id => restored.Cards!.Hand.Any(card => card.InstanceId == id)))
+                        statistics = statistics?.Increment(id, "TimesDrawn");
+                    context = context.WithCards(restored.Cards!).WithBattleRng(restored.BattleRng!.Value).WithStatistics(statistics);
+                    if (restored.OtherPiles != null) context = context.WithOtherPiles(restored.OtherPiles);
+                    foreach (CardInstanceState card in restored.ChangedCards) context = context.WithCard(card);
+                    foreach (int id in restored.RestoredCardIds)
+                    {
+                        CardInstanceState? card = context.FindCard(id);
+                        if (card?.ExhaustState != null) context = context.WithCard(CardExhaustModel.ResetTraits(card));
+                        Emit("Recursion", actor, actor, id);
+                    }
+                    return true;
+                }
                 if (action.Type == "UpgradeDeckSpells")
                 {
                     if (source.Preview || battleWon || context?.AllScenarioBossesDead == true) return true;

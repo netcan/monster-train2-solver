@@ -158,6 +158,12 @@ namespace MonsterTrain2Poju.Probe
                 IsolatedEnergyControlInstanceId = FullBattleTrace.Active!.CardId(energyControl);
             }
             CardState[] units = unitIds.Select(id => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false)).ToArray();
+            if (unitIds.Any(id => id is "55a291ba-611e-4e29-93b0-08f5154ceb89" or "4cad5d6e-3c7e-4993-9d3d-53948dae4b6d"))
+                foreach (string id in new[] { "63a48bad-07da-4687-bfef-2f7c6653af5e", "63a48bad-07da-4687-bfef-2f7c6653af5e", "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b" })
+                {
+                    CardState exhausted = cards.AddNewCard(all.FindCardData(id)!, CardPile.DiscardPile, false, false, animate: false);
+                    cards.GetDiscardPile().Remove(exhausted); cards.GetExhaustedPile().Add(exhausted);
+                }
             if (unitIds.Any(id => id is "58ac2b3e-ad25-4620-b814-6a3a74175aa4" or "8917df91-1517-4490-abd1-b58a065807fe"))
                 for (int drawControl = 0; drawControl < 14; drawControl++)
                     cards.AddNewCard(all.FindCardData(unitIds.Contains("8917df91-1517-4490-abd1-b58a065807fe")
@@ -204,7 +210,7 @@ namespace MonsterTrain2Poju.Probe
                         }
                 }
                 int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == isolatedRoom).Units.Count(unit => unit.Team == CombatTeam.Player);
-                if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4" or "bc89dc02-3fe0-42c3-bcb0-62a0e3ae0c84") isolatedPosition = 0;
+                if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4" or "bc89dc02-3fe0-42c3-bcb0-62a0e3ae0c84" or "55a291ba-611e-4e29-93b0-08f5154ceb89") isolatedPosition = 0;
                 var isolatedAction = ids[index] == IsolatedEnergyControlInstanceId && IsolatedEnergyControlInstanceId != 0
                     ? new PlayCardAction(ids[index], isolatedRoom)
                     : new PlayCardAction(ids[index], isolatedRoom, playerPosition: isolatedPosition);
