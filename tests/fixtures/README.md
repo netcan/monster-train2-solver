@@ -8034,6 +8034,24 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hulking-mass.mt2f
 ```
 
+### Original Reforming Ooze
+
+`full-battle-original-isolated-reforming-ooze.mt2f` records the unchanged
+1-cost Reforming Ooze and its native 7/15 size-2 birth with Undying 1 behind
+three zero-cost Steward anchors. Its captured `OnReanimated` callback grants a
+permanent self +6 Attack upgrade, but remains inactive in this battle; the
+fixture does not claim a positive reanimation. The 40.29-second native run won
+with four actions and five EndTurns; CaptureFailures, Mismatches, Unsupported
+and Pending were all zero, and protected original files were unchanged. The
+26,221-byte archive has 3,476 unique nodes and SHA-256
+`16041262efae7dfd927f835668000de6e5e76a634f6bc6f6fef30e05741c2c1f`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 357a72e3-935c-4946-9e5a-6449482641c1 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-reforming-ooze.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-reforming-ooze.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
