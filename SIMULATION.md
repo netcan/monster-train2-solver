@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 759 binary archives, including 719
-full battles and 40 component calibrations. The card index accepts 718 battles;
+Current curated inventory (2026-10-21): 773 binary archives, including 733
+full battles and 40 component calibrations. The card index accepts 732 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -22,10 +22,13 @@ Definition-matched successful native plays now cover 559/559 logbook entries
 without intrinsic unplayability. The remaining four logbook entries preserve
 their native NonPlayable cost or Unplayable trait: Bog Wurmling, Kinhost Pupa,
 Scrap Metal and Unplayable Unpurgeable. They retain mechanism/rejection evidence
-and are not counted as successful plays. Fifteen hidden unit-ability/internal
-definitions still have partial or unsupported paths; the report groups these
-by native effect/trait signature. These counts do not imply complete support
-for arbitrary combinations or completion of the optimal solver.
+and are not counted as successful plays. The fifteen previously guarded hidden
+unit-ability/internal definitions now have definition-matched native witnesses,
+including both Chomp feeding routes and both offered spike-crafting choices.
+Across all 668 definitions, 584 have direct native play evidence and 84 retain
+mechanism evidence; partial, unsupported and unreviewed inventory entries are
+all zero. These counts do not imply complete support for arbitrary combinations
+or completion of the optimal solver.
 
 The report distinguishes definition-matched native plays, indirect mechanism
 witnesses, partial/unsupported paths and unreviewed evidence. A DataId appearing

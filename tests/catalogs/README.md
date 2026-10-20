@@ -350,6 +350,20 @@ Ignoring newly absent/null TroopAura fields, only Squad Leader changes among
 movement rules replace the unsupported room-modifier guard. Birth, growth,
 troop loss and floor departure have a separate unchanged-original witness.
 
+The final hidden-definition refresh is from
+`.probe-runs/full-battle-no-cards-20261021-061053-d0de3aa7/card-catalog.mt2f`
+(110315 bytes, 13578 nodes, SHA-256
+`c9ea090d631034900d459f456e0027b8aa6863bb2f57e6de31fba6e6a4027723`).
+All 668 identities and native role counts remain unchanged. After normalizing
+absent/null optional fields, exactly sixteen projections change: the fifteen
+previously guarded hidden/internal definitions and the calibrated selected-floor
+Pyreshot focus flag. The new projections cover three Corrupt Restricted skills,
+four Infusions, Fetch, Savior levels two/three, Courage, Pyre Time Freeze,
+Chomp, Lunar Echo and single-stage spike crafting. Decision, RNG and frame are
+unchanged by inspection; this is an isolated catalog capture, without a fixture
+regression run. Original skills remain unchanged in their separate native
+activation witnesses; some use documented control owners.
+
 Recreate with an otherwise unmodified sandbox scenario:
 
 ```powershell

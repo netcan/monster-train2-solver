@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "776863ce7e7fe9aca2b17c790cf8bab51ac66179d70de0f3372b890603227d00";
+    private const string CatalogHash = "c9ea090d631034900d459f456e0027b8aa6863bb2f57e6de31fba6e6a4027723";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -222,6 +222,7 @@ internal static class CardCoverageInventory
         requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingBuffDamage" or "CardTraitScalingStatusEffectPerPile" or "CardTraitScalingTempCardUpgradeToCard" or "CardTraitScalingByConsumedTempCardUpgradeToCard" or "CardTraitShowCardTargets" or "CardTraitScalingAdvanceMoonPhase" or "CardTraitScalingAddCards" or "CardTraitAddCardUpgradeOnMoonPhase" or "CardTraitScalingFeederRules");
         requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitGraftedEquipment" or "CardTraitTreasure");
         requiresRaw |= traits.Any(trait => Text(trait, "Type") is "CardTraitScalingAdjustCapacity" or "CardTraitScalingHealTrain");
+        requiresRaw |= traits.Any(trait => Text(trait, "Type") == "CardTraitInfusion");
         foreach (string source in new[] { "CardInstances", "CardRegistry" })
         foreach (FixtureValue instance in Array(context, source))
         {
@@ -268,6 +269,17 @@ internal static class CardCoverageInventory
     private static bool CalibratedSourceTrait(FixtureValue trait, string cardId)
     {
         string type = Text(trait, "Type");
+        bool infusion = cardId is "3cf25a9b-daa1-42cd-8174-eb0f59cd590f" or "b4029b77-12b3-4d88-b10b-c6c0e6b62db8" or
+            "3f0d7968-ba33-4ad7-94d7-b0f867de837a" or "af13aa32-5442-408a-b491-229362c634f8";
+        bool actorCorrupt = cardId is "c59d1814-0e0e-414c-b82f-a71cead2951f" or "127b5582-1e59-4ce0-afdb-9ccc2d59f913";
+        if (infusion && (type is "CardTraitInfusion" or "CardTraitPersistent") || actorCorrupt && type == "CardTraitCorruptRestricted")
+            return trait.GetProperty("Int").GetInt32() == (infusion ? 0 : cardId == "c59d1814-0e0e-414c-b82f-a71cead2951f" ? 1 : 4) &&
+                trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
+                Flag(trait, "Bool") == (cardId == "c59d1814-0e0e-414c-b82f-a71cead2951f") &&
+                Text(trait, "Str") == "" && trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") &&
+                Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
+                new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag", "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
         if (cardId == "5afcb98c-e53a-4f70-b2f8-70b21bf2303c")
             return type == "CardTraitScalingAddStatusEffect" && trait.GetProperty("Int").GetInt32() == 1 &&
                 trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
@@ -659,7 +671,8 @@ internal static class CardCoverageInventory
 
     // Only these root fields describe decision-context eligibility/order rather than
     // card definitions. Missing null properties are equivalent across capture schemas;
-    // only two omitted defaults in SpawnUnit.Modifiers have additional calibration.
+    // only two omitted SpawnUnit.Modifiers defaults and the ordinary Funguy
+    // fallback's context-conditional bump defaults have additional calibration.
     private static bool Equivalent(FixtureValue left, FixtureValue right, bool ruleRoot = false,
         bool legacyMask = false, bool cardRule = false, string path = "$")
     {
@@ -681,6 +694,18 @@ internal static class CardCoverageInventory
                     statusAttackModifiers.ValueKind == FixtureKind.Array && statusAttackModifiers.GetArrayLength() == 0 &&
                     !b.ContainsKey("StatusAttackModifiers"))
                     a.Remove("StatusAttackModifiers");
+            }
+            if (cardRule && path.Contains(".MaskDescriptor.KillTriggers[", StringComparison.Ordinal) &&
+                path.EndsWith(".SpawnFallbackUnit", StringComparison.Ordinal) && Text(left, "AssetKey") == "MonsterFunguy" &&
+                !a.ContainsKey("BumpRules") && b.TryGetValue("BumpRules", out FixtureValue bump) &&
+                bump.ValueKind == FixtureKind.Object && bump.EnumerateObject().Count() == 5 &&
+                new[] { "Loops", "CompanionBoss", "OuterBoss", "OuterBossRelentlessPhase" }
+                    .All(name => bump.TryGetProperty(name, out FixtureValue flag) && flag.ValueKind == FixtureKind.False) &&
+                bump.TryGetProperty("PairedBossUnitId", out FixtureValue paired) && paired.ValueKind == FixtureKind.Number && paired.GetInt32() == 0)
+            {
+                // Lunar Echo's native creation pool captures this unchanged fallback
+                // with explicit ordinary-unit defaults only when bump capture is enabled.
+                b.Remove("BumpRules");
             }
             if (cardRule && path.Contains("$.SpawnUnit.Triggers[", StringComparison.Ordinal) &&
                 path.Contains(".Effects[", StringComparison.Ordinal) && a.TryGetValue("Type", out FixtureValue effectType) &&
@@ -758,7 +783,8 @@ internal static class CardCoverageInventory
             ("unreviewed", "Projection failed or a required primitive has no indexed transition witness; support is unknown.") })
             text.Append($"| {level} | {cards.Count(card => card.Logbook && card.Coverage == level)} | {cards.Count(card => card.Coverage == level)} | {meaning} |\n");
         text.Append("\nThese are evidence labels, not whole-card completion claims. A directly matched play proves that captured path; it does not prove every target, upgrade, relic combination, trigger or future branch. Indirect witnesses may execute an effect with no target; presence in a played chain is not a positive test of every parameter. The definition projection is conservative but is not a full raw-asset checksum.\n\n");
-        text.Append("Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; a missing false `SpawnUnit.Modifiers.IsChampion` and an empty `SpawnUnit.Modifiers.StatusAttackModifiers` are accepted only at those exact paths because the native action snapshot omits those defaults; other missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge, calibrated IgnoreArmor/ExhaustState/StrongerMagicPower parameters, and PlayedCost damage scalars five/eighty with exact source parameters and runtime/declared identity. Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower covers raw Int zero/five and zero/five room power for damage/healing. The X-damage witnesses cover enemy-present zero and positive X. Imp Olate has exact source calibration and native zero/one-Imp `SubtypeInDeck` witnesses for zero/twenty-five damage. Pyreshot has an original-card play witness for its selected-floor Pyre attack, including Sweep damage and the live per-floor enemy target set. Retch has an exact original-card `RandomToHand` witness from a controlled starting Eaten pile; it does not cover how cards enter Eaten through native feeding. Astrologer has an original 1-cost 5/10 size-2 play and three native +5 Attack `OnMoonPhaseShift` callbacks followed by a no-shift control. Its isolated fixture suppresses the broad player-wide Moon-phase-card interaction guard; other card/relic Moon-phase interactions remain outside this card witness. Snotty and Bloated Whelp have original 1-cost 4/1 Whelp plays whose `OnSpawn` adds the ability-available marker and resets cooldown; their distinct cooldown-two and cooldown-one abilities remain unused in their respective captured turns. Fae Meddler's original 1-cost 6/3 play natively advances phase 2 to 1 on spawn; its cooldown-two unit ability remains unused. This does not imply broad player-wide Moon-phase card/relic coverage.\n\n");
+        text.Append("Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; a missing false `SpawnUnit.Modifiers.IsChampion` and an empty `SpawnUnit.Modifiers.StatusAttackModifiers` are accepted only at those exact paths because the native action snapshot omits those defaults; other missing non-null fields are not, except the ordinary MonsterFunguy kill-trigger fallback's context-conditional bump defaults described below. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge, calibrated IgnoreArmor/ExhaustState/StrongerMagicPower parameters, and PlayedCost damage scalars five/eighty with exact source parameters and runtime/declared identity. Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower covers raw Int zero/five and zero/five room power for damage/healing. The X-damage witnesses cover enemy-present zero and positive X. Imp Olate has exact source calibration and native zero/one-Imp `SubtypeInDeck` witnesses for zero/twenty-five damage. Pyreshot has an original-card play witness for its selected-floor Pyre attack, including Sweep damage and the live per-floor enemy target set. Retch has an exact original-card `RandomToHand` witness from a controlled starting Eaten pile; it does not cover how cards enter Eaten through native feeding. Astrologer has an original 1-cost 5/10 size-2 play and three native +5 Attack `OnMoonPhaseShift` callbacks followed by a no-shift control. Its isolated fixture suppresses the broad player-wide Moon-phase-card interaction guard; other card/relic Moon-phase interactions remain outside this card witness. Snotty and Bloated Whelp have original 1-cost 4/1 Whelp plays whose `OnSpawn` adds the ability-available marker and resets cooldown; their distinct cooldown-two and cooldown-one abilities remain unused in their respective captured turns. Fae Meddler's original 1-cost 6/3 play natively advances phase 2 to 1 on spawn; its cooldown-two unit ability remains unused. This does not imply broad player-wide Moon-phase card/relic coverage.\n\n");
+        text.Append("The final hidden-definition batch adds unchanged original witnesses for all fifteen previously guarded definitions. Four Infusions calibrate exact zero-parameter Infusion/Persistent traits, played DiscardBuffer retention, suppressed SelfPurge and independent unplayed retention controls. Bog Fly calibrates source-floor Corrupt one with Bool true and actor-only teleport to a zero-corruption destination; Glugsider calibrates selected-floor Corrupt four with Bool false. Raw trait metadata remains mandatory. Extract Draw, Fetch, Savior levels two/three, Courage, Pyre Time Freeze, both Chomp feeding routes, Lunar Echo and both original spike-crafting choices have focused native checks and bounded search witnesses. The only additional missing-default normalization is MonsterFunguy inside a creation mask's kill-trigger SpawnFallbackUnit: four explicit false bump flags and a zero paired-boss ID match the catalog's omitted optional field. Nondefault bump metadata and all other fields still require exact matching. This keeps Lunar Echo's full original creation pool comparable across capture modes without ignoring nested definition changes.\n\n");
         text.Append("Molten Encasement has an original 1-cost 0/1 Tomb play and an exact captured OnDeath room +2 Stealth definition, but the unit survived all four post-deployment snapshots, so death-trigger execution is not covered. Shattered Shell has an original 1-cost 3/10 size-2 play and two positive native OnKill self +3 Attack upgrades; its four post-deployment snapshots show 6/9/9/9 Attack and no further upgrade. Weldling has an original 2-cost 6/3 Machine play whose PostCombat definition adds Armor to the friendly FrontInRoom target; two native transitions add three Armor to the original front Steward, with an unchanged control between gains. The final native cleanup is preserved without attributing its Armor removal to the Weldling callback. Hostguard has an original 3-cost 25/60 size-3 play whose OnSpawn adds the ability-available marker and resets its cooldown-three unit ability; that ability remains unused in all four post-deployment snapshots. Rubble Raiser has an original zero-cost 0/1 Snack play and an exact OnEaten +1 energy plus temporary LastFeederCharacter +3/+3 upgrade definition; no feeder was recorded in the direct birth witness, so the callback is not positively covered.\n\n");
         text.Append("PlayedCost status scaling is calibrated only at multiplier two/filter one with exact original source parameters. Spike of the Legion covers positive/zero X, propagatable Rage/Regeneration, unchanged armor, neighbor/floor controls and both Consume paths.\n\n");
         text.Append("CorruptionInTargetRoom damage scaling is calibrated at multiplier one, using original Echo Break at corruption zero/two/six. Original Unearthed Remains and Soul Siphon supply accumulation/fill-to-max; neighbor and selected-floor controls distinguish live selected-room state from cached/global values. Soul Siphon's negative amount with add mode fills the current maximum and also applies room-only Scorch. This witness targets friendly units; enemy-target paths need separate evidence.\n\n");
