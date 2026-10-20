@@ -304,6 +304,7 @@ namespace MonsterTrain2Poju.Probe
             cards.GetDrawPile().Clear();
             CardData energy = UnityEngine.Object.Instantiate(all.GetAllCardData().First(card => card.GetCardType() == CardType.Spell));
             energy.name = "PojuIsolatedSpellEnergy"; Set(energy, "id", "ac110052-0000-4000-8000-000000000099");
+            if (OriginalUnitAbilityScenario.AbilityId == "f6fa19db-cad1-4104-91a7-48098daabe4f") Set(energy, "cardType", CardType.Junk);
             Set(energy, "cost", 0); Set(energy, "costType", CardData.CostType.Default); Set(energy, "targetless", true); Set(energy, "targetsRoom", true);
             var energyTraits = new List<CardTraitData>();
             if (spellIds.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60"))

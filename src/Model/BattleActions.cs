@@ -69,6 +69,7 @@ namespace MonsterTrain2Poju.Model
         public UnitReturnRule? UnitReturn { get; }
         public EquipmentMergeRule? EquipmentMerge { get; }
         public bool? SuppressPyreRoomFocus { get; }
+        public ElixirRecipe? SpikeRecipe { get; }
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
@@ -85,7 +86,7 @@ namespace MonsterTrain2Poju.Model
             bool nullTargetless = false, bool nullForwardSelf = false, CardChooseDiscardRule? chooseDiscard = null,
             int transferAttackMultiplier = 0, StatusTransferRule? statusTransfer = null, string? unitTriggerKind = null,
             int? healDamageMultiplier = null, UnitReturnRule? unitReturn = null, EquipmentMergeRule? equipmentMerge = null,
-            string? sourceStatusMultiplier = null, bool? suppressPyreRoomFocus = null)
+            string? sourceStatusMultiplier = null, bool? suppressPyreRoomFocus = null, ElixirRecipe? spikeRecipe = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -103,7 +104,7 @@ namespace MonsterTrain2Poju.Model
             NullTargetless = nullTargetless; NullForwardSelf = nullForwardSelf; ChooseDiscard = chooseDiscard;
             TransferAttackMultiplier = transferAttackMultiplier; StatusTransfer = statusTransfer; UnitTriggerKind = unitTriggerKind;
             HealDamageMultiplier = healDamageMultiplier; UnitReturn = unitReturn; EquipmentMerge = equipmentMerge;
-            SuppressPyreRoomFocus = suppressPyreRoomFocus; }
+            SuppressPyreRoomFocus = suppressPyreRoomFocus; SpikeRecipe = spikeRecipe; }
     }
 
     public sealed class StatusTransferRule
@@ -824,6 +825,7 @@ namespace MonsterTrain2Poju.Model
             BattleStatistics? playedStatistics = terminal ? context.Statistics?.RefreshDeckAfterCardTerminal() : context.Statistics;
             playedStatistics = terminal && playedStatistics != null && !playedStatistics.TrackedCards.Contains(card.InstanceId)
                 ? playedStatistics.RecordPlayedCard(card.InstanceId) : playedStatistics?.Increment(card.InstanceId, "TimesPlayed");
+            if (source.Spawn.Train.Context?.EnergyState?.Phase == "MonsterTurn") playedStatistics = playedStatistics?.RecordHandCardPlayed(card.InstanceId);
             context = context.WithStatistics(playedStatistics);
             train = CardSpellModel.WithContext(train, context);
             if (rule.OnCastEffects.Count > 0)
@@ -1286,6 +1288,11 @@ namespace MonsterTrain2Poju.Model
         private static IEnumerable<PlayCardAction> EnumerateMixChoices(BattleTurnState source,
             PlayCardAction action, CardPlayRule rule)
         {
+            if (rule.Effects.Any(effect => effect.Type == "CraftSpike"))
+            {
+                foreach (PlayCardAction choice in SpikeCraftModel.Actions(rule, action)) yield return choice;
+                yield break;
+            }
             if (rule.Effects.All(effect => effect.Type != "Mix"))
             {
                 yield return action;

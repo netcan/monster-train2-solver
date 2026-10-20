@@ -267,7 +267,7 @@ namespace MonsterTrain2Poju.Model
             if (selectionError != null) return UnsupportedTrain(selectionError);
             if (mixSelections?.Any(selection => selection.MixNumber < 0 || selection.ChoiceIndex < 0 ||
                     selection.EffectIndex < 0 || selection.EffectIndex >= effects.Count ||
-                    effects[selection.EffectIndex].Type != "Mix") == true ||
+                    effects[selection.EffectIndex].Type is not ("Mix" or "CraftSpike")) == true ||
                 mixSelections?.GroupBy(selection => (selection.EffectIndex, selection.MixNumber))
                     .Any(group => group.Count() != 1) == true)
                 return UnsupportedTrain("Mix requires one captured draft choice per effect and repetition.");
@@ -410,6 +410,22 @@ namespace MonsterTrain2Poju.Model
                         state = WithContext(state, mixed.Context!);
                         piles = state.Context!.OtherPiles?.ToArray();
                     }
+                    continue;
+                }
+                if (effect.Type == "CraftSpike")
+                {
+                    if (selected.Preview || bossDead) continue;
+                    int choice = mixSelections?.FirstOrDefault(selection => selection.EffectIndex == index && selection.MixNumber == 0)?.ChoiceIndex ?? -1;
+                    CardGenerationResult crafted = SpikeCraftModel.Apply(state.Context!, effect, choice);
+                    if (!crafted.Supported) return UnsupportedTrain(crafted.UnsupportedReason!);
+                    state = WithContext(state, crafted.Context!);
+                    continue;
+                }
+                if (effect.Type == "CopyLastTurn")
+                {
+                    CardGenerationResult copied = CardLastTurnCopyModel.Apply(state.Context!, effect);
+                    if (!copied.Supported) return UnsupportedTrain(copied.UnsupportedReason!);
+                    state = WithContext(state, copied.Context!);
                     continue;
                 }
                 if (effect.Type == "GenerateUpgradedCopy")
@@ -569,7 +585,7 @@ namespace MonsterTrain2Poju.Model
                         chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                         healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
-                        sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus);
+                        sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -2170,6 +2186,19 @@ namespace MonsterTrain2Poju.Model
                     if (effect.Upgrade.ExternalInteractions.Count > 0) return string.Join("; ", effect.Upgrade.ExternalInteractions);
                     continue;
                 }
+                if (effect.Type == "CraftSpike")
+                {
+                    if (effect.Value != 1 || effect.SpikeRecipe == null || effects.Count != 1)
+                        return "Spike crafting requires the original single-stage fixed recipe.";
+                    continue;
+                }
+                if (effect.Type == "CopyLastTurn")
+                {
+                    if (effect.Generation == null) return "Last-turn copying requires original creation templates.";
+                    CardLastTurnCopyModel.EligibleCards(source.Context!, effect, out string? historyError);
+                    if (historyError != null) return historyError;
+                    continue;
+                }
                 if (effect.Type == "GenerateUpgradedCopy")
                 {
                     if (effect.Generation == null || !effect.Generation.RequireCopyableSource)
@@ -2414,6 +2443,11 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0,
             int sourceCardId = 0, int lastSacrificedUnitId = 0, bool hasPriorTargets = false)
         {
+            if (effect.Type == "CopyLastTurn")
+            {
+                IReadOnlyList<int> cards = CardLastTurnCopyModel.EligibleCards(state.Context!, effect, out string? error);
+                return new CardTargets(Array.Empty<int>(), error, cardIds: cards);
+            }
             if (effect.Type == "DuplicateCard")
             {
                 IReadOnlyList<int> cardIds = CardDuplicateModel.EligibleCards(state.Context!, effect, sourceCardId, out string? error);
@@ -2461,7 +2495,7 @@ namespace MonsterTrain2Poju.Model
                     return new CardTargets(Array.Empty<int>(), "Spawn-or-status fallback requires captured spawn points.");
                 return new CardTargets(Array.Empty<int>());
             }
-            return effect.Type is "Mix" or "MixRandom" or "Unbox" || effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
+            return effect.Type is "Mix" or "MixRandom" or "Unbox" or "CraftSpike" || effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
                 ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition,
                     index == 0 && !hasPriorTargets, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms,
                     positions, selfUnitId, lastSacrificedUnitId: lastSacrificedUnitId);
@@ -2479,6 +2513,8 @@ namespace MonsterTrain2Poju.Model
         private static bool PassesTest(CardActionEffect effect, int count, bool bossDead = false, CombatContext? context = null, bool preview = false,
             RoomCombatState? room = null, bool? pyreAlive = null, int sourceCardId = 0)
         {
+            if (effect.Type == "CraftSpike") return true;
+            if (effect.Type == "CopyLastTurn") return !preview && !bossDead && count > 0;
             if (effect.Type == "FeederRules") return room?.Deployment == false;
             if (effect.Type == "RewardGold") return context != null && (pyreAlive ?? context.EnergyState?.PyreAlive) == true &&
                 (effect.Value >= 0 || effect.GoldCostRequired == false || context.Gold >= unchecked(-effect.Value));
@@ -2650,7 +2686,7 @@ namespace MonsterTrain2Poju.Model
                 chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                 healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
-                sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus);
+                sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
@@ -2665,7 +2701,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "ReturnUnit")
                 return state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) &&
                     unit.Status("cardless")?.Stacks is not > 0);
-            if (effect.Type is "Recursion" or "ChooseDiscard" or "FreezeCard" or "DuplicateCard") return targets.CardIds.Count;
+            if (effect.Type is "Recursion" or "ChooseDiscard" or "FreezeCard" or "DuplicateCard" or "CopyLastTurn") return targets.CardIds.Count;
             if (effect.Type == "AdjustAllStatusEffects")
             {
                 if (effect.StatusAdjustmentFilter == 0 && effect.Statuses.Count == 0) return 0;

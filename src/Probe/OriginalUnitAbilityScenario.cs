@@ -55,6 +55,7 @@ namespace MonsterTrain2Poju.Probe
             CombatUnit? actor = state.Spawn.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.SpawnerCardId == anchorCardId);
             if (AbilityId == "4dbfc527-50b2-4068-aa36-9770d4444a57") actor = state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre);
             if (actor?.Ability?.HasAbility != true || state.Spawn.Turn == 0) return null;
+            if (AbilityId == "f6fa19db-cad1-4104-91a7-48098daabe4f" && state.Spawn.Turn < 2) return null;
             ObserveEligibility(FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == actor.Id));
             if (actor.Status("cooldown") != null) return null;
             if (context.LastAbilityActivatorUnitId == actor.Id) return null;
@@ -67,6 +68,8 @@ namespace MonsterTrain2Poju.Probe
                 int[] food = state.Spawn.Train.Rooms[0].Units.Where(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnEaten")).Select(unit => unit.Id).ToArray();
                 if (food.Length > 0) actions = actions.Where(action => food.Contains(action.TargetUnitId));
             }
+            if (AbilityId == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6")
+                actions = actions.Where(action => action.MixSelections.Single().ChoiceIndex == (Environment.GetEnvironmentVariable("MT2_PROBE_SPIKE_CHOICE") == "1" ? 1 : 0));
             return actions.FirstOrDefault();
         }
         internal sealed class TraitQuery
@@ -79,6 +82,39 @@ namespace MonsterTrain2Poju.Probe
             public bool Allowed { get; set; }
         }
         internal static readonly List<TraitQuery> Queries = new List<TraitQuery>();
+        internal sealed class DraftEvidence
+        {
+            public string[] Cards { get; set; } = Array.Empty<string>();
+            public string[] Upgrades { get; set; } = Array.Empty<string>();
+            public int Choice { get; set; }
+        }
+        internal static readonly List<DraftEvidence> Drafts = new List<DraftEvidence>();
+        private static int craftChoice;
+        internal static void Expect(PlayCardAction action)
+        {
+            if (AbilityId == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6") craftChoice = action.MixSelections.Single().ChoiceIndex;
+        }
+        [HarmonyPatch(typeof(ElixirDraftScreen), nameof(ElixirDraftScreen.SetupForNewElixir))]
+        private static class CraftDraftPatch
+        {
+            private static void Postfix(ElixirDraftScreen __instance, ElixirDraftScreen.DraftType draftType)
+            {
+                if (AbilityId == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6" && draftType == ElixirDraftScreen.DraftType.CraftedSpike)
+                    __instance.StartCoroutine(SelectCraft(__instance));
+            }
+        }
+        private static System.Collections.IEnumerator SelectCraft(ElixirDraftScreen screen)
+        {
+            yield return null;
+            var items = (System.Collections.IList)AccessTools.Field(typeof(ElixirDraftScreen), "draftItems").GetValue(screen);
+            CardUI[] offers = items.Cast<CardUI>().ToArray();
+            if (offers.Length != 2) throw new InvalidOperationException("Original spike skill requires two native draft offers.");
+            Drafts.Add(new DraftEvidence { Cards = offers.Select(card => card.GetCardState().GetCardDataID()).ToArray(),
+                Upgrades = offers.Select(card => card.GetCardUpgrade()?.GetID() ?? "").ToArray(), Choice = craftChoice });
+            // Record definition identities only: observing transient UI cards must
+            // not allocate owned-card IDs in the battle trace.
+            AccessTools.Method(typeof(ElixirDraftScreen), "ApplyDraft").Invoke(screen, new object[] { offers[craftChoice] });
+        }
         private static readonly HashSet<string> keys = new HashSet<string>();
         internal static void ObserveEligibility(CharacterState actor)
         {

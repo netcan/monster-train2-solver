@@ -35,7 +35,9 @@ namespace MonsterTrain2Poju.Probe
                 Field<Dictionary<CardState, CardStatsEntry>>("deckStats").Keys
                     .Concat(ownedCards ?? AllGameManagers.Instance!.GetCardManager()!.GetAllCards(new List<CardState>())).Select(cardId).ToArray(),
                 AllGameManagers.Instance!.GetSaveManager().GetDeckState().Select(cardId).ToArray(),
-                Field<Dictionary<CardState, CardStatsEntry>>("deckStats").Keys.Select(cardId).ToArray());
+                Field<Dictionary<CardState, CardStatsEntry>>("deckStats").Keys.Select(cardId).ToArray(),
+                ((List<CardState>)AccessTools.Field(typeof(CardManager), "cardsPlayedThisTurn").GetValue(AllGameManagers.Instance!.GetCardManager())).Select(cardId).ToArray(),
+                AllGameManagers.Instance!.GetCardManager()!.GetCardsPlayedLastTurn().Select(cardId).ToArray());
         }
     }
 }

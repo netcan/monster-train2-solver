@@ -10258,3 +10258,33 @@ decision, avoiding hidden allocation between recorded decisions. Six plays,
 five EndTurns and sixteen immutable replay branches pass. All three fresh
 captures finish in a settled native win with zero capture failures,
 mismatches, unsupported stages or pending stages.
+
+`full-battle-original-lunar-echo-ability.mt2f`, native run
+`20261021-060814-8e0b50c5`, preserves LunarEchoAbility
+`f6fa19db-cad1-4104-91a7-48098daabe4f`. It copies the previous turn's
+original Torch with the authored temporary upgrade and CardDraw selection.
+Separate CardManager histories retain ordered direct hand plays, including
+deployment plays when the native combat phase is MonsterTurn, and exclude
+unit/room activations. A Junk energy control fails the original Spell filter;
+empty prior-turn history supplies no candidate. All 379 original Spell
+creation templates have no captured guards, including initialized private
+states for the five moon-upgrade spells. This witness does not establish every
+copy-source, trait-upgrade, room override or relic combination.
+
+`full-battle-original-spikedriver-factory-choice0-ability.mt2f` and
+`full-battle-original-spikedriver-factory-choice1-ability.mt2f`, native runs
+`20261021-060811-2a8dc058` and `20261021-060945-8e144f56`, activate unchanged
+SpikedriverFactoryAbility `798142fe-fdf3-4f4f-8af7-dbc5dbc333c6`.
+The original one-stage/two-offer draft first draws its one-member spike pool,
+then selects two different upgrades from the authored six-upgrade pool with
+Battle RNG. Both native UI selections are captured by definition identity;
+transient draft cards do not allocate owned battle IDs. Each selected upgrade
+appears on the created SpikedriverSpider. Reproduce choice one by setting
+`MT2_PROBE_SPIKE_CHOICE=1` for the isolated native command; default is zero.
+Other choice counts, offer counts and mixed effect chains remain guarded.
+
+All three captures finish in settled native wins with zero failure, mismatch,
+unsupported and pending counters. Each six-play/five-EndTurn chain passes
+sixteen immutable branches; bounded 128-state searches require no unsupported
+attempts and agree between serial and parallel search. Focused moon-card,
+chosen-freeze and original Fetch checks also pass.

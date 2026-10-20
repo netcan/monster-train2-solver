@@ -141,7 +141,8 @@ namespace MonsterTrain2Poju.Model
             TrainSpellResult applied = rule.Effect == "Null" ? new TrainSpellResult(train, RoomOutcome.Exchanged, Array.Empty<CombatEvent>()) :
                 CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, effects, action.TargetUnitId, cache.Card.InstanceId,
                     source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actorId, action.TargetSpawnPointIndex,
-                    abilityRoomIndex: roomAbility ? actorRoom!.RoomIndex : (int?)null);
+                    abilityRoomIndex: roomAbility ? actorRoom!.RoomIndex : (int?)null, mixSelections: action.MixSelections,
+                    recursionSelections: action.RecursionSelections);
             if (!applied.Supported) return Unsupported(applied.UnsupportedReason!);
             train = applied.State!; if (Terminal(applied.Outcome)) outcome = applied.Outcome;
             context = train.Context!;
@@ -235,10 +236,13 @@ namespace MonsterTrain2Poju.Model
                     {
                         var action = new PlayCardAction(cached.Card!.InstanceId, target.RoomIndex,
                             targetUnitId: targetId, activatorUnitId: actor.Id, targetSpawnPointIndex: hasTeleport ? targetIndex : -1);
-                        BattleActionResult attempt = BattleActionModel.PlayCard(source, action);
-                        if (attempt.Supported) actions.Add(new SupportedActionCandidate(action, attempt));
-                        else if (attempt.Rejection == ActionRejection.Unsupported)
-                            unsupported.Add(new UnsupportedActionAttempt(action, attempt.Reason ?? "Unsupported unit ability action."));
+                        foreach (PlayCardAction choice in abilityRule == null ? new[] { action } : SpikeCraftModel.Actions(abilityRule, action))
+                        {
+                            BattleActionResult attempt = BattleActionModel.PlayCard(source, choice);
+                            if (attempt.Supported) actions.Add(new SupportedActionCandidate(choice, attempt));
+                            else if (attempt.Rejection == ActionRejection.Unsupported)
+                                unsupported.Add(new UnsupportedActionAttempt(choice, attempt.Reason ?? "Unsupported unit ability action."));
+                        }
                     }
                 }
             }

@@ -1013,6 +1013,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalSupportSpellsIds = OriginalSupportSpellsScenario.CardIds,
                 OriginalUnitAbilityId = OriginalUnitAbilityScenario.AbilityId,
                 OriginalUnitAbilityQueries = OriginalUnitAbilityScenario.Queries,
+                OriginalUnitAbilityDrafts = OriginalUnitAbilityScenario.Drafts,
                 OriginalRearrangeSpellsPrepared = OriginalRearrangeSpellsScenario.Prepared,
                 OriginalRearrangeSpellsIds = OriginalRearrangeSpellsScenario.CardIds,
                 OriginalMovementSpellsPrepared = OriginalMovementSpellsScenario.Prepared,

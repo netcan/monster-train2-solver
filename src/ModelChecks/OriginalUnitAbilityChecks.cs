@@ -16,6 +16,45 @@ internal static class OriginalUnitAbilityChecks
             CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == id);
             CardInstanceState card = before.Spawn.Train.Context!.CardRegistry.Single(card => card.InstanceId == action.CardInstanceId);
             Require(card.DataId == id && rule.Ability?.Kind == "Unit" && rule.ExternalInteractions.Count == 0, "Missing unchanged original unit skill.");
+            if (id == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6")
+            {
+                CombatContext old = before.Spawn.Train.Context!, next = after.Spawn.Train.Context!;
+                ElixirRecipe recipe = rule.Effects.Single().SpikeRecipe!;
+                ElixirDraftOptions expected = SpikeCraftModel.Draft(recipe, old.BattleRng);
+                CardToken token = next.Cards.Hand.Single(token => old.Cards.Hand.All(prior => prior.InstanceId != token.InstanceId));
+                CardInstanceState spike = next.CardRegistry.Single(value => value.InstanceId == token.InstanceId);
+                FixtureValue draft = root.GetProperty("OriginalUnitAbilityDrafts").EnumerateArray().Single();
+                Require(draft.GetProperty("Cards").EnumerateArray().Select(value => value.GetString()).SequenceEqual(new[] { token.DataId, token.DataId }) &&
+                    draft.GetProperty("Upgrades").EnumerateArray().Select(value => value.GetString()).SequenceEqual(expected.Offers.Select(offer => offer.Upgrade?.DataId ?? "")) &&
+                    expected.Offers.Select(offer => offer.Upgrade!.DataId).Distinct().Count() == 2 &&
+                    draft.GetProperty("Choice").GetInt32() == action.MixSelections.Single().ChoiceIndex &&
+                    spike.Permanent.Upgrades.Any(upgrade => upgrade.DataId == expected.Offers[action.MixSelections.Single().ChoiceIndex].Upgrade!.DataId) &&
+                    next.BattleRng.Equals(expected.Rng) && next.Cards.Rng.Equals(old.Cards.Rng),
+                    "Factory must offer the original spike with two distinct upgrades, copy the selected upgrade and advance only Battle RNG.");
+                count++; continue;
+            }
+            if (id == "f6fa19db-cad1-4104-91a7-48098daabe4f")
+            {
+                CombatContext old = before.Spawn.Train.Context!, next = after.Spawn.Train.Context!;
+                CardActionEffect effect = rule.Effects.Single();
+                var candidates = CardLastTurnCopyModel.EligibleCards(old, effect, out string? error);
+                Require(error == null && before.Spawn.Turn == 2 && candidates.Count == 1 &&
+                    old.CardRegistry.Single(value => value.InstanceId == candidates[0]).DataId == "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b",
+                    "Lunar Echo must select the original Torch from previous-turn hand plays, excluding the Junk energy control.");
+                CardToken token = next.Cards.Hand.Single(token => old.Cards.Hand.All(prior => prior.InstanceId != token.InstanceId));
+                CardInstanceState copied = next.CardRegistry.Single(value => value.InstanceId == token.InstanceId);
+                Require(copied.DataId == "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b" && effect.Upgrade != null &&
+                    copied.Temporary.Upgrades.Any(upgrade => upgrade.DataId == effect.Upgrade.DataId) &&
+                    next.Statistics!.HandCardsPlayedThisTurn!.SequenceEqual(old.Statistics!.HandCardsPlayedThisTurn!) &&
+                    next.Statistics.CardsPlayedThisTurn.Contains(action.CardInstanceId) &&
+                    !next.Statistics.HandCardsPlayedThisTurn.Contains(action.CardInstanceId) &&
+                    next.Cards.Rng.Equals(old.Cards.Rng.Range(0, 1).State) && next.BattleRng.Equals(old.BattleRng),
+                    "Lunar Echo must create an upgraded temporary copy using CardDraw RNG, without recording ability activation as a hand play.");
+                BattleTurnState first = root.GetProperty("Actions").EnumerateArray().First().GetProperty("Before").Deserialize<BattleTurnState>()!;
+                Require(CardLastTurnCopyModel.EligibleCards(first.Spawn.Train.Context!, effect, out error).Count == 0 && error == null,
+                    "Empty prior-turn history must provide no copy candidate.");
+                count++; continue;
+            }
             if (id == "f7126e4a-ef22-4621-b1f7-31a53e2e5870")
             {
                 CombatUnit actor = before.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == action.ActivatorUnitId);

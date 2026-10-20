@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddTempCardUpgradeToNextDrawnCard", "CardEffectAddTempCardUpgradeToUnits", "CardEffectRemoveTempUpgradeFromUnit",
             "CardEffectAddCardUpgradeToUnitsPerStatusEffect", "CardEffectAddTempSwapStats",
             "CardEffectAddTempCardUpgradeToCardsInHand", "CardEffectAddPermanentCardUpgradeToCardsInHand",
-            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectMix", "CardEffectMixRandom", "CardEffectUnboxSmallBoxUnitCard", "CardEffectReturnUnitToHand", "CardEffectReplayTrigger", "CardEffectMergeEquipment"
+            "CardEffectAddTempCardUpgradeToSpellsInDeck", "CardEffectAddUpgradedCopy", "CardEffectCreateCopyOfCardPlayedLastTurn", "CardEffectCraftSpike", "CardEffectMix", "CardEffectMixRandom", "CardEffectUnboxSmallBoxUnitCard", "CardEffectReturnUnitToHand", "CardEffectReplayTrigger", "CardEffectMergeEquipment"
         }, StringComparer.Ordinal);
         private readonly FullBattleTrace trace;
         private readonly UnitPlayModelProbe projection;
@@ -137,7 +137,8 @@ namespace MonsterTrain2Poju.Probe
                 CombatUnit[] spawned = new[] { rule.SpawnUnit, rule.Summon?.Additional?.Unit }
                     .Where(unit => unit != null).Cast<CombatUnit>()
                     .Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>()).ToArray();
-                foreach (string child in rule.Effects.Where(effect => effect.Generation != null).SelectMany(effect => effect.Generation!.Pool).Select(card => card.DataId)
+                foreach (string child in rule.Effects.Where(effect => effect.Generation != null && effect.Type != "CopyLastTurn").SelectMany(effect => effect.Generation!.Pool).Select(card => card.DataId)
+                    .Concat(rule.Effects.Where(effect => effect.SpikeRecipe != null).Select(effect => effect.SpikeRecipe!.Creation.DataId))
                     .Concat(rule.Effects.Where(effect => effect.EquipmentMerge != null).Select(effect => effect.EquipmentMerge!.Output.DataId))
                     .Concat(spawned.SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)))
                     pending.Enqueue(child);
@@ -371,11 +372,37 @@ namespace MonsterTrain2Poju.Probe
             return DescribeSpellEffect(source, effect, interactions, cardTrigger: true, captureBirthLifecycle: captureBirthLifecycle);
         }
 
+        private static CardCreationRule CopyCreation(CardData data)
+        {
+            try { return CardGenerationProbe.Creation(data); }
+            catch (InvalidOperationException failure)
+            {
+                // A guarded source template must reject only if it is selected;
+                // unrelated candidates must not prevent copying a supported card.
+                return new CardCreationRule(data.GetID(), CardModifiers.Empty(), null, new[] { failure.Message });
+            }
+        }
         private static CardActionEffect DescribeSpellEffect(CardData? data, CardEffectData effect, List<string> interactions,
             bool cardTrigger = false, bool captureBirthLifecycle = false)
         {
             if (AbilityLifecycleProbe.Known(effect.GetEffectStateName())) return AbilityLifecycleProbe.Describe(effect);
             if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) return AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool());
+            if (effect.GetEffectStateName() == "CardEffectCraftSpike")
+            {
+                ElixirConfigurationData config = AllGameManagers.Instance!.GetAllGameData().GetBalanceData().GetSpikeConfigurationData();
+                if (effect.GetParamInt() != 1 || effect.GetAdditionalParamInt() != 2 || config.Elixirs.Count != 1)
+                    interactions.Add("Multistage or variable-offer spike crafting requires separate native calibration.");
+                CardUpgradeModifier? baseUpgrade = null;
+                if (config.Elixirs[0].BaseUpgrade != null)
+                {
+                    var state = new CardUpgradeState(); state.Setup(config.Elixirs[0].BaseUpgrade);
+                    baseUpgrade = CardModifierProbe.Upgrade(state);
+                }
+                return new CardActionEffect("CraftSpike", "None", effect.GetParamInt(), false, false, Array.Empty<CombatStatus>(),
+                    tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false),
+                    spikeRecipe: new ElixirRecipe(CardGenerationProbe.Creation(config.Elixirs[0].Elixir), baseUpgrade,
+                        config.Elixirs[0].Upgrades.Select(extra => { var state = new CardUpgradeState(); state.Setup(extra); return CardModifierProbe.Upgrade(state); }).ToArray()));
+            }
             if (effect.GetEffectStateName() == "CardEffectFeederRules" && effect.GetParamBool())
                 interactions.Add("Forced feeding with an overridden self feeder requires native calibration");
             if (effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")
@@ -430,6 +457,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectSacrificeOrFeed" ? "SacrificeOrFeed" :
                 effect.GetEffectStateName() == "CardEffectFreezeCard" ? "FreezeCard" :
                 effect.GetEffectStateName() == "CardEffectFreezeAllCards" ? "FreezeAllCards" :
+                effect.GetEffectStateName() == "CardEffectCreateCopyOfCardPlayedLastTurn" ? "CopyLastTurn" :
                 effect.GetEffectStateName() == "CardEffectDuplicateCardInHand" ? "DuplicateCard" :
                 effect.GetEffectStateName() == "CardEffectReturnUnitToHand" ? "ReturnUnit" :
                 effect.GetEffectStateName() == "CardEffectReplayTrigger" ? "ReplayTrigger" :
@@ -500,6 +528,21 @@ namespace MonsterTrain2Poju.Probe
             CardUpgradeModifier? upgrade = type == "DrawNextTurn" ? BonusDrawProbe.Upgrade(effect) : null;
             IReadOnlyList<CardUpgradeMaskRule> upgradeFilters = Array.Empty<CardUpgradeMaskRule>();
             CardGenerationRule? generation = null;
+            if (type == "CopyLastTurn")
+            {
+                if (effect.GetParamCardUpgradeData() != null)
+                {
+                    CardUpgradeData extra = effect.GetParamCardUpgradeData();
+                    var extraState = new CardUpgradeState(); extraState.Setup(extra);
+                    upgrade = CardModifierProbe.Upgrade(extraState, false, filtersAlreadyApplied: true);
+                    upgradeFilters = extra.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
+                }
+                // Preserve original definition templates; selection uses the live,
+                // ordered CardManager history rather than this template pool.
+                generation = new CardGenerationRule("HandPile", 1, AllGameManagers.Instance!.GetAllGameData().GetAllCardData()
+                    .Where(card => card.GetCardType() == CardType.Spell).GroupBy(card => card.GetID()).Select(group => CopyCreation(group.First())).ToArray(),
+                    deterministicPoolSelection: true);
+            }
             if (upgradedCopy)
             {
                 CardUpgradeData? copyUpgradeData = effect.GetParamCardUpgradeData();
@@ -596,7 +639,7 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
                     excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()),
                 type == "Generate" ? CardGenerationProbe.Definition(effect) : generation, type == "AdjustCapacity" && effect.GetParamBool(),
-                cardFilter: (type == "DuplicateCard" || type == "FreezeAllCards") && effect.GetParamCardFilter() != null ? CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter()) : null,
+                cardFilter: (type == "DuplicateCard" || type == "FreezeAllCards" || type == "CopyLastTurn") && effect.GetParamCardFilter() != null ? CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter()) : null,
                 copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,
                 scaleUpgrade: scaleUpgrade, doNotFullyRemove: type == "SacrificeOrFeed" ? false : type == "Sacrifice" ? effect.GetParamBool() : (bool?)null,
                 targetSubtype: type == "DamageByUnitsKilled" ? effect.GetParamStr() :

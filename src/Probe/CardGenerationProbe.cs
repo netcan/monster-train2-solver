@@ -131,6 +131,8 @@ namespace MonsterTrain2Poju.Probe
                 CardBranchMaskProbe.Enabled && data.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")
                     ? Array.Empty<BoxedCardState>() : null);
             CardMaskDescriptor? descriptor = CardBranchMaskProbe.Creation(data, instance.CanScaleWithMagicPower());
+            if (descriptor?.BaseTraits.Any(trait => trait.RuntimeType == CardMoonUpgradeModel.Trait) == true)
+                descriptor = descriptor.WithBaseTraits(CardTraitCompositionProbe.Bases(instance).Select(CardTraitCompositionProbe.Value).ToArray());
             int multiplier = CardMagicPowerModel.Multiplier(new CardInstanceState(0, data.GetID(), modifiers, modifiers, 0, 0, 0,
                 Array.Empty<string>(), maskDescriptor: descriptor));
             foreach (CardUpgradeData upgrade in data.GetUpgradeData())
