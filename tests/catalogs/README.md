@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-005147-47951643/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,379 bytes, 12,057 unique nodes,
-SHA-256 `4fc194208b9cf0ee553ad38db07af7249d2de7e25f3ca7b53bbf1f5de1b19816`.
-The latest refresh captures Total Recall's native pre-combat consumed-spell draw.
+Source: `.probe-runs/full-battle-no-cards-20261021-005739-ab0dffea/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,368 bytes, 12,065 unique nodes,
+SHA-256 `464182901437c816d1207789dc7850cdc3bf4966a287b2c200d6fb39a9d4ef6b`.
+The latest refresh captures Hall of Mirrors' native room birth-copy modifier.
+Only this projection changes after normalizing absent/null SpawnCopySubtype
+fields on existing room attachment descriptors; the other 667 are identical.
+The preceding refresh captures Total Recall's native pre-combat consumed-spell draw.
 Only this projection changes after normalizing absent/null ConsumedSpellDrawCount
 fields on existing pre-combat descriptors; the other 667 are identical.
 The preceding refresh captures Hellfurnace's native room Pyregel stack modifier.

@@ -38,6 +38,7 @@ namespace MonsterTrain2Poju.Probe
                 var characterUpgrades = new List<CardUpgradeModifier>();
                 var characterFilters = new List<CardUpgradeMaskRule>();
                 var statusStacks = new List<RoomStatusStackRule>();
+                string? spawnCopySubtype = null;
                 foreach (var (state, definition) in attachment.UpgradeStates)
                 {
                     RoomModifierData[] roomModifiers = definition.GetRoomModifierUpgrades().ToArray();
@@ -49,6 +50,8 @@ namespace MonsterTrain2Poju.Probe
                         modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").ToArray();
                     var interactions = new List<string>();
                     statusStacks.AddRange(RoomStatusStackProbe.Rules(roomModifiers, interactions) ?? System.Array.Empty<RoomStatusStackRule>());
+                    string? copiedSubtype = RoomSpawnCopyProbe.Rule(roomModifiers, interactions);
+                    if (copiedSubtype != null) { if (spawnCopySubtype != null) return null; spawnCopySubtype = copiedSubtype; }
                     CardUpgradeMaskRule[] filters = state.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
                     if (filters.Length > 0 && attachment.UpgradeStates.Count != 1) return null;
                     characterFilters.AddRange(filters);
@@ -58,7 +61,7 @@ namespace MonsterTrain2Poju.Probe
                     if (post != null) { if (postCombat != null || attachment.UpgradeStates.Count != 1) return null; postCombat = post; }
                     RoomPreCombatRule? pre = RoomPreCombatProbe.Rule(definition, interactions);
                     if (pre != null) { if (preCombat != null || attachment.UpgradeStates.Count != 1) return null; preCombat = pre; }
-                    bool supported = interactions.Count == 0 && (phase != null || post != null || pre != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length + energyModifiers.Length + roomModifiers.Count(RoomStatusStackProbe.Known)) &&
+                    bool supported = interactions.Count == 0 && (phase != null || post != null || pre != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length + energyModifiers.Length + roomModifiers.Count(RoomStatusStackProbe.Known) + roomModifiers.Count(RoomSpawnCopyProbe.Known)) &&
                         capacityModifiers.Length <= 1 && spellCostModifiers.Length <= 1 && energyModifiers.Length <= 1 && energyModifiers.All(modifier => modifier.GetParamInt() == 1) &&
                         state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
                         (state.GetAdditionalUnhealedHP() == 0 || attachment.CardState?.GetCardDataID() == "57921ae8-ca98-4a3b-a659-5e741d2e904a" && state.GetAdditionalUnhealedHP() == 20) && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
@@ -85,7 +88,7 @@ namespace MonsterTrain2Poju.Probe
                     attachment.CardState == null ? attachment.Guid : RoomAttachmentTriggerIdentity.Known(dataId) ? FullBattleTrace.Active!.UpgradeKey(attachment.Guid) : "", spellCostDelta, moon,
                     attachment.UpgradeStates.SelectMany(item => item.Item2.GetRoomModifierUpgrades())
                         .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").Sum(modifier => modifier.GetParamInt()), characterFilters, postCombat, preCombat,
-                        statusStacks.Count == 0 ? null : statusStacks));
+                        statusStacks.Count == 0 ? null : statusStacks, spawnCopySubtype));
             }
             return result.ToArray();
         }

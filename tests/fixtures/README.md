@@ -9853,3 +9853,20 @@ DEPTH-PASS, settled wins and zero failure counters. Six/five-play, five-EndTurn
 chains pass sixteen immutable branches and bounded 128-state searches with
 zero unsupported attempts and equal serial/parallel results. Other draw counts
 remain guarded.
+
+`full-battle-original-isolated-hall-of-mirrors.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-010650-8bbdde92`.
+Unchanged Hall of Mirrors copies an unchanged paid Dreg on its own floor.
+The clone receives an independent detached source card, native clone/cardless
+markers, copied stats/statuses and the room's character upgrade. Other floors
+retain their units. Clones skip the duplicating callback, preventing recursion.
+`full-battle-original-isolated-hall-of-mirrors-replacement.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-010232-bae915d7`.
+Replacing Hall with original Fight Club removes copying: one paid Dreg is born
+and no detached source card is allocated. Both captures have DEPTH-PASS,
+settled wins and zero failure counters. Six/seven-play, five-EndTurn chains
+pass sixteen immutable branches and bounded 128-state searches with zero
+unsupported attempts and equal serial/parallel results. The affected existing
+unit-copy fixture and Weapons Cache birth fixture also pass their focused
+checks. Generated, triggered and repeated births into a duplicating room
+remain guarded pending calibration of their birth phases.

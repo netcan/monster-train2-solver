@@ -81,6 +81,8 @@ namespace MonsterTrain2Poju.Model
         {
             CombatContext? context = source.Context;
             CombatUnit? raw = definition.SpawnUnit;
+            if (!isClone && RoomSpawnCopyModel.Active(context, source.RoomIndex))
+                return Unsupported("Room spawn copying on generated/triggered births requires its native phase integration.");
             CardInstanceState? card = context?.FindCard(spawnerCardId);
             if (context == null || raw == null || raw.IsPyre || raw.Size < 0 || spawnerCardId < 0 ||
                 spawnerCardId > 0 && card == null || isCardless && (cardlessStatus?.Id != "cardless" || cardlessStatus.Stacks != 1))

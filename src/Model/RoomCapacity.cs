@@ -22,12 +22,13 @@ namespace MonsterTrain2Poju.Model
         public RoomPostCombatRule? PostCombat { get; }
         public RoomPreCombatRule? PreCombat { get; }
         public IReadOnlyList<RoomStatusStackRule>? StatusStackBonuses { get; }
+        public string? SpawnCopySubtype { get; }
         public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
             IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
             bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "", int spellCostDelta = 0,
             RoomMoonPhaseRule? moonPhase = null, int energyPerTurnDelta = 0, IReadOnlyList<CardUpgradeMaskRule>? characterFilters = null,
             RoomPostCombatRule? postCombat = null, RoomPreCombatRule? preCombat = null,
-            IReadOnlyList<RoomStatusStackRule>? statusStackBonuses = null)
+            IReadOnlyList<RoomStatusStackRule>? statusStackBonuses = null, string? spawnCopySubtype = null)
         {
             DataId = dataId; AssetKey = assetKey; AttachmentId = attachmentId; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
             CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
@@ -37,6 +38,7 @@ namespace MonsterTrain2Poju.Model
             PostCombat = postCombat;
             PreCombat = preCombat;
             StatusStackBonuses = statusStackBonuses == null ? null : Array.AsReadOnly(statusStackBonuses.ToArray());
+            SpawnCopySubtype = spawnCopySubtype;
         }
     }
 
@@ -104,6 +106,7 @@ namespace MonsterTrain2Poju.Model
                     attachment.EnergyPerTurnDelta != 0 && attachment.EnergyPerTurnDelta != 1 ||
                     ValidateCharacterFilters(attachment.CharacterFilters) != null ||
                     attachment.StatusStackBonuses?.Any(rule => rule.StatusId != "pyregel" || rule.Amount != 3) == true ||
+                    attachment.SpawnCopySubtype is not (null or "") ||
                     attachment.MoonPhase != null && RoomMoonPhaseModel.Validate(attachment.MoonPhase) != null ||
                     attachment.PostCombat != null && (attachment.MoonPhase != null || RoomPostCombatModel.Validate(attachment.PostCombat) != null) ||
                     attachment.PreCombat != null && (attachment.MoonPhase != null || attachment.PostCombat != null || RoomPreCombatModel.Validate(attachment.PreCombat) != null) ||

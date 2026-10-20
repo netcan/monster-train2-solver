@@ -434,7 +434,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 string id = card.GetCardDataID();
                 if (!checkedCopyCardIds.Add(id)) continue;
-                if (data.FindCardData(id)?.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectCopyUnits") == true)
+                if (data.FindCardData(id)?.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectCopyUnits" ||
+                    effect.GetParamCardUpgradeData()?.GetRoomModifierUpgrades().Any(RoomSpawnCopyProbe.Known) == true) == true)
                 {
                     copyCardlessStatusRequired = true;
                     break;

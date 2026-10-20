@@ -617,6 +617,8 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatResult spawnTriggers;
                 if (rule.Summon != null)
                 {
+                    if (RoomSpawnCopyModel.Active(context, target.RoomIndex))
+                        return Unsupported("Room spawn copies of repeated/pool summons require their native birth-phase integration.");
                     UnitBirthResult summoned = UnitSummonModel.Apply(target, originalRule!, card.InstanceId, position, targetRule.PlayerSlots);
                     if (!summoned.Supported) return Unsupported(summoned.Result.UnsupportedReason!);
                     spawnedId = summoned.UnitId; spawnTriggers = summoned.Result;
@@ -691,6 +693,17 @@ namespace MonsterTrain2Poju.Model
                         startingApplications: initialStatuses, enqueue: null, moonPhase: AdvanceFromSpawn, relicBirthEffect: ApplySummonDamage,
                         relicCharacterEffect: ApplyCharacterRelics);
                     if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
+                    if (RoomSpawnCopyModel.Active(spawnTriggers.State!.Context, target.RoomIndex))
+                    {
+                        var copyFrame = new TrainCombatState(train.Rooms.Select(room => room.RoomIndex == target.RoomIndex ? spawnTriggers.State! :
+                            room.WithContext(spawnTriggers.State!.Context)).ToArray(), train.Movement, train.EnemySlotsPerRoom, spawnTriggers.State!.Context);
+                        UnitCloneResult copiedBirth = RoomSpawnCopyModel.PaidBirth(copyFrame, spawned.Id, source.PlayRules.UnitCopyCatalog);
+                        if (!copiedBirth.Supported) return Unsupported(copiedBirth.UnsupportedReason!);
+                        train = copiedBirth.State!;
+                        spawnTriggers = new RoomCombatResult(train.Rooms.Single(room => room.RoomIndex == target.RoomIndex),
+                            copiedBirth.Outcome == RoomOutcome.Exchanged ? spawnTriggers.Outcome : copiedBirth.Outcome,
+                            0, spawnTriggers.Events.Concat(copiedBirth.Events).ToList());
+                    }
                     // Ordinary paid births have the same player-wide enchant phase
                     // as repeated and cloned births, before the post-play Rally.
                     var enchantQueue = spawnTriggers.State!.Units.Where(unit => unit.Team == CombatTeam.Player)

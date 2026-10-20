@@ -790,6 +790,11 @@ namespace MonsterTrain2Poju.Model
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == unitId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing birth actor.");
+            RoomCombatState? synchronized = RoomAttachmentUnitModel.ApplyToNewCharacter(state, unitId, out error);
+            if (error != null || synchronized == null)
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                    error ?? "Room attachment birth synchronization failed.");
+            state = synchronized;
             var callbacks = new List<QueuedCharacterTrigger>();
             if (state.Context?.QueryFrame?.MoonPhase is int moon && (moon == 1 || moon == 2))
                 callbacks.Add(new QueuedCharacterTrigger(state.RoomIndex, state.Units.Single(unit => unit.Id == unitId), moon == 1 ? "OnMoonShade" : "OnMoonLit"));
