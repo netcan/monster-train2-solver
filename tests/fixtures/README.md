@@ -8808,3 +8808,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-luna-coven-champ1.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-luna-coven-champ1.mt2f
 ```
+
+### Original Luna Coven Champion 2
+
+`full-battle-original-isolated-luna-coven-champ2.mt2f` plays the unchanged
+zero-cost 10/10 size-2 Luna Coven Champion 2 with Mageblade 2 (parameter 1).
+It has no unit ability; its captured `CardEffectNULL` OnSpawn remains inactive
+in four later snapshots. This covers direct play and birth only, not moon-phase
+interactions. The Instant battle won with zero capture failures, mismatches,
+unsupported transitions or pending records. Focused replay and bounded
+serial/parallel search agree at 128 states, with three replayed steps; archive
+metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 63eba1e1-3118-44a3-8906-c8bfbe559667
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-luna-coven-champ2.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-luna-coven-champ2.mt2f
+```
