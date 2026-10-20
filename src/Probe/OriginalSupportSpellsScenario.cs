@@ -122,6 +122,12 @@ namespace MonsterTrain2Poju.Probe
                 else if (source.Spawn.Train.Context.FindCard(ids[index])!.DataId != RoomEchoProbe.CardId)
                     candidates = candidates.Where(action => source.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy));
             }
+            if (index >= 4 && IsolatedIds.Contains(JackInTheBoxProbe.CardId))
+            {
+                candidates = candidates.Where(action => action.RoomIndex == 0);
+                if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == JackInTheBoxProbe.CardId)
+                    candidates = candidates.Where(action => action.PlayerPosition == 1);
+            }
             if (index >= 4 && IsolatedIds.Contains(TroopAuraProbe.CardId))
             {
                 candidates = candidates.Where(action => action.RoomIndex == 0);
@@ -302,6 +308,7 @@ namespace MonsterTrain2Poju.Probe
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
                 .Concat(spellIds.Select(Add)).ToArray();
+            JackInTheBoxProbe.Prepare(managers, created, spellIds);
             if (spellIds.Contains("37eaa51b-62cf-4cbc-971f-6d208fd07366"))
                 foreach (string treasure in spellIds.Where(id => all.FindCardData(id)!.GetTraits()
                     .Any(trait => trait.GetTraitStateName() == IndirectSpellModel.TreasureTrait)))

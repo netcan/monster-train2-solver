@@ -1102,6 +1102,13 @@ namespace MonsterTrain2Poju.Model
                             if (summonError != null) return summonError;
                             continue;
                         }
+                        if (effect.Type == "CardEffectUnboxJackInTheBoxUnitCard")
+                        {
+                            if (state.Context?.SummonCatalog == null || state.Context.SpawnPoints == null ||
+                                unit.SpawnerCardId > 0 && state.Context.FindCard(unit.SpawnerCardId)?.Permanent.BoxedCards == null)
+                                return "Jack-in-the-Box requires captured boxed templates, summon definitions and physical slots.";
+                            continue;
+                        }
                         if (effect.Type == "CardEffectSpawnMonsterOrAddStatusEffect")
                         {
                             CardActionEffect? action = effect.Action;
@@ -3455,7 +3462,8 @@ namespace MonsterTrain2Poju.Model
                         // when these trigger effects are bound to equipment.
                         int cacheCardId = unit.Source.SpawnerCardId;
                         CardInstanceState? cacheCard = context?.FindCard(cacheCardId);
-                        if (cacheCard?.PlayedRoomUnitIds != null)
+                        if (cacheCard?.PlayedRoomUnitIds != null && (!source.Preview ||
+                            effects.Any(effect => effect.Type != "CardEffectUnboxJackInTheBoxUnitCard")))
                             context = context!.WithCard(cacheCard.WithPlayedRoomUnits(units.Where(item => item.Alive && item.InRoom && item.Source.IsSpawning != true)
                                 .Select(item => item.Source.Id).ToArray()));
 
@@ -3465,7 +3473,13 @@ namespace MonsterTrain2Poju.Model
                             if (live >= 0) retained = unit.Triggers[live];
                             effects = retained.Effects.ToArray();
                             CombatEffect effect = effects[effectIndex];
-                            if (effect.Enchantment != null)
+                            if (effect.Type == "CardEffectUnboxJackInTheBoxUnitCard")
+                            {
+                                if (source.Preview) continue;
+                                if (!ApplyJackInTheBox(unit, effect, out IReadOnlyList<int>? remaining)) break;
+                                if (remaining != null) { effects[effectIndex] = effect.WithBoxedPool(remaining); Store(retained.Fired(effects)); }
+                            }
+                            else if (effect.Enchantment != null)
                             {
                                 if (!UpdateEnchantmentEffect(unit.Source.Id, live >= 0 ? live : index, effectIndex)) break;
                             }
@@ -3848,6 +3862,52 @@ namespace MonsterTrain2Poju.Model
                 if (result.Outcome == RoomOutcome.BattleWon) battleWon = true;
                 OrderPhysicalUnits();
             }
+            private bool ApplyJackInTheBox(WorkingUnit actor, CombatEffect effect, out IReadOnlyList<int>? remaining)
+            {
+                remaining = effect.BoxedPool;
+                if (remaining?.Count == 0) return true;
+                IReadOnlyList<BoxedCardState> boxed = context!.FindCard(actor.Source.SpawnerCardId)!.Permanent.BoxedCards!;
+                if (remaining == null)
+                {
+                    ShuffleResult<int> shuffled = context.BattleRng.Shuffle(Enumerable.Range(0, boxed.Count).ToArray());
+                    context = context.WithBattleRng(shuffled.State);
+                    remaining = shuffled.Items.Where(index => context.SummonCatalog!.Cards.Any(card =>
+                        card.Creation.DataId == boxed[index].Creation.DataId && card.SpawnCharacterId.Length > 0)).ToArray();
+                }
+                if (!actor.InRoom || actor.Removed) return true;
+                if (context.QueryFrame?.SelectedRoomIndex != null)
+                    context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
+                if (!SummonPhysical("Compact")) return false;
+                SpawnPointGroupState group = context.SpawnPoints!.SelectedGroup(source.RoomIndex, CombatTeam.Player)!;
+                int at = group.Occupants.ToList().IndexOf(actor.Source.Id);
+                if (at < 0 || group.Occupants.Take(group.GroupCount).Count(id => id != 0) >= group.GroupCount || remaining.Count == 0) return true;
+                RngDraw draw = context.BattleRng.Range(0, remaining.Count);
+                context = context.WithBattleRng(draw.State);
+                BoxedCardState selected = boxed[remaining[draw.Value]];
+                remaining = remaining.Where((_, index) => index != draw.Value).ToArray();
+                if (selected.Permanent.BoxedCards?.Count > 0 || selected.Temporary.BoxedCards?.Count > 0 ||
+                    selected.Creation.MaskDescriptor?.Definition.MainEffectNames.Contains("CardEffectReplayTrigger") == true ||
+                    context.Relics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0 ||
+                        relic.CardAttackModifiers?.Count > 0 || relic.MagicPowerModifiers?.Count > 0 || relic.CardTypeCosts?.Count > 0) == true)
+                { unsupportedReason = "Nested Jack boxes or unboxed-card relic upgrades need native calibration."; return false; }
+                CardGenerationResult created = CardGenerationModel.CreateDetached(context, selected.Creation);
+                if (!created.Supported) { unsupportedReason = created.UnsupportedReason; return false; }
+                context = created.Context!;
+                int cardId = created.AddedCards.Single().InstanceId;
+                context = context.WithCard(context.FindCard(cardId)!.WithModifiers(selected.Permanent, selected.Temporary));
+                SummonCardDefinition definition = context.SummonCatalog!.Cards.First(card => card.Creation.DataId == selected.Creation.DataId);
+                SummonUnitDefinition unit = context.SummonCatalog.Units.First(item => item.CharacterId == definition.SpawnCharacterId);
+                var birthRule = new CardPlayRule(selected.Creation.DataId, unit.Unit.AssetKey, 0, "SpawnMonster", "Standby", unit.Unit, unit.ExternalInteractions);
+                var callbacks = new List<QueuedCharacterTrigger>();
+                UnitBirthResult born = UnitBirthModel.SpawnQueued(CurrentRoom(), birthRule, cardId, at, true,
+                    context.StatusRules.First(status => status.Id == "cardless"), callbacks.Add,
+                    units.Select(item => item.Freeze()).ToArray());
+                if (!born.Supported) { unsupportedReason = born.Result.UnsupportedReason; return false; }
+                MergeSummon(born.Result);
+                foreach (var callback in callbacks) QueueCallback(callback);
+                return true;
+            }
+
             private bool ApplyTriggeredSummon(WorkingUnit actor, TriggeredSummonRule rule, out int firstId)
             {
                 firstId = 0;
@@ -4112,10 +4172,16 @@ namespace MonsterTrain2Poju.Model
 
             private bool ActionTriggerPassesTest(WorkingUnit actor, CombatTrigger trigger, int lastSpawnedOverrideUnitId)
             {
-                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null || effect.Action != null || effect.Summon != null || effect.Enchantment != null)) return true;
+                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null || effect.Action != null || effect.Summon != null || effect.Enchantment != null ||
+                    effect.Type == "CardEffectUnboxJackInTheBoxUnitCard")) return true;
                 bool passed = trigger.Effects.Count == 0;
                 foreach (CombatEffect effect in trigger.Effects)
                 {
+                    if (effect.Type == "CardEffectUnboxJackInTheBoxUnitCard")
+                    {
+                        passed |= !source.Preview && context?.AllScenarioBossesDead != true && effect.BoxedPool?.Count != 0;
+                        continue;
+                    }
                     if (effect.Enchantment != null)
                     {
                         // Native Enchant auras bind during initialization. An

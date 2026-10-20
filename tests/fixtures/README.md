@@ -9936,6 +9936,23 @@ pre-existing discrepancy is not covered by the room-skill acceptance. Attachment
 corruption with unit/relic CorruptionAdded callbacks remains explicitly guarded.
 The other two room skills have separate positive movement witnesses below.
 
+`full-battle-original-isolated-jack-in-the-box.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-044856-d24d770f`;
+its `-empty` control comes from `045149-e9c30720`. The unchanged original box
+contains two saved original Train Steward Spear cards with distinct permanent
+attack upgrades (three/seven) and fifty health, plus an original Torch.
+PostCombat shuffles the entire saved list before filtering nonunits, then
+randomly removes one unit per activation. Both children retain separate
+nonowned source-card identities, upgrades and Cardless. Only player spawn
+points compact before birth. Preview execution and exhausted pools leave the
+box's played-room cache untouched. The independent empty box initializes its
+empty pool without creating a child; repeated exhausted controls cannot unbox
+again. Both native battles have settled wins and zero failure counters. Five
+and six plays plus five EndTurns pass sixteen immutable replay branches each;
+both 128-state searches have zero unsupported attempts and equal
+serial/parallel best. Nested boxes, unboxed replay-trigger cards and relic
+card-upgrade composition remain explicit calibration boundaries.
+
 `full-battle-original-isolated-squad-leader.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-043517-8a032666`.
 Unchanged Squad Leader grants two attack upgrades per Horde stack and one

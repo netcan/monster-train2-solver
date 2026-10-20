@@ -204,10 +204,13 @@ namespace MonsterTrain2Poju.Model
         public TriggeredStatusScaling? StatusScaling { get; }
         public TriggeredSummonRule? Summon { get; }
         public EnchantmentRule? Enchantment { get; }
+        // Null is an uninitialized native Jack-in-the-Box pool; empty is exhausted.
+        public IReadOnlyList<int>? BoxedPool { get; }
         public CombatEffect(string type, int value, int counter, string destination, int count,
             IReadOnlyList<string> cardPool, bool skipDuplicateInHand, CardGenerationRule? generation = null,
             CardActionEffect? unitUpgrade = null, CardActionEffect? action = null, string? damageStatusMultiplier = null,
-            TriggeredStatusScaling? statusScaling = null, TriggeredSummonRule? summon = null, EnchantmentRule? enchantment = null)
+            TriggeredStatusScaling? statusScaling = null, TriggeredSummonRule? summon = null, EnchantmentRule? enchantment = null,
+            IReadOnlyList<int>? boxedPool = null)
         {
             Type = type; Value = value;
             // Every remaining count <= 1 despawns on the next application. Native UI previews can
@@ -217,14 +220,16 @@ namespace MonsterTrain2Poju.Model
             Destination = type is "CardEffectAddBattleCard" or "CardEffectAddRunCard" ? destination : ""; Count = count;
             CardPool = Array.AsReadOnly(cardPool.ToArray()); SkipDuplicateInHand = skipDuplicateInHand;
             Generation = generation; UnitUpgrade = unitUpgrade; Action = action; DamageStatusMultiplier = damageStatusMultiplier; StatusScaling = statusScaling; Summon = summon;
-            Enchantment = enchantment;
+            Enchantment = enchantment; BoxedPool = boxedPool == null ? null : Array.AsReadOnly(boxedPool.ToArray());
         }
         internal CombatEffect WithCounter(int counter) => new CombatEffect(Type, Value, counter,
-            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
+            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling, Summon, Enchantment, BoxedPool);
         internal CombatEffect WithSummon(TriggeredSummonRule summon) => new CombatEffect(Type, Value, Counter,
-            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling, summon, Enchantment);
+            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling, summon, Enchantment, BoxedPool);
         internal CombatEffect WithEnchantment(EnchantmentRule enchantment) => new CombatEffect(Type, Value, Counter,
-            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling, Summon, enchantment);
+            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling, Summon, enchantment, BoxedPool);
+        internal CombatEffect WithBoxedPool(IReadOnlyList<int> pool) => new CombatEffect(Type, Value, Counter,
+            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling, Summon, Enchantment, pool);
         internal CombatEffect WithActionValue(int value) => new CombatEffect(Type, value, Counter, Destination, Count,
             CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action == null ? null : new CardActionEffect(Action.Type,
                 Action.Target, value, Action.AllowEnemy, Action.AllowPlayer, Action.Statuses, Action.Upgrade, Action.Lifetime,
@@ -237,7 +242,7 @@ namespace MonsterTrain2Poju.Model
                 damagePerHpIncludeArmor: Action.DamagePerHpIncludeArmor,
                 roomAttachment: Action.RoomAttachment, recursion: Action.Recursion, overheal: Action.Overheal,
                 corruptionAdd: Action.CorruptionAdd, chooseDiscard: Action.ChooseDiscard,
-                transferAttackMultiplier: Action.TransferAttackMultiplier), DamageStatusMultiplier, StatusScaling, Summon, Enchantment);
+                transferAttackMultiplier: Action.TransferAttackMultiplier), DamageStatusMultiplier, StatusScaling, Summon, Enchantment, BoxedPool);
     }
 
     public sealed class CombatTriggerOrigin

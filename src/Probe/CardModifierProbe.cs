@@ -35,8 +35,8 @@ namespace MonsterTrain2Poju.Probe
                     card.IsNonPlayableEnergyCostType() != (data.GetCostType() == CardData.CostType.NonPlayable)) interactions.Add("Changed card cost type");
                 int rawCost = (int)AccessTools.Field(typeof(CardState), "cost").GetValue(card);
                 var state = new CardInstanceState(cardId(card), card.GetCardDataID(),
-                    Modifiers(card.GetCardStateModifiers(), CardBranchMaskProbe.Enabled && data.GetEffects().Any(effect =>
-                        effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard"), captureGraft: UnitGraftProbe.Known(data.GetID())), Modifiers(card.GetTemporaryCardStateModifiers()),
+                    Modifiers(card.GetCardStateModifiers(), CardBranchMaskProbe.Enabled && (data.GetID() == JackInTheBoxProbe.CardId || data.GetEffects().Any(effect =>
+                        effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")), captureGraft: UnitGraftProbe.Known(data.GetID())), Modifiers(card.GetTemporaryCardStateModifiers()),
                     card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions,
                     Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card), RoomCapacityProbe.Traits(card),
                     FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card), RawPlayedRoomUnits(card),
