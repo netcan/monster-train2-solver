@@ -5,6 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class OriginalSupportUnitsChecks
 {
     private const string AstrologerId = "4b50aa70-8918-40f0-8efd-c66ce78bbf52";
+    private const string BloatedWhelpId = "32dad9d3-f839-4077-8f73-9837d398df7b";
     private const string SnottyWhelpId = "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16";
     private const string BlightedTotemId = "21ad4f07-1568-4461-8be4-6fb2670bd90d";
     private const string ProsperityTotemId = "21567cc4-f684-48db-b377-b8289729dedc";
@@ -585,8 +586,13 @@ internal static class OriginalSupportUnitsChecks
                 upgrade.Upgrade.Stats.Damage == 5 && phaseAttacks.SequenceEqual([10, 15, 20, 20]) && phaseCallbacksFired,
                 "Astrologer must retain its native 1-cost 5/10 size-2 birth and three positive +5 Attack OnMoonPhaseShift callbacks followed by a no-shift control.");
         }
-        if (expectedId == SnottyWhelpId)
+        if (expectedId is SnottyWhelpId or BloatedWhelpId)
         {
+            bool bloated = expectedId == BloatedWhelpId;
+            string expectedCard = bloated ? "BloatedWhelp" : "SnottyWhelp";
+            string expectedUnit = bloated ? "MonsterBloatedWhelp" : "MonsterSneezyWhelp";
+            string expectedAbility = bloated ? "46ffe4e9-eb1e-417b-a37a-70d343706bdb" : "f3c7769a-4f9b-43cf-aacd-cf32c14e3082";
+            int expectedCooldown = bloated ? 1 : 2;
             CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
             CombatTrigger spawnedOnSpawn = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
             CombatEffect availableEffect = onSpawn.Effects.Single(effect => effect.Action?.Type == "AddStatus");
@@ -596,18 +602,20 @@ internal static class OriginalSupportUnitsChecks
                 .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
                 .Where(unit => unit != null).Select(unit => unit!).ToArray();
-            Require(rule.AssetKey == "SnottyWhelp" && template.AssetKey == "MonsterSneezyWhelp" && rule.Cost == 1 &&
+            Require(rule.AssetKey == expectedCard && template.AssetKey == expectedUnit && rule.Cost == 1 &&
                 template.Modifiers!.AttackDamage == 4 && template.Health == 1 && template.MaxHealth == 1 && template.Size == 1 &&
                 template.Subtypes.SequenceEqual(["SubtypesData_Whelp"]) && template.Status("unit_ability")?.Stacks == 1 &&
                 !onSpawn.Once && onSpawn.IgnoreSilence && onSpawn.Effects.Count == 2 && spawnedOnSpawn.HasTriggered &&
                 availableEffect.Action is { Target: "Self" } && availableEffect.Action.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
                 resetEffect.Type == "CardEffectResetCooldown" && resetEffect.Action is { Target: "Self" } &&
                 spawnedUnit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
-                spawnedUnit.Ability is { DataId: "f3c7769a-4f9b-43cf-aacd-cf32c14e3082", Cooldown: 2, HasAbility: true } &&
-                unitTurns.Length == 4 && unitTurns.All(unit => unit.Ability is { Cooldown: 2, HasAbility: true } &&
+                template.Ability is { DataId: var abilityId, HasAbility: true } && abilityId == expectedAbility && template.Ability.Cooldown == expectedCooldown &&
+                spawnedUnit.Ability is { DataId: var liveAbilityId, HasAbility: true } && liveAbilityId == expectedAbility && spawnedUnit.Ability.Cooldown == expectedCooldown &&
+                unitTurns.Length == 4 && unitTurns.All(unit => unit.Ability is { HasAbility: true } && unit.Ability.DataId == expectedAbility &&
+                    unit.Ability.Cooldown == expectedCooldown &&
                     unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
                     !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
-                "Snotty Whelp must preserve its native 1-cost 4/1 Whelp birth, fire OnSpawn to expose its cooldown-2 ability, and leave that ability unused in the captured turns.");
+                expectedCard + " must preserve its native 1-cost 4/1 Whelp birth, fire OnSpawn to expose its cooldown-" + expectedCooldown + " ability, and leave that ability unused in the captured turns.");
         }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
@@ -642,6 +650,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-ASTROLOGER PASS: original 1-cost 5/10 size-2 birth and three native +5 Attack OnMoonPhaseShift upgrades, then a no-shift control.");
         else if (expectedId == SnottyWhelpId)
             Console.WriteLine("ORIGINAL-SNOTTY-WHELP PASS: original 1-cost 4/1 Whelp birth; native OnSpawn grants ability availability and resets cooldown, while its cooldown-2 ability remains unused.");
+        else if (expectedId == BloatedWhelpId)
+            Console.WriteLine("ORIGINAL-BLOATED-WHELP PASS: original 1-cost 4/1 Whelp birth; native OnSpawn grants ability availability and resets cooldown, while its cooldown-1 ability remains unused.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
