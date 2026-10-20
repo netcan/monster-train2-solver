@@ -24,7 +24,8 @@ namespace MonsterTrain2Poju.Model
             BattlePlayRules? definitions, IReadOnlyList<CardPileState>? otherPiles = null,
             IReadOnlyList<int>? pendingExhaustedCards = null, bool exhaustionRunsTriggerQueue = false,
             IReadOnlyList<int>? selectedCardIds = null, string? effectCounterType = "CardEffectDiscardHand",
-            bool triggeredByCard = true, bool placement = false, bool preview = false)
+            bool triggeredByCard = true, bool placement = false, bool preview = false,
+            Func<CombatContext, HandRemovalResult>? onExhausted = null)
         {
             if (source.Cards.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.Cards.ExternalInteractions));
             CardToken[] handTargets = mode == 0 || mode == 1
@@ -80,6 +81,7 @@ namespace MonsterTrain2Poju.Model
             }
             CombatContext context = piles == null ? source : source.WithOtherPiles(piles);
             var processing = new HashSet<int>();
+            string? callbackError = null;
             foreach (CardToken token in targets)
             {
                 CardCycleState cards = context.Cards;
@@ -109,6 +111,7 @@ namespace MonsterTrain2Poju.Model
                     if (instance != null) context = context.WithCard(instance.OnDiscard(false));
                     context = ConduitModel.Discarded(context, token.InstanceId);
                     CheckStandby(0);
+                    if (callbackError != null) return Unsupported(callbackError);
                 }
                 else
                 {
@@ -119,6 +122,7 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithStatistics(context.Statistics?.Increment(token.InstanceId, "TimesExhausted"));
                     CheckStandby(token.InstanceId);
                     RunTriggerQueue();
+                    if (callbackError != null) return Unsupported(callbackError);
                 }
             }
             int consumed = mode == 1 ? targets.Length : 0;
@@ -151,6 +155,12 @@ namespace MonsterTrain2Poju.Model
                 piles = piles.Select(pile => pile == exhausted ? CardPileModel.Add(CardPileModel.Remove(exhausted, card.InstanceId), card) : pile).ToArray();
                 context = context.WithStatistics(context.Statistics?.Increment(card.InstanceId, "TimesExhausted"));
                 // CardExhausted character callbacks drain deaths before this standby entry is removed.
+                if (onExhausted != null)
+                {
+                    HandRemovalResult fired = onExhausted(context.WithOtherPiles(piles));
+                    if (!fired.Supported) { callbackError = fired.UnsupportedReason; return; }
+                    context = fired.Context!; piles = fired.OtherPiles!.ToArray();
+                }
                 if (runQueue) RunTriggerQueue();
                 standby = piles.Single(pile => pile.Name == "Standby");
                 piles = piles.Select(pile => pile == standby ? CardPileModel.Remove(standby, card.InstanceId) : pile).ToArray();

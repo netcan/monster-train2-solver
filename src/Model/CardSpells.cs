@@ -1028,7 +1028,19 @@ namespace MonsterTrain2Poju.Model
                     bool runsQueue = state.Rooms.Single(room => room.RoomIndex == roomIndex).Units.Count > 0 || pendingDeadRooms.Values.Contains(roomIndex);
                     HandRemovalResult removed = HandRemovalModel.Apply(state.Context!, effect.Value, sourceCardId, index, definitions, piles,
                         pendingCards, runsQueue, triggeredByCard: true, placement: placement,
-                        preview: state.Context!.IsolatedBattlePreview == true);
+                        preview: state.Context!.IsolatedBattlePreview == true, onExhausted: exhaustedContext =>
+                        {
+                            state = WithContext(state, exhaustedContext);
+                            if (callbacks.Count > 0 && state.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CardExhausted")))
+                                return new HandRemovalResult(null, null, Array.Empty<CardToken>(), 0,
+                                    "Card exhaustion with preceding character callbacks requires native ordering calibration.");
+                            TrainCombatResult fired = CardPlayedTriggerModel.Exhausted(state, roomIndex);
+                            if (!fired.Supported) return new HandRemovalResult(null, null, Array.Empty<CardToken>(), 0, fired.UnsupportedReason);
+                            state = fired.State!;
+                            events.AddRange(fired.RoomResults.SelectMany(result => result.Events));
+                            if (fired.Outcome != RoomOutcome.Exchanged) outcome = fired.Outcome;
+                            return new HandRemovalResult(state.Context!, state.Context!.OtherPiles, Array.Empty<CardToken>(), 0);
+                        });
                     if (!removed.Supported) return UnsupportedTrain(removed.UnsupportedReason!);
                     piles = removed.OtherPiles?.ToArray();
                     state = WithContext(state, removed.Context!);

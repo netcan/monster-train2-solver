@@ -152,7 +152,8 @@ internal static class OriginalSupportSpellsChecks
             }
             Require(card.DataId == originals[i - 4] && rule.CardType is "Spell" or "Equipment" or "Monster" && rule.ExternalInteractions.Count == 0 &&
                 after.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == 1 &&
-                before.Energy >= after.Energy, "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
+                (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
+                "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
             if (rule.AssetKey == "IntentOnDeath")
             {
@@ -194,6 +195,35 @@ internal static class OriginalSupportSpellsChecks
                     after.Spawn.Train.Context.NextCardId - before.Spawn.Train.Context.NextCardId == 1 &&
                     after.Spawn.Train.Context.FindCard(generated.InstanceId)!.Temporary.Upgrades.Single().Stats.Damage == 20,
                     "Sacrificial Resurrection must consume both independent hand controls and generate one Draff with twenty temporary attack.");
+                foreach (RoomCombatState room in before.Spawn.Train.Rooms)
+                foreach (CombatUnit observer in room.Units.Where(unit => unit.Triggers.Any(trigger => trigger.Kind == "CardExhausted")))
+                {
+                    CombatUnit changed = after.Spawn.Train.Rooms[room.RoomIndex].Units.Single(unit => unit.Id == observer.Id);
+                    if (room.RoomIndex != action.RoomIndex)
+                    {
+                        Require(Json(observer) == Json(changed), "Card exhaustion must not dispatch to a unit outside the selected room.");
+                        continue;
+                    }
+                    if (observer.AssetKey == "MonsterFirstOfKin")
+                        Require(observer.Attack == 45 && changed.Attack == 75 && changed.Health == observer.Health &&
+                            changed.Triggers.Single(trigger => trigger.Kind == "CardExhausted").HasTriggered,
+                            "First of Kin must gain fifteen attack for each consumed hand card without changing HP.");
+                    if (observer.AssetKey == "MonsterMorelMistress")
+                        Require(room.Units.Where(unit => unit.Team == CombatTeam.Enemy).All(unit =>
+                            after.Spawn.Train.Rooms[room.RoomIndex].Units.Single(enemy => enemy.Id == unit.Id).Status("decay")?.Stacks ==
+                                (unit.Status("decay")?.Stacks ?? 0) + 16) &&
+                            changed.Triggers.Single(trigger => trigger.Kind == "CardExhausted").HasTriggered,
+                            "Morel Mistress must apply eight Decay to each selected-room enemy for each consumed hand card.");
+                }
+            }
+            if (rule.AssetKey == "GainXEnergy" && originals.Contains("ec5dbc45-0053-4dc3-84c3-528efcba6b26"))
+            {
+                RoomCombatState room = before.Spawn.Train.Rooms[action.RoomIndex];
+                Require(room.Units.Any(unit => unit.AssetKey == "MonsterMorelMistress") &&
+                    room.Units.Where(unit => unit.Team == CombatTeam.Enemy).All(unit =>
+                        after.Spawn.Train.Rooms[action.RoomIndex].Units.Single(enemy => enemy.Id == unit.Id).Status("decay")?.Stacks == 8) &&
+                    after.Spawn.Train.Context!.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == ids[i]),
+                    "Natural Consume must dispatch one Morel Mistress callback after the original spell is played.");
             }
             if (rule.AssetKey == "HallowedHalls")
             {

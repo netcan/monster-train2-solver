@@ -9294,6 +9294,20 @@ Both native runs have DEPTH-PASS, settled victories and all failure counters zer
 
 ### Original death-trigger, sacrifice/draw and direct room recursion spells
 
+The `full-battle-original-isolated-exhausted-first-of-kin.mt2f` and
+`full-battle-original-isolated-exhausted-morel-mistress.mt2f` witnesses come from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-192738-5eb5e0a7` and
+`.probe-runs/full-battle-units-spells-and-junk-20261020-192928-7972c78d`.
+The shared CardExhausted dispatcher snapshots only the selected room, in native
+Heroes/Monsters physical order, and drains each actor separately. Two consumed
+hand controls raise First of Kin from 45 to 75 attack while Morel Mistress on
+another floor remains unchanged. Morel Mistress's separate witness applies eight
+Decay when GainXEnergy is naturally consumed, then another sixteen from the two
+hand controls. Both have settled DEPTH-PASS victories and zero failure counters.
+Hand consumption with an already pending character callback queue remains guarded
+until its interleaving is separately calibrated. Native NonPlayable BogWurmling
+requires its hatching path rather than a direct-play witness.
+
 `full-battle-original-isolated-sacrificial-resurrection.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261020-192211-cf829612`.
 Two independent anchor controls remain in Hand for the unchanged spell to

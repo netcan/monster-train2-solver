@@ -1034,6 +1034,13 @@ namespace MonsterTrain2Poju.Model
                 context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             var living = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             train = new TrainCombatState(rooms, train.Movement.Where(rule => living.Contains(rule.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
+            if (consumedOnPlay && !terminal)
+            {
+                TrainCombatResult exhausted = CardPlayedTriggerModel.Exhausted(train, action.RoomIndex);
+                if (!exhausted.Supported) return Unsupported(exhausted.UnsupportedReason!);
+                train = exhausted.State!; context = train.Context!; piles = context.OtherPiles?.ToArray() ?? piles;
+                if (exhausted.Outcome != RoomOutcome.Exchanged) outcome = exhausted.Outcome;
+            }
             // CardManager.OnCardPlayed refreshes auras after discard/cost clearing,
             // then drains their callbacks before the UI combat preview can start.
             TrainCombatResult cardCompleted = EnchantmentWorldModel.UpdateAll(train);

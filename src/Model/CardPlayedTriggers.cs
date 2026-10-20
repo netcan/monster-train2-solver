@@ -26,6 +26,30 @@ namespace MonsterTrain2Poju.Model
     }
     internal static class CardPlayedTriggerModel
     {
+        internal static TrainCombatResult Exhausted(TrainCombatState source, int fallbackRoom)
+        {
+            if (!source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CardExhausted")))
+                return new TrainCombatResult(source, RoomOutcome.Exchanged, System.Array.Empty<RoomCombatResult>());
+            int selectedRoom = source.Context?.QueryFrame?.SelectedRoomIndex ?? fallbackRoom;
+            RoomCombatState? room = source.Rooms.SingleOrDefault(item => item.RoomIndex == selectedRoom);
+            if (room == null)
+                return new TrainCombatResult(null, RoomOutcome.Unsupported, System.Array.Empty<RoomCombatResult>(), "Card exhaustion requires its selected native room.");
+            CombatUnit[] snapshot = room.Units.Where(unit => unit.Health > 0 && unit.DeathState?.IsDestroyed != true).ToArray();
+            TrainCombatState state = source;
+            var results = new List<RoomCombatResult>();
+            RoomOutcome outcome = RoomOutcome.Exchanged;
+            // Native snapshots Heroes then Monsters in physical order and drains
+            // QueueAndRunTrigger separately for every retained character reference.
+            foreach (CombatUnit actor in snapshot)
+            {
+                TrainCombatResult fired = TrainCombatModel.ApplyCharacterQueue(state,
+                    new List<RoomCombatModel.QueuedCharacterTrigger> { new(selectedRoom, actor, "CardExhausted") });
+                if (!fired.Supported) return fired;
+                state = fired.State!; results.AddRange(fired.RoomResults);
+                if (fired.Outcome != RoomOutcome.Exchanged) outcome = fired.Outcome;
+            }
+            return new TrainCombatResult(state, outcome, results);
+        }
         internal static TrainCombatResult Rally(TrainCombatState source, CombatTeam team, IReadOnlyList<int> cachedUnitIds,
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? preceding = null)
             => Apply(source, team, cachedUnitIds, "CardMonsterPlayed", preceding);
