@@ -8535,3 +8535,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-nightingale.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-nightingale.mt2f
 ```
+
+### Original Juggernaut
+
+`full-battle-original-isolated-juggernaut.mt2f` plays the unchanged X-cost
+Juggernaut with three Energy remaining. Its two +30-per-PlayedCost Attack and
+Health traits scale the native OnSpawn `Juggernaut_Upgrade` to +90/+90, making
+the 30/30 size-3 birth 120/120. The Instant battle won with zero capture
+failures, mismatches, unsupported transitions or pending records. Focused replay
+and bounded serial/parallel search agree at 128 states, with three replayed
+steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 952db29f-b585-41be-bfdd-0a36b9b05010
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-juggernaut.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-juggernaut.mt2f
+```

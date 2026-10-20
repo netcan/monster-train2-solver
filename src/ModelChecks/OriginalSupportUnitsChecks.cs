@@ -34,6 +34,7 @@ internal static class OriginalSupportUnitsChecks
     private const string WeldlingId = "acb9a1cb-f6fc-40df-b287-fc82b8df156b";
     private const string HostguardId = "c682012e-b5fc-4f75-9cb4-f6ade997b72f";
     private const string RubbleRaiserId = "e2ed318d-754c-41b8-8df6-0a6af221e54e";
+    private const string JuggernautId = "952db29f-b585-41be-bfdd-0a36b9b05010";
     private const string NightingaleId = "7775c5b5-eed9-4864-9976-9c86896becc1";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
@@ -351,13 +352,43 @@ internal static class OriginalSupportUnitsChecks
         CombatUnit template = rule.SpawnUnit!, spawnedUnit = unitAfter.Spawn.Train.Rooms.SelectMany(item => item.Units)
             .Single(candidate => candidate.SpawnerCardId == ids[actionIndex]);
         int appendPosition = unitBefore.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0).Units.Count(candidate => candidate.Team == CombatTeam.Player);
+        bool juggernautXCost = expectedId == JuggernautId;
         Require(unitCard.DataId == expectedId && unitAction.RoomIndex == 0 && unitAction.PlayerPosition == appendPosition &&
             unitAction.TargetUnitId == 0 && unitBefore.PlayRules.Rooms.Single(item => item.RoomIndex == 0).PlayerSlots > appendPosition &&
-            unitBefore.Energy >= rule.Cost && unitBefore.Energy - unitAfter.Energy == rule.Cost && rule.Effect == "SpawnMonster" &&
+            unitBefore.Energy >= rule.Cost && (juggernautXCost ? unitBefore.Energy == 3 && unitAfter.Energy == 0 : unitBefore.Energy - unitAfter.Energy == rule.Cost) &&
+            rule.Effect == "SpawnMonster" &&
             !string.IsNullOrEmpty(rule.AssetKey) && (expectedAsset == null || rule.AssetKey == expectedAsset) &&
             spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Size == template.Size &&
-            spawnedUnit.Health == template.Health && spawnedUnit.MaxHealth == template.MaxHealth && spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage,
+            (juggernautXCost || spawnedUnit.Health == template.Health && spawnedUnit.MaxHealth == template.MaxHealth &&
+                spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage),
             expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
+        if (expectedId == JuggernautId)
+        {
+            CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CombatTrigger spawnedOnSpawn = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CombatEffect effect = onSpawn.Effects.Single();
+            CardActionEffect upgradeEffect = effect.UnitUpgrade!;
+            ScalingUnitUpgradeTrait[] scaling = unitCard.UnitUpgradeScalingTraits!.ToArray();
+            ScalingUnitUpgradeTrait attack = scaling.Single(trait => trait.Stat == "Damage");
+            ScalingUnitUpgradeTrait health = scaling.Single(trait => trait.Stat == "Health");
+            CardUpgradeModifier appliedUpgrade = spawnedUnit.Modifiers!.Upgrades.Single();
+            Require(rule.AssetKey == "Juggernaut" && rule.Cost == 0 && rule.CostType == "ConsumeRemainingEnergy" &&
+                template.AssetKey == "MonsterJuggernaut" && template.Modifiers!.AttackDamage == 30 &&
+                template.Health == 30 && template.MaxHealth == 30 && template.Size == 3 && !onSpawn.Once &&
+                effect.Type == "CardEffectAddTempCardUpgradeToUnits" &&
+                upgradeEffect is { Type: "UnitUpgrade", Target: "Self", Lifetime: "TemporaryUntilEndOfBattle" } &&
+                upgradeEffect.Upgrade is { DataId: "270a2a5d-2d9e-450b-8b19-d347ea47867f", AssetKey: "Juggernaut_Upgrade" } &&
+                upgradeEffect.Upgrade.Stats.Damage == 0 && upgradeEffect.Upgrade.Stats.Health == 0 &&
+                scaling.Length == 2 && attack.AmountPerStat == 30 && attack.Restriction == 1 && attack.Query.Type == "PlayedCost" &&
+                attack.Query.Duration == "ThisTurn" && attack.Query.SourceRawCost == 0 && attack.Query.VariableCost &&
+                health.AmountPerStat == 30 && health.Restriction == 1 && health.Query.Type == "PlayedCost" &&
+                health.Query.Duration == "ThisTurn" && health.Query.SourceRawCost == 0 && health.Query.VariableCost &&
+                spawnedOnSpawn.HasTriggered && spawnedUnit.AssetKey == "MonsterJuggernaut" && spawnedUnit.Size == 3 &&
+                spawnedUnit.Modifiers.AttackDamage == 120 && spawnedUnit.Health == 120 && spawnedUnit.MaxHealth == 120 &&
+                appliedUpgrade is { DataId: "270a2a5d-2d9e-450b-8b19-d347ea47867f", AssetKey: "Juggernaut_Upgrade" } &&
+                appliedUpgrade.Stats.Damage == 90 && appliedUpgrade.Stats.Health == 90,
+                "Juggernaut must spend three remaining Energy and scale its native OnSpawn upgrade to +90/+90 from the two +30-per-PlayedCost traits.");
+        }
         if (expectedId == EelGorgonId)
         {
             CombatTrigger postCombat = template.Triggers.Single(trigger => trigger.Kind == "PostCombat");

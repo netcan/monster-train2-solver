@@ -302,6 +302,15 @@ internal static class CardCoverageInventory
                 new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag",
                     "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
                     .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
+        if (cardId == "952db29f-b585-41be-bfdd-0a36b9b05010" &&
+            type is "CardTraitScalingUpgradeUnitAttack" or "CardTraitScalingUpgradeUnitHealth")
+            return trait.GetProperty("Int").GetInt32() == 30 && trait.GetProperty("Int2").GetInt32() == 0 &&
+                trait.GetProperty("Int3").GetInt32() == 1 && !Flag(trait, "Bool") && Text(trait, "Str") == "" &&
+                trait.GetProperty("Float").GetDouble() == 0 && !Flag(trait, "Scaling") &&
+                Text(trait, "TrackedValue") == "PlayedCost" && Text(trait, "EntryDuration") == "ThisTurn" &&
+                new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag",
+                    "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
         if (cardId == "8d291f9a-30a1-4a6d-8d9e-6dc2df4432d1" && type == "CardTraitExhaustState")
             return trait.GetProperty("Int").GetInt32() == 0 && trait.GetProperty("Int2").GetInt32() == 0 &&
                 trait.GetProperty("Int3").GetInt32() == 0 && !Flag(trait, "Bool") && Text(trait, "Str") == "" &&
