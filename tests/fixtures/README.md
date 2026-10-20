@@ -8583,3 +8583,21 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hothead.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hothead.mt2f
 ```
+
+### Original Steadfast Crusader
+
+`full-battle-original-isolated-steadfast-crusader.mt2f` plays the unchanged
+1-cost 5/30 size-2 Steadfast Crusader. Its native OnSpawn callback exposes the
+cooldown-2 ability, which remains available but unused in all four
+post-deployment snapshots. This covers direct play, birth and unactivated
+ability lifecycle only; the ability effect itself is not exercised. The
+Instant battle won with zero capture failures, mismatches, unsupported
+transitions or pending records. Focused replay and bounded serial/parallel
+search agree at 128 states, with three replayed steps; archive metadata is in
+`manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 075a061c-480c-4873-8f9f-88cf836eec27
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-steadfast-crusader.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-steadfast-crusader.mt2f
+```
