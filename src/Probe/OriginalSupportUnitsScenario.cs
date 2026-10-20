@@ -26,6 +26,7 @@ namespace MonsterTrain2Poju.Probe
         private const string BattleDancerId = "a0b051b2-7898-454a-8bd8-300b72b99c93";
         private const string HeroInTrainingId = "57ffb1c3-0728-4254-ab35-7e34adab459f";
         private const string DivineDancerId = "a1e9a37b-504a-4a04-99e2-6d933727b427";
+        private const string IsolatedEnergyCardDataId = "ac110058-0000-4000-8000-000000000009";
         private static bool DivineDancerOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == DivineDancerName;
         private static bool IsolatedUnitBatchOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == IsolatedUnitBatchName;
         private static bool IsolatedColdstrikeSirenOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == IsolatedColdstrikeSirenName;
@@ -45,11 +46,13 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || DivineDancerOnly || IsolatedUnitBatchOnly || IsolatedColdstrikeSirenOnly || IsolatedUnitOnly;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
+        internal static int IsolatedEnergyControlInstanceId { get; private set; }
         private static ManualLogSource? logger;
         private static string? lastRejection;
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             logger = log;
+            IsolatedEnergyControlInstanceId = 0;
             if (DivineDancerOnly) { PrepareDivineDancer(managers, log); return; }
             if (IsolatedUnitBatchOnly) { PrepareIsolatedUnits(managers, log, IsolatedUnitBatchIds, "Branded Warrior"); return; }
             if (IsolatedColdstrikeSirenOnly) { PrepareIsolatedUnits(managers, log, IsolatedColdstrikeSirenIds, "Coldstrike Siren"); return; }
@@ -123,9 +126,29 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
             cards.GetDrawPile().Clear();
             CardState[] anchors = Enumerable.Range(0, 3).Select(_ => cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false)).ToArray();
+            int targetCost = unitIds.Sum(id => all.FindCardData(id)!.GetCost());
+            CardState? energyControl = null;
+            if (targetCost > 3)
+            {
+                CardData data = UnityEngine.Object.Instantiate(all.GetAllCardData().First(card => card.GetCardType() == CardType.Spell));
+                data.name = "PojuIsolatedUnitEnergyControl";
+                Set(data, "id", IsolatedEnergyCardDataId); Set(data, "cost", 0); Set(data, "costType", CardData.CostType.Default);
+                Set(data, "targetless", true); Set(data, "targetsRoom", true);
+                Set(data, "traits", new List<CardTraitData>()); Set(data, "startingUpgrades", new List<CardUpgradeData>());
+                Set(data, "triggers", new List<CardTriggerEffectData>()); Set(data, "effectTriggers", new List<CharacterTriggerData>());
+                var energyEffect = new CardEffectData("CardEffectGainEnergy", null!, Team.Type.None);
+                energyEffect.Cheat_SetTargetMode(TargetMode.Room); Set(energyEffect, "paramInt", targetCost - 3);
+                Set(data, "effects", new List<CardEffectData> { energyEffect });
+                ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(all)).Add(data);
+                energyControl = cards.AddNewCard(data, CardPile.HandPile, false, false, animate: false);
+                IsolatedEnergyControlInstanceId = FullBattleTrace.Active!.CardId(energyControl);
+            }
             CardState[] units = unitIds.Select(id => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false)).ToArray();
             foreach (CardState card in units) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
-            CardIds = anchors.Concat(units).Select(FullBattleTrace.Active!.CardId).ToArray();
+            var scheduledCards = new List<CardState>(anchors);
+            if (energyControl != null) scheduledCards.Add(energyControl);
+            scheduledCards.AddRange(units);
+            CardIds = scheduledCards.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
             log.LogInfo("ORIGINAL-ISOLATED-UNIT-PREPARED three safe native anchors plus one original " + label + ".");
@@ -138,7 +161,9 @@ namespace MonsterTrain2Poju.Probe
             {
                 int isolatedRoom = index < 3 ? index : 0;
                 int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == 0).Units.Count(unit => unit.Team == CombatTeam.Player);
-                var isolatedAction = new PlayCardAction(ids[index], isolatedRoom, playerPosition: isolatedPosition);
+                var isolatedAction = ids[index] == IsolatedEnergyControlInstanceId && IsolatedEnergyControlInstanceId != 0
+                    ? new PlayCardAction(ids[index], isolatedRoom)
+                    : new PlayCardAction(ids[index], isolatedRoom, playerPosition: isolatedPosition);
                 BattleActionResult isolatedResult = BattleActionModel.PlayCard(source, isolatedAction);
                 if (isolatedResult.Supported) return isolatedAction;
                 if (lastRejection != isolatedResult.Reason) { lastRejection = isolatedResult.Reason; logger?.LogInfo("ORIGINAL-ISOLATED-UNIT-REJECT index=" + index + " reason=" + isolatedResult.Reason); }

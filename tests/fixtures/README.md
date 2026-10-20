@@ -9025,3 +9025,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-royal-whelp.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-royal-whelp.mt2f
 ```
+
+### Original Consumer of Crowns
+
+`full-battle-original-isolated-consumer-of-crowns.mt2f` plays the unchanged
+4-cost Consumer of Crowns after three safe anchors. A separate scenario-only
+0-cost spell adds one Energy because the isolated battle otherwise starts the
+play turn at three; the original unit cost, rule and birth are unchanged. The
+Instant battle won with zero capture failures, mismatches, unsupported
+transitions or pending records. Focused replay and bounded serial/parallel
+search agree at 128 states with three replayed steps; archive metadata is in
+`manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 61f74a3a-8292-4478-b213-50cef449ed61
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-consumer-of-crowns.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-consumer-of-crowns.mt2f
+```

@@ -972,6 +972,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalFuelIds = OriginalFuelScenario.CardIds,
                 OriginalSupportUnitsPrepared = OriginalSupportUnitsScenario.Prepared,
                 OriginalSupportUnitsIds = OriginalSupportUnitsScenario.CardIds,
+                OriginalIsolatedEnergyControlId = OriginalSupportUnitsScenario.IsolatedEnergyControlInstanceId,
                 OriginalAttackOverridesPrepared = OriginalAttackOverridesScenario.Prepared,
                 OriginalAttackOverridesIds = OriginalAttackOverridesScenario.CardIds,
                 OriginalReactiveUnitsPrepared = OriginalReactiveUnitsScenario.Prepared,

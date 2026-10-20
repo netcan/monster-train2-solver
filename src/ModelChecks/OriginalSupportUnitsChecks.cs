@@ -118,9 +118,12 @@ internal static class OriginalSupportUnitsChecks
             Require(expectedIds.Length > 0 && expectedIds.All(expectedId => Guid.TryParseExact(expectedId, "D", out _)),
                 "Isolated unit scenario did not identify original card UUIDs.");
             FixtureValue[] isolatedActions = root.GetProperty("Actions").EnumerateArray().ToArray();
-            Require(isolatedActions.Length == expectedIds.Length + 3,
-                "Isolated unit scenario must record three anchors and every requested original unit birth.");
-            for (int index = 0; index < expectedIds.Length; index++) NativeIsolatedUnit(root, expectedIds[index], actionIndex: index + 3);
+            int energyControlActions = root.TryGetProperty("OriginalIsolatedEnergyControlId", out FixtureValue energyControlIdValue) &&
+                energyControlIdValue.GetInt32() > 0 ? 1 : 0;
+            Require(isolatedActions.Length == expectedIds.Length + 3 + energyControlActions,
+                "Isolated unit scenario must record three anchors, optional energy control, and every requested original unit birth.");
+            for (int index = 0; index < expectedIds.Length; index++)
+                NativeIsolatedUnit(root, expectedIds[index], actionIndex: index + 3 + energyControlActions);
             return;
         }
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
@@ -378,6 +381,23 @@ internal static class OriginalSupportUnitsChecks
             Require(card.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678" && action.RoomIndex == index && action.PlayerPosition == 0 &&
                 before.Energy - after.Energy == 0 && unit.AssetKey == "TrainStewardBig" && unit.Health == 10000 &&
                 unit.Modifiers!.AttackDamage == 1000 && unit.Size == 1, "Isolated unit batch anchor control changed.");
+        }
+        int energyControlId = root.TryGetProperty("OriginalIsolatedEnergyControlId", out FixtureValue energyControlValue)
+            ? energyControlValue.GetInt32() : 0;
+        if (energyControlId > 0)
+        {
+            BattleTurnState energyBefore = Before(3), energyAfter = After(3);
+            PlayCardAction energyAction = actions[3].GetProperty("Action").Deserialize<PlayCardAction>()!;
+            CardInstanceState energyCard = energyBefore.Spawn.Train.Context!.FindCard(energyControlId)!;
+            CardPlayRule energyRule = energyBefore.PlayRules!.Cards.Single(item => item.DataId == energyCard.DataId);
+            CardActionEffect gain = energyRule.Effects.Single();
+            Require(ids[3] == energyControlId && energyAction.CardInstanceId == energyControlId &&
+                energyAction.RoomIndex == 0 && energyAction.PlayerPosition == -1 && energyAction.TargetUnitId == 0 &&
+                energyCard.DataId == "ac110058-0000-4000-8000-000000000009" && energyRule.Cost == 0 &&
+                energyRule.CardType == "Spell" && energyRule.CostType == "Default" &&
+                gain is { Type: "GainEnergy", Target: "Room", Value: > 0 } &&
+                energyAfter.Energy - energyBefore.Energy == gain.Value,
+                "Isolated-unit energy control must be a distinct 0-cost card that natively adds its captured energy amount.");
         }
         BattleTurnState unitBefore = Before(actionIndex), unitAfter = After(actionIndex);
         PlayCardAction unitAction = actions[actionIndex].GetProperty("Action").Deserialize<PlayCardAction>()!;

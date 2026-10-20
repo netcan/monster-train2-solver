@@ -2694,12 +2694,13 @@ if ($OriginalIsolatedColdstrikeSiren -and ($trace.ModifierScenario -ne 'original
     -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
     throw 'Isolated Coldstrike Siren witness lacks three anchor controls and one direct unit play.'
 }
+$isolatedEnergyActionCount = if ([int]$trace.OriginalIsolatedEnergyControlId -gt 0) { 1 } else { 0 }
 if ($OriginalIsolatedUnitId -and ($trace.ModifierScenario -ne ('original-isolated-unit:' + $OriginalIsolatedUnitId) -or -not $trace.OriginalSupportUnitsPrepared -or
-    -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
+    -not $trace.NativeWon -or @($trace.Actions).Count -ne (4 + $isolatedEnergyActionCount))) {
     throw 'Isolated original unit witness lacks three anchor controls and one direct unit play.'
 }
 if ($OriginalIsolatedUnitIds.Count -gt 0 -and ($trace.ModifierScenario -ne ('original-isolated-unit-batch:' + ($OriginalIsolatedUnitIds -join ',')) -or
-    -not $trace.OriginalSupportUnitsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (3 + $OriginalIsolatedUnitIds.Count))) {
+    -not $trace.OriginalSupportUnitsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (3 + $OriginalIsolatedUnitIds.Count + $isolatedEnergyActionCount))) {
     throw 'Isolated original unit batch witness lacks three anchor controls and every requested direct unit play.'
 }
 if ($OriginalAttackOverrides -and (-not $trace.OriginalAttackOverridesPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 29)) {
