@@ -7996,6 +7996,26 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-bounty-stalker.mt2f
 ```
 
+### Original Plague Doctor
+
+`full-battle-original-isolated-plague-doctor.mt2f` records the unchanged
+2-cost Plague Doctor and its native 9/9 size-1 birth behind three zero-cost
+Steward anchors. Its `OnAttackingBeforeDamage` callback fires in native combat;
+the source trait is exactly zero-only `LastAttackDamageDealt` scaling for
+Unstable. The captured `LastAttackedCharacter` effect specifies `unstable=0`,
+so this fixture validates the zero-stack branch only and does not claim positive
+Unstable application. The 39.43-second native run won with four actions and five
+EndTurns; CaptureFailures, Mismatches, Unsupported and Pending were all zero,
+and protected original files were unchanged. The 26,909-byte archive has 3,552
+unique nodes and SHA-256
+`5afa7d33b69abc38bc88718ca0cfec7e6a7b4b85a6cb303a01b8ee30e5335358`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 34909c50-4cba-41fa-8b33-64c1e463691c -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-plague-doctor.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-plague-doctor.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and

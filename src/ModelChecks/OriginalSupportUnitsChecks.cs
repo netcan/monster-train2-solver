@@ -22,6 +22,7 @@ internal static class OriginalSupportUnitsChecks
     private const string SycophantId = "6d2053e9-1a6a-4862-b348-76a92a92ea83";
     private const string VotivaryId = "e9bb0dfe-ecf7-4046-be6d-f6f00893662f";
     private const string BountyStalkerId = "3e86422e-c8e4-4ec7-bc0a-0c622b7237b4";
+    private const string PlagueDoctorId = "34909c50-4cba-41fa-8b33-64c1e463691c";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -496,6 +497,28 @@ internal static class OriginalSupportUnitsChecks
                 !onDeath.HasTriggered && onDeathAppliedUpgrade,
                 "Bounty Stalker must preserve its native 1-cost 30/5 size-2 birth and apply its permanent self +10 Attack upgrade when it dies.");
         }
+        if (expectedId == PlagueDoctorId)
+        {
+            CombatTrigger beforeDamage = template.Triggers.Single(trigger => trigger.Kind == "OnAttackingBeforeDamage");
+            CombatEffect unstable = beforeDamage.Effects.Single();
+            CardSourceTrait source = unitCard.MaskDescriptor!.SourceTraits!.Single();
+            ScalingStatusTrait scaling = unitCard.StatusScalingTraits!.Single();
+            bool triggeredInNativeTurn = root.GetProperty("Turns").EnumerateArray().Any(row =>
+                row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                    unit.SpawnerCardId == ids[actionIndex] && unit.Triggers.Single(trigger => trigger.Kind == "OnAttackingBeforeDamage") is
+                        { HasTriggered: true, FireCount: 1 }));
+            Require(rule.AssetKey == "PlagueDoctor" && template.AssetKey == "MonsterPlagueDoctor" &&
+                rule.Cost == 2 && template.Health == 9 && template.MaxHealth == 9 && template.Modifiers!.AttackDamage == 9 && template.Size == 1 &&
+                source.Type == "CardTraitScalingAddStatusEffect" && source.Int == 1 && source.Int2 == 0 && source.Int3 == 0 && source.Bool &&
+                source.Str == "" && source.Float == 0 && !source.Scaling && source.TrackedValue == "LastAttackDamageDealt" &&
+                source.EntryDuration == "ThisTurn" && source.StatusEffectIds!.SequenceEqual(["unstable"]) &&
+                scaling.Query.Type == "LastAttackDamageDealt" && scaling.Query.Duration == "ThisTurn" && scaling.StacksPerStat == 1 &&
+                scaling.OnlyWhenSourceZero && scaling.Filter == 0 && scaling.StatusIds.SequenceEqual(["unstable"]) &&
+                beforeDamage.FireCount == 1 && !beforeDamage.Once && unstable.Type == "CardEffectAddStatusEffect" &&
+                unstable.Action is { Type: "AddStatus", Target: "LastAttackedCharacter" } &&
+                unstable.Action.Statuses.Single() is { Id: "unstable", Stacks: 0 } && triggeredInNativeTurn,
+                "Plague Doctor must preserve its native 2-cost 9/9 size-1 birth, exact zero-only LastAttackDamageDealt Unstable source trait and positively fired pre-damage callback.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
@@ -519,6 +542,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-VOTIVARY PASS: original zero-cost 1/1 size-1 birth and captured OnDeath room +2 DrawNextTurn; no death occurred, so draw remained unchanged.");
         else if (expectedId == BountyStalkerId)
             Console.WriteLine("ORIGINAL-BOUNTY-STALKER PASS: original 1-cost 30/5 size-2 birth; native OnDeath removed the unit and added permanent Plus10Attack (+10) to its card.");
+        else if (expectedId == PlagueDoctorId)
+            Console.WriteLine("ORIGINAL-PLAGUE-DOCTOR PASS: original 2-cost 9/9 size-1 birth, exact zero-only LastAttackDamageDealt Unstable source trait and a native OnAttackingBeforeDamage fire.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
