@@ -842,9 +842,11 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "AbilityTeleport")
                 {
-                    if (!fullTrain || definitions == null || targets.UnitIds.Count != 1)
+                    if (!fullTrain || definitions == null || selfUnitId <= 0)
                         return UnsupportedTrain("Unit teleport requires one activating actor, the complete train and room rules.");
-                    int actorId = targets.UnitIds[0];
+                    // Native uses selfTarget, irrespective of its authored Room target list.
+                    targets = new CardTargets(new[] { selfUnitId });
+                    int actorId = selfUnitId;
                     RoomCombatState? actorRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == actorId));
                     CombatUnit? actor = actorRoom?.Units.FirstOrDefault(unit => unit.Id == actorId);
                     if (actorRoom == null || actor == null)
@@ -1922,7 +1924,7 @@ namespace MonsterTrain2Poju.Model
                     return discardError;
             }
             if (effects.Any(effect => effect.Type == "AbilityTeleport") &&
-                (!fullTrain || selfUnitId <= 0 || effects.Any(effect => effect.Type == "AbilityTeleport" && effect.Target != "Self") ||
+                (!fullTrain || selfUnitId <= 0 || effects.Any(effect => effect.Type == "AbilityTeleport" && effect.Target is not ("Self" or "Room")) ||
                  source.Context.SpawnPoints == null))
                 return "Unit ability teleport requires its activating actor and captured train spawn points.";
             if (!fullTrain && effects.Any(effect => CardTargetModel.IsCrossRoom(effect.Target)))
@@ -2579,6 +2581,7 @@ namespace MonsterTrain2Poju.Model
             effect.Type == "Generate" && effect.Target == "Hand" ||
             effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" || CardOnlyDrawTarget(effect);
         private static bool CardOnlyDrawTarget(CardActionEffect effect) =>
+            effect.Type == "Draw" && effect.Target == "DrawPile" ||
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
             (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
         private static bool IsDamage(CardActionEffect effect) => effect.Type == "Damage" || effect.Type == "DamagePerSourceAttack";

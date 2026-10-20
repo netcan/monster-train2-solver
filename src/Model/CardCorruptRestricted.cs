@@ -8,8 +8,8 @@ namespace MonsterTrain2Poju.Model
         public const string Trait = "CardTraitCorruptRestricted";
 
         // Positive requirements currently use one unchanged base trait. Upgrade-added,
-        // replaced and source-room ability traits need their own captured provenance.
-        public static string? Requirement(CardInstanceState card, out int amount)
+        // replaced traits need their own captured provenance.
+        public static string? Requirement(CardInstanceState card, out int amount, bool allowSourceRoom = false)
         {
             amount = 0;
             CardMaskDescriptor? descriptor = card.MaskDescriptor;
@@ -30,7 +30,7 @@ namespace MonsterTrain2Poju.Model
                 return "Positive Corrupt Restricted requires captured base source parameters.";
             CardSourceTrait source = descriptor.SourceTraits[index];
             if (source.Type != Trait || source.Int != active[0].ParamInt || source.Int != active[0].DefinitionParamInt ||
-                source.Int2 != 0 || source.Int3 != 0 || source.Bool || source.Str != "" || source.Float != 0 || source.Scaling ||
+                source.Int2 != 0 || source.Int3 != 0 || source.Bool && !allowSourceRoom || source.Str != "" || source.Float != 0 || source.Scaling ||
                 source.TrackedValue != "SubtypeInDeck" || source.EntryDuration != "ThisTurn")
                 return "Uncalibrated Corrupt Restricted parameters or source-room eligibility.";
             if (combined.Any(trait => trait.RuntimeType == "CardTraitCorruptState"))
@@ -39,24 +39,30 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        public static string? Test(CombatContext context, CardInstanceState card, int selectedRoomIndex, out bool allowed)
+        public static string? Test(CombatContext context, CardInstanceState card, int selectedRoomIndex, out bool allowed, int? sourceRoomIndex = null)
         {
             allowed = false;
-            string? error = Requirement(card, out int amount);
+            string? error = Requirement(card, out int amount, sourceRoomIndex.HasValue);
             if (error != null) return error;
             if (amount == 0) { allowed = true; return null; }
-            RoomCapacityState? room = context.RoomCapacities?.SingleOrDefault(value => value.RoomIndex == selectedRoomIndex);
+            int? roomIndex = UsesSourceRoom(card) ? sourceRoomIndex : selectedRoomIndex;
+            RoomCapacityState? room = context.RoomCapacities?.SingleOrDefault(value => value.RoomIndex == roomIndex);
             if (room?.Corruption == null || room.Corruption < 0) return "Corrupt Restricted requires captured selected-room corruption.";
             allowed = room.Corruption >= amount;
             return null;
         }
 
-        internal static RoomCorruptionResult BeforeEffects(TrainCombatState source, CardInstanceState card, int selectedRoomIndex)
+        private static bool UsesSourceRoom(CardInstanceState card) =>
+            card.MaskDescriptor?.SourceTraits?.Any(trait => trait.Type == Trait && trait.Bool) == true;
+
+        internal static RoomCorruptionResult BeforeEffects(TrainCombatState source, CardInstanceState card, int selectedRoomIndex, int? sourceRoomIndex = null)
         {
-            string? error = Requirement(card, out int amount);
+            string? error = Requirement(card, out int amount, sourceRoomIndex.HasValue);
             if (error != null) return new RoomCorruptionResult(null, error);
             if (amount == 0) return new RoomCorruptionResult(source.Context);
-            return RoomCorruptionModel.Apply(source, selectedRoomIndex,
+            int? roomIndex = UsesSourceRoom(card) ? sourceRoomIndex : selectedRoomIndex;
+            if (!roomIndex.HasValue) return new RoomCorruptionResult(null, "Missing Corrupt Restricted ability source room.");
+            return RoomCorruptionModel.Apply(source, roomIndex.Value,
                 new CardActionEffect("AdjustCorruption", "Room", amount, false, false, Array.Empty<CombatStatus>(), corruptionAdd: false));
         }
     }

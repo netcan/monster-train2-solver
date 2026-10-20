@@ -188,7 +188,9 @@ internal static class OriginalSupportSpellsChecks
         Require(originals.Length is > 0 and <= 30 && originals.Distinct().Count() == originals.Length &&
             originals.All(id => Guid.TryParseExact(id, "D", out _)) && ids.Length == originals.Length + (returnedRecast ? 5 : 4) &&
             (!returnedRecast || ids[^1] == ids[4]) && actions.Length >= ids.Length && actions.Skip(ids.Length)
-                .All(row => row.GetProperty("Action").Deserialize<PlayCardAction>()!.ActivatorRoomIndex.HasValue),
+                .All(row => row.GetProperty("Action").Deserialize<PlayCardAction>() is var action &&
+                    (action!.ActivatorRoomIndex.HasValue || root.TryGetProperty("OriginalUnitAbilityId", out var ability) &&
+                        ability.ValueKind == FixtureKind.String && action.ActivatorUnitId != 0)),
             "Isolated spell batch must contain its exact controls and distinct original identities.");
         for (int i = 0; i < ids.Length; i++)
         {
@@ -722,6 +724,7 @@ internal static class OriginalSupportSpellsChecks
         RoomEchoChecks.Native(root, originals);
         TroopAuraChecks.Native(root, originals);
         JackInTheBoxChecks.Native(root, originals);
+        OriginalUnitAbilityChecks.Native(root);
         if (originals.Contains("7018bb02-2ec2-4b4f-95d0-7bafce95d97d")) CrucibleStewardChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }

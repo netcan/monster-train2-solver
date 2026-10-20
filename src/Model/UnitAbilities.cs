@@ -60,6 +60,9 @@ namespace MonsterTrain2Poju.Model
             if (cache.Card!.InstanceId != action.CardInstanceId) return Illegal("The action does not use this unit's cached ability card.");
             context = cache.Context!.WithOtherPiles(source.OtherPiles);
             rule = CardModifierModel.Resolve(rule, cache.Card);
+            error = CardCorruptRestrictedModel.Test(context, cache.Card, action.RoomIndex, out bool corruptionAllowed, actorRoom.RoomIndex);
+            if (error != null) return Unsupported(error);
+            if (!corruptionAllowed) return Illegal("The ability requires more corruption.");
             // The native pulley effect derives its displacement from the activating room.
             CardActionEffect[] effects = rule.Effects.Select(effect => roomAbility
                 ? RoomAbilityModel.ResolveEffect(effect, actorRoom!.RoomIndex, action.RoomIndex) : effect).ToArray();
@@ -124,6 +127,11 @@ namespace MonsterTrain2Poju.Model
                 train = before.State!; if (Terminal(before.Outcome)) outcome = before.Outcome;
             }
             // CombatManager caches the selected room after PreOwn, before effects.
+            int corruptionSourceRoom = roomAbility ? actorRoom.RoomIndex :
+                train.Rooms.First(room => room.Units.Any(unit => unit.Id == actorId)).RoomIndex;
+            RoomCorruptionResult corruption = CardCorruptRestrictedModel.BeforeEffects(train, cache.Card, action.RoomIndex, corruptionSourceRoom);
+            if (!corruption.Supported) return Unsupported(corruption.UnsupportedReason!);
+            train = CardSpellModel.WithContext(train, corruption.Context!);
             int[] cachedUnits = train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
                 .Where(unit => unit.Health > 0 && unit.DeathState?.IsDestroyed != true && unit.IsSpawning != true)
                 .Select(unit => unit.Id).ToArray();

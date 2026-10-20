@@ -3142,6 +3142,7 @@ namespace MonsterTrain2Poju.Probe
             if (action.ActivatorUnitId > 0)
             {
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
+                OriginalUnitAbilityScenario.ObserveEligibility(actor);
                 FullBattleTrace.Active.BeginCardPlay(action, scenarioAction: scenarioPrelude);
                 if (action.TargetUnitId > 0)
                 {

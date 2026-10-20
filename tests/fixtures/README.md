@@ -10182,3 +10182,20 @@ Both captures have DEPTH-PASS, settled wins and zero failure counters. Nine/ten
 plays and five EndTurns pass sixteen immutable branches and 128-state searches
 with zero unsupported attempts and equal serial/parallel results. Existing
 Conduit and Hall of Mirrors chains remain the affected regression scope.
+
+`full-battle-original-bog-fly-flight-ability.mt2f`,
+`full-battle-original-glugsider-ability.mt2f` and
+`full-battle-original-extract-draw-ability.mt2f` retain unchanged native skill
+definitions on modified control anchors. Sources are isolated runs
+`20261021-052152-4db9b66e`, `20261021-052323-a68c2e78` and
+`20261021-052152-e24e9885`. Bog Fly consumes one source-floor corruption and
+moves its activator to a different floor with zero corruption; the authored
+Room target list does not choose the unit moved. Glugsider consumes four
+selected-floor corruption and kills its living non-boss target. Extract Draw
+consumes three and draws two waiting cards. Native eligibility queries include
+positive and depleted negative controls, including a source-floor rejection
+while another floor still has corruption. Each settled native win has
+DEPTH-PASS and zero capture/mismatch/unsupported/pending counters; six plays,
+five/six EndTurns and sixteen immutable branches pass, with 128-state searches
+and equal serial/parallel results. The catalog remains a separate snapshot;
+these archives do not relax uncalibrated room-ability/source-trait compositions.

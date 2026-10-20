@@ -243,8 +243,8 @@ namespace MonsterTrain2Poju.Probe
             }
             if (data.GetTraits().Any(trait => !DamageScalingProbe.Known(trait.GetTraitStateName()))) interactions.Add("Card traits");
             if (data.GetTraits().Any(trait => trait.GetTraitStateName() == CardCorruptRestrictedModel.Trait &&
-                trait.GetParamInt() != 0 && (trait.GetParamBool() || data.IsUnitAbility() || data.IsRoomAbility())))
-                interactions.Add("Positive Corrupt Restricted source-room/unit abilities are not calibrated.");
+                trait.GetParamInt() != 0 && (data.IsRoomAbility() || trait.GetParamBool() && !data.IsUnitAbility())))
+                interactions.Add("Positive Corrupt Restricted room abilities or non-unit source-room traits are not calibrated.");
             if (data.GetTraits().Any(trait => trait.GetTraitStateName() == CardPileDrawModel.Trait &&
                 !(trait.GetParamInt() == 1 &&
                   (trait.GetParamInt2() == 0 && trait.GetParamInt3() == 15 && trait.GetParamBool() &&
@@ -388,7 +388,8 @@ namespace MonsterTrain2Poju.Probe
             bool deckSpellUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToSpellsInDeck";
             bool upgradedCopy = effect.GetEffectStateName() == "CardEffectAddUpgradedCopy";
             bool cardOnlyGenerationTarget = effect.GetEffectStateName() == "CardEffectAddBattleCard" && effect.GetTargetMode() == TargetMode.Hand;
-            bool cardOnlyDrawTarget = (effect.GetEffectStateName() == "CardEffectDrawType" ||
+            bool cardOnlyDrawTarget = effect.GetEffectStateName() == "CardEffectDraw" && effect.GetTargetMode() == TargetMode.DrawPile ||
+                (effect.GetEffectStateName() == "CardEffectDrawType" ||
                 effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard") &&
                 (effect.GetTargetMode() == TargetMode.DrawPile || effect.GetTargetMode() == TargetMode.Hand ||
                  effect.GetTargetMode() == TargetMode.LastDrawnCard);

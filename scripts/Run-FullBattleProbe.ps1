@@ -131,6 +131,7 @@ param(
     [switch] $OriginalSupportSpells,
     [string[]] $OriginalIsolatedSpellIds = @(),
     [string[]] $OriginalIsolatedSpellUpgrades = @(),
+    [string] $OriginalUnitAbilityId = '',
     [switch] $OriginalEquipmentCards,
     [string[]] $OriginalIsolatedEquipmentIds = @(),
     [switch] $OriginalStatusUnits,
@@ -1345,6 +1346,12 @@ if ($OriginalIsolatedSpellUpgrades.Count -gt 0) {
         throw 'Isolated spell upgrades must be native upgrade UUIDs.'
     }
     $environment['MT2_PROBE_ISOLATED_SPELL_UPGRADES'] = $OriginalIsolatedSpellUpgrades -join ','
+}
+if ($OriginalUnitAbilityId) {
+    if ($OriginalUnitAbilityId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' -or $OriginalIsolatedSpellIds.Count -eq 0) {
+        throw 'Original unit ability requires a native UUID and an isolated original spell control batch.'
+    }
+    $environment['MT2_PROBE_ORIGINAL_UNIT_ABILITY'] = $OriginalUnitAbilityId.ToLowerInvariant()
 }
 if ($OriginalRearrangeSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rearrange-spells' }
 if ($OriginalMovementSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-movement-spells' }
@@ -2780,7 +2787,11 @@ if ($OriginalSupportSpells -and (-not $trace.OriginalSupportSpellsPrepared -or -
 $returnedCorruptRecastCount = if ($OriginalIsolatedSpellIds.Count -gt 0 -and
     $OriginalIsolatedSpellIds[0] -eq 'bae01a8c-25dd-4a08-b08a-5f17a5f3f52a' -and
     $OriginalIsolatedSpellIds -contains '6a3633b6-4ecc-43b1-bb56-548f56cf1d60') { 1 } else { 0 }
-$isolatedRoomAbilityCount = @($trace.Actions | Where-Object { $null -ne $_.Action.ActivatorRoomIndex }).Count
+$isolatedRoomAbilityCount = @($trace.Actions | Where-Object { $null -ne $_.Action.ActivatorRoomIndex -or $_.Action.ActivatorUnitId -ne 0 }).Count
+if ($OriginalUnitAbilityId -and ($trace.OriginalUnitAbilityId -ne $OriginalUnitAbilityId -or
+    @($trace.Actions | Where-Object { $_.Action.ActivatorUnitId -gt 0 }).Count -ne 1)) {
+    throw 'Original unit skill witness requires exactly one positive native activation.'
+}
 if ($OriginalIsolatedSpellIds.Count -gt 0 -and ($trace.ModifierScenario -ne ('original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',')) -or
     -not $trace.OriginalSupportSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (4 + $OriginalIsolatedSpellIds.Count + $returnedCorruptRecastCount + $isolatedRoomAbilityCount))) {
     throw 'Isolated spell batch lacks three hosts, energy and every requested original spell play.'

@@ -74,6 +74,7 @@ namespace MonsterTrain2Poju.Probe
                 IsolatedIds.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60") &&
                 source.Spawn.Train.Context!.Statistics!.Value(ids[^1], "TimesPlayed", "ThisBattle") == 1)
                 index = ids.Length - 1; // Recast the actual returned recipient after the original choice.
+            if (index < 0 && OriginalUnitAbilityScenario.Enabled) return OriginalUnitAbilityScenario.Choose(source, ids[0]);
             if (index < 0 && IsolatedIds?.Any(RoomAbilitiesScenarioCard) == true)
                 return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action => action.ActivatorRoomIndex.HasValue &&
                     (!IsolatedIds.Contains("8d65e688-d93d-4bfa-975d-8c5f046fe2db") ||
@@ -272,7 +273,7 @@ namespace MonsterTrain2Poju.Probe
                 .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true) ||
                 spellIds.Contains("e1a39d88-4a77-4399-98b2-0b81f44fe6a8") || spellIds.Contains("6d6c72ab-890b-4275-bb52-2544befbc12b") || spellIds.Contains("9d18f2c2-1141-494d-943c-6ea6e13ff509");
             CapturesBump = spellIds.Contains(RoomPreCombatProbe.SirenSongId) || spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectBump"));
-            CapturesBump |= spellIds.Any(RoomAbilitiesScenarioCard);
+            CapturesBump |= spellIds.Any(RoomAbilitiesScenarioCard) || OriginalUnitAbilityScenario.Enabled;
             if (spellIds.Contains("37eaa51b-62cf-4cbc-971f-6d208fd07366") && spellIds.Any(id =>
                 all.FindCardData(id)!.GetTraits().Any(trait => trait.GetTraitStateName() == IndirectSpellModel.TreasureTrait)))
                 foreach (CharacterData enemy in all.GetAllCharacterData().Where(unit => unit.GetAssetKey() is "ShieldGuardT1_BasicNonAttack" or "MageT1_Junker"))
@@ -312,6 +313,7 @@ namespace MonsterTrain2Poju.Probe
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
                 .Concat(spellIds.Select(Add)).ToArray();
             JackInTheBoxProbe.Prepare(managers, created, spellIds);
+            OriginalUnitAbilityScenario.Prepare(managers, created);
             if (spellIds.Contains(TroopAuraProbe.CardId) && spellIds.Contains("f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b"))
             {
                 var fragile = new CardUpgradeState(); fragile.Setup(); fragile.SetAdditionalHP(-9);
