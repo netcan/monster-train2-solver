@@ -86,6 +86,10 @@ namespace MonsterTrain2Poju.Probe
             if (index >= 4 && IsolatedIds.Contains("f73bc157-ef23-4641-a938-ecd31945ca28") &&
                 source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "63a48bad-07da-4687-bfef-2f7c6653af5e")
                 candidates = candidates.OrderByDescending(action => action.RoomIndex == 0 && action.PlayerPosition == 1);
+            if (index >= 4 && IsolatedIds.Contains("5d34a8d1-be5c-44e0-bd7e-b6cd576df0bb") &&
+                source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "28875721-10df-4427-b9ef-4d237e89608e")
+                candidates = candidates.OrderByDescending(action => action.RoomIndex == 0 && source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Player));
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId is
                 "2ed78ce2-13c3-4e82-963f-99c9ea12d0f0" or "175a7730-7a1c-4da1-97b8-d799e7570396" or "98276338-b18f-4ffa-83a2-9501c2741f03" &&
                 ids.Any(id => source.Spawn.Train.Context.FindCard(id)?.DataId is "3cb0976c-7cf5-4470-bb5a-7eacfb404e9a" or "1362aa8c-d7b4-49b9-a4f7-268f47de4aa6" or "a5b05b40-45be-41ea-8c56-dd18f3feb1b4"))

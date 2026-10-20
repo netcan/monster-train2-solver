@@ -27,6 +27,6 @@ namespace MonsterTrain2Poju.Model
             new RoomCapacityAttachmentState(value.DataId, value.AssetKey, value.AttachmentType, value.CapacityDelta,
                 value.CharacterUpgrades, value.AffectsHeroes, value.AffectsMonsters, value.IgnoreBosses,
                 Key(value.DataId, roomIndex, ordinal), value.SpellCostDelta, value.MoonPhase, value.EnergyPerTurnDelta,
-                value.CharacterFilters, value.PostCombat, value.PreCombat);
+                value.CharacterFilters, value.PostCombat, value.PreCombat, value.StatusStackBonuses);
     }
 }

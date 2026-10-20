@@ -9821,3 +9821,19 @@ five-EndTurn chain passes sixteen immutable branches and a 128-state bounded
 search with zero unsupported attempts and equal serial/parallel results.
 Existing original rearrangement spells retain their focused nineteen-play replay.
 Triggered movement with OnShift/OnSentry callbacks remains explicitly guarded.
+
+`full-battle-original-isolated-hellfurnace.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-004554-040d90c5`.
+Unchanged Hellfurnace adds three Pyregel stacks to each application on its floor:
+original Pyrecask applies thirteen to the friendly Steward, while original Lava
+Flow applies seven to each enemy. Other floors remain unchanged. Native status
+ordering adds the room bonus after source scaling/Duality and before relic
+modifiers. The modifier's status mask supplies identities; its stored count is
+unused by the native getter. Other bonus/status parameters remain guarded.
+`full-battle-original-isolated-hellfurnace-replacement.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-004707-25dcc0c1`.
+Replacing Hellfurnace with original Fight Club removes the bonus: Pyrecask then
+applies its ordinary ten stacks. Both captures have DEPTH-PASS, settled wins and
+zero failure counters. Their eight/seven-play, five-EndTurn chains pass sixteen
+immutable branches and 128-state searches with zero unsupported attempts and
+equal serial/parallel results.

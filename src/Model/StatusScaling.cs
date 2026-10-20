@@ -119,8 +119,11 @@ namespace MonsterTrain2Poju.Model
                 context = scaled.Context; stacks = scaled.Stacks;
                 if (doubleForDuality) stacks = unchecked(stacks * 2);
                 if (allowStackModifiers)
+                {
+                    stacks = unchecked(stacks + RoomStatusStackModel.Modifier(context, source.RoomIndex, added.Id));
                     stacks = RelicStatusStackModel.GetStacks(context?.Relics, added.Id, stacks, target.Team,
                         target.Status(added.Id)?.Stacks > 0, fromPermanentUpgrade, fromEffectType: fromEffectType);
+                }
             }
             StatusScalingResult notified = RelicStatusStackModel.Notify(context, source.Preview, fromEffectType);
             if (!notified.Supported) return Unsupported(notified.UnsupportedReason!);

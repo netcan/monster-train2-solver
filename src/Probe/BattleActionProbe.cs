@@ -638,8 +638,9 @@ namespace MonsterTrain2Poju.Probe
             RoomModifierData[] capacities = modifiers.Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateCapacityModifier").ToArray();
             RoomModifierData[] spellCosts = modifiers.Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateSpellCostModifier").ToArray();
             RoomModifierData[] energies = modifiers.Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").ToArray();
+            RoomStatusStackRule[]? statusStacks = RoomStatusStackProbe.Rules(modifiers, interactions);
             CardUpgradeMaskRule[] characterFilters = upgrade.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
-            bool supported = (moon != null || post != null || pre != null || modifiers.Length == capacities.Length + spellCosts.Length + energies.Length && capacities.Length <= 1 && spellCosts.Length <= 1 &&
+            bool supported = (moon != null || post != null || pre != null || modifiers.Length == capacities.Length + spellCosts.Length + energies.Length + modifiers.Count(RoomStatusStackProbe.Known) && capacities.Length <= 1 && spellCosts.Length <= 1 &&
                 energies.Length <= 1 && energies.All(modifier => modifier.GetParamInt() == 1)) &&
                 upgrade.GetAttackDamageBuff() == 0 && upgrade.GetAdditionalHP() == 0 &&
                 (upgrade.GetAdditionalUnhealedHP() == 0 || card.GetID() == "57921ae8-ca98-4a3b-a659-5e741d2e904a" && upgrade.GetAdditionalUnhealedHP() == 20) && upgrade.GetCostReduction() == 0 && upgrade.GetAdditionalSize() == 0 &&
@@ -659,7 +660,7 @@ namespace MonsterTrain2Poju.Probe
                 affectsHeroes: effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
                 affectsMonsters: effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
                 ignoreBosses: effect.GetTargetIgnoreBosses(), moonPhase: moon, spellCostDelta: spellCosts.Sum(modifier => modifier.GetParamInt()),
-                energyPerTurnDelta: energies.Sum(modifier => modifier.GetParamInt()), characterFilters: characterFilters, postCombat: post, preCombat: pre);
+                energyPerTurnDelta: energies.Sum(modifier => modifier.GetParamInt()), characterFilters: characterFilters, postCombat: post, preCombat: pre, statusStackBonuses: statusStacks);
         }
 
         private static CardData? Fallback(CharacterData unit) => AllGameManagers.Instance!.GetSaveManager().GetAllGameData()

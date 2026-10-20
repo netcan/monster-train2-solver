@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-003831-d1f4dbcb/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,252 bytes, 12,040 unique nodes,
-SHA-256 `a84e58161c6ffb6d7413001d5973926739dfddeadf0f51a47361570d6d3f11a1`.
-The latest refresh captures Imprisoned Zephyr's self/front attack-triggered
+Source: `.probe-runs/full-battle-no-cards-20261021-004554-8b164dfc/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,258 bytes, 12,050 unique nodes,
+SHA-256 `701474e65a58098cd28eb386aea11e486712a9f998f28fae5311dd373132d809`.
+The latest refresh captures Hellfurnace's native room Pyregel stack modifier.
+Only this projection changes after normalizing absent/null StatusStackBonuses
+fields on existing room attachment descriptors; the other 667 are identical.
+The preceding refresh captures Imprisoned Zephyr's self/front attack-triggered
 floor rearrangement. Only this projection changes; the other 667 are identical.
 The preceding refresh captures Weapons Cache's triggered next-draw upgrade and
 typed draw. Only this projection changes; all other 667 definitions are identical.
