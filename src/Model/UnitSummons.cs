@@ -81,7 +81,7 @@ namespace MonsterTrain2Poju.Model
         {
             CombatContext? context = source.Context;
             CombatUnit? raw = definition.SpawnUnit;
-            if (!isClone && RoomSpawnCopyModel.Active(context, source.RoomIndex))
+            if (!isClone && RoomSpawnCopyModel.Active(source.WithContext(context)))
                 return Unsupported("Room spawn copying on generated/triggered births requires its native phase integration.");
             CardInstanceState? card = context?.FindCard(spawnerCardId);
             if (context == null || raw == null || raw.IsPyre || raw.Size < 0 || spawnerCardId < 0 ||
@@ -115,7 +115,7 @@ namespace MonsterTrain2Poju.Model
                 UnitModifiers old = template.Modifiers!;
                 var cloned = new UnitModifiers(old.AttackDamage, old.AttackDamageAdded, old.DamageBuff, old.RawSize, old.EquipmentLimit,
                     old.CanBeHealed, true, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
-                    old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts);
+                    old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts, old.SpawnCopySubtype);
                 template = UnitCloneModel.Copy(template, cloned, template.BaseAttack, template.Health, template.MaxHealth);
             }
             template = StatusAttackDamageModel.PrepareBirthTemplate(template, starting);

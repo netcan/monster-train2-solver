@@ -277,7 +277,8 @@ namespace MonsterTrain2Poju.Probe
             CombatTrigger[] triggers = CaptureTriggers(character, interactions);
             if (character.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier &&
                 !(ConduitProbe.Enabled && modifier is RoomStateConduitModifier) && !UnitSelfAttackModel.Known(modifier.GetType().Name) &&
-                !UnitRoomResourceModel.Known(modifier.GetType().Name) && !UnitRoomStatusModel.Known(modifier.GetType().Name) && modifier.GetType().Name != UnitRoomTriggerCountModel.Type))
+                !UnitRoomResourceModel.Known(modifier.GetType().Name) && !UnitRoomStatusModel.Known(modifier.GetType().Name) && modifier.GetType().Name != UnitRoomTriggerCountModel.Type &&
+                modifier is not RoomStateSpawnUnitOnUnitSpawnModifier))
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
             CardState? card = character.GetSpawnerCard();
             bool unsupportedSpawnerCardTriggers = card != null && card.GetTriggers().Any(trigger =>
@@ -435,7 +436,8 @@ namespace MonsterTrain2Poju.Probe
                 string id = card.GetCardDataID();
                 if (!checkedCopyCardIds.Add(id)) continue;
                 if (data.FindCardData(id)?.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectCopyUnits" ||
-                    effect.GetParamCardUpgradeData()?.GetRoomModifierUpgrades().Any(RoomSpawnCopyProbe.Known) == true) == true)
+                    effect.GetParamCardUpgradeData()?.GetRoomModifierUpgrades().Any(RoomSpawnCopyProbe.Known) == true ||
+                    effect.GetParamCharacterData()?.GetRoomModifiersData().Any(RoomSpawnCopyProbe.Known) == true) == true)
                 {
                     copyCardlessStatusRequired = true;
                     break;

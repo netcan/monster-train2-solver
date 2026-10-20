@@ -45,7 +45,9 @@ namespace MonsterTrain2Poju.Probe
                     .Cast<RoomStateModifierBase>().Select(modifier => modifier.GetRoomModifierData())),
                 roomTriggerCounts: UnitRoomTriggerCountProbe.Rules(unit.GetRoomStateModifiers()
                     .Where(modifier => modifier.GetType().Name == UnitRoomTriggerCountModel.Type)
-                    .Cast<RoomStateModifierBase>().Select(modifier => modifier.GetRoomModifierData())));
+                    .Cast<RoomStateModifierBase>().Select(modifier => modifier.GetRoomModifierData())),
+                spawnCopySubtype: RoomSpawnCopyProbe.UnitRule(unit.GetRoomStateModifiers().OfType<RoomStateModifierBase>()
+                    .Select(modifier => modifier.GetRoomModifierData())));
         }
         internal static UnitModifiers Definition(CharacterData data) => new UnitModifiers(data.GetAttackDamage(), 0, 0,
             data.GetSize(), data.GetEquipmentLimit(), data.GetCanBeHealed(), false, System.Array.Empty<CardUpgradeModifier>(),
@@ -54,6 +56,7 @@ namespace MonsterTrain2Poju.Probe
             selfAttackRules: UnitSelfAttackProbe.Rules(data.GetRoomModifiersData()),
             roomResources: UnitRoomResourceProbe.Rules(data.GetRoomModifiersData()),
             roomStatuses: UnitRoomStatusProbe.Rules(data.GetRoomModifiersData()),
-            roomTriggerCounts: UnitRoomTriggerCountProbe.Rules(data.GetRoomModifiersData()));
+            roomTriggerCounts: UnitRoomTriggerCountProbe.Rules(data.GetRoomModifiersData()),
+            spawnCopySubtype: RoomSpawnCopyProbe.UnitRule(data.GetRoomModifiersData()));
     }
 }

@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-005739-ab0dffea/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,368 bytes, 12,065 unique nodes,
-SHA-256 `464182901437c816d1207789dc7850cdc3bf4966a287b2c200d6fb39a9d4ef6b`.
-The latest refresh captures Hall of Mirrors' native room birth-copy modifier.
+Source: `.probe-runs/full-battle-no-cards-20261021-011038-dcde769a/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,231 bytes, 12,066 unique nodes,
+SHA-256 `67f415910cd75bb400a2e7d309d9291c19fdad96a367dfe86bf9327e499547eb`.
+The latest refresh captures Copy Morsels' native unit birth-copy modifier.
+Only this projection changes after normalizing absent/null SpawnCopySubtype
+fields on existing unit modifier descriptors; the other 667 are identical.
+The preceding refresh captures Hall of Mirrors' native room birth-copy modifier.
 Only this projection changes after normalizing absent/null SpawnCopySubtype
 fields on existing room attachment descriptors; the other 667 are identical.
 The preceding refresh captures Total Recall's native pre-combat consumed-spell draw.

@@ -617,7 +617,7 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatResult spawnTriggers;
                 if (rule.Summon != null)
                 {
-                    if (RoomSpawnCopyModel.Active(context, target.RoomIndex))
+                    if (RoomSpawnCopyModel.Active(target.WithContext(context)))
                         return Unsupported("Room spawn copies of repeated/pool summons require their native birth-phase integration.");
                     UnitBirthResult summoned = UnitSummonModel.Apply(target, originalRule!, card.InstanceId, position, targetRule.PlayerSlots);
                     if (!summoned.Supported) return Unsupported(summoned.Result.UnsupportedReason!);
@@ -693,7 +693,7 @@ namespace MonsterTrain2Poju.Model
                         startingApplications: initialStatuses, enqueue: null, moonPhase: AdvanceFromSpawn, relicBirthEffect: ApplySummonDamage,
                         relicCharacterEffect: ApplyCharacterRelics);
                     if (!spawnTriggers.Supported) return Unsupported(spawnTriggers.UnsupportedReason!);
-                    if (RoomSpawnCopyModel.Active(spawnTriggers.State!.Context, target.RoomIndex))
+                    if (RoomSpawnCopyModel.Active(spawnTriggers.State!))
                     {
                         var copyFrame = new TrainCombatState(train.Rooms.Select(room => room.RoomIndex == target.RoomIndex ? spawnTriggers.State! :
                             room.WithContext(spawnTriggers.State!.Context)).ToArray(), train.Movement, train.EnemySlotsPerRoom, spawnTriggers.State!.Context);

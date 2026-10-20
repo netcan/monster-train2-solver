@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Model
             int raw = unchecked(attack.Value + old.AttackDamageAdded);
             var modifiers = new UnitModifiers(raw, old.AttackDamageAdded, old.DamageBuff, old.RawSize, old.EquipmentLimit,
                 old.CanBeHealed, old.IsClone, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
-                old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts);
+                old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts, old.SpawnCopySubtype);
             var pyre = new CombatUnit(livePyre.Id, livePyre.AssetKey, livePyre.Team,
                 Math.Max(0, unchecked(raw + old.DamageBuff)), livePyre.Health, livePyre.MaxHealth,
                 livePyre.CanAttack, livePyre.IsPyre, livePyre.EndsBattleOnDeath, livePyre.Statuses, livePyre.Triggers,

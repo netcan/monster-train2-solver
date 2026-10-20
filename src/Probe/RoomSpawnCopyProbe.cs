@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -13,6 +14,14 @@ namespace MonsterTrain2Poju.Probe
             if (matches.Length != 1 || !matches[0].GetParamSubtype().IsNone || matches[0].DisallowedInDeploymentPhase)
                 interactions.Add("Uncalibrated room birth copy subtype or deployment policy");
             return matches[0].GetParamSubtype().IsNone ? "" : matches[0].GetParamSubtype().Key;
+        }
+        internal static string? UnitRule(IEnumerable<RoomModifierData> modifiers)
+        {
+            RoomModifierData[] matches = modifiers.Where(Known).ToArray();
+            if (matches.Length == 0) return null;
+            if (matches.Length != 1 || matches[0].GetParamSubtype().Key != "SubtypesData_Snack" || matches[0].DisallowedInDeploymentPhase)
+                throw new InvalidOperationException("Uncalibrated unit birth copy subtype or deployment policy.");
+            return matches[0].GetParamSubtype().Key;
         }
     }
 }

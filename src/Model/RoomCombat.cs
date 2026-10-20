@@ -986,6 +986,8 @@ namespace MonsterTrain2Poju.Model
                 if (roomStatusError != null) return roomStatusError;
                 string? roomTriggerCountError = UnitRoomTriggerCountModel.Validate(unit);
                 if (roomTriggerCountError != null) return roomTriggerCountError;
+                if (unit.Modifiers?.SpawnCopySubtype is not (null or "SubtypesData_Snack"))
+                    return "Uncalibrated unit birth copy subtype.";
                 if (unit.Modifiers?.RoomTriggerCounts?.Count > 0 && state.Context?.TriggerCounts == null)
                     return "Unit room trigger counts require a captured native trigger-count cache.";
                 if (selfAttackError != null) return selfAttackError;

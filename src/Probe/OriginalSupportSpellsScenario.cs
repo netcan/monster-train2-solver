@@ -83,6 +83,10 @@ namespace MonsterTrain2Poju.Probe
                 string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
                     .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            if (index >= 4 && IsolatedIds.Contains("d255dfe4-3fa7-4a47-873a-84d441889544") &&
+                source.PlayRules.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).SpawnUnit != null)
+                candidates = candidates.Where(action => action.RoomIndex ==
+                    (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "0347419a-2e3a-492d-a054-f6e340be3db2" ? 1 : 0));
             if (index >= 4 && IsolatedIds.Contains("83734ffd-cbaa-47f1-9809-cc4c4dac568d") &&
                 source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "63a48bad-07da-4687-bfef-2f7c6653af5e")
                 candidates = candidates.Where(action => action.RoomIndex == 0);

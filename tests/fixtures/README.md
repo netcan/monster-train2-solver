@@ -9870,3 +9870,17 @@ unsupported attempts and equal serial/parallel results. The affected existing
 unit-copy fixture and Weapons Cache birth fixture also pass their focused
 checks. Generated, triggered and repeated births into a duplicating room
 remain guarded pending calibration of their birth phases.
+
+`full-battle-original-isolated-copy-morsels-unit.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-011149-64c41c41`.
+Unchanged Copy Morsels copies a paid original Morsel Miner on its own floor.
+The native clone receives a detached source card, clone/cardless markers and
+copied stats/statuses. The owner's own birth, an unchanged Dreg on its floor
+and an unchanged Shadow Morsel on another floor each allocate one ordinary
+unit and no detached card. Clone callbacks do not recurse. Unit modifier
+metadata survives upgrades, attack changes and copying. The capture has
+DEPTH-PASS, a settled win and zero failure counters. Eight plays and five
+EndTurns replay across sixteen immutable branches; the 128-state search has
+zero unsupported attempts and equal serial/parallel results. Existing Hall
+copy and replacement chains still pass. Generated/triggered/repeated births
+through duplicating modifiers retain explicit native-phase guards.

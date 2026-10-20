@@ -166,7 +166,9 @@ namespace MonsterTrain2Poju.Probe
             var forgeUpgrade = new ForgeUpgradeDefinition(Upgrade(defaultForgeData), hasRoomForgeOverride, relicForgeUpgrades);
             rules = new BattlePlayRules(roomRules, reachable.Values.OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(),
                 new[] { "armor", "valor", "pyregel", "duality" }.Select(id => Status(id, 1)).ToArray(),
-                reachable.Values.Any(rule => rule.Effects.Any(effect => effect.Type == "CopyUnits" || effect.RoomAttachment?.SpawnCopySubtype != null)) ||
+                reachable.Values.Any(rule => rule.SpawnUnit?.Modifiers?.SpawnCopySubtype != null ||
+                    rule.Effects.Any(effect => effect.Type == "CopyUnits" || effect.RoomAttachment?.SpawnCopySubtype != null)) ||
+                spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Modifiers?.SpawnCopySubtype != null) ||
                 spawn.Train.Context?.RoomCapacities?.Any(room => room.Attachments?.Any(attachment => attachment.SpawnCopySubtype != null) == true) == true
                     ? UnitCopyCatalogProbe.Capture(reachable.Values.ToArray(), spawn) : null,
                 elixirs, forgeUpgrade);
@@ -680,7 +682,7 @@ namespace MonsterTrain2Poju.Probe
             UnitModifiers? m = source.Modifiers;
             var modifiers = m == null ? null : new UnitModifiers(m.AttackDamage, m.AttackDamageAdded, m.DamageBuff,
                 m.RawSize, m.EquipmentLimit, m.CanBeHealed, m.IsClone, m.Upgrades, m.HealthFromUpgrades, matchesSource,
-                m.DamageBuffFromStatusEffects, m.MagebladeDamagePerMagicPower, m.StatusAttackModifiers, m.IsChampion, m.SelfAttackRules, m.RoomResources, m.RoomStatuses, m.RoomTriggerCounts);
+                m.DamageBuffFromStatusEffects, m.MagebladeDamagePerMagicPower, m.StatusAttackModifiers, m.IsChampion, m.SelfAttackRules, m.RoomResources, m.RoomStatuses, m.RoomTriggerCounts, m.SpawnCopySubtype);
             return new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
                 source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
                 statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: modifiers, isBoss: source.IsBoss,
