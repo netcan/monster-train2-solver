@@ -16,6 +16,17 @@ internal static class OriginalUnitAbilityChecks
             CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == id);
             CardInstanceState card = before.Spawn.Train.Context!.CardRegistry.Single(card => card.InstanceId == action.CardInstanceId);
             Require(card.DataId == id && rule.Ability?.Kind == "Unit" && rule.ExternalInteractions.Count == 0, "Missing unchanged original unit skill.");
+            if (id == "8d54f68b-5660-4507-84c3-a0cf092bfbf1")
+            {
+                CardGenerationRule generation = rule.Effects.Single().Generation!;
+                CardToken generated = after.Spawn.Train.Context!.Cards.Hand.Single(token => before.Spawn.Train.Context.Cards.Hand.All(old => old.InstanceId != token.InstanceId));
+                CardInstanceState created = after.Spawn.Train.Context.CardRegistry.Single(card => card.InstanceId == generated.InstanceId);
+                Require(generation.OptionalUpgradeFilters?.Count > 0 && generation.Pool.Any(choice => choice.DataId == created.DataId) &&
+                    created.Temporary.Upgrades.Single().AssetKey == "FetchCostReduction" &&
+                    created.Temporary.Upgrades.Single().Stats.Cost == -1 && CardBranchMaskModel.Resolve(created).Traits.Contains("CardTraitEphemeral"),
+                    "Fetch must generate an original equipment pool member with its filtered temporary discount and Ephemeral trait.");
+                count++; continue;
+            }
             int sourceRoom = before.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == action.ActivatorUnitId)).RoomIndex;
             CardSourceTrait trait = card.MaskDescriptor!.SourceTraits!.Single(trait => trait.Type == CardCorruptRestrictedModel.Trait);
             int consumedRoom = trait.Bool ? sourceRoom : action.RoomIndex;
@@ -44,8 +55,9 @@ internal static class OriginalUnitAbilityChecks
             count++;
         }
         Require(count == 1, "Expected one positive original unit skill activation.");
-        Require(root.GetProperty("OriginalUnitAbilityQueries").EnumerateArray().Any(query => query.GetProperty("Allowed").GetBoolean()), "Missing native corruption eligibility query.");
-        Console.WriteLine("ORIGINAL-UNIT-ABILITY PASS: " + id + "; exact native corruption consumption and positive skill effect.");
+        if (id != "8d54f68b-5660-4507-84c3-a0cf092bfbf1")
+            Require(root.GetProperty("OriginalUnitAbilityQueries").EnumerateArray().Any(query => query.GetProperty("Allowed").GetBoolean()), "Missing native corruption eligibility query.");
+        Console.WriteLine("ORIGINAL-UNIT-ABILITY PASS: " + id + "; unchanged native definition and positive skill effect.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

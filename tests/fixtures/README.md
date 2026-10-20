@@ -10199,3 +10199,19 @@ DEPTH-PASS and zero capture/mismatch/unsupported/pending counters; six plays,
 five/six EndTurns and sixteen immutable branches pass, with 128-state searches
 and equal serial/parallel results. The catalog remains a separate snapshot;
 these archives do not relax uncalibrated room-ability/source-trait compositions.
+
+`full-battle-original-fetch-ability.mt2f` comes from
+`20261021-052816-0264433d`. The unchanged Fetch skill generates an equipment
+pool member with the original filtered cost reduction and Ephemeral upgrade.
+The projection now preserves optional upgrade masks and uses the existing
+branch-owned filter evaluation, matching native CardUpgradeHelper routing.
+`full-battle-original-isolated-infusion-definitions.mt2f` comes from
+`20261021-053056-3330c6a6`: unchanged Blast, Enfeebling, Goliath and Madman
+Infusion definitions have their NULL effects played once. Native Infusion and
+Persistent suppress discard/SelfPurge callbacks and retain the played buffer
+reference. Four independent unplayed originals, with no Freeze shim, stay in
+hand through sixteen nonterminal discard controls. Both captures have
+DEPTH-PASS, settled wins and four zero failure counters. Six/eight plays,
+five EndTurns, sixteen immutable branches and bounded 128-state searches pass.
+This validates the original NULL definitions and routing; upgrading their
+contents through Mix remains covered by the existing separate Mix fixtures.

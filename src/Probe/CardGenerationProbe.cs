@@ -69,7 +69,9 @@ namespace MonsterTrain2Poju.Probe
                 pool.RemoveAll(card => card.GetLinkedClass() != null && card.GetLinkedClass() != save.GetMainClass() && card.GetLinkedClass() != save.GetSubClass());
                 if (pool.Count == 0) interactions.Add("Class filtering leaves an invalid empty generated pool");
             }
-            CardUpgradeModifier? optional = data.GetParamCardUpgradeData() == null ? null : Upgrade(data.GetParamCardUpgradeData()!);
+            CardUpgradeData? optionalData = data.GetParamCardUpgradeData();
+            bool captureFilters = data.GetEffectStateName() == "CardEffectAddBattleCard" && optionalData?.GetFilters().Count > 0;
+            CardUpgradeModifier? optional = optionalData == null ? null : Upgrade(optionalData, captureFilters);
             // Both native generation iterators consult these upgrades only while copying
             // a source card's modifiers into DiscardPile. Other destinations cannot use them.
             var discard = data.GetCopyModifiersFromSource() && (CardPile)data.GetParamInt() == CardPile.DiscardPile
@@ -80,10 +82,11 @@ namespace MonsterTrain2Poju.Probe
             return new CardGenerationRule(((CardPile)data.GetParamInt()).ToString(), data.GetAdditionalParamInt(),
                 pool.Select(Creation).ToArray(), data.GetEffectStateName() == "CardEffectAddBattleCard" && data.GetParamBool2(),
                 data.GetParamBool(), data.GetCopyModifiersFromSource(), data.GetIgnoreTempModifiersFromSource(), optional, discard, interactions,
-                onlyUnequippedTargets: data.GetEffectStateName() == "CardEffectAddBattleCardPerTarget" ? (bool?)data.GetParamBool2() : null);
+                onlyUnequippedTargets: data.GetEffectStateName() == "CardEffectAddBattleCardPerTarget" ? (bool?)data.GetParamBool2() : null,
+                optionalUpgradeFilters: captureFilters ? optionalData!.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray() : null);
         }
-        private static CardUpgradeModifier Upgrade(CardUpgradeData data)
-        { var state = new CardUpgradeState(); state.Setup(data); return CardModifierProbe.Upgrade(state); }
+        private static CardUpgradeModifier Upgrade(CardUpgradeData data, bool captureFilters = false)
+        { var state = new CardUpgradeState(); state.Setup(data); return CardModifierProbe.Upgrade(state, false, filtersAlreadyApplied: captureFilters); }
         internal static CardCreationRule Creation(CardData data)
         {
             // Creation rules contain definition values, not live card identities.

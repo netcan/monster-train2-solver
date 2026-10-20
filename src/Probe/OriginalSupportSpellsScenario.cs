@@ -61,7 +61,7 @@ namespace MonsterTrain2Poju.Probe
                 Add("3c96e9b7-bdfb-4784-88f7-4b01bd58b4b7"), Add("1754dece-cf0b-455e-b9ca-d238134d7762"), Add("c354dd2c-0087-4eae-82d9-d4ab17b15f19"),
                 Add("996a0953-168a-44b9-bb90-5e46cbbb3e09"), Add("7f3dcb62-e418-4120-861c-02f8372173ce"), Add("7f3dcb62-e418-4120-861c-02f8372173ce"),
                 Add(piercing.GetID()), Add(hit.GetID()), Add(hit.GetID()), Add(hit.GetID()) };
-            foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
+            foreach (CardState card in created.Skip(3).Where(card => !card.HasTrait<CardTraitInfusion>())) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
@@ -314,6 +314,8 @@ namespace MonsterTrain2Poju.Probe
                 .Concat(spellIds.Select(Add)).ToArray();
             JackInTheBoxProbe.Prepare(managers, created, spellIds);
             OriginalUnitAbilityScenario.Prepare(managers, created);
+            if (spellIds.All(id => all.FindCardData(id)!.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitInfusion")))
+                foreach (string id in spellIds) Add(id); // Independent unplayed retention controls, without Freeze.
             if (spellIds.Contains(TroopAuraProbe.CardId) && spellIds.Contains("f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b"))
             {
                 var fragile = new CardUpgradeState(); fragile.Setup(); fragile.SetAdditionalHP(-9);
@@ -387,7 +389,7 @@ namespace MonsterTrain2Poju.Probe
                     if (!CardUpgradeHelper.TryApplyUpgradeToCard(card, null, upgrade, true, false, managers.GetCoreManagers(), out _))
                         throw new InvalidOperationException("Isolated spell upgrade was rejected by its native filter: " + upgradeId);
             }
-            foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
+            foreach (CardState card in created.Skip(3).Where(card => !card.HasTrait<CardTraitInfusion>())) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             foreach (CardState ephemeral in created.Skip(4).Where(card => card.HasTrait<CardTraitEphemeral>()))
                 cards.MoveCardFromHandToTopOfDeck(ephemeral); // Native first-turn draw keeps requested plays out of deployment discard.
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
