@@ -7903,6 +7903,21 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-crucible-warden.mt2f
 ```
 
+### Original Makeshift Golem
+
+`full-battle-original-isolated-makeshift-golem.mt2f` records an unchanged
+Makeshift Golem behind three zero-cost Steward anchors. Its original cost-1,
+12/12, size-2 birth matches; the captured `OnDeath` callback adds twelve Armor
+to its room. The 37.73-second native Instant run won with zero capture failures,
+mismatches, unsupported transitions or pending captures. The unit survived, so
+the callback is definition-only evidence here.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 92084a94-6cc6-4af3-9a7d-de61ec7d161c -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-makeshift-golem.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-makeshift-golem.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
