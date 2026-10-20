@@ -52,6 +52,10 @@ namespace MonsterTrain2Poju.Model
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
             PyreModifiedBaseAttack, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity,
             DragonsHoardCap, TowerHealingDisabled, value);
+        internal BattleResourceState WithBasePyreMaxHealth(int value) => new(BaseEnergy, DeploymentExtraEnergy,
+            BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, value, PyrePersistentDamage,
+            PyreModifiedBaseAttack, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity,
+            DragonsHoardCap, TowerHealingDisabled, VisibleDeckCount);
     }
 
     public sealed class RelicPileStartTurnRule

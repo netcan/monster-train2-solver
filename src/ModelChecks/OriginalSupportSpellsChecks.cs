@@ -20,6 +20,8 @@ internal static class OriginalSupportSpellsChecks
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
             if (replayKind != null) candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
+            if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f3406a6d-69f0-46e8-8db9-d829db017716")
+                candidates = candidates.OrderByDescending(action => action.RoomIndex == 2 && action.PlayerPosition == 1);
             if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
                 candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
@@ -357,6 +359,27 @@ internal static class OriginalSupportSpellsChecks
                     heal.GetProperty("After").GetInt32() == (heal.GetProperty("Preview").GetBoolean() || heal.GetProperty("Disabled").GetBoolean()
                         ? heal.GetProperty("Before").GetInt32() : Math.Min(heal.GetProperty("Maximum").GetInt32(), heal.GetProperty("Before").GetInt32() + 2))),
                 "Pyre Steward must heal the distant Pyre by two on native kills; native tests reject non-Pyre-room preview callbacks.");
+        }
+        if (originals.Contains("f3406a6d-69f0-46e8-8db9-d829db017716"))
+        {
+            var record = root.GetProperty("OriginalEquipmentGrowthEncounterComplete").EnumerateArray().Single();
+            Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("CaptureError").ValueKind == FixtureKind.Null,
+                "Bone Dog requires a completed native encounter callback.");
+            TrainCombatState before = record.GetProperty("Before").Deserialize<TrainCombatState>()!,
+                after = record.GetProperty("After").Deserialize<TrainCombatState>()!;
+            int[] order = record.GetProperty("ActiveMonsterOrder").Deserialize<int[]>()!;
+            string parent = Json(before);
+            TrainCombatResult replay = EncounterCompleteModel.Apply(before, order);
+            Require(replay.Supported, "Bone Dog encounter callback unsupported: " + replay.UnsupportedReason);
+            CombatUnit oldPyre = before.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre),
+                newPyre = after.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre);
+            Require(order.Any(id => before.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == id &&
+                    unit.SpawnerCardId == ids[4 + Array.IndexOf(originals, "f3406a6d-69f0-46e8-8db9-d829db017716")])) &&
+                after.Context!.Resources!.BasePyreMaxHealth - before.Context!.Resources!.BasePyreMaxHealth == 10 &&
+                newPyre.MaxHealth == oldPyre.MaxHealth && newPyre.Health - oldPyre.Health == 10,
+                "Bone Dog must raise raw Pyre maximum and wounded Pyre health by ten; the combat character retains its initialized maximum.");
+            Require(Json(replay.State) == Json(after) && Json(before) == parent,
+                "Bone Dog full encounter-complete snapshot differs or mutated its parent: " + ModelJson.Difference(Json(replay.State), Json(after)));
         }
         foreach (string egg in originals.Where(id => id is "27b0fdda-5dc4-4280-a510-fe51e550e3fb" or "07448181-5b6f-404a-88ff-cb4d8ac8a3b1"))
         {

@@ -610,10 +610,22 @@ namespace MonsterTrain2Poju.Model
             {
                 int roomPosition = Array.FindIndex(rooms, room => room.RoomIndex == queued.RoomIndex);
                 if (roomPosition < 0) { error = "Character trigger room is not present in train state."; return false; }
+                int pyrePosition = Array.FindIndex(rooms, room => room.Units.Any(unit => unit.IsPyre));
+                bool adjustsPyre = queued.Unit.Triggers.Where(trigger => trigger.Kind == queued.Kind).Any(trigger =>
+                    trigger.Effects.Any(effect => effect.Type == "CardEffectPermanentlyAdjustMaxPyreHealth"));
+                CombatUnit? externalPyre = adjustsPyre && pyrePosition >= 0 && pyrePosition != roomPosition
+                    ? rooms[pyrePosition].Units.Single(unit => unit.IsPyre) : null;
                 RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(WithContext(rooms[roomPosition], context), queued, queue.Add,
-                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
+                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : rooms[pyrePosition].RoomIndex);
                 if (!fired.Supported) { error = fired.UnsupportedReason; return false; }
                 rooms[roomPosition] = fired.State!; context = fired.State!.Context; results.Add(fired);
+                if (externalPyre != null)
+                {
+                    CombatUnit changed = fired.RetainedUnits.Single(unit => unit.Id == externalPyre.Id);
+                    rooms[pyrePosition] = rooms[pyrePosition].WithUnits(rooms[pyrePosition].Units.Select(unit =>
+                        unit.Id == changed.Id ? changed : unit).ToArray());
+                }
                 SetCompanionBosses(rooms, fired.State!.ActiveCompanionBossIds);
                 if (Terminal(fired.Outcome)) outcome = fired.Outcome;
                 return true;

@@ -77,6 +77,8 @@ namespace MonsterTrain2Poju.Probe
                 IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
                 if (replayKind != null) candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
+                if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f3406a6d-69f0-46e8-8db9-d829db017716")
+                    candidates = candidates.OrderByDescending(action => action.RoomIndex == 2 && action.PlayerPosition == 1);
                 if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
                     candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                         .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
@@ -106,7 +108,8 @@ namespace MonsterTrain2Poju.Probe
         {
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
             if (spellIds.Contains("e8f47c5d-c2d8-44e8-a443-4dca81acfa4d")) save.SetGold(250, isTotalReset: true);
-            if (spellIds.Contains("e90fc0e0-b383-48a9-bb10-d8aaa1518531")) save.Cheat_SetTowerHP(save.GetMaxTowerHP() - 10);
+            if (spellIds.Contains("e90fc0e0-b383-48a9-bb10-d8aaa1518531") || spellIds.Contains("f3406a6d-69f0-46e8-8db9-d829db017716"))
+                save.Cheat_SetTowerHP(save.GetMaxTowerHP() - 10);
             if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster)))
                 throw new InvalidOperationException("Isolated spell IDs must name one to thirty native spell, equipment or supporting monster definitions.");
             CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()

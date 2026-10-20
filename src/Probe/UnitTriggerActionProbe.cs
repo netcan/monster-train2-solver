@@ -33,6 +33,7 @@ namespace MonsterTrain2Poju.Probe
                 !(state.GetCardEffect() is CardEffectAdjustRoomCapacity) && !(state.GetCardEffect() is CardEffectAdjustForgePoints) &&
                 !(state.GetCardEffect() is CardEffectAdvanceMoonPhase) && !HealthEffect(state.GetCardEffect().GetType().Name) &&
                 state.GetCardEffect().GetType().Name != RelicResourceModel.PermanentPyreAttackAdjustment &&
+                state.GetCardEffect().GetType().Name != "CardEffectPermanentlyAdjustMaxPyreHealth" &&
                 state.GetCardEffect().GetType().Name != TriggeredStatusTransferModel.EffectType &&
                 !HatchEffect(state.GetCardEffect().GetType().Name) && !StatsFromSelf(state.GetCardEffect().GetType().Name) &&
                 !(state.GetCardEffect() is CardEffectAddStatusEffectBasedOnHealth)) return null;
@@ -53,7 +54,7 @@ namespace MonsterTrain2Poju.Probe
             effect.GetEffectStateName() != "CardEffectNULL" && effect.GetEffectStateName() != "CardEffectHeal" &&
                 effect.GetEffectStateName() != "CardEffectRemoveAllStatusEffects" && !DamageEffect(effect.GetEffectStateName()) && !StatusEffect(effect.GetEffectStateName()) &&
                 !EnergyModel.IsNativeEffect(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectAdjustRoomCapacity" && effect.GetEffectStateName() != "CardEffectAdjustForgePoints" &&
-                effect.GetEffectStateName() != "CardEffectAdvanceMoonPhase" && !HealthEffect(effect.GetEffectStateName()) && effect.GetEffectStateName() != RelicResourceModel.PermanentPyreAttackAdjustment && effect.GetEffectStateName() != TriggeredStatusTransferModel.EffectType &&
+                effect.GetEffectStateName() != "CardEffectAdvanceMoonPhase" && !HealthEffect(effect.GetEffectStateName()) && effect.GetEffectStateName() != RelicResourceModel.PermanentPyreAttackAdjustment && effect.GetEffectStateName() != "CardEffectPermanentlyAdjustMaxPyreHealth" && effect.GetEffectStateName() != TriggeredStatusTransferModel.EffectType &&
                 !HatchEffect(effect.GetEffectStateName()) && !StatsFromSelf(effect.GetEffectStateName()) ? null :
             // Effect states have no parent card; native damage/heal getters still clamp endpoints.
             Describe(effect, Numeric(effect, effect.GetParamInt()), effect.GetUseIntRange() ?
@@ -110,12 +111,13 @@ namespace MonsterTrain2Poju.Probe
             bool forceHatch = effect.GetEffectStateName() == "CardEffectForceHatchCheck";
             bool statsFromSelf = StatsFromSelf(effect.GetEffectStateName());
             bool pyreAttackAdjustment = effect.GetEffectStateName() == RelicResourceModel.PermanentPyreAttackAdjustment;
+            bool pyreHealthAdjustment = effect.GetEffectStateName() == "CardEffectPermanentlyAdjustMaxPyreHealth";
             bool adjustHealth = effect.GetEffectStateName() == "CardEffectAdjustMaxHealth";
             bool buffHealth = effect.GetEffectStateName() == "CardEffectBuffMaxHealth";
             bool removeAllStatuses = effect.GetEffectStateName() == "CardEffectRemoveAllStatusEffects";
             return new CardActionEffect(nullEffect ? "Null" : removeAllStatuses ? "RemoveAllStatusEffects" : statsFromSelf ? "AddStatsFromSelf" : capacity ? "AdjustCapacity" : drawNext ? "DrawNextTurn" : forgePoints ? ForgePointsModel.Effect : moonAdvance ? "AdvanceMoonPhase" :
-                adjustHealth ? "AdjustMaxHealth" : buffHealth ? "BuffHealth" : pyreAttackAdjustment ? "AdjustPyreAttack" : transferStatuses ? "TransferAllStatusesFromUnit" : hatchRemove ? "RemoveStatusPerCorrupt" : sacrifice ? "Sacrifice" : forceHatch ? "ForceHatchCheck" : energy ? EnergyEffectProbe.Type(effect) : DamageEffect(effect.GetEffectStateName()) ? "Damage" : effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" : "AddStatus",
-                pyreAttackAdjustment ? "Self" : effect.GetTargetMode().ToString(), value,
+                adjustHealth ? "AdjustMaxHealth" : buffHealth ? "BuffHealth" : pyreAttackAdjustment ? "AdjustPyreAttack" : pyreHealthAdjustment ? "AdjustPyreMaxHealth" : transferStatuses ? "TransferAllStatusesFromUnit" : hatchRemove ? "RemoveStatusPerCorrupt" : sacrifice ? "Sacrifice" : forceHatch ? "ForceHatchCheck" : energy ? EnergyEffectProbe.Type(effect) : DamageEffect(effect.GetEffectStateName()) ? "Damage" : effect.GetEffectStateName() == "CardEffectHeal" ? "Heal" : "AddStatus",
+                pyreAttackAdjustment || pyreHealthAdjustment ? "Self" : effect.GetTargetMode().ToString(), value,
                 effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
                 statuses ?? (StatusEffect(effect.GetEffectStateName()) || hatchRemove || transferStatuses ?
                     effect.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray() : Array.Empty<CombatStatus>()),

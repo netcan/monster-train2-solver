@@ -142,7 +142,7 @@ namespace MonsterTrain2Poju.Probe
                         if (Time.realtimeSinceStartup > deadline) Finish(false, "Natural forge-conservation combat-end callback did not complete.");
                         return;
                     }
-                    if (OriginalEquipmentGrowthScenario.Prepared && !OriginalEquipmentGrowthScenario.EncounterCompleteSettled)
+                    if (OriginalEquipmentGrowthScenario.CaptureEncounterComplete && !OriginalEquipmentGrowthScenario.EncounterCompleteSettled)
                     {
                         if (Time.realtimeSinceStartup > deadline) Finish(false, "Natural equipment-growth encounter-complete callback did not complete.");
                         return;

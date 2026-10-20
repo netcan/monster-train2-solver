@@ -9426,3 +9426,16 @@ even though the Pyre is elsewhere; full-train simulation carries the changed
 external Pyre back to its own room. Source-trait train-heal scaling remains
 guarded for character callbacks. This battle has settled victory, DEPTH-PASS,
 zero failure counters, sixteen immutable replay branches and search parity.
+
+`full-battle-original-isolated-bone-dog.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-202900-aa9bb776`.
+The unchanged Bone Dog survives behind the top-floor anchor and fires its
+OnEncounterComplete callback after StopCombatLoop's terminal snapshot. An
+independent before/after train capture records MonsterManager's active order,
+including the Pyre, and compares the complete modeled callback result. Raw
+maximum Pyre health increases from 80 to 90 and wounded Pyre HP from 70 to 80;
+the combat character retains its initialized max-health field of 80. The
+model keeps this save-backed callback separate from the earlier turn boundary.
+Positive fixed increases are calibrated; negative adjustments remain guarded.
+The native battle has settled victory, DEPTH-PASS, zero failure counters,
+sixteen immutable replay branches and serial/parallel search parity.

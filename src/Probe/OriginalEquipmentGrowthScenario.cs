@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "original-equipment-growth-relics";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
+        internal static bool CaptureEncounterComplete => Prepared || OriginalSupportSpellsScenario.IsolatedIds?.Contains("f3406a6d-69f0-46e8-8db9-d829db017716") == true;
         internal const string GearId = "fc119000-0000-4000-8000-000000000391";
         internal const string WoundId = "fc119000-0000-4000-8000-000000000393";
         internal const string HealId = "fc119000-0000-4000-8000-000000000394";
@@ -24,6 +25,7 @@ namespace MonsterTrain2Poju.Probe
             public TrainCombatState? After { get; set; }
             public bool Completed { get; set; }
             public string? CaptureError { get; set; }
+            public int[]? ActiveMonsterOrder { get; set; }
         }
         internal static readonly List<EncounterCompleteRecord> EncounterCompleteRecords = new List<EncounterCompleteRecord>();
         internal static bool EncounterCompleteSettled => EncounterCompleteRecords.Count == 1 &&
@@ -140,7 +142,7 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(ref IEnumerator __result)
             {
                 FullBattleTrace? trace = FullBattleTrace.Active;
-                if (!Prepared || trace == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                if (!CaptureEncounterComplete || trace == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 if (EncounterCompleteRecords.Count != 0)
                 { trace.CaptureFailure(new InvalidOperationException("Encounter-complete callback was observed more than once.")); return; }
                 __result = Observe(__result, trace);
@@ -150,7 +152,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 var record = new EncounterCompleteRecord();
                 EncounterCompleteRecords.Add(record);
-                try { record.Before = trace.CaptureTrain(); }
+                try
+                {
+                    record.Before = trace.CaptureTrain();
+                    record.ActiveMonsterOrder = ((IEnumerable<CharacterState>)AccessTools.Field(typeof(MonsterManager), "activeMonsters")
+                        .GetValue(AllGameManagers.Instance!.GetMonsterManager())).Select(trace.UnitId).ToArray();
+                }
                 catch (Exception error) { record.CaptureError = error.ToString(); trace.CaptureFailure(error); }
                 try
                 {

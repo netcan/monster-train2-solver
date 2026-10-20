@@ -680,14 +680,16 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre).CharacterPhase(unitId, kind);
         }
 
-        internal static RoomCombatResult ApplyQueuedCharacterTrigger(RoomCombatState state, QueuedCharacterTrigger queued, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+        internal static RoomCombatResult ApplyQueuedCharacterTrigger(RoomCombatState state, QueuedCharacterTrigger queued, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1)
         {
             if (RelicFloorTransitionDamageModel.TryDefer(state, queued, enqueue, out RoomCombatResult floorDamage))
                 return floorDamage;
             if (RelicMovementStatusModel.TryApplyBeforeMovementTrigger(state, queued, enqueue, out RoomCombatResult movementStatus))
                 return movementStatus;
             RoomCombatResult triggered = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue,
-                resetPreviewTriggers: false, refreshPyre: refreshPyre).TraceAllDispatches(queued.CaptureAllDispatches).QueuedTrigger(queued);
+                resetPreviewTriggers: false, refreshPyre: refreshPyre, externalPyre: externalPyre,
+                externalPyreRoomIndex: externalPyreRoomIndex).TraceAllDispatches(queued.CaptureAllDispatches).QueuedTrigger(queued);
             RoomCombatResult relicStatusEffect = RelicStatusAddedEffectModel.ApplyAfterTrigger(triggered, queued);
             RoomCombatResult entered = RelicRoomEntryStatusModel.ApplyAfterEntry(relicStatusEffect, queued, enqueue);
             return RelicAfterSpawnChanceStatusModel.ApplyAfterEntry(entered, queued, enqueue);
@@ -1048,6 +1050,14 @@ namespace MonsterTrain2Poju.Model
                     if (countError != null) return countError;
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        if (effect.Type == "CardEffectPermanentlyAdjustMaxPyreHealth")
+                        {
+                            if (trigger.Kind != "OnEncounterComplete" || effect.Action?.Type != "AdjustPyreMaxHealth" ||
+                                effect.Action.Target != "Self" || effect.Action.Value != effect.Value || effect.Value <= 0 ||
+                                effect.Action.Range != null || effect.Action.Statuses.Count != 0 || state.Context?.Resources == null)
+                                return "Permanent Pyre health requires a positive fixed encounter-complete adjustment and captured resources.";
+                            continue;
+                        }
                         if (effect.Type == RelicResourceModel.PermanentPyreAttackAdjustment)
                         {
                             CardActionEffect? adjustment = effect.Action;
@@ -3269,7 +3279,8 @@ namespace MonsterTrain2Poju.Model
                     // Removed native characters have no spawn point and skip trigger
                     // preflight, though their once flag can still be marked before abort.
                     if (unit.InRoom && !unit.Removed && !ActionTriggerPassesTest(unit, trigger, lastSpawnedOverrideUnitId)) continue;
-                    if (kind == "CorruptionAdded" && trigger.SuppressTriggerNotification == false && !source.Preview &&
+                    if ((kind == "CorruptionAdded" && trigger.SuppressTriggerNotification == false ||
+                        kind == "OnEncounterComplete" && trigger.SuppressTriggerNotification != true) && !source.Preview &&
                         context?.QueryFrame?.SelectedRoomIndex != null)
                         context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
                     var effects = trigger.Effects.ToArray();
@@ -4190,6 +4201,21 @@ namespace MonsterTrain2Poju.Model
                     RoomCorruptionResult changed = RoomCorruptionModel.Apply(train, source.RoomIndex, action);
                     if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
                     context = changed.Context;
+                    return true;
+                }
+                if (action.Type == "AdjustPyreMaxHealth")
+                {
+                    if (source.Preview) return true;
+                    WorkingUnit? pyre = units.SingleOrDefault(unit => unit.Source.IsPyre);
+                    if (context?.Resources == null || pyre == null)
+                    { unsupportedReason = "Permanent Pyre health requires the live Pyre and raw maximum health."; return false; }
+                    context = context.WithResources(context.Resources.WithBasePyreMaxHealth(
+                        Math.Max(1, unchecked(context.Resources.BasePyreMaxHealth + action.Value))));
+                    RelicResourceResult maximum = RelicResourceModel.GetPyreMaxHealth(context);
+                    if (!maximum.Supported) { unsupportedReason = maximum.UnsupportedReason; return false; }
+                    // SaveManager's new maximum does not rewrite the combat
+                    // character's initialized max-health field at this boundary.
+                    pyre.Health = Math.Max(0, Math.Min(maximum.Value, unchecked(pyre.Health + action.Value)));
                     return true;
                 }
                 if (action.Type == "AdjustPyreAttack")
