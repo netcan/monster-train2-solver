@@ -16,9 +16,13 @@ namespace MonsterTrain2Poju.Probe
         internal static CardActionEffect? Definition(CardEffectData effect, List<string> interactions)
         {
             if (!Known(effect.GetEffectStateName())) return null;
-            if (effect.GetUseIntRange() || effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
+            // AddCardUpgradeToUnits and its temporary subclass never read the
+            // shared editor scaling/copy/subtype fields. Target filters remain
+            // independent and are captured below; range initialization is stateful.
+            bool ignoresSharedFields = effect.GetEffectStateName() is "CardEffectAddCardUpgradeToUnits" or "CardEffectAddTempCardUpgradeToUnits";
+            if (effect.GetUseIntRange() || !ignoresSharedFields && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
                 effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() ||
-                effect.GetUseMagicPowerMultiplier() || !effect.GetParamSubtype().IsNone)
+                effect.GetUseMagicPowerMultiplier() || !effect.GetParamSubtype().IsNone))
                 interactions.Add("Unmodeled triggered unit upgrade parameters");
             bool equipment = effect.GetEffectStateName() == "CardEffectBuffEquipment";
             bool scaleUpgrade = (effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" || equipment) && effect.GetParamBool();
@@ -30,7 +34,7 @@ namespace MonsterTrain2Poju.Probe
                 if (scaleUpgrade && !data.CanScaleUpgradeToSingleInstance())
                     interactions.Add("Invalid scaled triggered unit upgrade definition");
                 var state = new CardUpgradeState(); state.Setup(data);
-                bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" || equipment;
+                bool filtersIgnoredByEffect = ignoresSharedFields || equipment;
                 upgrade = CardModifierProbe.Upgrade(state, false, filtersAlreadyApplied: filtersIgnoredByEffect);
                 interactions.AddRange(upgrade.ExternalInteractions);
             }

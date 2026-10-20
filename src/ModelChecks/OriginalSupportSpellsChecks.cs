@@ -32,6 +32,10 @@ internal static class OriginalSupportSpellsChecks
                 source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey is "RitualOfBattle" or "ScrapForParts")
                 candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.AssetKey == "MonsterBalmabello"));
+            if (index >= 4 && ids.Any(id => source.Spawn.Train.Context!.FindCard(id)?.DataId == "6a2bbbef-1282-4d28-8890-1daf0c1be50c") &&
+                source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "HiddenPassage")
+                candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId && unit.AssetKey == "MonsterDeathsDancer"));
             PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
                 playerPosition: index < 3 ? 0 : -1) : candidates.FirstOrDefault();
             return chosen != null && BattleActionModel.PlayCard(source, chosen).Supported ? chosen : null;
@@ -167,6 +171,39 @@ internal static class OriginalSupportSpellsChecks
                 (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
                 "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            if (rule.AssetKey is "SilverInk" or "MagicPowerHand")
+            {
+                CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;
+                foreach (string dataId in new[] { "bae01a8c-25dd-4a08-b08a-5f17a5f3f52a", "d81f1f43-f20e-4459-9fc4-19e5836a876f" })
+                {
+                    CardInstanceState control = old.CardInstances!.Single(item => item.DataId == dataId),
+                        upgraded = changed.FindCard(control.InstanceId)!;
+                    string key = rule.AssetKey == "SilverInk" ? "SilverInk_Upgrade" : "Magic";
+                    CardUpgradeModifier applied = upgraded.Temporary.Upgrades.Single(item => item.AssetKey == key);
+                    Require(old.Cards.Hand.Any(token => token.InstanceId == control.InstanceId) &&
+                        applied.Stats.Damage == (rule.AssetKey == "SilverInk" ? 15 : 50) && applied.Stats.Heal == applied.Stats.Damage &&
+                        upgraded.Permanent.Upgrades.Count == control.Permanent.Upgrades.Count,
+                        "Filtered hand upgrade must positively enhance the native damage/heal controls with Attuned scaling.");
+                }
+                foreach (string excluded in new[] { "d14a50f3-728d-43e1-87f0-ef1b013f6678", "d861b6a6-d8ef-4d58-8ebd-9f0abc276456", "ac110052-0000-4000-8000-000000000099" })
+                {
+                    Require(old.Cards.Hand.Any(token => token.DataId == excluded), "Missing independent hand filter exclusion control.");
+                    foreach (CardToken token in old.Cards.Hand.Where(token => token.DataId == excluded))
+                        Require(Json(old.FindCard(token.InstanceId)!.Temporary) == Json(changed.FindCard(token.InstanceId)!.Temporary),
+                            "Hand upgrade leaked to a monster, blacklisted heal or non-damage/heal spell.");
+                }
+            }
+            if (rule.AssetKey == "HiddenPassage" && originals.Contains("6a2bbbef-1282-4d28-8890-1daf0c1be50c"))
+            {
+                CombatUnit dancer = after.Spawn.Train.Rooms[1].Units.Single(unit => unit.Id == action.TargetUnitId);
+                Require(dancer.AssetKey == "MonsterDeathsDancer" && dancer.AttackBeforeStatuses == 11 &&
+                    dancer.Triggers.Single(trigger => trigger.Kind == "OnShift").HasTriggered &&
+                    after.Spawn.Train.Rooms[1].Units.Where(unit => unit.Team == CombatTeam.Player).All(unit =>
+                        unit.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "DeathDancerUpgrade" && upgrade.Stats.Damage == 4)) &&
+                    after.Spawn.Train.Rooms.Where(room => room.RoomIndex != 1).SelectMany(room => room.Units).All(unit =>
+                        unit.Modifiers!.Upgrades.All(upgrade => upgrade.AssetKey != "DeathDancerUpgrade")),
+                    "Death's Dancer must gain four Attack with its destination-floor allies on Shift, preserving other-floor controls.");
+            }
             if (rule.AssetKey == "StarterDamageForMorsel")
             {
                 CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;

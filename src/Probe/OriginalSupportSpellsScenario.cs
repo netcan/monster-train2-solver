@@ -10,6 +10,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalSupportSpellsScenario
     {
         internal static bool CapturesTriggeredSummons { get; private set; }
+        internal static bool CapturesBump { get; private set; }
         internal const string Name = "original-support-spells";
         internal const string IsolatedPrefix = "original-isolated-spells:";
         internal static string[]? IsolatedIds => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is string scenario &&
@@ -89,6 +90,10 @@ namespace MonsterTrain2Poju.Probe
                     source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey is "RitualOfBattle" or "ScrapForParts")
                     candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                         .Any(unit => unit.Id == action.TargetUnitId && unit.AssetKey == "MonsterBalmabello"));
+                if (index >= 4 && IsolatedIds.Contains("6a2bbbef-1282-4d28-8890-1daf0c1be50c") &&
+                    source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "HiddenPassage")
+                    candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .Any(unit => unit.Id == action.TargetUnitId && unit.AssetKey == "MonsterDeathsDancer"));
                 PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
                     playerPosition: index < 3 ? 0 : -1) : candidates.FirstOrDefault();
                 BattleActionResult? isolatedResult = chosen == null ? null : BattleActionModel.PlayCard(source, chosen);
@@ -117,6 +122,7 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Isolated spell IDs must name one to thirty native spell, equipment or supporting monster definitions.");
             CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()
                 .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true);
+            CapturesBump = spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectBump"));
             bool hatchControls = spellIds.Contains("27b0fdda-5dc4-4280-a510-fe51e550e3fb") ||
                 spellIds.Contains("07448181-5b6f-404a-88ff-cb4d8ac8a3b1");
             if (hatchControls || spellIds.Contains("a524d58a-6b12-4ec4-870c-679837e234cf") || spellIds.Contains("ae114dc4-d08f-4909-a2ad-d99215661463"))
@@ -146,6 +152,14 @@ namespace MonsterTrain2Poju.Probe
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
                 .Concat(spellIds.Select(Add)).ToArray();
+            if (spellIds.Any(id => id is "6bbebe9d-a185-412b-a2a7-4db581036ed7" or "758a0b03-3af5-4a70-82e1-4bfca40e92f0"))
+            {
+                Add("bae01a8c-25dd-4a08-b08a-5f17a5f3f52a"); // Native Attuned spell, retained as an independent hand control.
+                Add("d81f1f43-f20e-4459-9fc4-19e5836a876f"); // Ordinary healing spell gains Attuned before numeric upgrades.
+                Add("d861b6a6-d8ef-4d58-8ebd-9f0abc276456"); // Authored blacklist excludes this healing spell.
+                Add(steward.GetID()); // Monster exclusion control.
+                Add(energy.GetID()); // Non-Attuned spell control.
+            }
             if (spellIds.Contains("a27a5954-d63a-4b7c-9cff-308aa6a91314"))
                 for (int sacrificeControl = 0; sacrificeControl < 2; sacrificeControl++) Add(steward.GetID());
             if (spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectDrawType")))

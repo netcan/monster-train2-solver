@@ -9455,3 +9455,26 @@ changes from three to four. The shared corruption transition retains its
 guards for uncalibrated character and relic listeners. Both battles have
 settled native victories, DEPTH-PASS, zero failure counters, sixteen immutable
 replay branches and serial/parallel search parity.
+
+`full-battle-original-isolated-filtered-hand-upgrades.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-204639-42888e8d`.
+Original Silver Ink and Magic Power Hand retain the ordered native upgrade
+filters. Both Cosmic Bolt and an initially non-Attuned Starter Heal receive
+temporary upgrades: Silver Ink grants Attuned before its +3/+3 scales to
++15 Damage/+15 Heal, and the following +10/+10 scales to +50/+50. Independent
+monster, non-damage/heal spell and blacklisted Unleash the Wildwood controls
+remain unchanged. Filters are evaluated against each current branch-owned
+card before upgrade callbacks or trait validation.
+
+`full-battle-original-isolated-deaths-dancer.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-204847-2233476b` and
+preserves an exact original birth definition. The paired positive callback
+fixture, `full-battle-original-isolated-deaths-dancer-shift.mt2f`, comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-204639-8537a9ef`.
+Hidden Passage moves the original Dancer from floor zero to one; its OnShift
+grants +4 Attack to itself and the destination anchor, leaving other floors
+unchanged. AddCardUpgradeToUnits and its temporary subclass ignore the shared
+copy/scaling/subtype editor fields; their target filters remain captured and
+range initialization remains guarded. The movement witness additionally
+captures native Bump properties. All three battles have settled victories,
+DEPTH-PASS, zero failure counters, sixteen immutable branches and search parity.

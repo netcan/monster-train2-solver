@@ -506,10 +506,10 @@ namespace MonsterTrain2Poju.Probe
                     CardUpgradeData upgradeData = effect.GetParamCardUpgradeData();
                     var upgradeState = new CardUpgradeState(); upgradeState.Setup(upgradeData);
                     bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" ||
-                        effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" || deckSpellUpgrade || type == "DuplicateCard" || type == "MergeEquipment";
+                        effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" || deckSpellUpgrade || handUpgrade || type == "DuplicateCard" || type == "MergeEquipment";
                     upgrade = CardModifierProbe.Upgrade(upgradeState, false, filtersAlreadyApplied: filtersIgnoredByEffect);
                     interactions.AddRange(upgrade.ExternalInteractions);
-                    if (deckSpellUpgrade || type == "DuplicateCard") upgradeFilters = upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
+                    if (deckSpellUpgrade || handUpgrade || type == "DuplicateCard") upgradeFilters = upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
                     if (scaleUpgrade && !upgradeData.CanScaleUpgradeToSingleInstance()) interactions.Add("Invalid scaled unit upgrade definition");
                 }
                 lifetime = type == "BuffEquipment" ? "TemporaryUntilUnitDeath" : deckSpellUpgrade ? "TemporaryUntilEndOfBattle" : handUpgrade ?

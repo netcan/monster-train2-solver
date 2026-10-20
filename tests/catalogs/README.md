@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-204011-14533b99/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,783 bytes, 11,705 unique nodes,
-SHA-256 `20f940b74715c15524500238b82b870f45e4a8156dfb7ada8f245e213948d838`.
-The latest refresh projects Shadesplitter's Room-targeted OnKill generator and
+Source: `.probe-runs/full-battle-no-cards-20261020-204847-2724f8d4/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,899 bytes, 11,711 unique nodes,
+SHA-256 `5d7d28bc3efb2da23e29514fe41531eae88d1b816331eb57a1002f60cc060876`.
+The latest refresh captures Silver Ink and Magic Power Hand upgrade filters and
+removes the guard on unused shared fields in Death's Dancer's temporary unit
+upgrade. Only these three Rules changed; all 668 raw definitions are unchanged.
+The preceding refresh projects Shadesplitter's Room-targeted OnKill generator and
 Revenge of the Damned's OnKill corruption. Only these two Rules changed;
 all 668 raw native definitions remain identical.
 The preceding refresh projects Bone Dog's fixed positive encounter-complete Pyre

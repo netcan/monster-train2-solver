@@ -7,7 +7,7 @@ namespace MonsterTrain2Poju.Model
     public static class HandUpgradeModel
     {
         public static RoomCombatResult Apply(RoomCombatState source, CardUpgradeModifier upgrade, string lifetime,
-            BattlePlayRules? definitions)
+            BattlePlayRules? definitions, IReadOnlyList<CardUpgradeMaskRule>? filters = null)
         {
             string? validation = RoomCombatModel.Validate(source);
             if (validation != null) return Unsupported(validation);
@@ -22,6 +22,15 @@ namespace MonsterTrain2Poju.Model
                 CardInstanceState? card = context.FindCard(token.InstanceId);
                 if (card == null || card.DataId != token.DataId)
                     return Unsupported("Missing or mismatched upgraded card instance.");
+                if (filters?.Count > 0)
+                {
+                    if (card.MaskDescriptor == null) return Unsupported("Hand upgrade filters require branch-owned card metadata.");
+                    CardUpgradeMaskCard mask;
+                    try { mask = CardBranchMaskModel.Resolve(card); }
+                    catch (InvalidOperationException error) { return Unsupported(error.Message); }
+                    bool allSubtypes = context.Relics?.Any(relic => relic.EffectTypes.Contains("RelicEffectMonstersAreAllSubtypes")) == true;
+                    if (!filters.All(filter => CardUpgradeMaskModel.FilterCard(filter, mask, allSubtypes))) continue;
+                }
                 CardPlayRule? rule = definitions.Cards.FirstOrDefault(item => item.DataId == card.DataId);
                 if (rule == null) return Unsupported("Missing upgraded card trait definition.");
                 var interactions = rule.UpgradeInteractions ?? rule.ExternalInteractions;

@@ -1205,7 +1205,7 @@ namespace MonsterTrain2Poju.Model
                 if (effect.Type == "HandUpgrade")
                 {
                     RoomCombatResult upgraded = HandUpgradeModel.Apply(state.Rooms.Single(item => item.RoomIndex == roomIndex),
-                        effect.Upgrade!, effect.Lifetime, definitions);
+                        effect.Upgrade!, effect.Lifetime, definitions, effect.UpgradeFilters);
                     if (!upgraded.Supported) return UnsupportedTrain(upgraded.UnsupportedReason!);
                     state = ReplaceRoom(state, upgraded.State!);
                     events.AddRange(upgraded.Events);
