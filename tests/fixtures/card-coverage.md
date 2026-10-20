@@ -20,9 +20,9 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 495 | 500 | No captured projection guards; at least one successful native play has the same captured definition projection. |
-| mechanism-only | 9 | 90 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
-| partial | 59 | 67 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
+| direct-native-play | 497 | 502 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| mechanism-only | 10 | 91 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
+| partial | 56 | 64 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 11 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
 
@@ -58,7 +58,7 @@ Original Dante's Inferno calibrates ten damage per permanent Dante's Candle, ove
 
 Original GainXEnergy calibrates played-discard ember scaling from the still-live paid-cost statistic: X three returns six current ember; X zero returns zero. An unplayed original repeatedly discards/redraws without gaining ember. Seven callbacks independently match complete context, leaving next-turn/every-turn income unchanged. Exact base source parameters, paired Consume metadata and live paid cost are required; next-turn routes and added/replaced traits retain guards.
 
-Unplayable source values zero/three and Persistent/Refine value three have original native witnesses. The separate legality index records 12 restored full-card rejection queries across 3 definitions (2 logbook), with exact rule/source metadata. These are native rejection observations, not successful card plays; the dedicated checker independently verifies Illegal results and immutable parents. Ordinary unplayable cards discard/redraw, Persistent Scrap Metal stays in hand, and original Starter Scrap smelts it for Refine 3. Explicit discard and upgrade-added Refine remain guarded. These observations do not raise direct-play counts.
+Unplayable source values zero/three and Persistent/Refine value three have original native witnesses. The separate legality index records 20 restored full-card rejection queries across 3 definitions (2 logbook), with exact rule/source metadata. These are native rejection observations, not successful card plays; the dedicated checker independently verifies Illegal results and immutable parents. Ordinary unplayable cards discard/redraw, Persistent Scrap Metal stays in hand, and original Starter Scrap smelts it for Refine 3. Explicit discard and upgrade-added Refine remain guarded. These observations do not raise direct-play counts.
 
 New descriptors retain the actual CardData supplied to CardState.Setup, with source trait parameters separate from runtime traits. All captured raw source fields must match the frozen catalog when present; X damage/status scaling requires this provenance and older missing metadata remains unverified. Missing provenance, changed multiplier/query/filter, and changed runtime parameters are rejected. Other trait families need separate calibration. A shared DataId alone never establishes direct coverage. Instance upgrades do not change the original definition, but authored definition changes do. Other recorded plays can be authored variants or older/incomplete projections; they are not automatically original-card evidence.
 
@@ -80,7 +80,7 @@ Original Bloody Moon and Antumbra Assault each add seven unchanged plays with de
 
 Original Surgical Strike adds six unchanged plays and one generated play. Native suppression requires both Monsters team and FunGuy subtype; ordinary friendly and enemy kills still copy. Piercing bypasses armor/shield, nonlethal hits do not copy, and a revived FunGuy remains suppressed. Three deterministic source-card copies preserve the original temporary Ephemeral upgrade, upgrade inheritance, allocation/RNG and played/unplayed purge. Source team/subtype metadata is required; bonus fire counts, other subtypes, starting upgrades, all-subtype relics and character-attributed kills remain guarded.
 
-Across all classifications, 501 identities (496 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Across all classifications, 503 identities (498 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 
@@ -90,7 +90,7 @@ Across all classifications, 501 identities (496 logbook) have at least one defin
 - [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 652 full battles and 8856 native actions whose captured prediction is supported, actual state exists and difference is null. 578 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 654 full battles and 8865 native actions whose captured prediction is supported, actual state exists and difference is null. 579 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 
@@ -107,12 +107,11 @@ Counts are per logbook identity and can overlap. Conditional upgrade/discard gua
 | CardTraitTreasure hand discard callback/routing | 3 |
 | Upgrade replacements | 3 |
 | Upgrade trait CardTraitTreasure | 3 |
-| CardTraitEphemeral hand discard callback/routing | 2 |
 | Spell scaling or target filters | 2 |
 | Additional/modified unit spawn | 1 |
-| CardTraitPersistent hand discard callback/routing | 1 |
 | CardTraitScalingAddCards hand discard callback/routing | 1 |
 | Uncalibrated room pre-combat effect composition. | 1 |
+| Upgrade card filters | 1 |
 
 ## Explicitly unsupported logbook entries
 

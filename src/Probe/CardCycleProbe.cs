@@ -101,7 +101,8 @@ namespace MonsterTrain2Poju.Probe
                         .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitEphemeral))
                         .Select(trace.CardId).ToArray() : Array.Empty<int>();
                     int[] persistentCardIds = kind == "Discard" ? cards.GetHand()
-                        .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitPersistent || trait is CardTraitFreeze))
+                        .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitPersistent) ||
+                            card.GetTraitStates().Any(trait => trait is CardTraitFreeze) && !card.HasTrait<CardTraitEphemeral>())
                         .Select(trace.CardId).ToArray() : Array.Empty<int>();
                     int[] infusionCardIds = kind == "Discard" ? cards.GetHand()
                         .Where(card => card.GetTraitStates().Any(trait => trait is CardTraitInfusion))

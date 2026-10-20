@@ -322,6 +322,8 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-inhale-birth.mt2f',
     'full-battle-original-isolated-inhale-existing.mt2f',
     'full-battle-original-isolated-inhale-friendly-death.mt2f',
+    'full-battle-original-isolated-ephemeral-routing.mt2f',
+    'full-battle-original-unplayable-persistent-routing.mt2f',
     'full-battle-original-null-scourges.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
@@ -2409,7 +2411,7 @@ $remainingOriginalSpellFixtures = @($fixtures | Where-Object { (Split-Path -Leaf
     'full-battle-original-isolated-deaths-dancer-shift.mt2f', 'full-battle-original-isolated-kill-damage-growth.mt2f',
     'full-battle-original-isolated-boilerplate-forged.mt2f', 'full-battle-original-isolated-boilerplate-zero.mt2f',
     'full-battle-original-isolated-inhale-birth.mt2f', 'full-battle-original-isolated-inhale-existing.mt2f',
-    'full-battle-original-isolated-inhale-friendly-death.mt2f') })
+    'full-battle-original-isolated-inhale-friendly-death.mt2f', 'full-battle-original-isolated-ephemeral-routing.mt2f') })
 foreach ($fixturePath in $remainingOriginalSpellFixtures) {
     foreach ($mode in @('--original-support-spells-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
@@ -2788,7 +2790,8 @@ foreach ($fixturePath in $originalPermafrostFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Permafrost checks failed ($mode): $fixturePath" }
     }
 }
-$originalUnplayableFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-unplayable-cards.mt2f' })
+$originalUnplayableFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @(
+    'full-battle-original-unplayable-cards.mt2f', 'full-battle-original-unplayable-persistent-routing.mt2f') })
 foreach ($fixturePath in $originalUnplayableFixtures) {
     foreach ($mode in @('--original-unplayable-cards-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

@@ -933,8 +933,15 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (pile != destination) return pile;
                     CardPileState added = CardPileModel.Add(pile, card);
-                    // Native Ephemeral calls PurgeCard from both OnCardPlayed and OnCardDiscarded.
-                    return ephemeralPurgeCallbacks ? CardPileModel.Add(added, card) : added;
+                    // Ephemeral calls PurgeCard from both OnCardPlayed and
+                    // OnCardDiscarded; a separate SelfPurge discard callback adds a third reference.
+                    if (ephemeralPurgeCallbacks)
+                    {
+                        added = CardPileModel.Add(added, card);
+                        if (CardBranchMaskModel.Resolve(discardInstance!).Traits.Contains("CardTraitSelfPurge", StringComparer.Ordinal))
+                            added = CardPileModel.Add(added, card);
+                    }
+                    return added;
                 }).ToArray();
             }
             if (rule.Effect == "Equipment")

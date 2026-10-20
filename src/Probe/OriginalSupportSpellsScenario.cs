@@ -131,8 +131,8 @@ namespace MonsterTrain2Poju.Probe
             if (spellIds.Contains("e8f47c5d-c2d8-44e8-a443-4dca81acfa4d")) save.SetGold(250, isTotalReset: true);
             if (spellIds.Contains("e90fc0e0-b383-48a9-bb10-d8aaa1518531") || spellIds.Contains("f3406a6d-69f0-46e8-8db9-d829db017716"))
                 save.Cheat_SetTowerHP(save.GetMaxTowerHP() - 10);
-            if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster)))
-                throw new InvalidOperationException("Isolated spell IDs must name one to thirty native spell, equipment or supporting monster definitions.");
+            if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster or CardType.Junk)))
+                throw new InvalidOperationException("Isolated spell IDs must name one to thirty native playable card definitions.");
             CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()
                 .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true);
             CapturesBump = spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectBump"));
@@ -167,6 +167,11 @@ namespace MonsterTrain2Poju.Probe
                 .Concat(spellIds.Select(Add)).ToArray();
             foreach (string damageGrowth in spellIds.Where(id => id is "3f974014-72f2-407e-a8c1-28ba5b273cfa" or "f29d063b-cb41-44ee-8118-4db66b6f8195"))
                 Add(damageGrowth); // Same-definition, unplayed exclusion control for source-only growth.
+            foreach (string ephemeral in spellIds.Where(id => all.FindCardData(id)!.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitEphemeral")))
+            {
+                CardState control = Add(ephemeral); // Ephemeral must purge even when temporarily frozen.
+                var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); control.AddTemporaryTrait(freeze, managers.GetCoreManagers());
+            }
             if (spellIds.Any(id => id is "6bbebe9d-a185-412b-a2a7-4db581036ed7" or "758a0b03-3af5-4a70-82e1-4bfca40e92f0"))
             {
                 Add("bae01a8c-25dd-4a08-b08a-5f17a5f3f52a"); // Native Attuned spell, retained as an independent hand control.
@@ -189,6 +194,8 @@ namespace MonsterTrain2Poju.Probe
                         condition: new RemoveFromStandByCondition(() => CardPile.KeepInStandBy));
                 }
             foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
+            foreach (CardState ephemeral in created.Skip(4).Where(card => card.HasTrait<CardTraitEphemeral>()))
+                cards.MoveCardFromHandToTopOfDeck(ephemeral); // Native first-turn draw keeps requested plays out of deployment discard.
             CardIds = created.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);

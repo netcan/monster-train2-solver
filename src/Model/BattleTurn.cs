@@ -311,7 +311,8 @@ namespace MonsterTrain2Poju.Model
                     IReadOnlyList<string> traits = CardBranchMaskModel.Resolve(instance).Traits;
                     if (traits.Contains("CardTraitEphemeral", StringComparer.Ordinal))
                         ephemeralCardIds.Add(card.InstanceId);
-                    if (traits.Contains("CardTraitPersistent", StringComparer.Ordinal) || traits.Contains("CardTraitFreeze", StringComparer.Ordinal))
+                    if (traits.Contains("CardTraitPersistent", StringComparer.Ordinal) || traits.Contains("CardTraitFreeze", StringComparer.Ordinal) &&
+                        !traits.Contains("CardTraitEphemeral", StringComparer.Ordinal))
                         persistentCardIds.Add(card.InstanceId);
                     if (traits.Contains("CardTraitInfusion", StringComparer.Ordinal))
                         infusionCardIds.Add(card.InstanceId);

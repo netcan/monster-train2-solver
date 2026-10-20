@@ -23,10 +23,16 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-211232-c56ed4b3/card-catalog.mt2f`.
-The committed archive is byte-identical: 98,108 bytes, 11,821 unique nodes,
-SHA-256 `d18d12d38a205088888336cde462a2ed7dfe2ebfcee7f2521394b57a6ac2c3eb`.
-The latest refresh projects Inhale's OnKill spawn-or-status callback and
+Source: `.probe-runs/full-battle-no-cards-20261020-212312-9d4d332a/card-catalog.mt2f`.
+The committed archive is byte-identical: 98,203 bytes, 11,817 unique nodes,
+SHA-256 `f8b4f4cc4679ed1393312efdefd4435717d002b66349aab3821d5930d0122afb`.
+The latest refresh removes obsolete hand-discard guards for branch-owned
+Persistent and Ephemeral traits. Seven Rules changed: Scrap Metal, TFB Entropy
+Scourge, TFB Pyre Attack and four non-logbook Infusion definitions (Blast,
+Goliath, Madman and Enfeebling). All 668 raw card definitions stay identical.
+Native witnesses distinguish unplayable retention, unplayed purge overriding
+Freeze, two played Ephemeral purge references and three with SelfPurge.
+The preceding refresh projects Inhale's OnKill spawn-or-status callback and
 Boilerplate's permanent armor per Forge Point. Rules gain nullable OnForgeEffects;
 apart from that schema field, only these two Rules changed. All 668 raw native
 card definitions remain identical. The permanent-status flag stays captured;

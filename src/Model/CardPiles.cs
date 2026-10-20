@@ -11,9 +11,9 @@ namespace MonsterTrain2Poju.Model
             CardToken[] primary = cards.Hand.Concat(cards.Draw).Concat(cards.Discard)
                 .Concat(piles.Where(pile => pile.Name != "DiscardBuffer").SelectMany(pile => pile.Cards)).ToArray();
             if (primary.GroupBy(card => card.InstanceId).Any(group => group.Count() > 1 &&
-                // Native Ephemeral calls PurgeCard from both the play and discard callbacks.
-                !(group.Count() == 2 && group.Select(card => card.DataId).Distinct().Count() == 1 &&
-                    piles.Any(pile => pile.Name == "Purged" && pile.Cards.Count(card => card.InstanceId == group.Key) == 2)) &&
+                // Ephemeral gives two purge references; SelfPurge plus Ephemeral gives three.
+                !(group.Count() is 2 or 3 && group.Select(card => card.DataId).Distinct().Count() == 1 &&
+                    piles.Any(pile => pile.Name == "Purged" && pile.Cards.Count(card => card.InstanceId == group.Key) == group.Count())) &&
                 !(group.Count() == 2 && group.Select(card => card.DataId).Distinct().Count() == 1 &&
                     piles.Any(pile => pile.Name == "Exhausted" && pile.Cards.Any(card => card.InstanceId == group.Key)) &&
                     piles.Any(pile => pile.Name == "Standby" && pile.Cards.Any(card => card.InstanceId == group.Key) &&

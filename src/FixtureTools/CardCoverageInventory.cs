@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "d18d12d38a205088888336cde462a2ed7dfe2ebfcee7f2521394b57a6ac2c3eb";
+    private const string CatalogHash = "f8b4f4cc4679ed1393312efdefd4435717d002b66349aab3821d5930d0122afb";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -558,7 +558,7 @@ internal static class CardCoverageInventory
              Text(trait, "TrackedValue") == "AnyCharacter" && Text(trait, "HandCostTargetType") == "Monster") && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitDrawInDeploymentPhase") return value == 0 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn" &&
             trait.TryGetProperty("DeploymentDrawFlag", out FixtureValue drawFlag) && drawFlag.ValueKind == FixtureKind.False;
-        if (type is "CardTraitUnpurgable" or "CardTraitLimitedRange" or "CardTraitPermafrost" or "CardTraitGraftedEquipment") return value == 0 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
+        if (type is "CardTraitUnpurgable" or "CardTraitLimitedRange" or "CardTraitPermafrost" or "CardTraitGraftedEquipment" or "CardTraitEphemeral") return value == 0 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitDamageOverflow") return value == 2 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type == "CardTraitCorruptRestricted") return value is 1 or 2 or 3 or 5 && Text(trait, "TrackedValue") == "SubtypeInDeck" && Text(trait, "EntryDuration") == "ThisTurn";
         if (type is "CardTraitUnplayable" or "CardTraitPersistent" or "CardTraitRefine") return

@@ -174,7 +174,7 @@ internal static class OriginalSupportSpellsChecks
                     "Isolated spell energy control differs.");
                 continue;
             }
-            Require(card.DataId == originals[i - 4] && rule.CardType is "Spell" or "Equipment" or "Monster" && rule.ExternalInteractions.Count == 0 &&
+            Require(card.DataId == originals[i - 4] && rule.CardType is "Spell" or "Equipment" or "Monster" or "Junk" && rule.ExternalInteractions.Count == 0 &&
                 after.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == 1 &&
                 (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
                 "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
@@ -223,6 +223,17 @@ internal static class OriginalSupportSpellsChecks
                     after.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy) <
                         before.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy),
                     "Shadesplitter must positively kill a native enemy and roll its original weighted Morsel pool through the Room-targeted OnKill effect.");
+            }
+            if (rule.AssetKey is "TFB_EntropyScourge" or "TFB_PyreAttack")
+            {
+                CardSourceTrait ephemeral = card.MaskDescriptor!.SourceTraits!.Single(trait => trait.Type == "CardTraitEphemeral");
+                int expected = rule.AssetKey == "TFB_PyreAttack" ? 3 : 2;
+                Require(ephemeral.Int == 0 &&
+                    after.OtherPiles.Single(pile => pile.Name == "Purged").Cards.Count(token => token.InstanceId == card.InstanceId) -
+                    before.OtherPiles.Single(pile => pile.Name == "Purged").Cards.Count(token => token.InstanceId == card.InstanceId) == expected &&
+                    after.Spawn.Train.Context!.Cards.Hand.All(token => token.InstanceId != card.InstanceId) &&
+                    after.Spawn.Train.Context.Statistics!.DeckCards!.All(id => id != card.InstanceId),
+                    "Original Ephemeral must purge twice on play; the separate SelfPurge callback must create a third native reference.");
             }
             if (rule.AssetKey == "Boilerplate")
             {
@@ -526,6 +537,21 @@ internal static class OriginalSupportSpellsChecks
                 "Hatching needs positive original-parent exhaustion, exact cardless children and the preview's shared sacrifice-card reference.");
         }
         RecordedBattleChecks.Native(root);
+        if (originals.Contains("3b603b7f-300c-4022-9fc2-275448446e58"))
+        {
+            var firstTurn = root.GetProperty("Turns").EnumerateArray().First();
+            BattleTurnState before = firstTurn.GetProperty("Before").Deserialize<BattleTurnState>()!,
+                after = firstTurn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            CardInstanceState[] controls = before.Spawn.Train.Context!.Cards.Hand.Where(token => !ids.Contains(token.InstanceId))
+                .Select(token => before.Spawn.Train.Context.FindCard(token.InstanceId)!)
+                .Where(card => card.MaskDescriptor!.BaseTraits.Any(trait => trait.RuntimeType == "CardTraitEphemeral")).ToArray();
+            Require(controls.Length == 2 && controls.All(card =>
+                CardBranchMaskModel.Resolve(card).Traits.Contains("CardTraitFreeze") &&
+                after.OtherPiles.Single(pile => pile.Name == "Purged").Cards.Count(token => token.InstanceId == card.InstanceId) == 1 &&
+                after.Spawn.Train.Context!.Cards.Hand.All(token => token.InstanceId != card.InstanceId) &&
+                after.Spawn.Train.Context.Statistics!.Value(card.InstanceId, "TimesPlayed", "ThisBattle") == 0),
+                "Unplayed Ephemeral must override Freeze and purge each control exactly once during natural hand discard.");
+        }
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);

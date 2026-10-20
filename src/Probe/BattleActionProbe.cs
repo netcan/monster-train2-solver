@@ -711,9 +711,11 @@ namespace MonsterTrain2Poju.Probe
                     if (typeof(CardTraitSalvage).IsAssignableFrom(type)) interactions.Add("Salvage consumption callback");
                     if (type == typeof(CardTraitGraftedEquipment) && !CardBranchMaskProbe.Enabled) interactions.Add("Grafted equipment standby trait state");
                 }
-                else if (type == typeof(CardTraitEphemeral) || type == typeof(CardTraitInfusion) || type == typeof(CardTraitPersistent) || type == typeof(CardTraitTreasure) ||
+                else if ((!CardBranchMaskProbe.Enabled && (type == typeof(CardTraitEphemeral) || type == typeof(CardTraitPersistent))) ||
+                    type == typeof(CardTraitInfusion) || type == typeof(CardTraitTreasure) ||
                     type != typeof(CardTraitSelfPurge) && type != typeof(CardTraitExhaustState) && type != typeof(CardTraitScalingAddEnergy) &&
-                    !(CardBranchMaskProbe.Enabled && type == typeof(CardTraitAddCardUpgradeOnMoonPhase)) && type.GetMethod("OnCardDiscarded")?.DeclaringType != typeof(CardTraitState))
+                    !(CardBranchMaskProbe.Enabled && (type == typeof(CardTraitAddCardUpgradeOnMoonPhase) || type == typeof(CardTraitEphemeral))) &&
+                    type.GetMethod("OnCardDiscarded")?.DeclaringType != typeof(CardTraitState))
                     interactions.Add(type.Name + " hand discard callback/routing");
             }
             return interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray();

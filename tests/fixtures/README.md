@@ -9524,3 +9524,22 @@ receives the dying unit's retained physical identity/state, preventing a
 missing-occupant rejection. Native full-state replay matches sixteen branches;
 both this and the existing-Horde fixture now search 128 states with zero
 unsupported attempts and identical serial/parallel results.
+
+`full-battle-original-isolated-ephemeral-routing.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-212518-a3632934`.
+Unchanged TFB Entropy Scourge and TFB Pyre Attack are drawn through the native
+first-turn draw, then played. Ephemeral purges the former twice; SelfPurge's
+separate discard callback adds a third retained purge reference for the latter.
+Both leave the active hand and deck statistics. Two independent unplayed copies
+are temporarily frozen: native natural discard still purges each exactly once.
+Freeze retention now yields to Ephemeral; Persistent and Infusion still use
+their earlier native short circuit. Repeated purge membership is accepted only
+when all references have one identity/data ID and stay in the Purged pile.
+
+`full-battle-original-unplayable-persistent-routing.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-212105-bfcdebe8`.
+It refreshes the twelve original full-card legality queries after removal of
+the obsolete Persistent projection guard. Scrap Metal remains unplayable and
+in hand across natural discard, then Starter Scrap smelts it for Refine three.
+Ordinary unplayable discard/redraw controls and immutable parents also match.
+Both battles finish with settled victories, DEPTH-PASS and zero failure counters.
