@@ -9615,6 +9615,22 @@ callback through eight Decay applied to the other enemy. All three battles
 finish with settled victories, DEPTH-PASS and zero capture/mismatch/unsupported/
 pending counters. Focused replay covers sixteen immutable branches each;
 bounded search has zero unsupported attempts and equal serial/parallel results.
+
+`full-battle-original-isolated-heal-cost.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-230006-f7feb2b0`;
+`full-battle-original-isolated-heal-cost-other-floor.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-230152-2aa98f0c`.
+Unchanged Edge Prior supplies its native minus-one healing cost on its floor.
+Engraft's healing and Regen Potion's Regen qualify and cost zero; ordinary
+Torch damage still costs one. Focused Growth on another floor costs its full
+two energy. The model preserves raw card costs and records the actual paid
+cost separately, matching the native room modifier's zero played-cost offset.
+Both battles finish with DEPTH-PASS and all four failure counters at zero.
+Their eight and six plays plus five EndTurns replay with sixteen immutable
+branches each; bounded search has no unsupported attempts and equal serial/
+parallel results. The existing floor-two spell-cost attachment also retains
+its 27-play native replay. Conduit combinations and purified room-modifier
+births require their separate native witnesses.
 CopyOnPlay private discard state and permanent removal of Ephemeral/CopyOnPlay
 remain explicitly guarded.
 

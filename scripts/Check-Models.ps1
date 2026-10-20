@@ -332,6 +332,8 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-discard-copy-ephemeral.mt2f',
     'full-battle-original-isolated-discard-copy-stardust.mt2f',
     'full-battle-original-isolated-unit-room-resources.mt2f',
+    'full-battle-original-isolated-heal-cost.mt2f',
+    'full-battle-original-isolated-heal-cost-other-floor.mt2f',
     'full-battle-original-unplayable-persistent-routing.mt2f',
     'full-battle-original-null-scourges.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
@@ -2434,7 +2436,8 @@ $remainingOriginalSpellFixtures = @($fixtures | Where-Object { (Split-Path -Leaf
     'full-battle-original-isolated-bounding-corrupt.mt2f', 'full-battle-original-isolated-returned-corrupt.mt2f',
     'full-battle-original-isolated-horde-and-morsel-targets.mt2f', 'full-battle-original-isolated-funguy-existing-horde.mt2f',
     'full-battle-original-isolated-discard-copy-plain.mt2f', 'full-battle-original-isolated-discard-copy-ephemeral.mt2f',
-    'full-battle-original-isolated-discard-copy-stardust.mt2f') })
+    'full-battle-original-isolated-discard-copy-stardust.mt2f', 'full-battle-original-isolated-heal-cost.mt2f',
+    'full-battle-original-isolated-heal-cost-other-floor.mt2f') })
 foreach ($fixturePath in $remainingOriginalSpellFixtures) {
     foreach ($mode in @('--original-support-spells-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

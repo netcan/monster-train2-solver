@@ -18,6 +18,9 @@ internal static class OriginalSupportSpellsChecks
             string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
                 .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "25787bff-d2fb-4d9a-a636-d96a5863d559" &&
+                ids.Any(id => source.Spawn.Train.Context.FindCard(id)?.DataId == "f892b119-fa6a-4f69-9369-10e29bcfd96e"))
+                candidates = candidates.OrderByDescending(action => action.RoomIndex == 1);
             if (replayKind != null) candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f3406a6d-69f0-46e8-8db9-d829db017716")
@@ -183,6 +186,22 @@ internal static class OriginalSupportSpellsChecks
                 (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
                 "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            if (originals.Contains("f892b119-fa6a-4f69-9369-10e29bcfd96e"))
+            {
+                if (rule.AssetKey == "EdgePrior")
+                    Require(after.Spawn.Train.Rooms[action.RoomIndex].Units.Single(unit => unit.SpawnerCardId == card.InstanceId)
+                        .Modifiers!.RoomResources?.Single() is { Type: "RoomStateHealCostModifier", Amount: -1, DisallowedInDeployment: false },
+                        "Original Edge Prior must retain its exact native healing-cost room modifier.");
+                if (rule.AssetKey is "Engraft" or "RegenPotion" or "StarterTorch" or "FocusedGrowth")
+                {
+                    bool discounted = rule.AssetKey is "Engraft" or "RegenPotion";
+                    int gained = rule.Effects.Where(effect => effect.Type == "GainEnergy").Sum(effect => effect.Value);
+                    int baseCost = rule.AssetKey == "FocusedGrowth" ? 2 : 1;
+                    Require(rule.Cost == baseCost && (discounted ? action.RoomIndex == 0 : rule.AssetKey != "FocusedGrowth" || action.RoomIndex == 1) &&
+                        before.Energy + gained - after.Energy == (discounted ? 0 : baseCost),
+                        "Edge Prior must discount healing and Regen on its floor, retaining normal cost for damage and healing on another floor.");
+                }
+            }
             if (rule.AssetKey is "Pandemic" or "SpreadingSpores" or "Contagious")
             {
                 CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;

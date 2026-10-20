@@ -79,7 +79,10 @@ namespace MonsterTrain2Poju.Probe
             {
                 string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
                     .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
-                IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "25787bff-d2fb-4d9a-a636-d96a5863d559" &&
+                ids.Any(id => source.Spawn.Train.Context.FindCard(id)?.DataId == "f892b119-fa6a-4f69-9369-10e29bcfd96e"))
+                candidates = candidates.OrderByDescending(action => action.RoomIndex == 1);
                 if (replayKind != null) candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
                 if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "6a3633b6-4ecc-43b1-bb56-548f56cf1d60")

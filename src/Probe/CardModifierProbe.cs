@@ -59,8 +59,9 @@ namespace MonsterTrain2Poju.Probe
                 for (int index = 0; index < roomManager.GetNumRooms(); index++)
                 {
                     RoomState room = roomManager.GetRoom(index);
-                    int expectedCost = rule.CardType == "Spell"
-                        ? (int)Math.Clamp((long)handCost + RoomCapacityProbe.SpellCostDelta(room), 0L, 99L)
+                    int healingCostDelta = UnitRoomResourceProbe.HealingCostDelta(room, rule, state);
+                    int expectedCost = rule.CardType == "Spell" || healingCostDelta != 0
+                        ? (int)Math.Clamp((long)handCost + healingCostDelta + (rule.CardType == "Spell" ? RoomCapacityProbe.SpellCostDelta(room) : 0), 0L, 99L)
                         : handCost;
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(), room) != expectedCost)
                         interactions.Add("Unmodeled room/trait/hand card cost");

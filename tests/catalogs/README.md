@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-224601-f787e80a/card-catalog.mt2f`.
-The committed archive is byte-identical: 97,937 bytes, 11,823 unique nodes,
-SHA-256 `99cfd2ddac15714e3bd448cb13ddf4cfd62ab0e5da2e76dc613c6ce59f0f46ee`.
-The latest refresh captures native unit room resource modifiers and accepts
+Source: `.probe-runs/full-battle-no-cards-20261020-230152-5ea92956/card-catalog.mt2f`.
+The committed archive is byte-identical: 97,840 bytes, 11,826 unique nodes,
+SHA-256 `3c410775f302c8ef276e7d9944a5bf94a7506cdca23b2b7121d065f3a90779b2`.
+The latest refresh captures Edge Prior's native healing-cost room modifier.
+Only Edge Prior's card projection changes; the other 667 definitions remain
+byte-for-byte equivalent in their decoded card objects.
+The preceding refresh captures native unit room resource modifiers and accepts
 Ember Forge and Wildwood Custodian. Exactly these two card projections change
 semantically; after removing null RoomResources fields, all other card
 definitions remain identical. Purified resource units remain guarded.
