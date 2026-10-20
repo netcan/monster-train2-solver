@@ -9918,6 +9918,20 @@ that combat search's terminal boundary. Existing Stasis and equipment combat
 batch chains still pass. Other unit-source copy destinations/counts remain
 guarded pending independent native witnesses.
 
+`full-battle-original-isolated-status-synergy.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-031604-20fa33b8`.
+Unchanged Apex Imp converts its five OnSpawn Armor to five Rage. Original Enflame
+then adds six direct Rage and ten Armor; only the ten new Armor produces synergy
+Rage. Original Immortality Potion adds Armor to an independent front unit while
+Apex Imp stays unchanged. The native accumulated-status dictionary, including
+zero-valued entries after each clear, is captured and compared with the complete
+unit state. This prevents mistakenly scaling from total current Armor or reusing
+earlier applications. DEPTH-PASS records a settled victory with zero capture/
+mismatch/unsupported/pending counters. Seven plays/five EndTurns pass sixteen
+immutable replay branches and a 128-state search with zero unsupported attempts.
+Existing status callback and Morsel-Made replay checks pass. Other synergy
+parameter combinations and unit-copy interactions have no new positive witness.
+
 `full-battle-original-isolated-food-spawn.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-030841-e66aa7f4`.
 Unchanged Morsel-Made sits behind an ordinary front feeder and immediately eats

@@ -18,6 +18,15 @@ internal static class OriginalSupportSpellsChecks
             string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
                 .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            if (index >= 4 && ids.Any(id => source.Spawn.Train.Context!.FindCard(id)?.DataId == "a83756a0-7264-47d1-a661-d8ab2420fe29"))
+            {
+                string armorCard = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
+                candidates = candidates.Where(action => action.RoomIndex == 0);
+                if (armorCard == "a83756a0-7264-47d1-a661-d8ab2420fe29") candidates = candidates.Where(action => action.PlayerPosition == 1);
+                else candidates = candidates.Where(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                    unit.Id == action.TargetUnitId && (armorCard == "64beabe3-0260-44e2-a47a-b07192b52f25"
+                        ? unit.AssetKey == "MonsterApexImp" : unit.SpawnerCardId == ids[0])));
+            }
             if (index >= 4 && ids.Any(id => source.Spawn.Train.Context!.FindCard(id)?.DataId == "13876e8d-b111-429d-acdb-2e095fda897e"))
             {
                 string foodCard = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
@@ -704,6 +713,7 @@ internal static class OriginalSupportSpellsChecks
         RoomSirenSongChecks.Native(root, originals);
         EquipmentConsumptionChecks.Native(root, originals);
         FoodSpawnChecks.Native(root, originals);
+        StatusSynergyChecks.Native(root, originals);
         if (originals.Contains("7018bb02-2ec2-4b4f-95d0-7bafce95d97d")) CrucibleStewardChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }

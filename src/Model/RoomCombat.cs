@@ -1316,7 +1316,7 @@ namespace MonsterTrain2Poju.Model
                             continue;
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
-                            effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules") &&
+                            effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules" or "CardEffectSynergizeStatusEffects") &&
                             effect.Type is not ("CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type is not ("CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits"))
@@ -1396,6 +1396,14 @@ namespace MonsterTrain2Poju.Model
                         if (effect.Type == "CardEffectPurgeUnitOnDeath")
                         {
                             if (state.Context?.OtherPiles == null) return "Unit-card purge requires captured native piles.";
+                            continue;
+                        }
+                        if (effect.Type == "CardEffectSynergizeStatusEffects")
+                        {
+                            if (effect.Action?.Type != "SynergizeStatuses" || effect.Action.Target != "Self" ||
+                                effect.Action.Statuses.Count != 2 || effect.Action.Statuses.Any(status => !KnowsStatus(status.Id)) ||
+                                unit.Modifiers?.SynergizeStatuses == null)
+                                return "Status synergy requires captured self targets, two status definitions and the native accumulated-stack cache.";
                             continue;
                         }
                         if (effect.Type == "CardEffectFeederRules")
@@ -4500,6 +4508,27 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                if (action.Type == "SynergizeStatuses")
+                {
+                    foreach (int id in targets.UnitIds.Reverse())
+                    {
+                        WorkingUnit target = units.Single(unit => unit.Source.Id == id);
+                        int count = target.Source.Modifiers!.SynergizeStatuses!.FirstOrDefault(value => value.Key == action.Statuses[0].Id)?.Value ?? 0;
+                        if (count > 0)
+                        {
+                            int synergyAmount = action.Value == 1 ? Math.Max(1, action.Statuses[1].Stacks) : count;
+                            RoomCombatResult added = StatusApplicationModel.ApplyRetained(CurrentRoom(), id,
+                                action.Statuses[1].WithStacks(synergyAmount), actor.Source.SpawnerCardId,
+                                fromEffectType: "CardEffectSynergizeStatusEffects");
+                            if (!added.Supported) { unsupportedReason = added.UnsupportedReason; return false; }
+                            ImportEnchantmentRoom(added.State!);
+                            foreach (QueuedCharacterTrigger child in added.PendingCallbacks) QueueCallback(child);
+                        }
+                        target.Apply(target.Freeze().WithModifiers(target.Source.Modifiers!.WithSynergizeStatuses(
+                            target.Source.Modifiers.SynergizeStatuses!.Select(value => new StatisticCount(value.Key, 0)).ToArray())));
+                    }
+                    return true;
+                }
                 if (action.Type == "SelfFeederRules")
                 {
                     // Native runs the OnEaten queue before despawning food, even

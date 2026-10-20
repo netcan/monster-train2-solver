@@ -19,6 +19,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal static CardActionEffect? Capture(CardEffectState state, List<string>? interactions = null)
         {
+            if (state.GetCardEffect() is CardEffectSynergizeStatusEffects) return Synergy(state.GetSourceCardEffectData());
             if (state.GetCardEffect() is CardEffectFeederRules)
                 return Feeding(state.GetSourceCardEffectData());
             if (state.GetCardEffect() is CardEffectAdjustDragonsHoardPerStatusEffect)
@@ -50,6 +51,7 @@ namespace MonsterTrain2Poju.Probe
                     BattleActionProbe.Status(status.statusId, status.count)).ToArray() : null);
         }
         internal static CardActionEffect? Definition(CardEffectData effect, List<string>? interactions = null) =>
+            effect.GetEffectStateName() == "CardEffectSynergizeStatusEffects" ? Synergy(effect) :
             effect.GetEffectStateName() == "CardEffectFeederRules" ? Feeding(effect) :
             effect.GetEffectStateName() == "CardEffectAdjustDragonsHoardPerStatusEffect" ? HoardPerStatus(effect) :
             effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
@@ -68,6 +70,12 @@ namespace MonsterTrain2Poju.Probe
             // Effect states have no parent card; native damage/heal getters still clamp endpoints.
             Describe(effect, Numeric(effect, effect.GetParamInt()), effect.GetUseIntRange() ?
                 new CardEffectRange(Numeric(effect, effect.GetParamMinInt()), Numeric(effect, effect.GetParamMaxInt()), effect.GetParamMultiplier()) : null);
+        private static CardActionEffect Synergy(CardEffectData effect) => new CardActionEffect("SynergizeStatuses",
+            effect.GetTargetMode().ToString(), effect.GetParamBool() ? 1 : 0,
+            effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
+            effect.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray(),
+            tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
+                effect.GetShouldCancelSubsequentEffectsIfTestFails(), false));
         private static CardActionEffect Feeding(CardEffectData effect) => new CardActionEffect(
             effect.GetParamBool() ? "SelfFeederRules" : "FeederRules", effect.GetTargetMode().ToString(), effect.GetParamInt(),
             effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),

@@ -19,7 +19,7 @@ namespace MonsterTrain2Poju.Model
             int buff = checked(old.DamageBuff + (debuff ? -amount : amount));
             var modifiers = new UnitModifiers(old.AttackDamage, old.AttackDamageAdded, buff, old.RawSize, old.EquipmentLimit,
                 old.CanBeHealed, old.IsClone, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
-                old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts, old.SpawnCopySubtype, old.Graft);
+                old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts, old.SpawnCopySubtype, old.Graft, old.SynergizeStatuses);
             var changed = new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(old.AttackDamage + buff)),
                 target.Health, target.MaxHealth, target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, target.Statuses, target.Triggers,
                 target.SpawnerCardId, target.Size, target.StatusImmunities, target.Subtypes, modifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, target.NextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState, bumpRules: target.BumpRules, lastFeederId: target.LastFeederId, moonPhaseMask: target.MoonPhaseMask);

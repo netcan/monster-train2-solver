@@ -50,7 +50,10 @@ namespace MonsterTrain2Poju.Probe
                     .Where(modifier => modifier.GetType().Name == UnitRoomTriggerCountModel.Type)
                     .Cast<RoomStateModifierBase>().Select(modifier => modifier.GetRoomModifierData())),
                 spawnCopySubtype: RoomSpawnCopyProbe.UnitRule(unit.GetRoomStateModifiers().OfType<RoomStateModifierBase>()
-                    .Select(modifier => modifier.GetRoomModifierData())), graft: UnitGraftProbe.Rule(unit.GetSourceCharacterData()));
+                    .Select(modifier => modifier.GetRoomModifierData())), graft: UnitGraftProbe.Rule(unit.GetSourceCharacterData()),
+                synergizeStatuses: unit.GetTriggers().Any(trigger => trigger.GetEffectStates().Any(effect => effect.GetCardEffect() is CardEffectSynergizeStatusEffects))
+                    ? ((Dictionary<string, int>)AccessTools.Field(state.GetType(), "synergizeStatusEffects").GetValue(state))
+                        .Select(pair => new StatisticCount(pair.Key, pair.Value)).ToArray() : null);
         }
         internal static UnitModifiers Definition(CharacterData data) => new UnitModifiers(data.GetAttackDamage(), 0, 0,
             data.GetSize(), data.GetEquipmentLimit(), data.GetCanBeHealed(), false, System.Array.Empty<CardUpgradeModifier>(),
@@ -60,6 +63,8 @@ namespace MonsterTrain2Poju.Probe
             roomResources: UnitRoomResourceProbe.Rules(data.GetRoomModifiersData()),
             roomStatuses: UnitRoomStatusProbe.Rules(data.GetRoomModifiersData()),
             roomTriggerCounts: UnitRoomTriggerCountProbe.Rules(data.GetRoomModifiersData()),
-            spawnCopySubtype: RoomSpawnCopyProbe.UnitRule(data.GetRoomModifiersData()), graft: UnitGraftProbe.Rule(data));
+            spawnCopySubtype: RoomSpawnCopyProbe.UnitRule(data.GetRoomModifiersData()), graft: UnitGraftProbe.Rule(data),
+            synergizeStatuses: data.GetTriggers().Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSynergizeStatusEffects"))
+                ? Array.Empty<StatisticCount>() : null);
     }
 }

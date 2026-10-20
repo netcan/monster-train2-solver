@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-030333-f98fea3c/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,927 bytes, 12,136 unique nodes,
-SHA-256 `ff3c511583d59283b3ddb003c950ad4d7244977398c76f998449b66357d54900`.
-The latest refresh captures Morsel-Made's authored self-feeder effect. Only this
+Source: `.probe-runs/full-battle-no-cards-20261021-031441-17383425/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,893 bytes, 12,140 unique nodes,
+SHA-256 `c84397294b5143676809ee8d9971de2b44d7a103aa4fe426463eb289a7ec0722`.
+The latest refresh captures Apex Imp's status synergy and empty birth counter
+cache. Only this projection changes after normalizing absent/null SynergizeStatuses
+fields; the other 667 are identical.
+The preceding refresh captures Morsel-Made's authored self-feeder effect. Only this
 projection changes; the other 667 are identical.
 The preceding refresh captures Hydra-Armed Horror's equipment removal and
 Soulsmelter's status-quotient encounter award. Only these two projections change;

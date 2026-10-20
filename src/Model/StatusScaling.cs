@@ -133,6 +133,15 @@ namespace MonsterTrain2Poju.Model
             int count = Math.Max(0, Math.Min((existing?.Stackable ?? added.Stackable) == false ? 1 : 9999, unchecked(old + stacks)));
             CombatUnit changed = CardSpellModel.Copy(target, target.Health, target.Statuses.Where(status => status.Id != added.Id)
                 .Concat(new[] { (existing ?? added).WithStacks(count) }).ToArray());
+            if (count > old && changed.Modifiers?.SynergizeStatuses != null)
+            {
+                var counts = changed.Modifiers.SynergizeStatuses.ToList();
+                int index = counts.FindIndex(value => value.Key == added.Id);
+                int prior = index < 0 ? 0 : counts[index].Value;
+                var value = new StatisticCount(added.Id, unchecked(prior + stacks));
+                if (index < 0) counts.Add(value); else counts[index] = value;
+                changed = changed.WithModifiers(changed.Modifiers.WithSynergizeStatuses(counts));
+            }
             StatusAttackDamageResult attack = StatusAttackDamageModel.Change(context, changed, existing ?? added, count - old, adding: true);
             if (!attack.Supported) return Unsupported(attack.UnsupportedReason!);
             changed = attack.Unit!; context = attack.Context;
