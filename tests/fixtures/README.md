@@ -8841,3 +8841,21 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-sporelauncher.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-sporelauncher.mt2f
 ```
+
+### Original Conductor Steward
+
+`full-battle-original-isolated-conductor-steward.mt2f` plays the unchanged
+2-cost 10/10 size-2 Conductor Steward. Its OnSpawn exposes the cooldown-3
+Foreman ability, which remains available but unused across four later
+snapshots. The captured `CardMonsterPlayed` callback specifies a temporary
++5/+5 upgrade to the last spawned unit, but is not triggered in this witness;
+that effect remains outside the covered behavior. The Instant battle won with
+zero capture failures, mismatches, unsupported transitions or pending records.
+Focused replay and bounded serial/parallel search agree at 128 states, with
+three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 52b17dc7-968f-4748-a2ea-b6c09c5c8931
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-conductor-steward.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-conductor-steward.mt2f
+```

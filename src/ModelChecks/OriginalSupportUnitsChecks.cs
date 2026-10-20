@@ -53,6 +53,7 @@ internal static class OriginalSupportUnitsChecks
     private const string LunaCovenChamp1Id = "5d2b15ed-e9b4-464a-b029-f337f2ed6cd2";
     private const string LunaCovenChamp2Id = "63eba1e1-3118-44a3-8906-c8bfbe559667";
     private const string SporelauncherId = "aa20f108-ca78-42b1-b949-55fad0f84b15";
+    private const string ConductorStewardId = "52b17dc7-968f-4748-a2ea-b6c09c5c8931";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -453,6 +454,40 @@ internal static class OriginalSupportUnitsChecks
                     !unit.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed").HasTriggered),
                 "Sporelauncher must retain its original 2-cost 30/30 size-3 birth and inactive enemy-only CardMonsterPlayed Decay definition.");
             Console.WriteLine("ORIGINAL-SPORELAUNCHER PASS: native 2-cost 30/30 size-3 birth; enemy Decay callback remained inactive in four snapshots.");
+        }
+        if (expectedId == ConductorStewardId)
+        {
+            CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CardActionEffect available = onSpawn.Effects.Single(effect => effect.Action?.Type == "AddStatus").Action!;
+            CardActionEffect reset = onSpawn.Effects.Single(effect => effect.Action?.Type == "ResetCooldown").Action!;
+            CombatTrigger played = template.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed");
+            CardActionEffect temporaryUpgrade = played.Effects.Single().UnitUpgrade!;
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "ConductorSteward" && rule.Cost == 2 && template.AssetKey == "MonsterForemanSteward" &&
+                template.Modifiers!.AttackDamage == 10 && template.Health == 10 && template.MaxHealth == 10 && template.Size == 2 &&
+                template.Ability is { DataId: "8a8b394d-3dda-48dd-b157-20ca0c5fd7fb", Cooldown: 3, CooldownAtSpawn: 0, HasAbility: true } &&
+                onSpawn.Effects.Count == 2 && available is { Type: "AddStatus", Target: "Self" } &&
+                available.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
+                reset is { Type: "ResetCooldown", Target: "Self", CooldownParameter: true } &&
+                spawnedUnit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn").HasTriggered &&
+                played.Effects.Single().Type == "CardEffectAddTempCardUpgradeToUnits" &&
+                temporaryUpgrade is { Type: "UnitUpgrade", Target: "LastSpawnedCharacter", Lifetime: "TemporaryUntilEndOfBattle" } &&
+                temporaryUpgrade.Upgrade is { DataId: "5b38fa40-8776-4a23-af0c-22845e4ea552", AssetKey: "Plus5Attack5Health" } &&
+                temporaryUpgrade.Upgrade.Stats.Damage == 5 && temporaryUpgrade.Upgrade.Stats.Health == 5 &&
+                !played.HasTriggered && !spawnedUnit.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed").HasTriggered &&
+                unitTurns.Length == 4 && unitTurns.All(unit => unit.Health == 10 && unit.MaxHealth == 10 &&
+                    unit.Modifiers!.AttackDamage == 10 && unit.Size == 2 &&
+                    unit.Ability is { DataId: "8a8b394d-3dda-48dd-b157-20ca0c5fd7fb", Cooldown: 3, CooldownAtSpawn: 0, HasAbility: true } &&
+                    unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "CardMonsterPlayed").HasTriggered),
+                "Conductor Steward must preserve its original 2-cost 10/10 size-2 birth, expose but not use its cooldown-3 ability, and retain an inactive temporary +5/+5 CardMonsterPlayed callback.");
+            Console.WriteLine("ORIGINAL-CONDUCTOR-STEWARD PASS: native 2-cost 10/10 size-2 birth; cooldown-3 ability remained available but unused, and temporary +5/+5 CardMonsterPlayed stayed inactive across four snapshots.");
         }
         if (expectedId == JuggernautId)
         {
