@@ -60,6 +60,7 @@ internal static class OriginalSupportUnitsChecks
     private const string FeederPermanentAttackBoostId = "ed072114-b62e-4f61-8892-adf775d5a34c";
     private const string ZealotId = "071d7448-0be6-4a40-860c-ede856a42228";
     private const string ParrafinThugId = "a2bc0531-4037-418b-a30b-9189cc580adf";
+    private const string MonstrosityId = "5336f488-1e09-40a5-97bc-5a5fde3c5e55";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -386,6 +387,28 @@ internal static class OriginalSupportUnitsChecks
             (juggernautXCost || spawnedUnit.Health == template.Health && spawnedUnit.MaxHealth == template.MaxHealth &&
                 spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage),
             expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
+        if (expectedId == MonstrosityId)
+        {
+            CombatTrigger death = template.Triggers.Single(trigger => trigger.Kind == "OnAnyUnitDeathOnFloor");
+            CombatEffect growth = death.Effects.Single();
+            CardActionEffect action = growth.Action!;
+            var buff = action.Statuses.Single();
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "Monstrosity" && rule.Cost == 2 && template.AssetKey == "MonsterMonstrosity" &&
+                template.Modifiers!.AttackDamage == 10 && template.Health == 30 && template.MaxHealth == 30 && template.Size == 3 &&
+                death.Effects.Count == 1 && growth.Type == "CardEffectAddStatusEffect" && growth.Value == 100 &&
+                action.Type == "AddStatus" && action.Target == "Self" && buff.Id == "buff" && buff.Stacks == 5 && buff.ParamInt == 2 &&
+                buff.RemoveStackAtEnd && spawnedUnit.Modifiers!.AttackDamage == 10 && spawnedUnit.Health == 30 &&
+                spawnedUnit.MaxHealth == 30 && spawnedUnit.Size == 3 && unitTurns.Length == 4 &&
+                unitTurns.All(unit => unit.Triggers.Single(trigger => trigger.Kind == "OnAnyUnitDeathOnFloor").HasTriggered &&
+                    unit.Status("buff") is { Stacks: > 0 }),
+                "Monstrosity must preserve its original 2-cost 10/30 size-3 birth and positively gain temporary self buff on floor-unit deaths.");
+            Console.WriteLine("ORIGINAL-MONSTROSITY PASS: native 2-cost 10/30 size-3 birth; OnAnyUnitDeathOnFloor added temporary buff in all four turn snapshots.");
+        }
         if (expectedId == DeathEaterId)
         {
             CombatTrigger death = template.Triggers.Single(trigger => trigger.Kind == "OnAnyUnitDeathOnFloor");

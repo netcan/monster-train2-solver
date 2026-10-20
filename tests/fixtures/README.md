@@ -8959,3 +8959,22 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-parrafin-thug.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-parrafin-thug.mt2f
 ```
+
+### Original Monstrosity
+
+`full-battle-original-isolated-monstrosity.mt2f` plays the unchanged 2-cost
+10/30 size-3 Monstrosity. Its native spawn template includes an
+`OnAnyUnitDeathOnFloor` callback that adds five temporary `buff` stacks with
+parameter two to itself; the trigger fired in all four captured turn snapshots
+(stacks 9, 18, 17, 26, including turn decay). The catalog's top-level trigger
+summary is empty, so this evidence is taken from the native battle rule and
+spawn template. The Instant battle won with zero capture failures, mismatches,
+unsupported transitions or pending records. Focused replay and bounded
+serial/parallel search agree at 128 states, with three replayed steps; archive
+metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 5336f488-1e09-40a5-97bc-5a5fde3c5e55
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-monstrosity.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-monstrosity.mt2f
+```
