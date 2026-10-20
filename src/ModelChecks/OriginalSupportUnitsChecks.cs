@@ -39,6 +39,7 @@ internal static class OriginalSupportUnitsChecks
     private const string NightingaleId = "7775c5b5-eed9-4864-9976-9c86896becc1";
     private const string HotHeadId = "ee2a1d34-f1de-43ac-a06b-f3a414c93363";
     private const string SteadfastCrusaderId = "075a061c-480c-4873-8f9f-88cf836eec27";
+    private const string TrufflesId = "9a63e469-ae29-4199-ae41-4060ecd92853";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -421,83 +422,18 @@ internal static class OriginalSupportUnitsChecks
         }
         if (expectedId == HotHeadId)
         {
-            CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
-            CombatTrigger onActivated = template.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated");
-            CombatTrigger availableTrigger = template.Triggers.Single(trigger => trigger.Kind == "OnUnitAbilityAvailable");
-            CombatTrigger unavailableTrigger = template.Triggers.Single(trigger => trigger.Kind == "OnUnitAbilityUnavailable");
-            CombatTrigger spawnedOnSpawn = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
-            CardActionEffect available = onSpawn.Effects.Single(effect => effect.Action?.Type == "AddStatus").Action!;
-            CardActionEffect reset = onSpawn.Effects.Single(effect => effect.Action?.Type == "ResetCooldown").Action!;
-            CardActionEffect activatedReset = onActivated.Effects.Single().Action!;
-            CardActionEffect showAvailable = availableTrigger.Effects.Single().Action!;
-            CardActionEffect hideAvailable = unavailableTrigger.Effects.Single().Action!;
-            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
-                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
-                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
-                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
-                .Where(unit => unit != null).Select(unit => unit!).ToArray();
-            const string abilityId = "bd217216-3d1d-4139-9003-5d6a42f059d4";
-            Require(rule.AssetKey == "HotHead" && rule.Cost == 2 && template.AssetKey == "MonsterHotHead" &&
-                template.Modifiers!.AttackDamage == 5 && template.Health == 20 && template.MaxHealth == 20 && template.Size == 2 &&
-                template.Ability is { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
-                !onSpawn.Once && onSpawn.Effects.Count == 2 && spawnedOnSpawn.HasTriggered &&
-                available is { Type: "AddStatus", Target: "Self" } &&
-                available.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
-                reset is { Type: "ResetCooldown", Target: "Self", CooldownParameter: true } &&
-                activatedReset is { Type: "ResetCooldown", Target: "Self", CooldownParameter: false } &&
-                showAvailable is { Type: "AddStatus", Target: "Self" } &&
-                showAvailable.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
-                hideAvailable is { Type: "RemoveStatus", Target: "Self" } &&
-                hideAvailable.Statuses.Single().Id == "unit_ability_available" &&
-                spawnedUnit.Ability is { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
-                spawnedUnit.Status("unit_ability") is { Stacks: 1, ParamInt: 0 } &&
-                spawnedUnit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
-                unitTurns.Length == 4 && unitTurns.All(unit => unit.Ability is
-                    { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
-                    unit.Status("unit_ability") is { Stacks: 1, ParamInt: 0 } &&
-                    unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
-                    !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
-                "HotHead must preserve its native 2-cost 5/20 birth, expose and retain its cooldown-2 ability across four unused post-deployment snapshots, and keep availability callbacks calibrated.");
+            CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
+                "HotHead", "HotHead", "MonsterHotHead", 2, 5, 20, 2, "bd217216-3d1d-4139-9003-5d6a42f059d4");
         }
         if (expectedId == SteadfastCrusaderId)
         {
-            CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
-            CombatTrigger onActivated = template.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated");
-            CombatTrigger availableTrigger = template.Triggers.Single(trigger => trigger.Kind == "OnUnitAbilityAvailable");
-            CombatTrigger unavailableTrigger = template.Triggers.Single(trigger => trigger.Kind == "OnUnitAbilityUnavailable");
-            CombatTrigger spawnedOnSpawn = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
-            CardActionEffect available = onSpawn.Effects.Single(effect => effect.Action?.Type == "AddStatus").Action!;
-            CardActionEffect reset = onSpawn.Effects.Single(effect => effect.Action?.Type == "ResetCooldown").Action!;
-            CardActionEffect activatedReset = onActivated.Effects.Single().Action!;
-            CardActionEffect showAvailable = availableTrigger.Effects.Single().Action!;
-            CardActionEffect hideAvailable = unavailableTrigger.Effects.Single().Action!;
-            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
-                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
-                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
-                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
-                .Where(unit => unit != null).Select(unit => unit!).ToArray();
-            const string abilityId = "3366ff9e-1beb-4246-a025-c448b47dacae";
-            Require(rule.AssetKey == "SteadfastCrusader" && rule.Cost == 1 && template.AssetKey == "MonsterSteadfastCrusader" &&
-                template.Modifiers!.AttackDamage == 5 && template.Health == 30 && template.MaxHealth == 30 && template.Size == 2 &&
-                template.Ability is { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
-                !onSpawn.Once && onSpawn.Effects.Count == 2 && spawnedOnSpawn.HasTriggered &&
-                available is { Type: "AddStatus", Target: "Self" } &&
-                available.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
-                reset is { Type: "ResetCooldown", Target: "Self", CooldownParameter: true } &&
-                activatedReset is { Type: "ResetCooldown", Target: "Self", CooldownParameter: false } &&
-                showAvailable is { Type: "AddStatus", Target: "Self" } &&
-                showAvailable.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
-                hideAvailable is { Type: "RemoveStatus", Target: "Self" } &&
-                hideAvailable.Statuses.Single().Id == "unit_ability_available" &&
-                spawnedUnit.Ability is { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
-                spawnedUnit.Status("unit_ability") is { Stacks: 1, ParamInt: 0 } &&
-                spawnedUnit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
-                unitTurns.Length == 4 && unitTurns.All(unit => unit.Ability is
-                    { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
-                    unit.Status("unit_ability") is { Stacks: 1, ParamInt: 0 } &&
-                    unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
-                    !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
-                "Steadfast Crusader must preserve its native 1-cost 5/30 birth and unactivated cooldown-2 ability across four post-deployment snapshots, with calibrated availability callbacks.");
+            CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
+                "Steadfast Crusader", "SteadfastCrusader", "MonsterSteadfastCrusader", 1, 5, 30, 2, "3366ff9e-1beb-4246-a025-c448b47dacae");
+        }
+        if (expectedId == TrufflesId)
+        {
+            CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
+                "Truffles", "Truffles", "MonsterTruffles", 1, 5, 5, 1, "8d54f68b-5660-4507-84c3-a0cf092bfbf1");
         }
         if (expectedId == EelGorgonId)
         {
@@ -994,6 +930,49 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-RUBBLE-RAISER PASS: original zero-cost 0/1 Snack birth and exact inactive OnEaten +1 energy/LastFeeder +3/+3 upgrade definition.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
+    }
+    private static void CheckUnactivatedUnitAbilityLifecycle(FixtureValue root, int[] ids, int actionIndex,
+        CardPlayRule rule, CombatUnit template, CombatUnit spawnedUnit, string displayName, string cardAsset, string unitAsset,
+        int cost, int attack, int health, int size, string abilityId)
+    {
+        CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+        CombatTrigger onActivated = template.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated");
+        CombatTrigger availableTrigger = template.Triggers.Single(trigger => trigger.Kind == "OnUnitAbilityAvailable");
+        CombatTrigger unavailableTrigger = template.Triggers.Single(trigger => trigger.Kind == "OnUnitAbilityUnavailable");
+        CombatTrigger spawnedOnSpawn = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+        CardActionEffect available = onSpawn.Effects.Single(effect => effect.Action?.Type == "AddStatus").Action!;
+        CardActionEffect reset = onSpawn.Effects.Single(effect => effect.Action?.Type == "ResetCooldown").Action!;
+        CardActionEffect activatedReset = onActivated.Effects.Single().Action!;
+        CardActionEffect showAvailable = availableTrigger.Effects.Single().Action!;
+        CardActionEffect hideAvailable = unavailableTrigger.Effects.Single().Action!;
+        CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+            .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+            .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+            .Where(unit => unit != null).Select(unit => unit!).ToArray();
+        bool HasExpectedAbility(CombatUnit unit) => unit.Ability is
+            { DataId: var dataId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } && dataId == abilityId;
+        bool templateHasExpectedAbility = template.Ability is
+            { DataId: var dataId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } && dataId == abilityId;
+        Require(rule.AssetKey == cardAsset && rule.Cost == cost && template.AssetKey == unitAsset &&
+            template.Modifiers!.AttackDamage == attack && template.Health == health && template.MaxHealth == health && template.Size == size &&
+            templateHasExpectedAbility && !onSpawn.Once && onSpawn.Effects.Count == 2 && spawnedOnSpawn.HasTriggered &&
+            available is { Type: "AddStatus", Target: "Self" } &&
+            available.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
+            reset is { Type: "ResetCooldown", Target: "Self", CooldownParameter: true } &&
+            activatedReset is { Type: "ResetCooldown", Target: "Self", CooldownParameter: false } &&
+            showAvailable is { Type: "AddStatus", Target: "Self" } &&
+            showAvailable.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
+            hideAvailable is { Type: "RemoveStatus", Target: "Self" } &&
+            hideAvailable.Statuses.Single().Id == "unit_ability_available" &&
+            HasExpectedAbility(spawnedUnit) &&
+            spawnedUnit.Status("unit_ability") is { Stacks: 1, ParamInt: 0 } &&
+            spawnedUnit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+            unitTurns.Length == 4 && unitTurns.All(unit => HasExpectedAbility(unit) &&
+                unit.Status("unit_ability") is { Stacks: 1, ParamInt: 0 } &&
+                unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
+            $"{displayName} must retain its native {cost}-cost {attack}/{health} birth and unactivated cooldown-2 ability across four post-deployment snapshots, with calibrated availability callbacks.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

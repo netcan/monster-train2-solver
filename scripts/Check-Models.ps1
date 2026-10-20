@@ -253,6 +253,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-hoard-acolyte.mt2f',
     'full-battle-original-isolated-hothead.mt2f',
     'full-battle-original-isolated-steadfast-crusader.mt2f',
+    'full-battle-original-isolated-truffles.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
@@ -2099,6 +2100,13 @@ foreach ($fixturePath in $originalIsolatedSteadfastCrusaderFixtures) {
     foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Steadfast Crusader checks failed ($mode): $fixturePath" }
+    }
+}
+$originalIsolatedTrufflesFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-isolated-truffles.mt2f' })
+foreach ($fixturePath in $originalIsolatedTrufflesFixtures) {
+    foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Truffles checks failed ($mode): $fixturePath" }
     }
 }
 $originalAttackOverrideFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-attack-overrides.mt2f' })
