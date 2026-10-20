@@ -180,6 +180,7 @@ internal static class OriginalSupportUnitsChecks
                     tomb.PlayerPosition == 1 && splitter.PlayerPosition == 1,
                     "The death-summon batch must fit unchanged units behind separate anchors at native capacity five.");
             }
+            if (expectedIds.Contains("8917df91-1517-4490-abd1-b58a065807fe")) VinemotherChecks.Native(root);
             RecordedBattleChecks.Native(root);
             return;
         }

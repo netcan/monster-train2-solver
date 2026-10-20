@@ -9670,3 +9670,19 @@ mismatch/unsupported/pending counters. Focused replay covers sixteen immutable
 branches each; bounded search has zero unsupported attempts and equal serial/
 parallel results. Existing More Spikes, Rebalance Valor and self-attack fixtures
 retain their focused native-chain replays.
+
+`full-battle-original-isolated-vinemother.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-233442-73995d7f`.
+Unchanged Vinemother fires EndTurnPreHandDiscard three times after deployment,
+applying its native OnlyStings-filtered temporary +4 damage upgrade to all
+sixteen current Stings across Hand, Draw and Discard. Unchanged Torch is a
+nonmatching spell control, and deployment leaves every Sting unchanged.
+The existing deck spell upgrade implementation now accepts branch-owned card
+type/filter metadata when invoked from a character callback, which has no
+parent card play definition. Removed card references do not imply ownership.
+The battle finishes with a settled victory, DEPTH-PASS and zero capture/
+mismatch/unsupported/pending counters. Four plays and five EndTurns replay
+through sixteen immutable branches. Bounded search has zero unsupported
+attempts and equal serial/parallel results; the original Great Decay deck
+upgrade fixture retains its focused replay. Exhausted-pile membership and
+Vinemother's unused unit ability are not positive claims of this fixture.

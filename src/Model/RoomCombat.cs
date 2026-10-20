@@ -1145,6 +1145,14 @@ namespace MonsterTrain2Poju.Model
                             if (filter != null) return filter;
                             continue;
                         }
+                        if (effect.Type == "CardEffectAddTempCardUpgradeToSpellsInDeck")
+                        {
+                            if (state.Context?.CardInstances == null || state.Context.CardRegistry == null || state.Context.OtherPiles == null ||
+                                effect.Action is not { Type: "UpgradeDeckSpells", Upgrade: not null, Lifetime: "TemporaryUntilEndOfBattle" } deckUpgrade)
+                                return "Triggered deck spell upgrades require complete card ownership and an upgrade definition.";
+                            if (deckUpgrade.Upgrade.ExternalInteractions.Count > 0) return string.Join("; ", deckUpgrade.Upgrade.ExternalInteractions);
+                            continue;
+                        }
                         if (effect.Type == "CardEffectDrawType")
                         {
                             string? drawError = TriggeredTypedDrawModel.Validate(state.Context, effect);
@@ -3969,7 +3977,8 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (action.Tests?.ShouldTest == false) continue;
                     bool valid;
-                    if (action.Type == "SpawnOrStatus") valid = SpawnOrStatusCanApply(actor, action, trigger.Kind);
+                    if (action.Type == "UpgradeDeckSpells") valid = !source.Preview && !battleWon && context?.AllScenarioBossesDead != true;
+                    else if (action.Type == "SpawnOrStatus") valid = SpawnOrStatusCanApply(actor, action, trigger.Kind);
                     else
                     {
                         CardTargets targets = TriggerTargets(actor, action, testing: true, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId);
@@ -4190,6 +4199,15 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId)
             {
                 CardActionEffect action = effect.Action!;
+                if (action.Type == "UpgradeDeckSpells")
+                {
+                    if (source.Preview || battleWon || context?.AllScenarioBossesDead == true) return true;
+                    DeckSpellUpgradeResult upgraded = DeckSpellUpgradeModel.Apply(context!, action, null);
+                    if (!upgraded.Supported) { unsupportedReason = upgraded.UnsupportedReason; return false; }
+                    context = upgraded.Context;
+                    foreach (int id in upgraded.AppliedCardIds) Emit("UpgradeDeckSpells", actor, actor, id);
+                    return true;
+                }
                 if (action.Type == "SpawnOrStatus") return ApplyTriggeredSpawnOrStatus(actor, action, triggerKind);
                 if (action.Type == "DrawType")
                 {

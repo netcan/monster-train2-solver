@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-231422-6aae3fa3/card-catalog.mt2f`.
-The committed archive is byte-identical: 97,875 bytes, 11,836 unique nodes,
-SHA-256 `f8ed2eb235e2c8fccaeb0d92eea243c131e02deb76298baf9fdb21f89a65491a`.
-The latest refresh captures Deranged Brute, Shard Channeler and Lead Songbird's
+Source: `.probe-runs/full-battle-no-cards-20261020-233223-8f259988/card-catalog.mt2f`.
+The committed archive is byte-identical: 98,078 bytes, 11,847 unique nodes,
+SHA-256 `415ba963d21bc006ba4a10ade6c131d3b5916dd36f3ffc875868c09e0783efd2`.
+The latest refresh captures Vinemother's native temporary Sting upgrade and
+OnlyStings filter. Only Vinemother's card projection changes; the other 667
+decoded card definitions remain identical.
+The preceding refresh captures Deranged Brute, Shard Channeler and Lead Songbird's
 native Rage, Spikes and Valor room modifiers. Exactly these three card
 projections change semantically; after removing null RoomStatuses fields,
 all other 665 decoded card definitions remain identical.

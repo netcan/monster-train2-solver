@@ -24,7 +24,7 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Missing deck spell upgrade definition.");
             if (effect.Lifetime != "TemporaryUntilEndOfBattle")
                 return Unsupported("Deck spell upgrades require the temporary battle lifetime.");
-            if (definitions == null || source.CardInstances == null || source.CardRegistry == null || source.OtherPiles == null)
+            if (source.CardInstances == null || source.CardRegistry == null || source.OtherPiles == null)
                 return Unsupported("Deck spell upgrades require complete card definitions, instances and pile membership.");
             if (effect.Upgrade.ExternalInteractions.Count > 0)
                 return Unsupported(string.Join("; ", effect.Upgrade.ExternalInteractions));
@@ -46,15 +46,16 @@ namespace MonsterTrain2Poju.Model
             var applied = new List<int>();
             foreach (CardToken token in allCards)
             {
-                CardPlayRule? rule = definitions.Cards.FirstOrDefault(item => item.DataId == token.DataId);
-                if (rule == null) return Unsupported("Deck spell upgrade is missing a card definition for " + token.DataId + ".");
-                if (rule.CardType != "Spell") continue;
                 CardInstanceState? card = context.FindCard(token.InstanceId);
                 if (card == null || card.DataId != token.DataId)
                     return Unsupported("Deck spell upgrade is missing a matching card instance.");
+                CardPlayRule? rule = definitions?.Cards.FirstOrDefault(item => item.DataId == token.DataId);
+                string? cardType = rule?.CardType ?? (definitions == null ? card.MaskDescriptor?.Definition.CardType : null);
+                if (cardType == null) return Unsupported("Deck spell upgrade is missing a card definition for " + token.DataId + ".");
+                if (cardType != "Spell") continue;
                 if (card.ExternalInteractions.Count > 0)
                     return Unsupported(string.Join("; ", card.ExternalInteractions));
-                IReadOnlyList<string> upgradeInteractions = rule.UpgradeInteractions ?? rule.ExternalInteractions;
+                IReadOnlyList<string> upgradeInteractions = rule?.UpgradeInteractions ?? rule?.ExternalInteractions ?? Array.Empty<string>();
                 if (upgradeInteractions.Count > 0)
                     return Unsupported(string.Join("; ", upgradeInteractions));
 

@@ -156,9 +156,19 @@ namespace MonsterTrain2Poju.Probe
                 IsolatedEnergyControlInstanceId = FullBattleTrace.Active!.CardId(energyControl);
             }
             CardState[] units = unitIds.Select(id => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false)).ToArray();
-            if (unitIds.Contains("58ac2b3e-ad25-4620-b814-6a3a74175aa4"))
+            if (unitIds.Any(id => id is "58ac2b3e-ad25-4620-b814-6a3a74175aa4" or "8917df91-1517-4490-abd1-b58a065807fe"))
                 for (int drawControl = 0; drawControl < 14; drawControl++)
-                    cards.AddNewCard(all.FindCardData("f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b")!, CardPile.DeckPileTop, false, false, animate: false);
+                    cards.AddNewCard(all.FindCardData(unitIds.Contains("8917df91-1517-4490-abd1-b58a065807fe")
+                        ? "356a00a4-010b-462b-b683-2ef296d076a8" : "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b")!, CardPile.DeckPileTop, false, false, animate: false);
+            if (unitIds.Contains("8917df91-1517-4490-abd1-b58a065807fe"))
+            {
+                cards.AddNewCard(all.FindCardData("f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b")!, CardPile.DiscardPile, false, false, animate: false);
+                cards.AddNewCard(all.FindCardData("f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b")!, CardPile.HandPile, false, false, animate: false);
+                cards.AddNewCard(all.FindCardData("356a00a4-010b-462b-b683-2ef296d076a8")!, CardPile.DiscardPile, false, false, animate: false);
+                cards.AddNewCard(all.FindCardData("356a00a4-010b-462b-b683-2ef296d076a8")!, CardPile.ExhaustedPile, false, false, animate: false);
+                CardState heldSting = cards.AddNewCard(all.FindCardData("356a00a4-010b-462b-b683-2ef296d076a8")!, CardPile.HandPile, false, false, animate: false);
+                var heldFreeze = new CardTraitData(); heldFreeze.Setup("CardTraitFreeze"); heldSting.AddTemporaryTrait(heldFreeze, managers.GetCoreManagers());
+            }
             foreach (CardState card in units) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             var scheduledCards = new List<CardState>(anchors);
             if (energyControl != null) scheduledCards.Add(energyControl);
