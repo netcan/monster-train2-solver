@@ -16,6 +16,17 @@ The catalog/model projection is from 2026-10-21 (native callbacks and reachable 
 
 The 563 native logbook entries are the primary card-inventory denominator, not the 668 internal definitions. Logbook visibility does not imply collectible/reward-pool membership; generated, event and non-mastery cards are included. Native mastery eligibility is a separate recorded predicate (536 definitions). Abilities and other hidden definitions stay in the inventory.
 
+## Direct-play eligibility
+
+559/559 logbook entries without intrinsic unplayability have a definition-matched successful native play. This is a direct-play evidence gate, not proof of every branch or combination. The following 4 original entries retain their native restriction and are not promoted to successful-play evidence:
+
+| Asset key | Native restriction |
+| --- | --- |
+| BogWurmling | NonPlayable cost type |
+| KinhostPupa | NonPlayable cost type |
+| ScrapMetal | CardTraitUnplayable |
+| UnplayableUnpurgeable | CardTraitUnplayable |
+
 ## Evidence levels
 
 | Classification | Logbook | All definitions | Meaning |
@@ -103,6 +114,24 @@ Counts are per logbook identity and can overlap. Conditional upgrade/discard gua
 
 | Asset key | Main effects |
 | --- | --- |
+
+## Internal definitions with remaining guards
+
+15 unit abilities or other hidden definitions remain partial/unsupported. They stay in the 668-definition inventory and are outside the logbook direct-play gate above. Grouped native signatures identify shared implementation work; exact guards remain in `card-inventory.tsv`.
+
+| Native effect/trait signature | Definitions | Evidence level |
+| --- | --- | --- |
+| CardEffectNULL + CardTraitInfusion | BlastInfusion;EnfeeblingInfusion;GoliathInfusion;MadmanInfusion | partial |
+| CardEffectFloorRearrange -> CardEffectAddStatusEffect -> CardEffectAddStatusToRoomScalingByCasterStatusCount | SaviorAbility2;SaviorAbility3 | unsupported |
+| CardEffectAddBattleCard | FetchAbility | partial |
+| CardEffectCraftSpike | SpikedriverFactoryAbility | unsupported |
+| CardEffectCreateCopyOfCardPlayedLastTurn | LunarEchoAbility | unsupported |
+| CardEffectDraw | ExtractDrawAbility | partial |
+| CardEffectFloorRearrange -> CardEffectAddStatusEffectPerMissingHp -> CardEffectHeal | CourageAbility | unsupported |
+| CardEffectFreezeAllCards -> CardEffectRemoveAbility | PyreHeartTimeAbility | unsupported |
+| CardEffectKill | GlugsiderAbility | partial |
+| CardEffectSacrificeOrFeed -> CardEffectAddTempCardUpgradeToUnits | ChompAbility | unsupported |
+| CardEffectUnitAbilityTeleport | BogFlyFlightAbility | partial |
 
 ## Excluded capture records
 

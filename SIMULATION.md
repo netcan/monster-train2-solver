@@ -1,7 +1,9 @@
 # Full battle simulation
 
-Current accepted inventory (2026-10-19): 537 binary archives, including 497
-full battles and 40 component calibrations. Unchanged original relic evidence
+Current curated inventory (2026-10-21): 759 binary archives, including 719
+full battles and 40 component calibrations. The card index accepts 718 battles;
+one historical capture retains nonzero mismatch counters and stays excluded.
+Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
@@ -12,9 +14,18 @@ coverage and the optimal solver remain in progress.
 The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
-is frozen under [tests/catalogs](tests/catalogs/README.md), outside the 536
-accepted battle/component archives. Native decision state, RNG and frame are
+is frozen under [tests/catalogs](tests/catalogs/README.md), separately from the
+battle/component archives. Native decision state, RNG and frame are
 unchanged by catalog inspection; branch card metadata is enabled explicitly.
+
+Definition-matched successful native plays now cover 559/559 logbook entries
+without intrinsic unplayability. The remaining four logbook entries preserve
+their native NonPlayable cost or Unplayable trait: Bog Wurmling, Kinhost Pupa,
+Scrap Metal and Unplayable Unpurgeable. They retain mechanism/rejection evidence
+and are not counted as successful plays. Fifteen hidden unit-ability/internal
+definitions still have partial or unsupported paths; the report groups these
+by native effect/trait signature. These counts do not imply complete support
+for arbitrary combinations or completion of the optimal solver.
 
 The report distinguishes definition-matched native plays, indirect mechanism
 witnesses, partial/unsupported paths and unreviewed evidence. A DataId appearing

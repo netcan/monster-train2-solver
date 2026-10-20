@@ -742,7 +742,14 @@ internal static class CardCoverageInventory
         foreach (var group in cards.GroupBy(card => card.Role).OrderBy(group => group.Key, StringComparer.Ordinal)) text.Append($"| {group.Key} | {group.Count()} |\n");
         text.Append($"| **All definitions** | **{cards.Length}** |\n\n");
         text.Append($"The 563 native logbook entries are the primary card-inventory denominator, not the 668 internal definitions. Logbook visibility does not imply collectible/reward-pool membership; generated, event and non-mastery cards are included. Native mastery eligibility is a separate recorded predicate ({cards.Count(card => Flag(card.Definition, "CountsTowardsMastery"))} definitions). Abilities and other hidden definitions stay in the inventory.\n\n");
-        text.Append("## Evidence levels\n\n| Classification | Logbook | All definitions | Meaning |\n| --- | ---: | ---: | --- |\n");
+        Card[] intrinsicallyUnplayable = cards.Where(card => card.Logbook &&
+            (Text(card.Definition.GetProperty("Rule"), "CostType") == "NonPlayable" ||
+                Array(card.Definition, "Traits").Any(trait => Text(trait, "Type") == "CardTraitUnplayable"))).ToArray();
+        Card[] eligible = cards.Where(card => card.Logbook && !intrinsicallyUnplayable.Contains(card)).ToArray();
+        text.Append($"## Direct-play eligibility\n\n{eligible.Count(card => card.Coverage == "direct-native-play")}/{eligible.Length} logbook entries without intrinsic unplayability have a definition-matched successful native play. This is a direct-play evidence gate, not proof of every branch or combination. The following {intrinsicallyUnplayable.Length} original entries retain their native restriction and are not promoted to successful-play evidence:\n\n| Asset key | Native restriction |\n| --- | --- |\n");
+        foreach (Card card in intrinsicallyUnplayable.OrderBy(card => card.Name, StringComparer.Ordinal))
+            text.Append($"| {card.Name} | {(Text(card.Definition.GetProperty("Rule"), "CostType") == "NonPlayable" ? "NonPlayable cost type" : "CardTraitUnplayable")} |\n");
+        text.Append("\n## Evidence levels\n\n| Classification | Logbook | All definitions | Meaning |\n| --- | ---: | ---: | --- |\n");
         foreach ((string level, string meaning) in new[] {
             ("direct-native-play", "No captured projection guards; at least one successful native play has the same captured definition projection."),
             ("mechanism-only", "No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted."),
@@ -787,6 +794,12 @@ internal static class CardCoverageInventory
         text.Append("\n## Explicitly unsupported logbook entries\n\n| Asset key | Main effects |\n| --- | --- |\n");
         foreach (Card card in cards.Where(card => card.Logbook && card.Coverage == "unsupported"))
             text.Append($"| `{Escape(card.Name)}` | {Escape(Join(Array(card.Definition, "Effects").Select(effect => Text(effect, "Type"))))} |\n");
+        Card[] internalGaps = cards.Where(card => !card.Logbook && card.Coverage is "partial" or "unsupported").ToArray();
+        text.Append($"\n## Internal definitions with remaining guards\n\n{internalGaps.Length} unit abilities or other hidden definitions remain partial/unsupported. They stay in the 668-definition inventory and are outside the logbook direct-play gate above. Grouped native signatures identify shared implementation work; exact guards remain in `card-inventory.tsv`.\n\n| Native effect/trait signature | Definitions | Evidence level |\n| --- | --- | --- |\n");
+        foreach (var group in internalGaps.GroupBy(card => string.Join(" -> ", Array(card.Definition, "Effects").Select(effect => Text(effect, "Type"))) +
+            (Array(card.Definition, "Traits").Any(trait => Text(trait, "Type") == "CardTraitInfusion") ? " + CardTraitInfusion" : ""))
+            .OrderByDescending(group => group.Count()).ThenBy(group => group.Key, StringComparer.Ordinal))
+            text.Append($"| {Escape(group.Key)} | {Escape(Join(group.Select(card => card.Name)))} | {Join(group.Select(card => card.Coverage))} |\n");
         if (excluded.Count > 0)
         {
             text.Append("\n## Excluded capture records\n\nThese may have separate later-model acceptance, but the indexer does not reinterpret their captured failure counters.\n\n");
