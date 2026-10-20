@@ -341,6 +341,15 @@ definitions: its native empty remembered-spell state replaces the attachment
 guard. Native copying, overwrite, same-floor replay and an other-floor control
 have a separate unchanged-original witness.
 
+The Squad Leader refresh comes from
+`.probe-runs/full-battle-no-cards-20261021-043848-6330db70/card-catalog.mt2f`
+(100592 bytes, 12213 nodes, SHA-256
+`776863ce7e7fe9aca2b17c790cf8bab51ac66179d70de0f3372b890603227d00`).
+Ignoring newly absent/null TroopAura fields, only Squad Leader changes among
+668 definitions: its original troop upgrade, statuses, target cache and
+movement rules replace the unsupported room-modifier guard. Birth, growth,
+troop loss and floor departure have a separate unchanged-original witness.
+
 Recreate with an otherwise unmodified sandbox scenario:
 
 ```powershell

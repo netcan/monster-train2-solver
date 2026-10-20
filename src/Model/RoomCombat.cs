@@ -2843,6 +2843,8 @@ namespace MonsterTrain2Poju.Model
                 bool immediateHarvest = false, bool doNotFullyRemove = false, bool returnSpawnerAfterQueue = false)
             {
                 if (target.DeathFinished) return;
+                if (target.Source.Modifiers?.TroopAura != null)
+                { unsupportedReason = "Troop aura owner-death cleanup needs a native witness."; return; }
                 if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: false));
@@ -3583,6 +3585,16 @@ namespace MonsterTrain2Poju.Model
                     if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return; }
                     ImportEnchantmentRoom(applied.State!);
                     foreach (QueuedCharacterTrigger child in applied.PendingCallbacks) QueueCallback(child);
+                }
+                if (unsupportedReason == null && kind is "OnTroopAdded" or "OnTroopRemoved" &&
+                    units.Any(owner => owner.InRoom && owner.Source.Modifiers?.TroopAura != null))
+                {
+                    RoomCombatResult troop = TroopAuraModel.TroopChanged(CurrentRoom(), unit.Freeze(), kind, paramInt, paramInt2);
+                    if (!troop.Supported) { unsupportedReason = troop.UnsupportedReason; return; }
+                    CombatUnit? changedTroop = troop.State!.Units.Concat(troop.RetainedUnits).FirstOrDefault(actor => actor.Id == unit.Source.Id);
+                    if (changedTroop != null) unit.Apply(changedTroop);
+                    ImportEnchantmentRoom(troop.State!);
+                    foreach (QueuedCharacterTrigger child in troop.PendingCallbacks) QueueCallback(child);
                 }
                 if (unsupportedReason == null && kind == "OnSentry" && overrideTarget != null && unit.Source.Modifiers?.Sentry != null)
                 {

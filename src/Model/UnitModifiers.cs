@@ -25,6 +25,7 @@ namespace MonsterTrain2Poju.Model
         public UnitGraftRule? Graft { get; }
         public IReadOnlyList<StatisticCount>? SynergizeStatuses { get; }
         public SentryState? Sentry { get; }
+        public TroopAuraState? TroopAura { get; }
         public bool SpawnerMatchesDefinition { get; }
         public IReadOnlyList<CardUpgradeModifier> Upgrades { get; }
         public IReadOnlyList<StatisticCount> HealthFromUpgrades { get; }
@@ -35,7 +36,7 @@ namespace MonsterTrain2Poju.Model
             bool? isChampion = null, IReadOnlyList<UnitSelfAttackRule>? selfAttackRules = null,
             IReadOnlyList<UnitRoomResourceRule>? roomResources = null, IReadOnlyList<UnitRoomStatusRule>? roomStatuses = null,
             IReadOnlyList<TriggerCountModifier>? roomTriggerCounts = null, string? spawnCopySubtype = null, UnitGraftRule? graft = null,
-            IReadOnlyList<StatisticCount>? synergizeStatuses = null, SentryState? sentry = null)
+            IReadOnlyList<StatisticCount>? synergizeStatuses = null, SentryState? sentry = null, TroopAuraState? troopAura = null)
         {
             AttackDamage = attackDamage; AttackDamageAdded = attackDamageAdded; DamageBuff = damageBuff; IsChampion = isChampion; RawSize = rawSize;
             EquipmentLimit = equipmentLimit; CanBeHealed = canBeHealed; IsClone = isClone; Upgrades = Array.AsReadOnly(upgrades.ToArray());
@@ -52,26 +53,31 @@ namespace MonsterTrain2Poju.Model
             Graft = graft;
             SynergizeStatuses = synergizeStatuses == null ? null : Array.AsReadOnly(synergizeStatuses.ToArray());
             Sentry = sentry;
+            TroopAura = troopAura;
         }
         internal UnitModifiers WithStatusDamage(int amount) => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition, amount,
-            MagebladeDamagePerMagicPower, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft, SynergizeStatuses, Sentry);
+            MagebladeDamagePerMagicPower, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft, SynergizeStatuses, Sentry, TroopAura);
         internal UnitModifiers WithMagebladeDamage(int amount) => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition,
-            DamageBuffFromStatusEffects, amount, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft, SynergizeStatuses, Sentry);
+            DamageBuffFromStatusEffects, amount, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft, SynergizeStatuses, Sentry, TroopAura);
         internal UnitModifiers ResetStartingStatusCaches() => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition,
             DamageBuffFromStatusEffects.HasValue ? 0 : (int?)null,
             MagebladeDamagePerMagicPower.HasValue ? 0 : (int?)null, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft,
-            SynergizeStatuses == null ? null : Array.Empty<StatisticCount>(), Sentry == null ? null : new SentryState(Array.Empty<int>()));
+            SynergizeStatuses == null ? null : Array.Empty<StatisticCount>(), Sentry == null ? null : new SentryState(Array.Empty<int>()), TroopAura?.WithTargets(Array.Empty<int>()));
         internal UnitModifiers WithSynergizeStatuses(IReadOnlyList<StatisticCount> values) => new UnitModifiers(AttackDamage,
             AttackDamageAdded, DamageBuff, RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades,
             SpawnerMatchesDefinition, DamageBuffFromStatusEffects, MagebladeDamagePerMagicPower, StatusAttackModifiers,
-            IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft, values, Sentry);
+            IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft, values, Sentry, TroopAura);
         internal UnitModifiers WithSentry(SentryState value) => new UnitModifiers(AttackDamage,
             AttackDamageAdded, DamageBuff, RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades,
             SpawnerMatchesDefinition, DamageBuffFromStatusEffects, MagebladeDamagePerMagicPower, StatusAttackModifiers,
-            IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft, SynergizeStatuses, value);
+            IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft, SynergizeStatuses, value, TroopAura);
+        internal UnitModifiers WithTroopAura(TroopAuraState value) => new UnitModifiers(AttackDamage,
+            AttackDamageAdded, DamageBuff, RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades,
+            SpawnerMatchesDefinition, DamageBuffFromStatusEffects, MagebladeDamagePerMagicPower, StatusAttackModifiers,
+            IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft, SynergizeStatuses, Sentry, value);
     }
 
     public static class UnitModifierModel
@@ -193,7 +199,7 @@ namespace MonsterTrain2Poju.Model
                 var statuses = target.Statuses.ToDictionary(status => status.Id);
                 var nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition, modifiers.DamageBuffFromStatusEffects,
-                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers, modifiers.IsChampion, modifiers.SelfAttackRules, modifiers.RoomResources, modifiers.RoomStatuses, modifiers.RoomTriggerCounts, modifiers.SpawnCopySubtype, modifiers.Graft, modifiers.SynergizeStatuses, modifiers.Sentry);
+                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers, modifiers.IsChampion, modifiers.SelfAttackRules, modifiers.RoomResources, modifiers.RoomStatuses, modifiers.RoomTriggerCounts, modifiers.SpawnCopySubtype, modifiers.Graft, modifiers.SynergizeStatuses, modifiers.Sentry, modifiers.TroopAura);
                 var statusCallbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
                 RoomCombatResult? healthFailure = null;
                 ChangeHealth(sign * upgrade.Stats.Health, !(remove && upgrade.Stats.Health > 0), !remove || upgrade.Stats.Health < 0);
@@ -241,7 +247,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition, nextModifiers.DamageBuffFromStatusEffects,
-                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers, modifiers.IsChampion, modifiers.SelfAttackRules, modifiers.RoomResources, modifiers.RoomStatuses, modifiers.RoomTriggerCounts, modifiers.SpawnCopySubtype, modifiers.Graft, modifiers.SynergizeStatuses, modifiers.Sentry);
+                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers, modifiers.IsChampion, modifiers.SelfAttackRules, modifiers.RoomResources, modifiers.RoomStatuses, modifiers.RoomTriggerCounts, modifiers.SpawnCopySubtype, modifiers.Graft, modifiers.SynergizeStatuses, modifiers.Sentry, modifiers.TroopAura);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
                     Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, nextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState, bumpRules: target.BumpRules, lastFeederId: target.LastFeederId, moonPhaseMask: target.MoonPhaseMask);

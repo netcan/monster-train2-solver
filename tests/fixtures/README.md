@@ -9936,6 +9936,22 @@ pre-existing discrepancy is not covered by the room-skill acceptance. Attachment
 corruption with unit/relic CorruptionAdded callbacks remains explicitly guarded.
 The other two room skills have separate positive movement witnesses below.
 
+`full-battle-original-isolated-squad-leader.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-043517-8a032666`.
+Unchanged Squad Leader grants two attack upgrades per Horde stack and one
+Trample application to eligible Funguy units on its floor. Original Fertile
+Ground and Funguy in a Suit supply birth and troop-growth witnesses; original
+Mushroom Cloud removes a troop and its corresponding upgrade. Original Hidden
+Passage moves the survivor away, removing all owner upgrades, Trample and the
+cached target. Upgrade identities remain specific to each aura owner. Native
+DEPTH-PASS has a settled win and zero capture/mismatch/unsupported/pending
+counters. Nine plays and five EndTurns pass sixteen immutable replay branches.
+The 128-state search matches nine recorded decisions and serial/parallel best
+results, with three guarded search attempts involving invalid living-unit
+state. One recorded-decision alternative is also outside the supported domain.
+Owner death and composition with ordinary enchantment sources remain guarded
+pending native witnesses rather than being silently approximated.
+
 `full-battle-original-isolated-echo-vault.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-042641-01e9949d`.
 Unchanged Echo Vault remembers original Enflame, then replaces that reference

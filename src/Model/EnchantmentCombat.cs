@@ -149,7 +149,25 @@ namespace MonsterTrain2Poju.Model
             private readonly List<RoomCombatModel.QueuedCharacterTrigger> callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             private string? error;
             internal Engine(EnchantmentCombatState source) { state = source; }
-            internal EnchantmentCombatResult All() { UpdateAll(); return Finish(); }
+            internal EnchantmentCombatResult All()
+            {
+                bool alreadyUpdating = state.Updating;
+                UpdateAll();
+                if (error == null && !alreadyUpdating)
+                {
+                    var positions = state.Train.Rooms.SelectMany(room => room.Units.Where(unit => unit.Modifiers?.TroopAura != null)
+                        .Select(unit => new EnchantmentSourcePosition(unit.Id, unit.Team, room.RoomIndex,
+                            state.Train.Context?.SpawnPoints?.SelectedGroup(room.RoomIndex, unit.Team)?.Occupants.ToList().IndexOf(unit.Id) ?? 0))).ToArray();
+                    if (positions.Length > 0)
+                    {
+                        EnchantmentCombatResult troop = TroopAuraModel.UpdateAll(state,
+                            EnchantmentSourceOrderModel.Collect(state.Train.Rooms.Count, positions));
+                        if (!troop.Supported) error = troop.UnsupportedReason;
+                        else { state = troop.State!; callbacks.AddRange(troop.PendingCallbacks); }
+                    }
+                }
+                return Finish();
+            }
             internal EnchantmentCombatResult One(int id, int trigger, int effect) { Update(id, trigger, effect); return Finish(); }
             private EnchantmentCombatResult Finish() => new EnchantmentCombatResult(error == null ? state : null, requests, callbacks, error);
 

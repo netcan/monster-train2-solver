@@ -119,7 +119,7 @@ namespace MonsterTrain2Poju.Model
             int buff = unchecked(old.DamageBuff + (special ? 0 : Math.Max(0, source.Modifiers.DamageBuff)));
             var modifiers = new UnitModifiers(attack, old.AttackDamageAdded, buff, old.RawSize, old.EquipmentLimit,
                 old.CanBeHealed, old.IsClone, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
-                old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts, old.SpawnCopySubtype, old.Graft, old.SynergizeStatuses, old.Sentry);
+                old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts, old.SpawnCopySubtype, old.Graft, old.SynergizeStatuses, old.Sentry, old.TroopAura);
             CombatUnit changed = UnitCloneModel.Copy(target, modifiers, Math.Max(0, unchecked(attack + buff)), source.Health, source.MaxHealth);
             state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(),
                 state.ExternalInteractions, state.Context, state.Preview, state.ActiveCompanionBossIds);

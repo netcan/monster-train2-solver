@@ -371,6 +371,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-room-skills.mt2f',
     'full-battle-original-isolated-room-movement-skills.mt2f',
     'full-battle-original-isolated-sentry-turret.mt2f',
+    'full-battle-original-isolated-squad-leader.mt2f',
     'full-battle-original-isolated-echo-vault.mt2f',
     'full-battle-original-isolated-enchanted-chamber.mt2f',
     'full-battle-original-isolated-enchanted-chamber-replacement.mt2f',
@@ -2512,6 +2513,7 @@ $remainingOriginalSpellFixtures = @($fixtures | Where-Object { (Split-Path -Leaf
     'full-battle-original-isolated-room-skills.mt2f',
     'full-battle-original-isolated-room-movement-skills.mt2f',
     'full-battle-original-isolated-sentry-turret.mt2f',
+    'full-battle-original-isolated-squad-leader.mt2f',
     'full-battle-original-isolated-echo-vault.mt2f') })
 foreach ($fixturePath in $remainingOriginalSpellFixtures) {
     foreach ($mode in @('--original-support-spells-only', '--battle-search-only')) {

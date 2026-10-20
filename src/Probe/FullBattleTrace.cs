@@ -278,7 +278,7 @@ namespace MonsterTrain2Poju.Probe
             if (character.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier &&
                 !(ConduitProbe.Enabled && modifier is RoomStateConduitModifier) && !UnitSelfAttackModel.Known(modifier.GetType().Name) &&
                 !UnitRoomResourceModel.Known(modifier.GetType().Name) && !UnitRoomStatusModel.Known(modifier.GetType().Name) && modifier.GetType().Name != UnitRoomTriggerCountModel.Type &&
-                modifier is not RoomStateSpawnUnitOnUnitSpawnModifier && modifier is not RoomStateSentryAttackModifier))
+                modifier is not RoomStateSpawnUnitOnUnitSpawnModifier && modifier is not RoomStateSentryAttackModifier && modifier is not RoomStateTroopUnitUpgradeModifier))
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
             CardState? card = character.GetSpawnerCard();
             bool unsupportedSpawnerCardTriggers = card != null && card.GetTriggers().Any(trigger =>
@@ -339,7 +339,7 @@ namespace MonsterTrain2Poju.Probe
                 lastAttacker == null || normalizeDestroyedAttacker && (lastAttacker.IsDestroyed || !lastAttacker.IsAlive) ? 0 : UnitId(lastAttacker), statuses,
                 character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()),
                 new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning, character.SacrificeCard == null ? 0 : CardId(character.SacrificeCard), DeathSignalProbe.Capture(character),
-                SentryAttackProbe.Definition(character.GetSourceCharacterData()) != null || BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || (OriginalReactiveUnitsScenario.Enabled && team == CombatTeam.Enemy) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
+                SentryAttackProbe.Definition(character.GetSourceCharacterData()) != null || TroopAuraProbe.Definition(character.GetSourceCharacterData()) != null || BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || (OriginalReactiveUnitsScenario.Enabled && team == CombatTeam.Enemy) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
                     ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss(),
                         character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless,
                         pairedBoss == null ? 0 : UnitId(pairedBoss))
@@ -387,7 +387,7 @@ namespace MonsterTrain2Poju.Probe
                 int decisionStart = BattleSpawnPointProbe.Decisions.Count;
                 otherPiles = CaptureOtherPiles();
                 RoomEchoProbe.Discover();
-                enchantments = EnchantmentBattleScenario.Prepared || OriginalSupportUnitsScenario.CapturesEnchantments || RoomDeathEffectProbe.RequiresBirthWorld(this) || RoomPreCombatProbe.RequiresWorld(this)
+                enchantments = EnchantmentBattleScenario.Prepared || OriginalSupportUnitsScenario.CapturesEnchantments || RoomDeathEffectProbe.RequiresBirthWorld(this) || RoomPreCombatProbe.RequiresWorld(this) || TroopAuraProbe.RequiresWorld(this)
                     ? EnchantmentBattleScenario.CaptureWorld(this) : null;
                 abilityCache = AbilityCardProbe.Capture(this);
                 bonusDraw = BonusDrawProbe.Capture(cards, this);

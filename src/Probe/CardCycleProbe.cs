@@ -76,7 +76,7 @@ namespace MonsterTrain2Poju.Probe
                     units.Any(unit => unit.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier &&
                         !(ConduitProbe.Enabled && modifier is RoomStateConduitModifier) && !UnitSelfAttackModel.Known(modifier.GetType().Name) &&
                         !UnitRoomResourceModel.Known(modifier.GetType().Name) && !UnitRoomStatusModel.Known(modifier.GetType().Name) &&
-                        modifier.GetType().Name != UnitRoomTriggerCountModel.Type && modifier is not RoomStateSpawnUnitOnUnitSpawnModifier && modifier is not RoomStateSentryAttackModifier)))
+                        modifier.GetType().Name != UnitRoomTriggerCountModel.Type && modifier is not RoomStateSpawnUnitOnUnitSpawnModifier && modifier is not RoomStateSentryAttackModifier && modifier is not RoomStateTroopUnitUpgradeModifier)))
                     interactions.Add("Room card-manager modifiers");
             }
             if (cards.GetDrawingDeckCardsDisabledThisTurn() && !OriginalDiscardDrawScenario.Enabled) interactions.Add("Deck draw disabled");

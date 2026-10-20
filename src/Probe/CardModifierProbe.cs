@@ -247,7 +247,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Separate permanent starting-status application group");
             CardUpgradeData? copyDefinition = AllGameManagers.Instance?.GetSaveManager()?.GetAllGameData()
                 .FindCardUpgradeData(upgrade.GetCardUpgradeDataId());
-            return new CardUpgradeModifier(ConduitProbe.Normalize(upgrade.GetCardUpgradeDataId()), upgrade.GetAssetName(),
+            var captured = new CardUpgradeModifier(ConduitProbe.Normalize(upgrade.GetCardUpgradeDataId()), upgrade.GetAssetName(),
                 new CardStatModifier(upgrade.GetAttackDamage(), upgrade.GetAdditionalHP(), -upgrade.GetCostReduction(),
                     upgrade.GetAdditionalHeal(), upgrade.GetAdditionalSize(), upgrade.GetXCostReduction(),
                     upgrade.GetAdditionalEquipmentLimit(), upgrade.GetAdditionalUpgradeSlotCount()),
@@ -261,6 +261,7 @@ namespace MonsterTrain2Poju.Probe
                 copyRemoveOnDiscard: copyDefinition == null ? null : false, copyUnique: copyDefinition?.IsUnique(),
                 copyExcludeFromClones: copyDefinition?.GetExcludeFromClones(), lifecycle: lifecycle,
                 sharedReferenceId: TypedDrawProbe.SharedReferenceId(upgrade));
+            return TroopAuraProbe.Normalize(upgrade, captured);
         }
     }
 }

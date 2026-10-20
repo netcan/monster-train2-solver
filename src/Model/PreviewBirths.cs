@@ -28,7 +28,7 @@ namespace MonsterTrain2Poju.Model
                 Array.Empty<CardUpgradeModifier>(), Array.Empty<StatisticCount>(), metadata.SpawnerMatchesDefinition,
                 metadata.DamageBuffFromStatusEffects.HasValue ? 0 : (int?)null,
                 metadata.MagebladeDamagePerMagicPower.HasValue ? 0 : (int?)null, metadata.StatusAttackModifiers,
-                metadata.IsChampion, metadata.SelfAttackRules, metadata.RoomResources, metadata.RoomStatuses, metadata.RoomTriggerCounts, metadata.SpawnCopySubtype, metadata.Graft, metadata.SynergizeStatuses == null ? null : Array.Empty<StatisticCount>(), metadata.Sentry == null ? null : new SentryState(Array.Empty<int>()));
+                metadata.IsChampion, metadata.SelfAttackRules, metadata.RoomResources, metadata.RoomStatuses, metadata.RoomTriggerCounts, metadata.SpawnCopySubtype, metadata.Graft, metadata.SynergizeStatuses == null ? null : Array.Empty<StatisticCount>(), metadata.Sentry == null ? null : new SentryState(Array.Empty<int>()), metadata.TroopAura?.WithTargets(Array.Empty<int>()));
             var death = raw.DeathState == null ? new UnitDeathState(false, false, false) : new UnitDeathState(false, false, false,
                 isSacrifice: raw.DeathState.IsSacrifice.HasValue ? false : (bool?)null,
                 statisticsListenerOnce: raw.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null,

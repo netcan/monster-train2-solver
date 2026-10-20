@@ -122,6 +122,15 @@ namespace MonsterTrain2Poju.Probe
                 else if (source.Spawn.Train.Context.FindCard(ids[index])!.DataId != RoomEchoProbe.CardId)
                     candidates = candidates.Where(action => source.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy));
             }
+            if (index >= 4 && IsolatedIds.Contains(TroopAuraProbe.CardId))
+            {
+                candidates = candidates.Where(action => action.RoomIndex == 0);
+                string played = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
+                if (played == TroopAuraProbe.CardId) candidates = candidates.Where(action => action.PlayerPosition == 1);
+                if (played == "b67ca7bf-bd65-4d98-ae53-26397de1e355")
+                    candidates = candidates.Where(action => source.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == action.TargetUnitId &&
+                        unit.Team == CombatTeam.Player && unit.Status("horde")?.Stacks > 0));
+            }
             if (index >= 4 && IsolatedIds.Contains("13876e8d-b111-429d-acdb-2e095fda897e"))
             {
                 string foodCard = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
