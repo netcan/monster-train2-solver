@@ -145,6 +145,12 @@ namespace MonsterTrain2Poju.Probe
                 save.Cheat_SetTowerHP(save.GetMaxTowerHP() - 10);
             if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster or CardType.Junk)))
                 throw new InvalidOperationException("Isolated spell IDs must name one to thirty native playable card definitions.");
+            foreach (string id in spellIds)
+                foreach (CardEffectData effect in all.FindCardData(id)!.GetEffects())
+                    log.LogInfo("ORIGINAL-ISOLATED-EFFECT id=" + id + " type=" + effect.GetEffectStateName() +
+                        " target=" + effect.GetTargetMode() + " subtype=" + effect.GetParamSubtype().Key +
+                        " status=" + effect.GetUseStatusEffectStackMultiplier() + " health=" + effect.GetUseHealthMissingStackMultiplier() +
+                        " magic=" + effect.GetUseMagicPowerMultiplier());
             CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()
                 .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true);
             CapturesBump = spellIds.Any(id => all.FindCardData(id)!.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectBump"));

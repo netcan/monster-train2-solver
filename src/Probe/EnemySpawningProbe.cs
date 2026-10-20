@@ -139,8 +139,10 @@ namespace MonsterTrain2Poju.Probe
                 if (effect.GetEffectStateName() == "CardEffectNULL" &&
                     (effect.GetParamBool() || effect.GetAdditionalParamInt() != 0))
                     interactions.Add("Unmodeled triggered null-effect forwarding or targeting");
-                // AddStatusEffect never reads these shared editor fields (Void Excavator retains an unused upgrade).
-                if (effect.GetEffectStateName() is not ("CardEffectAddBattleCard" or "CardEffectAddRunCard" or "CardEffectAddStatusEffect") && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
+                // These native iterators do not read shared copy/filter/upgrade
+                // fields, except generation, which captures them independently.
+                if (effect.GetEffectStateName() is not ("CardEffectAddBattleCard" or "CardEffectAddRunCard" or "CardEffectAddStatusEffect" or
+                    "CardEffectAdjustForgePoints" or "CardEffectResetCooldown") && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
                     effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectSpawnMonster")) interactions.Add("Spawned effect modifiers");
                 var pool = new List<CardData>();
                 if (effect.GetEffectStateName() is "CardEffectAddBattleCard" or "CardEffectAddRunCard")

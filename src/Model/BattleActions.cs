@@ -48,6 +48,7 @@ namespace MonsterTrain2Poju.Model
         public bool CountStatusOnlyOnTargets { get; }
         public CombatUnit? SpawnFallbackUnit { get; }
         public bool DisallowStatusStackModifiers { get; }
+        public string? SourceStatusMultiplier { get; }
         public int? StatusAdjustmentFilter { get; }
         public bool? RemoveHalfStatusEffects { get; }
         public OverhealRule? Overheal { get; }
@@ -82,7 +83,8 @@ namespace MonsterTrain2Poju.Model
             bool? removeHalfStatusEffects = null, OverhealRule? overheal = null, bool? corruptionAdd = null,
             bool nullTargetless = false, bool nullForwardSelf = false, CardChooseDiscardRule? chooseDiscard = null,
             int transferAttackMultiplier = 0, StatusTransferRule? statusTransfer = null, string? unitTriggerKind = null,
-            int? healDamageMultiplier = null, UnitReturnRule? unitReturn = null, EquipmentMergeRule? equipmentMerge = null)
+            int? healDamageMultiplier = null, UnitReturnRule? unitReturn = null, EquipmentMergeRule? equipmentMerge = null,
+            string? sourceStatusMultiplier = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -91,6 +93,7 @@ namespace MonsterTrain2Poju.Model
             UseCardTraits = useCardTraits; RequireEquipment = requireEquipment; UseSelectedRoom = useSelectedRoom;
             CountStatusOnlyOnTargets = countStatusOnlyOnTargets; SpawnFallbackUnit = spawnFallbackUnit;
             DisallowStatusStackModifiers = disallowStatusStackModifiers; StatusAdjustmentFilter = statusAdjustmentFilter;
+            SourceStatusMultiplier = sourceStatusMultiplier;
             RemoveHalfStatusEffects = removeHalfStatusEffects;
             DamagePerHpLastAttacker = damagePerHpLastAttacker; DamagePerHpIncludeArmor = damagePerHpIncludeArmor;
             RoomAttachment = roomAttachment; Recursion = recursion; CardFilter = cardFilter;

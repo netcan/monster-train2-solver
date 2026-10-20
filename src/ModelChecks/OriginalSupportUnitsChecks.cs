@@ -139,6 +139,18 @@ internal static class OriginalSupportUnitsChecks
                 "Isolated unit scenario must record three anchors, optional energy control, and every requested original unit birth.");
             for (int index = 0; index < expectedIds.Length; index++)
                 NativeIsolatedUnit(root, expectedIds[index], actionIndex: index + 3 + energyControlActions, checkBattle: false);
+            foreach (string forgeId in expectedIds.Where(id => id is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "4e517f8b-3caa-4a2c-98ba-ebee99075eed"))
+            {
+                BattleTurnState[] turns = root.GetProperty("Turns").EnumerateArray()
+                    .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+                string callback = forgeId == "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" ? "OnHit" : "OnAnyUnitDeathOnFloor";
+                Require(turns.Any(turn => turn.Spawn.Train.Context!.QueryFrame!.ForgePoints > 0 &&
+                    turn.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                        turn.Spawn.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == forgeId &&
+                        unit.Triggers.Any(trigger => trigger.Kind == callback && trigger.HasTriggered &&
+                            trigger.Effects.Single().Action is { Type: "AdjustForgePoints", Value: 1 }))),
+                    "Original Forge unit must positively dispatch its native hit/death callback with active Forge tracking.");
+            }
             if (expectedIds.SequenceEqual([DregsTombId, SplitterUnitId]))
             {
                 PlayCardAction tomb = isolatedActions[3].GetProperty("Action").Deserialize<PlayCardAction>()!;
@@ -432,6 +444,7 @@ internal static class OriginalSupportUnitsChecks
         RoomCombatState targetRoom = unitBefore.Spawn.Train.Rooms.Single(item => item.RoomIndex == unitAction.RoomIndex);
         RoomPlayRule targetRule = unitBefore.PlayRules.Rooms.Single(item => item.RoomIndex == unitAction.RoomIndex);
         int appendPosition = targetRoom.Units.Count(candidate => candidate.Team == CombatTeam.Player);
+        if (expectedId == "0e4495fc-171b-4c5e-9a1f-d1220542a6f1") appendPosition = 0;
         bool juggernautXCost = expectedId == JuggernautId;
         bool healthAdjustedOnSpawn = expectedId == SteelsingerId;
         Require(unitCard.DataId == expectedId && unitAction.RoomIndex is >= 0 and < 3 && unitAction.PlayerPosition == appendPosition &&

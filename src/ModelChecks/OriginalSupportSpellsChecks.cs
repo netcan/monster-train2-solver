@@ -183,6 +183,30 @@ internal static class OriginalSupportSpellsChecks
                 (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
                 "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            if (rule.AssetKey == "FunguyInASuit")
+            {
+                RoomCombatState oldRoom = before.Spawn.Train.Rooms[action.RoomIndex], newRoom = after.Spawn.Train.Rooms[action.RoomIndex];
+                CombatUnit? oldHorde = oldRoom.Units.SingleOrDefault(unit => unit.Team == CombatTeam.Player && unit.Status("horde")?.Stacks > 0);
+                CombatUnit horde = newRoom.Units.Single(unit => unit.Team == CombatTeam.Player && unit.Status("horde")?.Stacks > 0);
+                Require(rule.Effects[0].SourceStatusMultiplier == "horde" && rule.Effects[0].Statuses.Single().Stacks == 3 &&
+                    horde.Status("horde")!.Stacks == (oldHorde?.Status("horde")?.Stacks ?? 0) + 3 &&
+                    horde.Status("armor")!.Stacks == (oldHorde?.Status("armor")?.Stacks ?? 0) + 4 * horde.Status("horde")!.Stacks &&
+                    (oldHorde == null ? horde.Id >= before.Spawn.NextUnitId : horde.Id == oldHorde.Id) &&
+                    oldRoom.Units.Where(unit => unit.Id != horde.Id).All(unit =>
+                        (newRoom.Units.Single(changed => changed.Id == unit.Id).Status("armor")?.Stacks ?? 0) == (unit.Status("armor")?.Stacks ?? 0)),
+                    "Funguy in a Suit must add three unmultiplied Horde with no source actor, then grant four Armor per resulting Horde only to its native subtype targets.");
+            }
+            if (rule.AssetKey == "MakingOfAMorsel")
+            {
+                CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;
+                CardGenerationRule generation = generators.Single();
+                CardInstanceState generated = changed.CardInstances!.Single(card => card.InstanceId >= old.NextCardId);
+                Require(rule.Effects.Single().Target == "Hand" && generation.Count == 0 && generation.Pool.Count == 1 &&
+                    generated.DataId == generation.Pool.Single().DataId && generated.DataId == "536e6de0-7ccf-412a-9a4e-ec55ab3988e5" &&
+                    changed.Cards.Hand.Any(token => token.InstanceId == generated.InstanceId) && changed.NextCardId == old.NextCardId + 1 &&
+                    !old.BattleRng.Equals(changed.BattleRng),
+                    "Making of a Morsel must use its native Hand target to generate exactly one Morsel Miner, retaining the one-entry pool RNG draw.");
+            }
             bool corruptUpgradeBatch = originals.Contains("4e8b6d4c-ee6b-46e7-8804-b94489af371d") ||
                 originals.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60");
             if (rule.AssetKey is "BoundingEchoes" or "ReturnedSoul")

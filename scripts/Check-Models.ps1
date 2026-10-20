@@ -325,6 +325,9 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-ephemeral-routing.mt2f',
     'full-battle-original-isolated-bounding-corrupt.mt2f',
     'full-battle-original-isolated-returned-corrupt.mt2f',
+    'full-battle-original-isolated-forge-resource-callbacks.mt2f',
+    'full-battle-original-isolated-horde-and-morsel-targets.mt2f',
+    'full-battle-original-isolated-funguy-existing-horde.mt2f',
     'full-battle-original-unplayable-persistent-routing.mt2f',
     'full-battle-original-null-scourges.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
@@ -2346,6 +2349,13 @@ foreach ($fixturePath in $originalIsolatedDeathSummonFixtures) {
     }
 }
 $originalFaeMeddlerFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-isolated-fae-meddler.mt2f' })
+$originalForgeCallbackFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-isolated-forge-resource-callbacks.mt2f' })
+foreach ($fixturePath in $originalForgeCallbackFixtures) {
+    foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Forge callback checks failed ($mode): $fixturePath" }
+    }
+}
 foreach ($fixturePath in $originalFaeMeddlerFixtures) {
     foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
@@ -2416,7 +2426,8 @@ $remainingOriginalSpellFixtures = @($fixtures | Where-Object { (Split-Path -Leaf
     'full-battle-original-isolated-boilerplate-forged.mt2f', 'full-battle-original-isolated-boilerplate-zero.mt2f',
     'full-battle-original-isolated-inhale-birth.mt2f', 'full-battle-original-isolated-inhale-existing.mt2f',
     'full-battle-original-isolated-inhale-friendly-death.mt2f', 'full-battle-original-isolated-ephemeral-routing.mt2f',
-    'full-battle-original-isolated-bounding-corrupt.mt2f', 'full-battle-original-isolated-returned-corrupt.mt2f') })
+    'full-battle-original-isolated-bounding-corrupt.mt2f', 'full-battle-original-isolated-returned-corrupt.mt2f',
+    'full-battle-original-isolated-horde-and-morsel-targets.mt2f', 'full-battle-original-isolated-funguy-existing-horde.mt2f') })
 foreach ($fixturePath in $remainingOriginalSpellFixtures) {
     foreach ($mode in @('--original-support-spells-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

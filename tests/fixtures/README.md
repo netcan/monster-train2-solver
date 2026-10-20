@@ -9573,3 +9573,26 @@ has zero unsupported attempts, with equal serial/parallel results. Ordinary
 spells and Monsters are calibrated; equipment, abilities, permanent Corrupt
 installation, positive Corrupt Restricted combinations and existing unmodeled
 corruption listener combinations remain explicitly guarded.
+
+`full-battle-original-isolated-forge-resource-callbacks.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-220152-7f3d03d7`.
+Unchanged Forge Steward is placed ahead of its anchor so its OnHit positively
+adds Forge. Salvage Machine's floor death callback also adds one Forge, with
+actual tracking enabled. The native ledger grows from zero to thirteen;
+ability cooldown availability initializes normally. Shared editor copy,
+filter and upgrade fields unused by AdjustForgePoints/ResetCooldown no longer
+block these original definitions. Later ability activations are not asserted.
+
+`full-battle-original-isolated-horde-and-morsel-targets.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-220817-f1af6200`;
+`full-battle-original-isolated-funguy-existing-horde.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-220857-05ca2d3e`.
+Unchanged Funguy in a Suit covers empty-floor birth and existing Horde status
+addition, then grants four Armor per resulting Horde only to subtype targets.
+Its captured source-status multiplier is ignored when ordinary spell
+selfTarget is null; non-null source actors retain an explicit guard.
+Making of a Morsel uses a Hand target but generates from its authored single
+Morsel Miner pool. Native count zero clamps to one, including the RNG draw.
+All three battles finish with settled victories, DEPTH-PASS and zero failure
+counters; focused replay covers sixteen immutable branches each, and bounded
+search has zero unsupported attempts with equal serial/parallel results.

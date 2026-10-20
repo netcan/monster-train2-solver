@@ -372,7 +372,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
             bool deckSpellUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToSpellsInDeck";
             bool upgradedCopy = effect.GetEffectStateName() == "CardEffectAddUpgradedCopy";
-            bool cardOnlyGenerationTarget = cardTrigger && effect.GetEffectStateName() == "CardEffectAddBattleCard" && effect.GetTargetMode() == TargetMode.Hand;
+            bool cardOnlyGenerationTarget = effect.GetEffectStateName() == "CardEffectAddBattleCard" && effect.GetTargetMode() == TargetMode.Hand;
             bool cardOnlyDrawTarget = (effect.GetEffectStateName() == "CardEffectDrawType" ||
                 effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToNextDrawnCard") &&
                 (effect.GetTargetMode() == TargetMode.DrawPile || effect.GetTargetMode() == TargetMode.Hand ||
@@ -394,10 +394,11 @@ namespace MonsterTrain2Poju.Probe
             if (effect.GetEffectStateName() == "CardEffectTransferAllStatusEffects" &&
                 (effect.GetTargetMode() != TargetMode.DropTargetCharacter || effect.GetParamStatusEffects().Length != 1))
                 interactions.Add("Unmodeled room-status transfer targets or status pool");
-            // DamagePerHp reads GetUnmodifiedIntInRange directly; inherited scaling flags and
-            // ParamSubtype do not participate in its overridden native iterator.
-            if (effect.GetEffectStateName() != "CardEffectDamagePerHp" &&
-                (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() || effect.GetUseMagicPowerMultiplier() ||
+            // These native iterators read their own count/status parameters rather
+            // than the inherited spell scaling fields or ParamSubtype.
+            if (effect.GetEffectStateName() is not ("CardEffectDamagePerHp" or "CardEffectAddBattleCard" or "CardEffectAddStatusEffectPerOtherEffect") &&
+                (effect.GetUseStatusEffectStackMultiplier() && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" ||
+                effect.GetUseHealthMissingStackMultiplier() || effect.GetUseMagicPowerMultiplier() ||
                 effect.GetEffectStateName() != "CardEffectSacrifice" && effect.GetEffectStateName() != "CardEffectKill" &&
                 effect.GetEffectStateName() != "CardEffectRecursion" && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" &&
                 effect.GetEffectStateName() != "CardEffectFeederRules" &&
@@ -605,7 +606,8 @@ namespace MonsterTrain2Poju.Probe
                 unitTriggerKind: type == "PlayUnitTrigger" || type == "ReplayTrigger" ? effect.GetParamTrigger().ToString() : null,
                 healDamageMultiplier: type == "HealRelative" ? (int?)effect.GetAdditionalParamInt() : null,
                 unitReturn: type == "ReturnUnit" ? new UnitReturnRule(effect.GetParamBool(), effect.GetParamBool2(), effect.GetParamBool3()) : null,
-                equipmentMerge: type == "MergeEquipment" ? EquipmentMerge(effect, interactions) : null);
+                equipmentMerge: type == "MergeEquipment" ? EquipmentMerge(effect, interactions) : null,
+                sourceStatusMultiplier: type == "SpawnOrStatus" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null);
         }
 
         private static EquipmentMergeRule? EquipmentMerge(CardEffectData effect, List<string> interactions)

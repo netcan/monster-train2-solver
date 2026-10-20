@@ -121,6 +121,11 @@ namespace MonsterTrain2Poju.Probe
         private static void PrepareIsolatedUnits(AllGameManagers managers, ManualLogSource log, string[] unitIds, string label)
         {
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
+            if (unitIds.Any(id => id is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "4e517f8b-3caa-4a2c-98ba-ebee99075eed"))
+            {
+                save.SetForgePoints(0); save.SetForgeToggleActive(true);
+                Set(managers.GetPlayerManager(), "isForgeTrackingActive", true);
+            }
             CapturesTriggeredSummons = unitIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData().GetTriggers()
                 .SelectMany(trigger => trigger.GetEffects()).Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster"));
             CapturesEnchantments = unitIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData().GetTriggers()
@@ -184,6 +189,7 @@ namespace MonsterTrain2Poju.Probe
                         }
                 }
                 int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == isolatedRoom).Units.Count(unit => unit.Team == CombatTeam.Player);
+                if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "0e4495fc-171b-4c5e-9a1f-d1220542a6f1") isolatedPosition = 0;
                 var isolatedAction = ids[index] == IsolatedEnergyControlInstanceId && IsolatedEnergyControlInstanceId != 0
                     ? new PlayCardAction(ids[index], isolatedRoom)
                     : new PlayCardAction(ids[index], isolatedRoom, playerPosition: isolatedPosition);

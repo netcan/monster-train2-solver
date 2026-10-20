@@ -546,7 +546,8 @@ namespace MonsterTrain2Poju.Model
                         effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
                         chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
-                        healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge);
+                        healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
+                        sourceStatusMultiplier: effect.SourceStatusMultiplier);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -639,6 +640,10 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "SpawnOrStatus")
                 {
+                    if (effect.SourceStatusMultiplier != null && selfUnitId != 0)
+                        return UnsupportedTrain("Spawn-or-status source-actor status multiplication requires native calibration.");
+                    // Native ignores this multiplier for ordinary spells, whose
+                    // selfTarget is null. Preserve the flag for non-null sources.
                     RoomPlayRule? spawnRule = definitions?.Rooms.FirstOrDefault(item => item.RoomIndex == collectionRoom);
                     if (spawnRule == null) return UnsupportedTrain("Spawn-or-status requires the selected room rule.");
                     if (!spawnRule.Enabled || spawnRule.SummonBlocked || spawnRule.IsPyre) continue;
@@ -2545,6 +2550,7 @@ namespace MonsterTrain2Poju.Model
         private static bool AttackChange(CardActionEffect effect) => effect.Type == "BuffAttack" || effect.Type == "DebuffAttack";
         private static bool CardOnlyPileTarget(CardActionEffect effect) =>
             effect.Type == "RandomDiscard" && effect.Target == "Hand" || effect.Type == "Recursion" ||
+            effect.Type == "Generate" && effect.Target == "Hand" ||
             effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" || CardOnlyDrawTarget(effect);
         private static bool CardOnlyDrawTarget(CardActionEffect effect) =>
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
@@ -2565,7 +2571,8 @@ namespace MonsterTrain2Poju.Model
                 effect.CardFilter, effect.UpgradeFilters, effect.RemoveHalfStatusEffects, effect.Overheal, effect.CorruptionAdd,
                 chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
-                healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge);
+                healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
+                sourceStatusMultiplier: effect.SourceStatusMultiplier);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

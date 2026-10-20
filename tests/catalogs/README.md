@@ -23,10 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-214338-7c78703d/card-catalog.mt2f`.
-The committed archive is byte-identical: 97,887 bytes, 11,814 unique nodes,
-SHA-256 `f2a915a2f0644e5d74cc5636a0c6bac59799b21b2108762b28291d1d90157c15`.
-The latest refresh projects Bounding Echoes and Returned Soul's temporary Corrupt
+Source: `.probe-runs/full-battle-no-cards-20261020-221001-61ce7b72/card-catalog.mt2f`.
+The committed archive is byte-identical: 97,973 bytes, 11,815 unique nodes,
+SHA-256 `21c845568c77203d812bb8ba3211cb177ab26d5cc57564899fd199a680bdd8b0`.
+The latest refresh clears unused shared-field guards for Forge Steward and
+Salvage Machine, records Funguy in a Suit's source-status multiplier, and
+accepts Making of a Morsel's card-only Hand generation target. Exactly these
+four Rules change semantically. SourceStatusMultiplier is nullable in all
+effect projections; all existing native definition parameters stay identical.
+The preceding refresh projects Bounding Echoes and Returned Soul's temporary Corrupt
 trait upgrades. Exactly those two Rules change; all 668 raw definitions match.
 The preceding refresh removes Awoken's Rail Spike's obsolete hand-discard guard.
 Its played-cost draw and draw blocking remain validated by CardDiscardDrawModel;
