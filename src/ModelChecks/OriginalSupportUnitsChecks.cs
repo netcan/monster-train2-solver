@@ -61,6 +61,8 @@ internal static class OriginalSupportUnitsChecks
     private const string ZealotId = "071d7448-0be6-4a40-860c-ede856a42228";
     private const string ParrafinThugId = "a2bc0531-4037-418b-a30b-9189cc580adf";
     private const string MonstrosityId = "5336f488-1e09-40a5-97bc-5a5fde3c5e55";
+    private const string WicklessBaronId = "4cf9eb1d-b852-4514-8f32-831bc38276ec";
+    private const string WicklessTycoonId = "918f8345-8660-49de-a764-d16e76343abc";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -107,11 +109,18 @@ internal static class OriginalSupportUnitsChecks
         }
         string? isolatedUnitScenario = root.GetProperty("ModifierScenario").GetString();
         const string isolatedUnitPrefix = "original-isolated-unit:";
-        if (isolatedUnitScenario?.StartsWith(isolatedUnitPrefix, StringComparison.Ordinal) == true)
+        const string isolatedUnitBatchPrefix = "original-isolated-unit-batch:";
+        if (isolatedUnitScenario?.StartsWith(isolatedUnitPrefix, StringComparison.Ordinal) == true ||
+            isolatedUnitScenario?.StartsWith(isolatedUnitBatchPrefix, StringComparison.Ordinal) == true)
         {
-            string expectedId = isolatedUnitScenario[isolatedUnitPrefix.Length..];
-            Require(Guid.TryParseExact(expectedId, "D", out _), "Isolated unit scenario did not identify an original card UUID.");
-            NativeIsolatedUnit(root, expectedId);
+            string prefix = isolatedUnitScenario.StartsWith(isolatedUnitBatchPrefix, StringComparison.Ordinal) ? isolatedUnitBatchPrefix : isolatedUnitPrefix;
+            string[] expectedIds = isolatedUnitScenario[prefix.Length..].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            Require(expectedIds.Length > 0 && expectedIds.All(expectedId => Guid.TryParseExact(expectedId, "D", out _)),
+                "Isolated unit scenario did not identify original card UUIDs.");
+            FixtureValue[] isolatedActions = root.GetProperty("Actions").EnumerateArray().ToArray();
+            Require(isolatedActions.Length == expectedIds.Length + 3,
+                "Isolated unit scenario must record three anchors and every requested original unit birth.");
+            for (int index = 0; index < expectedIds.Length; index++) NativeIsolatedUnit(root, expectedIds[index], actionIndex: index + 3);
             return;
         }
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
@@ -349,14 +358,15 @@ internal static class OriginalSupportUnitsChecks
         RecordedBattleChecks.Native(root);
         Console.WriteLine("ORIGINAL-DIVINE-DANCER PASS: native 7/14 size-2 birth in an available room slot; captured five-Armor room OnShift remains untriggered.");
     }
-    private static void NativeIsolatedUnit(FixtureValue root, string expectedId, string? expectedAsset = null)
+    private static void NativeIsolatedUnit(FixtureValue root, string expectedId, string? expectedAsset = null, int actionIndex = 3)
     {
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed isolated original unit witness.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalSupportUnitsIds").Deserialize<int[]>()!;
         FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 4 && actions.Length == 4, "Isolated unit witness needs three anchors and one direct unit birth.");
+        Require(ids.Length == actions.Length && ids.Length > actionIndex && actionIndex >= 3,
+            "Isolated unit witness needs three anchors and a captured direct unit birth.");
         BattleTurnState Before(int index) => actions[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState After(int index) => actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         for (int index = 0; index < 3; index++)
@@ -369,7 +379,6 @@ internal static class OriginalSupportUnitsChecks
                 before.Energy - after.Energy == 0 && unit.AssetKey == "TrainStewardBig" && unit.Health == 10000 &&
                 unit.Modifiers!.AttackDamage == 1000 && unit.Size == 1, "Isolated unit batch anchor control changed.");
         }
-        int actionIndex = 3;
         BattleTurnState unitBefore = Before(actionIndex), unitAfter = After(actionIndex);
         PlayCardAction unitAction = actions[actionIndex].GetProperty("Action").Deserialize<PlayCardAction>()!;
         CardInstanceState unitCard = unitBefore.Spawn.Train.Context!.FindCard(ids[actionIndex])!;
@@ -408,6 +417,61 @@ internal static class OriginalSupportUnitsChecks
                     unit.Status("buff") is { Stacks: > 0 }),
                 "Monstrosity must preserve its original 2-cost 10/30 size-3 birth and positively gain temporary self buff on floor-unit deaths.");
             Console.WriteLine("ORIGINAL-MONSTROSITY PASS: native 2-cost 10/30 size-3 birth; OnAnyUnitDeathOnFloor added temporary buff in all four turn snapshots.");
+        }
+        if (expectedId == WicklessBaronId)
+        {
+            CombatTrigger death = template.Triggers.Single(trigger => trigger.Kind == "OnAnyUnitDeathOnFloor");
+            CombatEffect growth = death.Effects.Single();
+            CardActionEffect upgrade = growth.UnitUpgrade!;
+            int[] turnAttacks = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!.Modifiers!.AttackDamage).ToArray();
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "WicklessBaron" && rule.Cost == 1 && template.AssetKey == "WicklessBaron" &&
+                template.Modifiers!.AttackDamage == 5 && template.Health == 15 && template.MaxHealth == 15 && template.Size == 2 &&
+                death.Effects.Count == 1 && growth.Type == "CardEffectAddTempCardUpgradeToUnits" &&
+                upgrade is { Type: "UnitUpgrade", Target: "Self", Lifetime: "TemporaryUntilEndOfBattle" } &&
+                upgrade.Upgrade is { AssetKey: "WicklessBaronTrigger" } && upgrade.Upgrade.Stats.Damage == 5 && upgrade.Upgrade.Stats.Health == 5 &&
+                spawnedUnit.Modifiers!.AttackDamage == 5 && spawnedUnit.Health == 15 && spawnedUnit.MaxHealth == 15 && spawnedUnit.Size == 2 &&
+                turnAttacks.SequenceEqual([15, 25, 25, 35]) && unitTurns.All(unit => unit.Triggers.Single(trigger =>
+                    trigger.Kind == "OnAnyUnitDeathOnFloor").HasTriggered),
+                "Wickless Baron must retain its 1-cost 5/15 size-2 birth and gain temporary +5/+5 on floor-unit deaths.");
+            Console.WriteLine("ORIGINAL-WICKLESS-BARON PASS: native OnAnyUnitDeathOnFloor applied temporary +5/+5; attacks across four snapshots were 15,25,25,35.");
+        }
+        if (expectedId == WicklessTycoonId)
+        {
+            CombatTrigger death = template.Triggers.Single(trigger => trigger.Kind == "OnAnyUnitDeathOnFloor");
+            CombatEffect reward = death.Effects.Single();
+            CombatUnit? InTurn(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]);
+            bool rewardedOnFirstDeath = root.GetProperty("Turns").EnumerateArray().Any(row =>
+            {
+                BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatUnit? prior = InTurn(before), current = InTurn(after);
+                int goldBefore = before.Spawn.Train.Context!.Gold;
+                int goldAfter = after.Spawn.Train.Context!.Gold;
+                return prior != null && current != null && goldBefore == 50 && goldAfter == 70 &&
+                    !prior.Triggers.Single(trigger => trigger.Kind == "OnAnyUnitDeathOnFloor").HasTriggered &&
+                    current.Triggers.Single(trigger => trigger.Kind == "OnAnyUnitDeathOnFloor").HasTriggered;
+            });
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(InTurn).Where(unit => unit != null).Select(unit => unit!).ToArray();
+            Require(rule.AssetKey == "WicklessTycoon" && rule.Cost == 1 && template.AssetKey == "WicklessTycoon" &&
+                template.Modifiers!.AttackDamage == 10 && template.Health == 40 && template.MaxHealth == 40 && template.Size == 2 &&
+                death.Effects.Count == 1 && reward is { Type: "CardEffectRewardGold", Value: 10 } &&
+                spawnedUnit.Modifiers!.AttackDamage == 10 && spawnedUnit.Health == 40 && spawnedUnit.MaxHealth == 40 && spawnedUnit.Size == 2 &&
+                rewardedOnFirstDeath && unitTurns.Length == 4 && unitTurns.All(unit => unit.Triggers.Single(trigger =>
+                    trigger.Kind == "OnAnyUnitDeathOnFloor").HasTriggered),
+                "Wickless Tycoon must retain its 1-cost 10/40 size-2 birth and reward 10 gold for each floor-unit death.");
+            Console.WriteLine("ORIGINAL-WICKLESS-TYCOON PASS: native OnAnyUnitDeathOnFloor reward was defined at +10 gold; first transition was 50 to 70.");
         }
         if (expectedId == DeathEaterId)
         {

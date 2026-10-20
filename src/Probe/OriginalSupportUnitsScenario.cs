@@ -29,16 +29,19 @@ namespace MonsterTrain2Poju.Probe
         private static bool DivineDancerOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == DivineDancerName;
         private static bool IsolatedUnitBatchOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == IsolatedUnitBatchName;
         private static bool IsolatedColdstrikeSirenOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == IsolatedColdstrikeSirenName;
-        private static string? IsolatedUnitId
+        private static string[]? IsolatedUnitIds
         {
             get
             {
-                const string prefix = "original-isolated-unit:";
                 string? modifiers = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
-                return modifiers != null && modifiers.StartsWith(prefix, StringComparison.Ordinal) ? modifiers.Substring(prefix.Length) : null;
+                const string singlePrefix = "original-isolated-unit:";
+                const string batchPrefix = "original-isolated-unit-batch:";
+                string? value = modifiers != null && modifiers.StartsWith(batchPrefix, StringComparison.Ordinal) ? modifiers.Substring(batchPrefix.Length) :
+                    modifiers != null && modifiers.StartsWith(singlePrefix, StringComparison.Ordinal) ? modifiers.Substring(singlePrefix.Length) : null;
+                return value?.Split(',').Select(id => id.Trim()).Where(id => id.Length > 0).ToArray();
             }
         }
-        internal static bool IsolatedUnitOnly => IsolatedUnitId != null && Guid.TryParseExact(IsolatedUnitId, "D", out _);
+        internal static bool IsolatedUnitOnly => IsolatedUnitIds is { Length: > 0 } ids && ids.All(id => Guid.TryParseExact(id, "D", out _));
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || DivineDancerOnly || IsolatedUnitBatchOnly || IsolatedColdstrikeSirenOnly || IsolatedUnitOnly;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -50,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
             if (DivineDancerOnly) { PrepareDivineDancer(managers, log); return; }
             if (IsolatedUnitBatchOnly) { PrepareIsolatedUnits(managers, log, IsolatedUnitBatchIds, "Branded Warrior"); return; }
             if (IsolatedColdstrikeSirenOnly) { PrepareIsolatedUnits(managers, log, IsolatedColdstrikeSirenIds, "Coldstrike Siren"); return; }
-            if (IsolatedUnitOnly) { PrepareIsolatedUnits(managers, log, new[] { IsolatedUnitId! }, IsolatedUnitId!); return; }
+            if (IsolatedUnitOnly) { PrepareIsolatedUnits(managers, log, IsolatedUnitIds!, string.Join(",", IsolatedUnitIds!)); return; }
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
             Set(all.GetBalanceData(), "maxHandSize", 40);
             CardData steward = all.FindCardData(MagneticRelayScenario.StewardId)!; CharacterData anchor = steward.GetSpawnCharacterData();

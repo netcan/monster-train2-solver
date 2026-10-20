@@ -139,6 +139,7 @@ param(
     [switch] $OriginalIsolatedUnitBatch,
     [switch] $OriginalIsolatedColdstrikeSiren,
     [string] $OriginalIsolatedUnitId = '',
+    [string[]] $OriginalIsolatedUnitIds = @(),
     [switch] $OriginalFuel,
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
@@ -682,9 +683,18 @@ if ($OriginalSupportUnits) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $t
 if ($OriginalDivineDancer) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalIsolatedUnitBatch) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalIsolatedColdstrikeSiren) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalIsolatedUnitId) {
-    if ($OriginalIsolatedUnitId -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') { throw 'OriginalIsolatedUnitId must be a card UUID.' }
-    $OriginalIsolatedUnitId = $OriginalIsolatedUnitId.ToLowerInvariant()
+$isolatedUnitIds = @()
+if ($OriginalIsolatedUnitId -and $OriginalIsolatedUnitIds.Count -gt 0) { throw 'Use either OriginalIsolatedUnitId or OriginalIsolatedUnitIds, not both.' }
+if ($OriginalIsolatedUnitIds.Count -gt 0) { $isolatedUnitIds = @($OriginalIsolatedUnitIds | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ }) }
+elseif ($OriginalIsolatedUnitId) { $isolatedUnitIds = @($OriginalIsolatedUnitId) }
+if ($isolatedUnitIds.Count -gt 0) {
+    foreach ($index in 0..($isolatedUnitIds.Count - 1)) {
+        if ($isolatedUnitIds[$index] -notmatch '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$') { throw 'Isolated unit IDs must be card UUIDs.' }
+        $isolatedUnitIds[$index] = $isolatedUnitIds[$index].ToLowerInvariant()
+    }
+    if (@($isolatedUnitIds | Select-Object -Unique).Count -ne $isolatedUnitIds.Count) { throw 'Isolated unit ID list contains duplicates.' }
+    if ($OriginalIsolatedUnitIds.Count -gt 0) { $OriginalIsolatedUnitIds = $isolatedUnitIds }
+    else { $OriginalIsolatedUnitId = $isolatedUnitIds[0] }
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk'
 }
 if ($OriginalAttackOverrides) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -1115,7 +1125,7 @@ $environment = @{
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
-    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $OriginalIsolatedUnitId) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
     MT2_PROBE_ISOLATE_UI_RNG = $(if ($CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
@@ -1292,7 +1302,8 @@ if ($OriginalSupportUnits) { $environment['MT2_PROBE_MODIFIERS'] = 'original-sup
 if ($OriginalDivineDancer) { $environment['MT2_PROBE_MODIFIERS'] = 'original-divine-dancer' }
 if ($OriginalIsolatedUnitBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-unit-batch' }
 if ($OriginalIsolatedColdstrikeSiren) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-coldstrike-siren' }
-if ($OriginalIsolatedUnitId) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-unit:' + $OriginalIsolatedUnitId }
+if ($OriginalIsolatedUnitIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-unit-batch:' + ($OriginalIsolatedUnitIds -join ',') }
+elseif ($OriginalIsolatedUnitId) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-unit:' + $OriginalIsolatedUnitId }
 if ($OriginalAttackOverrides) { $environment['MT2_PROBE_MODIFIERS'] = 'original-attack-overrides' }
 if ($OriginalReactiveUnits) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reactive-units' }
 if ($OriginalBaseChampions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-base-champions' }
@@ -2686,6 +2697,10 @@ if ($OriginalIsolatedColdstrikeSiren -and ($trace.ModifierScenario -ne 'original
 if ($OriginalIsolatedUnitId -and ($trace.ModifierScenario -ne ('original-isolated-unit:' + $OriginalIsolatedUnitId) -or -not $trace.OriginalSupportUnitsPrepared -or
     -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
     throw 'Isolated original unit witness lacks three anchor controls and one direct unit play.'
+}
+if ($OriginalIsolatedUnitIds.Count -gt 0 -and ($trace.ModifierScenario -ne ('original-isolated-unit-batch:' + ($OriginalIsolatedUnitIds -join ',')) -or
+    -not $trace.OriginalSupportUnitsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (3 + $OriginalIsolatedUnitIds.Count))) {
+    throw 'Isolated original unit batch witness lacks three anchor controls and every requested direct unit play.'
 }
 if ($OriginalAttackOverrides -and (-not $trace.OriginalAttackOverridesPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 29)) {
     throw 'Original attack override witness lacks unchanged equipment and positive priority/removal damage controls.'

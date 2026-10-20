@@ -8978,3 +8978,20 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-monstrosity.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-monstrosity.mt2f
 ```
+
+### Original Wickless Death-Trigger Batch
+
+`full-battle-original-isolated-wickless-death-trigger-batch.mt2f` plays the
+unchanged 1-cost Wickless Baron and Wickless Tycoon together after three safe
+anchors. Baron gains its temporary +5/+5 upgrade on floor-unit deaths (four
+captured attack values: 15, 25, 25, 35); Tycoon defines +10 gold per death,
+with the first observed trigger transition increasing gold from 50 to 70.
+The battle won with zero capture failures, mismatches, unsupported transitions
+or pending records. Both original births match, and bounded serial/parallel
+search agrees at 128 states with three replayed steps.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitIds '4cf9eb1d-b852-4514-8f32-831bc38276ec,918f8345-8660-49de-a764-d16e76343abc'
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-wickless-death-trigger-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-wickless-death-trigger-batch.mt2f
+```
