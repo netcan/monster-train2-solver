@@ -18,7 +18,7 @@ namespace MonsterTrain2Poju.Model
             UnitModifiers old = before.Modifiers;
             var modifiers = new UnitModifiers(changed.Attack, old.AttackDamageAdded, old.DamageBuff, old.RawSize,
                 old.EquipmentLimit, old.CanBeHealed, old.IsClone, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
-                old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources);
+                old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses);
             var actor = new CombatUnit(after.Id, after.AssetKey, after.Team, Math.Max(0, unchecked(changed.Attack + old.DamageBuff)),
                 changed.Health, changed.MaxHealth, after.CanAttack, after.IsPyre, after.EndsBattleOnDeath, after.Statuses,
                 after.Triggers, after.SpawnerCardId, after.Size, after.StatusImmunities, after.Subtypes, modifiers, after.IsBoss,

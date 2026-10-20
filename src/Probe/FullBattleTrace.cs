@@ -253,6 +253,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), captureContext ? CaptureContext() : null,
                 preview: save.PreviewMode, activeCompanionBossIds: activeCompanionBossIds);
             UnitSelfAttackProbe.Observe(captured, characters, this);
+            UnitRoomStatusProbe.Observe(captured, characters, this);
             return captured;
         }
 
@@ -265,7 +266,7 @@ namespace MonsterTrain2Poju.Probe
             CombatTrigger[] triggers = CaptureTriggers(character, interactions);
             if (character.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier &&
                 !(ConduitProbe.Enabled && modifier is RoomStateConduitModifier) && !UnitSelfAttackModel.Known(modifier.GetType().Name) &&
-                !UnitRoomResourceModel.Known(modifier.GetType().Name)))
+                !UnitRoomResourceModel.Known(modifier.GetType().Name) && !UnitRoomStatusModel.Known(modifier.GetType().Name)))
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
             CardState? card = character.GetSpawnerCard();
             bool unsupportedSpawnerCardTriggers = card != null && card.GetTriggers().Any(trigger =>
@@ -1535,6 +1536,7 @@ namespace MonsterTrain2Poju.Probe
                 AttackTriggers = AttackTriggerProbe.Records,
                 TriggeredStatuses = TriggeredStatusProbe.Records,
                 UnitSelfAttackQueries = UnitSelfAttackProbe.Records,
+                UnitRoomStatusQueries = UnitRoomStatusProbe.Records,
                 TriggeredTrainHeals = TriggeredTrainHealProbe.Records,
                 TriggeredTrainHealTests = TriggeredTrainHealProbe.Tests,
                 StatusRegistryCalibration = StatusRegistryCalibration.Samples,

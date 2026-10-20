@@ -23,10 +23,14 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-230152-5ea92956/card-catalog.mt2f`.
-The committed archive is byte-identical: 97,840 bytes, 11,826 unique nodes,
-SHA-256 `3c410775f302c8ef276e7d9944a5bf94a7506cdca23b2b7121d065f3a90779b2`.
-The latest refresh captures Edge Prior's native healing-cost room modifier.
+Source: `.probe-runs/full-battle-no-cards-20261020-231422-6aae3fa3/card-catalog.mt2f`.
+The committed archive is byte-identical: 97,875 bytes, 11,836 unique nodes,
+SHA-256 `f8ed2eb235e2c8fccaeb0d92eea243c131e02deb76298baf9fdb21f89a65491a`.
+The latest refresh captures Deranged Brute, Shard Channeler and Lead Songbird's
+native Rage, Spikes and Valor room modifiers. Exactly these three card
+projections change semantically; after removing null RoomStatuses fields,
+all other 665 decoded card definitions remain identical.
+The preceding refresh captures Edge Prior's native healing-cost room modifier.
 Only Edge Prior's card projection changes; the other 667 definitions remain
 byte-for-byte equivalent in their decoded card objects.
 The preceding refresh captures native unit room resource modifiers and accepts

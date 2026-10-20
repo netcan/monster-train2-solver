@@ -86,7 +86,8 @@ namespace MonsterTrain2Poju.Probe
         {
             var interactions = new List<string>();
             if (data.GetRoomModifiersData().Any(modifier => !UnitSelfAttackModel.Known(modifier.GetRoomStateModifierClassName()) &&
-                !UnitRoomResourceModel.Known(modifier.GetRoomStateModifierClassName()))) interactions.Add("Spawned room modifiers");
+                !UnitRoomResourceModel.Known(modifier.GetRoomStateModifierClassName()) &&
+                !UnitRoomStatusModel.Known(modifier.GetRoomStateModifierClassName()))) interactions.Add("Spawned room modifiers");
             if (data.IsOuterTrainBoss()) interactions.Add("Spawned outer Boss actions");
             CombatStatus[] statuses = data.GetStartingStatusEffects().Select(status =>
             {

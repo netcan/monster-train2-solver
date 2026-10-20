@@ -80,6 +80,15 @@ namespace MonsterTrain2Poju.Probe
                 string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
                     .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId is
+                "2ed78ce2-13c3-4e82-963f-99c9ea12d0f0" or "175a7730-7a1c-4da1-97b8-d799e7570396" or "98276338-b18f-4ffa-83a2-9501c2741f03" &&
+                ids.Any(id => source.Spawn.Train.Context.FindCard(id)?.DataId is "3cb0976c-7cf5-4470-bb5a-7eacfb404e9a" or "1362aa8c-d7b4-49b9-a4f7-268f47de4aa6" or "a5b05b40-45be-41ea-8c56-dd18f3feb1b4"))
+                candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Player && unit.Modifiers?.RoomStatuses?.Count > 0));
+            if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId is "2ed78ce2-13c3-4e82-963f-99c9ea12d0f0" or "175a7730-7a1c-4da1-97b8-d799e7570396" &&
+                ids.Any(id => source.Spawn.Train.Context.FindCard(id)?.DataId == "acb9a1cb-f6fc-40df-b287-fc82b8df156b"))
+                candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId && source.Spawn.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "acb9a1cb-f6fc-40df-b287-fc82b8df156b"));
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "25787bff-d2fb-4d9a-a636-d96a5863d559" &&
                 ids.Any(id => source.Spawn.Train.Context.FindCard(id)?.DataId == "f892b119-fa6a-4f69-9369-10e29bcfd96e"))
                 candidates = candidates.OrderByDescending(action => action.RoomIndex == 1);

@@ -9647,3 +9647,26 @@ modifier copies. Preview rooms contribute nothing; purified births retain an
 explicit guard. The battle finishes with DEPTH-PASS and zero failure counters.
 Its five plays and five EndTurns replay with sixteen immutable branches;
 bounded search has zero unsupported attempts and equal serial/parallel results.
+
+`full-battle-original-isolated-room-rage.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-231612-d498cb54`;
+`full-battle-original-isolated-room-spikes.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-231612-d43e9b3e`;
+`full-battle-original-isolated-room-valor.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-231805-a0d20e61`;
+`full-battle-original-isolated-room-rage-self-attack.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-232737-1f41aea7`.
+Unchanged Deranged Brute adds three attack per Rage stack, Shard Channeler
+adds one damage per Spikes stack, and Lead Songbird adds one attack per Valor
+stack. Valor's Armor gain remains unchanged. Independent read-only native
+queries check 502, 480, 501 and 594 attacks and room bonuses, including positive
+bonuses and an opposing-team Spikes control. Live room ownership is preserved
+through unit modifier copies and used during combat. The last fixture boosts
+Weldling's health with unchanged Cycle of Life; after Rage decay its 26 attack
+including Brute's bonus produces thirteen Armor in its PostCombat callback.
+Purified room-aura births retain an explicit guard.
+All four battles finish with DEPTH-PASS, settled victories and zero capture/
+mismatch/unsupported/pending counters. Focused replay covers sixteen immutable
+branches each; bounded search has zero unsupported attempts and equal serial/
+parallel results. Existing More Spikes, Rebalance Valor and self-attack fixtures
+retain their focused native-chain replays.

@@ -977,6 +977,8 @@ namespace MonsterTrain2Poju.Model
                 string? selfAttackError = UnitSelfAttackModel.Validate(state, unit);
                 string? roomResourceError = UnitRoomResourceModel.Validate(unit);
                 if (roomResourceError != null) return roomResourceError;
+                string? roomStatusError = UnitRoomStatusModel.Validate(unit);
+                if (roomStatusError != null) return roomStatusError;
                 if (selfAttackError != null) return selfAttackError;
                 if (unit.RegisteredStatus("conduit") != null && !ConduitModel.Captured(state.Context))
                     return "Conduit requires captured native room/card tracker state.";
@@ -1377,6 +1379,7 @@ namespace MonsterTrain2Poju.Model
             internal int RoomIndex => roomIndex;
             private readonly Func<CombatContext?>? getContext;
             private readonly Action<string>? reject;
+            private readonly Func<WorkingUnit, string, int>? roomStatusModifier;
             internal bool Alive => Health > 0 && !Removed && !Despawned;
             internal int Attack
             {
@@ -1395,14 +1398,18 @@ namespace MonsterTrain2Poju.Model
                         (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") - Amount("debuff"))) +
                         RelicStatusAttackModel.AdditionalAttack(Source.Modifiers?.StatusAttackModifiers, Source.Team, Statuses.Values.ToArray()) +
                         UnitSelfAttackModel.Additional(Source, getContext?.Invoke(), Statuses.Values) +
+                        (roomStatusModifier?.Invoke(this, "buff") ?? 0) * Count("buff") +
+                        (roomStatusModifier?.Invoke(this, "valor") ?? 0) * Count("valor") +
                         mageblade + (Source.IsPyre ? getContext?.Invoke()?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
                 }
             }
             internal int Attacks => CombatUnit.AttackCount(Statuses.Values);
 
-            internal WorkingUnit(CombatUnit source, int roomIndex, Func<CombatContext?>? getContext = null, Action<string>? reject = null)
+            internal WorkingUnit(CombatUnit source, int roomIndex, Func<CombatContext?>? getContext = null, Action<string>? reject = null,
+                Func<WorkingUnit, string, int>? roomStatusModifier = null)
             {
                 this.roomIndex = roomIndex; this.getContext = getContext; this.reject = reject;
+                this.roomStatusModifier = roomStatusModifier;
                 Source = source; Health = source.Health; LastAttackerId = source.LastAttackerId;
                 LastFeederId = source.LastFeederId;
                 Despawned = source.DeathState?.IsDespawned == true; Destroyed = source.DeathState?.IsDestroyed == true;
@@ -1556,7 +1563,12 @@ namespace MonsterTrain2Poju.Model
             }
 
             private WorkingUnit NewUnit(CombatUnit unit, bool inRoom = true, int? roomIndex = null) =>
-                new WorkingUnit(unit, roomIndex ?? source.RoomIndex, () => context, error => unsupportedReason = error) { InRoom = inRoom };
+                new WorkingUnit(unit, roomIndex ?? source.RoomIndex, () => context, error => unsupportedReason = error,
+                    RoomStatusModifier) { InRoom = inRoom };
+
+            private int RoomStatusModifier(WorkingUnit target, string status) => units.Where(unit => unit.Alive && unit.InRoom &&
+                unit.RoomIndex == target.RoomIndex && unit.Source.Team == target.Source.Team)
+                .Sum(unit => unit.Source.Modifiers?.RoomStatuses?.Where(rule => rule.StatusId == status).Sum(rule => rule.Amount) ?? 0);
 
             private bool HasLivingPairedCompanionBoss(int unitId)
             {
@@ -4605,7 +4617,7 @@ namespace MonsterTrain2Poju.Model
                 StatusScalingResult modifier = RelicStatusMagnitudeModel.GetModifier(context, id, unit.Source.Team == CombatTeam.Player ? 2 : 1);
                 if (!modifier.Supported) { unsupportedReason = modifier.UnsupportedReason; return 0; }
                 context = modifier.Context;
-                return unchecked(unchecked(status.ParamInt + modifier.Stacks) * status.Stacks);
+                return unchecked(unchecked(status.ParamInt + modifier.Stacks + (id == "spikes" ? RoomStatusModifier(unit, id) : 0)) * status.Stacks);
             }
 
             private bool Active(CombatStatus status) => !source.Deployment || !status.SkipDuringDeployment;
