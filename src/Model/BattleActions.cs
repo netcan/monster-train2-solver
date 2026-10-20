@@ -1041,7 +1041,14 @@ namespace MonsterTrain2Poju.Model
             {
                 if (context.OtherPiles == null || !context.OtherPiles.Any(pile => pile.Name == "Standby") ||
                     !context.OtherPiles.Any(pile => pile.Name == "Exhausted")) return Unsupported("Consume requires captured standby and exhausted piles.");
-                context = CardExhaustModel.ReturnReady(CardExhaustModel.MoveConsumedToStandby(context, card));
+                // Ephemeral purges again from OnCardDiscarded after Consume moves
+                // the card to standby. That removes the pending standby return,
+                // so only MoveToStandByPile records an exhaustion.
+                context = CardExhaustModel.MoveConsumedToStandby(context, card);
+                context = ephemeralPurgeCallbacks
+                    ? context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name is "Standby" or "Exhausted"
+                        ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray())
+                    : CardExhaustModel.ReturnReady(context);
             }
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {

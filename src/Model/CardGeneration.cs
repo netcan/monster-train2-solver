@@ -49,8 +49,10 @@ namespace MonsterTrain2Poju.Model
     {
         public string RequiredUpgradeId { get; }
         public CardUpgradeModifier Upgrade { get; }
-        public DiscardGenerationUpgrade(string requiredUpgradeId, CardUpgradeModifier upgrade)
-        { RequiredUpgradeId = requiredUpgradeId; Upgrade = upgrade; }
+        public IReadOnlyList<string>? IgnoredCopyUpgradeIds { get; }
+        public DiscardGenerationUpgrade(string requiredUpgradeId, CardUpgradeModifier upgrade, IReadOnlyList<string>? ignoredCopyUpgradeIds = null)
+        { RequiredUpgradeId = requiredUpgradeId; Upgrade = upgrade;
+            IgnoredCopyUpgradeIds = ignoredCopyUpgradeIds == null ? null : Array.AsReadOnly(ignoredCopyUpgradeIds.ToArray()); }
     }
 
     public sealed class CardGenerationRule
@@ -321,6 +323,7 @@ namespace MonsterTrain2Poju.Model
                     RefreshUpgrades();
                 }
                 CardInstanceState? copying = rule.CopyModifiers ? cachedCopy ?? context.FindCard(sourceCardId) : null;
+                var discardIgnored = new HashSet<string>(StringComparer.Ordinal);
                 if (copying?.Permanent.MergedEquipment != null) return Unsupported("Merged equipment copying requires separate native calibration.");
                 if (copying != null)
                 {
@@ -333,6 +336,21 @@ namespace MonsterTrain2Poju.Model
                         {
                             CardUpgradeModifier upgrade = conditional.Upgrade;
                             if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
+                            if (upgrade.Lifecycle?.ReplacedAssets.Count > 0 && (conditional.IgnoredCopyUpgradeIds == null ||
+                                conditional.IgnoredCopyUpgradeIds.Count != upgrade.Lifecycle.ReplacedAssets.Count || conditional.IgnoredCopyUpgradeIds.Any(string.IsNullOrEmpty)))
+                                return Unsupported("Discard-copy replacement upgrades require captured native exclusion IDs.");
+                            foreach (string id in conditional.IgnoredCopyUpgradeIds ?? Array.Empty<string>()) discardIgnored.Add(id);
+                            if (upgrade.Lifecycle?.ReplacedAssets.Count > 0)
+                            {
+                                var installed = temporary.Upgrades.ToList();
+                                foreach (string asset in upgrade.Lifecycle.ReplacedAssets)
+                                {
+                                    int replaced = installed.FindIndex(item => item.AssetKey == asset);
+                                    if (replaced >= 0) installed.RemoveAt(replaced);
+                                }
+                                temporary = new CardModifiers(temporary.Offsets, installed, temporary.PersistentHealth,
+                                    temporary.ExternalInteractions, temporary.BoxedCards, temporary.MergedEquipment);
+                            }
                             temporary = UnitModifierModel.Add(temporary, upgrade.WithSharedReference(null));
                             RefreshUpgrades();
                         }
@@ -344,6 +362,7 @@ namespace MonsterTrain2Poju.Model
                     // Same-card clones retain their own starting upgrades, rather than copying a second copy.
                     var ignored = new HashSet<string>(cachedCopy == null && copying.DataId == creation.DataId ? permanent.Upgrades.Select(upgrade => upgrade.DataId) :
                         Array.Empty<string>(), StringComparer.Ordinal);
+                    ignored.UnionWith(discardIgnored);
                     if (cachedCopy == null)
                         foreach (CardUpgradeModifier upgrade in copying.Permanent.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
                     permanent = Copy(permanent, copying.Permanent, ignored, forAddCardPipeline: true);

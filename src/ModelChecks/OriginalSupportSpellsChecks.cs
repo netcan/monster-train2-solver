@@ -183,6 +183,40 @@ internal static class OriginalSupportSpellsChecks
                 (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
                 "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
+            if (rule.AssetKey is "Pandemic" or "SpreadingSpores" or "Contagious")
+            {
+                CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;
+                CardGenerationRule generation = generators.Single();
+                CardInstanceState copy = changed.CardInstances!.Single(item => item.InstanceId >= old.NextCardId);
+                Require(generation.Destination == "DiscardPile" && generation.CopyModifiers && !generation.IgnoreTemporaryModifiers &&
+                    copy.DataId == card.DataId && changed.NextCardId == old.NextCardId + 1 &&
+                    changed.Cards.Discard.Any(token => token.InstanceId == copy.InstanceId) &&
+                    generation.DiscardCopyUpgrades.Count == 3 && generation.DiscardCopyUpgrades.All(item =>
+                        item.Upgrade.ExternalInteractions.Count == 0 && item.IgnoredCopyUpgradeIds?.Count == item.Upgrade.Lifecycle!.ReplacedAssets.Count),
+                    "Original discarded copy must retain its identity and captured cleanup exclusion IDs.");
+                foreach (DiscardGenerationUpgrade cleanup in generation.DiscardCopyUpgrades.Where(item =>
+                    card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.DataId == item.RequiredUpgradeId)))
+                    Require(copy.Temporary.Upgrades.Any(upgrade => upgrade.DataId == cleanup.Upgrade.DataId) &&
+                        copy.Permanent.Upgrades.Concat(copy.Temporary.Upgrades).All(upgrade => !cleanup.IgnoredCopyUpgradeIds!.Contains(upgrade.DataId)) &&
+                        !CardBranchMaskModel.Resolve(copy).Traits.Contains("CardTraitEphemeral"),
+                        "Discarded copy must install cleanup before copying and exclude the source Ephemeral upgrade.");
+                if (CardBranchMaskModel.Resolve(card).Traits.Contains("CardTraitEphemeral"))
+                {
+                    Require(after.OtherPiles.Single(pile => pile.Name == "Purged").Cards.Count(token => token.InstanceId == card.InstanceId) == 2 &&
+                        after.OtherPiles.Single(pile => pile.Name == "Exhausted").Cards.All(token => token.InstanceId != card.InstanceId) &&
+                        Json(changed.FindCard(card.InstanceId)!.Temporary.Upgrades) == Json(card.Temporary.Upgrades),
+                        "Ephemeral source must purge twice without changing its upgrades or leaving a pending exhausted copy.");
+                    if (CardBranchMaskModel.Resolve(card).Traits.Contains("CardTraitExhaustState"))
+                        Require(changed.Statistics!.Value(card.InstanceId, "TimesExhausted", "ThisBattle") -
+                            old.Statistics!.Value(card.InstanceId, "TimesExhausted", "ThisBattle") == 1,
+                            "Ephemeral plus Consume records exhaustion once before cancelling the standby return.");
+                    RoomCombatState oldRoom = before.Spawn.Train.Rooms[action.RoomIndex], newRoom = after.Spawn.Train.Rooms[action.RoomIndex];
+                    if (rule.AssetKey == "Pandemic" && oldRoom.Units.Any(unit => unit.AssetKey == "MonsterMorelMistress"))
+                        Require(oldRoom.Units.Where(unit => unit.Team == CombatTeam.Enemy && unit.Id != action.TargetUnitId).Any(unit =>
+                            (newRoom.Units.Single(item => item.Id == unit.Id).Status("decay")?.Stacks ?? 0) - (unit.Status("decay")?.Stacks ?? 0) == 8),
+                            "Ephemeral must fire Morel Mistress's manual exhaustion callback exactly once before discard.");
+                }
+            }
             if (rule.AssetKey == "FunguyInASuit")
             {
                 RoomCombatState oldRoom = before.Spawn.Train.Rooms[action.RoomIndex], newRoom = after.Spawn.Train.Rooms[action.RoomIndex];

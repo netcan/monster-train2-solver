@@ -9596,3 +9596,24 @@ Morsel Miner pool. Native count zero clamps to one, including the RNG draw.
 All three battles finish with settled victories, DEPTH-PASS and zero failure
 counters; focused replay covers sixteen immutable branches each, and bounded
 search has zero unsupported attempts with equal serial/parallel results.
+
+`full-battle-original-isolated-discard-copy-plain.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-222126-42390fae`;
+`full-battle-original-isolated-discard-copy-ephemeral.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-223200-6de30fce`;
+`full-battle-original-isolated-discard-copy-stardust.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-223200-c86d6134`.
+Unchanged Pandemic, Spreading Spores and Contagious each generate one copy
+in Discard, including the authored zero count that native clamps to one.
+The latter two captures install native AddEphemeral or Stardust Invocation
+temporary upgrades. The destination installs its native cleanup upgrade before
+copying modifiers and excludes the replaced source upgrade IDs; the played
+source retains its upgrades. Ephemeral plus Consume records exhaustion once,
+cancels its standby return, and leaves two Purged references. The Stardust
+capture includes Morel Mistress and positively observes one manual exhaustion
+callback through eight Decay applied to the other enemy. All three battles
+finish with settled victories, DEPTH-PASS and zero capture/mismatch/unsupported/
+pending counters. Focused replay covers sixteen immutable branches each;
+bounded search has zero unsupported attempts and equal serial/parallel results.
+CopyOnPlay private discard state and permanent removal of Ephemeral/CopyOnPlay
+remain explicitly guarded.

@@ -216,6 +216,14 @@ namespace MonsterTrain2Poju.Probe
                     cards.MoveToStandByPile(exhausted, wasPlayed: false, wasExhausted: true,
                         condition: new RemoveFromStandByCondition(() => CardPile.KeepInStandBy));
                 }
+            foreach (string upgradeId in (Environment.GetEnvironmentVariable("MT2_PROBE_ISOLATED_SPELL_UPGRADES") ?? "")
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                CardUpgradeData upgrade = all.FindCardUpgradeData(upgradeId) ?? throw new InvalidOperationException("Unknown isolated spell upgrade " + upgradeId);
+                foreach (CardState card in created.Skip(4).Where(card => card.GetCardType() == CardType.Spell))
+                    if (!CardUpgradeHelper.TryApplyUpgradeToCard(card, null, upgrade, true, false, managers.GetCoreManagers(), out _))
+                        throw new InvalidOperationException("Isolated spell upgrade was rejected by its native filter: " + upgradeId);
+            }
             foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             foreach (CardState ephemeral in created.Skip(4).Where(card => card.HasTrait<CardTraitEphemeral>()))
                 cards.MoveCardFromHandToTopOfDeck(ephemeral); // Native first-turn draw keeps requested plays out of deployment discard.

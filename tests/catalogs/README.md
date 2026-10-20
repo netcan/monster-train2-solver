@@ -23,10 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-221001-61ce7b72/card-catalog.mt2f`.
-The committed archive is byte-identical: 97,973 bytes, 11,815 unique nodes,
-SHA-256 `21c845568c77203d812bb8ba3211cb177ab26d5cc57564899fd199a680bdd8b0`.
-The latest refresh clears unused shared-field guards for Forge Steward and
+Source: `.probe-runs/full-battle-no-cards-20261020-223326-09ccd92d/card-catalog.mt2f`.
+The committed archive is byte-identical: 97,950 bytes, 11,816 unique nodes,
+SHA-256 `b01ea3cd0be98536810cb8e165fb999338dbe97f59cbe3c604a0a8853940a0eb`.
+The latest refresh captures discarded-copy cleanup upgrade exclusion IDs and
+accepts the three native cleanup definitions for Pandemic, Spreading Spores
+and Contagious. Exactly these three card projections change semantically;
+all other card definitions remain identical after removing the new optional
+exclusion-ID field from the comparison. CopyOnPlay sources remain guarded.
+The preceding refresh clears unused shared-field guards for Forge Steward and
 Salvage Machine, records Funguy in a Suit's source-status multiplier, and
 accepts Making of a Morsel's card-only Hand generation target. Exactly these
 four Rules change semantically. SourceStatusMultiplier is nullable in all

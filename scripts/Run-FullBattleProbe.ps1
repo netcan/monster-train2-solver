@@ -130,6 +130,7 @@ param(
     [switch] $OriginalRearrangeSpells,
     [switch] $OriginalSupportSpells,
     [string[]] $OriginalIsolatedSpellIds = @(),
+    [string[]] $OriginalIsolatedSpellUpgrades = @(),
     [switch] $OriginalEquipmentCards,
     [string[]] $OriginalIsolatedEquipmentIds = @(),
     [switch] $OriginalStatusUnits,
@@ -1337,6 +1338,14 @@ if ($OriginalEquipmentCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-e
 if ($OriginalIsolatedEquipmentIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-equipment:' + ($OriginalIsolatedEquipmentIds -join ',') }
 if ($OriginalSupportSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-support-spells' }
 if ($OriginalIsolatedSpellIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',') }
+if ($OriginalIsolatedSpellUpgrades.Count -gt 0) {
+    if ($OriginalIsolatedSpellIds.Count -eq 0) { throw 'Isolated spell upgrades require an isolated spell batch.' }
+    $OriginalIsolatedSpellUpgrades = @($OriginalIsolatedSpellUpgrades | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ })
+    if (@($OriginalIsolatedSpellUpgrades | Where-Object { $_ -notmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }).Count -gt 0) {
+        throw 'Isolated spell upgrades must be native upgrade UUIDs.'
+    }
+    $environment['MT2_PROBE_ISOLATED_SPELL_UPGRADES'] = $OriginalIsolatedSpellUpgrades -join ','
+}
 if ($OriginalRearrangeSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rearrange-spells' }
 if ($OriginalMovementSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-movement-spells' }
 if ($OriginalScaledDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-damage' }

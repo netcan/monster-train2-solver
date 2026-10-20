@@ -74,7 +74,8 @@ namespace MonsterTrain2Poju.Probe
             // a source card's modifiers into DiscardPile. Other destinations cannot use them.
             var discard = data.GetCopyModifiersFromSource() && (CardPile)data.GetParamInt() == CardPile.DiscardPile
                 ? AllGameManagers.Instance!.GetSaveManager().GetBalanceData().GetCardUpgradesOnAddCardToDiscardPile()
-                    .Select(item => new DiscardGenerationUpgrade(item.UpgradeToCheck == null ? "" : item.UpgradeToCheck.GetID(), Upgrade(item.UpgradeToAdd))).ToArray()
+                    .Select(item => new DiscardGenerationUpgrade(item.UpgradeToCheck == null ? "" : item.UpgradeToCheck.GetID(), Upgrade(item.UpgradeToAdd),
+                        item.UpgradeToAdd.GetUpgradesToRemove().Select(upgrade => upgrade.GetID()).ToArray())).ToArray()
                 : Array.Empty<DiscardGenerationUpgrade>();
             return new CardGenerationRule(((CardPile)data.GetParamInt()).ToString(), data.GetAdditionalParamInt(),
                 pool.Select(Creation).ToArray(), data.GetEffectStateName() == "CardEffectAddBattleCard" && data.GetParamBool2(),

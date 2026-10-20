@@ -202,6 +202,8 @@ namespace MonsterTrain2Poju.Probe
             bool refresh = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
             if (upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade room ability");
             CardLifecycleUpgrade lifecycle = CardUpgradeLifecycleProbe.Definition(upgrade);
+            bool discardCleanup = CardBranchMaskProbe.Enabled && upgrade.GetAssetName() is
+                "CopyOnPlayTraitUpgradeNoEphemeral" or "RemoveEphemeral" or "StardustInvocation_Upgrade_NoEphemeral";
             bool supportedTraitLifecycle = (lifecycle.AddedTraits.Count > 0 || lifecycle.RemovedRuntimeTypes.Count > 0) && lifecycle.AddedTraits.All(trait =>
                 trait.RuntimeType == trait.DeclaredName &&
                 (trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" or "CardTraitEphemeral" ||
@@ -210,7 +212,8 @@ namespace MonsterTrain2Poju.Probe
                     trait.RuntimeType == "CardTraitDrawInDeploymentPhase" ||
                     trait.RuntimeType == "CardTraitPermafrost" && upgrade.GetCardUpgradeDataId() == RelicExpensiveCardUpgradeModel.Effect ||
                     trait.RuntimeType == "CardTraitStrongerMagicPower" && CardBranchMaskProbe.Enabled)) &&
-                lifecycle.RemovedRuntimeTypes.All(type => type is "CardTraitIgnoreArmor" or "CardTraitExhaustState");
+                lifecycle.RemovedRuntimeTypes.All(type => type is "CardTraitIgnoreArmor" or "CardTraitExhaustState" ||
+                    discardCleanup && type is "CardTraitEphemeral" or "CardTraitCopyOnPlay");
             if ((upgrade.GetTraitDataUpgrades().Count > 0 || upgrade.GetRemoveTraitUpgrades().Count > 0) && !supportedTraitLifecycle)
                 interactions.Add("Upgrade traits");
             if (upgrade.GetCardTriggerUpgrades().Count > 0)
@@ -223,7 +226,7 @@ namespace MonsterTrain2Poju.Probe
             }
             if (!roomAttachmentUnitUpgrade && upgrade.GetRoomModifierUpgrades().Count > 0) interactions.Add("Upgrade room modifiers");
             if (!filtersAlreadyApplied && upgrade.GetFilters().Count > 0) interactions.Add("Upgrade card filters");
-            if (upgrade.GetUpgradesToRemove().Count > 0) interactions.Add("Upgrade replacements");
+            if (upgrade.GetUpgradesToRemove().Count > 0 && !discardCleanup) interactions.Add("Upgrade replacements");
             bool boilerplateArmor = CardBranchMaskProbe.Enabled && upgrade.GetCardUpgradeDataId() == "29ec3d1a-190f-4aef-a9f3-3ce696c7fd09" &&
                 upgrade.GetStatusEffectUpgrades().Count == 1 && upgrade.GetStatusEffectUpgrades()[0].statusId == "armor" &&
                 upgrade.GetStatusEffectUpgrades()[0].fromPermanentUpgrade;

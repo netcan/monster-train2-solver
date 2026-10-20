@@ -50,6 +50,8 @@ namespace MonsterTrain2Poju.Model
         {
             if (upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true)
                 return "Permanent Corrupt State installation requires separate native calibration.";
+            if (upgrade.Lifecycle?.RemovedRuntimeTypes.Any(type => type is "CardTraitEphemeral" or "CardTraitCopyOnPlay") == true)
+                return "Permanent removal of Ephemeral/CopyOnPlay requires separate native calibration.";
             CardTraitValue[] markers = upgrade.Lifecycle?.AddedTraits.Where(trait => trait.RuntimeType is "CardTraitDistinct" or "CardTraitEphemeral").ToArray() ?? Array.Empty<CardTraitValue>();
             if (markers.Length > 0 && (card.MaskDescriptor == null || markers.Any(trait => trait.StackMode != 0)))
                 return "Permanent Distinct/Ephemeral installation requires captured traits and a non-stacking definition.";
