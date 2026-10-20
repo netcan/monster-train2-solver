@@ -23,10 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-200938-0957a8c6/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,740 bytes, 11,702 unique nodes,
-SHA-256 `ac9ef511de49813ad18a366b75f669a37245668f506a3ab1ca75d97b191a92d6`.
-The latest refresh projects Dante's permanent OnSpawn card generation. Its unused
+Source: `.probe-runs/full-battle-no-cards-20261020-201716-1d6ad017/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,748 bytes, 11,703 unique nodes,
+SHA-256 `ef763a2c85bfd9f7599e31c82dda284e11adbec88f394bdb4cbd3fa5ed8993cb`.
+The latest refresh projects Pyre Steward's fixed two-HP OnKill train healing.
+Only its Rule changed; all 668 raw native definitions are unchanged.
+The preceding refresh projects Dante's permanent OnSpawn card generation. Its unused
 AddStatus card pool is omitted exactly as in runtime capture. Only Dante's Rule
 changed; all 668 raw native card definitions remain identical.
 The preceding refresh projects Goldtooth, Lady of the House and Bog Fly's contextual

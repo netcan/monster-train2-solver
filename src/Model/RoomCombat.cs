@@ -1230,6 +1230,13 @@ namespace MonsterTrain2Poju.Model
                             if (state.Context == null) return "Triggered maximum health requires shared battle context.";
                             continue;
                         }
+                        if (effect.Type == "CardEffectHealTrain")
+                        {
+                            if (effect.Action?.Type != "HealTrain" || effect.Action.Target != "Pyre" ||
+                                effect.Action.Range != null || effect.Action.UseCardTraits || state.Context?.Resources?.TowerHealingDisabled == null)
+                                return "Triggered train healing requires fixed Pyre targeting and captured healing rules without source-trait scaling.";
+                            continue;
+                        }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
                             effect.Type != "CardEffectAddStatsFromSelf" &&
                             effect.Type is not ("CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
@@ -4006,6 +4013,8 @@ namespace MonsterTrain2Poju.Model
             }
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type == "HealTrain" ? context?.EnergyState?.PyreAlive == true &&
+                    (!source.Preview || context.RoomCapacities?.Any(room => room.RoomIndex == source.RoomIndex && room.IsPyre) == true) :
                 action.Type == "PlayUnitTrigger" ? true :
                 action.Type == "AdjustCorruption" ? RoomCorruptionModel.Test(CurrentRoom(), action) :
                 action.Type is "AdjustMaxHealth" or "BuffHealth" ? true :
@@ -4270,6 +4279,16 @@ namespace MonsterTrain2Poju.Model
                         }
                         Emit(action.Type, actor, target, 0);
                     }
+                    return true;
+                }
+                if (action.Type == "HealTrain")
+                {
+                    WorkingUnit? pyre = units.SingleOrDefault(unit => unit.Source.IsPyre && !unit.Destroyed);
+                    if (pyre == null) return true;
+                    RelicResourceResult maximum = RelicResourceModel.GetPyreMaxHealth(context!);
+                    if (!maximum.Supported) { unsupportedReason = maximum.UnsupportedReason; return false; }
+                    if (action.Value > 0 && (source.Preview || context!.Resources!.TowerHealingDisabled != true))
+                        pyre.Health = Math.Min(maximum.Value, unchecked(pyre.Health + action.Value));
                     return true;
                 }
                 if (action.Type == "TransferAllStatusesFromUnit")

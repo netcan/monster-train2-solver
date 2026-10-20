@@ -106,6 +106,7 @@ namespace MonsterTrain2Poju.Probe
         {
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
             if (spellIds.Contains("e8f47c5d-c2d8-44e8-a443-4dca81acfa4d")) save.SetGold(250, isTotalReset: true);
+            if (spellIds.Contains("e90fc0e0-b383-48a9-bb10-d8aaa1518531")) save.Cheat_SetTowerHP(save.GetMaxTowerHP() - 10);
             if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster)))
                 throw new InvalidOperationException("Isolated spell IDs must name one to thirty native spell, equipment or supporting monster definitions.");
             CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()

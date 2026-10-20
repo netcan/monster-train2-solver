@@ -221,7 +221,7 @@ namespace MonsterTrain2Poju.Model
                 int pyreRoomIndex = rooms.Length - 1;
                 bool targetsPyre = index != pyreRoomIndex && rooms[index].Units.Any(unit =>
                     unit.Triggers.Any(trigger => trigger.Effects.Any(effect =>
-                        effect.Type == "CardEffectPyreDamageIfNoPlayerUnits")));
+                        effect.Type is "CardEffectPyreDamageIfNoPlayerUnits" or "CardEffectHealTrain")));
                 CombatUnit? externalPyre = targetsPyre ? rooms[pyreRoomIndex].Units.FirstOrDefault(unit => unit.IsPyre) : null;
                 if (targetsPyre && externalPyre == null) return Unsupported("Conditional Pyre damage requires a Pyre unit.");
                 bool requiresTowerTargets = NeedsTowerTargets(rooms[index]);

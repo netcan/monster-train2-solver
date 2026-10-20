@@ -9414,3 +9414,15 @@ native dictionary status order, positive visible statuses excluding Horde,
 and reversed target order. Existing Pyregel/Decay distribution paths keep
 their own gates. Both battles have settled native victories, DEPTH-PASS,
 zero failure counters, sixteen immutable replay branches and search parity.
+
+`full-battle-original-isolated-pyre-steward.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-201907-aa7f3e29`.
+The original 30/10 Pyre Steward kills a native enemy and heals the distant Pyre
+from 70 to 72. An independent effect record captures source identity, requested
+amount, native HP, maximum HP and the disabled-healing rule. Three exact native
+TestEffectOnTarget observations include rejected non-Pyre-room previews and the
+accepted real callback. Local room predictions preserve the trigger's fired flag
+even though the Pyre is elsewhere; full-train simulation carries the changed
+external Pyre back to its own room. Source-trait train-heal scaling remains
+guarded for character callbacks. This battle has settled victory, DEPTH-PASS,
+zero failure counters, sixteen immutable replay branches and search parity.

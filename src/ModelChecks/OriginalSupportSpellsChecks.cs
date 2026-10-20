@@ -343,6 +343,21 @@ internal static class OriginalSupportSpellsChecks
             Require(expected.All(positive.Contains), "Each contextual attack rule needs a positive independent native getter witness.");
             if (expected.Length > 0) Console.WriteLine($"UNIT-SELF-ATTACK PASS: {queries} exact native queries across {expected.Length} positive scaling rules.");
         }
+        if (originals.Contains("e90fc0e0-b383-48a9-bb10-d8aaa1518531"))
+        {
+            var heals = root.GetProperty("TriggeredTrainHeals").EnumerateArray().ToArray();
+            var tests = root.GetProperty("TriggeredTrainHealTests").EnumerateArray().ToArray();
+            int stewardCardId = ids[4 + System.Array.IndexOf(originals, "e90fc0e0-b383-48a9-bb10-d8aaa1518531")];
+            Require(heals.Any(heal => !heal.GetProperty("Preview").GetBoolean() && heal.GetProperty("After").GetInt32() > heal.GetProperty("Before").GetInt32()) &&
+                tests.Any(test => test.GetProperty("Preview").GetBoolean() && !test.GetProperty("Result").GetBoolean()) &&
+                tests.All(test => test.GetProperty("Result").GetBoolean() == (test.GetProperty("PyreTarget").GetBoolean() &&
+                    (!test.GetProperty("Preview").GetBoolean() || test.GetProperty("SelectedPyreRoom").ValueKind == FixtureKind.Null ||
+                        test.GetProperty("SelectedPyreRoom").GetBoolean()))) && heals.All(heal =>
+                    heal.GetProperty("SourceCardId").GetInt32() == stewardCardId && heal.GetProperty("Amount").GetInt32() == 2 &&
+                    heal.GetProperty("After").GetInt32() == (heal.GetProperty("Preview").GetBoolean() || heal.GetProperty("Disabled").GetBoolean()
+                        ? heal.GetProperty("Before").GetInt32() : Math.Min(heal.GetProperty("Maximum").GetInt32(), heal.GetProperty("Before").GetInt32() + 2))),
+                "Pyre Steward must heal the distant Pyre by two on native kills; native tests reject non-Pyre-room preview callbacks.");
+        }
         foreach (string egg in originals.Where(id => id is "27b0fdda-5dc4-4280-a510-fe51e550e3fb" or "07448181-5b6f-404a-88ff-cb4d8ac8a3b1"))
         {
             string parent = egg == "27b0fdda-5dc4-4280-a510-fe51e550e3fb" ? "MonsterBogChrysalis" : "MonsterBogdeepCocoon";

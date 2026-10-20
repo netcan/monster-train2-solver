@@ -88,7 +88,7 @@ namespace MonsterTrain2Poju.Model
             {
                 bool targetsPyre = room.RoomIndex != pyreRoomIndex && room.Units.Any(unit =>
                     unit.Triggers.Any(trigger => trigger.Effects.Any(effect =>
-                        effect.Type == "CardEffectPyreDamageIfNoPlayerUnits")));
+                        effect.Type is "CardEffectPyreDamageIfNoPlayerUnits" or "CardEffectHealTrain")));
                 RoomCombatResult preview = RoomCombatModel.Resolve(EnchantmentWorldModel.Refresh(new RoomCombatState(room.RoomIndex, room.Deployment,
                     room.Units, room.ExternalInteractions, previewContext, preview: true,
                     activeCompanionBossIds: room.ActiveCompanionBossIds)),
