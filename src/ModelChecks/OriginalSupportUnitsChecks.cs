@@ -49,6 +49,7 @@ internal static class OriginalSupportUnitsChecks
     private const string ScrivenerId = "c2baee0e-4bc6-4da6-8330-71f5a299133e";
     private const string BanishedChamp2Id = "27340034-9ee7-4535-bb63-2e0bd8c321fb";
     private const string PyreborneChamp1Id = "7488b439-316c-4a13-8897-90de239b6250";
+    private const string DeathEaterId = "68a76ecf-2108-4b7f-b805-b3653cdd96bf";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -375,6 +376,27 @@ internal static class OriginalSupportUnitsChecks
             (juggernautXCost || spawnedUnit.Health == template.Health && spawnedUnit.MaxHealth == template.MaxHealth &&
                 spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage),
             expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
+        if (expectedId == DeathEaterId)
+        {
+            CombatTrigger death = template.Triggers.Single(trigger => trigger.Kind == "OnAnyUnitDeathOnFloor");
+            CardActionEffect soul = death.Effects.Single().Action!;
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            int[] soulStacks = unitTurns.Select(unit => unit.Status("captured_soul")?.Stacks ?? 0).ToArray();
+            Require(rule.AssetKey == "DeathEater" && rule.Cost == 1 && template.AssetKey == "MonsterDeathEater" &&
+                template.Modifiers!.AttackDamage == 0 && template.Health == 5 && template.MaxHealth == 5 && template.Size == 1 &&
+                death.Effects.Count == 1 && soul is { Type: "AddStatus", Target: "Self" } &&
+                soul.Statuses.Single() is { Id: "captured_soul", Stacks: 1, Stackable: true } &&
+                spawnedUnit.Status("captured_soul") == null && unitTurns.Length == 4 && soulStacks[0] > 0 &&
+                soulStacks.Zip(soulStacks.Skip(1), (before, after) => after >= before).All(increasedOrEqual => increasedOrEqual) &&
+                unitTurns.Any(unit => unit.Triggers.Single(trigger => trigger.Kind == "OnAnyUnitDeathOnFloor").HasTriggered),
+                "Death Eater must retain its original 1-cost 0/5 birth and gain captured_soul only after same-floor unit deaths.");
+            Console.WriteLine("ORIGINAL-DEATH-EATER PASS: native OnAnyUnitDeathOnFloor added captured_soul after birth (four turn stacks: " +
+                string.Join(",", soulStacks) + ").");
+        }
         if (expectedId == JuggernautId)
         {
             CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");

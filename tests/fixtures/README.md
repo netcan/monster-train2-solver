@@ -8776,3 +8776,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-pyreborne-champ1.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-pyreborne-champ1.mt2f
 ```
+
+### Original Death Eater
+
+`full-battle-original-isolated-death-eater.mt2f` plays the unchanged 1-cost
+0/5 size-1 Death Eater. It has no `captured_soul` at birth; its native
+`OnAnyUnitDeathOnFloor` callback adds the stackable status after same-floor unit
+deaths. Four later snapshots record stacks `1, 2, 2, 4`. The Instant battle won
+with zero capture failures, mismatches, unsupported transitions or pending
+records. Focused replay and bounded serial/parallel search agree at 128 states,
+with three replayed steps; archive metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 68a76ecf-2108-4b7f-b805-b3653cdd96bf
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-death-eater.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-death-eater.mt2f
+```
