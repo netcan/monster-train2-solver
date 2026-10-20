@@ -4,6 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalSupportUnitsChecks
 {
+    private const string AstrologerId = "4b50aa70-8918-40f0-8efd-c66ce78bbf52";
     private const string BlightedTotemId = "21ad4f07-1568-4461-8be4-6fb2670bd90d";
     private const string ProsperityTotemId = "21567cc4-f684-48db-b377-b8289729dedc";
     private const string BattleDancerId = "a0b051b2-7898-454a-8bd8-300b72b99c93";
@@ -557,6 +558,32 @@ internal static class OriginalSupportUnitsChecks
                 upgrade.Upgrade.Stats.Health == 0 && remainsUntriggered,
                 "Reforming Ooze must preserve its native 1-cost 7/15 size-2 Undying birth and inactive permanent self +6 Attack OnReanimated upgrade.");
         }
+        if (expectedId == AstrologerId)
+        {
+            CombatTrigger phaseShift = template.Triggers.Single(trigger => trigger.Kind == "OnMoonPhaseShift");
+            CombatTrigger spawnedPhaseShift = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnMoonPhaseShift");
+            CombatEffect upgradeEffect = phaseShift.Effects.Single();
+            CardActionEffect upgrade = upgradeEffect.UnitUpgrade!;
+            int[] phaseAttacks = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!.Modifiers!.AttackDamage).ToArray();
+            bool phaseCallbacksFired = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).All(unit => unit!.Triggers.Single(trigger => trigger.Kind == "OnMoonPhaseShift").HasTriggered);
+            Require(rule.AssetKey == "Astrologer" && template.AssetKey == "MonsterAstrologer" && rule.Cost == 1 &&
+                template.Modifiers!.AttackDamage == 5 && template.Health == 10 && template.MaxHealth == 10 && template.Size == 2 &&
+                template.Subtypes.Contains("SubtypesData_Selene") && phaseShift.Effects.Count == 1 && !phaseShift.Once &&
+                phaseShift.FireCount == 1 && !phaseShift.HasTriggered && upgradeEffect.Type == "CardEffectAddTempCardUpgradeToUnits" &&
+                !spawnedPhaseShift.HasTriggered && spawnedUnit.Modifiers!.AttackDamage == 5 &&
+                upgrade is { Type: "UnitUpgrade", Target: "Self", Lifetime: "TemporaryUntilEndOfBattle" } &&
+                upgrade.Upgrade is { DataId: "de311466-d8c2-4d46-a2cb-0525fb4f3f01", AssetKey: "AstrologerAttackUpgrade" } &&
+                upgrade.Upgrade.Stats.Damage == 5 && phaseAttacks.SequenceEqual([10, 15, 20, 20]) && phaseCallbacksFired,
+                "Astrologer must retain its native 1-cost 5/10 size-2 birth and three positive +5 Attack OnMoonPhaseShift callbacks followed by a no-shift control.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
@@ -586,6 +613,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-HULKING-MASS PASS: original 2-cost 15/20 size-3 birth with 40 Armor; its captured OnReanimated +40 Armor callback remained inactive.");
         else if (expectedId == ReformingOozeId)
             Console.WriteLine("ORIGINAL-REFORMING-OOZE PASS: original 1-cost 7/15 size-2 Undying birth; its permanent self +6 Attack OnReanimated upgrade remained inactive.");
+        else if (expectedId == AstrologerId)
+            Console.WriteLine("ORIGINAL-ASTROLOGER PASS: original 1-cost 5/10 size-2 birth and three native +5 Attack OnMoonPhaseShift upgrades, then a no-shift control.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }

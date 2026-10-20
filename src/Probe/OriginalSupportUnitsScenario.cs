@@ -38,7 +38,7 @@ namespace MonsterTrain2Poju.Probe
                 return modifiers != null && modifiers.StartsWith(prefix, StringComparison.Ordinal) ? modifiers.Substring(prefix.Length) : null;
             }
         }
-        private static bool IsolatedUnitOnly => IsolatedUnitId != null && Guid.TryParseExact(IsolatedUnitId, "D", out _);
+        internal static bool IsolatedUnitOnly => IsolatedUnitId != null && Guid.TryParseExact(IsolatedUnitId, "D", out _);
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || DivineDancerOnly || IsolatedUnitBatchOnly || IsolatedColdstrikeSirenOnly || IsolatedUnitOnly;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
