@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-183245-65d9cf3c/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,090 bytes, 11,618 unique nodes,
-SHA-256 `4855438fda020c7bd4e04cfdea6833f0707d07ee82e176d7da9a30f16d2e8a24`.
-The latest refresh omits discard-copy upgrades when source modifiers are not
+Source: `.probe-runs/full-battle-no-cards-20261020-184429-9bb675ea/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,157 bytes, 11,619 unique nodes,
+SHA-256 `1eb4d82212e32b6b2124d765f2ddc80577fef99c102bdf36c188f1bcf58a341a`.
+The latest refresh adds native HasMoonPhaseCardEffect to nested card-creation
+rules so generation can activate player moon tracking. Sixty-four Rules have
+the new nullable field; all 668 raw native definitions are unchanged.
+The preceding refresh omits discard-copy upgrades when source modifiers are not
 copied or the destination is not DiscardPile. Both native generation iterators
 only inspect these upgrades inside those two conditions. Twenty-two Rules
 changed, with all 668 raw native definitions unchanged. Pandemic, Contagious

@@ -286,6 +286,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-morselmaker.mt2f',
     'full-battle-original-isolated-cluster-colonel.mt2f',
     'full-battle-original-isolated-glareminder.mt2f',
+    'full-battle-original-isolated-lunar-priestess.mt2f',
     'full-battle-original-isolated-forgotten-trade.mt2f',
     'full-battle-original-isolated-windblade.mt2f',
     'full-battle-original-isolated-shield-of-wyngh.mt2f',
@@ -2301,7 +2302,7 @@ foreach ($fixturePath in $originalIsolatedWicklessDeathFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Wickless death-trigger batch checks failed ($mode): $fixturePath" }
     }
 }
-$originalIsolatedDeathSummonFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-isolated-death-summon-batch.mt2f', 'full-battle-original-isolated-conduit-moon-batch.mt2f', 'full-battle-original-isolated-enchant-batch.mt2f', 'full-battle-original-isolated-fae-moon-pixie.mt2f', 'full-battle-original-isolated-morselmaker.mt2f', 'full-battle-original-isolated-cluster-colonel.mt2f', 'full-battle-original-isolated-glareminder.mt2f') })
+$originalIsolatedDeathSummonFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-isolated-death-summon-batch.mt2f', 'full-battle-original-isolated-conduit-moon-batch.mt2f', 'full-battle-original-isolated-enchant-batch.mt2f', 'full-battle-original-isolated-fae-moon-pixie.mt2f', 'full-battle-original-isolated-morselmaker.mt2f', 'full-battle-original-isolated-cluster-colonel.mt2f', 'full-battle-original-isolated-glareminder.mt2f', 'full-battle-original-isolated-lunar-priestess.mt2f') })
 foreach ($fixturePath in $originalIsolatedDeathSummonFixtures) {
     foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

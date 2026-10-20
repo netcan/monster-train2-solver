@@ -414,7 +414,7 @@ namespace MonsterTrain2Poju.Model
             if (source.MoonPhaseTrackingActive.HasValue)
             {
                 train = WithContext(train, context.WithQueryFrame(context.QueryFrame?.With(
-                    turn: turn, moonPhaseTrackingActive: source.MoonPhaseTrackingActive)), false);
+                    turn: turn, moonPhaseTrackingActive: context.QueryFrame?.MoonPhaseTrackingActive ?? source.MoonPhaseTrackingActive)), false);
                 MoonPhaseTransitionResult advanced = MoonPhaseTransitionModel.Apply(train,
                     new CardActionEffect("AdvanceMoonPhase", "Room", 1, false, false, []),
                     playerActionOnly: false);
@@ -648,7 +648,7 @@ namespace MonsterTrain2Poju.Model
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn, drawPerTurn,
                     finalContext.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, outputPlayRules,
                     source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
-                    selectedRoom, source.MoonPhaseTrackingActive), outcome);
+                    selectedRoom, finalContext.QueryFrame?.MoonPhaseTrackingActive ?? source.MoonPhaseTrackingActive), outcome);
             }
 
             bool RouteDeadUnits(TrainCombatState before, TrainCombatResult result)

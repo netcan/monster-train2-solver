@@ -482,6 +482,19 @@ internal static class OriginalSupportUnitsChecks
                 turns.All(room => room.Units.Single(unit => unit.SpawnerCardId == ids[actionIndex]).Triggers.Single().HasTriggered),
                 "Cluster Colonel must retain its original birth, preview-created reference cleanup and positive post-combat Horde spawn/growth.");
         }
+        if (rule.AssetKey == "LunarPriestess")
+        {
+            BattleTurnState[] turns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+            CardGenerationRule generator = template.Triggers.Single().Effects.Single().Generation!;
+            Require(generator.Pool.Single().ActivatesMoonTracking == true &&
+                turns.Select(turn => turn.MoonPhaseTrackingActive).SequenceEqual(new bool?[] { false, true, true, true, true }) &&
+                turns.Select(turn => turn.Spawn.Train.Context!.CardRegistry!.Count(card => card.DataId == "b1fe0ba1-fcce-4764-9f4c-54b77d20b665"))
+                    .SequenceEqual([0, 1, 2, 3, 3]) &&
+                turns[1].Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => !unit.IsPyre)
+                    .All(unit => unit.Status("newmoon")?.Stacks == 1),
+                "Lunar Priestess must generate native Dusk cards, activate moon tracking on the first PostCombat birth and apply the next New Moon to all units.");
+        }
         if (rule.AssetKey == "Morselmaker")
         {
             CombatUnit[] turns = root.GetProperty("Turns").EnumerateArray()

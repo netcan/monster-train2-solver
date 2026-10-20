@@ -142,7 +142,8 @@ namespace MonsterTrain2Poju.Probe
             return new CardCreationRule(data.GetID(), modifiers, counters.Length == 0 ? null : counters, interactions,
                 DamageScalingProbe.Creation(data), StatusScalingProbe.Creation(data), UnitUpgradeScalingProbe.Creation(data),
                 RoomCapacityProbe.Creation(data), 0, descriptor, CardModifierProbe.ForgeCountScalingTraits(instance), instance.CanBeCopied(),
-                CardModifierProbe.TrainHealScalingTraits(instance));
+                CardModifierProbe.TrainHealScalingTraits(instance),
+                activatesMoonTracking: instance.HasMoonPhaseCardEffect() ? true : (bool?)null);
         }
     }
 }

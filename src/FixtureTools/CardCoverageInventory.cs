@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Fixtures;
 internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
-    private const string CatalogHash = "4855438fda020c7bd4e04cfdea6833f0707d07ee82e176d7da9a30f16d2e8a24";
+    private const string CatalogHash = "1eb4d82212e32b6b2124d765f2ddc80577fef99c102bdf36c188f1bcf58a341a";
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -247,6 +247,21 @@ internal static class CardCoverageInventory
     private static bool CalibratedSourceTrait(FixtureValue trait, string cardId)
     {
         string type = Text(trait, "Type");
+        if (cardId is "7a01774e-1e0f-4551-8691-cd0dd2f372ea" or "70911970-988b-4535-b46e-e6aa3987fb6c")
+        {
+            bool collapse = cardId == "7a01774e-1e0f-4551-8691-cd0dd2f372ea";
+            bool attackUpgrade = type == "CardTraitScalingUpgradeUnitAttack";
+            return (collapse ? type is "CardTraitScalingAddDamage" or "CardTraitExhaustState" :
+                    type is "CardTraitScalingAddDamage" or "CardTraitScalingUpgradeUnitAttack") &&
+                trait.GetProperty("Int").GetInt32() == (collapse ? 30 : attackUpgrade ? 5 : 15) &&
+                trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&
+                !Flag(trait, "Bool") && Text(trait, "Str").Length == 0 &&
+                trait.GetProperty("Float").GetDouble() == (attackUpgrade ? 0 : 1) && !Flag(trait, "Scaling") &&
+                Text(trait, "TrackedValue") == (collapse ? "CapacityOfTargetRoom" : "PlayedCost") &&
+                Text(trait, "EntryDuration") == "ThisTurn" &&
+                new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag", "SpecificCardDataId", "StatusEffectIds", "MoonPhaseUpgrade" }
+                    .All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null);
+        }
         if (cardId == "9d04efb5-8794-42a8-8282-e8ef895e6c3a")
             return type == "CardTraitCorruptRestricted" && trait.GetProperty("Int").GetInt32() == 6 &&
                 trait.GetProperty("Int2").GetInt32() == 0 && trait.GetProperty("Int3").GetInt32() == 0 &&

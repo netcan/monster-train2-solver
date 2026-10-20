@@ -1059,7 +1059,7 @@ namespace MonsterTrain2Poju.Model
                 piles, BattleTurnModel.AfterActionInteractions(source, context), outputPlayRules, source.BattlePreviewEnabled, source.UiRngIsolated,
                 source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                 train.Context?.QueryFrame?.SelectedRoomIndex ?? (source.SelectedRoom < 0 ? source.SelectedRoom : action.RoomIndex),
-                source.MoonPhaseTrackingActive), outcome: outcome);
+                context.QueryFrame?.MoonPhaseTrackingActive ?? source.MoonPhaseTrackingActive), outcome: outcome);
         }
 
         // Unsupported attempts are kept separate from legal actions so callers can detect an incomplete search frontier.

@@ -9262,3 +9262,15 @@ and applies its native scaled twenty-attack temporary upgrade without HP loss.
 The profile is `.probe-runs/full-battle-units-spells-and-junk-20261020-183659-f33ea856`:
 DEPTH-PASS, native victory, settled terminal effects and all four failure counters
 zero. Focused immutable replay and bounded search validate this fixture.
+
+### Original Lunar Priestess moon-tracking activation
+
+`full-battle-original-isolated-lunar-priestess.mt2f` captures unchanged Lunar
+Priestess with PostCombat-generated Dusk. Tracking starts disabled, activates
+on the first generated moon card, and remains enabled across subsequent turns.
+Native Dusk registry counts are zero, one, two, three, three; the first enabled
+New Moon reaches all living non-Pyre units. Creation rules capture the native
+HasMoonPhaseCardEffect predicate. Activation is calibrated during Combat;
+other phase boundaries retain an explicit guard for native reset callbacks.
+The source is `.probe-runs/full-battle-units-spells-and-junk-20261020-184323-f8442fd6`:
+native DEPTH-PASS, settled victory and all four failure counters zero.

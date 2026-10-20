@@ -19,13 +19,15 @@ namespace MonsterTrain2Poju.Model
         public int? EquippedUnitId { get; }
         public CardMaskDescriptor? MaskDescriptor { get; }
         public bool? CanBeCopied { get; }
+        public bool? ActivatesMoonTracking { get; }
         public IReadOnlyList<CardUpgradeModifier> AddCardUpgrades { get; }
         public CardCreationRule(string dataId, CardModifiers startingModifiers, IReadOnlyList<CardEffectCounter>? effectCounters,
             IReadOnlyList<string> externalInteractions, IReadOnlyList<ScalingDamageTrait>? damageScalingTraits = null,
             IReadOnlyList<ScalingStatusTrait>? statusScalingTraits = null, IReadOnlyList<ScalingUnitUpgradeTrait>? unitUpgradeScalingTraits = null,
             IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null, int? equippedUnitId = null, CardMaskDescriptor? maskDescriptor = null,
             IReadOnlyList<ScalingForgeCountTrait>? forgeCountScalingTraits = null, bool? canBeCopied = null,
-            IReadOnlyList<ScalingTrainHealTrait>? trainHealScalingTraits = null, IReadOnlyList<CardUpgradeModifier>? addCardUpgrades = null)
+            IReadOnlyList<ScalingTrainHealTrait>? trainHealScalingTraits = null, IReadOnlyList<CardUpgradeModifier>? addCardUpgrades = null,
+            bool? activatesMoonTracking = null)
         { DataId = dataId; StartingModifiers = startingModifiers; EffectCounters = effectCounters == null ? null : Array.AsReadOnly(effectCounters.ToArray());
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             DamageScalingTraits = damageScalingTraits == null ? null : Array.AsReadOnly(damageScalingTraits.ToArray());
@@ -35,11 +37,12 @@ namespace MonsterTrain2Poju.Model
             ForgeCountScalingTraits = forgeCountScalingTraits == null ? null : Array.AsReadOnly(forgeCountScalingTraits.ToArray());
             TrainHealScalingTraits = trainHealScalingTraits == null ? null : Array.AsReadOnly(trainHealScalingTraits.ToArray());
             EquippedUnitId = equippedUnitId; MaskDescriptor = maskDescriptor; CanBeCopied = canBeCopied;
+            ActivatesMoonTracking = activatesMoonTracking;
             AddCardUpgrades = Array.AsReadOnly((addCardUpgrades ?? Array.Empty<CardUpgradeModifier>()).ToArray()); }
         internal CardCreationRule WithAddCardUpgrades(IReadOnlyList<CardUpgradeModifier> upgrades) => new(DataId,
             StartingModifiers, EffectCounters, ExternalInteractions, DamageScalingTraits, StatusScalingTraits,
             UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, MaskDescriptor, ForgeCountScalingTraits,
-            CanBeCopied, TrainHealScalingTraits, upgrades);
+            CanBeCopied, TrainHealScalingTraits, upgrades, ActivatesMoonTracking);
     }
 
     public sealed class DiscardGenerationUpgrade
@@ -385,6 +388,12 @@ namespace MonsterTrain2Poju.Model
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),
                     context.CardInstances?.Concat(new[] { candidate }).ToArray(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState);
+                if (creation.ActivatesMoonTracking == true && context.QueryFrame?.MoonPhaseTrackingActive == false)
+                {
+                    if (context.EnergyState?.Phase != "Combat")
+                        return Unsupported("Generated card moon tracking activation outside combat requires native reset-boundary calibration.");
+                    context = context.WithQueryFrame(context.QueryFrame.With(moonPhaseTrackingActive: true));
+                }
                 // Setup/upgrade refresh builds scaling trait text in an active battle.
                 // Those native statistic queries refresh deckStats after the new card
                 // enters its pile, even when the displayed scaling value is zero.
