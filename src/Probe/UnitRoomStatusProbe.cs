@@ -24,7 +24,14 @@ namespace MonsterTrain2Poju.Probe
         internal static UnitRoomStatusRule[]? Rules(IEnumerable<RoomModifierData> definitions)
         {
             UnitRoomStatusRule[] rules = definitions.Where(data => UnitRoomStatusModel.Known(data.GetRoomStateModifierClassName()))
-                .Select(data => new UnitRoomStatusRule(data.GetRoomStateModifierClassName(), UnitRoomStatusModel.Status(data.GetRoomStateModifierClassName()), data.GetParamInt())).ToArray();
+                .Select(data =>
+                {
+                    string type = data.GetRoomStateModifierClassName();
+                    if (type == UnitRoomStatusModel.QueuedStatus && (data.GetParamInt() != 1 || data.DisallowedInDeploymentPhase ||
+                        data.GetParamStatusEffects().Length != 1 || data.GetParamStatusEffects()[0].statusId != "conduit"))
+                        throw new InvalidOperationException("Uncalibrated queued room status modifier.");
+                    return new UnitRoomStatusRule(type, UnitRoomStatusModel.Status(type), data.GetParamInt());
+                }).ToArray();
             return rules.Length == 0 ? null : rules;
         }
         internal static void Observe(RoomCombatState room, IReadOnlyList<CharacterState> characters, FullBattleTrace trace)

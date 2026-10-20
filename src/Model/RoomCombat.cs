@@ -2148,7 +2148,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (!blockedDeath) FireTriggers(actor, queued.Kind, canFireTriggers: queued.CanFireTriggers, fromQueue: true, paramInt: queued.ParamInt,
                         overrideTarget: overridden, dyingCharacter: dying, triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId,
-                        exclusiveTriggerStateId: queued.ExclusiveTriggerStateId, paramInt2: queued.ParamInt2);
+                        exclusiveTriggerStateId: queued.ExclusiveTriggerStateId, paramInt2: queued.ParamInt2, paramStringOverride: queued.ParamString);
                     if (queued.Kind == "OnDeath" && queued.ParamInt != 1 && actor.Source.DeathState != null &&
                         (queued.RemovalLifecycle || queued.Unit.Health <= 0))
                         actor.Apply(actor.Freeze().WithDeathState(new UnitDeathState(true, true, false,
@@ -3205,9 +3205,9 @@ namespace MonsterTrain2Poju.Model
 
             private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false, int paramInt = 0,
                 WorkingUnit? overrideTarget = null, WorkingUnit? dyingCharacter = null, int triggerCount = 1, int lastSpawnedOverrideUnitId = 0,
-                int? exclusiveTriggerStateId = null, int paramInt2 = 0)
+                int? exclusiveTriggerStateId = null, int paramInt2 = 0, string? paramStringOverride = null)
             {
-                string? paramString = kind == "OnHeal" || kind == "OnHit" ? "" : null;
+                string? paramString = paramStringOverride ?? (kind == "OnHeal" || kind == "OnHit" ? "" : null);
                 // CombatManager checks purification when adding to its queue, not
                 // when dispatching an already accepted callback.
                 if (!fromQueue && unit.Has("purify"))
@@ -3517,6 +3517,18 @@ namespace MonsterTrain2Poju.Model
                     if (remainingTriggerIndex >= 0) Store(unit.Triggers[remainingTriggerIndex].Fired(unit.Triggers[remainingTriggerIndex].Effects));
                 }
                 if (unsupportedReason == null && !ApplyRelicUnitUpgradeTriggers(unit, kind, paramInt, paramInt2)) return;
+                if (unsupportedReason == null && kind == "OnQueuedStatusEffectToAdd" && paramString != null &&
+                    units.Any(owner => owner.InRoom && owner.Alive && owner.Source.Id == paramInt2 &&
+                        owner.Source.Modifiers?.RoomStatuses?.Any(rule => rule.Type == UnitRoomStatusModel.QueuedStatus && rule.StatusId == paramString) == true))
+                {
+                    CombatStatus? definition = unit.Freeze().RegisteredStatus(paramString);
+                    if (definition == null) { unsupportedReason = "Queued room status requires its registered native definition."; return; }
+                    RoomCombatResult applied = StatusApplicationModel.ApplyRetained(CurrentRoom(), unit.Source.Id,
+                        definition.WithStacks(paramInt), 0, fromRoomModifier: true);
+                    if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return; }
+                    ImportEnchantmentRoom(applied.State!);
+                    foreach (QueuedCharacterTrigger child in applied.PendingCallbacks) QueueCallback(child);
+                }
                 bool Present(WorkingUnit target, string id) => target.Statuses.Any(pair =>
                     string.Equals(pair.Key, id, StringComparison.OrdinalIgnoreCase) && pair.Value.Stacks > 0);
             }

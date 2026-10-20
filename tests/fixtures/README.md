@@ -9918,6 +9918,23 @@ that combat search's terminal boundary. Existing Stasis and equipment combat
 batch chains still pass. Other unit-source copy destinations/counts remain
 guarded pending independent native witnesses.
 
+`full-battle-original-isolated-ethereal-seelie.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-014856-507727f2`.
+Unchanged Ethereal Seelie keeps its five authored Conduit stacks at birth.
+Original Glittering Draught on its floor adds four base stacks and one queued
+stack to its control host. That callback marks the application as coming from
+a room modifier, preventing recursion. Original Rage Serum adds five Rage
+stacks without a Conduit bonus; original Spike of the Luna Coven on another
+floor adds only three Conduit stacks per ember. The model preserves queued
+string payloads and routes each bonus by a branch-local owner identity, which
+represents the native process-global equality token without sharing counters.
+Conduit tracker/card upgrades remain captured. The settled native battle has
+DEPTH-PASS and zero failure counters. Eight plays and five EndTurns pass sixteen
+immutable branches and a 128-state search with zero unsupported attempts and
+equal serial/parallel results. Existing status callback checks and original
+Spike's X=4/0 chain also pass. This fixture calibrates ordinary status queues;
+it does not add physical Conduit movement support.
+
 `full-battle-original-isolated-enchanted-chamber.mt2f` and its `-replacement`
 control come from `.probe-runs/full-battle-units-spells-and-junk-20261021-013926-666f1317`
 and `013926-156d9c2c`. Unchanged Enchanted Chamber adds fifteen magic power

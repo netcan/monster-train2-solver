@@ -102,7 +102,7 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult ApplyRetained(RoomCombatState source, int targetId, CombatStatus added, int sourceCardId,
             bool overrideImmunity = false, bool allowModification = true, bool suppressHordeSpawnCallbacks = false,
             bool fromPermanentUpgrade = false, bool spawnEffect = false, string? fromEffectType = null,
-            bool allowStackModifiers = true, bool doubleForDuality = false)
+            bool allowStackModifiers = true, bool doubleForDuality = false, bool fromRoomModifier = false)
         {
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null) return Unsupported("Missing status target.");
@@ -142,6 +142,8 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksAdded", count - old,
                     requireTrackedCard: context.CardInstances?.Count == 0));
             var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            if (count > old && !spawnEffect && !fromRoomModifier)
+                UnitRoomStatusModel.QueueApplied(source, changed, added.Id, queue);
             if (added.Id == "horde" && count > old)
             {
                 var staged = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,

@@ -23,12 +23,11 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-013731-681cee3b/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,458 bytes, 12,092 unique nodes,
-SHA-256 `6d6ea230beb49562cfa9346039eb56c54b7a9ebfde4b988c6ef5d64c1603e0e3`.
-The latest refresh captures Enchanted Chamber's magical-power upgrade and
-tracker descriptor. Only this projection changes; after normalizing the new
-nullable attachment field, the other 667 projections are identical.
+Source: `.probe-runs/full-battle-no-cards-20261021-014609-b72ae2d6/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,531 bytes, 12,095 unique nodes,
+SHA-256 `9c734fdf248045647e7895fdc465aa4e2bfa07a58db95059bd2d60343ee68c0d`.
+The latest refresh captures Ethereal Seelie's queued room status modifier.
+Only this projection changes; the other 667 projections are identical.
 The preceding refresh captures Stasis Crystal's native status-scaled PostCombat
 upgrade. Only this projection changes; the other 667 are identical.
 The preceding refresh captures Copy Morsels' native unit birth-copy modifier.
