@@ -8016,6 +8016,24 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-plague-doctor.mt2f
 ```
 
+### Original Hulking Mass
+
+`full-battle-original-isolated-hulking-mass.mt2f` records the unchanged
+2-cost Hulking Mass and its native 15/20 size-3 birth with 40 Armor behind
+three zero-cost Steward anchors. Its captured `OnReanimated` callback adds 40
+Armor to itself but remains inactive in this battle; this fixture makes no
+positive reanimation claim. The 39.36-second native run won with four actions
+and five EndTurns; CaptureFailures, Mismatches, Unsupported and Pending were all
+zero, and protected original files were unchanged. The 26,340-byte archive has
+3,479 unique nodes and SHA-256
+`0cd399de281f3a888363597e5112e8621f8be520a37c9404d8e7c524566d12a0`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId a0c52fd5-e77f-43ec-b9f7-2ebf7e3ac8ac -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hulking-mass.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hulking-mass.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and

@@ -23,6 +23,7 @@ internal static class OriginalSupportUnitsChecks
     private const string VotivaryId = "e9bb0dfe-ecf7-4046-be6d-f6f00893662f";
     private const string BountyStalkerId = "3e86422e-c8e4-4ec7-bc0a-0c622b7237b4";
     private const string PlagueDoctorId = "34909c50-4cba-41fa-8b33-64c1e463691c";
+    private const string HulkingMassId = "a0c52fd5-e77f-43ec-b9f7-2ebf7e3ac8ac";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -519,6 +520,23 @@ internal static class OriginalSupportUnitsChecks
                 unstable.Action.Statuses.Single() is { Id: "unstable", Stacks: 0 } && triggeredInNativeTurn,
                 "Plague Doctor must preserve its native 2-cost 9/9 size-1 birth, exact zero-only LastAttackDamageDealt Unstable source trait and positively fired pre-damage callback.");
         }
+        if (expectedId == HulkingMassId)
+        {
+            CombatTrigger reanimated = template.Triggers.Single(trigger => trigger.Kind == "OnReanimated");
+            CombatEffect armor = reanimated.Effects.Single();
+            bool remainsUntriggered = root.GetProperty("Turns").EnumerateArray().SelectMany(row =>
+                row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms.SelectMany(room => room.Units))
+                .Where(unit => unit.SpawnerCardId == ids[actionIndex]).Any() && root.GetProperty("Turns").EnumerateArray().All(row =>
+                    row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .Where(unit => unit.SpawnerCardId == ids[actionIndex]).All(unit => !unit.Triggers.Single(trigger => trigger.Kind == "OnReanimated").HasTriggered));
+            Require(rule.AssetKey == "HulkingMass" && template.AssetKey == "MonsterHulkingMass" && rule.Cost == 2 &&
+                template.Modifiers!.AttackDamage == 15 && template.Health == 20 && template.MaxHealth == 20 && template.Size == 3 &&
+                template.Status("armor")?.Stacks == 40 && spawnedUnit.Status("armor")?.Stacks == 40 &&
+                reanimated.Effects.Count == 1 && !reanimated.Once && armor.Type == "CardEffectAddStatusEffect" &&
+                armor.Action is { Type: "AddStatus", Target: "Self" } && armor.Action.Statuses.Single() is { Id: "armor", Stacks: 40 } &&
+                remainsUntriggered,
+                "Hulking Mass must preserve its native 2-cost 15/20 size-3, 40-Armor birth and untriggered OnReanimated +40 Armor callback.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
@@ -544,6 +562,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-BOUNTY-STALKER PASS: original 1-cost 30/5 size-2 birth; native OnDeath removed the unit and added permanent Plus10Attack (+10) to its card.");
         else if (expectedId == PlagueDoctorId)
             Console.WriteLine("ORIGINAL-PLAGUE-DOCTOR PASS: original 2-cost 9/9 size-1 birth, exact zero-only LastAttackDamageDealt Unstable source trait and a native OnAttackingBeforeDamage fire.");
+        else if (expectedId == HulkingMassId)
+            Console.WriteLine("ORIGINAL-HULKING-MASS PASS: original 2-cost 15/20 size-3 birth with 40 Armor; its captured OnReanimated +40 Armor callback remained inactive.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
