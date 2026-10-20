@@ -32,6 +32,7 @@ internal static class OriginalSupportUnitsChecks
     private const string MoltenEncasementId = "b20aaea2-cf9e-4475-aac3-abba7a0bed7e";
     private const string ShatteredShellId = "57985d47-d8ac-46be-8545-20a51209fc4f";
     private const string WeldlingId = "acb9a1cb-f6fc-40df-b287-fc82b8df156b";
+    private const string HostguardId = "c682012e-b5fc-4f75-9cb4-f6ade997b72f";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -564,6 +565,33 @@ internal static class OriginalSupportUnitsChecks
                 upgrade.Upgrade.Stats.Health == 0 && remainsUntriggered,
                 "Reforming Ooze must preserve its native 1-cost 7/15 size-2 Undying birth and inactive permanent self +6 Attack OnReanimated upgrade.");
         }
+        if (expectedId == HostguardId)
+        {
+            CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CombatTrigger spawnedOnSpawn = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CombatEffect availableEffect = onSpawn.Effects.Single(effect => effect.Action?.Type == "AddStatus");
+            CombatEffect resetEffect = onSpawn.Effects.Single(effect => effect.Action?.Type == "ResetCooldown");
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            const string abilityId = "126787b8-2d30-4c9c-bd3f-d6ec936aa8d6";
+            Require(rule.AssetKey == "Hostguard" && template.AssetKey == "MonsterHostguard" && rule.Cost == 3 &&
+                template.Modifiers!.AttackDamage == 25 && template.Health == 60 && template.MaxHealth == 60 && template.Size == 3 &&
+                template.Ability is { DataId: abilityId, Cooldown: 3, CooldownAtSpawn: 0, HasAbility: true } &&
+                !onSpawn.Once && onSpawn.IgnoreSilence && onSpawn.Effects.Count == 2 && spawnedOnSpawn.HasTriggered &&
+                availableEffect.Action is { Type: "AddStatus", Target: "Self" } &&
+                availableEffect.Action.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
+                resetEffect.Action is { Type: "ResetCooldown", Target: "Self", CooldownParameter: true } &&
+                spawnedUnit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                spawnedUnit.Ability is { DataId: abilityId, Cooldown: 3, CooldownAtSpawn: 0, HasAbility: true } &&
+                unitTurns.Length == 4 && unitTurns.All(unit => unit.Ability is
+                    { DataId: abilityId, Cooldown: 3, CooldownAtSpawn: 0, HasAbility: true } &&
+                    unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
+                "Hostguard must preserve its native 3-cost 25/60 size-3 birth, fire OnSpawn to expose/reset its cooldown-3 ability and leave it unused.");
+        }
         if (expectedId == WeldlingId)
         {
             CombatTrigger postCombat = template.Triggers.Single(trigger => trigger.Kind == "PostCombat");
@@ -753,6 +781,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-SHATTERED-SHELL PASS: original 1-cost 3/10 size-2 birth; two native OnKill events add +3 Attack each and no further upgrades occur.");
         else if (expectedId == WeldlingId)
             Console.WriteLine("ORIGINAL-WELDLING PASS: original 2-cost 6/3 Machine birth; two native PostCombat transitions add +3 Armor to the front ally with an unchanged control.");
+        else if (expectedId == HostguardId)
+            Console.WriteLine("ORIGINAL-HOSTGUARD PASS: original 3-cost 25/60 size-3 birth; native OnSpawn exposes/resets the cooldown-3 ability, which remains unused.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }

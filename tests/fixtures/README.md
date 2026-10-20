@@ -8485,3 +8485,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-weldling.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-weldling.mt2f
 ```
+
+### Original Hostguard
+
+`full-battle-original-isolated-hostguard.mt2f` plays the unchanged 3-cost
+25/60 size-3 unit. Its OnSpawn adds the native ability-available marker and
+resets its common cooldown-three ability (`126787b8-2d30-4c9c-bd3f-d6ec936aa8d6`);
+the ability remains unused in all four post-deployment snapshots. The Instant
+battle won with zero capture failures, mismatches, unsupported transitions or
+pending records. Focused replay and bounded serial/parallel search agree at
+128 states, with three replayed steps; see `manifest.tsv` for archive metadata.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId c682012e-b5fc-4f75-9cb4-f6ade997b72f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hostguard.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hostguard.mt2f
+```
