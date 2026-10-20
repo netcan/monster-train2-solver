@@ -23,15 +23,19 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-091946-c33aacef/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,224 bytes, 11,610 unique nodes,
-SHA-256 `b7503ac3e8ed994af6f7386551dce19b66c958da59ba7ded61013c68da665ddb`.
-This refresh captures unit-trigger `CardEffectRemoveAllStatusEffects` actions
-through the existing status-removal projection. Native raw fields across all 668
-cards are unchanged from the prior catalog; only the `Rule` projections for
-Green Recruit, Eel Gorgon and Cluster Colonel changed. Native frame 14113/14113,
-all RNG and decision state remained unchanged; the surrounding baseline won with
-all capture counters zero.
+Source: `.probe-runs/full-battle-no-cards-20261020-120709-f7624fae/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,152 bytes, 11,610 unique nodes,
+SHA-256 `81eafe5b0cf6b4b9cb1121ca1f2080787b4b338b1a1a3c201e450cbc1552e456`.
+The latest refresh preserves the owning Spell CardData type in static unit-ability
+scaling queries. Kinhost Carapace's two traits and Pyreblooded's ability trait now
+retain native `CurrentCostSourceIsSpell=true`. The 668-definition native catalog
+pass kept decision state, RNG and frame unchanged; its surrounding baseline won
+with zero capture failures, mismatches, unsupported transitions and pending
+records.
+An earlier refresh captured unit-trigger `CardEffectRemoveAllStatusEffects`
+actions through the existing status-removal projection. Its only `Rule`
+projection changes were Green Recruit, Eel Gorgon and Cluster Colonel; native raw
+fields across all 668 cards were unchanged.
 Ancient Synergy retains `QueryCardType=Spell` for its native TypeInDeck filter.
 Greed, Golden Touch and Bonk retain their fixed
 card-owned resource kill effects.

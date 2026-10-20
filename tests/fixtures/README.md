@@ -8618,3 +8618,22 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-truffles.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-truffles.mt2f
 ```
+
+### Original Pyreblooded
+
+`full-battle-original-isolated-pyreblooded.mt2f` plays the unchanged 1-cost
+5/10 size-1 Pyreblooded. Its native OnSpawn callback exposes the cooldown-3
+ability, which remains available but unused in all four post-deployment
+snapshots. The captured ability definition retains its +1 Damage per pyregel
+query with the Spell-source flag. This covers direct play, birth and
+unactivated ability lifecycle only; the ability effect itself is not
+exercised. The Instant battle won with zero capture failures, mismatches,
+unsupported transitions or pending records. Focused replay and bounded
+serial/parallel search agree at 128 states, with three replayed steps; archive
+metadata is in `manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -OriginalIsolatedUnitId e962f77b-d5bc-441b-be79-8cb3207d8a42
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-pyreblooded.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-pyreblooded.mt2f
+```

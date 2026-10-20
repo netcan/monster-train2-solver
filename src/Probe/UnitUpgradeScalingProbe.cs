@@ -19,12 +19,14 @@ namespace MonsterTrain2Poju.Probe
             ScalingUnitUpgradeTrait[] traits = card.GetTraits().Where(data => Known(data.GetTraitStateName())).Select(data =>
             {
                 var trait = (CardTraitState)Activator.CreateInstance(typeof(CardTraitState).Assembly.GetType(data.GetTraitStateName())!)!;
-                trait.Setup(data, CardState.None); return Definition(trait, card.GetCost(), card.GetCostType() == CardData.CostType.ConsumeRemainingEnergy);
+                trait.Setup(data, CardState.None); return Definition(trait, card.GetCost(),
+                    card.GetCostType() == CardData.CostType.ConsumeRemainingEnergy, card.GetCardType() == CardType.Spell);
             }).ToArray();
             return traits.Length == 0 ? null : traits;
         }
-        private static ScalingUnitUpgradeTrait Definition(CardTraitState trait, int rawCost, bool variable) => new ScalingUnitUpgradeTrait(
-            DamageScalingProbe.Query(trait.StatValueData, rawCost, variable), trait is CardTraitScalingUpgradeUnitAttack ? "Damage" : "Health",
+        private static ScalingUnitUpgradeTrait Definition(CardTraitState trait, int rawCost, bool variable,
+            bool? currentCostSourceIsSpell = null) => new ScalingUnitUpgradeTrait(
+            DamageScalingProbe.Query(trait.StatValueData, rawCost, variable, currentCostSourceIsSpell), trait is CardTraitScalingUpgradeUnitAttack ? "Damage" : "Health",
             trait.GetParamInt(), trait.GetParamInt3());
     }
 }

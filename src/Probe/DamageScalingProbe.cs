@@ -32,7 +32,8 @@ namespace MonsterTrain2Poju.Probe
             }).ToArray();
             return traits.Length == 0 ? null : traits;
         }
-        internal static CardStatisticQuery Query(CardStatistics.StatValueData data, int rawCost, bool variable)
+        internal static CardStatisticQuery Query(CardStatistics.StatValueData data, int rawCost, bool variable,
+            bool? currentCostSourceIsSpellOverride = null)
         {
             // Masks cover every static definition, including cards that future effects may generate.
             IReadOnlyList<CardData> definitions = AllGameManagers.Instance!.GetSaveManager().GetAllGameData().GetAllCardData();
@@ -43,7 +44,7 @@ namespace MonsterTrain2Poju.Probe
             return new CardStatisticQuery(data.trackedValue.ToString(), data.entryDuration.ToString(), typeMask, subtypeMask,
                 data.paramSubtype == null || data.paramSubtype.IsNone, data.paramSubtype?.Key, data.paramCardData?.GetID(), rawCost, variable,
                 data.paramTeamType.ToString(), CurrentCostModifiersOnly(data.cardState),
-                data.cardState?.GetCardType() == CardType.Spell,
+                currentCostSourceIsSpellOverride ?? (data.cardState?.GetCardType() == CardType.Spell),
                 data.trackedValue == CardStatistics.TrackedValueType.StatusEffectCountInTargetRoom ?
                     data.paramStatusEffects.Select(status => status.statusId).ToArray() : null);
         }

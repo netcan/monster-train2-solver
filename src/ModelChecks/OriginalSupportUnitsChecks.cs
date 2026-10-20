@@ -40,6 +40,7 @@ internal static class OriginalSupportUnitsChecks
     private const string HotHeadId = "ee2a1d34-f1de-43ac-a06b-f3a414c93363";
     private const string SteadfastCrusaderId = "075a061c-480c-4873-8f9f-88cf836eec27";
     private const string TrufflesId = "9a63e469-ae29-4199-ae41-4060ecd92853";
+    private const string PyrebloodedId = "e962f77b-d5bc-441b-be79-8cb3207d8a42";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -423,17 +424,28 @@ internal static class OriginalSupportUnitsChecks
         if (expectedId == HotHeadId)
         {
             CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
-                "HotHead", "HotHead", "MonsterHotHead", 2, 5, 20, 2, "bd217216-3d1d-4139-9003-5d6a42f059d4");
+                "HotHead", "HotHead", "MonsterHotHead", 2, 5, 20, 2, 2, "bd217216-3d1d-4139-9003-5d6a42f059d4");
         }
         if (expectedId == SteadfastCrusaderId)
         {
             CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
-                "Steadfast Crusader", "SteadfastCrusader", "MonsterSteadfastCrusader", 1, 5, 30, 2, "3366ff9e-1beb-4246-a025-c448b47dacae");
+                "Steadfast Crusader", "SteadfastCrusader", "MonsterSteadfastCrusader", 1, 5, 30, 2, 2, "3366ff9e-1beb-4246-a025-c448b47dacae");
         }
         if (expectedId == TrufflesId)
         {
             CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
-                "Truffles", "Truffles", "MonsterTruffles", 1, 5, 5, 1, "8d54f68b-5660-4507-84c3-a0cf092bfbf1");
+                "Truffles", "Truffles", "MonsterTruffles", 1, 5, 5, 1, 2, "8d54f68b-5660-4507-84c3-a0cf092bfbf1");
+        }
+        if (expectedId == PyrebloodedId)
+        {
+            CheckUnactivatedUnitAbilityLifecycle(root, ids, actionIndex, rule, template, spawnedUnit,
+                "Pyreblooded", "Pyreblooded", "MonsterPyreblooded", 1, 5, 10, 1, 3, "7eb9fd9a-0d9b-4509-80b9-991de5f217c0");
+            ScalingUnitUpgradeTrait abilityScaling = template.Ability!.CardCreation!.UnitUpgradeScalingTraits!.Single();
+            Require(abilityScaling is { Stat: "Damage", AmountPerStat: 1, Restriction: 0 } &&
+                abilityScaling.Query.Type == "StatusEffectCountInTargetRoom" && abilityScaling.Query.Duration == "ThisTurn" &&
+                abilityScaling.Query.CurrentCostCardModifiersOnly && abilityScaling.Query.CurrentCostSourceIsSpell &&
+                abilityScaling.Query.StatusIds?.SequenceEqual(["pyregel"]) == true,
+                "Pyreblooded's inactive unit ability must retain the native +1 Damage-per-pyregel scaling query and Spell source flag.");
         }
         if (expectedId == EelGorgonId)
         {
@@ -933,7 +945,7 @@ internal static class OriginalSupportUnitsChecks
     }
     private static void CheckUnactivatedUnitAbilityLifecycle(FixtureValue root, int[] ids, int actionIndex,
         CardPlayRule rule, CombatUnit template, CombatUnit spawnedUnit, string displayName, string cardAsset, string unitAsset,
-        int cost, int attack, int health, int size, string abilityId)
+        int cost, int attack, int health, int size, int cooldown, string abilityId)
     {
         CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
         CombatTrigger onActivated = template.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated");
@@ -951,9 +963,11 @@ internal static class OriginalSupportUnitsChecks
                 .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
             .Where(unit => unit != null).Select(unit => unit!).ToArray();
         bool HasExpectedAbility(CombatUnit unit) => unit.Ability is
-            { DataId: var dataId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } && dataId == abilityId;
+            { DataId: var dataId, Cooldown: var actualCooldown, CooldownAtSpawn: 0, HasAbility: true } &&
+            dataId == abilityId && actualCooldown == cooldown;
         bool templateHasExpectedAbility = template.Ability is
-            { DataId: var dataId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } && dataId == abilityId;
+            { DataId: var dataId, Cooldown: var actualCooldown, CooldownAtSpawn: 0, HasAbility: true } &&
+            dataId == abilityId && actualCooldown == cooldown;
         Require(rule.AssetKey == cardAsset && rule.Cost == cost && template.AssetKey == unitAsset &&
             template.Modifiers!.AttackDamage == attack && template.Health == health && template.MaxHealth == health && template.Size == size &&
             templateHasExpectedAbility && !onSpawn.Once && onSpawn.Effects.Count == 2 && spawnedOnSpawn.HasTriggered &&
@@ -972,7 +986,7 @@ internal static class OriginalSupportUnitsChecks
                 unit.Status("unit_ability") is { Stacks: 1, ParamInt: 0 } &&
                 unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
                 !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
-            $"{displayName} must retain its native {cost}-cost {attack}/{health} birth and unactivated cooldown-2 ability across four post-deployment snapshots, with calibrated availability callbacks.");
+            $"{displayName} must retain its native {cost}-cost {attack}/{health} birth and unactivated cooldown-{cooldown} ability across four post-deployment snapshots, with calibrated availability callbacks.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }
