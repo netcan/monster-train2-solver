@@ -237,6 +237,28 @@ internal static class OriginalEquipmentCardsChecks
                 turns.All(unit => unit.Triggers.Single(trigger => trigger.Kind == "PostCombat" && trigger.Origin?.EquipmentCardId == ids[4]).HasTriggered),
                 "Loamcoat must add Regeneration then adjust its existing status stacks in native post-combat order, including terminal cleanup.");
         }
+        if (originals.SequenceEqual(["1cb73496-d5ba-49c1-ae6e-a145809c29e2"]))
+        {
+            CombatUnit[] turns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms[0].Units
+                    .Single(unit => unit.SpawnerCardId == ids[0])).Where(unit => unit.EquipmentCards!.Contains(ids[4])).ToArray();
+            Require(turns.Select(unit => unit.Status("valor")?.Stacks ?? 0).SequenceEqual([1, 2, 3, 3]) &&
+                turns.All(unit => unit.Triggers.Where(trigger => trigger.Origin?.EquipmentCardId == ids[4]).All(trigger => trigger.HasTriggered)),
+                "Windblade must queue its native PostCombat self OnShift callback and accumulate Valor without moving its host.");
+        }
+        if (originals.SequenceEqual(["19f119ac-b9d4-4daf-b887-cf439fad0a60"]))
+        {
+            var terminal = root.GetProperty("Stages").EnumerateArray().Single(stage => stage.GetProperty("Kind").GetString() == "Room" &&
+                stage.GetProperty("Turn").GetInt32() == 4 && stage.GetProperty("Before").GetProperty("RoomIndex").GetInt32() == 0);
+            RoomCombatState before = terminal.GetProperty("Before").Deserialize<RoomCombatState>()!,
+                after = terminal.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            CombatUnit host = after.Units.Single(unit => unit.SpawnerCardId == ids[0]);
+            Require(before.Units.Count(unit => unit.Team == CombatTeam.Enemy) == 2 &&
+                after.Units.Single(unit => unit.Team == CombatTeam.Enemy).Health == 5 && host.Health == 9995 &&
+                host.Triggers.Single(trigger => trigger.Origin?.EquipmentCardId == ids[4]).HasTriggered &&
+                !after.Units.Any(unit => unit.EndsBattleOnDeath),
+                "Shield of Wyngh must kill the final Boss with its host's current HP and stop combat before the host attacks the surviving guard.");
+        }
         if (originals.SequenceEqual(["fccd2d4d-8751-4d7b-bd0a-e66f7586b275"]))
         {
             BattleTurnState[] turns = root.GetProperty("Turns").EnumerateArray()

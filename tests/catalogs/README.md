@@ -23,13 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-181428-9bfe71f9/card-catalog.mt2f`.
-The committed archive is byte-identical: 96,261 bytes, 11,616 unique nodes,
-SHA-256 `4cb0e7c385c00b491c02cb77ea754588f702a10af3d75d7faefd826b53f4b3b6`.
-The latest refresh adds Glareminder and Forgotten Trade's triggered corruption
-through the existing card-effect projection. Only these two Rules changed;
-all 668 raw native definitions are unchanged. The catalog and its surrounding
-baseline passed. Loamcoat's earlier triggered status-adjustment projection is retained.
+Source: `.probe-runs/full-battle-no-cards-20261020-182236-9ea09cc2/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,063 bytes, 11,618 unique nodes,
+SHA-256 `11ca3fdec53cf6be34160332f187bed2d5158b484d22ffba38676f4de9521baf`.
+The latest refresh adds Shield of Wyngh's triggered HP damage and Windblade's
+trigger replay. Only these two Rules changed; all 668 raw native definitions
+are unchanged. The catalog and its surrounding baseline passed. Earlier
+triggered corruption and status-adjustment projections are retained.
 Original Enchant effects retain their native test flags. Binding an aura through
 its spawn lifecycle does not set HasTriggered when its only effect has
 ShouldTest=false. Legacy evidence without these flags retains its prior behavior.

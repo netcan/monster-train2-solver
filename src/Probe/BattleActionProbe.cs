@@ -380,11 +380,14 @@ namespace MonsterTrain2Poju.Probe
             if (effect.GetEffectStateName() == "CardEffectTransferAllStatusEffects" &&
                 (effect.GetTargetMode() != TargetMode.DropTargetCharacter || effect.GetParamStatusEffects().Length != 1))
                 interactions.Add("Unmodeled room-status transfer targets or status pool");
-            if (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() || effect.GetUseMagicPowerMultiplier() ||
+            // DamagePerHp reads GetUnmodifiedIntInRange directly; inherited scaling flags and
+            // ParamSubtype do not participate in its overridden native iterator.
+            if (effect.GetEffectStateName() != "CardEffectDamagePerHp" &&
+                (effect.GetUseStatusEffectStackMultiplier() || effect.GetUseHealthMissingStackMultiplier() || effect.GetUseMagicPowerMultiplier() ||
                 effect.GetEffectStateName() != "CardEffectSacrifice" && effect.GetEffectStateName() != "CardEffectKill" &&
                 effect.GetEffectStateName() != "CardEffectRecursion" && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" &&
                 effect.GetEffectStateName() != "CardEffectFeederRules" &&
-                !effect.GetParamSubtype().IsNone ||
+                !effect.GetParamSubtype().IsNone) ||
                 (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
                     !cardOnlyGenerationTarget && !cardOnlyDrawTarget && !randomDiscardHandTarget && !recursionCardPileTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                 interactions.Add("Spell scaling or target filters");

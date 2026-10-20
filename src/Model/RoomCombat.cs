@@ -1177,6 +1177,22 @@ namespace MonsterTrain2Poju.Model
                             if (filter != null) return filter;
                             continue;
                         }
+                        if (effect.Type == "CardEffectDamagePerHp")
+                        {
+                            CardActionEffect? retaliation = effect.Action;
+                            if (retaliation?.Type != "DamagePerHp" || retaliation.Target != "Self" ||
+                                !retaliation.DamagePerHpLastAttacker || retaliation.Range != null || unit.LastAttackerId == null)
+                                return "Triggered damage-per-HP requires fixed self HP and a captured last attacker.";
+                            continue;
+                        }
+                        if (effect.Type == "CardEffectPlayUnitTrigger")
+                        {
+                            CardActionEffect? replay = effect.Action;
+                            if (replay?.Type != "PlayUnitTrigger" || replay.UnitTriggerKind != "OnShift" ||
+                                replay.Target != "Self" || replay.Range != null)
+                                return "Triggered unit replay requires its fixed native self OnShift definition.";
+                            continue;
+                        }
                         if (effect.Type == "CardEffectAdjustCorruption")
                         {
                             CardActionEffect? corruption = effect.Action;
@@ -2104,14 +2120,14 @@ namespace MonsterTrain2Poju.Model
                 {
                     Trigger(unit, "ambush", 1);
                     Turn(unit);
-                    if (CombatPreviewStopped()) return;
+                    if (battleWon || CombatPreviewStopped()) return;
                 }
                 BeginTeam(CombatTeam.Enemy);
                 foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy).ToArray())
-                { Turn(unit); if (CombatPreviewStopped()) return; }
+                { Turn(unit); if (battleWon || CombatPreviewStopped()) return; }
                 BeginTeam(CombatTeam.Player);
                 foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && unit.Source.Team == CombatTeam.Player).ToArray())
-                    if (!quick.Contains(unit)) { Turn(unit); if (CombatPreviewStopped()) return; }
+                    if (!quick.Contains(unit)) { Turn(unit); if (battleWon || CombatPreviewStopped()) return; }
             }
 
             private bool CombatPreviewStopped() => source.Preview && units.Any(unit => !unit.Alive &&
@@ -3971,6 +3987,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type == "PlayUnitTrigger" ? true :
                 action.Type == "AdjustCorruption" ? RoomCorruptionModel.Test(CurrentRoom(), action) :
                 action.Type is "AdjustMaxHealth" or "BuffHealth" ? true :
                 action.Type == "Null" ? targets.UnitIds.Count > 0 || action.NullTargetless :
@@ -4265,6 +4282,27 @@ namespace MonsterTrain2Poju.Model
                         foreach (CombatEvent item in applied.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
                     }
                     return true;
+                }
+                if (action.Type == "DamagePerHp")
+                {
+                    if (targets.UnitIds.Count == 0) return true;
+                    WorkingUnit selected = units.First(unit => unit.Source.Id == targets.UnitIds[0]);
+                    int retaliationDamage = unchecked((selected.Health + (action.DamagePerHpIncludeArmor ? selected.Count("armor") : 0)) * action.Value);
+                    if (retaliationDamage <= 0 || actor.LastAttackerId == 0) return true;
+                    WorkingUnit? attacker = units.FirstOrDefault(unit => unit.Source.Id == actor.LastAttackerId);
+                    if (attacker == null)
+                    { unsupportedReason = "Triggered damage-per-HP last attacker is outside the captured room."; return false; }
+                    if (attacker.Alive && !attacker.Removed) Damage(actor, attacker, retaliationDamage, "TriggeredDamage", actor.Source.SpawnerCardId);
+                    return unsupportedReason == null;
+                }
+                if (action.Type == "PlayUnitTrigger")
+                {
+                    foreach (int id in targets.UnitIds)
+                    {
+                        WorkingUnit target = units.First(unit => unit.Source.Id == id);
+                        QueueCallback(new QueuedCharacterTrigger(target.RoomIndex, target.Freeze(), action.UnitTriggerKind!));
+                    }
+                    return unsupportedReason == null;
                 }
                 if (action.Type == "Null") return true;
                 if (AbilityCooldownModel.IsEffect(action.Type) || action.Type is "RemoveStatus" or "RemoveAllStatusEffects" || AbilityLifecycleModel.IsEffect(action.Type))

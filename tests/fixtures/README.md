@@ -9207,3 +9207,24 @@ and `.probe-runs/full-battle-units-spells-and-junk-20261020-181033-f28188a2`.
 Both native battles win with DEPTH-PASS, settled terminal effects and all four
 failure counters zero. Focused checks retain full immutable replay branches
 and bounded serial/parallel search.
+
+### Original Windblade and Shield of Wyngh
+
+`full-battle-original-isolated-windblade.mt2f` captures unchanged Windblade.
+Its PostCombat effect queues the host's OnShift trigger without movement.
+Equipped-host Valor snapshots are one, two, three and three, with both original
+triggers fired. Triggered PlayUnitTrigger currently admits fixed self OnShift;
+associated card-trigger families remain outside this narrow callback path.
+
+`full-battle-original-isolated-shield-of-wyngh.mt2f` captures unchanged Shield
+of Wyngh. OnHit samples its host's current HP and damages the last attacker.
+The final Boss receives 9,995 damage and dies; native combat stops immediately,
+leaving a five-HP guard alive. The exchange model now honors that boundary
+before the next unit turn. DamagePerHp's overridden iterator ignores inherited
+scaling flags and uses its unmodified multiplier, matching the decompiled code.
+
+Native profiles are `.probe-runs/full-battle-units-spells-and-junk-20261020-181930-a1754938`
+and `.probe-runs/full-battle-units-spells-and-junk-20261020-182434-59263f54`.
+Both win with DEPTH-PASS, settled terminal effects and all four failure counters
+zero. Focused full-chain replay and bounded search accompany the fixtures;
+existing last-attacker HP damage and terminal-death damage remain affected checks.
