@@ -140,6 +140,7 @@ param(
     [switch] $OriginalIsolatedColdstrikeSiren,
     [string] $OriginalIsolatedUnitId = '',
     [string[]] $OriginalIsolatedUnitIds = @(),
+    [switch] $IsolatedUnitConduit,
     [switch] $FailFastOnIsolatedUnitReject,
     [switch] $OriginalFuel,
     [switch] $OriginalScaledMoonPhase,
@@ -698,6 +699,10 @@ if ($isolatedUnitIds.Count -gt 0) {
     else { $OriginalIsolatedUnitId = $isolatedUnitIds[0] }
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk'
 }
+if ($IsolatedUnitConduit) {
+    if ($isolatedUnitIds.Count -eq 0) { throw 'IsolatedUnitConduit requires original isolated unit IDs.' }
+    $PhysicalSpawnPoints = $false
+}
 if ($OriginalAttackOverrides) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalReactiveUnits) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBaseChampions) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -1123,6 +1128,7 @@ $environment = @{
     MT2_PROBE_STATUS_CALLBACKS = $(if ($HordeStatuses -or $StatusCallbacks) { '1' } else { '0' })
     MT2_PROBE_STATUS_CALLBACK_ACTIONS = $(if ($StatusCallbackActions) { '1' } else { '0' })
     MT2_PROBE_PHYSICAL_SPAWNPOINTS = $(if ($PhysicalSpawnPoints) { '1' } else { '0' })
+    MT2_PROBE_ISOLATED_CONDUIT = $(if ($IsolatedUnitConduit) { '1' } else { '0' })
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'

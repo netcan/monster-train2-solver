@@ -150,8 +150,10 @@ namespace MonsterTrain2Poju.Model
                     updateRoom?.Invoke(initializing);
                 }
             }
-            // Card-sourced starting statuses also update statistics without an enchantment world.
-            if (cardStatus != null) updateContext?.Invoke(initializing.Context);
+            // Starting Conduit installs its room/card tracker even without an
+            // enchantment world or a unit-stat cache that needs refreshing.
+            if (cardStatus != null || applications.Any(status => status.Id == "conduit" && status.Stacks > 0))
+                updateContext?.Invoke(initializing.Context);
             return null;
         }
 

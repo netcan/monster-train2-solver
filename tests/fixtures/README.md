@@ -9090,3 +9090,27 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-death-summon-batch.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-death-summon-batch.mt2f
 ```
+
+### Original Conduit and Moon Unit Batch
+
+`full-battle-original-isolated-conduit-moon-batch.mt2f` plays unchanged Magic
+Power Acolyte, Aurora Weaver, Moonguard and Selene Acolyte. The separate energy
+control supplies three Energy; original costs and unit definitions are unchanged.
+`-IsolatedUnitConduit` captures native Conduit contributors and card trackers
+using the already calibrated logical positions. Conduit with physical movement
+remains guarded. Authored starting Conduit now propagates its shared context
+from status initialization: Acolyte's birth registers power ten on its floor.
+Selene's initial Moonlit callback positively installs Sweep. Aurora's shift,
+Moonguard's shade and the lost-phase callbacks do not fire in this witness.
+
+The native battle won with `DEPTH-PASS` and zero capture failures, mismatches,
+unsupported transitions or pending records. The focused check validates each
+original and replays the eight plays/five EndTurns once per batch, including
+16 independent immutable branches. The original Conduit relic fixture remains
+an affected regression.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -SkipBuild -OriginalIsolatedUnitIds 'd8c13978-32aa-4476-b568-68a3d83e1d49,ad37d22e-fcbe-43a0-9901-faaba3bb2ea7,df0a4dbc-b022-4e29-aadc-10e98ceaceab,2b7a187f-da0b-4c34-b8c5-b18755911b43' -IsolatedUnitConduit -FailFastOnIsolatedUnitReject
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-conduit-moon-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-conduit-moon-batch.mt2f
+```

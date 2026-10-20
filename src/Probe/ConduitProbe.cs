@@ -13,7 +13,8 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
             PlanetariumScenario.Enabled || OriginalStrongMagicCardsScenario.Enabled || OriginalScaledMoonPhaseScenario.Enabled ||
-            OriginalSupportSpellsScenario.Enabled || OriginalXLunaSpikeScenario.Enabled || OriginalMoonRitualScenario.Prepared;
+            OriginalSupportSpellsScenario.Enabled || OriginalXLunaSpikeScenario.Enabled || OriginalMoonRitualScenario.Prepared ||
+            OriginalSupportUnitsScenario.IsolatedUnitOnly && Environment.GetEnvironmentVariable("MT2_PROBE_ISOLATED_CONDUIT") == "1";
         private static object? Modifier(CharacterState character)
         {
             var statuses = new List<CharacterState.StatusEffectStack>();

@@ -136,7 +136,7 @@ internal static class OriginalSupportUnitsChecks
             Require(isolatedActions.Length == expectedIds.Length + 3 + energyControlActions,
                 "Isolated unit scenario must record three anchors, optional energy control, and every requested original unit birth.");
             for (int index = 0; index < expectedIds.Length; index++)
-                NativeIsolatedUnit(root, expectedIds[index], actionIndex: index + 3 + energyControlActions);
+                NativeIsolatedUnit(root, expectedIds[index], actionIndex: index + 3 + energyControlActions, checkBattle: false);
             if (expectedIds.SequenceEqual([DregsTombId, SplitterUnitId]))
             {
                 PlayCardAction tomb = isolatedActions[3].GetProperty("Action").Deserialize<PlayCardAction>()!;
@@ -145,6 +145,7 @@ internal static class OriginalSupportUnitsChecks
                     tomb.PlayerPosition == 1 && splitter.PlayerPosition == 1,
                     "The death-summon batch must fit unchanged units behind separate anchors at native capacity five.");
             }
+            RecordedBattleChecks.Native(root);
             return;
         }
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
@@ -382,7 +383,7 @@ internal static class OriginalSupportUnitsChecks
         RecordedBattleChecks.Native(root);
         Console.WriteLine("ORIGINAL-DIVINE-DANCER PASS: native 7/14 size-2 birth in an available room slot; captured five-Armor room OnShift remains untriggered.");
     }
-    private static void NativeIsolatedUnit(FixtureValue root, string expectedId, string? expectedAsset = null, int actionIndex = 3)
+    private static void NativeIsolatedUnit(FixtureValue root, string expectedId, string? expectedAsset = null, int actionIndex = 3, bool checkBattle = true)
     {
         Require(root.GetProperty("OriginalSupportUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed isolated original unit witness.");
@@ -441,6 +442,21 @@ internal static class OriginalSupportUnitsChecks
             (juggernautXCost || spawnedUnit.Health == template.Health && (healthAdjustedOnSpawn || spawnedUnit.MaxHealth == template.MaxHealth) &&
                 spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage),
             expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
+        if (rule.AssetKey == "MagicPowerAcolyte")
+        {
+            RoomMagicPower power = unitAfter.Spawn.Train.Context!.MagicPower!.Single(room => room.RoomIndex == unitAction.RoomIndex && room.Team == CombatTeam.Player);
+            ConduitUnitState contributor = power.Conduit!.Units.Single(unit => unit.UnitId == spawnedUnit.Id);
+            Require(rule.Cost == 1 && template.Modifiers!.AttackDamage == 5 && template.Health == 3 && template.Size == 1 &&
+                template.Status("conduit")?.Stacks == 10 && contributor.Power == 10 && contributor.Active && power.Value == 10 &&
+                unitAfter.Spawn.Train.Context.SpawnPoints == null && spawnedUnit.Status("conduit")?.Stacks == 10,
+                "Magic Power Acolyte's authored Conduit 10 must register an active room contributor during birth.");
+        }
+        if (rule.AssetKey == "SeleneAcolyte")
+            Require(rule.Cost == 2 && template.Modifiers!.AttackDamage == 10 && template.Health == 5 && template.Size == 2 &&
+                template.Status("mageblade")?.Stacks == 2 && spawnedUnit.Status("sweep")?.Stacks == 1 &&
+                spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnMoonLit").HasTriggered &&
+                !spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnMoonlitLost").HasTriggered,
+                "Selene Acolyte must natively acquire Sweep on its initial Moonlit callback without firing the lost-phase callback.");
         if (expectedId is DregsTombId or SplitterUnitId)
         {
             bool tomb = expectedId == DregsTombId;
@@ -1428,7 +1444,7 @@ internal static class OriginalSupportUnitsChecks
                 unitBefore.Spawn.Train.Context!.QueryFrame!.MoonPhase == 2 && unitAfter.Spawn.Train.Context!.QueryFrame!.MoonPhase == 1,
                 "Fae Meddler must preserve its native 1-cost 6/3 birth, available cooldown-2 ability and a positive OnSpawn moon advance from phase 2 to 1.");
         }
-        RecordedBattleChecks.Native(root);
+        if (checkBattle) RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
         else if (expectedId == EntombedExplosiveId)
