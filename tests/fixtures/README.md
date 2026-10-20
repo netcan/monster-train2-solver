@@ -8551,3 +8551,19 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-juggernaut.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-juggernaut.mt2f
 ```
+
+### Original Hoard Acolyte
+
+`full-battle-original-isolated-hoard-acolyte.mt2f` plays the unchanged 0-cost
+5/3 size-1 Hoard Acolyte. Native OnSpawn exposes its cooldown-2 ability; the
+ability remains available but unused in all four post-deployment snapshots.
+The Instant battle won with zero capture failures, mismatches, unsupported
+transitions or pending records. Focused replay and bounded serial/parallel
+search agree at 128 states, with three replayed steps; archive metadata is in
+`manifest.tsv`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 3224dfe8-41f9-49b9-8917-3afefb67e9dd
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hoard-acolyte.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hoard-acolyte.mt2f
+```

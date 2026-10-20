@@ -35,6 +35,7 @@ internal static class OriginalSupportUnitsChecks
     private const string HostguardId = "c682012e-b5fc-4f75-9cb4-f6ade997b72f";
     private const string RubbleRaiserId = "e2ed318d-754c-41b8-8df6-0a6af221e54e";
     private const string JuggernautId = "952db29f-b585-41be-bfdd-0a36b9b05010";
+    private const string HoardAcolyteId = "3224dfe8-41f9-49b9-8917-3afefb67e9dd";
     private const string NightingaleId = "7775c5b5-eed9-4864-9976-9c86896becc1";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
@@ -388,6 +389,33 @@ internal static class OriginalSupportUnitsChecks
                 appliedUpgrade is { DataId: "270a2a5d-2d9e-450b-8b19-d347ea47867f", AssetKey: "Juggernaut_Upgrade" } &&
                 appliedUpgrade.Stats.Damage == 90 && appliedUpgrade.Stats.Health == 90,
                 "Juggernaut must spend three remaining Energy and scale its native OnSpawn upgrade to +90/+90 from the two +30-per-PlayedCost traits.");
+        }
+        if (expectedId == HoardAcolyteId)
+        {
+            CombatTrigger onSpawn = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CombatTrigger spawnedOnSpawn = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn");
+            CardActionEffect available = onSpawn.Effects.Single(effect => effect.Action?.Type == "AddStatus").Action!;
+            CardActionEffect reset = onSpawn.Effects.Single(effect => effect.Action?.Type == "ResetCooldown").Action!;
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            const string abilityId = "7a0103bd-9bbb-4a9e-af38-334ed948db5f";
+            Require(rule.AssetKey == "HoardAcolyte" && rule.Cost == 0 && template.AssetKey == "MonsterHoardTotem" &&
+                template.Modifiers!.AttackDamage == 5 && template.Health == 3 && template.MaxHealth == 3 && template.Size == 1 &&
+                template.Ability is { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
+                !onSpawn.Once && onSpawn.Effects.Count == 2 && spawnedOnSpawn.HasTriggered &&
+                available is { Type: "AddStatus", Target: "Self" } &&
+                available.Statuses.Single() is { Id: "unit_ability_available", Stacks: 1, ParamInt: 1 } &&
+                reset is { Type: "ResetCooldown", Target: "Self", CooldownParameter: true } &&
+                spawnedUnit.Ability is { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
+                spawnedUnit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                unitTurns.Length == 4 && unitTurns.All(unit => unit.Ability is
+                    { DataId: abilityId, Cooldown: 2, CooldownAtSpawn: 0, HasAbility: true } &&
+                    unit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                    !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
+                "Hoard Acolyte must retain its native 0-cost 5/3 birth, expose its cooldown-2 ability on spawn and leave it unused.");
         }
         if (expectedId == EelGorgonId)
         {
