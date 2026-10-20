@@ -1297,6 +1297,11 @@ namespace MonsterTrain2Poju.Model
                             if (filterError != null) return filterError;
                             continue;
                         }
+                        if (effect.Type == "CardEffectPurgeUnitOnDeath")
+                        {
+                            if (state.Context?.OtherPiles == null) return "Unit-card purge requires captured native piles.";
+                            continue;
+                        }
                         if (effect.Type == "CardEffectAdjustDragonsHoard")
                         {
                             CombatContext? context = state.Context;
@@ -2784,7 +2789,8 @@ namespace MonsterTrain2Poju.Model
             private void SettleDeadSpawner(WorkingUnit unit)
             {
                 if (source.Preview || unit.Source.Team != CombatTeam.Player) return;
-                if (unit.Source.SpawnerCardId > 0 && !DetachedSpawner(unit))
+                if (unit.Source.SpawnerCardId > 0 && !DetachedSpawner(unit) &&
+                    context?.OtherPiles?.Any(pile => pile.Name == "Purged" && pile.Cards.Any(card => card.InstanceId == unit.Source.SpawnerCardId)) != true)
                 {
                     bool endless = unit.Has("endless");
                     if (!endless && context?.Statistics != null)
@@ -2806,6 +2812,7 @@ namespace MonsterTrain2Poju.Model
             {
                 if (unit.Source.Team != CombatTeam.Player || unit.Source.SpawnerCardId <= 0 || context?.OtherPiles == null) return;
                 if (DetachedSpawner(unit)) return;
+                if (context.OtherPiles.Any(pile => pile.Name == "Purged" && pile.Cards.Any(card => card.InstanceId == unit.Source.SpawnerCardId))) return;
                 CardPileState? standby = context.OtherPiles.FirstOrDefault(pile => pile.Name == "Standby");
                 CardPileState? exhausted = context.OtherPiles.FirstOrDefault(pile => pile.Name == "Exhausted");
                 int id = unit.Source.SpawnerCardId;
@@ -3350,6 +3357,13 @@ namespace MonsterTrain2Poju.Model
                                     if (unsupportedReason != null) break;
                                 }
                                 Emit("Gold", unit, unit, reward);
+                            }
+                            else if (effect.Type == "CardEffectPurgeUnitOnDeath")
+                            {
+                                if (source.Preview || unit.Has("cardless")) continue;
+                                CombatContext? purged = UnitCardPurgeModel.Apply(context!, unit.Source.SpawnerCardId, out string? purgeError);
+                                if (purged == null) { unsupportedReason = purgeError; break; }
+                                context = purged;
                             }
                             else if (effect.Type == "CardEffectAdjustDragonsHoard")
                             {

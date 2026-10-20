@@ -9294,6 +9294,19 @@ Both native runs have DEPTH-PASS, settled victories and all failure counters zer
 
 ### Original death-trigger, sacrifice/draw and direct room recursion spells
 
+The `full-battle-original-isolated-void-arms-living.mt2f` and
+`full-battle-original-isolated-void-arms-death.mt2f` witnesses come from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-193704-0348c2df` and
+`.probe-runs/full-battle-units-spells-and-junk-20261020-193956-f55213af`.
+Intent on Death positively purges a living host's source card while retaining
+the host and its equipment. Scrap for Parts then has a separate true-death
+witness: the source card enters Purged before standby exhaustion, its exhaustion
+counter stays zero, and the attached equipment enters Exhausted. Both native
+victories are settled DEPTH-PASS runs with zero failure counters. The chooser
+prefers equipped hosts for Scrap for Parts so an unequipped control cannot
+substitute for the required positive interaction. Other relic purge callbacks
+and purging from Hand/Draw remain guarded.
+
 The `full-battle-original-isolated-exhausted-first-of-kin.mt2f` and
 `full-battle-original-isolated-exhausted-morel-mistress.mt2f` witnesses come from
 `.probe-runs/full-battle-units-spells-and-junk-20261020-192738-5eb5e0a7` and

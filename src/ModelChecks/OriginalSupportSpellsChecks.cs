@@ -20,6 +20,9 @@ internal static class OriginalSupportSpellsChecks
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
             if (replayKind != null) candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
+            if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
+                candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
             PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
                 playerPosition: index < 3 ? 0 : -1) : candidates.FirstOrDefault();
             return chosen != null && BattleActionModel.PlayCard(source, chosen).Supported ? chosen : null;
@@ -162,9 +165,12 @@ internal static class OriginalSupportSpellsChecks
                 Require(oldTarget.Health > 0 && newTarget.Health == oldTarget.Health &&
                     newTarget.Triggers.Any(trigger => trigger.Kind == "OnDeath" && trigger.HasTriggered) &&
                     Json(newTarget.DeathState) == Json(oldTarget.DeathState) &&
-                    after.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy) <
-                        before.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy),
-                    "Intent on Death must positively fire a living unit's death damage without changing its death lifecycle flags.");
+                    (oldTarget.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Type == "CardEffectPurgeUnitOnDeath")
+                        ? after.Spawn.Train.Context!.OtherPiles!.Single(pile => pile.Name == "Purged").Cards.Any(token => token.InstanceId == oldTarget.SpawnerCardId) &&
+                            after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Standby").Cards.All(token => token.InstanceId != oldTarget.SpawnerCardId)
+                        : after.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy) <
+                            before.Spawn.Train.Rooms[action.RoomIndex].Units.Count(unit => unit.Team == CombatTeam.Enemy)),
+                    "Intent on Death must positively fire a living unit's death payload without changing its death lifecycle flags.");
             }
             if (rule.AssetKey == "Cannibalize")
             {
@@ -184,6 +190,12 @@ internal static class OriginalSupportSpellsChecks
                     upgraded.Temporary.Upgrades.Any(upgrade => upgrade.AssetKey == "ScrapForParts_Upgrade" && upgrade.Stats.Damage == 40 && upgrade.Stats.Cost == -99) &&
                     after.Spawn.Train.Context.Cards.NextDrawUpgrades?.Count == 0,
                     "Scrap for Parts must sacrifice the equipped host, positively draw the waiting unit, apply forty attack/free cost, and clear its upgrade queue.");
+                if (originals.Contains("fea8a847-88a1-4d77-b34d-83dcb3199d79"))
+                    Require(after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Purged").Cards.Any(token => token.InstanceId == victim.SpawnerCardId) &&
+                        after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.All(token => token.InstanceId != victim.SpawnerCardId) &&
+                        after.Spawn.Train.Context.Statistics!.Value(victim.SpawnerCardId, "TimesExhausted") ==
+                            before.Spawn.Train.Context.Statistics!.Value(victim.SpawnerCardId, "TimesExhausted"),
+                        "Void Arms must purge its dying host's card before standby exhaustion and preserve the zero exhaustion count.");
             }
             if (rule.AssetKey == "SacrificialRessurection")
             {

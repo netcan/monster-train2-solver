@@ -76,6 +76,9 @@ namespace MonsterTrain2Poju.Probe
                 IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
                 if (replayKind != null) candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == action.TargetUnitId && unit.Triggers.Any(trigger => trigger.Kind == replayKind)));
+                if (index >= 4 && source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId).AssetKey == "ScrapForParts")
+                    candidates = candidates.OrderByDescending(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .Any(unit => unit.Id == action.TargetUnitId && unit.EquipmentCards?.Count > 0));
                 PlayCardAction? chosen = index < 4 ? new PlayCardAction(ids[index], index < 3 ? index : 0,
                     playerPosition: index < 3 ? 0 : -1) : candidates.FirstOrDefault();
                 BattleActionResult? isolatedResult = chosen == null ? null : BattleActionModel.PlayCard(source, chosen);
