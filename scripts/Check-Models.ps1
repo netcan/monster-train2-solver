@@ -329,6 +329,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
     'full-battle-original-discard-draw.mt2f',
+    'full-battle-original-discard-draw-routing.mt2f',
     'full-battle-original-moon-card-upgrades.mt2f',
     'full-battle-original-room-status-damage.mt2f',
     'full-battle-original-corruption-damage.mt2f',
@@ -1886,7 +1887,8 @@ foreach ($fixturePath in $originalMoonCardUpgradeFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original moon card upgrades checks failed ($mode): $fixturePath" }
     }
 }
-$originalDiscardDrawFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-discard-draw.mt2f' })
+$originalDiscardDrawFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @(
+    'full-battle-original-discard-draw.mt2f', 'full-battle-original-discard-draw-routing.mt2f') })
 foreach ($fixturePath in $originalDiscardDrawFixtures) {
     foreach ($mode in @('--original-discard-draw-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

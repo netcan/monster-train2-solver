@@ -9543,3 +9543,13 @@ the obsolete Persistent projection guard. Scrap Metal remains unplayable and
 in hand across natural discard, then Starter Scrap smelts it for Refine three.
 Ordinary unplayable discard/redraw controls and immutable parents also match.
 Both battles finish with settled victories, DEPTH-PASS and zero failure counters.
+
+`full-battle-original-discard-draw-routing.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-213027-6720f8fb`.
+It refreshes the original Awoken's Rail Spike X=3/0/10 witnesses after removing
+the stale hand-discard projection guard. Complete native discard contexts,
+recipient cost/X upgrades, played Consume, unplayed no-op, ordinary/typed draw
+blocking and next-turn reset match the existing focused checker. Eleven plays,
+five EndTurns and sixteen immutable branches pass with settled victory and
+zero failure counters. Existing source, hand-cap, shuffle and relic boundaries
+remain as documented by the original discard-draw fixture.

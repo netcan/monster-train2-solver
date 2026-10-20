@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261020-212312-9d4d332a/card-catalog.mt2f`.
-The committed archive is byte-identical: 98,203 bytes, 11,817 unique nodes,
-SHA-256 `f8b4f4cc4679ed1393312efdefd4435717d002b66349aab3821d5930d0122afb`.
-The latest refresh removes obsolete hand-discard guards for branch-owned
+Source: `.probe-runs/full-battle-no-cards-20261020-213037-f9e7fb4d/card-catalog.mt2f`.
+The committed archive is byte-identical: 97,965 bytes, 11,815 unique nodes,
+SHA-256 `37edb635ceca4cbcc5dc89ff982b1b5742521fc312a9b7eed84e028c0deeb940`.
+The latest refresh removes Awoken's Rail Spike's obsolete hand-discard guard.
+Its played-cost draw and draw blocking remain validated by CardDiscardDrawModel;
+only its Rule changes and all 668 raw card definitions stay identical.
+The preceding refresh removes obsolete hand-discard guards for branch-owned
 Persistent and Ephemeral traits. Seven Rules changed: Scrap Metal, TFB Entropy
 Scourge, TFB Pyre Attack and four non-logbook Infusion definitions (Blast,
 Goliath, Madman and Enfeebling). All 668 raw card definitions stay identical.
