@@ -20,6 +20,7 @@ internal static class OriginalSupportUnitsChecks
     private const string DeathcappedProphetId = "ec522dfa-0b0d-41a9-860d-1a18fae0efb6";
     private const string ParrafinEnforcerId = "b9788a77-50da-4654-acfa-960c23649984";
     private const string SycophantId = "6d2053e9-1a6a-4862-b348-76a92a92ea83";
+    private const string VotivaryId = "e9bb0dfe-ecf7-4046-be6d-f6f00893662f";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -452,6 +453,21 @@ internal static class OriginalSupportUnitsChecks
                 pyregel.Action.Statuses.Single() is { Id: "pyregel", Stacks: 8, ParamInt: 1 } && triggeredInNativeTurn && !pyregelPersists,
                 "Sycophant must preserve its native 1-cost 10/25 size-2 birth, single OnAttacking Pyregel callback and no lingering end-turn Pyregel status.");
         }
+        if (expectedId == VotivaryId)
+        {
+            CombatTrigger onDeath = template.Triggers.Single(trigger => trigger.Kind == "OnDeath");
+            CombatEffect draw = onDeath.Effects.Single();
+            bool remainsUntriggered = root.GetProperty("Turns").EnumerateArray().All(row =>
+                row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Where(unit => unit.SpawnerCardId == ids[actionIndex])
+                    .All(unit => !unit.Triggers.Single(trigger => trigger.Kind == "OnDeath").HasTriggered));
+            Require(rule.AssetKey == "Votivary" && template.AssetKey == "Votivary" &&
+                rule.Cost == 0 && template.Health == 1 && template.MaxHealth == 1 && template.Modifiers.AttackDamage == 1 && template.Size == 1 &&
+                draw.Type == "CardEffectDrawAdditionalNextTurn" && draw.Value == 2 &&
+                draw.Action is { Type: "DrawNextTurn", Target: "Room", Value: 2, AllowEnemy: false, AllowPlayer: false } &&
+                !onDeath.HasTriggered && remainsUntriggered && unitBefore.DrawPerTurn == unitAfter.DrawPerTurn,
+                "Votivary must preserve its native zero-cost 1/1 size-1 birth and inactive OnDeath room +2 DrawNextTurn definition.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
@@ -471,6 +487,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-PARRAFIN-ENFORCER PASS: original 1-cost 15/25 size-2 birth and a positive single OnAttacking room +3 buff callback.");
         else if (expectedId == SycophantId)
             Console.WriteLine("ORIGINAL-SYCOPHANT PASS: original 1-cost 10/25 size-2 birth and a single OnAttacking +8 Pyregel definition; the ending snapshot has no lingering Pyregel status.");
+        else if (expectedId == VotivaryId)
+            Console.WriteLine("ORIGINAL-VOTIVARY PASS: original zero-cost 1/1 size-1 birth and captured OnDeath room +2 DrawNextTurn; no death occurred, so draw remained unchanged.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
