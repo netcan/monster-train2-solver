@@ -7809,6 +7809,27 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-coldsting-siren.mt2f
 ```
 
+### Original Eel Gorgon
+
+`full-battle-original-isolated-eel-gorgon.mt2f` uses the reusable UUID-targeted
+probe for an unchanged Eel Gorgon. It preserves the native cost-2, 10/5, size-2
+spawn and captures its three self-only PostCombat remove-all definitions for
+Positive, Negative and Persistent statuses. The native Instant run won in 37.92
+seconds with zero capture failures, mismatches, unsupported stages or pending
+records. Four plays span five EndTurns; the 26,310-byte archive contains 3,487
+unique nodes and has SHA-256
+`b0ca2a295e1da3415eaab09771f5893f6e0981ce75589f8387abc26dd95c27c2`.
+Dedicated replay and search pass: all four decisions match, 16 independent
+immutable branches and 128 serial/parallel search states. Eel Gorgon remained
+status-free in this encounter, so this is not a positive non-empty-status removal
+witness; the separate remove-all fixture covers positive full/half status removal.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId eaaae54e-58ed-4926-b5bb-a0b36404c4b7 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-eel-gorgon.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-eel-gorgon.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and

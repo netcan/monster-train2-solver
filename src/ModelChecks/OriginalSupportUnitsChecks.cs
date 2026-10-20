@@ -11,6 +11,7 @@ internal static class OriginalSupportUnitsChecks
     private const string DivineDancerId = "a1e9a37b-504a-4a04-99e2-6d933727b427";
     private const string BrandedWarriorId = "276fdd51-4bb8-4810-9bbf-cb663522b70f";
     private const string ColdstrikeSirenId = "ff11e59c-d696-4aea-b626-432574508f40";
+    private const string EelGorgonId = "eaaae54e-58ed-4926-b5bb-a0b36404c4b7";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -334,7 +335,21 @@ internal static class OriginalSupportUnitsChecks
             spawnedUnit.AssetKey == template.AssetKey && spawnedUnit.Size == template.Size &&
             spawnedUnit.Health == template.Health && spawnedUnit.MaxHealth == template.MaxHealth && spawnedUnit.Modifiers!.AttackDamage == template.Modifiers!.AttackDamage,
             expectedAsset + " must preserve its captured original card identity, paid spawn and native birth template.");
+        if (expectedId == EelGorgonId)
+        {
+            CombatTrigger postCombat = template.Triggers.Single(trigger => trigger.Kind == "PostCombat");
+            int[] categories = postCombat.Effects.Select(effect => effect.Action?.Value ?? -1).ToArray();
+            Require(rule.AssetKey == "EelGorgon" && template.AssetKey == "MonsterEelGorgon" && template.Health == 5 &&
+                template.MaxHealth == 5 && template.Modifiers.AttackDamage == 10 && template.Size == 2 && rule.Cost == 2 &&
+                postCombat.Effects.Count == 3 && categories.SequenceEqual([2, 1, 0]) && postCombat.Effects.All(effect =>
+                    effect.Type == "CardEffectRemoveAllStatusEffects" && effect.Action is { Type: "RemoveAllStatusEffects", Target: "Self", AllowPlayer: true, AllowEnemy: false,
+                        RemoveHalfStatusEffects: false, Range: null } && effect.Action.Statuses.Count == 0),
+                "Eel Gorgon must retain its native 10/5 size-2 birth and self-only PostCombat cleanse definitions for Positive, Negative and Persistent statuses.");
+        }
         RecordedBattleChecks.Native(root);
+        if (expectedId == EelGorgonId)
+            Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
+        else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

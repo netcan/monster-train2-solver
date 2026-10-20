@@ -1177,6 +1177,16 @@ namespace MonsterTrain2Poju.Model
                             if (filter != null) return filter;
                             continue;
                         }
+                        if (effect.Type == "CardEffectRemoveAllStatusEffects")
+                        {
+                            CardActionEffect? removal = effect.Action;
+                            if (removal?.Type != "RemoveAllStatusEffects" || removal.Target != "Self" ||
+                                !removal.AllowPlayer || removal.AllowEnemy || removal.Range != null)
+                                return "Unsupported triggered remove-all status effect definition.";
+                            string? removalError = StatusRemovalModel.ValidateAll(removal);
+                            if (removalError != null) return removalError;
+                            continue;
+                        }
                         if (TriggeredHealthModel.IsEffect(effect.Type))
                         {
                             string? healthError = TriggeredHealthModel.Validate(effect);
@@ -4186,21 +4196,22 @@ namespace MonsterTrain2Poju.Model
                     return true;
                 }
                 if (action.Type == "Null") return true;
-                if (AbilityCooldownModel.IsEffect(action.Type) || action.Type == "RemoveStatus" || AbilityLifecycleModel.IsEffect(action.Type))
+                if (AbilityCooldownModel.IsEffect(action.Type) || action.Type is "RemoveStatus" or "RemoveAllStatusEffects" || AbilityLifecycleModel.IsEffect(action.Type))
                 {
-                    IEnumerable<int> ordered = action.Type == "RemoveStatus" ? targets.UnitIds : targets.UnitIds.Reverse();
+                    bool removeStatus = action.Type is "RemoveStatus" or "RemoveAllStatusEffects";
+                    IEnumerable<int> ordered = removeStatus ? targets.UnitIds : targets.UnitIds.Reverse();
                     foreach (int id in ordered)
                     {
                         RoomCombatState retained = RetainedStatusRoom(actor, targets.UnitIds);
                         RoomCombatResult applied = AbilityLifecycleModel.IsEffect(action.Type)
                             ? AbilityLifecycleModel.Apply(retained, id, action.AbilityChange!, action.Type == "RemoveAbility", deferCallbacks: true) :
-                            action.Type == "RemoveStatus" ? StatusRemovalModel.Effect(retained, id, action, actor.Source.SpawnerCardId,
+                            removeStatus ? StatusRemovalModel.Effect(retained, id, action, actor.Source.SpawnerCardId,
                                 whileRunningQueue: true) :
                             AbilityCooldownModel.Apply(retained, id, action, actor.Source.SpawnerCardId, triggerKind);
                         if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
                         context = applied.State!.Context;
                         foreach (CombatUnit changed in applied.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);
-                        if (action.Type == "RemoveStatus" && !applied.State.Units.Any(unit => unit.Id == id))
+                        if (removeStatus && !applied.State.Units.Any(unit => unit.Id == id))
                         {
                             var dead = applied.PendingCallbacks.LastOrDefault(item => item.Unit.Id == id && item.Unit.Health <= 0);
                             if (dead != null) units.First(unit => unit.Source.Id == id).Apply(dead.Unit);

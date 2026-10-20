@@ -3,7 +3,7 @@
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
 and component fixtures. It does not increase their curated acceptance count.
 
-The isolated `no-cards` run on 2026-10-19 inspected all 668 unique
+The isolated `no-cards` run on 2026-10-20 inspected all 668 unique
 `AllGameData.GetAllCardData()` definitions from game module
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. Native predicates identify 563 logbook
 entries, 536 mastery entries, 91 unit abilities and four room abilities. These
@@ -23,13 +23,15 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261019-080544-5c85bf11/card-catalog.mt2f`.
-The committed archive is byte-identical: 95,987 bytes, SHA-256
-`4561be9d6ceccf632351f6be15a4bd4b338399230b7553458a2e291391ea4ec9`.
-The projection includes triggered maximum-health and typed-draw effects. All
-raw fields across 668 cards match the previous frozen catalog; only model
-projections change. Native frame 13109/13109, all RNG and decision state remain
-unchanged; the surrounding baseline won with all counters zero.
+Source: `.probe-runs/full-battle-no-cards-20261020-091946-c33aacef/card-catalog.mt2f`.
+The committed archive is byte-identical: 96,224 bytes, 11,610 unique nodes,
+SHA-256 `b7503ac3e8ed994af6f7386551dce19b66c958da59ba7ded61013c68da665ddb`.
+This refresh captures unit-trigger `CardEffectRemoveAllStatusEffects` actions
+through the existing status-removal projection. Native raw fields across all 668
+cards are unchanged from the prior catalog; only the `Rule` projections for
+Green Recruit, Eel Gorgon and Cluster Colonel changed. Native frame 14113/14113,
+all RNG and decision state remained unchanged; the surrounding baseline won with
+all capture counters zero.
 Ancient Synergy retains `QueryCardType=Spell` for its native TypeInDeck filter.
 Greed, Golden Touch and Bonk retain their fixed
 card-owned resource kill effects.
