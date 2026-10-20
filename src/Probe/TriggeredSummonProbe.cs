@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").StartsWith("triggered-summon", StringComparison.Ordinal) ||
             SpawnStatusRelicScenario.OriginalEggTransformation || OriginalEggCardScenario.Enabled ||
             EnchantmentBattleScenario.ChildSummons || OriginalSupportUnitsScenario.CapturesTriggeredSummons ||
-            OriginalSupportSpellsScenario.CapturesTriggeredSummons;
+            OriginalSupportSpellsScenario.CapturesTriggeredSummons || UnitCardCopyProbe.Enabled;
         private static string Register(CharacterData? unit)
         {
             if (unit == null) return "";

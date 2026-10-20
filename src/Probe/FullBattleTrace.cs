@@ -513,7 +513,7 @@ namespace MonsterTrain2Poju.Probe
                     }
                     return new CombatEffect(type, value, counter, ((CardPile)(AbilityLifecycleProbe.Known(type) ? 0 : effect.GetParamInt())).ToString(),
                         effect.GetAdditionalParamInt(), pool.Select(card => card.GetID()).ToArray(), effect.GetParamBool2(),
-                        type is "CardEffectAddBattleCard" or "CardEffectAddRunCard" ? CardGenerationProbe.Definition(effect) : null,
+                        type is "CardEffectAddBattleCard" or "CardEffectAddRunCard" ? CardGenerationProbe.Definition(effect) : UnitCardCopyProbe.Definition(effect.GetSourceCardEffectData(), interactions),
                         UnitTriggerUpgradeProbe.Capture(effect, interactions), UnitTriggerActionProbe.Capture(effect, interactions),
                         type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null, UnitTriggerActionProbe.Scaling(effect),
                         TriggeredSummonProbe.Capture(effect), EnchantmentCombatProbe.Capture(effect));

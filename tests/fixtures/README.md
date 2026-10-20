@@ -9899,3 +9899,21 @@ pass sixteen immutable replay branches and a 128-state search with zero
 unsupported attempts and equal serial/parallel results. The existing paid
 status-scaled upgrade fixture also passes. Triggered status-scaled upgrades
 currently require a captured self target; other target layouts remain guarded.
+
+`full-battle-original-isolated-mitosis-cap.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-012806-f38b2c6e`.
+Unchanged Mitosis Cap grants its control host fifteen maximum health and an
+OnEncounterComplete callback. After the terminal combat snapshot, the native
+callback adds one permanent copy of that host's source card to discard and
+the run deck, allocating an independent card identity without a random
+selection. A dedicated check replays the complete encounter callback in native
+active-monster order and compares the complete resulting train/context with
+the native capture, including card ownership, deck membership, piles and RNG.
+The equipment's champion and registered-cardless filters are retained and
+evaluated during attach tests. The capture has DEPTH-PASS, a settled win and
+zero failure counters. Five plays and five EndTurns pass sixteen immutable
+branches and a 128-state search with zero unsupported attempts and equal
+serial/parallel results. The encounter callback is checked separately from
+that combat search's terminal boundary. Existing Stasis and equipment combat
+batch chains still pass. Other unit-source copy destinations/counts remain
+guarded pending independent native witnesses.

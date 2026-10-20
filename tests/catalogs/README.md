@@ -23,10 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-011554-850e14a5/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,498 bytes, 12,071 unique nodes,
-SHA-256 `70d32c2491fe2c34b90daea716087ccfb8b17bd2e18d43ebfe935da8bec99cbb`.
-The latest refresh captures Stasis Crystal's native status-scaled PostCombat
+Source: `.probe-runs/full-battle-no-cards-20261021-012848-ade797d0/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,571 bytes, 12,077 unique nodes,
+SHA-256 `a20ba39cb75e6b43d26c7fe828a5bf3a0d9ce17a6c083a78c54de9a6dd9ec188`.
+The latest refresh captures Mitosis Cap's unit-source card generation and
+equipment character filters. Only this projection changes; the other 667 are identical.
+The preceding refresh captures Stasis Crystal's native status-scaled PostCombat
 upgrade. Only this projection changes; the other 667 are identical.
 The preceding refresh captures Copy Morsels' native unit birth-copy modifier.
 Only this projection changes after normalizing absent/null SpawnCopySubtype

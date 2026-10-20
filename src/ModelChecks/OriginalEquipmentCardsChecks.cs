@@ -299,6 +299,7 @@ internal static class OriginalEquipmentCardsChecks
                 "Forgotten Trade needs a positive native equipment OnHit callback.");
         }
         if (stasis) StasisCrystalChecks.Native(root, ids);
+        if (originals.SequenceEqual(["c71b2d2b-a2c5-449f-8cf5-2abef684ff33"])) MitosisCapChecks.Native(root, ids);
         RecordedBattleChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-EQUIPMENT PASS: {originals.Length} unchanged paid attachments on separate native hosts and immutable full chains.");
     }

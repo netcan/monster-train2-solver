@@ -313,7 +313,8 @@ namespace MonsterTrain2Poju.Probe
             if (effects.Any(effect => effect.GetEffectStateName() == "CardEffectAttachEquipment"))
             {
                 var upgrades = effects.Where(effect => effect.GetParamCardUpgradeData() != null).Select(effect =>
-                { var state = new CardUpgradeState(); state.Setup(effect.GetParamCardUpgradeData()); return CardModifierProbe.Upgrade(state); }).ToArray();
+                { var state = new CardUpgradeState(); state.Setup(effect.GetParamCardUpgradeData()); return CardModifierProbe.Upgrade(state, false,
+                    filtersAlreadyApplied: effect.GetEffectStateName() == "CardEffectAttachEquipment"); }).ToArray();
                 equipment = new EquipmentDefinition(upgrades, data.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitReturnToHandEquipment"), data.GetID());
                 interactions.AddRange(upgrades.SelectMany(upgrade => upgrade.ExternalInteractions));
                 if (data.GetCardType() == CardType.Equipment) { kind = "Equipment"; destination = "Standby"; }
@@ -525,10 +526,10 @@ namespace MonsterTrain2Poju.Probe
                     CardUpgradeData upgradeData = effect.GetParamCardUpgradeData();
                     var upgradeState = new CardUpgradeState(); upgradeState.Setup(upgradeData);
                     bool filtersIgnoredByEffect = effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnits" ||
-                        effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" || deckSpellUpgrade || handUpgrade || type == "DuplicateCard" || type == "MergeEquipment";
+                        effect.GetEffectStateName() == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" || type == "AttachEquipment" || deckSpellUpgrade || handUpgrade || type == "DuplicateCard" || type == "MergeEquipment";
                     upgrade = CardModifierProbe.Upgrade(upgradeState, false, filtersAlreadyApplied: filtersIgnoredByEffect);
                     interactions.AddRange(upgrade.ExternalInteractions);
-                    if (deckSpellUpgrade || handUpgrade || type == "DuplicateCard") upgradeFilters = upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
+                    if (deckSpellUpgrade || handUpgrade || type == "DuplicateCard" || type == "AttachEquipment") upgradeFilters = upgradeData.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray();
                     if (scaleUpgrade && !upgradeData.CanScaleUpgradeToSingleInstance()) interactions.Add("Invalid scaled unit upgrade definition");
                 }
                 lifetime = type == "BuffEquipment" ? "TemporaryUntilUnitDeath" : deckSpellUpgrade ? "TemporaryUntilEndOfBattle" : handUpgrade ?

@@ -1066,6 +1066,12 @@ namespace MonsterTrain2Poju.Model
                     if (countError != null) return countError;
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        if (effect.Type == UnitCardCopyModel.Effect)
+                        {
+                            string? copyError = UnitCardCopyModel.Validate(effect);
+                            if (copyError != null) return copyError;
+                            continue;
+                        }
                         if (effect.Type == "CardEffectPermanentlyAdjustMaxPyreHealth")
                         {
                             if (trigger.Kind != "OnEncounterComplete" || effect.Action?.Type != "AdjustPyreMaxHealth" ||
@@ -3488,6 +3494,13 @@ namespace MonsterTrain2Poju.Model
                                     context.Resources!.DragonsHoardCap!.Value);
                                 if (amount != frame.DragonsHoard.Value)
                                     context = context.WithQueryFrame(frame.With(dragonsHoard: amount));
+                            }
+                            else if (effect.Type == UnitCardCopyModel.Effect && !source.Preview && context != null)
+                            {
+                                CardGenerationResult copied = UnitCardCopyModel.Apply(context, unit.Source.SpawnerCardId, effect);
+                                if (!copied.Supported) { unsupportedReason = copied.UnsupportedReason; break; }
+                                context = copied.Context;
+                                foreach (CardToken card in copied.AddedCards) Emit("AddCard", unit, unit, card.InstanceId);
                             }
                             else if (effect.Type is "CardEffectAddBattleCard" or "CardEffectAddRunCard" && !source.Preview && context != null &&
                                 (effect.Type == "CardEffectAddRunCard" || !battleWon && context.AllScenarioBossesDead != true) &&
