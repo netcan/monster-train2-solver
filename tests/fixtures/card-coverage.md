@@ -20,8 +20,8 @@ The 563 native logbook entries are the primary card-inventory denominator, not t
 
 | Classification | Logbook | All definitions | Meaning |
 | --- | ---: | ---: | --- |
-| direct-native-play | 388 | 393 | No captured projection guards; at least one successful native play has the same captured definition projection. |
-| mechanism-only | 93 | 165 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
+| direct-native-play | 389 | 394 | No captured projection guards; at least one successful native play has the same captured definition projection. |
+| mechanism-only | 92 | 164 | No captured projection guards; its pipeline/effect types have indexed native play or positive unplayed-trigger witnesses. The original card itself is not directly accepted. |
 | partial | 82 | 99 | Projection contains explicit play, upgrade, discard, consume or nested interaction guards. See each row. |
 | unsupported | 0 | 11 | The current definition/activation pipeline is explicitly unimplemented. |
 | unreviewed | 0 | 0 | Projection failed or a required primitive has no indexed transition witness; support is unknown. |
@@ -30,7 +30,7 @@ These are evidence labels, not whole-card completion claims. A directly matched 
 
 Definition matching compares all captured rule fields recursively, including source-unit statistics, statuses, triggers, ability metadata, effect parameters and nested creation rules. Only root `ForgeEligible` and `UnplayedNegativeOrder` are excluded because they depend on the decision context. Missing null fields are tolerated for older schemas; a missing false `SpawnUnit.Modifiers.IsChampion` and an empty `SpawnUnit.Modifiers.StatusAttackModifiers` are accepted only at those exact paths because the native action snapshot omits those defaults; other missing non-null fields are not. Direct evidence also requires captured instance base-trait metadata. This matcher accepts trait-free definitions, SelfPurge, calibrated IgnoreArmor/ExhaustState/StrongerMagicPower parameters, and PlayedCost damage scalars five/eighty with exact source parameters and runtime/declared identity. Consume witnesses distinguish played exhaustion from unplayed discard/redraw. StrongerMagicPower covers raw Int zero/five and zero/five room power for damage/healing. The X-damage witnesses cover enemy-present zero and positive X. Imp Olate has exact source calibration and native zero/one-Imp `SubtypeInDeck` witnesses for zero/twenty-five damage. Pyreshot has an original-card play witness for its selected-floor Pyre attack, including Sweep damage and the live per-floor enemy target set. Retch has an exact original-card `RandomToHand` witness from a controlled starting Eaten pile; it does not cover how cards enter Eaten through native feeding. Astrologer has an original 1-cost 5/10 size-2 play and three native +5 Attack `OnMoonPhaseShift` callbacks followed by a no-shift control. Its isolated fixture suppresses the broad player-wide Moon-phase-card interaction guard; other card/relic Moon-phase interactions remain outside this card witness. Snotty and Bloated Whelp have original 1-cost 4/1 Whelp plays whose `OnSpawn` adds the ability-available marker and resets cooldown; their distinct cooldown-two and cooldown-one abilities remain unused in their respective captured turns. Fae Meddler's original 1-cost 6/3 play natively advances phase 2 to 1 on spawn; its cooldown-two unit ability remains unused. This does not imply broad player-wide Moon-phase card/relic coverage.
 
-Molten Encasement has an original 1-cost 0/1 Tomb play and an exact captured OnDeath room +2 Stealth definition, but the unit survived all four post-deployment snapshots, so death-trigger execution is not covered.
+Molten Encasement has an original 1-cost 0/1 Tomb play and an exact captured OnDeath room +2 Stealth definition, but the unit survived all four post-deployment snapshots, so death-trigger execution is not covered. Shattered Shell has an original 1-cost 3/10 size-2 play and two positive native OnKill self +3 Attack upgrades; its four post-deployment snapshots show 6/9/9/9 Attack and no further upgrade.
 
 PlayedCost status scaling is calibrated only at multiplier two/filter one with exact original source parameters. Spike of the Legion covers positive/zero X, propagatable Rage/Regeneration, unchanged armor, neighbor/floor controls and both Consume paths.
 
@@ -80,7 +80,7 @@ Original Bloody Moon and Antumbra Assault each add seven unchanged plays with de
 
 Original Surgical Strike adds six unchanged plays and one generated play. Native suppression requires both Monsters team and FunGuy subtype; ordinary friendly and enemy kills still copy. Piercing bypasses armor/shield, nonlethal hits do not copy, and a revived FunGuy remains suppressed. Three deterministic source-card copies preserve the original temporary Ephemeral upgrade, upgrade inheritance, allocation/RNG and played/unplayed purge. Source team/subtype metadata is required; bonus fire counts, other subtypes, starting upgrades, all-subtype relics and character-attributed kills remain guarded.
 
-Across all classifications, 395 identities (390 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
+Across all classifications, 396 identities (391 logbook) have at least one definition-matched play. Partial cards retain their matched-play evidence without losing their guard classification.
 
 ## Reproducible files
 
@@ -90,7 +90,7 @@ Across all classifications, 395 identities (390 logbook) have at least one defin
 - [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 569 full battles and 8421 native actions whose captured prediction is supported, actual state exists and difference is null. 538 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 570 full battles and 8425 native actions whose captured prediction is supported, actual state exists and difference is null. 538 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 

@@ -8448,3 +8448,22 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuil
 dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-molten-encasement.mt2f
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-molten-encasement.mt2f
 ```
+
+### Original Shattered Shell
+
+`full-battle-original-isolated-shattered-shell.mt2f` plays the unchanged
+one-cost 3/10 size-2 Animus Banner unit. Its original OnKill applies the
+temporary `ShatteredShellTrigger` +3 Attack upgrade to itself. Native combat
+produces two kills: attack progresses 3 to 6 to 9, with one then two upgrade
+instances; it stays at 9 for the remaining two post-deployment snapshots. The
+Instant battle won with zero capture failures, mismatches, unsupported
+transitions or pending records. Focused native replay and bounded serial/parallel
+search agree at 128 states, with three replayed steps. The 26,445-byte archive
+has 3,503 unique nodes and SHA-256
+`1757d4725a6f915d4126df2f0bc5e71a79270ba398f0fd6539227b84baa72783`.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 57985d47-d8ac-46be-8545-20a51209fc4f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-shattered-shell.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-shattered-shell.mt2f
+```

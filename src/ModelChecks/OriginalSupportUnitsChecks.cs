@@ -30,6 +30,7 @@ internal static class OriginalSupportUnitsChecks
     private const string HulkingMassId = "a0c52fd5-e77f-43ec-b9f7-2ebf7e3ac8ac";
     private const string ReformingOozeId = "357a72e3-935c-4946-9e5a-6449482641c1";
     private const string MoltenEncasementId = "b20aaea2-cf9e-4475-aac3-abba7a0bed7e";
+    private const string ShatteredShellId = "57985d47-d8ac-46be-8545-20a51209fc4f";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -562,6 +563,31 @@ internal static class OriginalSupportUnitsChecks
                 upgrade.Upgrade.Stats.Health == 0 && remainsUntriggered,
                 "Reforming Ooze must preserve its native 1-cost 7/15 size-2 Undying birth and inactive permanent self +6 Attack OnReanimated upgrade.");
         }
+        if (expectedId == ShatteredShellId)
+        {
+            CombatTrigger onKill = template.Triggers.Single(trigger => trigger.Kind == "OnKill");
+            CombatEffect upgradeEffect = onKill.Effects.Single();
+            CardActionEffect upgrade = upgradeEffect.UnitUpgrade!;
+            CombatUnit[] unitTurns = root.GetProperty("Turns").EnumerateArray()
+                .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!)
+                .Select(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]))
+                .Where(unit => unit != null).Select(unit => unit!).ToArray();
+            int[] attacks = unitTurns.Select(unit => unit.Modifiers!.AttackDamage).ToArray();
+            int[] upgradesPerTurn = unitTurns.Select(unit => unit.Modifiers!.Upgrades.Count(item =>
+                item.DataId == "214658eb-db42-4734-879c-ff7414d8f21b" && item.Stats.Damage == 3)).ToArray();
+            Require(rule.AssetKey == "ShatteredShell" && template.AssetKey == "ShatteredShell" && rule.Cost == 1 &&
+                template.Modifiers!.AttackDamage == 3 && template.Health == 10 && template.MaxHealth == 10 && template.Size == 2 &&
+                template.Subtypes.Contains("SubtypesData_Animus_c0f95969-ae86-4477-9458-57bb235d965b") &&
+                template.Subtypes.Contains("SubtypesData_BannerUnit") && !onKill.Once && onKill.FireCount == 1 && !onKill.HasTriggered &&
+                upgradeEffect.Type == "CardEffectAddTempCardUpgradeToUnits" && upgrade.Type == "UnitUpgrade" &&
+                upgrade.Target == "Self" && upgrade.Lifetime == "TemporaryUntilEndOfBattle" &&
+                upgrade.Upgrade is { DataId: "214658eb-db42-4734-879c-ff7414d8f21b", AssetKey: "ShatteredShellTrigger" } &&
+                upgrade.Upgrade.Stats.Damage == 3 && upgrade.Upgrade.Stats.Health == 0 && unitTurns.Length == 4 &&
+                attacks.SequenceEqual([6, 9, 9, 9]) && upgradesPerTurn.SequenceEqual([1, 2, 2, 2]) &&
+                unitTurns.All(unit => unit.Health == 10 && unit.Triggers.Single(trigger => trigger.Kind == "OnKill").HasTriggered),
+                "Shattered Shell must preserve its native 1-cost 3/10 size-2 birth and positively apply two self +3 Attack OnKill upgrades, then hold steady.");
+        }
         if (expectedId == MoltenEncasementId)
         {
             CombatTrigger onDeath = template.Triggers.Single(trigger => trigger.Kind == "OnDeath");
@@ -692,6 +718,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-FAE-MEDDLER PASS: original 1-cost 6/3 birth and positive OnSpawn phase advance 2 to 1; cooldown-2 unit ability remains outside this action witness.");
         else if (expectedId == MoltenEncasementId)
             Console.WriteLine("ORIGINAL-MOLTEN-ENCASEMENT PASS: original 1-cost 0/1 Tomb birth and inactive OnDeath room +2 Stealth definition; no death occurred.");
+        else if (expectedId == ShatteredShellId)
+            Console.WriteLine("ORIGINAL-SHATTERED-SHELL PASS: original 1-cost 3/10 size-2 birth; two native OnKill events add +3 Attack each and no further upgrades occur.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }
