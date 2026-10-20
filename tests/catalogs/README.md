@@ -23,10 +23,13 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-004554-8b164dfc/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,258 bytes, 12,050 unique nodes,
-SHA-256 `701474e65a58098cd28eb386aea11e486712a9f998f28fae5311dd373132d809`.
-The latest refresh captures Hellfurnace's native room Pyregel stack modifier.
+Source: `.probe-runs/full-battle-no-cards-20261021-005147-47951643/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,379 bytes, 12,057 unique nodes,
+SHA-256 `4fc194208b9cf0ee553ad38db07af7249d2de7e25f3ca7b53bbf1f5de1b19816`.
+The latest refresh captures Total Recall's native pre-combat consumed-spell draw.
+Only this projection changes after normalizing absent/null ConsumedSpellDrawCount
+fields on existing pre-combat descriptors; the other 667 are identical.
+The preceding refresh captures Hellfurnace's native room Pyregel stack modifier.
 Only this projection changes after normalizing absent/null StatusStackBonuses
 fields on existing room attachment descriptors; the other 667 are identical.
 The preceding refresh captures Imprisoned Zephyr's self/front attack-triggered

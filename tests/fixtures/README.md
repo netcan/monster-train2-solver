@@ -9837,3 +9837,19 @@ applies its ordinary ten stacks. Both captures have DEPTH-PASS, settled wins and
 zero failure counters. Their eight/seven-play, five-EndTurn chains pass sixteen
 immutable branches and 128-state searches with zero unsupported attempts and
 equal serial/parallel results.
+
+`full-battle-original-isolated-total-recall.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-005015-f133e472`.
+Unchanged Total Recall returns two seeded original consumed Torches over two
+pre-combat callbacks. Each uses one native Battle Range selection, restores the
+selected card's ownership and draws it with null source-card attribution. The
+exhausted original Dreg is excluded. Two subsequent empty callbacks preserve
+the hand and RNG. `full-battle-original-isolated-total-recall-empty.mt2f` comes
+from `.probe-runs/full-battle-units-spells-and-junk-20261021-005015-241d5d6e`
+and supplies four independent empty callbacks. Previews skip draws; deployment
+skips the room callback. A dedicated checker compares complete native callback
+contexts including piles, instances, RNG and statistics. Both captures have
+DEPTH-PASS, settled wins and zero failure counters. Six/five-play, five-EndTurn
+chains pass sixteen immutable branches and bounded 128-state searches with
+zero unsupported attempts and equal serial/parallel results. Other draw counts
+remain guarded.

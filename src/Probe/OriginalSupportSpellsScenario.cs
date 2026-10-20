@@ -210,6 +210,12 @@ namespace MonsterTrain2Poju.Probe
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
             CardState[] created = new[] { Add(steward.GetID()), Add(steward.GetID()), Add(steward.GetID()), Add(energy.GetID()) }
                 .Concat(spellIds.Select(Add)).ToArray();
+            if (spellIds.Contains("93fd40da-054d-4cc2-a8b3-da77e619a1d0") && spellIds.Contains("63a48bad-07da-4687-bfef-2f7c6653af5e"))
+                foreach (string id in new[] { "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b", "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b", "63a48bad-07da-4687-bfef-2f7c6653af5e" })
+                {
+                    CardState exhausted = cards.AddNewCard(all.FindCardData(id)!, CardPile.DiscardPile, false, false, animate: false);
+                    cards.GetDiscardPile().Remove(exhausted); cards.GetExhaustedPile().Add(exhausted);
+                }
             if (spellIds.Contains("e221f8ac-7b5f-4485-a4d1-dedd22f61466") && spellIds.Contains("63a48bad-07da-4687-bfef-2f7c6653af5e"))
             {
                 for (int equipment = 0; equipment < 2; equipment++)

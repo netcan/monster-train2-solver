@@ -9,12 +9,17 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CardActionEffect> Effects { get; }
         public bool DisallowedInDeployment { get; }
         public bool FocusRoom { get; }
-        public RoomPreCombatRule(IReadOnlyList<CardActionEffect> effects, bool disallowedInDeployment, bool focusRoom)
-        { Effects = Array.AsReadOnly(effects.ToArray()); DisallowedInDeployment = disallowedInDeployment; FocusRoom = focusRoom; }
+        public int? ConsumedSpellDrawCount { get; }
+        public RoomPreCombatRule(IReadOnlyList<CardActionEffect> effects, bool disallowedInDeployment, bool focusRoom,
+            int? consumedSpellDrawCount = null)
+        { Effects = Array.AsReadOnly(effects.ToArray()); DisallowedInDeployment = disallowedInDeployment; FocusRoom = focusRoom; ConsumedSpellDrawCount = consumedSpellDrawCount; }
     }
     public static class RoomPreCombatModel
     {
-        public static string? Validate(RoomPreCombatRule rule) => !rule.DisallowedInDeployment || !rule.FocusRoom || rule.Effects.Count != 1 || rule.Effects.Any(effect =>
+        public static string? Validate(RoomPreCombatRule rule) => rule.ConsumedSpellDrawCount.HasValue ?
+            rule.ConsumedSpellDrawCount == 1 && rule.DisallowedInDeployment && !rule.FocusRoom && rule.Effects.Count == 0
+                ? null : "Uncalibrated consumed-spell room draw." :
+            !rule.DisallowedInDeployment || !rule.FocusRoom || rule.Effects.Count != 1 || rule.Effects.Any(effect =>
             effect.Type != "Damage" || effect.Target != "Room" || !effect.AllowPlayer || !effect.AllowEnemy || effect.Value != 50 ||
             effect.Statuses.Count > 0 || effect.Range != null || effect.Upgrade != null || effect.Filters != null &&
                 (effect.Filters.Health != "Both" || effect.Filters.RequiredStatuses.Count > 0 || effect.Filters.ExcludedStatuses.Count > 0 ||
@@ -35,6 +40,14 @@ namespace MonsterTrain2Poju.Model
                 if (rule == null || source.Deployment && rule.DisallowedInDeployment) continue;
                 string? error = Validate(rule);
                 if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, error);
+                if (rule.ConsumedSpellDrawCount.HasValue)
+                {
+                    if (current.Preview) continue;
+                    TypedDrawResult drawn = RoomConsumedSpellDrawModel.Apply(current.Context!);
+                    if (!drawn.Supported) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, drawn.UnsupportedReason);
+                    current = current.WithContext(drawn.Context!);
+                    continue;
+                }
                 // Native attachment VFX selects the room before running effects.
                 if (!current.Preview && rule.FocusRoom && current.Context?.QueryFrame != null)
                     current = current.WithContext(current.Context.WithQueryFrame(current.Context.QueryFrame.With(selectedRoomIndex: source.RoomIndex)));
