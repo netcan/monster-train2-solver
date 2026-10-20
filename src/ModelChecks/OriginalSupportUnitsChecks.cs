@@ -6,6 +6,7 @@ internal static class OriginalSupportUnitsChecks
 {
     private const string AstrologerId = "4b50aa70-8918-40f0-8efd-c66ce78bbf52";
     private const string BloatedWhelpId = "32dad9d3-f839-4077-8f73-9837d398df7b";
+    private const string FaeMeddlerId = "d10e2dac-fa58-4509-b0ee-112b3bf78800";
     private const string SnottyWhelpId = "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16";
     private const string BlightedTotemId = "21ad4f07-1568-4461-8be4-6fb2670bd90d";
     private const string ProsperityTotemId = "21567cc4-f684-48db-b377-b8289729dedc";
@@ -617,6 +618,22 @@ internal static class OriginalSupportUnitsChecks
                     !unit.Triggers.Single(trigger => trigger.Kind == "OnOwnAbilityActivated").HasTriggered),
                 expectedCard + " must preserve its native 1-cost 4/1 Whelp birth, fire OnSpawn to expose its cooldown-" + expectedCooldown + " ability, and leave that ability unused in the captured turns.");
         }
+        if (expectedId == FaeMeddlerId)
+        {
+            CombatTrigger phaseAdvance = template.Triggers.Single(trigger => trigger.Kind == "OnSpawn" &&
+                trigger.Effects.Any(effect => effect.Type == "CardEffectAdvanceMoonPhase"));
+            CombatEffect advanceEffect = phaseAdvance.Effects.Single();
+            CombatTrigger livePhaseAdvance = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnSpawn" &&
+                trigger.Effects.Any(effect => effect.Type == "CardEffectAdvanceMoonPhase"));
+            Require(rule.AssetKey == "FaeMeddler" && template.AssetKey == "MonsterFaeMeddler" && rule.Cost == 1 &&
+                template.Modifiers!.AttackDamage == 6 && template.Health == 3 && template.MaxHealth == 3 && template.Size == 1 &&
+                template.Ability is { DataId: "d1ab03ed-fe63-4eca-b68e-3090524f325e", Cooldown: 2 } &&
+                spawnedUnit.Status("unit_ability_available") is { Stacks: 1, ParamInt: 1 } &&
+                !phaseAdvance.Once && advanceEffect.Action is { Type: "AdvanceMoonPhase", Target: "Self", Value: 1 } &&
+                !phaseAdvance.HasTriggered && livePhaseAdvance.HasTriggered &&
+                unitBefore.Spawn.Train.Context!.QueryFrame!.MoonPhase == 2 && unitAfter.Spawn.Train.Context!.QueryFrame!.MoonPhase == 1,
+                "Fae Meddler must preserve its native 1-cost 6/3 birth, available cooldown-2 ability and a positive OnSpawn moon advance from phase 2 to 1.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
@@ -652,6 +669,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-SNOTTY-WHELP PASS: original 1-cost 4/1 Whelp birth; native OnSpawn grants ability availability and resets cooldown, while its cooldown-2 ability remains unused.");
         else if (expectedId == BloatedWhelpId)
             Console.WriteLine("ORIGINAL-BLOATED-WHELP PASS: original 1-cost 4/1 Whelp birth; native OnSpawn grants ability availability and resets cooldown, while its cooldown-1 ability remains unused.");
+        else if (expectedId == FaeMeddlerId)
+            Console.WriteLine("ORIGINAL-FAE-MEDDLER PASS: original 1-cost 6/3 birth and positive OnSpawn phase advance 2 to 1; cooldown-2 unit ability remains outside this action witness.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }

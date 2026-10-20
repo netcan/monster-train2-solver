@@ -242,6 +242,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-astrologer.mt2f',
     'full-battle-original-snotty-whelp.mt2f',
     'full-battle-original-bloated-whelp.mt2f',
+    'full-battle-original-fae-meddler.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
@@ -2011,6 +2012,13 @@ foreach ($fixturePath in $originalBloatedWhelpFixtures) {
     foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Bloated Whelp checks failed ($mode): $fixturePath" }
+    }
+}
+$originalFaeMeddlerFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-fae-meddler.mt2f' })
+foreach ($fixturePath in $originalFaeMeddlerFixtures) {
+    foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original Fae Meddler checks failed ($mode): $fixturePath" }
     }
 }
 $originalAttackOverrideFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-attack-overrides.mt2f' })
