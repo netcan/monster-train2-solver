@@ -40,6 +40,13 @@ namespace MonsterTrain2Poju.Model
                 .Select(unit => unit.Id).ToHashSet();
             void CarryRoomCaches(CombatContext from)
             {
+                foreach (RoomEchoState echo in (context.RoomCapacities ?? Array.Empty<RoomCapacityState>())
+                    .SelectMany(room => room.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
+                    .Where(attachment => attachment.Echo?.CopyCardId > 0).Select(attachment => attachment.Echo!))
+                {
+                    CardPlayedCost? cost = from.Statistics?.PlayedCosts.FirstOrDefault(value => value.CardId == echo.CopyCardId);
+                    if (cost != null) context = context.WithStatistics(context.Statistics?.WithPlayedCost(cost.CardId, cost.Cost));
+                }
                 foreach (CardInstanceState original in context.CardRegistry ?? context.CardInstances ?? Array.Empty<CardInstanceState>())
                 {
                     CardInstanceState? captured = from.FindCard(original.InstanceId);

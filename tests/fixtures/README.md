@@ -9936,6 +9936,23 @@ pre-existing discrepancy is not covered by the room-skill acceptance. Attachment
 corruption with unit/relic CorruptionAdded callbacks remains explicitly guarded.
 The other two room skills have separate positive movement witnesses below.
 
+`full-battle-original-isolated-echo-vault.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-042641-01e9949d`.
+Unchanged Echo Vault remembers original Enflame, then replaces that reference
+with an independent original Torch copy. Original Ritual of Battle on another floor
+does not overwrite it. The native pre-combat callback positively replays Torch
+for three damage without paying again, then clears the remembered spell. Copies
+remain known but outside owned cards and piles; the overwritten copy never
+casts. Their local play counts stay zero, while the replay increments global
+AnyCardPlayed history without adding a per-copy tracked-card statistic. Freeze
+is removed before copying. Native preview leaves the copy's played-cost query
+behind; replacement preserves the old query and real replay clears the active
+copy's query. DEPTH-PASS records a settled victory and all four failure counters
+zero. Eight plays/five EndTurns pass sixteen immutable branches and bounded
+search; existing Treasure-discard and room-skill chains also pass. Additional
+Consume/card callbacks, relic interactions and temporary Corruption restoration
+remain guarded pending separate native witnesses.
+
 `full-battle-original-isolated-sentry-turret.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-040145-372d48e4`.
 Original Sentry Turret enters the middle floor behind its independent anchor.

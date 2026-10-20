@@ -719,6 +719,7 @@ internal static class OriginalSupportSpellsChecks
         TreasureDiscardChecks.Native(root, originals);
         RoomAbilityChecks.Native(root, originals);
         SentryAttackChecks.Native(root, originals);
+        RoomEchoChecks.Native(root, originals);
         if (originals.Contains("7018bb02-2ec2-4b4f-95d0-7bafce95d97d")) CrucibleStewardChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }

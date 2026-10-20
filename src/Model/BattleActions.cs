@@ -908,6 +908,9 @@ namespace MonsterTrain2Poju.Model
                 capacitiesBeforeRelics, context.RoomCapacities);
             if (!replicatedCharacters.Supported) return Unsupported(replicatedCharacters.UnsupportedReason!);
             train = replicatedCharacters.State!;
+            TrainSpellResult echoed = RoomEchoModel.Remember(train, source, action, rule);
+            if (!echoed.Supported) return Unsupported(echoed.UnsupportedReason!);
+            train = echoed.State!; context = train.Context!;
             TrainCombatResult delayedStatusRemovals = TrainCombatModel.ProcessDelayedStatusRemovalsAfterCardPlayed(train);
             if (!delayedStatusRemovals.Supported) return Unsupported(delayedStatusRemovals.UnsupportedReason!);
             train = delayedStatusRemovals.State!; context = train.Context!;

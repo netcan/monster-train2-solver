@@ -27,6 +27,7 @@ namespace MonsterTrain2Poju.Model
         public RoomDeathEffectRule? DeathEffect { get; }
         public RoomAbilityState? Ability { get; }
         public RoomAttachmentCorruption? CorruptionModifier { get; }
+        public RoomEchoState? Echo { get; }
         public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
             IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
             bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "", int spellCostDelta = 0,
@@ -34,7 +35,7 @@ namespace MonsterTrain2Poju.Model
             RoomPostCombatRule? postCombat = null, RoomPreCombatRule? preCombat = null,
             IReadOnlyList<RoomStatusStackRule>? statusStackBonuses = null, string? spawnCopySubtype = null,
             RoomSpellUpgradeState? spellUpgrade = null, RoomDeathEffectRule? deathEffect = null,
-            RoomAbilityState? ability = null, RoomAttachmentCorruption? corruptionModifier = null)
+            RoomAbilityState? ability = null, RoomAttachmentCorruption? corruptionModifier = null, RoomEchoState? echo = null)
         {
             DataId = dataId; AssetKey = assetKey; AttachmentId = attachmentId; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
             CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
@@ -47,16 +48,20 @@ namespace MonsterTrain2Poju.Model
             SpawnCopySubtype = spawnCopySubtype;
             SpellUpgrade = spellUpgrade;
             DeathEffect = deathEffect;
-            Ability = ability; CorruptionModifier = corruptionModifier;
+            Ability = ability; CorruptionModifier = corruptionModifier; Echo = echo;
         }
         internal RoomCapacityAttachmentState WithSpellUpgrade(RoomSpellUpgradeState value) =>
             new RoomCapacityAttachmentState(DataId, AssetKey, AttachmentType, CapacityDelta, CharacterUpgrades,
                 AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
-                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, value, DeathEffect, Ability, CorruptionModifier);
+                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, value, DeathEffect, Ability, CorruptionModifier, Echo);
         internal RoomCapacityAttachmentState WithAbility(RoomAbilityState value) =>
             new RoomCapacityAttachmentState(DataId, AssetKey, AttachmentType, CapacityDelta, CharacterUpgrades,
                 AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
-                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, SpellUpgrade, DeathEffect, value, CorruptionModifier);
+                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, SpellUpgrade, DeathEffect, value, CorruptionModifier, Echo);
+        internal RoomCapacityAttachmentState WithEcho(RoomEchoState value) =>
+            new RoomCapacityAttachmentState(DataId, AssetKey, AttachmentType, CapacityDelta, CharacterUpgrades,
+                AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
+                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, SpellUpgrade, DeathEffect, Ability, CorruptionModifier, value);
     }
 
     public sealed class RoomCapacityState

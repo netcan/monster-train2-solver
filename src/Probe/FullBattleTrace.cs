@@ -386,6 +386,7 @@ namespace MonsterTrain2Poju.Probe
                 observedCards = projection.KnownCards.Count(); observedUnits = identities.Count;
                 int decisionStart = BattleSpawnPointProbe.Decisions.Count;
                 otherPiles = CaptureOtherPiles();
+                RoomEchoProbe.Discover();
                 enchantments = EnchantmentBattleScenario.Prepared || OriginalSupportUnitsScenario.CapturesEnchantments || RoomDeathEffectProbe.RequiresBirthWorld(this) || RoomPreCombatProbe.RequiresWorld(this)
                     ? EnchantmentBattleScenario.CaptureWorld(this) : null;
                 abilityCache = AbilityCardProbe.Capture(this);

@@ -332,6 +332,15 @@ After ignoring newly absent/null Sentry fields, only Sentry Turret changes among
 false attacking flag and original movement rules. Its original direct play and positive attack are checked
 separately against the native battle witness.
 
+The Echo Vault refresh comes from
+`.probe-runs/full-battle-no-cards-20261021-041950-8b750633/card-catalog.mt2f`
+(100454 bytes, 12209 nodes, SHA-256
+`87ab01e7204c995b2e7ab9c7f4013390c433e348f2b920dac492eba56551876a`).
+Ignoring newly absent/null Echo fields, only Echo Vault changes among 668
+definitions: its native empty remembered-spell state replaces the attachment
+guard. Native copying, overwrite, same-floor replay and an other-floor control
+have a separate unchanged-original witness.
+
 Recreate with an otherwise unmodified sandbox scenario:
 
 ```powershell

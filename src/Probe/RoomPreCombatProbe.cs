@@ -10,7 +10,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class RoomPreCombatProbe
     {
         internal const string SirenSongId = "8ccceee7-0eb9-4aa0-9268-ff83b6f6c54e";
-        internal static bool RequiresWorld(FullBattleTrace trace) => trace.KnownCards.Any(card => card.GetCardDataID() == SirenSongId);
+        internal static bool RequiresWorld(FullBattleTrace trace) => trace.KnownCards.Any(card => card.GetCardDataID() == SirenSongId || card.GetCardDataID() == RoomEchoProbe.CardId);
         internal static RoomPreCombatRule? Rule(CardUpgradeData upgrade, List<string> interactions)
         {
             RoomModifierData[] modifiers = upgrade.GetRoomModifierUpgrades().ToArray();
@@ -66,6 +66,15 @@ namespace MonsterTrain2Poju.Probe
             Records.Add(record);
             try { while (native.MoveNext()) yield return native.Current; record.Completed = true; }
             finally { (native as IDisposable)?.Dispose(); record.After = FullBattleTrace.Active!.CaptureCanonicalTrain(); }
+        }
+        [HarmonyPatch(typeof(RoomStateRecastSpellModifier), nameof(RoomStateRecastSpellModifier.PreCombat))]
+        private static class EchoPatch
+        {
+            private static void Postfix(RoomState room, ref IEnumerator __result)
+            {
+                if (FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                    __result = Observe(__result, room);
+            }
         }
     }
 }

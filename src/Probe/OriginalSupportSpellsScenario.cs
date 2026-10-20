@@ -112,6 +112,16 @@ namespace MonsterTrain2Poju.Probe
                 else candidates = candidates.Where(action => action.RoomIndex == 0 && source.Spawn.Train.Rooms[0].Units.Any(unit =>
                     unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.IsBoss != true));
             }
+            if (index >= 4 && IsolatedIds.Contains(RoomEchoProbe.CardId))
+            {
+                candidates = candidates.Where(action => action.RoomIndex == (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f9f20326-dccb-44af-894b-467534afab4a" ? 1 : 0));
+                if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "64beabe3-0260-44e2-a47a-b07192b52f25")
+                    candidates = candidates.Where(action => source.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == action.TargetUnitId && unit.SpawnerCardId == ids[0]));
+                else if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f9f20326-dccb-44af-894b-467534afab4a")
+                    candidates = candidates.Where(action => source.Spawn.Train.Rooms[1].Units.Any(unit => unit.Id == action.TargetUnitId && unit.SpawnerCardId == ids[1]));
+                else if (source.Spawn.Train.Context.FindCard(ids[index])!.DataId != RoomEchoProbe.CardId)
+                    candidates = candidates.Where(action => source.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy));
+            }
             if (index >= 4 && IsolatedIds.Contains("13876e8d-b111-429d-acdb-2e095fda897e"))
             {
                 string foodCard = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;

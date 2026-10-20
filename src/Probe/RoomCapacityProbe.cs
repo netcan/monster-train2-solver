@@ -65,7 +65,7 @@ namespace MonsterTrain2Poju.Probe
                     RoomSpellUpgradeProbe.Rule(roomModifiers, interactions);
                     RoomDeathEffectRule? death = RoomDeathEffectProbe.Rule(roomModifiers, interactions);
                     if (death != null) { if (deathEffect != null || attachment.UpgradeStates.Count != 1) return null; deathEffect = death; }
-                    bool supported = interactions.Count == 0 && (phase != null || post != null || pre != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length + energyModifiers.Length + roomModifiers.Count(RoomStatusStackProbe.Known) + roomModifiers.Count(RoomSpawnCopyProbe.Known) + roomModifiers.Count(RoomSpellUpgradeProbe.Known) + roomModifiers.Count(RoomDeathEffectProbe.Known) + roomModifiers.Count(RoomAbilityProbe.IsCorruption)) &&
+                    bool supported = interactions.Count == 0 && (phase != null || post != null || pre != null || roomModifiers.Length == capacityModifiers.Length + spellCostModifiers.Length + energyModifiers.Length + roomModifiers.Count(RoomStatusStackProbe.Known) + roomModifiers.Count(RoomSpawnCopyProbe.Known) + roomModifiers.Count(RoomSpellUpgradeProbe.Known) + roomModifiers.Count(RoomDeathEffectProbe.Known) + roomModifiers.Count(RoomAbilityProbe.IsCorruption) + roomModifiers.Count(RoomEchoProbe.Known)) &&
                         capacityModifiers.Length <= 1 && spellCostModifiers.Length <= 1 && energyModifiers.Length <= 1 && energyModifiers.All(modifier => modifier.GetParamInt() == 1) &&
                         state.GetAttackDamageBuff() == 0 && state.GetAdditionalHP() == 0 &&
                         (state.GetAdditionalUnhealedHP() == 0 || attachment.CardState?.GetCardDataID() == "57921ae8-ca98-4a3b-a659-5e741d2e904a" && state.GetAdditionalUnhealedHP() == 20) && state.GetCostReduction() == 0 && state.GetAdditionalSize() == 0 &&
@@ -93,7 +93,7 @@ namespace MonsterTrain2Poju.Probe
                     attachment.UpgradeStates.SelectMany(item => item.Item2.GetRoomModifierUpgrades())
                         .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").Sum(modifier => modifier.GetParamInt()), characterFilters, postCombat, preCombat,
                         statusStacks.Count == 0 ? null : statusStacks, spawnCopySubtype, RoomSpellUpgradeProbe.Capture(attachment), deathEffect,
-                        RoomAbilityProbe.Capture(attachment), RoomAbilityProbe.Corruption(attachment.UpgradeStates.SelectMany(upgrade => upgrade.Item2.GetRoomModifierUpgrades()))));
+                        RoomAbilityProbe.Capture(attachment), RoomAbilityProbe.Corruption(attachment.UpgradeStates.SelectMany(upgrade => upgrade.Item2.GetRoomModifierUpgrades())), RoomEchoProbe.Capture(attachment)));
             }
             return result.ToArray();
         }

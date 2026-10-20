@@ -37,8 +37,10 @@ namespace MonsterTrain2Poju.Model
 
         internal static RoomCombatResult Apply(RoomCombatState source, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre)
         {
-            RoomCombatState current = source;
-            var events = new List<CombatEvent>();
+            RoomCombatResult echo = RoomEchoModel.PreCombat(source);
+            if (!echo.Supported) return echo;
+            RoomCombatState current = echo.State!;
+            var events = echo.Events.ToList();
             // Native DoRoomCombat calls the room hook in previews as well.
             // The nested Damage effect supports preview application even though
             // the room modifier advertises CanApplyInPreviewMode = false.
