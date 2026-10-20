@@ -9918,6 +9918,20 @@ that combat search's terminal boundary. Existing Stasis and equipment combat
 batch chains still pass. Other unit-source copy destinations/counts remain
 guarded pending independent native witnesses.
 
+`full-battle-original-isolated-food-spawn.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261021-030841-e66aa7f4`.
+Unchanged Morsel-Made sits behind an ordinary front feeder and immediately eats
+an original Morsel Miner on birth. Its +9/+9 meal and +4/+4 OnFeed upgrade apply
+before the original food card finishes playing; the source routes to Eaten.
+The front feeder is unchanged. An original Morsel Jeweler on another floor
+survives birth, providing an independent scope control. The local OnEaten queue
+must finish before despawning the birth, followed by physical point compaction.
+DEPTH-PASS records a settled victory and zero capture/mismatch/unsupported/
+pending counters. Seven plays/five EndTurns pass sixteen immutable full replay
+branches and a 128-state search. Existing original Morsel eating and forced
+feeding checks pass. Nested food births with food-spawn listeners remain guarded
+until native creation-depth behavior is calibrated.
+
 `full-battle-original-isolated-equipment-consumption.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261021-025634-beb0e439`.
 Unchanged Hydra-Armed Horror converts Bloodthirsty Blade into one Multistrike,

@@ -1044,7 +1044,7 @@ namespace MonsterTrain2Poju.Model
                         return "Invalid equipment trigger origin.";
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "OnReanimated" && trigger.Kind != "OnBurnout" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnEncounterComplete" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "CardMonsterPlayed" && trigger.Kind != "CardSpellPlayed" && trigger.Kind != "CardExhausted" && trigger.Kind != "OnOwnAbilityActivated" && trigger.Kind != "OnPreOwnAbilityActivated" &&
-                        trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" &&
+                        trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" && trigger.Kind != "OnFoodSpawn" &&
                         trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" && trigger.Kind != "AfterSpawnEnchant" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
                         trigger.Kind != "OnTrainRoomLoop" && trigger.Kind != "PostAscension" && trigger.Kind != "OnShift" && trigger.Kind != "OnSentry" &&
@@ -1316,7 +1316,7 @@ namespace MonsterTrain2Poju.Model
                             continue;
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
-                            effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect") &&
+                            effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules") &&
                             effect.Type is not ("CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type is not ("CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits"))
@@ -1396,6 +1396,14 @@ namespace MonsterTrain2Poju.Model
                         if (effect.Type == "CardEffectPurgeUnitOnDeath")
                         {
                             if (state.Context?.OtherPiles == null) return "Unit-card purge requires captured native piles.";
+                            continue;
+                        }
+                        if (effect.Type == "CardEffectFeederRules")
+                        {
+                            if (trigger.Kind != "OnFoodSpawn" || effect.Action?.Type != "SelfFeederRules" ||
+                                effect.Action.Target != "Room" || effect.Action.Range != null ||
+                                !effect.Action.AllowPlayer || effect.Action.AllowEnemy)
+                                return "Triggered feeding requires the captured food-spawn target and self feeder.";
                             continue;
                         }
                         if (effect.Type == "CardEffectRemoveEquipment")
@@ -1577,6 +1585,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect;
             private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId, int? ExclusiveTriggerStateId)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int, int?)>();
             private bool runningTriggerQueue;
+            private bool localFeedingQueue;
             private bool stopAfterBossRemoval;
             private bool killCamActivated;
             // Older captures omitted the identity store. Retain observed source cards while
@@ -3031,7 +3040,7 @@ namespace MonsterTrain2Poju.Model
                 if (unsupportedReason == null) Feed(CombatTeam.Enemy);
             }
 
-            private void Feed(CombatTeam team, IReadOnlyList<int>? foodIds = null, int triggerCount = 1)
+            private void Feed(CombatTeam team, IReadOnlyList<int>? foodIds = null, int triggerCount = 1, WorkingUnit? selfFeeder = null)
             {
                 if (source.Deployment) return;
                 WorkingUnit[] living = units.Where(unit => unit.InRoom && unit.Alive && unit.Source.Team == team).ToArray();
@@ -3039,6 +3048,7 @@ namespace MonsterTrain2Poju.Model
                     foodIds.Select(id => living.FirstOrDefault(unit => unit.Source.Id == id))
                         .Where(unit => unit != null && IsFood(unit.Freeze())).Cast<WorkingUnit>().ToArray();
                 WorkingUnit? feeder = living.FirstOrDefault(unit => !unit.Has("untouchable") && !IsFood(unit.Freeze()));
+                if (feeder != null && selfFeeder != null) feeder = selfFeeder;
                 if (food.Length == 0 || feeder == null) return;
                 if (context?.QueryFrame?.SelectedRoomIndex != null)
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
@@ -3069,9 +3079,11 @@ namespace MonsterTrain2Poju.Model
                             {
                                 CardPileState? standby = context.OtherPiles?.FirstOrDefault(pile => pile.Name == "Standby");
                                 CardToken? card = standby?.Cards.FirstOrDefault(item => item.InstanceId == unit.Source.SpawnerCardId);
-                                if (card == null || context.OtherPiles!.All(pile => pile.Name != "Eaten"))
+                                bool resolvingBirth = context.OtherPiles?.Any(pile => pile.Name == "DiscardBuffer" &&
+                                    pile.Cards.Any(item => item.InstanceId == unit.Source.SpawnerCardId)) == true;
+                                if ((card == null && !resolvingBirth) || context.OtherPiles!.All(pile => pile.Name != "Eaten"))
                                 { unsupportedReason = "Eaten source cards require captured Standby and Eaten piles."; return; }
-                                context = context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name == "Standby" ? CardPileModel.Remove(pile, card.InstanceId) :
+                                if (card != null) context = context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name == "Standby" ? CardPileModel.Remove(pile, card.InstanceId) :
                                     pile.Name == "Eaten" ? CardPileModel.Add(pile, card) : pile).ToArray());
                             }
                             context = EquipmentModel.ReturnAttached(context, unit.Freeze());
@@ -3240,7 +3252,7 @@ namespace MonsterTrain2Poju.Model
                     if (context?.PurifyBlockedTriggers == null) { unsupportedReason = "Purify requires captured trigger queue restrictions."; return; }
                     if (context.PurifyBlockedTriggers.Contains(kind)) return;
                 }
-                if (!fromQueue && enqueueCharacterTrigger != null)
+                if (!fromQueue && enqueueCharacterTrigger != null && !localFeedingQueue)
                 { enqueueCharacterTrigger(new QueuedCharacterTrigger(unit.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramInt2: paramInt2, paramString: paramString,
                     dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId,
                     admission: CharacterTriggerAdmission.Accepted, exclusiveTriggerStateId: exclusiveTriggerStateId,
@@ -4188,6 +4200,7 @@ namespace MonsterTrain2Poju.Model
                 (RoomMoonPhaseModel.Effective(context, unit.RoomIndex, context!.QueryFrame!.MoonPhase!.Value) & action.Value) != 0;
 
             private bool ActionTestValid(CardActionEffect action, CardTargets targets, int amount = 0) =>
+                action.Type == "SelfFeederRules" ? !source.Deployment :
                 action.Type == "RemoveEquipment" ? targets.UnitIds.Any(id => units.Any(unit => unit.Source.Id == id && unit.Source.EquipmentCards?.Count > 0)) :
                 action.Type == "DamagePerSourceAttack" ? targets.UnitIds.Count > 0 :
                 action.Type == "UnitUpgradePerHoard" ? targets.UnitIds.Count > 0 && context?.QueryFrame?.DragonsHoard > 0 :
@@ -4487,6 +4500,17 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                if (action.Type == "SelfFeederRules")
+                {
+                    // Native runs the OnEaten queue before despawning food, even
+                    // when this effect is itself executing inside a character queue.
+                    bool previous = localFeedingQueue;
+                    localFeedingQueue = true;
+                    try { if (!source.Deployment) Feed(actor.Source.Team, targets.UnitIds, selfFeeder: actor); }
+                    finally { localFeedingQueue = previous; }
+                    if (unsupportedReason == null && context?.SpawnPoints != null && !SummonPhysical("Compact", team: actor.Source.Team)) return false;
+                    return unsupportedReason == null;
+                }
                 if (action.Type == "RemoveEquipment")
                 {
                     var definitions = new BattlePlayRules(context!.SummonCatalog!.Rooms, context.SummonCatalog.Cards

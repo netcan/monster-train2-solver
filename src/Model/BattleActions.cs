@@ -546,6 +546,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit[] players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             int position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
             int? spawnedId = null;
+            bool eatenDuringBirth = false;
             bool effectsApplied = false;
             IReadOnlyList<NextDrawUpgradeRule>? discardDrawUpgrades = null;
             RoomOutcome outcome = RoomOutcome.Exchanged;
@@ -707,6 +708,25 @@ namespace MonsterTrain2Poju.Model
                         spawnTriggers = new RoomCombatResult(train.Rooms.Single(room => room.RoomIndex == target.RoomIndex),
                             copiedBirth.Outcome == RoomOutcome.Exchanged ? spawnTriggers.Outcome : copiedBirth.Outcome,
                             0, spawnTriggers.Events.Concat(copiedBirth.Events).ToList());
+                    }
+                    CombatUnit? foodBirth = spawnTriggers.State!.Units.FirstOrDefault(unit => unit.Id == spawned.Id);
+                    if (foodBirth?.Health > 0 && foodBirth.DeathState?.IsDespawned != true && RoomCombatModel.IsFood(foodBirth))
+                    {
+                        foreach (int ownerId in spawnTriggers.State.Units.Where(unit => unit.Team == CombatTeam.Player).Select(unit => unit.Id).ToArray())
+                        {
+                            CombatUnit? owner = spawnTriggers.State.Units.FirstOrDefault(unit => unit.Id == ownerId);
+                            if (owner == null) continue;
+                            var foodFrame = new TrainCombatState(train.Rooms.Select(room => room.RoomIndex == target.RoomIndex
+                                ? spawnTriggers.State : room.WithContext(spawnTriggers.State.Context)).ToArray(), train.Movement,
+                                train.EnemySlotsPerRoom, spawnTriggers.State.Context);
+                            TrainCombatResult fed = TrainCombatModel.ApplyCharacterQueue(foodFrame, new List<RoomCombatModel.QueuedCharacterTrigger> {
+                                new RoomCombatModel.QueuedCharacterTrigger(target.RoomIndex, owner, "OnFoodSpawn", lastSpawnedOverrideUnitId: spawned.Id) });
+                            if (!fed.Supported) return Unsupported(fed.UnsupportedReason!);
+                            eatenDuringBirth |= fed.RoomResults.SelectMany(result => result.Events).Any(item => item.Kind == "Eaten" && item.Target == spawned.Id);
+                            train = fed.State!;
+                            spawnTriggers = new RoomCombatResult(train.Rooms.Single(room => room.RoomIndex == target.RoomIndex), fed.Outcome,
+                                0, spawnTriggers.Events.ToList());
+                        }
                     }
                     // Ordinary paid births have the same player-wide enchant phase
                     // as repeated and cloned births, before the post-play Rally.
@@ -985,13 +1005,13 @@ namespace MonsterTrain2Poju.Model
                     new UnitStandbyCondition(card.InstanceId, spawnedId.Value,
                         !train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == spawnedId.Value))) : pile).ToArray();
             bool summonRemoved = spawnedId.HasValue && !train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == spawnedId.Value);
-            bool summonedEndless = summonRemoved && rule.SpawnUnit?.Statuses.Any(status => status.Id == "endless" && status.Stacks > 0) == true;
+            bool summonedEndless = summonRemoved && !eatenDuringBirth && rule.SpawnUnit?.Statuses.Any(status => status.Id == "endless" && status.Stacks > 0) == true;
             if (summonRemoved && !terminal && !consumedOnPlay)
             {
                 if (!summonedEndless)
                 {
                     CardPileState? standby = piles.FirstOrDefault(pile => pile.Name == "Standby");
-                    CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == "Exhausted");
+                    CardPileState? exhausted = piles.FirstOrDefault(pile => pile.Name == (eatenDuringBirth ? "Eaten" : "Exhausted"));
                     if (standby == null || exhausted == null) return Unsupported("Missing removed summon card routing.");
                     piles = piles.Select(pile => pile == standby ? CardPileModel.Remove(pile, card.InstanceId) :
                         pile == exhausted ? CardPileModel.Add(pile, card) : pile).ToArray();
@@ -1036,7 +1056,7 @@ namespace MonsterTrain2Poju.Model
             if (!skipNaturalDiscard) statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
             statistics = statistics?.WithPlayedCost(card.InstanceId, null);
             if (!skipNaturalDiscard && !terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
-            if (!skipNaturalDiscard && summonRemoved && !summonedEndless && !terminal && !consumedOnPlay)
+            if (!skipNaturalDiscard && summonRemoved && !eatenDuringBirth && !summonedEndless && !terminal && !consumedOnPlay)
                 statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
             if (!skipNaturalDiscard && rule.Destination == "Purged")
             {

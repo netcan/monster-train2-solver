@@ -18,6 +18,12 @@ internal static class OriginalSupportSpellsChecks
             string? replayKind = source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(ids[index])!.DataId)
                 .Effects.FirstOrDefault(effect => effect.Type == "PlayUnitTrigger")?.UnitTriggerKind;
             IEnumerable<PlayCardAction> candidates = index < 4 ? Array.Empty<PlayCardAction>() : BattleActionModel.EnumerateSupportedPlays(source, ids[index]);
+            if (index >= 4 && ids.Any(id => source.Spawn.Train.Context!.FindCard(id)?.DataId == "13876e8d-b111-429d-acdb-2e095fda897e"))
+            {
+                string foodCard = source.Spawn.Train.Context!.FindCard(ids[index])!.DataId;
+                candidates = candidates.Where(action => action.RoomIndex == (foodCard == "9c8d3e46-1758-4ade-a4b4-cd2bf649a4d6" ? 1 : 0));
+                if (foodCard == "13876e8d-b111-429d-acdb-2e095fda897e") candidates = candidates.Where(action => action.PlayerPosition == 1);
+            }
             if (index >= 4 && source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "8ccceee7-0eb9-4aa0-9268-ff83b6f6c54e")
                 candidates = candidates.Where(action => action.RoomIndex == 2);
             if (index >= 4 && ids.Any(id => source.Spawn.Train.Context!.FindCard(id)?.DataId == "6d6c72ab-890b-4275-bb52-2544befbc12b") &&
@@ -697,6 +703,7 @@ internal static class OriginalSupportSpellsChecks
         RoomDeathEffectChecks.Native(root, originals);
         RoomSirenSongChecks.Native(root, originals);
         EquipmentConsumptionChecks.Native(root, originals);
+        FoodSpawnChecks.Native(root, originals);
         if (originals.Contains("7018bb02-2ec2-4b4f-95d0-7bafce95d97d")) CrucibleStewardChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
     }

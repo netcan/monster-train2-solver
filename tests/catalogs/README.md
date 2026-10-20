@@ -23,10 +23,12 @@ and frame stayed unchanged during inspection. No card was played by the catalog
 operation. The surrounding sandbox run passed its usual capture checks and
 verified the protected original profile afterward.
 
-Source: `.probe-runs/full-battle-no-cards-20261021-025416-351857f5/card-catalog.mt2f`.
-The committed archive is byte-identical: 99,909 bytes, 12,134 unique nodes,
-SHA-256 `9452f589e504317331907c3013a66146b414bd4efc8815a7e3e9c1bca1e5dc22`.
-The latest refresh captures Hydra-Armed Horror's equipment removal and
+Source: `.probe-runs/full-battle-no-cards-20261021-030333-f98fea3c/card-catalog.mt2f`.
+The committed archive is byte-identical: 99,927 bytes, 12,136 unique nodes,
+SHA-256 `ff3c511583d59283b3ddb003c950ad4d7244977398c76f998449b66357d54900`.
+The latest refresh captures Morsel-Made's authored self-feeder effect. Only this
+projection changes; the other 667 are identical.
+The preceding refresh captures Hydra-Armed Horror's equipment removal and
 Soulsmelter's status-quotient encounter award. Only these two projections change;
 the other 666 are identical.
 The preceding refresh captures Siren Song's pre-combat Dazed/movement composition.

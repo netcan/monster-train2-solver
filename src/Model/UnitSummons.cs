@@ -81,6 +81,8 @@ namespace MonsterTrain2Poju.Model
         {
             CombatContext? context = source.Context;
             CombatUnit? raw = definition.SpawnUnit;
+            if (raw != null && RoomCombatModel.IsFood(raw) && source.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnFoodSpawn")))
+                return Unsupported("Nested food births with food-spawn listeners require native creation-depth calibration.");
             if (raw?.Modifiers?.Graft != null)
                 return Unsupported("Generated, triggered, or cloned graft births require their native equipment identity transition.");
             if (!isClone && RoomSpawnCopyModel.Active(source.WithContext(context)))
