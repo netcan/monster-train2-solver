@@ -9705,3 +9705,21 @@ All three battles finish with DEPTH-PASS, settled victories and zero capture/
 mismatch/unsupported/pending counters. Focused replay covers sixteen immutable
 branches each; bounded search has no unsupported attempts and equal serial/
 parallel results.
+
+`full-battle-original-isolated-mooncaller.mt2f` comes from
+`.probe-runs/full-battle-units-spells-and-junk-20261020-235332-06f0fe80`.
+Unchanged Mooncaller adds one OnMoonPhaseShift execution on its current floor.
+Astrologer on the same floor executes its +5 Attack callback twice for +10.
+Mooncaller is placed at the front, takes damage and dies; Astrologer's next
+phase callbacks return to one execution and +5 Attack. Battle Dancer on the
+other floor supplies an independent native fire-count query control, including
+when it has no authored Moon callback. Queries also verify enemy eligibility.
+The model recomputes counts from current live owners when freezing units,
+installing triggers or dispatching callbacks, retaining native relic-count
+admission rules and preserving room metadata through modifier copies.
+Purified aura births and unknown room count modifiers remain guarded.
+The battle finishes with DEPTH-PASS, settled victory and all four failure
+counters at zero. Six plays and five EndTurns replay through sixteen immutable
+branches. Bounded search has zero unsupported attempts and equal serial/parallel
+results. Existing original trigger relic and Astrologer native chains retain
+their focused replays.

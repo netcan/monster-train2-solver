@@ -675,7 +675,7 @@ namespace MonsterTrain2Poju.Probe
             UnitModifiers? m = source.Modifiers;
             var modifiers = m == null ? null : new UnitModifiers(m.AttackDamage, m.AttackDamageAdded, m.DamageBuff,
                 m.RawSize, m.EquipmentLimit, m.CanBeHealed, m.IsClone, m.Upgrades, m.HealthFromUpgrades, matchesSource,
-                m.DamageBuffFromStatusEffects, m.MagebladeDamagePerMagicPower, m.StatusAttackModifiers, m.IsChampion, m.SelfAttackRules, m.RoomResources, m.RoomStatuses);
+                m.DamageBuffFromStatusEffects, m.MagebladeDamagePerMagicPower, m.StatusAttackModifiers, m.IsChampion, m.SelfAttackRules, m.RoomResources, m.RoomStatuses, m.RoomTriggerCounts);
             return new CombatUnit(0, source.AssetKey, CombatTeam.Player, source.BaseAttack, source.Health,
                 source.MaxHealth, source.CanAttack, false, false, source.Statuses, source.Triggers, size: source.Size,
                 statusImmunities: source.StatusImmunities, subtypes: source.Subtypes, modifiers: modifiers, isBoss: source.IsBoss,

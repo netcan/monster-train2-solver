@@ -979,6 +979,10 @@ namespace MonsterTrain2Poju.Model
                 if (roomResourceError != null) return roomResourceError;
                 string? roomStatusError = UnitRoomStatusModel.Validate(unit);
                 if (roomStatusError != null) return roomStatusError;
+                string? roomTriggerCountError = UnitRoomTriggerCountModel.Validate(unit);
+                if (roomTriggerCountError != null) return roomTriggerCountError;
+                if (unit.Modifiers?.RoomTriggerCounts?.Count > 0 && state.Context?.TriggerCounts == null)
+                    return "Unit room trigger counts require a captured native trigger-count cache.";
                 if (selfAttackError != null) return selfAttackError;
                 if (unit.RegisteredStatus("conduit") != null && !ConduitModel.Captured(state.Context))
                     return "Conduit requires captured native room/card tracker state.";
@@ -1050,7 +1054,8 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.Kind == "OnNewStatusEffectAdded" && !unit.CountUniqueVisibleStatuses().HasValue)
                         return "New-status callbacks require the complete native status dictionary and display definitions.";
                     if (trigger.FireCount < 0 && state.Context?.TriggerCounts == null) return "Invalid trigger fire count.";
-                    TriggerCountModel.Query(state.Context, unit, trigger, out string? countError);
+                    TriggerCountModel.Query(state.Context, unit, trigger, out string? countError,
+                        UnitRoomTriggerCountModel.Modifier(state.Units, unit.Team, trigger.Kind));
                     if (countError != null) return countError;
                     foreach (CombatEffect effect in trigger.Effects)
                     {
@@ -1394,6 +1399,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Func<CombatContext?>? getContext;
             private readonly Action<string>? reject;
             private readonly Func<WorkingUnit, string, int>? roomStatusModifier;
+            private readonly Func<WorkingUnit, string, int>? roomTriggerModifier;
             internal bool Alive => Health > 0 && !Removed && !Despawned;
             internal int Attack
             {
@@ -1420,10 +1426,11 @@ namespace MonsterTrain2Poju.Model
             internal int Attacks => CombatUnit.AttackCount(Statuses.Values);
 
             internal WorkingUnit(CombatUnit source, int roomIndex, Func<CombatContext?>? getContext = null, Action<string>? reject = null,
-                Func<WorkingUnit, string, int>? roomStatusModifier = null)
+                Func<WorkingUnit, string, int>? roomStatusModifier = null, Func<WorkingUnit, string, int>? roomTriggerModifier = null)
             {
                 this.roomIndex = roomIndex; this.getContext = getContext; this.reject = reject;
                 this.roomStatusModifier = roomStatusModifier;
+                this.roomTriggerModifier = roomTriggerModifier;
                 Source = source; Health = source.Health; LastAttackerId = source.LastAttackerId;
                 LastFeederId = source.LastFeederId;
                 Despawned = source.DeathState?.IsDespawned == true; Destroyed = source.DeathState?.IsDestroyed == true;
@@ -1474,7 +1481,8 @@ namespace MonsterTrain2Poju.Model
                     Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards, Source.NextTriggerId, Source.Ability, dictionary, Source.AbilityRules, Source.HordeDefinition, Source.IsSpawning, Source.SacrificeCardId,
                     Source.DeathState?.WithLifecycle(Source.DeathState.IsDespawned.HasValue ? Despawned : (bool?)null,
                         Source.DeathState.IsDestroyed.HasValue ? Destroyed : (bool?)null), bumpRules: Source.BumpRules, lastFeederId: LastFeederId, moonPhaseMask: Source.MoonPhaseMask);
-                result = TriggerCountModel.Refresh(getContext?.Invoke(), result, out string? error);
+                result = TriggerCountModel.Refresh(getContext?.Invoke(), result, out string? error,
+                    kind => roomTriggerModifier?.Invoke(this, kind) ?? 0);
                 if (error != null) reject?.Invoke(error);
                 return result;
             }
@@ -1578,7 +1586,11 @@ namespace MonsterTrain2Poju.Model
 
             private WorkingUnit NewUnit(CombatUnit unit, bool inRoom = true, int? roomIndex = null) =>
                 new WorkingUnit(unit, roomIndex ?? source.RoomIndex, () => context, error => unsupportedReason = error,
-                    RoomStatusModifier) { InRoom = inRoom };
+                    RoomStatusModifier, RoomTriggerModifier) { InRoom = inRoom };
+
+            private int RoomTriggerModifier(WorkingUnit target, string kind) => units.Where(unit => unit.Alive && unit.InRoom &&
+                unit.RoomIndex == target.RoomIndex && unit.Source.Team == target.Source.Team)
+                .Sum(unit => unit.Source.Modifiers?.RoomTriggerCounts?.Where(rule => rule.Kind == kind).Sum(rule => rule.Value) ?? 0);
 
             private int RoomStatusModifier(WorkingUnit target, string status) => units.Where(unit => unit.Alive && unit.InRoom &&
                 unit.RoomIndex == target.RoomIndex && unit.Source.Team == target.Source.Team)
@@ -3328,7 +3340,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     // Native tests and marks each trigger once per queue record, then
                     // executes its entire batch, including a trigger marked Once.
-                    int currentCount = TriggerCountModel.Query(context, unit.Freeze(), trigger, out string? countError);
+                    int currentCount = TriggerCountModel.Query(context, unit.Freeze(), trigger, out string? countError, RoomTriggerModifier(unit, trigger.Kind));
                     if (countError != null) { unsupportedReason = countError; return; }
                     int fireCount = unchecked(currentCount * triggerCount);
                     bool captureReplay = context?.TriggerCounts?.ReplayHistory?.CapturedKinds.Contains(kind) == true;
@@ -3589,7 +3601,7 @@ namespace MonsterTrain2Poju.Model
                     {
                         var query = new CombatTrigger(kind, false, false, true, 1, Array.Empty<CombatEffect>(), false,
                             noCountModifiersAllowed: false);
-                        fireCount = TriggerCountModel.Query(context, unit.Freeze(), query, out string? error);
+                        fireCount = TriggerCountModel.Query(context, unit.Freeze(), query, out string? error, RoomTriggerModifier(unit, kind));
                         if (error != null) { unsupportedReason = error; return false; }
                     }
 

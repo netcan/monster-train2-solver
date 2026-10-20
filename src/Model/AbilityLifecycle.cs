@@ -144,7 +144,8 @@ namespace MonsterTrain2Poju.Model
                 int? next = actor.NextTriggerId;
                 var triggers = actor.Triggers.Concat((source.Preview ? Array.Empty<CombatTrigger>() : rule.CommonTriggers).Select(trigger =>
                     trigger.WithOrigin(CommonOrigin, 0, next.HasValue ? next++ : null))).ToArray();
-                CombatUnit installed = TriggerCountModel.Refresh(state.Context, Copy(actor, added, triggers, next), out error);
+                CombatUnit installed = TriggerCountModel.Refresh(state.Context, Copy(actor, added, triggers, next), out error,
+                    kind => UnitRoomTriggerCountModel.Modifier(state.Units, actor.Team, kind));
                 if (error != null) return Unsupported(error);
                 state = Replace(state, installed);
                 AbilityCardResult cached = AbilityCardModel.Get(state.Context!, definition.CardCreation);

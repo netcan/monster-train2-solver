@@ -64,7 +64,7 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        internal static int Query(CombatContext? context, CombatUnit unit, CombatTrigger trigger, out string? error)
+        internal static int Query(CombatContext? context, CombatUnit unit, CombatTrigger trigger, out string? error, int roomModifier = 0)
         {
             error = null;
             TriggerCountState? state = context?.TriggerCounts;
@@ -88,12 +88,10 @@ namespace MonsterTrain2Poju.Model
                 if (!eligible) return 1;
             }
             if (trigger.NoCountModifiersAllowed == true) return 1;
-            // Room modifiers remain guarded by the existing room/upgrade capture
-            // boundary. Signed and overflowing native counts can be non-positive.
-            return unchecked(1 + (state.Modifiers.FirstOrDefault(item => item.Kind == trigger.Kind)?.Value ?? 0));
+            return unchecked(1 + roomModifier + (state.Modifiers.FirstOrDefault(item => item.Kind == trigger.Kind)?.Value ?? 0));
         }
 
-        internal static CombatUnit Refresh(CombatContext? context, CombatUnit unit, out string? error)
+        internal static CombatUnit Refresh(CombatContext? context, CombatUnit unit, out string? error, Func<string, int>? roomModifier = null)
         {
             error = null;
             if (context?.TriggerCounts == null) return unit;
@@ -101,7 +99,7 @@ namespace MonsterTrain2Poju.Model
             bool changed = false;
             for (int index = 0; index < triggers.Length; index++)
             {
-                int count = Query(context, unit, triggers[index], out error);
+                int count = Query(context, unit, triggers[index], out error, roomModifier?.Invoke(triggers[index].Kind) ?? 0);
                 if (error != null) return unit;
                 if (count == triggers[index].FireCount) continue;
                 triggers[index] = triggers[index].WithFireCount(count); changed = true;

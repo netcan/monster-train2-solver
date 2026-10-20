@@ -204,7 +204,7 @@ namespace MonsterTrain2Poju.Probe
                         }
                 }
                 int isolatedPosition = index < 3 ? 0 : source.Spawn.Train.Rooms.Single(currentRoom => currentRoom.RoomIndex == isolatedRoom).Units.Count(unit => unit.Team == CombatTeam.Player);
-                if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4") isolatedPosition = 0;
+                if (source.Spawn.Train.Context!.FindCard(ids[index])!.DataId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4" or "bc89dc02-3fe0-42c3-bcb0-62a0e3ae0c84") isolatedPosition = 0;
                 var isolatedAction = ids[index] == IsolatedEnergyControlInstanceId && IsolatedEnergyControlInstanceId != 0
                     ? new PlayCardAction(ids[index], isolatedRoom)
                     : new PlayCardAction(ids[index], isolatedRoom, playerPosition: isolatedPosition);

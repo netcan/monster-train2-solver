@@ -42,6 +42,9 @@ namespace MonsterTrain2Poju.Probe
                 UnitRoomResourceProbe.Rules(unit.GetRoomStateModifiers().Where(modifier => UnitRoomResourceModel.Known(modifier.GetType().Name))
                     .Cast<RoomStateModifierBase>().Select(modifier => modifier.GetRoomModifierData())),
                 UnitRoomStatusProbe.Rules(unit.GetRoomStateModifiers().Where(modifier => UnitRoomStatusModel.Known(modifier.GetType().Name))
+                    .Cast<RoomStateModifierBase>().Select(modifier => modifier.GetRoomModifierData())),
+                roomTriggerCounts: UnitRoomTriggerCountProbe.Rules(unit.GetRoomStateModifiers()
+                    .Where(modifier => modifier.GetType().Name == UnitRoomTriggerCountModel.Type)
                     .Cast<RoomStateModifierBase>().Select(modifier => modifier.GetRoomModifierData())));
         }
         internal static UnitModifiers Definition(CharacterData data) => new UnitModifiers(data.GetAttackDamage(), 0, 0,
@@ -50,6 +53,7 @@ namespace MonsterTrain2Poju.Probe
             statusAttackModifiers: RelicProbe.StatusAttackModifiers(AllGameManagers.Instance!), isChampion: data.IsChampion(),
             selfAttackRules: UnitSelfAttackProbe.Rules(data.GetRoomModifiersData()),
             roomResources: UnitRoomResourceProbe.Rules(data.GetRoomModifiersData()),
-            roomStatuses: UnitRoomStatusProbe.Rules(data.GetRoomModifiersData()));
+            roomStatuses: UnitRoomStatusProbe.Rules(data.GetRoomModifiersData()),
+            roomTriggerCounts: UnitRoomTriggerCountProbe.Rules(data.GetRoomModifiersData()));
     }
 }

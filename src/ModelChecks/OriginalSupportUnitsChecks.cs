@@ -182,6 +182,7 @@ internal static class OriginalSupportUnitsChecks
             }
             if (expectedIds.Contains("8917df91-1517-4490-abd1-b58a065807fe")) VinemotherChecks.Native(root);
             ConditionalUnitUpgradeChecks.Native(root, expectedIds);
+            if (expectedIds.Contains("bc89dc02-3fe0-42c3-bcb0-62a0e3ae0c84")) UnitRoomTriggerCountChecks.Native(root);
             RecordedBattleChecks.Native(root);
             return;
         }
@@ -467,7 +468,7 @@ internal static class OriginalSupportUnitsChecks
         RoomCombatState targetRoom = unitBefore.Spawn.Train.Rooms.Single(item => item.RoomIndex == unitAction.RoomIndex);
         RoomPlayRule targetRule = unitBefore.PlayRules.Rooms.Single(item => item.RoomIndex == unitAction.RoomIndex);
         int appendPosition = targetRoom.Units.Count(candidate => candidate.Team == CombatTeam.Player);
-        if (expectedId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4") appendPosition = 0;
+        if (expectedId is "0e4495fc-171b-4c5e-9a1f-d1220542a6f1" or "58ac2b3e-ad25-4620-b814-6a3a74175aa4" or "bc89dc02-3fe0-42c3-bcb0-62a0e3ae0c84") appendPosition = 0;
         bool juggernautXCost = expectedId == JuggernautId;
         bool healthAdjustedOnSpawn = expectedId == SteelsingerId;
         int hoardBirthBonus = expectedId == "0060b286-4716-49e0-9714-3fd7811b9f72" ? unitBefore.Spawn.Train.Context!.QueryFrame!.DragonsHoard!.Value * 10 : 0;
@@ -1491,7 +1492,7 @@ internal static class OriginalSupportUnitsChecks
                     !unit.Triggers.Single(trigger => trigger.Kind == "OnDeath").HasTriggered) && spawnedUnit.Status("stealth") == null,
                 "Molten Encasement must preserve its native 1-cost 0/1 Tomb birth and inactive OnDeath room +2 Stealth definition.");
         }
-        if (expectedId == AstrologerId)
+        if (expectedId == AstrologerId && root.GetProperty("ModifierScenario").GetString()?.Contains("bc89dc02-3fe0-42c3-bcb0-62a0e3ae0c84") != true)
         {
             CombatTrigger phaseShift = template.Triggers.Single(trigger => trigger.Kind == "OnMoonPhaseShift");
             CombatTrigger spawnedPhaseShift = spawnedUnit.Triggers.Single(trigger => trigger.Kind == "OnMoonPhaseShift");
@@ -1593,7 +1594,7 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-HULKING-MASS PASS: original 2-cost 15/20 size-3 birth with 40 Armor; its captured OnReanimated +40 Armor callback remained inactive.");
         else if (expectedId == ReformingOozeId)
             Console.WriteLine("ORIGINAL-REFORMING-OOZE PASS: original 1-cost 7/15 size-2 Undying birth; its permanent self +6 Attack OnReanimated upgrade remained inactive.");
-        else if (expectedId == AstrologerId)
+        else if (expectedId == AstrologerId && root.GetProperty("ModifierScenario").GetString()?.Contains("bc89dc02-3fe0-42c3-bcb0-62a0e3ae0c84") != true)
             Console.WriteLine("ORIGINAL-ASTROLOGER PASS: original 1-cost 5/10 size-2 birth and three native +5 Attack OnMoonPhaseShift upgrades, then a no-shift control.");
         else if (expectedId == SnottyWhelpId)
             Console.WriteLine("ORIGINAL-SNOTTY-WHELP PASS: original 1-cost 4/1 Whelp birth; native OnSpawn grants ability availability and resets cooldown, while its cooldown-2 ability remains unused.");

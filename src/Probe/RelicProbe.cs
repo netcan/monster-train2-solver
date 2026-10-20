@@ -14,7 +14,7 @@ namespace MonsterTrain2Poju.Probe
             managers.GetCardManager()?.GetAllCards(new List<CardState>()).Any(card =>
                 card.GetEffectStates().Any(effect => effect.GetCardEffect() is CardEffectReplayTrigger)) == true;
         internal static bool HasTriggerCounts(AllGameManagers managers) =>
-            HasReplayHistory(managers) || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount || effect is RelicEffectAddTrigger));
+            HasReplayHistory(managers) || UnitRoomTriggerCountProbe.Captured(managers) || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount || effect is RelicEffectAddTrigger));
         internal static bool HasStatusAttackHistory(AllGameManagers managers) =>
             PyreResourceRefreshScenario.Enabled || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude ||
                 effect is IRebalanceValorRelicEffect ||

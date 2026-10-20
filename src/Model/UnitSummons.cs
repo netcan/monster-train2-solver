@@ -87,7 +87,7 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Unit birth requires its template, source reference and cardless metadata.");
             if (card?.MaskDescriptor?.Purified == true && raw.Modifiers?.RoomResources?.Count > 0)
                 return Unsupported("Purified unit room resources require separate native calibration.");
-            if (card?.MaskDescriptor?.Purified == true && raw.Modifiers?.RoomStatuses?.Count > 0)
+            if (card?.MaskDescriptor?.Purified == true && (raw.Modifiers?.RoomStatuses?.Count > 0 || raw.Modifiers?.RoomTriggerCounts?.Count > 0))
                 return Unsupported("Purified unit room status modifiers require separate native calibration.");
             CombatUnit initialized = AbilityLifecycleModel.InitialAtSpawn(raw, card, context, out string? error);
             if (error != null) return Unsupported(error);
@@ -113,7 +113,7 @@ namespace MonsterTrain2Poju.Model
                 UnitModifiers old = template.Modifiers!;
                 var cloned = new UnitModifiers(old.AttackDamage, old.AttackDamageAdded, old.DamageBuff, old.RawSize, old.EquipmentLimit,
                     old.CanBeHealed, true, old.Upgrades, old.HealthFromUpgrades, old.SpawnerMatchesDefinition,
-                    old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses);
+                    old.DamageBuffFromStatusEffects, old.MagebladeDamagePerMagicPower, old.StatusAttackModifiers, old.IsChampion, old.SelfAttackRules, old.RoomResources, old.RoomStatuses, old.RoomTriggerCounts);
                 template = UnitCloneModel.Copy(template, cloned, template.BaseAttack, template.Health, template.MaxHealth);
             }
             template = StatusAttackDamageModel.PrepareBirthTemplate(template, starting);

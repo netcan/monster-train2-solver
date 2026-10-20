@@ -146,7 +146,8 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             actor = state.Units.Single(unit => unit.Id == unitId);
-            actor = TriggerCountModel.Refresh(state.Context, actor, out string? error);
+            actor = TriggerCountModel.Refresh(state.Context, actor, out string? error,
+                kind => UnitRoomTriggerCountModel.Modifier(state.Units, actor.Team, kind));
             if (error != null) return Fail(error);
             state = new RoomCombatState(state.RoomIndex, state.Deployment,
                 state.Units.Select(unit => unit.Id == unitId ? actor : unit).ToArray(), state.ExternalInteractions,

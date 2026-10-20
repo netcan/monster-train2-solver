@@ -254,6 +254,7 @@ namespace MonsterTrain2Poju.Probe
                 preview: save.PreviewMode, activeCompanionBossIds: activeCompanionBossIds);
             UnitSelfAttackProbe.Observe(captured, characters, this);
             UnitRoomStatusProbe.Observe(captured, characters, this);
+            UnitRoomTriggerCountProbe.Observe(captured, characters, this);
             return captured;
         }
 
@@ -266,7 +267,7 @@ namespace MonsterTrain2Poju.Probe
             CombatTrigger[] triggers = CaptureTriggers(character, interactions);
             if (character.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier &&
                 !(ConduitProbe.Enabled && modifier is RoomStateConduitModifier) && !UnitSelfAttackModel.Known(modifier.GetType().Name) &&
-                !UnitRoomResourceModel.Known(modifier.GetType().Name) && !UnitRoomStatusModel.Known(modifier.GetType().Name)))
+                !UnitRoomResourceModel.Known(modifier.GetType().Name) && !UnitRoomStatusModel.Known(modifier.GetType().Name) && modifier.GetType().Name != UnitRoomTriggerCountModel.Type))
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " room modifiers");
             CardState? card = character.GetSpawnerCard();
             bool unsupportedSpawnerCardTriggers = card != null && card.GetTriggers().Any(trigger =>
@@ -467,7 +468,8 @@ namespace MonsterTrain2Poju.Probe
                 if (RelicProbe.HasTriggerCounts(AllGameManagers.Instance!))
                 {
                     var point = (SpawnPoint?)AccessTools.Field(primary.GetType(), "spawnPoint").GetValue(primary);
-                    if (point?.GetRoomOwner()?.GetRoomStateTriggerCountModification(trigger.GetTrigger(), unit) != 0 && point?.GetRoomOwner() != null)
+                    if (point?.GetRoomOwner() is RoomState triggerRoom &&
+                        triggerRoom.GetRoomStateTriggerCountModification(trigger.GetTrigger(), unit) != UnitRoomTriggerCountProbe.Amount(triggerRoom, unit, trigger.GetTrigger()))
                         interactions.Add("Unmodeled room trigger count modification");
                 }
                 CharacterTriggerData data = trigger.GetTriggerData();
@@ -1537,6 +1539,7 @@ namespace MonsterTrain2Poju.Probe
                 TriggeredStatuses = TriggeredStatusProbe.Records,
                 UnitSelfAttackQueries = UnitSelfAttackProbe.Records,
                 UnitRoomStatusQueries = UnitRoomStatusProbe.Records,
+                UnitRoomTriggerCountQueries = UnitRoomTriggerCountProbe.Records,
                 TriggeredTrainHeals = TriggeredTrainHealProbe.Records,
                 TriggeredTrainHealTests = TriggeredTrainHealProbe.Tests,
                 StatusRegistryCalibration = StatusRegistryCalibration.Samples,
