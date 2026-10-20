@@ -21,6 +21,7 @@ internal static class OriginalSupportUnitsChecks
     private const string ParrafinEnforcerId = "b9788a77-50da-4654-acfa-960c23649984";
     private const string SycophantId = "6d2053e9-1a6a-4862-b348-76a92a92ea83";
     private const string VotivaryId = "e9bb0dfe-ecf7-4046-be6d-f6f00893662f";
+    private const string BountyStalkerId = "3e86422e-c8e4-4ec7-bc0a-0c622b7237b4";
     private static readonly string[] Originals = ["4aa37169-c5cf-4a5b-b927-dc31b05f6e24", "82e21764-56cb-4e41-882f-ab3dd0c1dcbc",
         "c8b428ac-a1e9-4e52-96e0-5eed522195a2", "0c68b12a-0779-4c3c-bf64-6bc5bcf83e9f", "8c404be7-7179-461c-8e7d-b5fdb296174c",
         "d76be2d0-f851-4d43-bdc0-7c7a7779724f", "600ef4bf-59ec-45b6-a3e7-273cbb43c7bb", "85bddcfb-8e7a-4797-a209-c7d62f40ecc7",
@@ -468,6 +469,33 @@ internal static class OriginalSupportUnitsChecks
                 !onDeath.HasTriggered && remainsUntriggered && unitBefore.DrawPerTurn == unitAfter.DrawPerTurn,
                 "Votivary must preserve its native zero-cost 1/1 size-1 birth and inactive OnDeath room +2 DrawNextTurn definition.");
         }
+        if (expectedId == BountyStalkerId)
+        {
+            CombatTrigger onDeath = template.Triggers.Single(trigger => trigger.Kind == "OnDeath");
+            CombatEffect upgradeEffect = onDeath.Effects.Single();
+            CardActionEffect upgrade = upgradeEffect.UnitUpgrade!;
+            bool onDeathAppliedUpgrade = root.GetProperty("Turns").EnumerateArray().Any(row =>
+            {
+                BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                CombatUnit? dying = before.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .SingleOrDefault(unit => unit.SpawnerCardId == ids[actionIndex]);
+                if (dying == null) return false;
+                CombatTrigger death = dying.Triggers.Single(trigger => trigger.Kind == "OnDeath");
+                CardInstanceState beforeCard = before.Spawn.Train.Context!.FindCard(ids[actionIndex])!;
+                CardInstanceState afterCard = after.Spawn.Train.Context!.FindCard(ids[actionIndex])!;
+                bool removed = after.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != dying.Id);
+                return dying.Health == 5 && !death.HasTriggered && death.FireCount == 1 && removed &&
+                    afterCard.Permanent.Upgrades.Count == beforeCard.Permanent.Upgrades.Count + 1 &&
+                    afterCard.Permanent.Upgrades.Any(item => item.AssetKey == "Plus10Attack" && item.Stats.Damage == 10);
+            });
+            Require(rule.AssetKey == "BountyStalker" && template.AssetKey == "BountyStalker" &&
+                rule.Cost == 1 && template.Health == 5 && template.MaxHealth == 5 && template.Modifiers.AttackDamage == 30 && template.Size == 2 &&
+                upgradeEffect.Type == "CardEffectAddCardUpgradeToUnits" && upgrade.Type == "UnitUpgrade" && upgrade.Target == "Self" &&
+                upgrade.Lifetime == "Permanent" && upgrade.Upgrade is { AssetKey: "Plus10Attack" } && upgrade.Upgrade.Stats.Damage == 10 &&
+                !onDeath.HasTriggered && onDeathAppliedUpgrade,
+                "Bounty Stalker must preserve its native 1-cost 30/5 size-2 birth and apply its permanent self +10 Attack upgrade when it dies.");
+        }
         RecordedBattleChecks.Native(root);
         if (expectedId == EelGorgonId)
             Console.WriteLine("ORIGINAL-EEL-GORGON PASS: original 10/5 size-2 paid spawn and three captured self PostCombat remove-all categories; no positive status-removal stimulus was present.");
@@ -489,6 +517,8 @@ internal static class OriginalSupportUnitsChecks
             Console.WriteLine("ORIGINAL-SYCOPHANT PASS: original 1-cost 10/25 size-2 birth and a single OnAttacking +8 Pyregel definition; the ending snapshot has no lingering Pyregel status.");
         else if (expectedId == VotivaryId)
             Console.WriteLine("ORIGINAL-VOTIVARY PASS: original zero-cost 1/1 size-1 birth and captured OnDeath room +2 DrawNextTurn; no death occurred, so draw remained unchanged.");
+        else if (expectedId == BountyStalkerId)
+            Console.WriteLine("ORIGINAL-BOUNTY-STALKER PASS: original 1-cost 30/5 size-2 birth; native OnDeath removed the unit and added permanent Plus10Attack (+10) to its card.");
         else
         Console.WriteLine("ORIGINAL-ISOLATED-UNIT PASS: native " + expectedId + " birth matched its captured original spawn template.");
     }

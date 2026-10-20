@@ -235,6 +235,7 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-original-isolated-parrafin-enforcer.mt2f',
     'full-battle-original-isolated-sycophant.mt2f',
     'full-battle-original-isolated-votivary.mt2f',
+    'full-battle-original-isolated-bounty-stalker.mt2f',
     'full-battle-original-scaled-moon-phase.mt2f',
     'full-battle-original-positive-status.mt2f',
     'full-battle-original-spell-compositions.mt2f',
@@ -1955,6 +1956,13 @@ foreach ($fixturePath in $originalIsolatedVotivaryFixtures) {
     foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original isolated Votivary checks failed ($mode): $fixturePath" }
+    }
+}
+$originalIsolatedBountyStalkerFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-isolated-bounty-stalker.mt2f' })
+foreach ($fixturePath in $originalIsolatedBountyStalkerFixtures) {
+    foreach ($mode in @('--original-support-units-only', '--battle-search-only')) {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original isolated Bounty Stalker checks failed ($mode): $fixturePath" }
     }
 }
 $originalAttackOverrideFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-attack-overrides.mt2f' })

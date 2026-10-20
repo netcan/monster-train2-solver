@@ -7980,6 +7980,22 @@ dotnet run --project src/ModelChecks -c Release -- --original-support-units-only
 dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-votivary.mt2f
 ```
 
+### Original Bounty Stalker
+
+`full-battle-original-isolated-bounty-stalker.mt2f` records an unchanged Bounty
+Stalker behind three zero-cost Steward anchors. Its original cost-1, 30/5,
+size-2 birth matches; the captured `OnDeath` callback applies a permanent
+`Plus10Attack` upgrade to itself. Native combat removes it at 5 HP with one
+OnDeath fire count and adds exactly one +10 Attack upgrade to its original card.
+The 38.48-second native Instant run won with zero capture failures, mismatches,
+unsupported transitions or pending captures.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 3e86422e-c8e4-4ec7-bc0a-0c622b7237b4 -BinaryCapture -TimeoutSeconds 480
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-bounty-stalker.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-bounty-stalker.mt2f
+```
+
 ### Original Alloyed Construct fuel
 
 `full-battle-original-fuel.mt2f` records the unchanged Alloyed Construct and
