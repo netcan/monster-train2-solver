@@ -50,12 +50,16 @@ namespace MonsterTrain2Poju.Model
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger =>
                     UnitCallbacks.Contains(trigger.Kind))))
             {
-                if (source.Context!.RoomCapacities?.Any(room => room.Attachments?.Any(attachment => attachment.MoonPhase != null) == true) == true)
-                    return "Room mask phase-shift callbacks require separate native calibration.";
+                bool roomMasks = RoomMoonPhaseModel.HasMask(source);
+                if (roomMasks)
+                {
+                    string? maskError = RoomMoonPhaseModel.ValidateCallbacks(source);
+                    if (maskError != null) return maskError;
+                }
                 int oldPhase = frame.MoonPhase.Value;
                 string oldStatus = oldPhase == 1 ? "newmoon" : "fullmoon";
                 string otherStatus = oldPhase == 1 ? "fullmoon" : "newmoon";
-                if (source.Rooms.SelectMany(room => room.Units).Where(unit => !unit.IsPyre && unit.Health > 0)
+                if (!roomMasks && source.Rooms.SelectMany(room => room.Units).Where(unit => !unit.IsPyre && unit.Health > 0)
                     .Any(unit => unit.Status(oldStatus)?.Stacks != 1 || unit.Status(otherStatus) != null))
                     return "Moon-phase callbacks require known prior unit phase masks.";
                 string? trainError = TrainCombatModel.Validate(source);
@@ -111,6 +115,7 @@ namespace MonsterTrain2Poju.Model
                 state = CardSpellModel.WithContext(state, state.Context!.WithQueryFrame(
                     state.Context.QueryFrame!.With(moonPhase: phase)));
                 if (state.Context!.QueryFrame!.MoonPhaseTrackingActive != true) continue;
+                TrainCombatState beforeUnderstanding = state;
                 state = MoonPhaseStatusModel.WithPhase(state, phase);
                 CombatContext hand = CardMoonUpgradeModel.RefreshHand(state.Context!, out string? cardUpgradeError);
                 if (cardUpgradeError != null) return new MoonPhaseTransitionResult(null, cardUpgradeError);
@@ -134,6 +139,13 @@ namespace MonsterTrain2Poju.Model
                     state.Rooms.Any(room => room.Preview), state.Rooms.Any(room => room.Deployment));
                 if (!roomEffects.Supported) return roomEffects;
                 state = roomEffects.State!;
+                if (RoomMoonPhaseModel.HasMask(state))
+                {
+                    MoonPhaseTransitionResult understood = RoomMoonPhaseModel.ApplyUnderstanding(beforeUnderstanding, state, phaseShift: true);
+                    if (!understood.Supported) return understood;
+                    state = understood.State!;
+                    continue;
+                }
                 foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
                 {
                     var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();

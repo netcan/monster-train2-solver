@@ -720,11 +720,24 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            // This isolated component deliberately suppresses automatic preview
+            // refreshes. Its own settled boundary must not wait for dirty=false.
+            if (stage == Stage.Battle && RoomMoonCallbackCalibration.Enabled && RoomMoonCallbackCalibration.Started)
+            {
+                if (RoomMoonCallbackCalibration.Error != null) throw new InvalidOperationException(RoomMoonCallbackCalibration.Error);
+                if (RoomMoonCallbackCalibration.Completed) Finish(true, "Room moon callback component captured; integrated player acceptance is separate.");
+                return;
+            }
             if (stage != Stage.Battle || !Ready(managers, save, combat, cards))
             {
                 return;
             }
             if (PlayerAdvisorProbe.Enabled && !PlayerAdvisorProbe.CaptureInitialized) return;
+            if (RoomMoonCallbackCalibration.Enabled)
+            {
+                RoomMoonCallbackCalibration.Start(log);
+                return;
+            }
             if (ConduitMovementCalibration.Enabled)
             {
                 if (ConduitMovementCalibration.Error != null) throw new InvalidOperationException(ConduitMovementCalibration.Error);

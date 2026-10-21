@@ -18,6 +18,7 @@ param(
     [switch] $HoldoverVariants,
     [switch] $PermanentTraits,
     [switch] $ConduitMovement,
+    [switch] $RoomMoonCallbacks,
     [switch] $BossActionTargets,
     [switch] $BossActionControllers,
     [switch] $OuterBossPhases,
@@ -593,6 +594,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($RoomMoonCallbacks) {
+    $allowed = @('RoomMoonCallbacks', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'RoomMoonCallbacks is an isolated component calibration.' }
+    $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
+}
 if ($ConduitMovement) {
     $allowed = @('ConduitMovement', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'ConduitMovement is an isolated component calibration; do not combine battle scenarios.' }
@@ -1196,6 +1202,7 @@ $environment = @{
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
     MT2_PROBE_CONDUIT_MOVEMENT = $(if ($ConduitMovement) { '1' } else { '0' })
+    MT2_PROBE_ROOM_MOON_CALLBACKS = $(if ($RoomMoonCallbacks) { '1' } else { '0' })
     MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
     MT2_PROBE_PREVIEW_ATTACK_TRACE = $(if ($PreviewAttackTrace) { '1' } else { '0' })
@@ -1776,6 +1783,23 @@ while (-not $process.WaitForExit(250)) {
 }
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
+if ($RoomMoonCallbacks) {
+    $componentPath = Join-Path $profile 'room-moon-callback-calibration.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ROOM-MOON-CALLBACK-NATIVE PASS' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Room moon native calibration failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $component = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
+    try {
+        $captured = $component.RootElement.ToObjectGraph()
+        if (-not $captured.NativeCompleted -or -not $captured.RngUnchanged -or
+            -not $captured.PreviewUpdatesSuppressed -or @($captured.Rows).Count -ne 13 -or @($captured.ActorIds).Count -ne 3) {
+            throw 'Incomplete room moon callback calibration.'
+        }
+    } finally { $component.Dispose() }
+    [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true; ModelAcceptance = 'Pending independent focused checker'; Trace = $componentPath } | ConvertTo-Json
+    return
+}
 if ($ConduitMovement) {
     $componentPath = Join-Path $profile 'conduit-movement-calibration.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or

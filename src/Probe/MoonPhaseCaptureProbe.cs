@@ -9,7 +9,7 @@ namespace MonsterTrain2Poju.Probe
     // search. Development fixture switches are not evidence of live capability.
     internal static class MoonPhaseCaptureProbe
     {
-        internal static bool Enabled => AdvisorRuntime.PlayerSession ||
+        internal static bool Enabled => AdvisorRuntime.PlayerSession || RoomMoonCallbackCalibration.Enabled ||
             !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_PRIMARY_CLAN"));
         internal static bool CaptureMasks => Enabled &&
             AllGameManagers.Instance?.GetPlayerManager()?.GetHasMoonPhaseCardEffect() == true;

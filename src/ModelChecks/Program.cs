@@ -1771,6 +1771,12 @@ if (args.Length == 2 && args[0] == "--rolling-advice-only")
     RollingAdviceChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--room-moon-callback-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RoomMoonCallbackChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--conduit-movement-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3488,6 +3494,11 @@ foreach (string path in args.Where(path => path.Contains("conduit-movement-calib
 {
     using var document = ModelJson.ReadFixture(path);
     ConduitMovementChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("room-moon-callback-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    RoomMoonCallbackChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("holdover-variants-calibration", StringComparison.OrdinalIgnoreCase)))
 {
