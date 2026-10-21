@@ -34,6 +34,7 @@ namespace MonsterTrain2Poju.Probe
         internal static readonly List<Record> Records = new List<Record>();
         private static readonly List<Record> active = new List<Record>();
         private static int observingBirth;
+        internal static void InstallAdvisorPatches(Harmony harmony) => harmony.CreateClassProcessor(typeof(TriggerIdentityPatch)).Patch();
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.AddTrigger))]
         private static class TriggerIdentityPatch
         {
@@ -41,7 +42,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 // Register after each prepend so IDs reflect creation order, even
                 // when a relic installs several triggers before the next snapshot.
-                if (observingBirth > 0 && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                if ((observingBirth > 0 || AdvisorRuntime.PlayerSession) && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     FullBattleTrace.Active?.TriggerStates(__instance);
             }
         }

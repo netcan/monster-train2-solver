@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     // comparisons and card upgrades continue to use their original GUIDs.
     internal static class ConduitProbe
     {
-        internal static bool Enabled => ConduitMovementCalibration.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
+        internal static bool Enabled => AdvisorRuntime.PlayerSession || ConduitMovementCalibration.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
             PlanetariumScenario.Enabled || OriginalStrongMagicCardsScenario.Enabled || OriginalScaledMoonPhaseScenario.Enabled ||
             OriginalSupportSpellsScenario.Enabled && (OriginalSupportSpellsScenario.IsolatedIds == null || !BattleSpawnPointProbe.Enabled) ||
             OriginalXLunaSpikeScenario.Enabled || OriginalMoonRitualScenario.Prepared ||
@@ -60,7 +60,6 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static IReadOnlyList<RetainedConduitState>? CaptureRetained(FullBattleTrace trace)
         {
-            // Player capture remains disabled until complete combat acceptance.
             if (!Enabled || !BattleSpawnPointProbe.Enabled) return null;
             return trace.KnownUnits.Where(character => character != null && !character.IsDestroyed &&
                     (!character.IsAlive || character.GetCurrentRoom() == null))
