@@ -71,6 +71,7 @@ param(
     [switch] $TranscendImp,
     [switch] $FusedWeaponry,
     [switch] $EclipseChamber,
+    [switch] $EclipseChamberCallbacks,
     [switch] $OriginalRoomCards,
     [switch] $OriginalForgeCards,
     [switch] $OriginalStatusCards,
@@ -661,6 +662,7 @@ if ($SmallBox) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MagneticRelay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TranscendImp) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($FusedWeaponry) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($EclipseChamberCallbacks) { $EclipseChamber = $true }
 if ($EclipseChamber) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalForgeCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1370,6 +1372,7 @@ if ($MagneticRelay) { $environment['MT2_PROBE_MODIFIERS'] = 'magnetic-relay' }
 if ($TranscendImp) { $environment['MT2_PROBE_MODIFIERS'] = 'transcend-imp' }
 if ($FusedWeaponry) { $environment['MT2_PROBE_MODIFIERS'] = 'fused-weaponry' }
 if ($EclipseChamber) { $environment['MT2_PROBE_MODIFIERS'] = 'eclipse-chamber' }
+if ($EclipseChamberCallbacks) { $environment['MT2_PROBE_ECLIPSE_CALLBACKS'] = '1' }
 if ($OriginalRoomCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-cards' }
 if ($OriginalForgeCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-cards' }
 if ($OriginalStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-cards' }

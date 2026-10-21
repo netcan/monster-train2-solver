@@ -104,10 +104,16 @@ namespace MonsterTrain2Poju.Model
 
                 if (previous?.Attachments?.Any(item => item.MoonPhase != null) == true || current?.Attachments?.Any(item => item.MoonPhase != null) == true)
                 {
-                    if (state.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost")))
-                        return Fail("Room attachment phase callbacks require native calibration.");
+                    if (state.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind is "OnMoonShade" or "OnMoonshadeLost")))
+                        return Fail("Room attachment New-moon callbacks require independent native calibration.");
                     if (state.Context?.QueryFrame?.MoonPhase is int phase && state.Context.QueryFrame.MoonPhaseTrackingActive == true)
                     {
+                        // Eclipse changes only the New bit. Original Selene
+                        // Full callbacks stay idle when understanding is current.
+                        if (state.Units.Any(unit => unit.Health > 0 && unit.Triggers.Any(trigger =>
+                                trigger.Kind is "OnMoonLit" or "OnMoonlitLost") &&
+                            (!unit.MoonPhaseMask.HasValue || (unit.MoonPhaseMask.Value & 2) != (phase & 2))))
+                            return Fail("Room attachment callbacks require settled prior Full understanding.");
                         RoomCapacityAttachmentState? oldAttachment = previous?.Attachments?.SingleOrDefault();
                         RoomCapacityAttachmentState? newAttachment = current?.Attachments?.SingleOrDefault();
                         int mask = RoomMoonPhaseModel.Effective(state.Context, room.RoomIndex, phase);

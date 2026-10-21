@@ -169,7 +169,7 @@ $fixtureNames = @('room-moon-callback-calibration.mt2f', 'full-battle-player-con
     'full-battle-magnetic-relay.mt2f',
     'full-battle-transcend-imp.mt2f',
     'full-battle-fused-weaponry.mt2f',
-    'full-battle-eclipse-chamber.mt2f',
+    'full-battle-eclipse-chamber.mt2f', 'full-battle-eclipse-chamber-callbacks.mt2f',
     'full-battle-original-room-cards.mt2f',
     'full-battle-original-forge-cards.mt2f',
     'full-battle-original-status-cards.mt2f',
@@ -3233,9 +3233,10 @@ foreach ($fixturePath in $originalRoomCardsFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original room-card checks failed ($mode): $fixturePath" }
     }
 }
-$eclipseFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-eclipse-chamber.mt2f' })
+$eclipseFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-eclipse-chamber.mt2f', 'full-battle-eclipse-chamber-callbacks.mt2f') })
 foreach ($fixturePath in $eclipseFixtures) {
-    foreach ($mode in @('--eclipse-chamber-only', '--battle-search-only')) {
+    $eclipseMode = if ((Split-Path -Leaf $fixturePath) -eq 'full-battle-eclipse-chamber-callbacks.mt2f') { '--eclipse-callbacks-only' } else { '--eclipse-chamber-only' }
+    foreach ($mode in @($eclipseMode, '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Eclipse Chamber checks failed ($mode): $fixturePath" }
     }

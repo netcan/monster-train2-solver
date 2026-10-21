@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "eclipse-chamber";
         internal const string DataId = "0fcb1ed0-49e2-465f-b8fa-444699348dfc";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Callbacks => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_CALLBACKS") == "1";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static readonly List<Record> Records = new List<Record>();
@@ -37,6 +38,11 @@ namespace MonsterTrain2Poju.Probe
             Set(ordinary, "effects", new List<CardEffectData> { spawn });
             ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(all)).Add(ordinary);
             ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(all)).Add(ordinaryUnit);
+            if (Callbacks)
+            {
+                CharacterData original = all.FindCardData("2b7a187f-da0b-4c34-b8c5-b18755911b43")!.GetSpawnCharacterData();
+                Set(steward.GetSpawnCharacterData(), "triggers", original.GetTriggers().ToList());
+            }
             Set(steward.GetSpawnCharacterData(), "subtypeKeys", new List<string> { "SubtypesData_Silent" });
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);

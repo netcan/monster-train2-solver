@@ -32,6 +32,14 @@ internal static class RoomMoonCallbackChecks
                 Require(difference == null, row.GetProperty("Label").GetString() + ": " + difference);
             }
             Check(); Parallel.For(0, 8, _ => Check());
+            if (refresh)
+            {
+                TrainSpellResult cast = CardSpellModel.Apply(before, 0, [new CardActionEffect("RefreshMoonPhase", "Room",
+                    row.GetProperty("Characters").GetBoolean() ? 1 : 0, false, false, [])], 0);
+                Require(cast.Supported, "Full-train card pipeline: " + cast.UnsupportedReason);
+                Require(ModelJson.Difference(JsonSerializer.Serialize(cast.State, ModelJson.Options),
+                    JsonSerializer.Serialize(actual, ModelJson.Options)) == null, "Full-train card refresh differs.");
+            }
             Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Room moon callback mutated its parent.");
             Require(row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")),
                 "Room moon callbacks consumed gameplay RNG.");

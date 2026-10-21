@@ -73,6 +73,23 @@ internal static class EclipseChamberChecks
         RecordedBattleChecks.Native(root);
         Console.WriteLine($"ECLIPSE-CHAMBER PASS: two original room plays, replacement, later birth, {characters} character/{support} support refreshes, {pulses} Silent growth and {controls} floor/subtype controls, exact immutable action chains.");
     }
+    internal static void Callbacks(FixtureValue root)
+    {
+        Require(root.GetProperty("EclipseChamberCallbacks").GetBoolean(), "Missing authored original-callback carriers.");
+        Native(root);
+        BattleTurnState[] states = root.GetProperty("Actions").EnumerateArray()
+            .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+        CombatUnit[] actors = states.SelectMany(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units))
+            .Where(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnMoonLit") &&
+                unit.Triggers.Any(trigger => trigger.Kind == "OnMoonlitLost")).ToArray();
+        Require(actors.Select(unit => unit.Id).Distinct().Count() == 3 &&
+            actors.Any(unit => (unit.MoonPhaseMask & 3) == 3) && actors.Any(unit =>
+                unit.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "SeleneAcolyte_MagicPower_Upgrade")),
+            "Missing three live callback actors, mixed masks or original phase upgrades.");
+        Require(states.Any(state => state.Spawn.Train.Rooms[1].Units.Any(unit => unit.Triggers.Any(trigger =>
+                trigger.Kind == "OnMoonLit") && unit.MoonPhaseMask == 6)), "Missing outside-floor callback control.");
+        Console.WriteLine("ECLIPSE-CALLBACK-CHAIN PASS authoredCarriers=true nativeOriginalPayloads=true callbackActors=3 mixedMasks=true outsideFloor=true");
+    }
     private static void Equal<T>(T predicted, T actual, string label)
     {
         string? difference = ModelJson.Difference(JsonSerializer.Serialize(predicted, ModelJson.Options), JsonSerializer.Serialize(actual, ModelJson.Options));

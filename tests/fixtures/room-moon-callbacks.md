@@ -31,3 +31,26 @@ This calibrates player temporary-upgrade add/remove payloads. Enemy callbacks,
 other callback payloads, moon resource trait callbacks and preview refreshes
 remain guarded. It does not establish an integrated Eclipse/character action
 chain or a real player encounter. No new Mac package is built for this batch.
+
+## Integrated original-callback carrier chain
+
+`full-battle-eclipse-chamber-callbacks.mt2f` records profile
+`full-battle-units-spells-and-junk-20261021-224510-3982295e` (57.16 seconds).
+The two original Selene triggers are copied to the existing authored Silent
+carriers; ordinary units remain callback-free. Original room/spell definitions
+are unchanged. The battle wins with 80 Pyre HP, eight exact plays, five EndTurns,
+two character refreshes, eight queued support refreshes and zero failure counters.
+Terminal effects settle and original files remain unchanged. Six Silent growth
+witnesses and six floor/subtype controls pass, as do 16 immutable action branches.
+
+The card pipeline now prevalidates global refresh using the entire train rather
+than one selected room. All nine isolated refresh rows also pass through the
+same card-effect pipeline. Eclipse attachment/removal accepts settled Full
+understanding, whose callbacks are unchanged by the extra New bit. Stale Full
+understanding and New-moon attachment callbacks remain guarded. This is a
+complete authored action chain; real player-entry acceptance remains separate.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberCallbacks -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-callbacks-only tests/fixtures/full-battle-eclipse-chamber-callbacks.mt2f
+```

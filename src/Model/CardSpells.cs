@@ -2001,6 +2001,12 @@ namespace MonsterTrain2Poju.Model
                 string? moonError = MoonPhaseTransitionModel.Validate(source, effect, sourceCardId);
                 if (moonError != null) return moonError;
             }
+            foreach (CardActionEffect effect in effects.Where(effect => effect.Type == "RefreshMoonPhase"))
+            {
+                if (selected.Preview) continue;
+                string? refreshError = RoomMoonPhaseModel.Refresh(source, effect.Value != 0).UnsupportedReason;
+                if (refreshError != null) return refreshError;
+            }
             string? validation = Validate(selected, effects, targetId);
             if (validation != null) return validation;
             if (CardTargetModel.IsRandom(effects[0].Target))
@@ -2305,8 +2311,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "RefreshMoonPhase")
                 {
-                    string? refreshError = RoomMoonPhaseModel.Refresh(SingleRoom(source), effect.Value != 0).UnsupportedReason;
-                    if (refreshError != null) return refreshError;
+                    // The train-level validator checks this global operation
+                    // with all rooms and callback actors in scope.
                     continue;
                 }
                 if (effect.Type == "SetMoonPhase" || effect.Type == "AdvanceMoonPhase")

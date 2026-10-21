@@ -849,6 +849,7 @@ namespace MonsterTrain2Poju.Probe
                 EquipmentMergeRecords = EquipmentMergeScenario.Records,
                 EquipmentMergeTests = EquipmentMergeScenario.Tests,
                 EclipseChamberPrepared = EclipseChamberScenario.Prepared,
+                EclipseChamberCallbacks = EclipseChamberScenario.Callbacks,
                 EclipseChamberCardIds = EclipseChamberScenario.CardIds,
                 EclipseChamberRecords = EclipseChamberScenario.Records,
                 OriginalRoomCardsPrepared = OriginalRoomCardsScenario.Prepared,
