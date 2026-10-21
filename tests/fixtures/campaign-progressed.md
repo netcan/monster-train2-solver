@@ -89,8 +89,20 @@ the ZIP SHA256 is
 `3C02949FC5AEDD2B6D8A8AFAE60890FAB2F2B1E482BE0C12DB30DA7A94AA0406`.
 All 25 data/history members were verified on restore. The package also retains
 `campaign-battle-replay.mt2f`, the actual replay capture before campaign handoff.
-This is a legal eighth-ring input, not an eighth-ring model/victory acceptance.
-Outer-train boss actions and their battle-phase integration remain guarded.
+The checkpoint itself is a legal eighth-ring input. Two separate full-battle
+archives now accept model behavior on that input:
+`full-battle-progressed-ring8-no-cards.mt2f` and
+`full-battle-progressed-ring8-policy.mt2f`. Opt-in `-OuterBossBirth -OuterBossTurns
+-PhysicalSpawnPoints` captures the original queued boss definition at deployment
+and models creation, initial placement, casting actions and the complete EndTurn
+sequence. Both captures settle in native losses with all four failure counters
+zero and protected game files unchanged. Frozen model replays start at one
+deployment root and match every successor, including legal deployment plays,
+without substituting later native snapshots. The no-card/policy runs retain
+seven/six EndTurns and zero/27 legal card actions, including five deployment
+plays in the policy. This accepts the battle model for
+these two continuations; eighth-ring advisor victory and outer-boss Pyre-entry
+routing remain open. Default capture guards remain in place.
 
 ## Reproduce
 

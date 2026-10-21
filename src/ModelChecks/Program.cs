@@ -1468,6 +1468,13 @@ if (args.Length == 2 && args[0] == "--outer-boss-birth-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--outer-boss-deployment-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OuterBossTurnChecks.Deployment(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--outer-boss-turn-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3223,6 +3230,11 @@ foreach (string path in args.Where(path => path.Contains("outer-boss-turn-calibr
 {
     using var fixture = ModelJson.ReadFixture(path);
     OuterBossTurnChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("full-battle-progressed-ring8-", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OuterBossTurnChecks.Deployment(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("outer-boss-phase-calibration", StringComparison.OrdinalIgnoreCase) ||
     path.Contains("outer-boss-relentless-phase-calibration", StringComparison.OrdinalIgnoreCase) ||

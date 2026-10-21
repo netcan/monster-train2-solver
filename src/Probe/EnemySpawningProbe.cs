@@ -51,7 +51,18 @@ namespace MonsterTrain2Poju.Probe
             var interactions = new List<string>();
             var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
             OuterBossProgress? outerBoss = OuterBossPhaseProbe.ModelsLiveBoss ? OuterBossPhaseProbe.CaptureProgress() : null;
-            if (pattern.GetBossType() != SpawnPatternData.BossType.None && !ignoreOuterBossSpawnInteraction && outerBoss == null)
+            OuterBossSpawnDefinition? queuedOuterBoss = null;
+            if (OuterBossBirthProbe.Enabled && heroes.GetOuterTrainBossCharacter() == null &&
+                managers.GetCombatManager().GetTurnCount() <= 1 && pattern.GetBossType() != SpawnPatternData.BossType.None)
+            {
+                CharacterData data = pattern.GetOuterTrainBossCharacter((bool)AccessTools.Field(typeof(HeroManager), "harderOuterTrainBossEnabled").GetValue(heroes));
+                if (data.GetAssetKey() == "Boss_Level8_AllyBuffer")
+                {
+                    OuterBossSpawnDefinition candidate = OuterBossBirthProbe.Definition(data);
+                    if (candidate.Actor.ExternalInteractions.Count == 0) queuedOuterBoss = candidate;
+                }
+            }
+            if (pattern.GetBossType() != SpawnPatternData.BossType.None && !ignoreOuterBossSpawnInteraction && outerBoss == null && queuedOuterBoss == null)
                 interactions.Add("Outer or queued final boss spawning");
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) interactions.Add(relicError);
@@ -93,7 +104,7 @@ namespace MonsterTrain2Poju.Probe
                 (bool)AccessTools.Field(typeof(HeroManager), "treasureAndTraitorCharactersEnabled").GetValue(heroes),
                 easy ? 1 : 2, easy ? 1 : 0, managers.GetCombatManager()!.GetTurnCount(), interactions,
                 canonicalDecisionReferences: canonicalReferences,
-                pendingDestroyedUnitIds: canonicalReferences ? null : trace.PendingDestroyedUnitIds(), outerBoss: outerBoss);
+                pendingDestroyedUnitIds: canonicalReferences ? null : trace.PendingDestroyedUnitIds(), outerBoss: outerBoss, queuedOuterBoss: queuedOuterBoss);
         }
 
         internal static EnemyDefinition Definition(CharacterData data) => Definition(data, false);

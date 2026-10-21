@@ -56,7 +56,6 @@ namespace MonsterTrain2Poju.Probe
         internal static OuterBossProgress CaptureProgress() => CaptureProgress(AllGameManagers.Instance.GetHeroManager().GetOuterTrainBossCharacter());
         internal static OuterBossProgress CaptureProgress(CharacterState boss)
         {
-            AllGameManagers managers = AllGameManagers.Instance;
             BossState state = boss.GetBossState();
             BossActionController controller = Field<BossActionController>(state, "_bossActionController");
             object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(boss);

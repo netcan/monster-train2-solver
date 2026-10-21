@@ -1,8 +1,28 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 822 archives (767 full battles and
+Current manifest inventory (2026-10-21): 824 archives (769 full battles and
 55 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-progressed-ring8-no-cards.mt2f` and
+`full-battle-progressed-ring8-policy.mt2f` use the legal `campaign-progressed-ring8.zip`
+checkpoint and the opt-in `-OuterBossBirth -OuterBossTurns -PhysicalSpawnPoints`
+capture. Their authored queued boss definition survives deployment plays and
+initial ordinary wave spawning, then is consumed by model instantiation and
+initial placement. Both native battles reach settled losses with zero capture,
+mismatch, unsupported and pending counters; original game files remain unchanged.
+`--outer-boss-deployment-only` compares all native EndTurns and separately replays
+every action/EndTurn from a single deployment root without injecting later
+native states. Complete controller, aura, physical, context and RNG state match.
+The no-card control has seven EndTurns; the occupied policy has six EndTurns and
+27 legal plays, including five deployment plays across three floors. Sources
+`20261021-134436-d7f00e6c` and `20261021-134436-f85dddff` ran on separate isolated
+workers in 79.01/191.25 seconds. Binary archives are 44,957/71,962 bytes with
+6,680/12,502 nodes; exact hashes are in the manifest.
+These are accepted battle-model losses, not winning-advisor
+evidence. Natural eighth-ring victory and outer-boss Pyre-entry routing remain
+open. Default capture guards remain; the two older guarded component sources
+below retain their historical boundaries.
 
 `outer-boss-instantiation-calibration.mt2f` extends the birth boundary backwards
 across native `CreateHeroState`. Authored unit/controller definitions are inputs;

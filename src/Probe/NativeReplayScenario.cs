@@ -2674,9 +2674,9 @@ namespace MonsterTrain2Poju.Probe
                 if (CorruptionScenario.RelicTrigger) CorruptionScenario.PrepareRelicDecision(managers, log);
                 if (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared)
                     damagePerHpAbilityInputPrepared = DamagePerHpScenario.SeedAbilityLastAttackerInput(managers, log);
-                // Boss component diagnostics may play normal legal cards against the
-                // explicitly captured outer boss. This does not remove the guards
-                // on ordinary full-battle captures or mark this run accepted.
+                // Opt-in probes capture the supported outer boss and permit
+                // normal legal cards. Default capture guards remain in place;
+                // acceptance still requires the complete native failure counters.
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision(
                     includeOuterBossForBump: OuterBossPhaseProbe.Enabled || OuterBossBirthProbe.Enabled,
                     ignoreOuterBossSpawnInteraction: OuterBossPhaseProbe.Enabled || OuterBossBirthProbe.Enabled);

@@ -52,12 +52,14 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<int>? PendingDestroyedUnitIds { get; }
         public OuterBossProgress? OuterBoss { get; }
         public bool ShouldSerializeOuterBoss() => OuterBoss != null;
+        public OuterBossSpawnDefinition? QueuedOuterBoss { get; }
+        public bool ShouldSerializeQueuedOuterBoss() => QueuedOuterBoss != null;
         public EnemySpawnState(TrainCombatState train, IReadOnlyList<EnemyWave> waves,
             IReadOnlyList<int> selectedGroups, int phase, bool looping, UnityRng rng, int nextUnitId,
             IReadOnlyList<EnemyDefinition> treasures, int treasuresRemaining, bool treasureEnabled,
             int firstTreasureTurn, int firstTreasureRoom, int turn, IReadOnlyList<string> externalInteractions,
             bool canonicalDecisionReferences = false, IReadOnlyList<int>? pendingDestroyedUnitIds = null,
-            OuterBossProgress? outerBoss = null)
+            OuterBossProgress? outerBoss = null, OuterBossSpawnDefinition? queuedOuterBoss = null)
         {
             Train = train; Waves = Array.AsReadOnly(waves.ToArray()); SelectedGroups = Array.AsReadOnly(selectedGroups.ToArray());
             Phase = phase; Looping = looping; Rng = rng; NextUnitId = nextUnitId;
@@ -68,6 +70,7 @@ namespace MonsterTrain2Poju.Model
             PendingDestroyedUnitIds = pendingDestroyedUnitIds == null ? null : Array.AsReadOnly(pendingDestroyedUnitIds.ToArray());
             RoomCombatState? bossRoom = outerBoss == null ? null : train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == outerBoss.UnitId));
             OuterBoss = bossRoom == null ? null : outerBoss!.WithRoom(bossRoom.RoomIndex);
+            QueuedOuterBoss = OuterBoss == null ? queuedOuterBoss : null;
         }
     }
 
@@ -329,7 +332,7 @@ namespace MonsterTrain2Poju.Model
                 return new EnemySpawnResult(new EnemySpawnState(train, source.Waves, groups, phase, source.Looping,
                     rng, context?.NextUnitId ?? nextId, source.Treasures, treasureRemaining, source.TreasureEnabled, source.FirstTreasureTurn,
                     source.FirstTreasureRoom, source.Turn, source.ExternalInteractions, source.CanonicalDecisionReferences, source.PendingDestroyedUnitIds,
-                    source.OuterBoss), outcome);
+                    source.OuterBoss, source.QueuedOuterBoss), outcome);
             }
         }
 

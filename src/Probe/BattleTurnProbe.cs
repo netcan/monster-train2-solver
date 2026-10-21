@@ -158,6 +158,7 @@ namespace MonsterTrain2Poju.Probe
                 state.CanonicalPhysicalReferences
             });
             if (state.Spawn.OuterBoss != null) result["OuterBoss"] = JToken.FromObject(state.Spawn.OuterBoss);
+            if (state.Spawn.QueuedOuterBoss != null) result["QueuedOuterBoss"] = JToken.FromObject(state.Spawn.QueuedOuterBoss);
             return result;
         }
 

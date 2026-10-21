@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 821 binary archives, including 767
-full battles and 54 component calibrations. The card index accepts 766 battles;
+Current curated inventory (2026-10-21): 824 binary archives, including 769
+full battles and 55 component calibrations. The card index accepts 768 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -56,8 +56,15 @@ at this boundary, including the occupied control. These samples do not model
 the shared unit identity and registers an unplaced physical owner. Its complete
 created actor, controller, movement and battle match the native return exactly.
 This covers the original no-status/no-ability/no-room-modifier boss without
-creation substitutions, Covenant effects or moon tracking. Deployment integration,
-natural eighth-ring victory, effect-bearing boss spells and
+creation substitutions, Covenant effects or moon tracking. The opt-in birth mode
+now captures the queued authored definition at deployment, preserves it through
+normal card plays and initial wave spawning, and consumes it when creating and
+placing the boss. The two `full-battle-progressed-ring8-{no-cards,policy}`
+captures run complete battles from the natural eighth-ring input with all four
+failure counters zero. Their frozen model replays begin at a single deployment
+root, including deployment card plays, and match every successor through the
+native terminal losses. These establish full deployment integration for this
+original boss. Natural eighth-ring victory, effect-bearing boss spells and
 terminal boss-action callbacks remain unverified. Pyre-entry routing is guarded
 explicitly, and the default capture mode retains its previous coverage guards.
 Native upgrade-slot relics now pass battle validation because their only
@@ -91,7 +98,8 @@ The historical later encounters use controlled native map jumps. New
 [natural campaign checkpoints](tests/fixtures/campaign-progressed.md) preserve
 four/six/seven preceding native victories and all offered rewards/upgrades without
 map jumps or authored stats. Strict progressed-deck wins at rings five and
-seven are accepted separately. Outer-train boss support remains outstanding.
+seven are accepted separately. Outer-boss Pyre-entry routing and eighth-ring
+advisor victory remain outstanding.
 
 ### Per-card evidence inventory
 

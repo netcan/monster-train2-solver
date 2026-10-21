@@ -175,7 +175,7 @@ namespace MonsterTrain2Poju.Model
             EnemySpawnState old = source.Spawn;
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng, train.Context?.NextUnitId ?? old.NextUnitId,
                 old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn, old.FirstTreasureRoom,
-                old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences, outerBoss: old.OuterBoss);
+                old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences, outerBoss: old.OuterBoss, queuedOuterBoss: old.QueuedOuterBoss);
             return new BattleActionResult(new BattleTurnState(spawn, context.QueryFrame?.Energy ?? source.Energy - energyPaid,
                 source.EnergyPerTurn, source.DrawPerTurn, context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard,
                 context.QueryFrame?.MoonPhase == 1 ? "New" : context.QueryFrame?.MoonPhase == 2 ? "Full" : source.MoonPhase,
