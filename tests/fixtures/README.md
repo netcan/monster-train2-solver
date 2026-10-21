@@ -1,8 +1,23 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 814 archives (767 full battles and
-47 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 815 archives (767 full battles and
+48 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`boss-action-controller-calibration.mt2f` retains 14 actual eighth-ring boss
+controller calls and 1,152 detached transitions through the original controller
+and action groups. Only control-action executability is supplied by a detached
+interface stub; group selection, skipping, repeat counters, initial-action latch
+and destruction-group progression execute native code. The checker compares
+all cursors and native next-action identities, exact RNG/frame restoration and
+immutable model parents. Its retained `Boss_Level8_AllyBuffer` definition has
+one zero-repeat group, one occupied-floor action and no action effects. This
+component does not yet integrate the controller with combat or room destruction.
+Its source battle remains a losing, 54-unsupported-stage diagnostic with zero
+capture/mismatch/pending counters and original files unchanged. Binary: 9,379
+bytes, 2,536 nodes, SHA256
+`dc1cebe415f65bd236c883b0bceb1dc1e616f107fca2d7fd9775bf0c2f9a12f5`.
+Focused selector: `--boss-action-controller-only`.
 
 `boss-action-target-calibration.mt2f` retains 1,792 native random floor choices,
 including visit-age priority, initial choice ordering and single-candidate RNG
