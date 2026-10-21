@@ -18,6 +18,10 @@ calibrated unpaired original outer-boss deployment/phase state. This enables
 the same birth/turn capture flags used in its native acceptance; other outer-boss
 definitions still retain their explicit model guards. The defaults stay at
 three turns/3,000 ms, and long forecasts can take considerably longer to publish.
+Add `-DotNetPlanner` to run search and independent model verification in an
+isolated .NET 8 process. Native capture, UI publication, invalidation and player
+controls stay in the game. Binary requests/results are retained in its profile;
+see [the process boundary and timings](offline-planning.md).
 
 The command prints its isolated `Profile`. Pass that same directory with
 `-Profile .probe-runs/advisor-<timestamp>-<suffix>` to resume that progress.

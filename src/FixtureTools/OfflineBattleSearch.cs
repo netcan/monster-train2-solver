@@ -8,6 +8,43 @@ using MonsterTrain2Poju.Model;
 // model predictions; only a fresh game process can establish native acceptance.
 internal static class OfflineBattleSearch
 {
+    internal static void Single(string input, string output)
+    {
+        if (File.Exists(output)) throw new IOException("Output already exists: " + output);
+        using var document = FixtureDocument.Read(input);
+        FixtureValue request = document.RootElement;
+        Require(request.GetProperty("Schema").GetInt32() == 1, "Unknown planner request schema.");
+        BattleTurnState root = request.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        int horizon = request.GetProperty("Horizon").GetInt32(), milliseconds = request.GetProperty("Milliseconds").GetInt32();
+        int floor = request.GetProperty("DeploymentRoom").GetInt32();
+        Require(horizon is >= 1 and <= 16 && milliseconds is >= 100 and <= 30000 && floor is >= 0 and <= 2,
+            "External planner request exceeds the native option bounds.");
+        using var keys = new BattleStateKeys();
+        string rootKey = keys.Key(root);
+        BattlePlanResult plan = BattlePlanner.Plan(root, keys.Key, new BattlePlannerOptions(256, horizon, 8, 12,
+            TimeSpan.FromMilliseconds(milliseconds), floor, request.GetProperty("TacticalSeed").GetBoolean()));
+        Require(plan.CompletedHorizon && !plan.Cancelled && plan.Steps.Count > 0, "No complete bounded external plan.");
+        var verification = Stopwatch.StartNew();
+        BattleTurnState replayed = root;
+        RoomOutcome outcome = RoomOutcome.Exchanged;
+        foreach (BattleSearchStep step in plan.Steps)
+            replayed = Apply(replayed, step.Action, step.IsEndTurn, out outcome);
+        using var independent = new BattleStateKeys();
+        string finalKey = independent.Key(replayed);
+        Require(outcome == plan.Outcome && finalKey == independent.Key(plan.State) && independent.Key(root) == rootKey &&
+            plan.Score == BattlePlanner.Evaluate(replayed, outcome) &&
+            (!plan.PolicyBaselineScore.HasValue || plan.Score <= plan.PolicyBaselineScore.Value),
+            "External plan failed independent full-state/RNG replay or mutated its root.");
+        verification.Stop();
+        using var result = NativeFixtureCapture.Capture(new { Schema = 1, Verified = true, Root = root, RootKey = rootKey, FinalKey = finalKey,
+            ModelSearchMs = plan.Elapsed.TotalMilliseconds, ModelVerificationMs = verification.Elapsed.TotalMilliseconds,
+            Plan = new { plan.State, plan.Outcome, plan.Steps, plan.Score, plan.TurnsCompleted, plan.ExpandedNodes,
+                plan.DuplicateStates, plan.BeamPruned, plan.TimedOut, plan.Cancelled, plan.ReachedNodeLimit,
+                plan.ReachedActionLimit, plan.CompletedHorizon, plan.UnsupportedAttempts, plan.PolicyBaselineScore } });
+        using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
+        result.Write(stream);
+    }
+
     internal static void Policy(string input, string output, int floor)
     {
         if (floor is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(floor));

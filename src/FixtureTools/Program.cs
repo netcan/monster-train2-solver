@@ -2,7 +2,11 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using MonsterTrain2Poju.Fixtures;
 
-if (args.Length is 6 or 7 && args[0] == "plan-battle" && (args.Length == 6 || args[6] == "--tactical"))
+if (args.Length == 3 && args[0] == "plan-once")
+{
+    OfflineBattleSearch.Single(args[1], args[2]);
+}
+else if (args.Length is 6 or 7 && args[0] == "plan-battle" && (args.Length == 6 || args[6] == "--tactical"))
 {
     OfflineBattleSearch.Run(args[1], args[2], int.Parse(args[3]), int.Parse(args[4]), int.Parse(args[5]), args.Length == 7);
 }

@@ -186,6 +186,11 @@ namespace MonsterTrain2Poju.Probe
             }
             if (Time.realtimeSinceStartup > deadline)
             {
+                if (RollingAdviceScenario.Enabled)
+                {
+                    try { FullBattleTrace.Active?.Write(); }
+                    catch (Exception exportError) { log.LogError("ROLLING-DIAGNOSTIC-EXPORT-FAIL " + exportError); }
+                }
                 Finish(false, "Timed out in " + stage + ", pass=" + pass);
                 return;
             }
@@ -3364,6 +3369,11 @@ namespace MonsterTrain2Poju.Probe
 
         private void Enter(Stage next, float seconds)
         {
+            // Planning and its independent full-path verification share this
+            // wait stage. A long explicit planner budget needs room for both.
+            if (next == Stage.Battle && BattleAdvisorOverlay.Enabled &&
+                float.TryParse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TIME_LIMIT_MS"), out float budgetMs))
+                seconds = Math.Max(seconds, 60f + 2f * budgetMs / 1000f);
             stage = next;
             deadline = Time.realtimeSinceStartup + seconds;
         }

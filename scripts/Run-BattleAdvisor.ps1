@@ -7,6 +7,7 @@ param(
     [ValidateRange(100, 30000)] [int] $TimeLimitMs = 3000,
     [switch] $TacticalSeed,
     [switch] $OuterBoss,
+    [switch] $DotNetPlanner,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -28,6 +29,13 @@ if ($Profile) {
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/Probe/Probe.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
     if ($LASTEXITCODE -ne 0) { throw 'Advisor build failed.' }
+    if ($DotNetPlanner) {
+        dotnet build (Join-Path $workspace 'src/FixtureTools/FixtureTools.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'External planner build failed.' }
+    }
+}
+if ($DotNetPlanner -and -not (Test-Path -LiteralPath (Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll'))) {
+    throw 'External planner is not built; build FixtureTools or omit -SkipBuild.'
 }
 foreach ($assembly in @('Probe', 'Model', 'FixtureArchive')) {
     Copy-Item -LiteralPath (Join-Path $workspace "src/Probe/bin/Release/netstandard2.1/$assembly.dll") -Destination (Join-Path $gameRoot 'BepInEx/plugins') -Force
@@ -46,6 +54,7 @@ $settings = @{
     MT2_PROBE_PLANNER_HORIZON = "$Horizon"
     MT2_PROBE_PLANNER_TIME_LIMIT_MS = "$TimeLimitMs"
     MT2_PROBE_PLANNER_TACTICAL_SEED = $(if ($TacticalSeed) { '1' } else { '0' })
+    MT2_PROBE_DOTNET_PLANNER = $(if ($DotNetPlanner) { Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll' } else { '' })
     MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBoss) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBoss) { '1' } else { '0' })
     MT2_PROBE_BRANCH_CARD_MASKS = '1'; MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'
@@ -56,4 +65,5 @@ foreach ($entry in $settings.GetEnumerator()) { $start.Environment[$entry.Key] =
 $process = [Diagnostics.Process]::Start($start)
 [pscustomobject]@{ ProcessId = $process.Id; Profile = $Profile; Worker = $NativeWorker; Horizon = $Horizon;
     TimeLimitMs = $TimeLimitMs; TacticalSeed = $TacticalSeed.IsPresent; OuterBoss = $OuterBoss.IsPresent;
+    PlannerBackend = $(if ($DotNetPlanner) { 'dotnet' } else { 'in-process' });
     Controls = 'F8: show/hide; panel: refresh/pause' } | ConvertTo-Json -Compress

@@ -52,6 +52,28 @@ For native rolling acceptance, `Run-FullBattleProbe.ps1` and
 remain a three-turn horizon and 3,000 ms; the native benchmark may explicitly
 allow 30,000 ms for its longer continuation. Evidence records this setting.
 
+`-DotNetPlanner` on the full-battle, rolling-benchmark and interactive launchers
+optionally moves search plus independent full-path replay into a .NET 8 process.
+The game exports one immutable binary request under its isolated profile. The
+worker checks shared bounds, replays every returned step, checks full state/RNG,
+score and root immutability, then writes a new verified binary result. The game
+compares every captured request value and every decoded final-state value across
+the process boundary before publication. Concrete CLR collection types are not
+part of this wire comparison; all model properties and ordered values are.
+Cancellation kills only the owned planner process; generation checks still reject
+obsolete publications, and failed verification exposes no executable advice.
+
+Requests/results remain in the profile as `advisor-*.input.mt2f` and
+`advisor-*.output.mt2f`. `FixtureTools plan-once <request> <new-result>` reproduces
+one request independently. A native request calibration took 7,014 ms for search
+and 2,490 ms for its separate replay. Initial live publications took about 12
+seconds, versus 45–48 seconds in the earlier in-process trial. These are initial
+observations, not whole-battle acceptance or a latency guarantee. External
+publication `SearchMs` includes process startup, search, independent replay and
+result decoding; each result retains separate `ModelSearchMs` and
+`ModelVerificationMs`. The usual native capture guard, driver and replay
+acceptance remain in force, and the backend is opt-in.
+
 `freeze-actions <native.mt2f> <actions.json or -> <output.mt2f>` imports a bounded
 external policy's action sequence and independently applies every legal action
 from that same native deployment root. Input items contain `Action` and

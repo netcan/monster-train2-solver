@@ -9,6 +9,7 @@ param(
     [int] $NativeWorker = 1,
     [switch] $Planner,
     [switch] $PlannerTacticalSeed,
+    [switch] $DotNetPlanner,
     [switch] $Advisor,
     [switch] $RollingAdvice,
     [switch] $PreviewAttackTrace,
@@ -1113,10 +1114,17 @@ if ($existingGame.Count -gt 0) {
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src\Probe\Probe.csproj') -c Release
     if ($LASTEXITCODE -ne 0) { throw 'Probe build failed.' }
+    if ($DotNetPlanner) {
+        dotnet build (Join-Path $workspace 'src/FixtureTools/FixtureTools.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'External planner build failed.' }
+    }
     if ($BinaryCapture) {
         dotnet build (Join-Path $workspace 'src\FixtureArchive\FixtureArchive.csproj') -c Release -f net8.0
         if ($LASTEXITCODE -ne 0) { throw 'Fixture inspection build failed.' }
     }
+}
+if ($DotNetPlanner -and -not (Test-Path -LiteralPath (Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll'))) {
+    throw 'External planner is not built; build FixtureTools or omit -SkipBuild.'
 }
 $pluginDir = Join-Path $gameRoot 'BepInEx\plugins'
 Copy-Item -LiteralPath (Join-Path $workspace 'src\Probe\bin\Release\netstandard2.1\Probe.dll') -Destination $pluginDir -Force
@@ -1171,6 +1179,7 @@ $environment = @{
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
     MT2_PROBE_PLANNER_HORIZON = "$PlannerHorizon"
     MT2_PROBE_PLANNER_TACTICAL_SEED = $(if ($PlannerTacticalSeed) { '1' } else { '0' })
+    MT2_PROBE_DOTNET_PLANNER = $(if ($DotNetPlanner) { Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll' } else { '' })
     MT2_PROBE_PLANNER_DEPLOYMENT_ROOM = "$PlannerDeploymentRoom"
     MT2_PROBE_PLANNER_TIME_LIMIT_MS = "$PlannerTimeLimitMs"
     MT2_PROBE_PLANNER_INPUT = $(if ($PlannerInput) { (Resolve-Path -LiteralPath $PlannerInput).Path } else { '' })

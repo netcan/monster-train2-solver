@@ -33,6 +33,7 @@ namespace MonsterTrain2Poju.Model
     public sealed class BattleAdviceSession : IDisposable
     {
         private readonly Func<BattleTurnState, CancellationToken, BattlePlanResult> search;
+        private readonly Action<BattleTurnState, BattlePlanResult> verify;
         private Task<BattleAdvice>? worker;
         private CancellationTokenSource? cancellation;
         private BattleTurnState? pending;
@@ -55,7 +56,14 @@ namespace MonsterTrain2Poju.Model
             }) { }
 
         internal BattleAdviceSession(Func<BattleTurnState, CancellationToken, BattlePlanResult> search)
-        { this.search = search ?? throw new ArgumentNullException(nameof(search)); }
+            : this(search, Verify) { }
+
+        internal BattleAdviceSession(Func<BattleTurnState, CancellationToken, BattlePlanResult> search,
+            Action<BattleTurnState, BattlePlanResult> verify)
+        {
+            this.search = search ?? throw new ArgumentNullException(nameof(search));
+            this.verify = verify ?? throw new ArgumentNullException(nameof(verify));
+        }
 
         public void Observe(BattleTurnState state, string fullStateKey, TimeSpan captureElapsed = default)
         {
@@ -118,7 +126,7 @@ namespace MonsterTrain2Poju.Model
                     BattlePlanResult plan = search(root, token);
                     token.ThrowIfCancellationRequested();
                     var verification = Stopwatch.StartNew();
-                    Verify(root, plan);
+                    verify(root, plan);
                     verification.Stop();
                     token.ThrowIfCancellationRequested();
                     return new BattleAdvice(root, key, plan, captureElapsed, queued, verification.Elapsed, requestedAt);

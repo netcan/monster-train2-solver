@@ -88,6 +88,13 @@ internal static class BattleAdviceChecks
             failing.Invalidate();
             Require(failing.Error == null, "Failure survived invalidation.");
         }
+        using (var failedVerification = new BattleAdviceSession((state, _) => Plan(state),
+            (_, _) => throw new InvalidOperationException("external state mismatch")))
+        {
+            failedVerification.Observe(root, Key(root)); Pump(failedVerification, BattleAdviceStatus.Unavailable);
+            Require(failedVerification.Current == null && failedVerification.Error == "external state mismatch",
+                "A failed process-boundary verification exposed executable advice.");
+        }
         using var disposingEntered = new ManualResetEventSlim();
         using var disposingRelease = new ManualResetEventSlim();
         var disposing = new BattleAdviceSession((state, _) =>

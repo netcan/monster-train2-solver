@@ -6,6 +6,7 @@ param(
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
     [ValidateRange(2, 16)] [int] $PlannerHorizon = 3,
     [switch] $PlannerTacticalSeed,
+    [switch] $DotNetPlanner,
     [ValidateRange(0, 2)] [int] $PlannerDeploymentRoom = 2,
     [ValidateRange(100, 30000)] [int] $PlannerTimeLimitMs = 3000,
     [ValidateRange(60, 3600)] [int] $TimeoutSeconds = 1200,
@@ -28,6 +29,10 @@ try {
             dotnet build "src/$project/$project.csproj" -c Release --no-restore -p:WarningLevel=0 -v:q
             if ($LASTEXITCODE -ne 0) { throw "Rolling advisor $project build failed." }
         }
+        if ($DotNetPlanner) {
+            dotnet build src/FixtureTools/FixtureTools.csproj -c Release --no-restore -p:WarningLevel=0 -v:q
+            if ($LASTEXITCODE -ne 0) { throw 'External planner build failed.' }
+        }
     }
     $arguments = @{ Seed = $Seed; BattleDistance = $BattleDistance; NativeWorker = $NativeWorker
         SkipBuild = $true; PhysicalSpawnPoints = $true; BranchCardMasks = $true; Policy = 'units-spells-and-junk'
@@ -35,6 +40,7 @@ try {
         PlannerTimeLimitMs = $PlannerTimeLimitMs }
     if ($InputProfile) { $arguments.InputProfile = $InputProfile }
     if ($PlannerTacticalSeed) { $arguments.PlannerTacticalSeed = $true }
+    if ($DotNetPlanner) { $arguments.DotNetPlanner = $true }
     if ($SettleDeathDissolves) { $arguments.SettleDeathDissolves = $true }
     if ($OuterBossTurns) { $arguments.OuterBossTurns = $true }
     if ($OuterBossBirth) { $arguments.OuterBossBirth = $true }
