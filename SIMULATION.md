@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 839 binary archives, including 777
-full battles and 62 component calibrations. The card index accepts 776 battles;
+Current curated inventory (2026-10-21): 841 binary archives, including 779
+full battles and 62 component calibrations. The card index accepts 778 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign

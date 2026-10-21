@@ -219,11 +219,12 @@ the starting deck, champion, relics and encounter without card/stat edits.
 `PrimaryClan` cannot be combined with a resumed checkpoint. The player acceptance
 bridge now reports an unavailable plan immediately instead of waiting for timeout.
 
-Search profile `full-battle-units-spells-and-junk-20261021-200103-eb0de862`
-wins in 282.64 seconds with 80 Pyre HP: 38 decisions, 31 card plays, seven EndTurns,
-40 publications and 483 pure captures. The UI checks pass (340 vertices,
+The refreshed 0.2.2 search profile
+`full-battle-units-spells-and-junk-20261021-201209-120850e8`
+wins in 304.33 seconds with 80 Pyre HP: 38 decisions, 31 card plays, seven EndTurns,
+40 publications and 486 pure captures. The UI checks pass (340 vertices,
 85,699 visible pixels). Fresh profile
-`full-battle-units-spells-and-junk-20261021-200558-4a5085d8` wins in 73.30 seconds
+`full-battle-units-spells-and-junk-20261021-201819-8a16dad1` wins in 88.40 seconds
 using the same 38 frozen inputs with zero search nodes. Both runs settle terminal
 effects, preserve protected files and have zero capture/mismatch/unsupported/pending
 counters. Full roots, successors, published continuations and RNG match.
