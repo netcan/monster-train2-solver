@@ -78,8 +78,10 @@ The calibration compares this source side effect separately from the clone.
 No detached card enters the live deck. The complete decision, all native/Unity
 RNG streams and frame stay unchanged. The host is the isolated no-card battle
 `20261021-181338-b0a16581`: settled terminal result, all four counters zero,
-original files unchanged. Missing private state and non-default permanent
-stack-mode installation remain explicit rejection boundaries.
+original files unchanged. A separate [80-operation permanent calibration](permanent-traits.md)
+also covers all four native Holdover/Corrupt stack modes, repeated installation,
+clobber protection and exact native modified-trait flags. Missing private state
+remains an explicit rejection boundary.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --holdover-only tests/fixtures/full-battle-progressed-ring7-holdover-policy.mt2f

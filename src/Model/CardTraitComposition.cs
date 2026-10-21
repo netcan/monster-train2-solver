@@ -56,6 +56,9 @@ namespace MonsterTrain2Poju.Model
         internal CardTraitValue WithHoldover(bool pending) => new CardTraitValue(RuntimeType, DeclaredName,
             DefinitionParamInt, ParamInt, Removable, StackMode, TemporaryReplacement, ParameterUpgradeCastEffects,
             DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, GraftSevered, pending);
+        internal CardTraitValue WithParamInt(int value) => new CardTraitValue(RuntimeType, DeclaredName,
+            DefinitionParamInt, value, Removable, StackMode, TemporaryReplacement, ParameterUpgradeCastEffects,
+            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, GraftSevered, HoldoverPending);
     }
 
     public sealed class CardTraitReplacement

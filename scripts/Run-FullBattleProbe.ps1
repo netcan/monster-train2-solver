@@ -15,6 +15,7 @@ param(
     [switch] $PreviewAttackTrace,
     [switch] $HoldoverCalibration,
     [switch] $HoldoverVariants,
+    [switch] $PermanentTraits,
     [switch] $BossActionTargets,
     [switch] $BossActionControllers,
     [switch] $OuterBossPhases,
@@ -677,7 +678,7 @@ if ($OriginalLimitedRange) { $BranchCardMasks = $true; $Policy = 'units-spells-a
 if ($OriginalMonsterHandCosts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnplayableCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPermafrostCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($HoldoverCalibration -or $HoldoverVariants) { $BranchCardMasks = $true }
+if ($HoldoverCalibration -or $HoldoverVariants -or $PermanentTraits) { $BranchCardMasks = $true }
 if ($OriginalOverflowCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptRestricted) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusStackDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1371,6 +1372,7 @@ if ($OriginalUnplayableCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalPermafrostCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-permafrost-cards' }
 if ($HoldoverCalibration) { $environment['MT2_PROBE_HOLDOVER_CALIBRATION'] = '1' }
 if ($HoldoverVariants) { $environment['MT2_PROBE_HOLDOVER_VARIANTS'] = '1' }
+if ($PermanentTraits) { $environment['MT2_PROBE_PERMANENT_TRAITS'] = '1' }
 if ($OriginalOverflowCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-overflow-cards' }
 if ($OriginalCorruptRestricted) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupt-restricted' }
 if ($OriginalStatusStackDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-stack-damage' }
@@ -3905,6 +3907,19 @@ if ($OwnedCardMasks) {
             -not $ownedData.GetProperty('ParameterTraitPresent').GetBoolean()) { throw 'Incomplete or mutating owned card mask calibration.' }
         Write-Output 'NATIVE-OWNED-CARD-MASK-CAPTURE PASS: 416 owned/controlled carried views and 62 original masks; unchanged context/RNG/frame.'
     } finally { $ownedArchive.Dispose() }
+}
+if ($PermanentTraits) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $permanentArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'permanent-trait-calibration.mt2f'))
+    try {
+        $permanentData = $permanentArchive.RootElement
+        if (-not $permanentData.GetProperty('ContextUnchanged').GetBoolean() -or
+            $permanentData.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $permanentData.GetProperty('FrameBefore').GetInt32() -ne $permanentData.GetProperty('FrameAfter').GetInt32() -or
+            -not $permanentData.GetProperty('RngBefore').ContentEquals($permanentData.GetProperty('RngAfter')) -or
+            $permanentData.GetProperty('Rows').GetArrayLength() -ne 80) { throw 'Incomplete or mutating permanent trait calibration.' }
+        Write-Output 'NATIVE-PERMANENT-TRAITS-CAPTURE PASS: 80 native operations; unchanged decision/RNG/frame.'
+    } finally { $permanentArchive.Dispose() }
 }
 if ($HoldoverVariants) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

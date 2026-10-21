@@ -55,12 +55,10 @@ namespace MonsterTrain2Poju.Model
         public static bool HasConsume(CardInstanceState card) => RefreshTraits(card).CombinedTraits?.Any(trait => trait.RuntimeType == Trait) == true;
         internal static string? PermanentUpgradeError(CardInstanceState card, CardUpgradeModifier upgrade)
         {
-            if (upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardRetainModel.Trait && trait.StackMode != 0) == true)
-                return "Permanent Holdover installation requires a captured non-stacking trait definition.";
-            if (upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true)
-                return "Permanent Corrupt State installation requires separate native calibration.";
-            if (upgrade.Lifecycle?.RemovedRuntimeTypes.Any(type => type is "CardTraitEphemeral" or "CardTraitCopyOnPlay") == true)
-                return "Permanent removal of Ephemeral/CopyOnPlay requires separate native calibration.";
+            if (card.MaskDescriptor == null && (upgrade.Lifecycle?.AddedTraits.Any(trait =>
+                trait.RuntimeType is CardRetainModel.Trait or CardCorruptStateModel.Trait) == true ||
+                upgrade.Lifecycle?.RemovedRuntimeTypes.Any(type => type is "CardTraitEphemeral" or "CardTraitCopyOnPlay") == true))
+                return "Permanent trait installation/removal requires captured branch-owned trait state.";
             CardTraitValue[] markers = upgrade.Lifecycle?.AddedTraits.Where(trait => trait.RuntimeType is "CardTraitDistinct" or "CardTraitEphemeral").ToArray() ?? Array.Empty<CardTraitValue>();
             if (markers.Length > 0 && (card.MaskDescriptor == null || markers.Any(trait => trait.StackMode != 0)))
                 return "Permanent Distinct/Ephemeral installation requires captured traits and a non-stacking definition.";
@@ -73,19 +71,21 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
         internal static CardMaskDescriptor? InstallPermanentTraits(CardInstanceState source,
-            IReadOnlyList<CardUpgradeModifier> addedUpgrades)
+            IReadOnlyList<CardUpgradeModifier> addedUpgrades, out IReadOnlyList<CardUpgradeModifier> preparedUpgrades)
         {
+            preparedUpgrades = addedUpgrades;
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
             CardTraitValue[] added = addedUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())
                 .Where(trait => trait.RuntimeType == Trait).ToArray();
             if (descriptor == null) return null;
             if (added.Length > 0 && !HasConsume(source)) descriptor = descriptor.WithBaseTraits(descriptor.BaseTraits.Concat(added).ToArray());
-            // These have no OnTraitAdded callback. Native permanent upgrades
-            // install them into the base list, unless a combined trait exists.
-            var installed = new HashSet<string>((RefreshTraits(source).CombinedTraits ?? Array.Empty<CardTraitValue>()).Select(trait => trait.RuntimeType));
-            foreach (CardTraitValue marker in addedUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())
-                .Where(trait => trait.RuntimeType is "CardTraitDistinct" or "CardTraitEphemeral" or CardRetainModel.Trait && trait.StackMode == 0))
-                if (installed.Add(marker.RuntimeType)) descriptor = descriptor.WithBaseTraits(descriptor.BaseTraits.Concat(new[] { marker }).ToArray());
+            var prepared = new List<CardUpgradeModifier>();
+            foreach (var upgrade in addedUpgrades)
+            {
+                descriptor = PermanentCardTraits.Install(source, descriptor, upgrade, out var changed);
+                prepared.Add(changed);
+            }
+            preparedUpgrades = prepared;
             return descriptor;
         }
         internal static string? CreationError(CardCreationRule creation) =>

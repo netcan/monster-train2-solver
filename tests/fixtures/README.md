@@ -1,7 +1,7 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 838 archives (777 full battles and
-61 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 839 archives (777 full battles and
+62 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 `full-battle-progressed-ring7-holdover-{policy,win}.mt2f` closes the original
@@ -23,6 +23,12 @@ See [exact search and certificates](exact-search.md) and
 [unknown draw probability policies](unknown-draw-policy.md).
 `scripts/Check-SolverCompletion.ps1` is the focused acceptance entrypoint;
 it does not run the full regression inventory.
+
+`permanent-trait-calibration.mt2f` adds 80 detached native operations for all
+four Holdover/Corrupt permanent stack modes, repeated installation, clobber
+protection and Ephemeral/CopyOnPlay removal. Temporary and nonremovable trait
+controls retain complete private/card state and native modified-trait flags.
+See [permanent trait evidence](permanent-traits.md).
 
 `full-battle-progressed-ring8-gold-{search,replay,policy}.mt2f` closes natural
 eighth-ring rolling-advisor acceptance: 50 decisions, 39 plays, 11 EndTurns,

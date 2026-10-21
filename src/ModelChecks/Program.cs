@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--permanent-traits-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PermanentTraitChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--belief-battle-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3441,6 +3448,11 @@ foreach (string path in args.Where(path => path.Contains("holdover-variants-cali
 {
     using var document = ModelJson.ReadFixture(path);
     HoldoverVariantChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("permanent-trait-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    PermanentTraitChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("card-status-composition-calibration", StringComparison.OrdinalIgnoreCase)))
     CardStatusCompositionChecks.Native(path);

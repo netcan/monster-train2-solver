@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 838 binary archives, including 777
-full battles and 61 component calibrations. The card index accepts 776 battles;
+Current curated inventory (2026-10-21): 839 binary archives, including 777
+full battles and 62 component calibrations. The card index accepts 776 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -25,6 +25,13 @@ side effects. Exhaustive search of the last card decision's one-EndTurn horizon
 also removes one unnecessary play. Its fresh 41-input native replay wins with
 Pyre104, matching every full-state/RNG successor with four zero counters.
 See [the Holdover evidence and remaining guards](tests/fixtures/holdover.md).
+
+Eighty additional detached native permanent-upgrade operations cover all four
+Holdover/Corrupt stack modes, repeated installation, clobber protection and
+Ephemeral/CopyOnPlay removal with temporary/nonremovable controls. The model
+retains native dummy slots, runtime parameters, private pending state and the
+upgrade's modified-trait flags. See
+[permanent trait calibration](tests/fixtures/permanent-traits.md).
 
 `scripts/Check-SolverCompletion.ps1` checks these increments and both new search
 interfaces without invoking the full fixture regression. Native witnesses,

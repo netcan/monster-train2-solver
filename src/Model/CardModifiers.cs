@@ -318,7 +318,11 @@ namespace MonsterTrain2Poju.Model
             if (refreshTraits && !Permanent.Upgrades.SequenceEqual(permanent.Upgrades))
             {
                 CardUpgradeModifier[] addedUpgrades = permanent.Upgrades.Where(upgrade => !Permanent.Upgrades.Contains(upgrade)).ToArray();
-                descriptor = CardExhaustModel.InstallPermanentTraits(this, addedUpgrades) ?? descriptor;
+                descriptor = CardExhaustModel.InstallPermanentTraits(this, addedUpgrades, out var prepared) ?? descriptor;
+                if (prepared.Where((upgrade, index) => !ReferenceEquals(upgrade, addedUpgrades[index])).Any())
+                    permanent = new CardModifiers(permanent.Offsets, permanent.Upgrades.Select(upgrade => {
+                        int index = Array.IndexOf(addedUpgrades, upgrade); return index < 0 ? upgrade : prepared[index];
+                    }).ToArray(), permanent.PersistentHealth, permanent.ExternalInteractions, permanent.BoxedCards, permanent.MergedEquipment);
             }
             var changed = new CardInstanceState(InstanceId, DataId,
             permanent, temporary, LastPlayedCost, LastForgedAmount, PlayCount, ExternalInteractions,

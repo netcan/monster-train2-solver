@@ -18,6 +18,8 @@ try {
     $shortened = 'tests/fixtures/full-battle-progressed-ring7-holdover-exact-replay.mt2f'
     dotnet $checks --holdover-variants-only tests/fixtures/holdover-variants-calibration.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Native upgrade/clone variant matrix failed.' }
+    dotnet $checks --permanent-traits-only tests/fixtures/permanent-trait-calibration.mt2f
+    if ($LASTEXITCODE -ne 0) { throw 'Native permanent trait matrix failed.' }
     foreach ($mode in @('--holdover-only', '--starting-duality-only', '--rolling-advice-only')) {
         dotnet $checks $mode $shortened
         if ($LASTEXITCODE -ne 0) { throw "Shortened native victory failed: $mode" }
