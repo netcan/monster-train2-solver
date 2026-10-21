@@ -1,8 +1,21 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 816 archives (767 full battles and
-49 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 817 archives (767 full battles and
+50 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`outer-boss-occupied-phase-calibration.mt2f` adds nine settled native casting
+phases with normal legal card plays and player units. Its five pre-combat actions,
+four post-combat no-ops and four moves retain four new live corruption-aura
+targets. The model explicitly refreshes auras after boss movement and collects
+outer-boss enchanters from their reserved anchors using native
+`OuterTrainSpawnPoint.IndexInRoom = Int32.MaxValue`. The same focused selector
+compares complete battle/controller/physical/RNG state and immutable parents.
+The source diagnostic loses on turn five with 63 unsupported stages and zero
+capture/mismatch/pending counters; original files remain unchanged. It is
+component evidence and does not accept the source as a full battle. Binary:
+29,647 bytes, 4,921 nodes, SHA256
+`1384ba4c0d0d15e5cbe0e79bbcfcf6d84346a9e3bc824b6d3fde1eafef7040e9`.
 
 `outer-boss-phase-calibration.mt2f` retains 11 settled native casting phases for
 `Boss_Level8_AllyBuffer`: six pre-combat actions, five post-combat no-ops, five

@@ -208,6 +208,12 @@ namespace MonsterTrain2Poju.Model
                         {
                             var group = state.Train.Context?.SpawnPoints?.SelectedGroup(room.RoomIndex, team);
                             int index = group == null ? rank : Array.IndexOf(group.Occupants.ToArray(), unit.Id);
+                            // OuterTrainSpawnPoint.GetIndexInRoom is Int32.MaxValue;
+                            // its reserved anchor is outside the ordinary group slots.
+                            SpawnPointReference? anchor = state.Train.Context?.SpawnPoints?.Units
+                                .FirstOrDefault(point => point.UnitId == unit.Id)?.Current;
+                            if (unit.BumpRules?.OuterBoss == true && anchor?.OuterBossAnchor == true &&
+                                anchor.RoomIndex == room.RoomIndex) index = int.MaxValue;
                             if (index < 0)
                             {
                                 error = "Missing physical point for enchantment source collection: unit=" + unit.Id +

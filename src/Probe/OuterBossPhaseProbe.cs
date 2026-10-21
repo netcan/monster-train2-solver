@@ -51,16 +51,18 @@ namespace MonsterTrain2Poju.Probe
         }
         private static IEnumerator Observe(IEnumerator native)
         {
+            Record? row = null;
             if (Capturing && AllGameManagers.Instance.GetHeroManager().GetOuterTrainBossCharacter()?.IsAlive == true)
                 try
                 {
                     if (pending != null) throw new InvalidOperationException("Previous native outer-boss phase has not settled.");
-                    pending = new Record { Phase = AllGameManagers.Instance.GetCombatManager().GetCombatPhase().ToString(), Before = Capture() };
-                    Records.Add(pending);
+                    row = new Record { Phase = AllGameManagers.Instance.GetCombatManager().GetCombatPhase().ToString(), Before = Capture() };
+                    pending = row; Records.Add(row);
                 }
                 catch (Exception error) { Errors.Add(error.ToString()); }
-            try { while (native.MoveNext()) yield return native.Current; }
-            finally { (native as IDisposable)?.Dispose(); if (pending != null) pending.NativeReturned = true; }
+            bool completed = false;
+            try { while (native.MoveNext()) yield return native.Current; completed = true; }
+            finally { (native as IDisposable)?.Dispose(); if (row != null) row.NativeReturned = completed; }
         }
         private static IEnumerator Settle(IEnumerator native, Record row)
         {

@@ -107,7 +107,17 @@ namespace MonsterTrain2Poju.Model
                 { error = "Native action movement of an immobilized outer boss is not calibrated."; return false; }
                 BumpResult moved = BumpModel.Apply(train, new[] { boss.UnitId }, destination - room, rules);
                 if (!moved.Supported) { error = moved.UnsupportedReason; return false; }
+                if (moved.Outcome != RoomOutcome.Exchanged)
+                { error = "Terminal outer-boss action movement requires native phase calibration."; return false; }
                 train = moved.State!; rules = moved.RoomRules.ToArray(); room = destination;
+                // HandleBossMovement calls HandleRoomUnitOrderPossiblyChanged even
+                // when no movement callback fires. That refreshes the moving aura.
+                var pending = new List<RoomCombatModel.QueuedCharacterTrigger>();
+                TrainCombatResult updated = EnchantmentWorldModel.UpdateAll(train, pending.Add);
+                if (!updated.Supported) { error = updated.UnsupportedReason; return false; }
+                TrainCombatResult settled = TrainCombatModel.ApplyCharacterQueue(updated.State!, pending);
+                if (!settled.Supported) { error = settled.UnsupportedReason; return false; }
+                train = settled.State!;
                 return true;
             }
             if (!Move(target.TargetRoom) || !Move(target.PostActionRoom)) return Fail(error!);

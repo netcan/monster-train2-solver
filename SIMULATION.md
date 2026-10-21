@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 816 binary archives, including 767
-full battles and 49 component calibrations. The card index accepts 766 battles;
+Current curated inventory (2026-10-21): 817 binary archives, including 767
+full battles and 50 component calibrations. The card index accepts 766 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -30,7 +30,10 @@ native transitions, including initial-action retention, repeat exhaustion,
 invalid-action skipping and the destruction group. `OuterBossPhaseModel` now
 combines targeting, controller progression and movement across 11 settled native
 casting phases, including aura state, physical points and every captured RNG
-stream. It also retains five post-combat no-op controls and immutable parents.
+stream. Nine additional native phases with normal legal card plays retain four
+new live corruption-aura targets, proving explicit movement-order refresh and
+reserved-anchor source ordering. All twenty phases match complete states and
+immutable parents.
 Relentless transition, room destruction and EndTurn integration remain guarded;
 the source diagnostic loses with 42 unsupported stages and zero other counters.
 Native upgrade-slot relics now pass battle validation because their only

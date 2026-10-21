@@ -2674,7 +2674,12 @@ namespace MonsterTrain2Poju.Probe
                 if (CorruptionScenario.RelicTrigger) CorruptionScenario.PrepareRelicDecision(managers, log);
                 if (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared)
                     damagePerHpAbilityInputPrepared = DamagePerHpScenario.SeedAbilityLastAttackerInput(managers, log);
-                BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
+                // The phase diagnostic may play normal legal cards against the
+                // explicitly captured outer boss. This does not remove the guards
+                // on ordinary full-battle captures or mark this run accepted.
+                BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision(
+                    includeOuterBossForBump: OuterBossPhaseProbe.Enabled,
+                    ignoreOuterBossSpawnInteraction: OuterBossPhaseProbe.Enabled);
                 try { if (PlannerReplayScenario.AwaitingAdvice(decision)) return; }
                 catch (Exception error) { throw new InvalidOperationException("Asynchronous advisor preparation failed.", error); }
                 if (fullBattle && RelicCardModifierScenario.CastTriggerUpgrade)
