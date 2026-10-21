@@ -7,7 +7,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
+$fixtureNames = @('intrinsic-opening-draw-calibration.mt2f',
+    'full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
     'full-battle-planner-starter-search.mt2f', 'full-battle-planner-starter-replay.mt2f',
     'full-battle-planner-relics-search.mt2f', 'full-battle-planner-relics-replay.mt2f',
     'full-battle-planner-ability-search.mt2f', 'full-battle-planner-ability-replay.mt2f',

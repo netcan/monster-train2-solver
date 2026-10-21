@@ -52,7 +52,10 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardState card in nativeHand.Concat(cards.GetDrawPile()).Concat(cards.GetDiscardPile()))
             {
                 if (card.GetTraitStates().Any(trait => trait.GetType().GetMethod("OnPreOpeningHand",
-                    BindingFlags.Public | BindingFlags.Instance)?.DeclaringType != typeof(CardTraitState)))
+                    BindingFlags.Public | BindingFlags.Instance)?.DeclaringType != typeof(CardTraitState) &&
+                    // Captured Intrinsic traits draw once on normal turn one;
+                    // BattleTurnModel includes that post-deployment pre-draw.
+                    !(CardBranchMaskProbe.Enabled && trait is CardTraitIntrinsicState)))
                     interactions.Add("Opening hand trait callback");
             }
             bool moonPhaseTrackingActive = (bool)AccessTools.Field(typeof(PlayerManager), "isMoonPhaseTrackingActive").GetValue(player);

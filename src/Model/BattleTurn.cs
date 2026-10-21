@@ -540,6 +540,20 @@ namespace MonsterTrain2Poju.Model
                 if (!count.Supported) return Unsupported(count.UnsupportedReason!);
                 context = count.Context!; drawPerTurn = count.Value;
             }
+            // Deployment is turn zero. Native DrawOpeningHand runs on turn one:
+            // each Intrinsic card leaves the deck before the ordinary hand draw.
+            if (turn == 1)
+            {
+                foreach (CardToken token in context.Cards.Draw.ToArray())
+                {
+                    CardInstanceState? intrinsic = context.FindCard(token.InstanceId);
+                    if (intrinsic?.MaskDescriptor == null ||
+                        !CardBranchMaskModel.Resolve(intrinsic).Traits.Contains("CardTraitIntrinsicState")) continue;
+                    TypedDrawResult opening = NextDrawUpgradeModel.DrawSpecific(context, token.InstanceId, 0, source.PlayRules);
+                    if (!opening.Supported) return Unsupported(opening.UnsupportedReason!);
+                    context = opening.Context!;
+                }
+            }
             int roomDrawCount = Math.Max(0, unchecked(drawPerTurn + UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Draw)));
             if (context.OtherPiles != null) otherPiles = context.OtherPiles.ToArray();
             if (RelicCorruptedAngelsModel.Enabled(context))

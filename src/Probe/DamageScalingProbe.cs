@@ -9,6 +9,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class DamageScalingProbe
     {
         internal static bool Known(string name) => name == "CardTraitShowCardTargets" || name == "CardTraitReturnToHandEquipment" || name == "CardTraitScalingAdjustCapacity" || name == "CardTraitSelfPurge" || name == "CardTraitInfusion" || name == "CardTraitPersistent" || name == "CardTraitScalingAddDamage" || name == "CardTraitScalingAddStatusEffect" ||
+            name == "CardTraitIntrinsicState" && CardBranchMaskProbe.Enabled ||
             (name == CardGraftedEquipmentModel.Trait || name == CardCorruptStateModel.Trait) && CardBranchMaskProbe.Enabled ||
             name == "CardTraitScalingAddForged" || name == "CardTraitScalingHealTrain" || name == "CardTraitFreeze" || name == "CardTraitCraftedSpike" ||
             (name == "CardTraitScalingFeederRules" || name == "CardTraitDistinct" || name == CardCorruptRestrictedModel.Trait || name == CardStatusDamageModel.Trait || name == CardSpecificDamageModel.Trait || name == CardScaledEnergyModel.Trait || name == CardStatusRemovalScalingModel.Trait || name == CardEffectApplicationsModel.Trait) && CardBranchMaskProbe.Enabled ||
@@ -43,7 +44,11 @@ namespace MonsterTrain2Poju.Probe
                 card.GetSpawnCharacterData()?.GetSubtypes().Contains(data.paramSubtype) == true).Select(card => card.GetID()).ToArray();
             return new CardStatisticQuery(data.trackedValue.ToString(), data.entryDuration.ToString(), typeMask, subtypeMask,
                 data.paramSubtype == null || data.paramSubtype.IsNone, data.paramSubtype?.Key, data.paramCardData?.GetID(), rawCost, variable,
-                data.paramTeamType.ToString(), CurrentCostModifiersOnly(data.cardState),
+                // This is a CurrentCost evaluation shortcut, not mutable card
+                // state. Other query types must not inherit ambient room/hand
+                // cost changes in otherwise identical scaling descriptors.
+                data.paramTeamType.ToString(), data.trackedValue == CardStatistics.TrackedValueType.CurrentCost &&
+                    CurrentCostModifiersOnly(data.cardState),
                 currentCostSourceIsSpellOverride ?? (data.cardState?.GetCardType() == CardType.Spell),
                 data.trackedValue == CardStatistics.TrackedValueType.StatusEffectCountInTargetRoom ?
                     data.paramStatusEffects.Select(status => status.statusId).ToArray() : null);
