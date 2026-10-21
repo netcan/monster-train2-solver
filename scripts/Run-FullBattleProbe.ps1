@@ -1152,8 +1152,12 @@ if ($DotNetPlanner -and -not (Test-Path -LiteralPath (Join-Path $workspace 'src/
 }
 $pluginDir = Join-Path $gameRoot 'BepInEx\plugins'
 Copy-Item -LiteralPath (Join-Path $workspace 'src\Probe\bin\Release\netstandard2.1\Probe.dll') -Destination $pluginDir -Force
-Copy-Item -LiteralPath (Join-Path $workspace 'src\Model\bin\Release\netstandard2.1\Model.dll') -Destination $pluginDir -Force
-Copy-Item -LiteralPath (Join-Path $workspace 'src\FixtureArchive\bin\Release\netstandard2.1\FixtureArchive.dll') -Destination $pluginDir -Force
+foreach ($dependency in @('Model', 'FixtureArchive')) {
+    # Player acceptance must use the same complete payload as packaging, even
+    # if a later checker build refreshed another project's dependency outputs.
+    $dependencyRoot = if ($PlayerAdvisor) { 'Advisor' } else { $dependency }
+    Copy-Item -LiteralPath (Join-Path $workspace "src/$dependencyRoot/bin/Release/netstandard2.1/$dependency.dll") -Destination $pluginDir -Force
+}
 if ($InputProfile) {
     $checkpoint = (Resolve-Path -LiteralPath $InputProfile).Path.TrimEnd('\')
     if ((Split-Path $checkpoint -Parent) -ine (Join-Path $workspace '.probe-runs')) {
@@ -6557,6 +6561,9 @@ if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePasse
         if ($PlayerAdvisor -and $playerCheckPlugin -and (Test-Path -LiteralPath $playerCheckPlugin)) {
             if ($process -and -not $process.HasExited) { $process.Kill(); $process.WaitForExit() }
             Move-Item -LiteralPath $playerCheckPlugin -Destination (Join-Path $profile 'player-plugin')
+            foreach ($dependency in @('Model.dll', 'FixtureArchive.dll')) {
+                Copy-Item -LiteralPath (Join-Path $pluginDir $dependency) -Destination (Join-Path $profile 'player-plugin')
+            }
             if ($playerConfigPath -and (Test-Path -LiteralPath $playerConfigPath)) {
                 Move-Item -LiteralPath $playerConfigPath -Destination (Join-Path $profile 'checked-player-advisor.cfg')
             }

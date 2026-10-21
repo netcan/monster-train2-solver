@@ -1,7 +1,7 @@
 # Player Mod validation · 2026-10-21
 
 The player entry point is `src/Advisor/AdvisorPlugin.cs`. The 0.2.0 baseline below
-is followed by the 0.2.1 focused results.
+is followed by the 0.2.1 and 0.2.2 focused results.
 It compiles against Mono game 2.2.1, module
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, as an AnyCPU netstandard2.1 assembly.
 The assembly excludes `ProbePlugin` and `NativeReplayScenario`. Startup selects
@@ -266,3 +266,22 @@ player assembly in source and replay processes.
 This establishes the natural Luna Coven starter battle in the real player
 entry point. It does not establish every later moon deck, room/relic combination,
 final boss or macOS runtime.
+
+## Efficient complete-window player validation
+
+The isolated frozen-window driver waits for player capture initialization before
+any native input. A searched window still verifies the real player UI and a new
+publication after the first action. It then pauses unused background planning
+through the player's existing pause button while executing that original plan.
+A frozen replay pauses planning before its first input. The separate player
+assembly, native observation and every complete-state/RNG comparison stay active.
+This mode verifies one complete publication; it does not establish rolling
+replanning at every subsequent decision. The rolling acceptance mode is unchanged.
+
+The driver also skips the unused fixed-policy candidate while a player plan owns
+the decision. Ordinary policy execution before and after the window is retained.
+These driver changes are excluded from the player assembly and package.
+
+Player probes load both shared dependencies from the Advisor build output and
+archive all three loaded DLLs. This keeps the native replay and package byte
+identical even if an intervening checker build refreshes another output tree.

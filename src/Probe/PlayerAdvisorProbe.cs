@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
         private static long initialGeneration;
         private static ManualLogSource? log;
         private static BattleTurnState? terminal;
+        private static bool frozenObservation;
         internal static bool InteractionsPassed { get; private set; }
         internal static bool CaptureInitialized
         {
@@ -97,6 +98,16 @@ namespace MonsterTrain2Poju.Probe
         internal static void CaptureTerminal()
         { if (Enabled) terminal = Capture(); }
         internal static BattleTurnState Terminal => terminal ?? throw new InvalidOperationException("Player terminal capture is missing.");
+
+        internal static void PauseForFrozenPlan()
+        {
+            if (frozenObservation) return;
+            Resolve();
+            if (!Field<bool>("paused")) Click("暂停建议");
+            Require(Field<bool>("paused") && CurrentIsNull(), "frozen plan retained background advice");
+            frozenObservation = true;
+            log!.LogInfo("PLAYER-ADVISOR-FROZEN-OBSERVATION pausedBackground=true; native observation remains active");
+        }
 
         internal static PlayCardAction? NativeAction(PlayCardAction? action)
         {

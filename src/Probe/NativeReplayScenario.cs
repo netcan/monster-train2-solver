@@ -722,6 +722,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 return;
             }
+            if (PlayerAdvisorProbe.Enabled && !PlayerAdvisorProbe.CaptureInitialized) return;
             string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
             if (fullBattle && HoldoverCalibration.Enabled && !HoldoverCalibration.Prepared)
                 HoldoverCalibration.Prepare(managers, log);
@@ -2742,7 +2743,10 @@ namespace MonsterTrain2Poju.Probe
                 }
                 else
                 {
-                    pendingPlay = modifierScenario == OriginalStingRelicBatchScenario.Name
+                    bool playerPlan = PlayerAdvisorProbe.Enabled && decision.Spawn.Turn >=
+                        int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "2") &&
+                        (PlannerReplayScenario.Records.Count == 0 || !PlannerReplayScenario.Records[0].Completed);
+                    pendingPlay = playerPlan ? null : modifierScenario == OriginalStingRelicBatchScenario.Name
                         ? OriginalStingRelicBatchScenario.Choose(decision)
                         : Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                             ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
@@ -3060,7 +3064,15 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = EquipmentScenario.ChooseBuffTarget(decision, pendingPlay) ?? pendingPlay;
                 if (fullBattle && OriginalFirstImpBonusScenario.Enabled)
                     pendingPlay = OriginalFirstImpBonusScenario.Choose(decision) ?? pendingPlay;
-                if (PlannerReplayScenario.TryChoose(decision, log, out PlayCardAction? planned)) pendingPlay = planned;
+                if (PlannerReplayScenario.TryChoose(decision, log, out PlayCardAction? planned))
+                {
+                    pendingPlay = planned;
+                    // A frozen window consumes its original publication. After
+                    // proving one real action refresh, further background searches
+                    // are unused; retain the player's read-only native observer.
+                    if (PlayerAdvisorProbe.Enabled && (PlannerReplayScenario.Records[0].Mode == "replay" ||
+                        PlannerReplayScenario.Records[0].Actual.Count > 0)) PlayerAdvisorProbe.PauseForFrozenPlan();
+                }
                 if (pendingPlay != null)
                 {
                     RoomManager rooms = managers.GetRoomManager()!;
