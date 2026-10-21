@@ -27,6 +27,7 @@ namespace MonsterTrain2Poju.Probe
             public double Score { get; set; }
             public double? PolicyBaselineScore { get; set; }
             public int Nodes { get; set; }
+            public bool ReusedWinningContinuation { get; set; }
             public long Generation { get; set; }
             public BattleAdvisorOverlay.Publication? Timing { get; set; }
             public string? Difference { get; set; }
@@ -107,6 +108,7 @@ namespace MonsterTrain2Poju.Probe
                 decision = new Decision { Root = root, Action = steps[0].Action, IsEndTurn = steps[0].IsEndTurn,
                     PlanSteps = steps.ToList(), Planned = plan.State, PlannedOutcome = plan.Outcome, Score = plan.Score,
                     PolicyBaselineScore = plan.PolicyBaselineScore, Nodes = plan.ExpandedNodes,
+                    ReusedWinningContinuation = advice.ReusedWinningContinuation,
                     Generation = timing.Generation, Timing = timing };
                 if (decision.IsEndTurn)
                 {
@@ -127,6 +129,7 @@ namespace MonsterTrain2Poju.Probe
 #endif
             log.LogInfo("ROLLING-CHOOSE mode=" + decision.Mode + " decision=" + Records.Count + " turn=" + root.Spawn.Turn +
                 " endTurn=" + decision.IsEndTurn + " generation=" + decision.Generation + " nodes=" + decision.Nodes +
+                " retainedWin=" + decision.ReusedWinningContinuation +
                 " searchMs=" + decision.Timing?.SearchMs + " responseMs=" + decision.Timing?.EndToEndMs);
             return true;
         }

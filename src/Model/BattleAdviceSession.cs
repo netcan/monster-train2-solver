@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -16,15 +17,19 @@ namespace MonsterTrain2Poju.Model
         public TimeSpan CaptureElapsed { get; }
         public TimeSpan QueueElapsed { get; }
         public TimeSpan VerificationElapsed { get; }
+        public bool ReusedWinningContinuation { get; }
+        internal WinningAdviceContinuation? WinningContinuation { get; }
         private readonly long requestedAt;
         public TimeSpan ResponseElapsed => CaptureElapsed + Since(requestedAt);
         internal static TimeSpan Since(long timestamp) => TimeSpan.FromSeconds(
             (Stopwatch.GetTimestamp() - timestamp) / (double)Stopwatch.Frequency);
         internal BattleAdvice(BattleTurnState root, string key, BattlePlanResult plan,
-            TimeSpan captureElapsed, TimeSpan queueElapsed, TimeSpan verificationElapsed, long requestedAt)
+            TimeSpan captureElapsed, TimeSpan queueElapsed, TimeSpan verificationElapsed, long requestedAt,
+            WinningAdviceContinuation? winningContinuation = null, bool reusedWinningContinuation = false)
         {
             Root = root; RootKey = key; Plan = plan; CaptureElapsed = captureElapsed;
             QueueElapsed = queueElapsed; VerificationElapsed = verificationElapsed; this.requestedAt = requestedAt;
+            WinningContinuation = winningContinuation; ReusedWinningContinuation = reusedWinningContinuation;
         }
     }
 
@@ -34,6 +39,8 @@ namespace MonsterTrain2Poju.Model
     {
         private readonly Func<BattleTurnState, CancellationToken, BattlePlanResult> search;
         private readonly Action<BattleTurnState, BattlePlanResult> verify;
+        private readonly bool retainWinningPlans;
+        private WinningAdviceContinuation? winningContinuation;
         private Task<BattleAdvice>? worker;
         private CancellationTokenSource? cancellation;
         private BattleTurnState? pending;
@@ -56,7 +63,7 @@ namespace MonsterTrain2Poju.Model
             }) { }
 
         internal BattleAdviceSession(Func<BattleTurnState, CancellationToken, BattlePlanResult> search)
-            : this(search, Verify) { }
+            : this(search, Verify) { retainWinningPlans = true; }
 
         internal BattleAdviceSession(Func<BattleTurnState, CancellationToken, BattlePlanResult> search,
             Action<BattleTurnState, BattlePlanResult> verify)
@@ -82,9 +89,16 @@ namespace MonsterTrain2Poju.Model
             Poll();
         }
 
-        public void Invalidate()
+        public void Invalidate() => Invalidate(false);
+
+        // Input/animation boundaries hide the old publication immediately, but
+        // may retain an immutable proof until the next settled state is known.
+        public void InvalidateForInput() => Invalidate(true);
+
+        private void Invalidate(bool preserveWinningContinuation)
         {
             if (disposed) return;
+            if (!preserveWinningContinuation) winningContinuation = null;
             if (currentKey != null) generation++;
             currentKey = pendingKey = null; pending = null;
             Current = null; Error = null; Status = BattleAdviceStatus.Idle;
@@ -100,12 +114,12 @@ namespace MonsterTrain2Poju.Model
                 {
                     BattleAdvice advice = worker.GetAwaiter().GetResult();
                     if (workerGeneration == generation && advice.RootKey == currentKey)
-                    { Current = advice; Status = BattleAdviceStatus.Ready; }
+                    { Current = advice; winningContinuation = advice.WinningContinuation; Status = BattleAdviceStatus.Ready; }
                 }
                 catch (Exception error)
                 {
                     if (workerGeneration == generation && currentKey != null)
-                    { Error = error.Message; Status = BattleAdviceStatus.Unavailable; }
+                    { winningContinuation = null; Error = error.Message; Status = BattleAdviceStatus.Unavailable; }
                 }
                 finally
                 { worker = null; cancellation!.Dispose(); cancellation = null; }
@@ -116,6 +130,7 @@ namespace MonsterTrain2Poju.Model
                 string key = pendingKey!;
                 long requestedAt = pendingRequestedAt;
                 TimeSpan captureElapsed = pendingCaptureElapsed;
+                WinningAdviceContinuation? retained = winningContinuation;
                 pending = null; pendingKey = null;
                 workerGeneration = generation;
                 cancellation = new CancellationTokenSource();
@@ -123,18 +138,41 @@ namespace MonsterTrain2Poju.Model
                 worker = Task.Run(() =>
                 {
                     TimeSpan queued = BattleAdvice.Since(requestedAt);
-                    BattlePlanResult plan = search(root, token);
                     token.ThrowIfCancellationRequested();
-                    var verification = Stopwatch.StartNew();
-                    verify(root, plan);
+                    BattlePlanResult plan;
+                    WinningAdviceContinuation? proof;
+                    var verification = new Stopwatch();
+                    verification.Start();
+                    WinningAdviceContinuation? matched = retained?.Match(root);
+                    verification.Stop();
+                    if (matched != null)
+                    {
+                        verification.Start();
+                        using var keys = new BattleStateKeys();
+                        if (keys.Key(root) != key)
+                            throw new InvalidOperationException("Captured state differs from the retained winning continuation.");
+                        plan = matched.Remaining(); proof = matched;
+                    }
+                    else
+                    {
+                        plan = search(root, token);
+                        token.ThrowIfCancellationRequested();
+                        verification.Start();
+                        if (retainWinningPlans) proof = VerifyAndRetain(root, plan, true, token);
+                        else { verify(root, plan); proof = null; }
+                    }
                     verification.Stop();
                     token.ThrowIfCancellationRequested();
-                    return new BattleAdvice(root, key, plan, captureElapsed, queued, verification.Elapsed, requestedAt);
+                    return new BattleAdvice(root, key, plan, captureElapsed, queued, verification.Elapsed, requestedAt,
+                        proof, reusedWinningContinuation: matched != null);
                 });
             }
         }
 
-        internal static void Verify(BattleTurnState root, BattlePlanResult plan)
+        internal static void Verify(BattleTurnState root, BattlePlanResult plan) => VerifyAndRetain(root, plan, false);
+
+        private static WinningAdviceContinuation? VerifyAndRetain(BattleTurnState root, BattlePlanResult plan,
+            bool retain, CancellationToken token = default)
         {
             if (plan.Cancelled || !plan.CompletedHorizon || plan.Steps.Count == 0)
                 throw new InvalidOperationException("No complete verified continuation within the planning budget. turns=" +
@@ -142,8 +180,13 @@ namespace MonsterTrain2Poju.Model
                     " reasons=" + string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));
             BattleTurnState replayed = root;
             RoomOutcome outcome = RoomOutcome.Exchanged;
+            using var keys = new BattleStateKeys();
+            using var continuationKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+            var roots = retain && plan.Outcome == RoomOutcome.BattleWon ? new List<string>() : null;
             foreach (BattleSearchStep step in plan.Steps)
             {
+                token.ThrowIfCancellationRequested();
+                roots?.Add(continuationKeys.Key(replayed));
                 if (step.IsEndTurn)
                 {
                     BattleTurnResult next = BattleTurnModel.EndTurn(replayed);
@@ -158,12 +201,11 @@ namespace MonsterTrain2Poju.Model
                     replayed = next.State!; outcome = next.Outcome;
                 }
             }
-            using var expected = new BattleStateKeys();
-            using var actual = new BattleStateKeys();
-            if (expected.Key(plan.State) != actual.Key(replayed) || plan.Outcome != outcome)
+            if (keys.Key(plan.State) != keys.Key(replayed) || plan.Outcome != outcome)
                 throw new InvalidOperationException("Advice does not reproduce the full planned state.");
             if (plan.PolicyBaselineScore.HasValue && plan.Score > plan.PolicyBaselineScore.Value)
                 throw new InvalidOperationException("Advice lost its completed policy baseline.");
+            return roots == null ? null : new WinningAdviceContinuation(plan, roots.ToArray());
         }
 
         public void Dispose()

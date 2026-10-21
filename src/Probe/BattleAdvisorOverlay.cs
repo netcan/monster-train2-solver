@@ -57,6 +57,7 @@ namespace MonsterTrain2Poju.Probe
             public double SearchMs { get; set; }
             public double VerificationMs { get; set; }
             public double EndToEndMs { get; set; }
+            public bool ReusedWinningContinuation { get; set; }
         }
         internal List<Publication> Publications { get; } = new List<Publication>();
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
@@ -196,18 +197,18 @@ namespace MonsterTrain2Poju.Probe
             AllGameManagers? managers = AllGameManagers.Instance;
             if (managers == null || LoadingScreen.IsWorking())
             {
-                session.Invalidate(); displayed = null; session.Poll();
+                session.InvalidateForInput(); displayed = null; session.Poll();
                 if (body != null) body.text = "等待场景加载完成…";
                 return;
             }
             EnsureUi();
             bool inBattle = managers?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle;
             if (!inBattle && wasInBattle && ManualSession)
-            { new FullBattleTrace(log); manualBattleKey = null; }
+            { new FullBattleTrace(log); manualBattleKey = null; Invalidate(); }
             wasInBattle = inBattle;
             if (paused || HiddenPause || managers == null || !Ready(managers))
             {
-                if (session.Status != BattleAdviceStatus.Idle) Invalidate();
+                if (session.Status != BattleAdviceStatus.Idle) InvalidateState(inBattle && !paused && !HiddenPause);
                 session.Poll();
                 body.text = paused || HiddenPause ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。";
                 return;
@@ -247,10 +248,12 @@ namespace MonsterTrain2Poju.Probe
                 Publications.Add(new Publication { Generation = session.Generation, Turn = displayed.Root.Spawn.Turn,
                     CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,
                     SearchMs = displayed.Plan.Elapsed.TotalMilliseconds, VerificationMs = displayed.VerificationElapsed.TotalMilliseconds,
-                    EndToEndMs = displayed.ResponseElapsed.TotalMilliseconds });
+                    EndToEndMs = displayed.ResponseElapsed.TotalMilliseconds,
+                    ReusedWinningContinuation = displayed.ReusedWinningContinuation });
                 if (playerSession && Publications.Count > 128) Publications.RemoveAt(0);
                 log.LogInfo((playerSession ? "POJU-ADVICE" : "ADVISOR-PUBLISHED") + " generation=" + session.Generation + " steps=" + displayed.Plan.Steps.Count +
-                    " elapsedMs=" + displayed.Plan.Elapsed.TotalMilliseconds.ToString("F1") + " capturePurityFailures=" + PurityFailures);
+                    " elapsedMs=" + displayed.Plan.Elapsed.TotalMilliseconds.ToString("F1") + " capturePurityFailures=" + PurityFailures +
+                    " source=" + (displayed.ReusedWinningContinuation ? "verified-continuation" : "search"));
                 if (!playerSession && !screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")
                 {
                     CapturePanel(); screenshotTaken = true;
@@ -352,22 +355,26 @@ namespace MonsterTrain2Poju.Probe
                     text.Append(" · 目标：").Append(target.GetName()).Append("（").Append(target.GetHP()).Append(" 血）");
                 }
             }
-            text.Append("\n\n搜索 ").Append((plan.Elapsed.TotalMilliseconds / 1000).ToString("F2")).Append(" 秒");
+            if (advice.ReusedWinningContinuation) text.Append("\n\n沿用已验证胜局");
+            else text.Append("\n\n搜索 ").Append((plan.Elapsed.TotalMilliseconds / 1000).ToString("F2")).Append(" 秒");
             if (plan.TimedOut) text.Append(" · 使用预算内已验证方案");
             if (plan.UnsupportedAttempts.Count > 0) text.Append("\n部分操作尚未纳入比较");
             return text.ToString();
         }
 
-        private void Invalidate()
+        private void Invalidate() => InvalidateState(false);
+
+        private void InvalidateState(bool preserveWinningContinuation)
         {
             if (session.Status != BattleAdviceStatus.Idle) Invalidations++;
-            session.Invalidate(); displayed = null; captureError = null; nextCapture = 0;
+            if (preserveWinningContinuation) session.InvalidateForInput(); else session.Invalidate();
+            displayed = null; captureError = null; nextCapture = 0;
             if (body != null) body.text = "局面已更新，等待重新计算…";
         }
-        private static void NativeAction()
+        private static void NativeAction(bool preserveWinningContinuation = true)
         {
             if (Active != null && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
-                Active.Invalidate();
+                Active.InvalidateState(preserveWinningContinuation);
         }
         internal static void InstallAdvisorPatches(Harmony harmony)
         {
@@ -379,9 +386,9 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(BattleHud), "EndTurn")]
         private static class EndTurnPatch { private static void Prefix() => NativeAction(); }
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.UndoTurn))]
-        private static class UndoPatch { private static void Prefix() { NativeAction(); if (Active != null) Active.manualBattleKey = null; } }
+        private static class UndoPatch { private static void Prefix() { NativeAction(false); if (Active != null) Active.manualBattleKey = null; } }
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.RestartBattle))]
-        private static class RestartPatch { private static void Prefix() { NativeAction(); if (Active != null) Active.manualBattleKey = null; } }
+        private static class RestartPatch { private static void Prefix() { NativeAction(false); if (Active != null) Active.manualBattleKey = null; } }
         [HarmonyPatch(typeof(RoomManager), nameof(RoomManager.RoomSelectionChanged))]
         private static class SelectionPatch { private static void Prefix() => NativeAction(); }
 

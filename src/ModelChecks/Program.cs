@@ -1803,6 +1803,13 @@ if (args.Length == 3 && args[0] == "--player-conduit-pair-only")
     PlayerConduitChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--player-boss-winning-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerOuterBossChecks.WinningPair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--player-boss-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -1844,6 +1851,12 @@ if (args.Length == 2 && args[0] == "--native-advice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     BattleAdviceChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--winning-advice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    WinningAdviceChecks.Run(fixture.RootElement);
     return;
 }
 if (args.Length == 2 && args[0] == "--battle-advice-only")
