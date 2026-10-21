@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using BepInEx.Logging;
 using HarmonyLib;
 using Newtonsoft.Json;
@@ -29,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
         private int lastTurn = -1, battleDistance = -1;
         private int eventIndex;
         private int quitCode;
+        private int savedRing;
 
         internal CampaignProgressScenario(ManualLogSource log)
         {
@@ -84,6 +86,7 @@ namespace MonsterTrain2Poju.Probe
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_RESUME_RUN") == "1")
                 {
                     if (!save.HasRun(RunType.Class)) throw new InvalidOperationException("Resume requires an existing native run.");
+                    save.SetActiveRunType(RunType.Class);
                     save.ContinueRunWithReplay(RunType.Class);
                     Record("resume", new { distance = save.GetCurrentDistance() });
                 }
@@ -142,7 +145,8 @@ namespace MonsterTrain2Poju.Probe
                     x.Affordable && x.Purchasable && !x.Claimed && x.GoodState.Unlocked &&
                     x is MerchantGoodDetailsUI).FirstOrDefault();
                 if (buy != null) Click(buy.SelectableUI as GameUISelectableButton, "buy", new {
-                    gold = save.GetGold(), reward = buy.GoodState.RewardData.name });
+                    gold = save.GetGold(), reward = buy.GoodState.RewardData.GetReplayDataID(),
+                    rewardType = buy.GoodState.RewardData.GetType().Name });
                 else Click(merchant.GetCloseButton(), "leave-merchant");
                 return;
             }
@@ -185,6 +189,7 @@ namespace MonsterTrain2Poju.Probe
                 var nodes = map.GetComponentsInChildren<MapNodeUI>().Where(x => x.gameObject.activeInHierarchy &&
                     x.GetLocation()?.Distance == save.GetCurrentDistance() && x.GetData() != null &&
                     x.GetData().CanBeTriggered(x.GetLocation(), save) &&
+                    !x.GetData().HasBeenVisited(x.GetLocation(), save) &&
                     (x.GetBranch() == MapScreen.BranchSelection.NoBranch || (int)x.GetBranch() == save.GetCurrentBranch()))
                     .OrderByDescending(x => NodeValue(x.GetData()));
                 foreach (MapNodeUI node in nodes)
@@ -195,12 +200,14 @@ namespace MonsterTrain2Poju.Probe
             }
             if (screen is BattleIntroScreen intro)
             {
-                if (save.GetCurrentDistance() + 1 >= stopRing)
+                int ring = save.GetCurrentDistance() + 1;
+                if (savedRing != ring)
                 {
                     if (!checkpointSaving)
-                    { checkpointSaving = true; save.Save(); Record("checkpoint", new { ring = stopRing, distance = save.GetCurrentDistance() }); return; }
-                    Finish(true, "Native campaign checkpoint ready before ring " + stopRing); return;
+                    { checkpointSaving = true; save.Save(); Record("checkpoint-save", new { ring }); return; }
+                    SaveCheckpoint(ring); savedRing = ring; checkpointSaving = false;
                 }
+                if (ring >= stopRing) { Finish(true, "Native campaign checkpoint ready before ring " + ring); return; }
                 if ((bool)AccessTools.Field(typeof(BattleIntroScreen), "isFightButtonAvailable").GetValue(intro))
                     Click(intro.GetFightButton(), "fight");
                 return;
@@ -288,6 +295,23 @@ namespace MonsterTrain2Poju.Probe
         {
             if (button == null || !button.gameObject.activeInHierarchy || !button.CanBeActivated() || !ReplayManager.TryClickButton(button)) return false;
             Record(kind, data ?? new { }); return true;
+        }
+        private void SaveCheckpoint(int ring)
+        {
+            string root = Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!;
+            string destination = root + "-before-ring" + ring;
+            if (Directory.Exists(destination)) throw new IOException("Checkpoint already exists: " + destination);
+            Directory.CreateDirectory(destination);
+            Directory.CreateDirectory(Path.Combine(destination, "saves"));
+            foreach (string file in Directory.GetFiles(Path.Combine(root, "saves")))
+                File.Copy(file, Path.Combine(destination, "saves", Path.GetFileName(file)));
+            foreach (string name in new[] { "metagameSave.json", "preferences.json", "preferences-local.json", "campaign-input.json", "campaign-parent-audit.jsonl" })
+                if (File.Exists(Path.Combine(root, name))) File.Copy(Path.Combine(root, name), Path.Combine(destination, name));
+            byte[] bytes = File.ReadAllBytes(Path.Combine(destination, "saves", "save-singlePlayer.json"));
+            string hash;
+            using (SHA256 sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
+            Record("checkpoint", new { ring, profile = destination, sha256 = hash });
+            File.Copy(auditPath, Path.Combine(destination, "campaign-audit.jsonl"));
         }
         private static T Field<T>(object instance, string name) => (T)AccessTools.Field(instance.GetType(), name).GetValue(instance);
         private static MethodInfo Command(string name, params Type[] args) => AccessTools.Method(typeof(CheatManager), name, args);

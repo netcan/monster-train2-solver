@@ -225,6 +225,7 @@ namespace MonsterTrain2Poju.Probe
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_RESUME_RUN") == "1")
                 {
                     int targetDistance = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_DISTANCE") ?? "0", CultureInfo.InvariantCulture);
+                    save.SetActiveRunType(RunType.Class);
                     if (!save.HasRun(RunType.Class) || save.GetCurrentDistance() != targetDistance ||
                         save.GetGameSequence() != SaveData.GameSequence.BattleIntro)
                         throw new InvalidOperationException("A resumed battle requires a matching native BattleIntro checkpoint.");
