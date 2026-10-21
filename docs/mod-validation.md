@@ -218,8 +218,12 @@ Conduit with physical movement and uncalibrated room-mask callback combinations.
 selects the clan through the native run-setup handler. Only the disposable
 profile's clan unlock and moon tutorial marker are prepared; the game generates
 the starting deck, champion, relics and encounter without card/stat edits.
-`PrimaryClan` cannot be combined with a resumed checkpoint. The player acceptance
-bridge now reports an unavailable plan immediately instead of waiting for timeout.
+`-PrimaryClan Hellhorned -SecondaryClan Banished` selects both clans explicitly.
+Legacy clan selection also unlocks the native Crew feature in the disposable
+profile; DLC availability checks remain active. Neither clan selector can be
+combined with a resumed checkpoint, and the two requested clans must differ.
+The player acceptance bridge reports an unavailable plan immediately instead
+of waiting for timeout.
 
 The refreshed 0.2.2 search profile
 `full-battle-units-spells-and-junk-20261021-201209-120850e8`
@@ -267,6 +271,38 @@ player assembly in source and replay processes.
 This establishes the natural Luna Coven starter battle in the real player
 entry point. It does not establish every later moon deck, room/relic combination,
 final boss or macOS runtime.
+
+## Delivered 0.2.3 Hellhorned/Banished check
+
+The requested main Hellhorned / secondary Banished pair was selected through
+native setup in a fresh disposable profile, seed `20261021`. The three Advisor
+build-output DLLs were temporarily replaced with the original delivered 0.2.3
+package payload before running, then restored afterward. The archived loaded
+DLLs match all three package files by SHA256.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 `
+  -PlayerAdvisor -RollingAdvice -PrimaryClan Hellhorned -SecondaryClan Banished `
+  -Seed 20261021 -PlannerHorizon 3 -PlannerTimeLimitMs 3000 `
+  -BinaryCapture -SkipBuild -TimeoutSeconds 360
+```
+
+Profile `full-battle-units-spells-and-junk-20261021-232913-afdc977e` completes
+the natural `Level1BattleHorde` encounter in 252.73 seconds, winning with 80 Pyre
+HP. All 28 inputs (21 card plays, seven EndTurns) consume fresh player advice;
+30 publications and 363 pure captures pass UI and stale-result checks. The
+first rendered recommendation deploys a Shield Steward on floor one, position
+one, after a 3.11-second search. All four native failure counters are zero,
+terminal effects settle, protected files remain unchanged, and the independent
+`--rolling-advice-only` checker passes every input and published continuation.
+
+The initial attempt stopped before battle because the blank profile lacked the
+native Crew unlock. Only the isolated selection driver was updated to prepare
+that prerequisite; it is excluded from the player assembly. Duplicate clan
+requests and clan selection with resumed checkpoints are rejected before launch.
+This Windows first-battle check does not reproduce the reported macOS failure
+or establish later decks or both main/secondary orientations. No Mac package
+was rebuilt and no full regression was run.
 
 ## Efficient complete-window player validation
 

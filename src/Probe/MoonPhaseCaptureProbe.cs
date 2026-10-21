@@ -10,7 +10,8 @@ namespace MonsterTrain2Poju.Probe
     internal static class MoonPhaseCaptureProbe
     {
         internal static bool Enabled => AdvisorRuntime.PlayerSession || RoomMoonCallbackCalibration.Enabled ||
-            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_PRIMARY_CLAN"));
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_PRIMARY_CLAN")) ||
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_SECONDARY_CLAN"));
         internal static bool CaptureMasks => Enabled &&
             AllGameManagers.Instance?.GetPlayerManager()?.GetHasMoonPhaseCardEffect() == true;
 

@@ -31,6 +31,7 @@ param(
     [string] $RollingInput = '',
     [string] $InputProfile = '',
     [string] $PrimaryClan = '',
+    [string] $SecondaryClan = '',
     [ValidateRange(0, 20)] [int] $BattleDistance = 0,
     [switch] $ShowWindow,
     [ValidateRange(1, 2147483647)]
@@ -623,7 +624,8 @@ if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns req
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
 if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
-if ($PrimaryClan -and $InputProfile) { throw 'PrimaryClan selects a fresh native run and cannot be combined with InputProfile.' }
+if (($PrimaryClan -or $SecondaryClan) -and $InputProfile) { throw 'Clan selection requires a fresh native run and cannot be combined with InputProfile.' }
+if ($PrimaryClan -and $SecondaryClan -and $PrimaryClan -ieq $SecondaryClan) { throw 'PrimaryClan and SecondaryClan must be different.' }
 if ($RollingAdvice) {
     if ($Planner) { throw 'RollingAdvice and a frozen-window Planner run are separate test modes.' }
     $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
@@ -1207,6 +1209,7 @@ if (Test-Path -LiteralPath $preferencesPath) {
 $environment = @{
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
+    MT2_PROBE_SECONDARY_CLAN = $SecondaryClan
     MT2_PROBE_CONDUIT_MOVEMENT = $(if ($ConduitMovement) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_CALLBACKS = $(if ($RoomMoonCallbacks) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SHADE = $(if ($RoomMoonCallbacksShade) { '1' } else { '0' })
