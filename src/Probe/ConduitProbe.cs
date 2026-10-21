@@ -58,6 +58,18 @@ namespace MonsterTrain2Poju.Probe
             }
             return new ConduitRoomState(CardModifierProbe.Upgrade(upgrade, false, true), units);
         }
+        internal static IReadOnlyList<RetainedConduitState>? CaptureRetained(FullBattleTrace trace)
+        {
+            // Initially emitted only at the isolated physical calibration boundary.
+            // Ordinary player capture remains guarded until complete combat acceptance.
+            if (!ConduitMovementCalibration.Enabled) return null;
+            return trace.KnownUnits.Where(character => character != null && !character.IsDestroyed &&
+                    (!character.IsAlive || character.GetCurrentRoom() == null))
+                .Select(character => new { Character = character, Contributor = CaptureUnit(character, trace) })
+                .Where(value => value.Contributor != null)
+                .Select(value => new RetainedConduitState(value.Character.GetTeamType() == Team.Type.Heroes
+                    ? CombatTeam.Enemy : CombatTeam.Player, value.Contributor!)).ToArray();
+        }
         internal static ConduitUnitState? CaptureUnit(CharacterState character, FullBattleTrace trace)
         {
             object? modifier = Modifier(character);

@@ -10,7 +10,7 @@ internal static class ConduitMovementChecks
             root.GetProperty("Boundary").GetString() == "AfterNativeSetSpawnPointReturn" &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
             "Missing original native Conduit movement boundary.");
-        int rows = 0, entered = 0, cleared = 0, unchanged = 0, detached = 0, dead = 0;
+        int rows = 0, entered = 0, cleared = 0, unchanged = 0, detached = 0, dead = 0, retained = 0;
         foreach (FixtureValue row in root.GetProperty("Rows").EnumerateArray())
         {
             TrainCombatState before = row.GetProperty("Before").GetProperty("Train").Deserialize<TrainCombatState>()!;
@@ -30,10 +30,16 @@ internal static class ConduitMovementChecks
             BattleSpawnPointResult points = BattleSpawnPointModel.Apply(before.Context.SpawnPoints!, scope, "Set", CombatTeam.Player,
                 contributor.UnitId, target: to);
             Require(points.Supported, points.Error ?? "Physical move failed.");
-            var predicted = ConduitModel.MoveCapturedContributor(before.Context.WithSpawnPoints(points.State!), contributor,
-                CombatTeam.Player, from, to, isDead);
-            Equal(predicted.Context, actual.Context, label + " complete context/physical points");
-            Equal(predicted.Contributor, afterContributor, label + " private tracker");
+            Require(before.Context.ConduitRetained != null && actual.Context!.ConduitRetained != null,
+                "Missing detached/dead tracker capture.");
+            CombatContext predicted = ConduitModel.MovePhysicalContributor(before.Context.WithSpawnPoints(points.State!),
+                contributor.UnitId, CombatTeam.Player, from, to);
+            Equal(predicted, actual.Context, label + " complete context/physical points/retained trackers");
+            ConduitUnitState captured = predicted.MagicPower!.SelectMany(room => room.Conduit!.Units)
+                .Concat(predicted.ConduitRetained!.Select(value => value.Contributor))
+                .Single(value => value.UnitId == contributor.UnitId);
+            Equal(captured, afterContributor, label + " private tracker");
+            retained += actual.Context!.ConduitRetained!.Count;
             Require(row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")),
                 "Conduit movement consumed gameplay RNG.");
             CardInstanceState plain = actual.Context!.FindCard(root.GetProperty("PlainCardId").GetInt32())!;
@@ -52,9 +58,9 @@ internal static class ConduitMovementChecks
             Require(ConduitModel.Validate(before.Context) != null, "Uncalibrated whole-battle physical guard was removed.");
             rows++;
         }
-        Require(rows == 34 && entered > 0 && cleared > 0 && unchanged > 0 && detached >= 4 && dead == 3,
+        Require(rows == 34 && entered > 0 && cleared > 0 && unchanged > 0 && detached >= 4 && dead == 3 && retained >= 5,
             "Missing selected/unselected, detached, dead or unchanged native controls.");
-        Console.WriteLine($"CONDUIT-MOVEMENT PASS rows={rows} entered={entered} cleared={cleared} unchanged={unchanged} detached={detached} dead={dead}: exact context, private trackers, physical points, RNG and immutable parents; whole-battle guard retained.");
+        Console.WriteLine($"CONDUIT-MOVEMENT PASS rows={rows} entered={entered} cleared={cleared} unchanged={unchanged} detached={detached} dead={dead} retained={retained}: snapshot-only prediction, exact context, private trackers, physical points, RNG and immutable parents; whole-battle guard retained.");
     }
     private static void Equal<T>(T predicted, T actual, string label)
     {

@@ -4,6 +4,14 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
+    // Private modifier state survives removal from native room enumeration.
+    public sealed class RetainedConduitState
+    {
+        public CombatTeam Team { get; }
+        public ConduitUnitState Contributor { get; }
+        public RetainedConduitState(CombatTeam team, ConduitUnitState contributor)
+        { Team = team; Contributor = contributor; }
+    }
     public sealed class ConduitUnitState
     {
         public int UnitId { get; }
@@ -154,7 +162,27 @@ namespace MonsterTrain2Poju.Model
             // private modifier and current point still exist.
             if (to == null || !contributor.Active) context = Put(context, holder, team,
                 updated.Conduit.Units.Where(unit => unit.UnitId != contributor.UnitId).ToArray());
+            if (context.ConduitRetained != null)
+            {
+                var retained = context.ConduitRetained.Where(value => value.Contributor.UnitId != contributor.UnitId);
+                if (to == null || !contributor.Active) retained = retained.Append(new RetainedConduitState(team, result));
+                context = context.WithConduitRetained(retained.ToArray());
+            }
             return (context, result);
+        }
+        // Resolve the modifier entirely from the parent snapshot, including
+        // detached/dead actors omitted from room contribution enumeration.
+        internal static CombatContext MovePhysicalContributor(CombatContext context, int unitId, CombatTeam team,
+            SpawnPointReference? from, SpawnPointReference? to)
+        {
+            if (context.ConduitRetained == null)
+                throw new InvalidOperationException("Conduit movement requires captured retained private trackers.");
+            ConduitUnitState? contributor = context.MagicPower?.Where(row => row.Team == team)
+                .SelectMany(row => row.Conduit?.Units ?? Array.Empty<ConduitUnitState>())
+                .Concat(context.ConduitRetained.Where(value => value.Team == team).Select(value => value.Contributor))
+                .SingleOrDefault(value => value.UnitId == unitId);
+            if (contributor == null) return context;
+            return MoveCapturedContributor(context, contributor, team, from, to, !contributor.Active).Context;
         }
         internal static CombatContext Updated(CombatContext context, int cardId)
         {

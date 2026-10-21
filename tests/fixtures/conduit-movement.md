@@ -2,7 +2,7 @@
 
 `conduit-movement-calibration.mt2f` records 34 actual `CharacterState.SetSpawnPoint`
 calls in an isolated game 2.2.1 process. Native profile
-`full-battle-no-cards-20261021-213038-caea6e79` completes in 32.57 seconds and
+`full-battle-no-cards-20261021-213928-2176fff4` completes in 33.75 seconds and
 preserves the protected original files. The boundary is immediately after the
 native call returns; this archive is a component calibration, not a battle win.
 
@@ -30,10 +30,14 @@ detach/reattach operations and three dead-character operations.
 Native order matters: entering a selected floor adds hand tracking even for a
 dead actor. Dead actors are excluded from the room contributor enumeration while
 their private modifier still exists. Detached actors also retain that modifier.
-The calibration therefore captures it separately and the pure component receives
-it explicitly. Ordinary battle snapshots do not yet retain those detached/dead
-trackers; `ConduitModel.Validate` continues to reject physical whole-battle
-contexts. The component-only validation path does not relax that guard.
+The calibration records those modifiers in `CombatContext.ConduitRetained`.
+Prediction resolves the contributor from the parent context alone, without an
+extra tracker argument. All context-copy operations preserve this immutable
+collection. A null collection identifies older captures; an empty collection
+means the complete capture contains no retained modifier. Only the isolated
+component currently emits it. `ConduitModel.Validate` continues to reject
+physical whole-battle contexts until integrated callbacks and preview lifecycle
+have independent native acceptance.
 
 This does not establish preview movement, mixed conduits, room-mask callbacks,
 arbitrary multiplier/trait combinations or an integrated player action chain.

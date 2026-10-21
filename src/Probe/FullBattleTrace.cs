@@ -440,7 +440,8 @@ namespace MonsterTrain2Poju.Probe
                 RelicProbe.Capture(managers), RelicProbe.TriggerCounts(managers),
                 resources: RelicResourceProbe.CaptureResources(managers),
                 mixState: new MixRuntimeState(managers.GetCombatManager()!.LastMixCardSelected?.GetID(),
-                    managers.GetCombatManager()!.LastMixUpgradeSelected?.GetID()));
+                    managers.GetCombatManager()!.LastMixUpgradeSelected?.GetID()),
+                conduitRetained: ConduitProbe.CaptureRetained(this));
             CardBranchMaskProbe.Observe(this, context);
             return context;
         }
