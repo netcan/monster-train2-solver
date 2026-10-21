@@ -471,3 +471,74 @@ Archives: `full-battle-player-room-moon-{search,replay}.mt2f`. Run
 `scripts/Check-PlayerAdvisor.ps1 -Case RoomMoon -SkipBuild` for the manifest-
 verified pair gate. Existing Moon and Conduit player gates also pass.
 Per the user's request, no further Mac packages are built.
+
+## Retaining verified winning continuations
+
+The in-process player session now retains one immutable winning line after its
+complete independent model replay. At the next settled input boundary it hashes
+the captured state on the worker and can publish the remaining suffix under a
+new generation. Every gameplay property, RNG stream, physical reference and
+selected room must match a forward position on the proven line. The next unused
+UI preview-copy number is normalized only while the allocator is present and
+valid; existing copy identities remain in the key. Ordinary search and
+publication keys still include that number.
+
+Input and animation boundaries immediately hide old advice. A divergent state
+requests fresh search; explicit refresh, undo, restart, pause, hide and a new
+battle clear the retained line. Cancelled or obsolete workers cannot install
+one. A reused suffix reports zero search nodes/time and displays
+`沿用已验证胜局`; it does not claim to have searched again. Custom external
+verifiers retain their existing behavior and do not create these proofs.
+
+`--winning-advice-only full-battle-player-boss-search.mt2f` checks all 49 native
+successor roots of the archived 50-input win. It also checks resource changes,
+RNG seed and word changes, forward jumps, backward moves, explicit reset, forged
+publication keys, cancelled work, immutable roots and the preview-allocator
+boundary. Existing advice-session cancellation/coalescing/failure checks pass.
+
+Source profile `full-battle-units-spells-and-junk-20261021-234726-00a8770f`
+completes 50 rolling decisions (39 plays, eleven EndTurns) in 774.50 seconds,
+winning with Pyre21. All 50 consumed publications predict victory: the initial decision
+uses real search, and the following 49 publish the exact remaining winning
+suffix with zero new search nodes. Retained capture-to-publication latency is
+2.18 seconds median, 3.64 seconds P95 and 4.24 seconds maximum. The initial
+consumed publication still takes 42.91 seconds; the search budget does not
+bound capture, verification or total response time.
+
+The player records 52 publications, 554 pure captures, 296 text vertices and
+85,699 visible pixels. Native UI interactions pass, terminal effects settle,
+protected files remain unchanged, `DEPTH-PASS` is present and all four failure
+counters are zero. The source archive retains all 3,010 complete decision
+contexts and is curated as `full-battle-player-boss-rolling-search.mt2f`.
+
+Fresh profile `full-battle-units-spells-and-junk-20261022-000038-aa55e6f7`
+repeats all 50 frozen inputs with zero search nodes in 339.36 seconds, again
+winning with Pyre21. It records 120 pure captures and no publications. Terminal
+effects settle, protected files remain unchanged, `DEPTH-PASS` is present and
+all four failure counters are zero. The frozen record preserves the historical
+source labels; it does not run a winning-continuation cache or a new search.
+Its archive is `full-battle-player-boss-rolling-replay.mt2f`.
+
+The pair checker independently replays every input and every published suffix,
+compares full state/RNG between native processes and checks each retained root
+with only the unused allocator normalized. It also requires exact remaining
+steps, unchanged terminal forecasts/scores, fresh generations, zero new search
+work and correct source/timing labels. Queued boss birth, Casting/Relentless,
+generated Entropy Scourge source traits and three native ability activations
+remain covered. Run `scripts/Check-PlayerAdvisor.ps1 -Case OuterBossRolling -SkipBuild`.
+
+Both runs resume the natural ring-eight checkpoint
+`campaign-ring8-20261021-140958-4b20355b-before-ring8`, distance seven, with the
+12-turn/30,000-ms tactical configuration and deployment room two. This validates
+following a verified winning line; it does not establish a fresh winning search
+at every input or sufficient performance under the default three-turn budget.
+All three loaded player DLL hashes match between the two processes:
+
+| DLL | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | `9df82bedd1ee9b7f5325fffda37621659301478c01d1af4523fbdb22f6f7ad34` |
+| Model.dll | `7bf1fc6f38ba504598151455fee922a030e4f5bf254c73e91479aaff25a1042f` |
+| FixtureArchive.dll | `dd0c12238c09b68252f0d0e65425337d3ecf324df3257cc85cdd084ddba0d6f4` |
+
+Only focused checks and the coverage metadata refresh are run. No full
+regression or Mac package build is performed.

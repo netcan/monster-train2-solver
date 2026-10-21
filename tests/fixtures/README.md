@@ -1,8 +1,19 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 853 archives (788 full battles and
+Current manifest inventory (2026-10-22): 855 archives (790 full battles and
 65 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-player-boss-rolling-{search,replay}.mt2f` closes retained winning
+advice for the natural `Boss_Level8_AllyBuffer`: 50 decisions, 39 plays, eleven
+EndTurns and Pyre21 in both native processes. Every consumed source publication
+predicts victory; 49 follow the independently verified suffix without a new
+search, using new full-state generations. Retained response median/P95 are
+2.18/3.64 seconds; initial response remains 42.91 seconds with the explicit
+12-turn/30-second tactical configuration. All four failure counters are zero.
+`scripts/Check-PlayerAdvisor.ps1 -Case OuterBossRolling -SkipBuild` verifies the
+manifest and every native input, complete forecast, retained root/RNG, exact
+suffix and historical source label. See [player validation](../../docs/mod-validation.md#retaining-verified-winning-continuations).
 
 `full-battle-progressed-ring7-holdover-{policy,win}.mt2f` closes the original
 naturally purchased Holdover branch: the fixed policy loses; the frozen plan
