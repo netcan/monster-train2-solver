@@ -17,7 +17,11 @@ namespace MonsterTrain2Poju.Probe
                 state.InstalledCastEffects, state.Purified, state.PermanentGraft,
                 state.Traits.Composition.TemporaryTraits, state.Traits.Composition.PermanentReplacements,
                 CardSourceTraitProbe.Capture(card), KillTriggers(card.GetTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnKill)
-                    .Select(trigger => CardUpgradeLifecycleProbe.TriggerDefinition(trigger.GetCardTriggerEffectData())).ToArray()));
+                    .Select(trigger => CardUpgradeLifecycleProbe.TriggerDefinition(trigger.GetCardTriggerEffectData())).ToArray()),
+                holdoverUpgradePending: !CardTraitCompositionProbe.Bases(card).Concat(card.GetTemporaryCardStateModifiers().GetTemporaryTraits())
+                    .Any(trait => trait is CardTraitRetain)
+                    ? card.GetTraitStates().OfType<CardTraitRetain>().Select(trait => CardTraitCompositionProbe.Value(trait).HoldoverPending).FirstOrDefault()
+                    : null);
         }
         internal static CardUpgradeMaskMetadata? Upgrade(CardUpgradeState upgrade) => !Enabled ? null :
             new CardUpgradeMaskMetadata(upgrade.GetStatusEffectUpgrades().Select(status =>

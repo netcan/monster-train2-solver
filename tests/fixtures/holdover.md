@@ -49,11 +49,29 @@ callbacks separately prove positive return and repeated no-op behavior.
 The focused checker verifies every callback's complete card/context/RNG,
 ordinary draw cycles, the uninterrupted action/EndTurn chain and sixteen
 immutable branches. Starting Duality has its own complete native birth check.
-Temporary/replaced Holdover, missing private state, cloning and in-battle
-installation retain explicit guards.
+`holdover-variants-calibration.mt2f` additionally retains 100 original native
+operations on detached cards: permanent installation, temporary upgrade,
+direct temporary trait, base replacement and temporary-upgrade replacement,
+each with both remove-on-discard settings. Every path checks the full card
+before/after discard/recast callbacks, cached queries, forced refresh, trait
+reset, cloning and discard cleanup. Ten independent native clones start with
+cleared pending state. Upgrades copied from original data restore native copy
+flags; the copied replacement rules are retained.
+
+Native `CardStateModifiers.CopyUpgrades` dirties the **source** modifier cache.
+The next query recreates a source upgrade-owned Holdover instance and clears
+its pending state, while directly installed instances retain theirs. The model
+returns that change in its child context and preserves the immutable parent.
+The calibration compares this source side effect separately from the clone.
+No detached card enters the live deck. The complete decision, all native/Unity
+RNG streams and frame stay unchanged. The host is the isolated no-card battle
+`20261021-181338-b0a16581`: settled terminal result, all four counters zero,
+original files unchanged. Missing private state and non-default permanent
+stack-mode installation remain explicit rejection boundaries.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --holdover-only tests/fixtures/full-battle-progressed-ring7-holdover-policy.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --holdover-variants-only tests/fixtures/holdover-variants-calibration.mt2f
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --holdover-only tests/fixtures/full-battle-progressed-ring7-holdover-win.mt2f
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --starting-duality-only tests/fixtures/full-battle-progressed-ring7-holdover-win.mt2f
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --rolling-advice-only tests/fixtures/full-battle-progressed-ring7-holdover-win.mt2f

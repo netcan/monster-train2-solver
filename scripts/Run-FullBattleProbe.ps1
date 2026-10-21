@@ -14,6 +14,7 @@ param(
     [switch] $RollingAdvice,
     [switch] $PreviewAttackTrace,
     [switch] $HoldoverCalibration,
+    [switch] $HoldoverVariants,
     [switch] $BossActionTargets,
     [switch] $BossActionControllers,
     [switch] $OuterBossPhases,
@@ -676,7 +677,7 @@ if ($OriginalLimitedRange) { $BranchCardMasks = $true; $Policy = 'units-spells-a
 if ($OriginalMonsterHandCosts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnplayableCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPermafrostCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($HoldoverCalibration) { $BranchCardMasks = $true }
+if ($HoldoverCalibration -or $HoldoverVariants) { $BranchCardMasks = $true }
 if ($OriginalOverflowCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptRestricted) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusStackDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1369,6 +1370,7 @@ if ($OriginalMonsterHandCosts) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalUnplayableCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unplayable-cards' }
 if ($OriginalPermafrostCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-permafrost-cards' }
 if ($HoldoverCalibration) { $environment['MT2_PROBE_HOLDOVER_CALIBRATION'] = '1' }
+if ($HoldoverVariants) { $environment['MT2_PROBE_HOLDOVER_VARIANTS'] = '1' }
 if ($OriginalOverflowCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-overflow-cards' }
 if ($OriginalCorruptRestricted) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupt-restricted' }
 if ($OriginalStatusStackDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-stack-damage' }
@@ -3903,6 +3905,20 @@ if ($OwnedCardMasks) {
             -not $ownedData.GetProperty('ParameterTraitPresent').GetBoolean()) { throw 'Incomplete or mutating owned card mask calibration.' }
         Write-Output 'NATIVE-OWNED-CARD-MASK-CAPTURE PASS: 416 owned/controlled carried views and 62 original masks; unchanged context/RNG/frame.'
     } finally { $ownedArchive.Dispose() }
+}
+if ($HoldoverVariants) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $holdoverArchive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'holdover-variants-calibration.mt2f'))
+    try {
+        $holdoverData = $holdoverArchive.RootElement
+        if ($holdoverData.GetProperty('Schema').GetInt32() -ne 1 -or
+            -not $holdoverData.GetProperty('ContextUnchanged').GetBoolean() -or
+            $holdoverData.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $holdoverData.GetProperty('FrameBefore').GetInt32() -ne $holdoverData.GetProperty('FrameAfter').GetInt32() -or
+            -not $holdoverData.GetProperty('RngBefore').ContentEquals($holdoverData.GetProperty('RngAfter')) -or
+            $holdoverData.GetProperty('Rows').GetArrayLength() -ne 100) { throw 'Incomplete or mutating Holdover variant calibration.' }
+        Write-Output 'NATIVE-HOLDOVER-VARIANTS-CAPTURE PASS: 100 native operations; unchanged decision/RNG/frame.'
+    } finally { $holdoverArchive.Dispose() }
 }
 if ($CardUpgradeLifecycle) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

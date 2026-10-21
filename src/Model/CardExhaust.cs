@@ -37,19 +37,26 @@ namespace MonsterTrain2Poju.Model
         {
             CardMaskDescriptor? descriptor = card.MaskDescriptor;
             if (descriptor == null) return new CardTraitCompositionState([], [], [], [], []);
-            return CardTraitCompositionModel.Refresh(new CardTraitCompositionState(descriptor.BaseTraits,
+            var refreshed = CardTraitCompositionModel.Refresh(new CardTraitCompositionState(descriptor.BaseTraits,
                 descriptor.TemporaryTraits, card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Select(upgrade =>
                     (IReadOnlyList<CardTraitValue>)(upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())).ToArray(),
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Where(upgrade => upgrade.Lifecycle != null)
                     .SelectMany(upgrade => upgrade.Lifecycle!.RemovedRuntimeTypes).ToArray(),
                 descriptor.PermanentReplacements));
+            if (!refreshed.BaseTraits.Concat(descriptor.TemporaryTraits).Any(trait => trait.RuntimeType == CardRetainModel.Trait) &&
+                descriptor.HoldoverUpgradePending.HasValue)
+                refreshed = new CardTraitCompositionState(refreshed.BaseTraits, refreshed.TemporaryTraits,
+                    refreshed.TemporaryUpgradeTraits, refreshed.RemovedRuntimeTypes, refreshed.PermanentReplacements,
+                    refreshed.CombinedTraits!.Select(trait => trait.RuntimeType == CardRetainModel.Trait
+                        ? trait.WithHoldover(descriptor.HoldoverUpgradePending.Value) : trait).ToArray());
+            return refreshed;
         }
         private static IReadOnlyList<CardTraitValue> BaseTraits(CardInstanceState card) => RefreshTraits(card).BaseTraits;
         public static bool HasConsume(CardInstanceState card) => RefreshTraits(card).CombinedTraits?.Any(trait => trait.RuntimeType == Trait) == true;
         internal static string? PermanentUpgradeError(CardInstanceState card, CardUpgradeModifier upgrade)
         {
-            if (upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardRetainModel.Trait) == true)
-                return "In-battle permanent Holdover installation requires separate native calibration.";
+            if (upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardRetainModel.Trait && trait.StackMode != 0) == true)
+                return "Permanent Holdover installation requires a captured non-stacking trait definition.";
             if (upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true)
                 return "Permanent Corrupt State installation requires separate native calibration.";
             if (upgrade.Lifecycle?.RemovedRuntimeTypes.Any(type => type is "CardTraitEphemeral" or "CardTraitCopyOnPlay") == true)
@@ -77,7 +84,7 @@ namespace MonsterTrain2Poju.Model
             // install them into the base list, unless a combined trait exists.
             var installed = new HashSet<string>((RefreshTraits(source).CombinedTraits ?? Array.Empty<CardTraitValue>()).Select(trait => trait.RuntimeType));
             foreach (CardTraitValue marker in addedUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())
-                .Where(trait => trait.RuntimeType is "CardTraitDistinct" or "CardTraitEphemeral" && trait.StackMode == 0))
+                .Where(trait => trait.RuntimeType is "CardTraitDistinct" or "CardTraitEphemeral" or CardRetainModel.Trait && trait.StackMode == 0))
                 if (installed.Add(marker.RuntimeType)) descriptor = descriptor.WithBaseTraits(descriptor.BaseTraits.Concat(new[] { marker }).ToArray());
             return descriptor;
         }
@@ -122,6 +129,7 @@ namespace MonsterTrain2Poju.Model
         // Native rebuilds traits contributed by upgrades whenever the modifier list is dirtied.
         internal static CardInstanceState RefreshUpgradeTrait(CardInstanceState card)
         {
+            card = CardRetainModel.RefreshUpgradeTrait(card);
             CardExhaustState? state = card.ExhaustState;
             if (state == null) return HasConsume(card) ? Initialize(card, 0) : card;
             CardMaskDescriptor descriptor = card.MaskDescriptor ??

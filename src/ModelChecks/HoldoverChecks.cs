@@ -78,7 +78,7 @@ internal static class HoldoverChecks
         Guards(owner, rows.First(row => row.GetProperty("Kind").GetString() == "PreDraw").GetProperty("BeforeContext").Deserialize<CombatContext>()!);
         CardCycleChecks.Native(root);
         RecordedBattleChecks.Native(root);
-        Console.WriteLine($"HOLDOVER PASS: 48 isolated native controls, {returned} natural returns, complete context/RNG, immutable whole-battle replay and missing/temporary-state guards.");
+        Console.WriteLine($"HOLDOVER PASS: 48 isolated native controls, {returned} natural returns, complete context/RNG, immutable whole-battle replay and missing-state guards.");
     }
 
     private static void Guards(CardInstanceState owner, CombatContext context)
@@ -99,21 +99,18 @@ internal static class HoldoverChecks
             descriptor.BaseTraits, descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft,
             descriptor.TemporaryTraits.Concat(new[] { held }).ToArray(), descriptor.PermanentReplacements,
             descriptor.SourceTraits, descriptor.KillTriggers));
-        Require(CardModifierModel.UnsupportedReason(temporary)?.Contains("Holdover") == true,
-            "Uncalibrated temporary Holdover must remain guarded.");
+        Require(CardModifierModel.UnsupportedReason(temporary) == null,
+            "Captured temporary Holdover state must be accepted.");
         var replaced = owner.WithMaskDescriptor(new CardMaskDescriptor(descriptor.Definition, descriptor.BaseCost,
             descriptor.BaseTraits, descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft,
             descriptor.TemporaryTraits, [new CardTraitReplacement(CardRetainModel.Trait, CardRetainModel.Trait, CardRetainModel.Trait)],
             descriptor.SourceTraits, descriptor.KillTriggers));
-        Require(CardModifierModel.UnsupportedReason(replaced)?.Contains("Holdover") == true,
-            "Uncalibrated replacement Holdover must remain guarded.");
+        Require(CardModifierModel.UnsupportedReason(replaced) == null,
+            "Captured replacement Holdover state must be accepted.");
         CardUpgradeModifier merchant = owner.Permanent.Upgrades.First(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait =>
             trait.RuntimeType == CardRetainModel.Trait) == true);
-        Require(CardExhaustModel.PermanentUpgradeError(owner, merchant)?.Contains("Holdover") == true,
-            "Uncalibrated in-battle Holdover installation must remain guarded.");
-        var creation = new CardCreationRule(owner.DataId, CardModifiers.Empty(), owner.EffectCounters, [], maskDescriptor: descriptor);
-        Require(CardGenerationModel.CloneDetached(context, creation, owner.InstanceId).UnsupportedReason?.Contains("Holdover") == true,
-            "Uncalibrated Holdover cloning must remain guarded.");
+        Require(CardExhaustModel.PermanentUpgradeError(owner, merchant) == null,
+            "Default in-battle Holdover installation must be accepted.");
     }
     private static bool Pending(CardInstanceState card) => card.MaskDescriptor!.BaseTraits.Single(trait => trait.RuntimeType == CardRetainModel.Trait).HoldoverPending!.Value;
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);

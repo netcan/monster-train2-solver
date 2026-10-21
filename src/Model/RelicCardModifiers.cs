@@ -657,7 +657,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     descriptor = new CardMaskDescriptor(descriptor.Definition, descriptor.BaseCost, baseTraits,
                         descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft,
-                        descriptor.TemporaryTraits, descriptor.PermanentReplacements.Concat(new[] { converted }).ToArray(), descriptor.SourceTraits, descriptor.KillTriggers);
+                        descriptor.TemporaryTraits, descriptor.PermanentReplacements.Concat(new[] { converted }).ToArray(), descriptor.SourceTraits, descriptor.KillTriggers, descriptor.HoldoverUpgradePending);
                     current = current.WithMaskDescriptor(descriptor);
                 }
                 return hasSource ? CardExhaustModel.RefreshUpgradeTrait(current) : current;

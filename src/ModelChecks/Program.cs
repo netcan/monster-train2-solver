@@ -1,6 +1,22 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--clone-refresh-only")
+{
+    CardGenerationChecks.Run();
+    CloneUpgradeRefreshChecks.Run();
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CloneUpgradeRefreshChecks.Native(fixture.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--holdover-variants-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HoldoverVariantChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--starting-duality-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3407,6 +3423,11 @@ foreach (string path in args.Where(path => path.Contains("card-modifier-overflow
     CardModifierOverflowChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("card-trait-composition-calibration", StringComparison.OrdinalIgnoreCase)))
     CardTraitCompositionChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("holdover-variants-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    HoldoverVariantChecks.Native(document.RootElement);
+}
 foreach (string path in args.Where(path => path.Contains("card-status-composition-calibration", StringComparison.OrdinalIgnoreCase)))
     CardStatusCompositionChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("card-owned-mask-calibration", StringComparison.OrdinalIgnoreCase)))

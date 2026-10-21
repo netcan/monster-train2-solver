@@ -156,7 +156,6 @@ namespace MonsterTrain2Poju.Model
             if (source.NextCardId <= 0 || source.NextCardId == int.MaxValue || source.CardRegistry.Any(card => card.InstanceId >= source.NextCardId))
                 return Unsupported("Invalid detached card identity allocation.");
             if (copying.DataId != creation.DataId) return Unsupported("Detached clone definition differs from its source.");
-            if (CardRetainModel.Present(copying)) return Unsupported("Holdover cloning requires independent native pending-state calibration.");
             if (copying.GraftedEquipmentCardId.HasValue) return Unsupported("Grafted source-card cloning requires its independent graft identity transition.");
             if (CardGraftedEquipmentModel.Present(copying)) return Unsupported("Grafted equipment cloning requires native private-state calibration.");
             if (copying.Permanent.MergedEquipment != null) return Unsupported("Merged equipment cloning requires separate native calibration.");
@@ -165,8 +164,8 @@ namespace MonsterTrain2Poju.Model
             // CopyCardState does not pass an exclusion list. Clone-exclusion flags
             // apply to AddCardImpl copies, while these detached references retain them.
             var ignored = new HashSet<string>(StringComparer.Ordinal);
-            CardModifiers permanent = Copy(CardModifiers.Empty(), copying.Permanent, ignored);
-            CardModifiers temporary = Copy(CardModifiers.Empty(), copying.Temporary, ignored);
+            CardModifiers permanent = Copy(CardModifiers.Empty(), copying.Permanent, ignored, forAddCardPipeline: true);
+            CardModifiers temporary = Copy(CardModifiers.Empty(), copying.Temporary, ignored, forAddCardPipeline: true);
             var clone = new CardInstanceState(source.NextCardId, creation.DataId, CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0,
                 creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits,
                 creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
@@ -180,10 +179,14 @@ namespace MonsterTrain2Poju.Model
                 error = CardExhaustModel.PermanentUpgradeError(clone, upgrade);
                 if (error != null) return Unsupported(error);
             }
+            clone = CopyTraitReplacements(clone, copying);
             clone = CardMagicPowerModel.Refresh(clone.WithModifiers(permanent, temporary));
             error = CardModifierModel.UnsupportedReason(clone);
             if (error != null) return Unsupported(error);
-            CombatContext context = source.WithCardRegistry(source.CardRegistry.Concat(new[] { clone }).ToArray())
+            // CardStateModifiers.CopyUpgrades dirties the source modifier cache.
+            // Source upgrade-owned Holdover is recreated on its next query.
+            CombatContext copied = source.WithCard(CardRetainModel.RefreshUpgradeTrait(copying));
+            CombatContext context = copied.WithCardRegistry(copied.CardRegistry!.Concat(new[] { clone }).ToArray())
                 .WithNextCardId(source.NextCardId + 1);
             return new CardGenerationResult(context, new[] { new CardToken(clone.InstanceId, clone.DataId) });
         }
@@ -329,7 +332,6 @@ namespace MonsterTrain2Poju.Model
                 if (copying?.Permanent.MergedEquipment != null) return Unsupported("Merged equipment copying requires separate native calibration.");
                 if (copying != null)
                 {
-                    if (CardRetainModel.Present(copying)) return Unsupported("Holdover cloning requires independent native pending-state calibration.");
                     if (copying.GraftedEquipmentCardId.HasValue) return Unsupported("Grafted source-card copying requires its independent graft identity transition.");
                     if (CardGraftedEquipmentModel.Present(copying)) return Unsupported("Grafted equipment copying requires native private-state calibration.");
                     error = CardModifierModel.UnsupportedReason(copying);
@@ -378,7 +380,10 @@ namespace MonsterTrain2Poju.Model
                     }
                     // Copying and each helper application refresh all installed
                     // upgrades against the destination card's current traits.
+                    candidate = CopyTraitReplacements(candidate, copying);
                     RefreshUpgrades();
+                    if (context.FindCard(copying.InstanceId) != null)
+                        context = context.WithCard(CardRetainModel.RefreshUpgradeTrait(copying));
                 }
                 foreach (CardUpgradeModifier upgrade in context.NextAddedTemporaryUpgrades ?? Array.Empty<CardUpgradeModifier>())
                 {
@@ -440,6 +445,15 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithStatistics(context.Statistics.AddDeckCards(added.Select(card => card.InstanceId)));
             return new CardGenerationResult(context, added);
         }
+        private static CardInstanceState CopyTraitReplacements(CardInstanceState destination, CardInstanceState source)
+        {
+            if (source.MaskDescriptor?.PermanentReplacements.Count > 0 && destination.MaskDescriptor is CardMaskDescriptor d)
+                destination = destination.WithMaskDescriptor(new CardMaskDescriptor(d.Definition, d.BaseCost, d.BaseTraits,
+                    d.AuthoredCastEffects, d.Purified, d.PermanentGraft, d.TemporaryTraits,
+                    d.PermanentReplacements.Concat(source.MaskDescriptor.PermanentReplacements).ToArray(),
+                    d.SourceTraits, d.KillTriggers, d.HoldoverUpgradePending));
+            return destination;
+        }
         private static CardModifiers Copy(CardModifiers destination, CardModifiers source, HashSet<string> ignored,
             bool forAddCardPipeline = false)
         {
@@ -461,8 +475,10 @@ namespace MonsterTrain2Poju.Model
             if (card.MaskDescriptor == null) return "Copy generation requires branch-owned source traits.";
             // Freeze and Ephemeral inherit GetIsCopyable=true; their discard/play
             // callbacks do not invalidate the captured CanBeCopied query.
-            bool Neutral(CardTraitValue trait) => trait.RuntimeType is "CardTraitFreeze" or "CardTraitEphemeral" && trait.DeclaredName == trait.RuntimeType;
-            if (card.MaskDescriptor.TemporaryTraits.Any(trait => !Neutral(trait)) || card.MaskDescriptor.PermanentReplacements.Count > 0 ||
+            bool NeutralType(string type) => type is "CardTraitFreeze" or "CardTraitEphemeral" or CardRetainModel.Trait or "CardTraitIgnoreArmor";
+            bool Neutral(CardTraitValue trait) => NeutralType(trait.RuntimeType) && trait.DeclaredName == trait.RuntimeType;
+            if (card.MaskDescriptor.TemporaryTraits.Any(trait => !Neutral(trait)) ||
+                card.MaskDescriptor.PermanentReplacements.Any(rule => !NeutralType(rule.OldName) || !NeutralType(rule.NewRuntimeType)) ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
                     upgrade.Lifecycle?.AddedTraits.Any(trait => !Neutral(trait)) == true || upgrade.Lifecycle?.RemovedRuntimeTypes.Count > 0))
                 return "Copyability changes from card trait upgrades are not modeled.";

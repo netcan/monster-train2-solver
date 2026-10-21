@@ -17,13 +17,12 @@ namespace MonsterTrain2Poju.Model
             var descriptor = card.MaskDescriptor!;
             var traits = CardExhaustModel.RefreshTraits(card).CombinedTraits!.Where(trait => trait.RuntimeType == Trait).ToArray();
             if (traits.Length == 0) return null;
-            if (traits.Length != 1 || descriptor.BaseTraits.Count(trait => trait.RuntimeType == Trait) != 1 ||
-                descriptor.TemporaryTraits.Any(trait => trait.RuntimeType == Trait) ||
-                card.Temporary.Upgrades.Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true) ||
-                descriptor.PermanentReplacements.Any(rule => rule.OldName == Trait || rule.NewRuntimeType == Trait) ||
-                traits[0].DeclaredName != Trait || traits[0].ParamInt != 0 || traits[0].DefinitionParamInt != 0 ||
-                traits[0].StackMode != 0 || !traits[0].HoldoverPending.HasValue)
-                return "Holdover requires one installed default trait with captured private pending state; temporary/replaced variants remain guarded.";
+            if (traits.Any(trait => trait.DeclaredName != Trait || !trait.HoldoverPending.HasValue))
+                return "Holdover requires captured private pending state for every active trait instance.";
+            bool upgradeOwned = !CardExhaustModel.RefreshTraits(card).BaseTraits.Concat(descriptor.TemporaryTraits)
+                .Any(trait => trait.RuntimeType == Trait);
+            if (upgradeOwned && !descriptor.HoldoverUpgradePending.HasValue)
+                return "Holdover upgrade trait requires its captured private pending state.";
             return null;
         }
         public static CardInstanceState Discarded(CardInstanceState card, bool wasPlayed,
@@ -48,9 +47,28 @@ namespace MonsterTrain2Poju.Model
             definition?.OnUnplayedNegativeEffects.Count > 0 || definition?.HasUnsupportedUnplayedTriggers == true ||
             card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
                 upgrade.Lifecycle?.Triggers.Any(trigger => trigger.Type is "OnUnplayedNegative" or "OnUnplayedPositive") == true);
-        private static CardInstanceState Set(CardInstanceState card, bool pending) => card.WithMaskDescriptor(
-            card.MaskDescriptor!.WithBaseTraits(card.MaskDescriptor.BaseTraits.Select(trait =>
-                trait.RuntimeType == Trait ? trait.WithHoldover(pending) : trait).ToArray()));
+        private static CardInstanceState Set(CardInstanceState card, bool pending)
+        {
+            var descriptor = card.MaskDescriptor!;
+            var bases = CardExhaustModel.RefreshTraits(card).BaseTraits;
+            bool installed = bases.Concat(descriptor.TemporaryTraits).Any(trait => trait.RuntimeType == Trait);
+            return card.WithMaskDescriptor(descriptor.WithHoldover(
+                bases.Select(trait => trait.RuntimeType == Trait ? trait.WithHoldover(pending) : trait).ToArray(),
+                descriptor.TemporaryTraits.Select(trait => trait.RuntimeType == Trait ? trait.WithHoldover(pending) : trait).ToArray(),
+                installed ? null : pending));
+        }
+        // Native rebuilds upgrade-owned trait instances when modifiers become dirty;
+        // directly installed base/temporary instances keep their private state.
+        internal static CardInstanceState RefreshUpgradeTrait(CardInstanceState card)
+        {
+            if (card.MaskDescriptor == null) return card;
+            var descriptor = card.MaskDescriptor;
+            var refreshed = CardExhaustModel.RefreshTraits(card);
+            bool installed = refreshed.BaseTraits.Concat(descriptor.TemporaryTraits).Any(trait => trait.RuntimeType == Trait);
+            bool active = refreshed.CombinedTraits!.Any(trait => trait.RuntimeType == Trait);
+            return card.WithMaskDescriptor(descriptor.WithHoldover(refreshed.BaseTraits, descriptor.TemporaryTraits,
+                active && !installed ? false : (bool?)null));
+        }
 
         public static TypedDrawResult PreDrawCard(CombatContext source, int cardId, BattlePlayRules? definitions = null)
         {

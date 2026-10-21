@@ -67,7 +67,7 @@ namespace MonsterTrain2Poju.Model
                 d.AuthoredUnitAbility, d.EquipmentUnitAbility, d.AuthoredGraft, d.CanScaleWithMagicPower, d.IsChampionCard,
                 d.UnmodifiedSpawnAttack, d.HasStartingUpgrades);
             return new CardMaskDescriptor(definition, descriptor.BaseCost, descriptor.BaseTraits, descriptor.AuthoredCastEffects,
-                descriptor.Purified, descriptor.PermanentGraft, descriptor.TemporaryTraits, descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers);
+                descriptor.Purified, descriptor.PermanentGraft, descriptor.TemporaryTraits, descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers, descriptor.HoldoverUpgradePending);
         }
     }
 

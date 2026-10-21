@@ -71,7 +71,7 @@ namespace MonsterTrain2Poju.Model
             CardInstanceState frozen = card.WithMaskDescriptor(new CardMaskDescriptor(descriptor.Definition, descriptor.BaseCost,
                 descriptor.BaseTraits, descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft,
                 descriptor.TemporaryTraits.Concat(new[] { new CardTraitValue("CardTraitFreeze", "CardTraitFreeze", 0, 0, true, 0) }).ToArray(),
-                descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers));
+                descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers, descriptor.HoldoverUpgradePending));
             try { return new(CardMagicPowerModel.Refresh(source, frozen, out _)); }
             catch (InvalidOperationException failure) { return new(null, failure.Message); }
         }
