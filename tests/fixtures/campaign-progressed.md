@@ -19,9 +19,20 @@ remaining boss HP in any completed battle. Native preparation outcomes were:
 | 3 | yes | 57 |
 | 4 | yes | 77 |
 
-The fifth battle has not been accepted by this checkpoint alone. Winning,
-native/model comparisons, fresh frozen replay and policy comparison are
-separate requirements.
+The fifth battle is now accepted separately by the three
+`full-battle-progressed-ring5-{search,replay,policy}.mt2f` archives. The rolling
+advisor wins against the actually present `Boss_Level5_Reanimate`, finishing
+with 59 Pyre HP after 17 card/ability plays and nine EndTurns. A fresh native
+process searches zero nodes and reproduces all 26 decisions, complete state,
+gameplay RNG and the same victory. The completed fixed policy loses. All
+three captures settle with zero capture, mismatch, unsupported and pending
+counters, and all launchers verify the original game files unchanged. The
+source's 275 guarded captures have zero purity failures.
+
+Check this group with `--rolling-advice-victory-pair-only` and the search,
+replay and policy archives in that order. The input checkpoint alone does
+not prove these results. This is the first accepted naturally progressed
+middle-ring victory; seventh-ring rolling victory remains outstanding.
 
 `campaign-progressed-ring7.zip` preserves six natural preparation wins. Its
 fifth and sixth victories finished at 69 and 48 Pyre HP. Strict rolling

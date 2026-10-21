@@ -21,6 +21,7 @@ $fixtureNames = @('undying-boss-preview-calibration.mt2f', 'intrinsic-opening-dr
     'full-battle-rolling-advisor-ring2-search.mt2f', 'full-battle-rolling-advisor-ring2-replay.mt2f', 'full-battle-rolling-advisor-ring2-policy.mt2f',
     'full-battle-rolling-advisor-ring5-search.mt2f', 'full-battle-rolling-advisor-ring5-replay.mt2f', 'full-battle-rolling-advisor-ring5-policy.mt2f',
     'full-battle-rolling-advisor-ring7-search.mt2f', 'full-battle-rolling-advisor-ring7-replay.mt2f', 'full-battle-rolling-advisor-ring7-policy.mt2f',
+    'full-battle-progressed-ring5-search.mt2f', 'full-battle-progressed-ring5-replay.mt2f', 'full-battle-progressed-ring5-policy.mt2f',
     'full-battle-original-isolated-frozen-totem.mt2f', 'full-battle-original-isolated-royal-whelp.mt2f',
     'full-battle-original-isolated-consumer-of-crowns.mt2f', 'full-battle-original-isolated-steelsinger.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',
@@ -3312,6 +3313,13 @@ $advisorFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -like 'ful
 foreach ($fixturePath in $advisorFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --native-advice-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Native live advisor checks failed: $fixturePath" }
+}
+$progressedFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -like 'full-battle-progressed-*-search.mt2f' })
+foreach ($fixturePath in $progressedFixtures) {
+    $replayPath = $fixturePath -replace '-search\.mt2f$', '-replay.mt2f'
+    $policyPath = $fixturePath -replace '-search\.mt2f$', '-policy.mt2f'
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --rolling-advice-victory-pair-only $fixturePath $replayPath $policyPath
+    if ($LASTEXITCODE -ne 0) { throw "Progressed native victory checks failed: $fixturePath" }
 }
 $rollingFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -like 'full-battle-rolling-advisor-*-search.mt2f' })
 foreach ($fixturePath in $rollingFixtures) {

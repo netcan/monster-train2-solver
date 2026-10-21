@@ -1,13 +1,19 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 804 binary archives, including 761
-full battles and 43 component calibrations. The card index accepts 760 battles;
+Current curated inventory (2026-10-21): 807 binary archives, including 764
+full battles and 43 component calibrations. The card index accepts 763 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+The [naturally progressed fifth-ring checkpoint](tests/fixtures/campaign-progressed.md)
+now has a strict rolling victory: 59 Pyre HP, 26 decisions, an identical fresh
+native replay and a completed losing fixed-policy baseline. All three full
+battles have zero capture/mismatch/unsupported/pending counters. The natural
+seventh-ring victory remains outstanding.
 
 The [bounded multi-turn planner](tests/fixtures/planner-benchmarks.md) now has
 five captured-state benchmarks and five search/independent-native-replay pairs.
