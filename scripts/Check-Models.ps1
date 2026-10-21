@@ -103,7 +103,7 @@ $fixtureNames = @('conduit-movement-calibration.mt2f', 'full-battle-player-boss-
     'full-battle-original-opening-corruption-relics.mt2f',
     'full-battle-original-spell-play-threshold-relics.mt2f',
     'full-battle-original-shroom-decay-relic.mt2f',
-    'full-battle-original-conduit-relics.mt2f',
+    'full-battle-original-conduit-relics.mt2f', 'full-battle-original-conduit-relics-physical.mt2f',
     'full-battle-original-equipment-growth-relics.mt2f',
     'full-battle-original-health-choice-relic.mt2f',
     'full-battle-original-after-draw-generation-relics.mt2f',
@@ -1213,7 +1213,7 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
         if ($LASTEXITCODE -ne 0) { throw "Original Shroom Decay checks failed ($mode): $fixturePath" }
     }
 }
-foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-conduit-relics.mt2f' })) {
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-conduit-relics.mt2f', 'full-battle-original-conduit-relics-physical.mt2f') })) {
     foreach ($mode in @('--original-conduit-relics-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Conduit relic checks failed ($mode): $fixturePath" }

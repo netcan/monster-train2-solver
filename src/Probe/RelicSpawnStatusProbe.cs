@@ -101,10 +101,9 @@ namespace MonsterTrain2Poju.Probe
                         nativeDispatches = BehavioralDispatches(record.BeforeTrain!, nativeDispatches);
                     }
                     record.Difference = record.UnsupportedQueueReason ?? (!world!.Supported ? world.UnsupportedReason :
-                        JToken.DeepEquals(JToken.FromObject(world.State!), JToken.FromObject(record.AfterTrain)) &&
-                        JToken.DeepEquals(JToken.FromObject(world.Queued), JToken.FromObject(record.QueuedAfter)) &&
-                        JToken.DeepEquals(JToken.FromObject(predictedDispatches.ToArray()), JToken.FromObject(nativeDispatches.ToArray())) ? null :
-                        "Relic CharacterAdded train/queue/dispatch differs.");
+                        UnitPlayModelProbe.FirstDifference(JToken.FromObject(world.State!), JToken.FromObject(record.AfterTrain), "$.Train") ??
+                        UnitPlayModelProbe.FirstDifference(JToken.FromObject(world.Queued), JToken.FromObject(record.QueuedAfter), "$.Queue") ??
+                        UnitPlayModelProbe.FirstDifference(JToken.FromObject(predictedDispatches.ToArray()), JToken.FromObject(nativeDispatches.ToArray()), "$.Dispatch"));
                 }
                 else record.Difference = !predicted!.Supported ? predicted.UnsupportedReason :
                     JToken.DeepEquals(JToken.FromObject(predicted.State!), JToken.FromObject(record.After)) ? null :

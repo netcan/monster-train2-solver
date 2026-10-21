@@ -43,10 +43,32 @@ The calibration records those modifiers in `CombatContext.ConduitRetained`.
 Prediction resolves the contributor from the parent context alone, without an
 extra tracker argument. All context-copy operations preserve this immutable
 collection. A null collection identifies older captures; an empty collection
-means the complete capture contains no retained modifier. Only the isolated
-component currently emits it. `ConduitModel.Validate` continues to reject
-physical whole-battle contexts until integrated callbacks and preview lifecycle
-have independent native acceptance.
+means the complete capture contains no retained modifier. Physical capture now
+emits it whenever Conduit is enabled. `WithSpawnPoints` dispatches the calibrated
+callback automatically, skips preview card changes and same-point no-ops, and
+retains private state across detach/reattach. Incomplete captures and enemy
+Conduit physical movement remain guarded. Player Conduit capture is still disabled.
+
+## Integrated physical battle
+
+`full-battle-original-conduit-relics-physical.mt2f` comes from native profile
+`full-battle-units-spells-and-junk-20261021-215255-3751b00b` (86.49 seconds).
+It wins with 80 Pyre HP, 21 card plays, five EndTurns, 239 native compactions and
+470 complete physical decision captures. All four failure counters are zero,
+terminal effects settle and original files stay unchanged. Original relic owner
+definitions are unchanged; Steward and equipment carriers are authored controls.
+
+This exposed an ordering bug hidden by single-contributor controls: native
+`RefreshCardInHand` refreshes UI without dispatching `CardUpdated`. The extra
+model callback changed temporary upgrade order when a third Conduit spawned
+before two existing contributors. Removing it preserves native upgrade order.
+The accepted fixture includes this exact multi-contributor birth and independently
+replays the entire action chain, all 14 births and the three owner ablations.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -OriginalConduitRelics -PhysicalSpawnPoints -Policy units-spells-and-junk -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-conduit-relics-only tests/fixtures/full-battle-original-conduit-relics-physical.mt2f
+```
 
 This does not establish complete combat preview, mixed conduits, room-mask
 callbacks, arbitrary multiplier/trait combinations or an integrated player action chain.

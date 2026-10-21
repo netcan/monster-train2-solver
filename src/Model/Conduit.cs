@@ -37,13 +37,16 @@ namespace MonsterTrain2Poju.Model
     {
         private static string Id(int unitId) => "conduit:" + unitId;
         internal static bool Captured(CombatContext? context) => context?.MagicPower?.Any(room => room.Conduit != null) == true;
-        internal static string? Validate(CombatContext? context, bool allowPhysicalCalibration = false)
+        internal static string? Validate(CombatContext? context)
         {
             if (!Captured(context)) return null;
             if (context!.QueryFrame?.SelectedRoomIndex == null || context.CardInstances == null)
                 return "Conduit requires captured room selection and card instances.";
-            if (context.SpawnPoints != null && !allowPhysicalCalibration)
-                return "Conduit physical movement callbacks require independent native calibration.";
+            if (context.SpawnPoints != null && context.ConduitRetained == null)
+                return "Conduit physical movement requires complete retained tracker capture.";
+            if (context.SpawnPoints != null && (context.MagicPower!.Any(row => row.Team != CombatTeam.Player &&
+                    row.Conduit?.Units.Count > 0) || context.ConduitRetained?.Any(value => value.Team != CombatTeam.Player) == true))
+                return "Enemy Conduit physical movement requires independent native calibration.";
             foreach (var room in context.MagicPower!)
             {
                 if (room.Conduit == null) return "Conduit requires complete room/team contributor state.";
@@ -131,20 +134,18 @@ namespace MonsterTrain2Poju.Model
                 var row = context.MagicPower!.Single(room => room.RoomIndex == roomIndex && room.Team == team);
                 if (row.Conduit!.Units.Single(unit => unit.UnitId == unitId).Cards.Contains(token.InstanceId)) continue;
                 context = Add(context, roomIndex, team, unitId, [token.InstanceId]);
-                context = Updated(context, token.InstanceId);
+                // Native RefreshCardInHand redraws the UI; it does not dispatch
+                // CardUpdated. That callback belongs to trait scaling/hand entry.
             }
             return context;
         }
-        // Component calibration only. The caller supplies the captured private
-        // tracker even while detached; ordinary combat keeps its physical guard
-        // until that retained tracker is part of the complete battle snapshot.
-        internal static (CombatContext Context, ConduitUnitState Contributor) MoveCapturedContributor(
+        private static (CombatContext Context, ConduitUnitState Contributor) MoveCapturedContributor(
             CombatContext context, ConduitUnitState contributor, CombatTeam team,
-            SpawnPointReference? from, SpawnPointReference? to, bool dead)
+            SpawnPointReference? from, SpawnPointReference? to, bool dead, bool preview)
         {
-            if (!Captured(context) || team != CombatTeam.Player || from?.PreviewCopyId != null || to?.PreviewCopyId != null)
-                throw new InvalidOperationException("Conduit movement calibration requires captured primary player trackers.");
-            string? error = Validate(context, allowPhysicalCalibration: true);
+            if (!Captured(context) || team != CombatTeam.Player)
+                throw new InvalidOperationException("Conduit movement requires captured player trackers.");
+            string? error = Validate(context);
             if (error != null) throw new InvalidOperationException(error);
             foreach (RoomMagicPower row in context.MagicPower!.ToArray())
                 if (row.Conduit!.Units.Any(unit => unit.UnitId == contributor.UnitId))
@@ -154,8 +155,11 @@ namespace MonsterTrain2Poju.Model
             RoomMagicPower destination = context.MagicPower!.Single(row => row.RoomIndex == holder && row.Team == team);
             context = Put(context, holder, team, destination.Conduit!.Units.Append(contributor).ToArray());
             int selected = context.QueryFrame!.SelectedRoomIndex!.Value;
-            if (to?.RoomIndex == selected) context = ApplyHand(context, holder, team, contributor.UnitId);
-            else if (from?.RoomIndex == selected || dead) context = Clear(context, holder, team, contributor.UnitId);
+            if (!preview)
+            {
+                if (to?.RoomIndex == selected) context = ApplyHand(context, holder, team, contributor.UnitId);
+                else if (from?.RoomIndex == selected || dead) context = Clear(context, holder, team, contributor.UnitId);
+            }
             RoomMagicPower updated = context.MagicPower!.Single(row => row.RoomIndex == holder && row.Team == team);
             ConduitUnitState result = updated.Conduit!.Units.Single(unit => unit.UnitId == contributor.UnitId);
             // Native room enumeration excludes dead actors even while their
@@ -173,7 +177,7 @@ namespace MonsterTrain2Poju.Model
         // Resolve the modifier entirely from the parent snapshot, including
         // detached/dead actors omitted from room contribution enumeration.
         internal static CombatContext MovePhysicalContributor(CombatContext context, int unitId, CombatTeam team,
-            SpawnPointReference? from, SpawnPointReference? to)
+            SpawnPointReference? from, SpawnPointReference? to, bool preview = false)
         {
             if (context.ConduitRetained == null)
                 throw new InvalidOperationException("Conduit movement requires captured retained private trackers.");
@@ -183,7 +187,37 @@ namespace MonsterTrain2Poju.Model
                 .Concat(context.ConduitRetained.Where(value => value.Team == team).Select(value => value.Contributor))
                 .SingleOrDefault(value => value.UnitId == unitId);
             if (contributor == null) return context;
-            return MoveCapturedContributor(context, contributor, team, from, to, !contributor.Active).Context;
+            return MoveCapturedContributor(context, contributor, team, from, to, !contributor.Active, preview).Context;
+        }
+        internal static CombatContext Physical(CombatContext before, CombatContext after)
+        {
+            if (!Captured(after) || after.ConduitRetained == null || before.SpawnPoints == null || after.SpawnPoints == null)
+                return after;
+            if (after.ConduitRetained.Count == 0 && !after.MagicPower!.Any(row => row.Conduit!.Units.Count > 0)) return after;
+            CombatContext original = after;
+            bool preview = before.SpawnPoints.ActiveCopies.Count > 0 || after.SpawnPoints.ActiveCopies.Count > 0;
+            foreach (UnitSpawnPointState unit in after.SpawnPoints.Units)
+            {
+                SpawnPointReference? previous = before.SpawnPoints.Units.FirstOrDefault(value => value.UnitId == unit.UnitId)?.Current;
+                if (SamePoint(previous, unit.Current)) continue;
+                CombatTeam team = unit.Current?.Team ?? previous?.Team ?? CombatTeam.Player;
+                after = MovePhysicalContributor(after, unit.UnitId, team, previous, unit.Current, preview);
+            }
+            if (ReferenceEquals(after, original)) return after;
+            foreach (RoomMagicPower row in after.MagicPower!.ToArray())
+            {
+                if (row.Conduit!.Units.Count <= 1) continue;
+                SpawnPointGroupState? group = after.SpawnPoints.SelectedGroup(row.RoomIndex, row.Team);
+                if (group == null) continue;
+                int Position(int id)
+                {
+                    for (int index = 0; index < group.Occupants.Count; index++) if (group.Occupants[index] == id) return index;
+                    return int.MaxValue;
+                }
+                var ordered = row.Conduit.Units.OrderBy(value => Position(value.UnitId)).ToArray();
+                if (!ordered.SequenceEqual(row.Conduit.Units)) after = Put(after, row.RoomIndex, row.Team, ordered);
+            }
+            return after;
         }
         private static bool SamePoint(SpawnPointReference? first, SpawnPointReference? second) => first == null
             ? second == null : second != null && first.RoomIndex == second.RoomIndex && first.Team == second.Team &&

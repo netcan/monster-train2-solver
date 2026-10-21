@@ -32,8 +32,7 @@ internal static class ConduitMovementChecks
             Require(points.Supported, points.Error ?? "Physical move failed.");
             Require(before.Context.ConduitRetained != null && actual.Context!.ConduitRetained != null,
                 "Missing detached/dead tracker capture.");
-            CombatContext predicted = ConduitModel.MovePhysicalContributor(before.Context.WithSpawnPoints(points.State!),
-                contributor.UnitId, CombatTeam.Player, from, to);
+            CombatContext predicted = before.Context.WithSpawnPoints(points.State!);
             Equal(predicted, actual.Context, label + " complete context/physical points/retained trackers");
             ConduitUnitState captured = predicted.MagicPower!.SelectMany(room => room.Conduit!.Units)
                 .Concat(predicted.ConduitRetained!.Select(value => value.Contributor))
@@ -55,7 +54,8 @@ internal static class ConduitMovementChecks
             if (from == null || to == null) detached++;
             if (isDead) dead++;
             Require(JsonSerializer.Serialize(before) == parent, "Conduit movement mutated its source snapshot.");
-            Require(ConduitModel.Validate(before.Context) != null, "Uncalibrated whole-battle physical guard was removed.");
+            Require(ConduitModel.Validate(before.Context) == null && ConduitModel.Validate(before.Context.WithConduitRetained(null)) != null,
+                "Complete capture must be accepted while legacy physical captures remain guarded.");
             rows++;
         }
         Require(rows == 38 && entered > 0 && cleared > 0 && unchanged > 0 && detached >= 4 && dead == 4 && retained >= 5,
@@ -97,7 +97,7 @@ internal static class ConduitMovementChecks
             previews++;
         }
         Require(previews == 3, "Missing native preview movement controls.");
-        Console.WriteLine($"CONDUIT-MOVEMENT PASS rows={rows} entered={entered} cleared={cleared} unchanged={unchanged} detached={detached} dead={dead} retained={retained} previews={previews}: snapshot-only prediction, exact context, private trackers, physical points, RNG and immutable parents; whole-battle guard retained.");
+        Console.WriteLine($"CONDUIT-MOVEMENT PASS rows={rows} entered={entered} cleared={cleared} unchanged={unchanged} detached={detached} dead={dead} retained={retained} previews={previews}: integrated physical callbacks, exact context, private trackers, points, RNG and immutable parents; incomplete captures guarded.");
     }
     private static void Equal<T>(T predicted, T actual, string label)
     {

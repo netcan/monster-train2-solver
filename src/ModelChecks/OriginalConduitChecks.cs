@@ -18,6 +18,13 @@ internal static class OriginalConduitChecks
             new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(name => root.GetProperty(name).GetInt32() == 0),
             "Original Conduit battle failed native acceptance.");
         var first = root.GetProperty("Turns")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        bool physical = first.Spawn.Train.Context!.SpawnPoints != null;
+        if (physical)
+        {
+            Require(first.Spawn.Train.Context.ConduitRetained != null && root.GetProperty("PhysicalCompactions").GetArrayLength() > 0,
+                "Physical Conduit battle omitted retained tracker capture or native compactions.");
+            BattleSpawnPointChecks.DecisionReferences(root);
+        }
         ConduitChecks.Run(first.Spawn.Train.Context!.MagicPower![0].Conduit!.Upgrade);
         var definitions = new Dictionary<string, CombatTrigger>();
         void Definitions(CombatContext context)
@@ -109,7 +116,7 @@ internal static class OriginalConduitChecks
         Require(firstSummons > 0 && laterSummons > 0 && enemies > 0 && slays > 0 && equipment > 0 && scaledSpells > 0,
             $"Missing positive Conduit owner, spell upgrade or birth controls: first={firstSummons},later={laterSummons},enemy={enemies},slay={slays},equipment={equipment},scaled={scaledSpells}.");
         BattleActionChecks.Native(root);
-        Console.WriteLine($"ORIGINAL-CONDUIT-NATIVE PASS: {births} exact births; first={firstSummons}, later={laterSummons}, enemy={enemies}; positive owner ablations slay={slays}, equipment={equipment}; {scaledSpells} upgraded spells.");
+        Console.WriteLine($"ORIGINAL-CONDUIT-NATIVE PASS: {births} exact births; first={firstSummons}, later={laterSummons}, enemy={enemies}; positive owner ablations slay={slays}, equipment={equipment}; {scaledSpells} upgraded spells; physical={physical}.");
     }
     private static int Positive(IEnumerable<CombatUnit> actual, IEnumerable<CombatUnit> without, int amount)
     {

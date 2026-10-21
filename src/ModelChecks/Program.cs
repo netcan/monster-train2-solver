@@ -3323,6 +3323,11 @@ SharedPileChecks.Run();
 CardGenerationChecks.Run();
 CloneUpgradeRefreshChecks.Run();
 TrainCombatChecks.Run();
+foreach (string path in args.Where(path => path.Contains("full-battle-original-conduit-relics-physical", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OriginalConduitChecks.Native(fixture.RootElement);
+}
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();
 foreach (string path in args.Where(path => path.Contains("outer-boss-pyre-turn-calibration", StringComparison.OrdinalIgnoreCase) ||

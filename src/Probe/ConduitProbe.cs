@@ -60,9 +60,8 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static IReadOnlyList<RetainedConduitState>? CaptureRetained(FullBattleTrace trace)
         {
-            // Initially emitted only at the isolated physical calibration boundary.
-            // Ordinary player capture remains guarded until complete combat acceptance.
-            if (!ConduitMovementCalibration.Enabled) return null;
+            // Player capture remains disabled until complete combat acceptance.
+            if (!Enabled || !BattleSpawnPointProbe.Enabled) return null;
             return trace.KnownUnits.Where(character => character != null && !character.IsDestroyed &&
                     (!character.IsAlive || character.GetCurrentRoom() == null))
                 .Select(character => new { Character = character, Contributor = CaptureUnit(character, trace) })

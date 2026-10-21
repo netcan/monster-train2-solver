@@ -128,10 +128,10 @@ namespace MonsterTrain2Poju.Model
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
             OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
             LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, nextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained);
-        internal CombatContext WithSpawnPoints(BattleSpawnPoints spawnPoints) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
+        internal CombatContext WithSpawnPoints(BattleSpawnPoints spawnPoints) => ConduitModel.Physical(this, new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
             OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
-            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, spawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained);
+            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, spawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained));
         internal CombatContext WithLastSpawned(int? unitId) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
             OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
