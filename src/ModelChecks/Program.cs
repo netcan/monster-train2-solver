@@ -1798,6 +1798,12 @@ if (args.Length == 4 && args[0] == "--battle-planner-only")
     BattlePlannerChecks.Native(fixture.RootElement, int.Parse(args[2]), int.Parse(args[3]));
     return;
 }
+if (args.Length == 2 && args[0] == "--tactical-planner-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattlePlannerChecks.TacticalSeed(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--battle-search-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

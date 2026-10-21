@@ -13,10 +13,11 @@ namespace MonsterTrain2Poju.Model
         public int BeamWidth { get; }
         public int MaxActionsPerTurn { get; }
         public int PreferredDeploymentRoom { get; }
+        public bool UseTacticalSeed { get; }
         public TimeSpan TimeLimit { get; }
 
         public BattlePlannerOptions(int maxNodes = 2048, int maxTurns = 3, int beamWidth = 16,
-            int maxActionsPerTurn = 12, TimeSpan? timeLimit = null, int preferredDeploymentRoom = 2)
+            int maxActionsPerTurn = 12, TimeSpan? timeLimit = null, int preferredDeploymentRoom = 2, bool useTacticalSeed = false)
         {
             if (maxNodes < 1 || maxTurns < 1 || beamWidth < 1 || maxActionsPerTurn < 1 || preferredDeploymentRoom < 0)
                 throw new ArgumentOutOfRangeException(nameof(maxNodes));
@@ -24,6 +25,7 @@ namespace MonsterTrain2Poju.Model
             if (TimeLimit <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timeLimit));
             MaxNodes = maxNodes; MaxTurns = maxTurns; BeamWidth = beamWidth; MaxActionsPerTurn = maxActionsPerTurn;
             PreferredDeploymentRoom = preferredDeploymentRoom;
+            UseTacticalSeed = useTacticalSeed;
         }
     }
 
@@ -147,6 +149,40 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             Rollout(root);
+
+            if (options.UseTacticalSeed)
+            {
+                Node tactical = root;
+                while (!Stop() && tactical.Turns < options.MaxTurns && !Terminal(tactical))
+                {
+                    nodes++;
+                    SupportedActionCandidate? chosen = null;
+                    if (tactical.Actions < options.MaxActionsPerTurn)
+                    {
+                        chosen = BattleTacticalPolicy.Choose(tactical.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
+                            options.PreferredDeploymentRoom);
+                        foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
+                    }
+                    else actionLimit = true;
+                    if (chosen != null)
+                        tactical = Child(tactical, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(chosen.Action, false));
+                    else
+                    {
+                        BattleTurnResult ended = BattleTurnModel.EndTurn(tactical.State);
+                        if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported tactical-seed EndTurn.")); break; }
+                        tactical = Child(tactical, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
+                    }
+                    Consider(tactical);
+                }
+                // This opt-in mode accepts the first complete winning seed. It
+                // remains bounded and replayable, without an optimality claim.
+                if (tactical.Outcome == RoomOutcome.BattleWon)
+                {
+                    Stop();
+                    return new BattlePlanResult(tactical.State, tactical.Outcome, tactical.Steps, tactical.Score, tactical.Turns,
+                        nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, true, unsupported, null);
+                }
+            }
 
             // A visible-strength seed supplies deployment, tank placement and
             // available unit abilities before the fixed verification policy

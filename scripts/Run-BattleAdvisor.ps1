@@ -3,7 +3,10 @@
 param(
     [string] $Profile = '',
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
-    [ValidateRange(2, 3)] [int] $Horizon = 3,
+    [ValidateRange(2, 16)] [int] $Horizon = 3,
+    [ValidateRange(100, 30000)] [int] $TimeLimitMs = 3000,
+    [switch] $TacticalSeed,
+    [switch] $OuterBoss,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -41,10 +44,16 @@ foreach ($name in @($start.Environment.Keys)) {
 $settings = @{
     MT2_PROBE_DATA_DIR = $Profile; MT2_PROBE_SCENARIO = 'advisor'
     MT2_PROBE_PLANNER_HORIZON = "$Horizon"
+    MT2_PROBE_PLANNER_TIME_LIMIT_MS = "$TimeLimitMs"
+    MT2_PROBE_PLANNER_TACTICAL_SEED = $(if ($TacticalSeed) { '1' } else { '0' })
+    MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBoss) { '1' } else { '0' })
+    MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBoss) { '1' } else { '0' })
     MT2_PROBE_BRANCH_CARD_MASKS = '1'; MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = '1'
 }
 foreach ($entry in $settings.GetEnumerator()) { $start.Environment[$entry.Key] = $entry.Value }
 # This is the interactive game window the user controls; no probe autoplay.
 $process = [Diagnostics.Process]::Start($start)
-[pscustomobject]@{ ProcessId = $process.Id; Profile = $Profile; Worker = $NativeWorker; Horizon = $Horizon; Controls = 'F8: show/hide; panel: refresh/pause' } | ConvertTo-Json -Compress
+[pscustomobject]@{ ProcessId = $process.Id; Profile = $Profile; Worker = $NativeWorker; Horizon = $Horizon;
+    TimeLimitMs = $TimeLimitMs; TacticalSeed = $TacticalSeed.IsPresent; OuterBoss = $OuterBoss.IsPresent;
+    Controls = 'F8: show/hide; panel: refresh/pause' } | ConvertTo-Json -Compress

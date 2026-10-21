@@ -134,7 +134,10 @@ namespace MonsterTrain2Poju.Probe
                 using var keys = new BattleStateKeys();
                 BattlePlanResult plan = BattleAdvisorOverlay.Active != null ? BattleAdvisorOverlay.Active.CurrentPlan :
                     BattlePlanner.Plan(root, keys.Key,
-                        new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromSeconds(3)));
+                        new BattlePlannerOptions(256, horizon, 8,
+                            timeLimit: TimeSpan.FromMilliseconds(int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TIME_LIMIT_MS") ?? "3000", CultureInfo.InvariantCulture)),
+                            preferredDeploymentRoom: int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2", CultureInfo.InvariantCulture),
+                            useTacticalSeed: Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1"));
                 if (!plan.CompletedHorizon || plan.UnsupportedAttempts.Count != 0 || plan.Steps.Count == 0)
                     throw new InvalidOperationException("Native planner root has no complete supported recommendation: " +
                         string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));

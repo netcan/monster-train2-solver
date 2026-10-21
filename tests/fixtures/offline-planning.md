@@ -21,6 +21,37 @@ and deployment rooms 0..2. Node/beam/action bounds remain 256/8/12, and the whol
 battle stops at 256 decisions. Unsupported candidate reasons remain visible.
 Existing live-advisor defaults are unchanged. Output files must be new.
 
+The optional `--tactical` argument adds a deterministic long-horizon seed before
+the existing strength/fixed-policy/beam seeds. It preserves tower attack by
+skipping negative tower-status cards, concentrates units on the preferred floor,
+prioritizes equipment/armor, then spends X buffs and unit abilities. Targets are
+ranked by visible stats with oldest-unit identity breaking ties; no encounter or
+card asset names enter this policy. The seed shares all node/time/action and
+cancellation limits. The first complete winning seed may return immediately;
+this is a bounded recommendation without an optimality claim. A seed that does
+not win continues through the existing planner within the remaining budget.
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-battle tests/fixtures/full-battle-progressed-ring8-gold-no-cards.mt2f .probe-runs/tactical-candidate.mt2f 12 10000 2 --tactical
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll policy-battle tests/fixtures/full-battle-progressed-ring8-gold-no-cards.mt2f .probe-runs/policy-candidate.mt2f 2
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-planner-only tests/fixtures/full-battle-progressed-ring8-gold-frozen-win.mt2f
+```
+
+`policy-battle` freezes the seed's actions without search; its output is still a
+model prediction. The planner's rolling 12-turn/10,000-ms candidate completed
+50 decisions with zero unsupported reasons and model Pyre21 in 163.84 seconds,
+including independent replay of all forecasts. This is separate from the
+accepted external frozen route's natural native Pyre4 victory.
+
+For native rolling acceptance, `Run-FullBattleProbe.ps1` and
+`Run-RollingAdvisorBenchmark.ps1` accept `-PlannerTacticalSeed` and explicit
+`-PlannerHorizon 12`. `Run-BattleAdvisor.ps1` exposes the same opt-in setting as
+`-TacticalSeed -Horizon 12 -TimeLimitMs 30000`. Outer-boss benchmarks also require
+`-OuterBossBirth -OuterBossTurns`; the interactive launcher combines these as
+`-OuterBoss`. Manual and automated defaults
+remain a three-turn horizon and 3,000 ms; the native benchmark may explicitly
+allow 30,000 ms for its longer continuation. Evidence records this setting.
+
 `freeze-actions <native.mt2f> <actions.json or -> <output.mt2f>` imports a bounded
 external policy's action sequence and independently applies every legal action
 from that same native deployment root. Input items contain `Action` and

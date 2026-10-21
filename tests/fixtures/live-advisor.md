@@ -11,6 +11,14 @@ or target, and the forecast Pyre HP after up to three EndTurns. F8 hides/shows
 the panel; its buttons refresh or pause recommendations. `-Horizon 2` selects
 two EndTurns. The overlay does not play cards automatically.
 
+Longer known-state continuations are opt-in: `-TacticalSeed -Horizon 12
+-TimeLimitMs 30000` enables the bounded tactical seed described in
+[offline planning](offline-planning.md). Use `-OuterBoss` to project the
+calibrated unpaired original outer-boss deployment/phase state. This enables
+the same birth/turn capture flags used in its native acceptance; other outer-boss
+definitions still retain their explicit model guards. The defaults stay at
+three turns/3,000 ms, and long forecasts can take considerably longer to publish.
+
 The command prints its isolated `Profile`. Pass that same directory with
 `-Profile .probe-runs/advisor-<timestamp>-<suffix>` to resume that progress.
 Omitting `-Profile` creates a new copy of `.probe-baseline`. `-NativeWorker 2`

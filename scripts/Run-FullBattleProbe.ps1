@@ -8,6 +8,7 @@ param(
     [ValidateRange(1, 2)]
     [int] $NativeWorker = 1,
     [switch] $Planner,
+    [switch] $PlannerTacticalSeed,
     [switch] $Advisor,
     [switch] $RollingAdvice,
     [switch] $PreviewAttackTrace,
@@ -27,7 +28,7 @@ param(
     [int] $Seed = 424242,
     [ValidateRange(0, 20)]
     [int] $PlannerTurn = 2,
-    [ValidateRange(2, 3)]
+    [ValidateRange(2, 16)]
     [int] $PlannerHorizon = 3,
     [ValidateRange(0, 2)] [int] $PlannerDeploymentRoom = 2,
     [ValidateRange(100, 30000)] [int] $PlannerTimeLimitMs = 3000,
@@ -1169,6 +1170,7 @@ $environment = @{
     MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
     MT2_PROBE_PLANNER_HORIZON = "$PlannerHorizon"
+    MT2_PROBE_PLANNER_TACTICAL_SEED = $(if ($PlannerTacticalSeed) { '1' } else { '0' })
     MT2_PROBE_PLANNER_DEPLOYMENT_ROOM = "$PlannerDeploymentRoom"
     MT2_PROBE_PLANNER_TIME_LIMIT_MS = "$PlannerTimeLimitMs"
     MT2_PROBE_PLANNER_INPUT = $(if ($PlannerInput) { (Resolve-Path -LiteralPath $PlannerInput).Path } else { '' })

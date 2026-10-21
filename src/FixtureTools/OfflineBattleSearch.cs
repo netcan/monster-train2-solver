@@ -8,6 +8,25 @@ using MonsterTrain2Poju.Model;
 // model predictions; only a fresh game process can establish native acceptance.
 internal static class OfflineBattleSearch
 {
+    internal static void Policy(string input, string output, int floor)
+    {
+        if (floor is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(floor));
+        using var source = FixtureDocument.Read(input);
+        FixtureValue[] actions = source.RootElement.GetProperty("Actions").EnumerateArray().ToArray();
+        BattleTurnState current = (actions.Length > 0 ? actions[0] : source.RootElement.GetProperty("Turns")[0])
+            .GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var steps = new List<Step>();
+        RoomOutcome outcome = RoomOutcome.Exchanged;
+        int played = 0;
+        while (!Terminal(outcome) && steps.Count < 256)
+        {
+            SupportedActionCandidate? choice = played < 18 ? BattleTacticalPolicy.Choose(current, out _, floor) : null;
+            var step = new Step { Action = choice?.Action, IsEndTurn = choice == null };
+            current = Apply(current, step.Action, step.IsEndTurn, out outcome);
+            steps.Add(step); played = step.IsEndTurn ? 0 : played + 1;
+        }
+        Freeze(input, System.Text.Json.JsonSerializer.Serialize(steps), output);
+    }
     internal static void Freeze(string input, string actionsJson, string output)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
@@ -41,7 +60,7 @@ internal static class OfflineBattleSearch
         using (var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) document.Write(stream);
         Verify(output);
     }
-    internal static void Run(string input, string output, int horizon, int milliseconds, int floor)
+    internal static void Run(string input, string output, int horizon, int milliseconds, int floor, bool tactical = false)
     {
         if (horizon is < 1 or > 16 || milliseconds is < 1 or > 60000 || floor is < 0 or > 2)
             throw new ArgumentOutOfRangeException(nameof(horizon), "Horizon 1..16, budget 1..60000 ms and room 0..2 required.");
@@ -62,7 +81,7 @@ internal static class OfflineBattleSearch
         Require(root.Spawn.Turn == 0, "Offline whole-battle planning requires the native deployment root.");
         using var rootKeys = new BattleStateKeys();
         string immutable = rootKeys.Key(root);
-        var options = new BattlePlannerOptions(256, horizon, 8, 12, TimeSpan.FromMilliseconds(milliseconds), floor);
+        var options = new BattlePlannerOptions(256, horizon, 8, 12, TimeSpan.FromMilliseconds(milliseconds), floor, tactical);
         var decisions = new List<Decision>();
         var unsupported = new HashSet<string>(StringComparer.Ordinal);
         var timer = Stopwatch.StartNew();
@@ -88,7 +107,7 @@ internal static class OfflineBattleSearch
         Require(immutable == freshKeys.Key(root), "Planning mutated its native root.");
         using (var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelPrediction",
             SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
-            Horizon = horizon, MillisecondsPerDecision = milliseconds, DeploymentRoom = floor,
+            Horizon = horizon, MillisecondsPerDecision = milliseconds, DeploymentRoom = floor, TacticalSeed = tactical,
             Root = root, Final = current, Outcome = outcome, ElapsedSeconds = timer.Elapsed.TotalSeconds,
             UnsupportedReasons = unsupported.Order(StringComparer.Ordinal).ToArray(), RollingDecisions = decisions }))
         using (var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) document.Write(stream);

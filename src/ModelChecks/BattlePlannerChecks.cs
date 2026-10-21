@@ -5,6 +5,36 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattlePlannerChecks
 {
+    internal static void TacticalSeed(FixtureValue fixture)
+    {
+        foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(fixture.GetProperty(counter).GetInt32() == 0, "Tactical seed requires accepted native input: " + counter);
+        BattleTurnState root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        Require(root.Spawn.Turn == 0 && root.Spawn.QueuedOuterBoss?.Boss.AssetKey == "Boss_Level8_AllyBuffer",
+            "Missing natural final-battle deployment input.");
+        string original = Key(root);
+        using var keys = new BattleStateKeys();
+        var options = new BattlePlannerOptions(256, 12, 8, 12, TimeSpan.FromSeconds(30), 2, useTacticalSeed: true);
+        BattlePlanResult plan = BattlePlanner.Plan(root, keys.Key, options);
+        Require(plan.Outcome == RoomOutcome.BattleWon && plan.CompletedHorizon && plan.ExpandedNodes <= options.MaxNodes &&
+            plan.TurnsCompleted <= options.MaxTurns && plan.UnsupportedAttempts.Count == 0,
+            "Bounded tactical seed did not find the supported complete winning continuation.");
+        BattleTurnState replayed = Replay(root, plan.Steps, out RoomOutcome outcome);
+        Require(outcome == RoomOutcome.BattleWon && Key(replayed) == Key(plan.State) &&
+            BattlePlanner.Evaluate(replayed, outcome) == plan.Score && Key(root) == original,
+            "Tactical plan changed its root or failed independent complete-state/RNG replay.");
+        BattlePlanResult cancelled = BattlePlanner.Plan(root, keys.Key, options, cancellationToken: new CancellationToken(true));
+        Require(cancelled.Cancelled && cancelled.ExpandedNodes == 0 && cancelled.Steps.Count == 0 && !cancelled.CompletedHorizon,
+            "Tactical seed ignored pre-cancellation.");
+        BattlePlanResult limited = BattlePlanner.Plan(root, keys.Key,
+            new BattlePlannerOptions(1, 12, 8, timeLimit: TimeSpan.FromSeconds(30), useTacticalSeed: true));
+        Require(limited.ReachedNodeLimit && limited.ExpandedNodes == 1 && limited.Steps.Count == 1,
+            "Tactical seed escaped the planner's shared node budget.");
+        Require(!new BattlePlannerOptions().UseTacticalSeed, "Existing planner defaults must remain opt-in.");
+        Console.WriteLine($"TACTICAL-PLANNER PASS steps={plan.Steps.Count} turns={plan.TurnsCompleted} nodes={plan.ExpandedNodes} " +
+            $"elapsedMs={plan.Elapsed.TotalMilliseconds:F1}: complete model victory, independent replay, immutable native root and shared cancellation/node budgets; native winning acceptance remains separate.");
+    }
+
     internal static void NativePlan(FixtureValue fixture)
     {
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
