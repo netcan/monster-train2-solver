@@ -1,5 +1,9 @@
 # Bounded multi-turn planner
 
+The separate [exact solver](exact-search.md) can certify an exhausted deterministic
+model frontier and explicitly distinguishes terminal from horizon optimality.
+The interactive bounded planner below retains its existing latency budgets.
+
 `BattlePlanner` returns a model-verified executable recommendation under node,
 time, beam-width and per-turn action budgets. It seeds a complete no-card
 continuation, a visible-strength/unit-ability policy and the existing

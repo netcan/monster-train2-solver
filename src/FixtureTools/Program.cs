@@ -2,7 +2,11 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using MonsterTrain2Poju.Fixtures;
 
-if (args.Length == 3 && args[0] == "plan-once")
+if (args.Length is 5 or 6 && args[0] == "solve-exact")
+{
+    ExactBattleCommands.Run(args[1], args[2], int.Parse(args[3]), int.Parse(args[4]), args.Length == 6 ? int.Parse(args[5]) : null);
+}
+else if (args.Length == 3 && args[0] == "plan-once")
 {
     OfflineBattleSearch.Single(args[1], args[2]);
 }

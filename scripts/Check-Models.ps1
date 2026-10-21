@@ -2972,6 +2972,8 @@ foreach ($fixturePath in $holdoverFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Native starting Duality checks failed: $fixturePath" }
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --rolling-advice-only $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Native Holdover frozen forecast checks failed: $fixturePath" }
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --exact-battle-only $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Exact solver certificate checks failed: $fixturePath" }
     }
 }
 $originalUnplayableFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @(
