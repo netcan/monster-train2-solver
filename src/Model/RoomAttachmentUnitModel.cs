@@ -56,6 +56,7 @@ namespace MonsterTrain2Poju.Model
 
             var rooms = new List<RoomCombatState>(source.Rooms.Count);
             CombatContext? context = source.Context;
+            bool moonChanged = false;
             foreach (RoomCombatState room in source.Rooms)
             {
                 RoomCapacityState? previous = before.FirstOrDefault(item => item.RoomIndex == room.RoomIndex);
@@ -104,12 +105,10 @@ namespace MonsterTrain2Poju.Model
 
                 if (previous?.Attachments?.Any(item => item.MoonPhase != null) == true || current?.Attachments?.Any(item => item.MoonPhase != null) == true)
                 {
-                    if (state.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind is "OnMoonShade" or "OnMoonshadeLost")))
-                        return Fail("Room attachment New-moon callbacks require independent native calibration.");
                     if (state.Context?.QueryFrame?.MoonPhase is int phase && state.Context.QueryFrame.MoonPhaseTrackingActive == true)
                     {
-                        // Eclipse changes only the New bit. Original Selene
-                        // Full callbacks stay idle when understanding is current.
+                        // Installation/removal updates affected characters before
+                        // draining their original New gained/lost callbacks.
                         if (state.Units.Any(unit => unit.Health > 0 && unit.Triggers.Any(trigger =>
                                 trigger.Kind is "OnMoonLit" or "OnMoonlitLost") &&
                             (!unit.MoonPhaseMask.HasValue || (unit.MoonPhaseMask.Value & 2) != (phase & 2))))
@@ -119,14 +118,26 @@ namespace MonsterTrain2Poju.Model
                         int mask = RoomMoonPhaseModel.Effective(state.Context, room.RoomIndex, phase);
                         state = state.WithUnits(state.Units.Select(unit => (oldAttachment != null && Affected(unit, oldAttachment, state.Context) || newAttachment != null && Affected(unit, newAttachment, state.Context))
                             ? unit.WithMoonPhaseMask(mask) : unit).ToArray());
+                        moonChanged = true;
                     }
                 }
                 context = state.Context;
                 rooms.Add(state);
             }
-            return new RoomAttachmentUnitSyncResult(new TrainCombatState(rooms.Select(room => new RoomCombatState(room.RoomIndex,
+            var synchronized = new TrainCombatState(rooms.Select(room => new RoomCombatState(room.RoomIndex,
                 room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
-                source.Movement, source.EnemySlotsPerRoom, context));
+                source.Movement, source.EnemySlotsPerRoom, context);
+            if (moonChanged && source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger =>
+                trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost")))
+            {
+                if (source.Rooms.Any(room => room.Preview))
+                    return Fail("Room attachment moon callback previews require separate native calibration.");
+                string? error = RoomMoonPhaseModel.ValidateCallbacks(source);
+                if (error != null) return Fail(error);
+                MoonPhaseTransitionResult callbacks = RoomMoonPhaseModel.ApplyUnderstanding(source, synchronized, phaseShift: false);
+                return new RoomAttachmentUnitSyncResult(callbacks.State, callbacks.UnsupportedReason);
+            }
+            return new RoomAttachmentUnitSyncResult(synchronized);
         }
 
         internal static RoomAttachmentUnitSyncResult SynchronizeMovement(TrainCombatState before, TrainCombatState after)

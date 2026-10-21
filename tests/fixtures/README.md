@@ -1,7 +1,7 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 839 archives (777 full battles and
-62 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 850 archives (785 full battles and
+65 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 `full-battle-progressed-ring7-holdover-{policy,win}.mt2f` closes the original

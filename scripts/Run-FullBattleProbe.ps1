@@ -19,6 +19,7 @@ param(
     [switch] $PermanentTraits,
     [switch] $ConduitMovement,
     [switch] $RoomMoonCallbacks,
+    [switch] $RoomMoonCallbacksShade,
     [switch] $BossActionTargets,
     [switch] $BossActionControllers,
     [switch] $OuterBossPhases,
@@ -595,8 +596,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($RoomMoonCallbacksShade) { $RoomMoonCallbacks = $true }
 if ($RoomMoonCallbacks) {
-    $allowed = @('RoomMoonCallbacks', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('RoomMoonCallbacks', 'RoomMoonCallbacksShade', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'RoomMoonCallbacks is an isolated component calibration.' }
     $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1205,6 +1207,7 @@ $environment = @{
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
     MT2_PROBE_CONDUIT_MOVEMENT = $(if ($ConduitMovement) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_CALLBACKS = $(if ($RoomMoonCallbacks) { '1' } else { '0' })
+    MT2_PROBE_ROOM_MOON_SHADE = $(if ($RoomMoonCallbacksShade) { '1' } else { '0' })
     MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
     MT2_PROBE_PREVIEW_ATTACK_TRACE = $(if ($PreviewAttackTrace) { '1' } else { '0' })
@@ -1796,7 +1799,9 @@ if ($RoomMoonCallbacks) {
     try {
         $captured = $component.RootElement.ToObjectGraph()
         if (-not $captured.NativeCompleted -or -not $captured.RngUnchanged -or
-            -not $captured.PreviewUpdatesSuppressed -or @($captured.Rows).Count -ne 13 -or @($captured.ActorIds).Count -ne 3) {
+            -not $captured.PreviewUpdatesSuppressed -or @($captured.Rows).Count -ne $(if ($RoomMoonCallbacksShade) { 15 } else { 13 }) -or
+            @($captured.ActorIds).Count -ne $(if ($RoomMoonCallbacksShade) { 6 } else { 3 }) -or
+            [bool]$captured.ShadeCallbacks -ne [bool]$RoomMoonCallbacksShade) {
             throw 'Incomplete room moon callback calibration.'
         }
     } finally { $component.Dispose() }

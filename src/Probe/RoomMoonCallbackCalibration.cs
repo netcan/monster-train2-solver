@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class RoomMoonCallbackCalibration
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_CALLBACKS") == "1";
+        internal static bool Shade => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SHADE") == "1";
         internal static bool Started, Completed;
         internal static string? Error;
         private static AllGameManagers Managers => AllGameManagers.Instance!;
@@ -74,6 +75,12 @@ namespace MonsterTrain2Poju.Probe
                     data.FindCardData("2b7a187f-da0b-4c34-b8c5-b18755911b43")!.GetSpawnCharacterData(), null!, floor,
                     unit => { actors.Add(unit); Trace.UnitId(unit); }, SpawnMode.SelectedSlot,
                     rooms.GetRoom(floor).GetMonsterPoint(0), isCardless: true);
+            if (Shade)
+                foreach (int floor in new[] { 1, 0, 2 })
+                    yield return Managers.GetMonsterManager().CreateMonsterState(
+                        data.FindCardData("7775c5b5-eed9-4864-9976-9c86896becc1")!.GetSpawnCharacterData(), null!, floor,
+                        unit => { actors.Add(unit); Trace.UnitId(unit); }, SpawnMode.SelectedSlot,
+                        rooms.GetRoom(floor).GetMonsterPoint(1), isCardless: true);
             yield return player.SetMoonPhase(PlayerManager.MoonPhase.Full);
             yield return Managers.GetCombatManager().RunTriggerQueue();
             CardData eclipseData = data.FindCardData(EclipseChamberScenario.DataId)!;
@@ -89,8 +96,10 @@ namespace MonsterTrain2Poju.Probe
             yield return Refresh("unmasked-full-gained", refresh);
             CardState eclipse = cards.AddNewCard(eclipseData, CardPile.HandPile, false, false, animate: false);
             Trace.CardId(eclipse);
-            yield return rooms.GetRoom(0).AddTrainRoomAttachment("poju-room-moon-calibration", eclipse, upgrade, null!,
+            IEnumerator attach = rooms.GetRoom(0).AddTrainRoomAttachment("poju-room-moon-calibration", eclipse, upgrade, null!,
                 Team.Type.Monsters, TrainRoomAttachmentType.Primary, Managers.GetCoreManagers(), skipTargeting: true);
+            if (Shade) yield return Record("attach-original-eclipse", "Attach", false, 0, attach);
+            else yield return attach;
             yield return Managers.GetCombatManager().RunTriggerQueue();
             yield return Refresh("attached-full-gains-new", refresh);
             yield return Refresh("attached-full-noop", refresh);
@@ -100,7 +109,9 @@ namespace MonsterTrain2Poju.Probe
             yield return Record("masked-global-new", "SetMoonPhase", false, 1, player.SetMoonPhase(PlayerManager.MoonPhase.New));
             yield return Record("masked-global-same", "SetMoonPhase", false, 1, player.SetMoonPhase(PlayerManager.MoonPhase.New));
             yield return Record("masked-global-full-again", "SetMoonPhase", false, 2, player.SetMoonPhase(PlayerManager.MoonPhase.Full));
-            yield return rooms.GetRoom(0).RemoveTrainRoomAttachment(rooms.GetRoom(0).Attachments.Single(), Managers.GetCoreManagers());
+            IEnumerator detach = rooms.GetRoom(0).RemoveTrainRoomAttachment(rooms.GetRoom(0).Attachments.Single(), Managers.GetCoreManagers());
+            if (Shade) yield return Record("detach-original-eclipse", "Detach", false, 0, detach);
+            else yield return detach;
             yield return Managers.GetCombatManager().RunTriggerQueue();
             yield return Refresh("detached-full-loses-new", refresh);
             yield return Refresh("detached-full-noop", refresh);
@@ -109,6 +120,7 @@ namespace MonsterTrain2Poju.Probe
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeCompleted = true, RngUnchanged = rngUnchanged, PreviewUpdatesSuppressed = Managers.GetCombatManager().SuppressCombatPreviewUpdates,
                 Boundary = "AfterOriginalCoroutineAndTriggerQueue",
+                ShadeCallbacks = Shade, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0],
                 ActorIds = actors.Select(Trace.UnitId).ToArray(), Rows = rows }))
             using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "room-moon-callback-calibration.mt2f"))) document.Write(stream);
             Completed = true; log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS rows=" + rows.Count + " gameplayRngUnchanged=" + rngUnchanged);

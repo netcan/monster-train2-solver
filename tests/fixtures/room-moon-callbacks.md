@@ -46,11 +46,35 @@ witnesses and six floor/subtype controls pass, as do 16 immutable action branche
 The card pipeline now prevalidates global refresh using the entire train rather
 than one selected room. All nine isolated refresh rows also pass through the
 same card-effect pipeline. Eclipse attachment/removal accepts settled Full
-understanding, whose callbacks are unchanged by the extra New bit. Stale Full
-understanding and New-moon attachment callbacks remain guarded. This is a
+understanding, whose callbacks are unchanged by the extra New bit. This initial
+Full-only acceptance kept New-moon attachment callbacks guarded. This is a
 complete authored action chain; real player-entry acceptance remains separate.
 
 ```powershell
 scripts/Run-FullBattleProbe.ps1 -EclipseChamberCallbacks -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-callbacks-only tests/fixtures/full-battle-eclipse-chamber-callbacks.mt2f
+```
+
+## Original New callbacks and attachment boundaries
+
+`room-moon-callback-calibration-shade.mt2f` records profile
+`full-battle-no-cards-20261021-224949-b9bae29a` (30.18 seconds). Three original
+Nightingales join the three original Selenes, retaining their unmodified
+Full/New temporary-upgrade add/remove definitions. Fifteen independent rows
+include nine refreshes, four global phase assignments and explicit original
+Eclipse installation/removal. All complete states and gameplay RNG match,
+including 36 upgrade-count changes, 16 Nightingale upgrade-presence changes
+and five mixed-mask witnesses. Eight parallel immutable branches pass per row.
+
+Installation adds the room upgrade before draining New gained callbacks;
+removal drops the room upgrade before draining New lost callbacks. The shared
+attachment model now performs these callbacks. Original Full-only and
+callback-free Eclipse action chains still pass. Stale Full understanding,
+enemy callbacks, other callback payloads, previews and friendly movement
+through moon rooms remain guarded. The integrated New-callback action chain
+and real player entry remain separate acceptance steps.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -RoomMoonCallbacksShade -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-callback-only tests/fixtures/room-moon-callback-calibration-shade.mt2f
 ```
