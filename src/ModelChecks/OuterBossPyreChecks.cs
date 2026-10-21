@@ -4,7 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class OuterBossPyreChecks
 {
-    internal static void Turns(FixtureValue fixture)
+    internal static void Turns(FixtureValue fixture, string expectedBoss = "Boss_Level8_AllyBuffer", bool pyreHealthControl = false)
     {
         bool victory = fixture.GetProperty("NativeWon").GetBoolean();
         RoomOutcome expectedOutcome = victory ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated;
@@ -17,9 +17,14 @@ internal static class OuterBossPyreChecks
         Require(turns.Length == 5, "Unexpected controlled native turn count.");
         BattleTurnState controlBefore = turns[1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState controlAfter = turns[1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
-        Require(controlBefore.Spawn.Turn == 1 && controlBefore.Spawn.Phase < controlBefore.Spawn.Waves.Count &&
+        Require(controlBefore.Spawn.OuterBoss?.AssetKey == expectedBoss && controlAfter.Spawn.OuterBoss?.AssetKey == expectedBoss &&
+            controlBefore.Spawn.Turn == 1 && controlBefore.Spawn.Phase < controlBefore.Spawn.Waves.Count &&
             controlAfter.Spawn.Turn == 2 && controlAfter.Spawn.Phase == controlAfter.Spawn.Waves.Count &&
             controlAfter.Spawn.OuterBoss?.Phase == "Relentless", "Missing the explicit mid-turn native queue control.");
+        if (pyreHealthControl)
+            Require(victory && controlBefore.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).MaxHealth == 80 &&
+                controlAfter.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).MaxHealth == 10000,
+                "Missing the explicit Pyre-health control; this is not a natural victory.");
         BattleTurnState root = turns[2].GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState current = root;
         string immutable = JsonSerializer.Serialize(root, ModelJson.Options);
@@ -39,12 +44,29 @@ internal static class OuterBossPyreChecks
             turns[^1].GetProperty("ActualOutcome").GetInt32() == (int)expectedOutcome,
             "Missing immutable root, three destroyed floors or expected native Pyre terminal outcome.");
         if (victory) Require(current.Spawn.OuterBoss == null && current.Spawn.Train.Context!.AllScenarioBossesDead == true &&
-            current.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 13,
-            "Controlled Pyre victory must remove the boss and retain native Pyre13.");
+            current.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == (pyreHealthControl ? 7866 : 13),
+            "Controlled Pyre victory must remove the boss and retain the original captured Pyre health.");
+        if (pyreHealthControl)
+            Parallel.For(0, 4, _ =>
+            {
+                BattleTurnState branch = root;
+                foreach (FixtureValue row in turns.Skip(2))
+                {
+                    BattleTurnResult result = BattleTurnModel.EndTurn(branch);
+                    Require(result.Supported, "Concurrent controlled EndTurn unsupported: " + result.UnsupportedReason);
+                    bool terminal = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+                    BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                    Require(BattleTurnChecks.Comparable(result.State!, terminal) == BattleTurnChecks.Comparable(actual, terminal) &&
+                        result.Outcome == (RoomOutcome)row.GetProperty("ActualOutcome").GetInt32(),
+                        "Concurrent controlled chain differs from complete native state/RNG.");
+                    branch = result.State!;
+                }
+                Require(JsonSerializer.Serialize(root, ModelJson.Options) == immutable, "Concurrent chain mutated its root.");
+            });
         Console.WriteLine($"OUTER-BOSS-PYRE-TURN PASS: three complete native EndTurns from one post-control root through floor destruction and Pyre combat; {expectedOutcome}, exact successors without native reinjection.");
     }
 
-    internal static void Native(FixtureValue fixture)
+    internal static void Native(FixtureValue fixture, string expectedBoss = "Boss_Level8_AllyBuffer", bool pyreHealthControl = false)
     {
         FixtureValue[] rows = fixture.GetProperty("Actions").EnumerateArray().ToArray();
         bool victory = rows.Length > 0 && (RoomOutcome)rows[^1].GetProperty("Outcome").GetInt32() == RoomOutcome.BattleWon;
@@ -52,9 +74,10 @@ internal static class OuterBossPyreChecks
             fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
             fixture.GetProperty("Boundary").GetString() == "AfterDoBossTowerAttackOrTerminalStop" &&
             fixture.GetProperty("Errors").GetArrayLength() == 0 && fixture.GetProperty("Actions").GetArrayLength() > 0 &&
-            fixture.GetProperty("QueueControls").GetArrayLength() == (victory ? 2 : 1),
+            fixture.GetProperty("QueueControls").GetArrayLength() == (victory || pyreHealthControl ? 2 : 1),
             "Missing original Pyre-entry capture and explicit native queue control.");
-        if (victory)
+        if (pyreHealthControl) OuterBossPhaseChecks.ValidatePyreHealthControl(fixture.GetProperty("QueueControls")[1]);
+        else if (victory)
         {
             FixtureValue health = fixture.GetProperty("QueueControls")[1];
             Require(health.GetProperty("Kind").GetString() == "SetOuterBossHealth" && health.GetProperty("Turn").GetInt32() == 2 &&
@@ -68,6 +91,7 @@ internal static class OuterBossPyreChecks
                 (RoomOutcome)row.GetProperty("Outcome").GetInt32() is RoomOutcome.PlayerDefeated or RoomOutcome.BattleWon,
                 "Native Pyre attack neither returned nor reached the terminal stop boundary.");
             OuterBossPhaseState before = row.GetProperty("Before").Deserialize<OuterBossPhaseState>()!;
+            Require(before.Boss.AssetKey == expectedBoss, "Unexpected native boss at Pyre entry.");
             BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
             OuterBossPyreResult result = OuterBossPyreModel.Apply(before);

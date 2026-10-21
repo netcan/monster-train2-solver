@@ -40,9 +40,34 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --outer-boss-fragile-o
   tests/fixtures/boss-action-fragile-controller-calibration.mt2f
 ```
 
+## Controlled Fragile Relentless and Pyre route
+
+Profile `full-battle-no-cards-20261022-074843-cd0f066b` explicitly empties the
+spawn queue before turn-two pre-combat and sets live/saved Pyre HP and max HP to
+10000. Both mutations are recorded in `QueueControls`. This isolated native
+victory (Pyre7866) is not a natural encounter. The full harness requires exactly
+one mismatch at the mid-turn control, with zero capture/unsupported/pending
+failures. The eight settled phase boundaries, one original Pyre-entry combat
+and three complete post-control EndTurns match all state, physical positions,
+controller progress and RNG. Four concurrent chains replay from the same
+immutable post-control root without native reinjection.
+
+This exposed an over-broad preview cleanup: ordinary Boss pending aura actions
+were also being cleared for the separately managed outer-train boss. Its aura
+map now retains the native pending action. The existing ordinary-boss
+persistent-enchantment and AllyBuffer checks remain separate regression gates.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --outer-boss-fragile-relentless-only `
+  tests/fixtures/outer-boss-fragile-relentless-phase-calibration.mt2f `
+  tests/fixtures/outer-boss-fragile-pyre-calibration.mt2f `
+  tests/fixtures/outer-boss-fragile-pyre-turn-calibration.mt2f
+```
+
 The player entry remains limited to AllyBuffer until Fragile has a natural
-progressed encounter and independent native replay. The baseline ends in Casting;
-it does not establish a complete Relentless/Pyre-entry cycle for Fragile.
-A separate forced-queue diagnostic reached Relentless but ended before Pyre
-entry, so it is not curated as that acceptance. No full regression or Mac build
-was run for this increment.
+progressed encounter and independent native replay. The seed's first natural
+route exposes unsupported event grafting; the explicit native "leave" choice
+avoids the graft but the simple driver loses at ring six on all three preferred
+deployment floors. Those failures remain diagnostics. The driver now exposes
+story-choice order and deployment preference, with its defaults unchanged.
+No full regression or Mac build was run for this increment.

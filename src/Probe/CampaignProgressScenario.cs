@@ -192,9 +192,14 @@ namespace MonsterTrain2Poju.Probe
             if (screen is StoryEventScreen story)
             {
                 if (Click(story.GetContinueButton(), "event-continue")) return;
-                for (int i = 0; i < 8; i++)
+                bool lastChoice = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER") == "Last";
+                for (int choice = 0; choice < 8; choice++)
+                {
+                    int i = lastChoice ? 7 - choice : choice;
                     if (story.FindChoiceItemButton(i) is StoryChoiceItem item && item.conditionsPassed &&
-                        Click(item.button, "event-choice", new { text = item.choiceText })) return;
+                        Click(item.button, "event-choice", new { index = i, text = item.choiceText,
+                            order = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER") ?? "First" })) return;
+                }
                 story.TryToFastForward(); return;
             }
             if (save.GetGameSequence() == SaveData.GameSequence.GameOver)
@@ -266,6 +271,7 @@ namespace MonsterTrain2Poju.Probe
                     enemies = m.GetHeroManager().GetCharactersReadOnly().Select(UnitDescription).ToList() });
             }
             var choices = new List<(CardState card, int room, SpawnPoint? drop, double score)>();
+            int preferredRoom = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_DEPLOYMENT_ROOM") ?? "2");
             foreach (CardState card in cards.GetHand())
             for (int r = 0; r < Math.Min(3, rooms.GetNumRooms()); r++)
             {
@@ -292,7 +298,8 @@ namespace MonsterTrain2Poju.Probe
                     if (!cards.CanPlayHandCard(card, r, drop, null, null, out _)) continue;
                     if (!combat.TestEffects(card.GetEffectStates(), card.GetTargetless() || card.GetTargetsRoom() ? r : -1,
                         card, null, drop, null, null, out _)) continue;
-                    double score = card.GetCardType() == CardType.Monster ? 1000 + CardValue(card) + r * 50 : 100;
+                    double score = card.GetCardType() == CardType.Monster ?
+                        1100 + CardValue(card) - Math.Abs(r - preferredRoom) * 50 : 100;
                     CharacterState? target = drop?.GetCharacterState();
                     if (card.GetCardType() == CardType.Monster)
                     {

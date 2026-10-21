@@ -1,7 +1,7 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 863 archives (794 full battles and
-69 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-22): 866 archives (794 full battles and
+72 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 `full-battle-outer-boss-fragile-no-cards.mt2f` and its three component archives
@@ -9,6 +9,14 @@ calibrate original Fragile creation, initial placement, casting movement, enemy
 buff aura and remote Pyre damage. Four complete EndTurns match a native loss;
 all four failure counters are zero. This map-jump diagnostic does not establish
 a naturally progressed player victory. See [boss variant scope](outer-boss-variants.md).
+
+Three `outer-boss-fragile-{relentless-phase,pyre,pyre-turn}-calibration.mt2f`
+archives additionally cover eight phase boundaries, all three destroyed floors
+and original Pyre combat. The driver explicitly empties the spawn queue and
+sets Pyre HP/max HP to 10000; the native victory leaves 7866 HP. The one
+mid-turn control mismatch is required, and all three later EndTurns replay
+exactly from one immutable root, including four concurrent chains. The scope
+is isolated mechanics, with the player gate still closed pending natural play.
 
 `full-battle-player-room-moon-movement-{search,replay}.mt2f` closes the player
 movement gate with an authored hand: thirty decisions, twenty-five plays, five

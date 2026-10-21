@@ -7,6 +7,8 @@ param(
     [string] $BattleReplay = '',
     [string[]] $ExcludeUpgradeTrait = @(),
     [switch] $SkipMerchantPurchases,
+    [ValidateSet('First', 'Last')] [string] $StoryChoiceOrder = 'First',
+    [ValidateRange(0, 2)] [int] $DeploymentRoom = 2,
     [switch] $OuterBossTurns,
     [switch] $OuterBossBirth,
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
@@ -64,6 +66,8 @@ $savePath = Join-Path $profile 'saves/save-singlePlayer.json'
 [pscustomobject]@{ InputProfile = $source; InputSaveSHA256 = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash;
     StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker; ExcludeUpgradeTrait = $ExcludeUpgradeTrait;
     SkipMerchantPurchases = [bool]$SkipMerchantPurchases;
+    StoryChoiceOrder = $StoryChoiceOrder;
+    DeploymentRoom = $DeploymentRoom;
     OuterBossTurns = [bool]$OuterBossTurns; OuterBossBirth = [bool]$OuterBossBirth;
     BattleReplay = $BattleReplay; BattleReplaySHA256 = $(if ($BattleReplay) { (Get-FileHash -LiteralPath $BattleReplay -Algorithm SHA256).Hash } else { $null }) } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-input.json')
@@ -84,6 +88,8 @@ $settings = @{
     MT2_PROBE_CAMPAIGN_STOP_RING = "$StopBeforeRing"; MT2_PROBE_SETTLE_CARD_ANIMATIONS = '1'
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
     MT2_PROBE_CAMPAIGN_SKIP_MERCHANT_PURCHASES = $(if ($SkipMerchantPurchases) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER = $StoryChoiceOrder
+    MT2_PROBE_CAMPAIGN_DEPLOYMENT_ROOM = [string]$DeploymentRoom
     MT2_PROBE_BRANCH_CARD_MASKS = '1'; MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'; MT2_PROBE_GAME_SPEED = 'Instant'
     MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBossTurns) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })

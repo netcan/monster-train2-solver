@@ -26,6 +26,7 @@ param(
     [switch] $OuterBossPhases,
     [switch] $OuterBossRelentless,
     [ValidateRange(0, 100000)] [int] $OuterBossRelentlessHealth = 0,
+    [ValidateRange(0, 99999)] [int] $OuterBossRelentlessPyreHealth = 0,
     [switch] $OuterBossTurns,
     [switch] $OuterBossBirth,
     [switch] $OuterBossPyre,
@@ -623,6 +624,7 @@ if ($PlayerAdvisor) {
 }
 if ($OuterBossRelentless -and -not $OuterBossPhases) { throw '-OuterBossRelentless requires -OuterBossPhases.' }
 if ($OuterBossRelentlessHealth -and -not $OuterBossRelentless) { throw '-OuterBossRelentlessHealth requires -OuterBossRelentless.' }
+if ($OuterBossRelentlessPyreHealth -and -not $OuterBossRelentless) { throw '-OuterBossRelentlessPyreHealth requires -OuterBossRelentless.' }
 if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns requires -PhysicalSpawnPoints.' }
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
@@ -1226,6 +1228,7 @@ $environment = @{
     MT2_PROBE_OUTER_BOSS_PHASES = $(if ($OuterBossPhases) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_RELENTLESS = $(if ($OuterBossRelentless) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_RELENTLESS_HEALTH = [string]$OuterBossRelentlessHealth
+    MT2_PROBE_OUTER_BOSS_RELENTLESS_PYRE_HEALTH = [string]$OuterBossRelentlessPyreHealth
     MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBossTurns) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_PYRE = $(if ($OuterBossPyre) { '1' } else { '0' })

@@ -1545,6 +1545,25 @@ if (args.Length >= 2 && args[0] == "--outer-boss-pyre-only")
     return;
 }
 
+if (args.Length == 4 && args[0] == "--outer-boss-fragile-relentless-only")
+{
+    using var phases = ModelJson.ReadFixture(args[1]);
+    using var pyre = ModelJson.ReadFixture(args[2]);
+    using var turns = ModelJson.ReadFixture(args[3]);
+    OuterBossPhaseChecks.Native(phases.RootElement, "Boss_Level8_Fragile");
+    OuterBossPyreChecks.Native(pyre.RootElement, "Boss_Level8_Fragile", pyreHealthControl: true);
+    OuterBossPyreChecks.Turns(turns.RootElement, "Boss_Level8_Fragile", pyreHealthControl: true);
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--player-boss-fragile-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerOuterBossChecks.WinningPair(source.RootElement, replay.RootElement, "Boss_Level8_Fragile");
+    return;
+}
+
 if (args.Length == 5 && args[0] == "--outer-boss-fragile-only")
 {
     using var battle = ModelJson.ReadFixture(args[1]);
@@ -3416,6 +3435,21 @@ foreach (string path in args.Where(path => path.Contains("outer-boss-fragile-pha
     using var fixture = ModelJson.ReadFixture(path);
     bool partial = !fixture.RootElement.GetProperty("ForcedSpawnQueueEmpty").GetBoolean();
     OuterBossPhaseChecks.Native(fixture.RootElement, "Boss_Level8_Fragile", earlyDefeat: partial);
+}
+foreach (string path in args.Where(path => path.Contains("outer-boss-fragile-relentless-phase-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OuterBossPhaseChecks.Native(fixture.RootElement, "Boss_Level8_Fragile");
+}
+foreach (string path in args.Where(path => path.Contains("outer-boss-fragile-pyre-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OuterBossPyreChecks.Native(fixture.RootElement, "Boss_Level8_Fragile", pyreHealthControl: true);
+}
+foreach (string path in args.Where(path => path.Contains("outer-boss-fragile-pyre-turn-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OuterBossPyreChecks.Turns(fixture.RootElement, "Boss_Level8_Fragile", pyreHealthControl: true);
 }
 foreach (string path in args.Where(path => path.Contains("boss-action-fragile-controller-calibration", StringComparison.OrdinalIgnoreCase)))
 {

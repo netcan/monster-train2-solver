@@ -3,9 +3,9 @@ using MonsterTrain2Poju.Model;
 
 internal static class PlayerOuterBossChecks
 {
-    internal static void WinningPair(FixtureValue source, FixtureValue replay)
+    internal static void WinningPair(FixtureValue source, FixtureValue replay, string expectedBoss = "Boss_Level8_AllyBuffer")
     {
-        Pair(source, replay);
+        Pair(source, replay, expectedBoss);
         FixtureValue[] records = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         FixtureValue[] frozen = replay.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         Require(records.Length > 2, "Missing winning rolling publications.");
@@ -44,7 +44,7 @@ internal static class PlayerOuterBossChecks
         Console.WriteLine($"PLAYER-BOSS-WINNING-CONTINUATION PASS decisions={records.Length} retained={records.Length - 1}: every publication wins; full roots/RNG, exact suffixes and fresh native replay verified.");
     }
 
-    internal static void Pair(FixtureValue source, FixtureValue replay)
+    internal static void Pair(FixtureValue source, FixtureValue replay, string expectedBoss = "Boss_Level8_AllyBuffer")
     {
         foreach (FixtureValue fixture in new[] { source, replay })
             Require(fixture.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor",
@@ -87,10 +87,10 @@ internal static class PlayerOuterBossChecks
         int live = 0;
         foreach (BattleTurnState state in states)
         {
-            queued |= state.Spawn.Turn == 0 && state.Spawn.QueuedOuterBoss?.Boss.AssetKey == "Boss_Level8_AllyBuffer";
+            queued |= state.Spawn.Turn == 0 && state.Spawn.QueuedOuterBoss?.Boss.AssetKey == expectedBoss;
             if (state.Spawn.OuterBoss is OuterBossProgress boss)
             {
-                Require(boss.AssetKey == "Boss_Level8_AllyBuffer", "Uncalibrated boss entered the player acceptance scope.");
+                Require(boss.AssetKey == expectedBoss, "Uncalibrated boss entered the player acceptance scope.");
                 phases.Add(boss.Phase); live++;
             }
             generatedSourceTraits |= state.Spawn.Train.Context!.CardInstances!.Any(card =>
@@ -103,9 +103,19 @@ internal static class PlayerOuterBossChecks
             .Count(action => action.GetProperty("Action").GetProperty("ActivatorUnitId").GetInt32() > 0);
         Require(queued, "Missing native queued boss at deployment.");
         Require(live > 0 && phases.SetEquals(new[] { "Casting", "Relentless" }), "Missing native boss phases.");
-        Require(generatedSourceTraits, "Missing new native Entropy Scourge source traits.");
-        Require(abilitySourceTraits && activations > 0, "Missing native ability source traits or activations.");
-        Console.WriteLine($"PLAYER-OUTER-BOSS PASS mode={(rolling ? "rolling" : "complete-window")} queuedBirth=true phases=2 liveSnapshots={live} generatedScourgeSourceTraits=true abilityActivations={activations}");
+        if (expectedBoss == "Boss_Level8_AllyBuffer")
+        {
+            Require(generatedSourceTraits, "Missing new native Entropy Scourge source traits.");
+            Require(abilitySourceTraits && activations > 0, "Missing native ability source traits or activations.");
+        }
+        else if (expectedBoss == "Boss_Level8_Fragile")
+        {
+            Require(states.Any(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Any(unit => unit.Team == CombatTeam.Enemy && unit.Status("buff")?.Stacks == 3)),
+                "Missing the original Fragile aura in the live player encounter.");
+        }
+        else throw new InvalidOperationException("Uncalibrated player boss acceptance definition.");
+        Console.WriteLine($"PLAYER-OUTER-BOSS PASS boss={expectedBoss} mode={(rolling ? "rolling" : "complete-window")} queuedBirth=true phases=2 liveSnapshots={live} generatedScourgeSourceTraits={generatedSourceTraits} abilityActivations={activations}");
     }
 
     private static void Require(bool value, string message)

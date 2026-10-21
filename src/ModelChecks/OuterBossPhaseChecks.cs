@@ -14,11 +14,12 @@ internal static class OuterBossPhaseChecks
         if (forced)
         {
             FixtureValue controls = fixture.GetProperty("QueueControls");
-            Require(controls.GetArrayLength() == 1 && controls[0].GetProperty("Kind").GetString() == "ForceSpawnQueueEmpty" &&
+            Require(controls.GetArrayLength() is 1 or 2 && controls[0].GetProperty("Kind").GetString() == "ForceSpawnQueueEmpty" &&
                 controls[0].GetProperty("Turn").GetInt32() == 2 &&
                 controls[0].GetProperty("PhaseBefore").GetInt32() < controls[0].GetProperty("PhaseAfter").GetInt32() &&
                 controls[0].GetProperty("PhaseAfter").GetInt32() == controls[0].GetProperty("NativeWaveCount").GetInt32(),
                 "Missing explicit isolated spawn-queue control provenance.");
+            if (controls.GetArrayLength() == 2) ValidatePyreHealthControl(controls[1]);
         }
         else Require(!fixture.TryGetProperty("QueueControls", out FixtureValue naturalControls) || naturalControls.GetArrayLength() == 0,
             "Natural boss phases contain isolated controls.");
@@ -67,6 +68,14 @@ internal static class OuterBossPhaseChecks
             initial == 1 && (forced || transitions > 0 ? transitions == 1 && destroyed >= 2 : destroyed == 0 && (!occupied || auraTargets > 0)),
             "Missing native initial action, moving casting actions or post-combat no-op controls.");
         Console.WriteLine($"OUTER-BOSS-PHASE PASS: {count} settled native actions ({pre} pre, {post} post), {moves} moves, {initial} initial latch, {auraTargets} new live aura targets, {transitions} relentless transitions, {destroyed} destroyed rooms; explicit control={forced}; complete battle/controller/RNG equality and immutable parents.");
+    }
+    internal static void ValidatePyreHealthControl(FixtureValue control)
+    {
+        Require(control.GetProperty("Kind").GetString() == "SetPyreHealth" && control.GetProperty("Turn").GetInt32() == 2 &&
+            control.GetProperty("HealthBefore").GetInt32() > 0 && control.GetProperty("MaxHealthBefore").GetInt32() == 80 &&
+            control.GetProperty("HealthAfter").GetInt32() == 10000 && control.GetProperty("MaxHealthAfter").GetInt32() == 10000 &&
+            control.GetProperty("SavedHealthAfter").GetInt32() == 10000 && control.GetProperty("SavedMaxHealthAfter").GetInt32() == 10000,
+            "Missing explicit isolated Pyre-health control; this is not a natural victory.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

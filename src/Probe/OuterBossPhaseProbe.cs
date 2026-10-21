@@ -112,6 +112,20 @@ namespace MonsterTrain2Poju.Probe
                         AccessTools.Field(typeof(HeroManager), "spawnPatternPhase").SetValue(heroes, waves.Count);
                         QueueControls.Add(new { Kind = "ForceSpawnQueueEmpty", Turn = combat.GetTurnCount(),
                             PhaseBefore = previous, PhaseAfter = waves.Count, NativeWaveCount = waves.Count });
+                        if (int.TryParse(Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS_PYRE_HEALTH"), out int pyreHealth) && pyreHealth > 0)
+                        {
+                            CharacterState pyre = AllGameManagers.Instance.GetRoomManager().GetPyreRoom().GetPyreHeart();
+                            int healthBefore = pyre.GetHP(), maximumBefore = pyre.GetMaxHP();
+                            SaveManager save = AllGameManagers.Instance.GetSaveManager();
+                            int savedBefore = save.GetTowerHP();
+                            save.AdjustTowerMaxHP(pyreHealth - save.GetMaxTowerHP());
+                            pyre.SetHealth(pyreHealth, pyreHealth);
+                            save.AdjustTowerHP(pyreHealth - save.GetTowerHP());
+                            QueueControls.Add(new { Kind = "SetPyreHealth", Turn = combat.GetTurnCount(),
+                                HealthBefore = healthBefore, MaxHealthBefore = maximumBefore,
+                                HealthAfter = pyre.GetHP(), MaxHealthAfter = pyre.GetMaxHP(),
+                                SavedHealthBefore = savedBefore, SavedHealthAfter = save.GetTowerHP(), SavedMaxHealthAfter = save.GetMaxTowerHP() });
+                        }
                         if (int.TryParse(Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS_HEALTH"), out int health) && health > 0)
                         {
                             CharacterState boss = heroes.GetOuterTrainBossCharacter();
