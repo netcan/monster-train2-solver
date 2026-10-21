@@ -39,7 +39,12 @@ fifth-ring victory; the separately accepted seventh-ring group is below.
 fifth and sixth victories finished at 69 and 48 Pyre HP. Strict rolling
 acceptance stopped at the explicit `CardTraitRetain` draw/opening-hand guard:
 the optional `TraitRetain` spell upgrade had been purchased after ring five.
-The unimplemented Holdover lifecycle remains guarded.
+That historical guard is now closed for captured default installed Holdover.
+The original purchased-upgrade input has its own completed fixed-policy loss
+and a fresh frozen victory: 42 inputs, Pyre104, four zero failure counters,
+48 detached native callback controls and uninterrupted full-state/RNG replay.
+See [Holdover lifecycle evidence](holdover.md). Temporary/replaced Holdover,
+cloning and in-battle installation retain their separate guards.
 
 `campaign-progressed-ring7-supported.zip` is a separate native branch from the
 same fifth-ring input. `-ExcludeUpgradeTrait CardTraitRetain` declines the
@@ -234,7 +239,8 @@ Profiles under `.probe-runs`:
   input, save SHA256
   `3E380C8CCF98146227D97CAE6997BE8F0CBE16995F5A637431657D68A6347E46`.
 - `campaign-ring7-20261021-103038-eaa75877`: native sixth victory, original
-  seventh-ring checkpoint retaining the unsupported Holdover purchase.
+  seventh-ring checkpoint retaining the originally guarded Holdover purchase,
+  now accepted by the separate Holdover full-battle fixtures.
 - `campaign-ring7-20261021-104013-117d0c7a`: two native continuation wins,
   audited Holdover refusal, seventh-ring checkpoint; `CAMPAIGN-PASS`, 233
   events and original game files unchanged.

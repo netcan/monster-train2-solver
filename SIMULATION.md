@@ -1,13 +1,22 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 834 binary archives, including 774
-full battles and 60 component calibrations. The card index accepts 773 battles;
+Current curated inventory (2026-10-21): 836 binary archives, including 776
+full battles and 60 component calibrations. The card index accepts 775 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
 coverage and the optimal solver remain in progress.
+
+The original seventh-ring checkpoint now also wins while retaining its
+naturally purchased Holdover upgrade: 42 frozen inputs, Pyre104, fresh native
+replay and a completed losing policy control. Both archives have four zero
+failure counters. Forty-eight detached native callback controls per battle
+verify the captured pending state, discard/recast conditions and opening/reset;
+natural returns match complete context/RNG and uninterrupted immutable chains.
+This also fixes starting Duality before temporary armor/avarice on summon.
+See [the Holdover evidence and remaining variant guards](tests/fixtures/holdover.md).
 
 The [naturally progressed fifth-ring checkpoint](tests/fixtures/campaign-progressed.md)
 now has a strict rolling victory: 59 Pyre HP, 26 decisions, an identical fresh

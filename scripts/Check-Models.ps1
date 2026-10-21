@@ -27,6 +27,7 @@ $fixtureNames = @('outer-boss-pyre-victory-calibration.mt2f', 'outer-boss-pyre-v
     'full-battle-rolling-advisor-ring7-search.mt2f', 'full-battle-rolling-advisor-ring7-replay.mt2f', 'full-battle-rolling-advisor-ring7-policy.mt2f',
     'full-battle-progressed-ring5-search.mt2f', 'full-battle-progressed-ring5-replay.mt2f', 'full-battle-progressed-ring5-policy.mt2f',
     'full-battle-progressed-ring7-search.mt2f', 'full-battle-progressed-ring7-replay.mt2f', 'full-battle-progressed-ring7-policy.mt2f',
+    'full-battle-progressed-ring7-holdover-policy.mt2f', 'full-battle-progressed-ring7-holdover-win.mt2f',
     'full-battle-original-isolated-frozen-totem.mt2f', 'full-battle-original-isolated-royal-whelp.mt2f',
     'full-battle-original-isolated-consumer-of-crowns.mt2f', 'full-battle-original-isolated-steelsinger.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',
@@ -898,7 +899,7 @@ $focusedBumpFixtures = @($fixtures | Where-Object {
 $focusedTeamSpawnStatusFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -eq 'full-battle-original-team-spawn-status.mt2f'
 })
-# These isolated relic fixtures have dedicated native checks; their search checks run below.
+# These fixtures have dedicated native/replay checks below.
 $generalFixtures = @($fixtures | Where-Object {
     (Split-Path -Leaf $_) -notin @('full-battle-companion-bump.mt2f', 'full-battle-outer-boss-bump.mt2f',
         'full-battle-original-damage-on-floor-transition.mt2f', 'full-battle-original-pyregel-on-ascend.mt2f',
@@ -910,6 +911,8 @@ $generalFixtures = @($fixtures | Where-Object {
         'full-battle-relic-card-cast-trigger-unit-upgrades.mt2f',
         'full-battle-original-cheaper-spell-cost.mt2f',
         'full-battle-original-first-card-cost.mt2f',
+        'full-battle-progressed-ring7-holdover-policy.mt2f',
+        'full-battle-progressed-ring7-holdover-win.mt2f',
         'full-battle-original-rebalance-valor.mt2f',
         'full-battle-original-first-imp-bonus.mt2f',
         'full-battle-original-moon-phase-rooms-gain-magic-power.mt2f',
@@ -2953,6 +2956,18 @@ foreach ($fixturePath in $originalPermafrostFixtures) {
     foreach ($mode in @('--original-permafrost-cards-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Permafrost checks failed ($mode): $fixturePath" }
+    }
+}
+$holdoverFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @(
+    'full-battle-progressed-ring7-holdover-policy.mt2f', 'full-battle-progressed-ring7-holdover-win.mt2f') })
+foreach ($fixturePath in $holdoverFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --holdover-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Native Holdover checks failed: $fixturePath" }
+    if ((Split-Path -Leaf $fixturePath) -eq 'full-battle-progressed-ring7-holdover-win.mt2f') {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --starting-duality-only $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Native starting Duality checks failed: $fixturePath" }
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --rolling-advice-only $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Native Holdover frozen forecast checks failed: $fixturePath" }
     }
 }
 $originalUnplayableFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @(

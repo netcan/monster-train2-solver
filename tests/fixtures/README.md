@@ -1,8 +1,15 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 834 archives (774 full battles and
+Current manifest inventory (2026-10-21): 836 archives (776 full battles and
 60 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-progressed-ring7-holdover-{policy,win}.mt2f` closes the original
+naturally purchased Holdover branch: the fixed policy loses; the frozen plan
+wins with Pyre104 after 33 plays/nine EndTurns. Both retain 48 isolated native
+callback controls, complete context/RNG matches and four zero failure counters.
+The winning route also calibrates starting Duality before temporary armor and
+avarice. See [Holdover evidence, commands and variant guards](holdover.md).
 
 `full-battle-progressed-ring8-gold-{search,replay,policy}.mt2f` closes natural
 eighth-ring rolling-advisor acceptance: 50 decisions, 39 plays, 11 EndTurns,
