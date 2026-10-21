@@ -128,7 +128,11 @@ namespace MonsterTrain2Poju.Probe
                     " endTurn=" + current?.GetCombatManager()?.ShouldShowEndTurnButton() +
                     " drawn=" + current?.GetCombatManager()?.HaveCardsBeenDrawnForCurrentTurn() +
                     " triggers=" + current?.GetCombatManager()?.IsRunningTriggerQueue +
-                    " animations=" + CardAnimationSettlement.Ready());
+                    " animations=" + CardAnimationSettlement.Ready() +
+                    " handAnimating=" + current?.GetHandUI()?.AreAnyCardsAnimating() +
+                    " preview=" + current?.GetSaveManager()?.PreviewMode + " isolatedPreview=" + PreviewRngIsolation.Active +
+                    " playing=" + current?.GetReplayManager()?.IsCardPlaying() +
+                    " dirty=" + (current?.GetCombatManager() == null ? null : AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(current.GetCombatManager())));
             }
             if (stage == Stage.Quitting)
             {
@@ -273,6 +277,26 @@ namespace MonsterTrain2Poju.Probe
                     screen.GetScreen(ScreenName.RunSetup) is RunSetupScreen setup)
                 {
                     runSetupRequested = true;
+                    string? primaryClan = Environment.GetEnvironmentVariable("MT2_PROBE_PRIMARY_CLAN");
+                    if (!string.IsNullOrEmpty(primaryClan))
+                    {
+                        ClassData clan = managers.GetAllGameData().GetAllClassDatas().Single(data =>
+                            data.GetCardStyle().ToString().Equals(primaryClan, StringComparison.OrdinalIgnoreCase));
+                        // The disposable baseline has no progression. Unlock only
+                        // this clan in its metagame; keep native starter decks,
+                        // champion levels, relics and encounter generation intact.
+                        if (!save.IsClassUnlockedInMetagame(clan))
+                        {
+                            save.GetMetagameSave().UnlockClass(clan);
+                            log.LogInfo("ISOLATED-PROFILE-CLAN-UNLOCK " + clan.GetCardStyle());
+                        }
+                        if (!save.IsUnlockedAndAvailableWhenStartingRun(clan))
+                            throw new InvalidOperationException("Requested native starting clan is locked: " + primaryClan);
+                        AccessTools.Method(typeof(RunSetupScreen), "HandleClanOptionsSelected").Invoke(setup,
+                            new object[] { true, new RunSetupClanSelectionLayoutUI.ClanOptionData(clan, false) });
+                        log.LogInfo("NATIVE-STARTING-CLAN " + clan.GetCardStyle() + " id=" + clan.GetID());
+                        save.MarkOneTimeMessageComplete(OneTimeMessage.MoonPhase);
+                    }
                     startRunFromSetup.Invoke(setup, null);
                     return;
                 }

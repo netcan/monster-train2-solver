@@ -147,6 +147,8 @@ namespace MonsterTrain2Poju.Probe
 
         private static bool Ready()
         {
+            BattleAdviceSession session = Field<BattleAdviceSession>("session");
+            Require(session.Status != BattleAdviceStatus.Unavailable, "player advice unavailable: " + session.Error);
             if (CurrentIsNull()) return false;
             // Both assemblies allocate their own capture identities. Compare
             // the player publication with a fresh native capture in its own

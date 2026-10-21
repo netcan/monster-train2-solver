@@ -27,6 +27,7 @@ param(
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
     [string] $InputProfile = '',
+    [string] $PrimaryClan = '',
     [ValidateRange(0, 20)] [int] $BattleDistance = 0,
     [switch] $ShowWindow,
     [ValidateRange(1, 2147483647)]
@@ -606,6 +607,7 @@ if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns req
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
 if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
+if ($PrimaryClan -and $InputProfile) { throw 'PrimaryClan selects a fresh native run and cannot be combined with InputProfile.' }
 if ($RollingAdvice) {
     if ($Planner) { throw 'RollingAdvice and a frozen-window Planner run are separate test modes.' }
     $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
@@ -1182,6 +1184,7 @@ if (Test-Path -LiteralPath $preferencesPath) {
 }
 $environment = @{
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
+    MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
     MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
     MT2_PROBE_PREVIEW_ATTACK_TRACE = $(if ($PreviewAttackTrace) { '1' } else { '0' })
