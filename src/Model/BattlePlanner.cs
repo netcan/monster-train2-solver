@@ -146,6 +146,35 @@ namespace MonsterTrain2Poju.Model
             }
             Rollout(root);
 
+            // A visible-strength seed supplies deployment, tank placement and
+            // available unit abilities before the fixed verification policy
+            // consumes the remaining budget. It cannot bypass model legality,
+            // the common evaluator or the shared node/time limits.
+            Node strength = root;
+            while (!Stop() && strength.Turns < options.MaxTurns && !Terminal(strength))
+            {
+                nodes++;
+                SupportedActionCandidate? chosen = null;
+                if (strength.Actions < options.MaxActionsPerTurn)
+                {
+                    chosen = BattleHeuristicPolicy.Choose(strength.State, out IReadOnlyList<UnsupportedActionAttempt> omitted);
+                    foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
+                }
+                else actionLimit = true;
+                if (chosen != null)
+                {
+                    strength = Child(strength, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(chosen.Action, false));
+                    Consider(strength); Rollout(strength);
+                }
+                else
+                {
+                    BattleTurnResult ended = BattleTurnModel.EndTurn(strength.State);
+                    if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported strength-seed EndTurn.")); break; }
+                    strength = Child(strength, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
+                    Consider(strength);
+                }
+            }
+
             // Seed the existing fixed play policy as well as the no-card path.
             // Reuse its cached successors rather than applying a selected card
             // twice. Charge all work to the same budgets, retaining partial

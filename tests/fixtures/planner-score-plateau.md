@@ -17,3 +17,16 @@ public scores tie. Pyre survival ordering and archived scores are unchanged.
 forecast no worse than the idle continuation, exact full-state replay and
 an unchanged source. A fresh native battle must separately prove any
 improvement in actual outcomes.
+
+A second candidate seed now uses captured card/unit strength to deploy units,
+place healthier tanks in front, activate available unit abilities and select
+beneficial versus harmful spell targets. It shares the planner's node/time
+budget, legality checks and evaluator. The fixed verification policy remains
+unchanged. The native-root plateau check now reaches -58501; starter and unit
+ability planning checks also pass their replay, immutability and budget gates.
+
+`--heuristic-forecast-only <rolling-source.mt2f>` runs that seed to a terminal
+model outcome and replays its entire chain without Unity. On the progressed
+fifth-ring root it predicts a win at 63 Pyre HP in 38 decisions. It reports
+omitted unsupported alternatives explicitly; this is a fast strategy diagnostic
+and does not establish a native victory. Native rolling acceptance is separate.

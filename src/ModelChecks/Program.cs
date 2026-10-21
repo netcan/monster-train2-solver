@@ -1693,6 +1693,12 @@ if (args.Length == 2 && args[0] == "--planner-plateau-only")
     PlannerPlateauChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--heuristic-forecast-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattleHeuristicChecks.Forecast(fixture.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--battle-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

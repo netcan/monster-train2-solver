@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 801 binary archives, including 761
-full battles and 40 component calibrations. The card index accepts 760 battles;
+Current curated inventory (2026-10-21): 803 binary archives, including 761
+full battles and 42 component calibrations. The card index accepts 760 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -32,8 +32,11 @@ including the fifth-ring boss. The first two encounters win with 73/34 Pyre HP
 versus the completed policy's 66/33; the fifth/seventh-ring starter-deck runs
 lose and tie that policy. The seventh-ring boss never enters and is not counted.
 Capture-to-UI-publication response has a 3893.4 ms median and 4492.3 ms P95.
-Later encounters use controlled native map jumps; progressed-deck campaign wins
-and outer-train boss support remain outstanding.
+The historical later encounters use controlled native map jumps. New
+[natural campaign checkpoints](tests/fixtures/campaign-progressed.md) preserve
+four/six preceding native victories and all offered rewards/upgrades without
+map jumps or authored stats. Strict progressed-deck rolling wins and
+outer-train boss support remain outstanding.
 
 ### Per-card evidence inventory
 
