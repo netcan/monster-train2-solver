@@ -56,6 +56,9 @@ internal static class CampaignRelicChecks
                 "Original campaign effect payload changed.");
         }
         var slots = root.GetProperty("Slots").EnumerateArray().ToArray();
+        foreach (var owner in Owners.Take(2))
+            Require(RelicModel.Validate(new[] { new CombatRelicState(owner.Id, owner.Key, new[] { owner.Type }) }) == null,
+                "A native campaign-only upgrade-slot owner blocks an otherwise captured battle context.");
         Require(slots.Length == 80, "Missing slot matrix observations.");
         foreach (var row in slots)
         {

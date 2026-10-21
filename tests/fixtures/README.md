@@ -1,8 +1,24 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 813 archives (767 full battles and
-46 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 814 archives (767 full battles and
+47 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`boss-action-target-calibration.mt2f` retains 1,792 native random floor choices,
+including visit-age priority, initial choice ordering and single-candidate RNG
+consumption. It also retains seven actual `Boss_Level8_AllyBuffer` setup calls
+and 3,024 synchronous detached action/visit-state controls covering all three
+native behaviors, including 216 post-action floor changes. Native decision,
+BossState identity/visits, frame and gameplay/global RNG are restored exactly;
+the focused checker recomputes every result and checks immutable model inputs.
+It covers targeting with the captured movement speed of one. Boss spell/action
+groups, movement execution, room destruction and complete EndTurn integration
+remain guarded. The source eighth-ring run loses, has 54 unsupported stages
+and is diagnostic evidence; it is not curated as an accepted full battle.
+Original game files are unchanged. Binary: 24,183 bytes, 8,521 nodes, SHA256
+`14a7a279d84e84b92358f200095cb9688e3ca0b986659a33a05d55394bb2e36f`.
+Check only this component with `dotnet run --project src/ModelChecks -c Release
+--no-build -- --boss-action-target-only tests/fixtures/boss-action-target-calibration.mt2f`.
 
 The three `full-battle-progressed-ring7-{search,replay,policy}.mt2f` archives
 retain the natural checkpoint's strict seventh-ring victory: actual boss

@@ -4,8 +4,9 @@ These inputs use seed 424242, covenant 0 and the native Banished/Pyreborne
 campaign. The driver selects offered rewards, purchases affordable upgrades,
 chooses map branches and plays legal native actions. It does not author deck
 contents or unit stats, grant arbitrary rewards, or jump map distances.
-Preparation battles use a native heuristic policy; model acceptance runs
-separately from each immutable BattleIntro checkpoint.
+Preparation battles use a native heuristic policy or the accepted frozen
+seventh-ring winning inputs. Model acceptance runs separately from each
+immutable BattleIntro checkpoint.
 
 `campaign-progressed-ring5.zip` retains the exact native save, preferences,
 metagame and choice history. Its manifest hashes every member. The save has

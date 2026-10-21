@@ -1461,6 +1461,13 @@ if (args.Length == 1 && args[0] == "--no-player-units-status-pure")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--boss-action-target-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BossActionTargetChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--retired-unit-destruction-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3177,6 +3184,11 @@ CloneUpgradeRefreshChecks.Run();
 TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();
+foreach (string path in args.Where(path => path.Contains("boss-action-target-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    BossActionTargetChecks.Native(fixture.RootElement);
+}
 foreach (string path in args.Where(path => path.Contains("retired-unit-destruction-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);

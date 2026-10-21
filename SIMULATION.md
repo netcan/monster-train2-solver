@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 813 binary archives, including 767
-full battles and 46 component calibrations. The card index accepts 766 battles;
+Current curated inventory (2026-10-21): 814 binary archives, including 767
+full battles and 47 component calibrations. The card index accepts 766 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -17,6 +17,19 @@ seventh-ring checkpoint now also wins against `Boss_Level7_Rax`: 111 Pyre HP,
 42 decisions, the same winning fresh native replay and a completed losing
 policy baseline. Its explicit search budget is 10,000 ms per decision; the
 default remains 3,000 ms. All three seventh-ring captures have zero counters.
+
+The accepted frozen seventh-ring sequence now continues through native rewards
+and map choices to a legal eighth-ring BattleIntro input: seven preceding wins,
+no cheat flag and a portable archive retaining its replay/choice history.
+`BossActionTargetModel` separately matches 1,792 native room selections, seven
+actual `Boss_Level8_AllyBuffer` setups and 3,024 detached setup controls, with
+exact RNG and immutable inputs. Its three targeting behaviors include visit-age
+priority, initial-action reuse and post-action floor changes. This component
+does not yet integrate boss spells, action-group progression, movement or room
+destruction into EndTurn. The diagnostic eighth-ring battle remains guarded.
+Native upgrade-slot relics now pass battle validation because their only
+consumer is the already calibrated campaign upgrade-slot interface; acquired
+card upgrades are captured normally. The six-owner campaign calibration passes.
 
 The [bounded multi-turn planner](tests/fixtures/planner-benchmarks.md) now has
 five captured-state benchmarks and five search/independent-native-replay pairs.
@@ -43,7 +56,7 @@ lose and tie that policy. The seventh-ring boss never enters and is not counted.
 Capture-to-UI-publication response has a 3893.4 ms median and 4492.3 ms P95.
 The historical later encounters use controlled native map jumps. New
 [natural campaign checkpoints](tests/fixtures/campaign-progressed.md) preserve
-four/six preceding native victories and all offered rewards/upgrades without
+four/six/seven preceding native victories and all offered rewards/upgrades without
 map jumps or authored stats. Strict progressed-deck wins at rings five and
 seven are accepted separately. Outer-train boss support remains outstanding.
 

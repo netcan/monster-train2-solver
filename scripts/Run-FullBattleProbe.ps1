@@ -11,6 +11,7 @@ param(
     [switch] $Advisor,
     [switch] $RollingAdvice,
     [switch] $PreviewAttackTrace,
+    [switch] $BossActionTargets,
     [string] $RollingInput = '',
     [string] $InputProfile = '',
     [ValidateRange(0, 20)] [int] $BattleDistance = 0,
@@ -1141,6 +1142,7 @@ $environment = @{
     MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
     MT2_PROBE_PREVIEW_ATTACK_TRACE = $(if ($PreviewAttackTrace) { '1' } else { '0' })
+    MT2_PROBE_BOSS_ACTION_TARGETS = $(if ($BossActionTargets) { '1' } else { '0' })
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"
     MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
     MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })
