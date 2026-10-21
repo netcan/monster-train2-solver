@@ -29,12 +29,12 @@ namespace MonsterTrain2Poju.Model
     {
         private static string Id(int unitId) => "conduit:" + unitId;
         internal static bool Captured(CombatContext? context) => context?.MagicPower?.Any(room => room.Conduit != null) == true;
-        internal static string? Validate(CombatContext? context)
+        internal static string? Validate(CombatContext? context, bool allowPhysicalCalibration = false)
         {
             if (!Captured(context)) return null;
             if (context!.QueryFrame?.SelectedRoomIndex == null || context.CardInstances == null)
                 return "Conduit requires captured room selection and card instances.";
-            if (context.SpawnPoints != null)
+            if (context.SpawnPoints != null && !allowPhysicalCalibration)
                 return "Conduit physical movement callbacks require independent native calibration.";
             foreach (var room in context.MagicPower!)
             {
@@ -126,6 +126,35 @@ namespace MonsterTrain2Poju.Model
                 context = Updated(context, token.InstanceId);
             }
             return context;
+        }
+        // Component calibration only. The caller supplies the captured private
+        // tracker even while detached; ordinary combat keeps its physical guard
+        // until that retained tracker is part of the complete battle snapshot.
+        internal static (CombatContext Context, ConduitUnitState Contributor) MoveCapturedContributor(
+            CombatContext context, ConduitUnitState contributor, CombatTeam team,
+            SpawnPointReference? from, SpawnPointReference? to, bool dead)
+        {
+            if (!Captured(context) || team != CombatTeam.Player || from?.PreviewCopyId != null || to?.PreviewCopyId != null)
+                throw new InvalidOperationException("Conduit movement calibration requires captured primary player trackers.");
+            string? error = Validate(context, allowPhysicalCalibration: true);
+            if (error != null) throw new InvalidOperationException(error);
+            foreach (RoomMagicPower row in context.MagicPower!.ToArray())
+                if (row.Conduit!.Units.Any(unit => unit.UnitId == contributor.UnitId))
+                    context = Put(context, row.RoomIndex, row.Team,
+                        row.Conduit.Units.Where(unit => unit.UnitId != contributor.UnitId).ToArray());
+            int holder = to?.RoomIndex ?? from?.RoomIndex ?? 0;
+            RoomMagicPower destination = context.MagicPower!.Single(row => row.RoomIndex == holder && row.Team == team);
+            context = Put(context, holder, team, destination.Conduit!.Units.Append(contributor).ToArray());
+            int selected = context.QueryFrame!.SelectedRoomIndex!.Value;
+            if (to?.RoomIndex == selected) context = ApplyHand(context, holder, team, contributor.UnitId);
+            else if (from?.RoomIndex == selected || dead) context = Clear(context, holder, team, contributor.UnitId);
+            RoomMagicPower updated = context.MagicPower!.Single(row => row.RoomIndex == holder && row.Team == team);
+            ConduitUnitState result = updated.Conduit!.Units.Single(unit => unit.UnitId == contributor.UnitId);
+            // Native room enumeration excludes dead actors even while their
+            // private modifier and current point still exist.
+            if (to == null || !contributor.Active) context = Put(context, holder, team,
+                updated.Conduit.Units.Where(unit => unit.UnitId != contributor.UnitId).ToArray());
+            return (context, result);
         }
         internal static CombatContext Updated(CombatContext context, int cardId)
         {

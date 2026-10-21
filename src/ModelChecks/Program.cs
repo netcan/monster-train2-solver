@@ -1771,6 +1771,12 @@ if (args.Length == 2 && args[0] == "--rolling-advice-only")
     RollingAdviceChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--conduit-movement-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    ConduitMovementChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--player-boss-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -3466,6 +3472,11 @@ foreach (string path in args.Where(path => path.Contains("card-modifier-overflow
     CardModifierOverflowChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("card-trait-composition-calibration", StringComparison.OrdinalIgnoreCase)))
     CardTraitCompositionChecks.Native(path);
+foreach (string path in args.Where(path => path.Contains("conduit-movement-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    ConduitMovementChecks.Native(document.RootElement);
+}
 foreach (string path in args.Where(path => path.Contains("holdover-variants-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);

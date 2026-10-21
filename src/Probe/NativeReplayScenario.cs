@@ -723,6 +723,13 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             if (PlayerAdvisorProbe.Enabled && !PlayerAdvisorProbe.CaptureInitialized) return;
+            if (ConduitMovementCalibration.Enabled)
+            {
+                if (ConduitMovementCalibration.Error != null) throw new InvalidOperationException(ConduitMovementCalibration.Error);
+                if (ConduitMovementCalibration.Completed) Finish(true, "Conduit physical movement component captured; whole-battle acceptance is separate.");
+                else if (!ConduitMovementCalibration.Started) ConduitMovementCalibration.Start(log);
+                return;
+            }
             string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
             if (fullBattle && HoldoverCalibration.Enabled && !HoldoverCalibration.Prepared)
                 HoldoverCalibration.Prepare(managers, log);

@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     // comparisons and card upgrades continue to use their original GUIDs.
     internal static class ConduitProbe
     {
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
+        internal static bool Enabled => ConduitMovementCalibration.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
             PlanetariumScenario.Enabled || OriginalStrongMagicCardsScenario.Enabled || OriginalScaledMoonPhaseScenario.Enabled ||
             OriginalSupportSpellsScenario.Enabled && (OriginalSupportSpellsScenario.IsolatedIds == null || !BattleSpawnPointProbe.Enabled) ||
             OriginalXLunaSpikeScenario.Enabled || OriginalMoonRitualScenario.Prepared ||
@@ -53,16 +53,21 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (character == null || character.IsDestroyed || character.GetTeamType() != team ||
                     character.GetCurrentRoom()?.GetRoomIndex() != roomIndex) continue;
-                var modifier = Modifier(character);
-                if (modifier == null) continue;
-                var tracker = Tracker(modifier);
-                var cards = (IDictionary)AccessTools.Field(tracker.GetType(), "_modifiedCardMagicPower").GetValue(tracker);
-                var multiplied = (IEnumerable)AccessTools.Field(tracker.GetType(), "_appliedMagicPowerMultiplier").GetValue(tracker);
-                units.Add(new ConduitUnitState(trace.UnitId(character), ((RoomStateConduitModifier)modifier).MagicPower,
-                    character.IsAlive, cards.Keys.Cast<CardState>().Select(trace.CardId).ToArray(),
-                    multiplied.Cast<CardState>().Select(trace.CardId).ToArray()));
+                ConduitUnitState? unit = CaptureUnit(character, trace);
+                if (unit != null) units.Add(unit);
             }
             return new ConduitRoomState(CardModifierProbe.Upgrade(upgrade, false, true), units);
+        }
+        internal static ConduitUnitState? CaptureUnit(CharacterState character, FullBattleTrace trace)
+        {
+            object? modifier = Modifier(character);
+            if (modifier == null) return null;
+            object tracker = Tracker(modifier);
+            var cards = (IDictionary)AccessTools.Field(tracker.GetType(), "_modifiedCardMagicPower").GetValue(tracker);
+            var multiplied = (IEnumerable)AccessTools.Field(tracker.GetType(), "_appliedMagicPowerMultiplier").GetValue(tracker);
+            return new ConduitUnitState(trace.UnitId(character), ((RoomStateConduitModifier)modifier).MagicPower,
+                character.IsAlive, cards.Keys.Cast<CardState>().Select(trace.CardId).ToArray(),
+                multiplied.Cast<CardState>().Select(trace.CardId).ToArray());
         }
     }
 }

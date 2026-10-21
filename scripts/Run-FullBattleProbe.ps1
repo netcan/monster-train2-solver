@@ -17,6 +17,7 @@ param(
     [switch] $HoldoverCalibration,
     [switch] $HoldoverVariants,
     [switch] $PermanentTraits,
+    [switch] $ConduitMovement,
     [switch] $BossActionTargets,
     [switch] $BossActionControllers,
     [switch] $OuterBossPhases,
@@ -592,6 +593,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($ConduitMovement) {
+    $allowed = @('ConduitMovement', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'ConduitMovement is an isolated component calibration; do not combine battle scenarios.' }
+    $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
+}
 if ($PlayerAdvisor) {
     if ($Advisor -or $DotNetPlanner) {
         throw 'PlayerAdvisor uses the real in-process player overlay without a development advisor.'
@@ -1189,6 +1195,7 @@ if (Test-Path -LiteralPath $preferencesPath) {
 $environment = @{
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
+    MT2_PROBE_CONDUIT_MOVEMENT = $(if ($ConduitMovement) { '1' } else { '0' })
     MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
     MT2_PROBE_PREVIEW_ATTACK_TRACE = $(if ($PreviewAttackTrace) { '1' } else { '0' })
@@ -1769,6 +1776,20 @@ while (-not $process.WaitForExit(250)) {
 }
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
+if ($ConduitMovement) {
+    $componentPath = Join-Path $profile 'conduit-movement-calibration.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'CONDUIT-MOVEMENT-NATIVE PASS' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Conduit native calibration failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $component = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
+    try {
+        $captured = $component.RootElement.ToObjectGraph()
+        if (-not $captured.NativeCompleted -or -not $captured.RngUnchanged -or @($captured.Rows).Count -ne 34) { throw 'Incomplete Conduit movement calibration.' }
+    } finally { $component.Dispose() }
+    [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; Rows = 34; OriginalFilesUnchanged = $true; ModelAcceptance = 'Pending independent focused checker'; Trace = $componentPath } | ConvertTo-Json
+    return
+}
 $tracePath = Join-Path $profile $(if ($BinaryCapture) { 'full-battle.mt2f' } else { 'full-battle.json' })
 if (-not (Test-Path -LiteralPath $tracePath)) { throw "Missing battle trace (native exit code $($process.ExitCode)); inspect $unityLog" }
 $inspectionTimer = [System.Diagnostics.Stopwatch]::StartNew()

@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 843 binary archives, including 781
-full battles and 62 component calibrations. The card index accepts 780 battles;
+Current curated inventory (2026-10-21): 844 binary archives, including 781
+full battles and 63 component calibrations. The card index accepts 780 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -20,6 +20,12 @@ match fresh native frozen replays in full state/RNG. Final-boss acceptance uses
 winning deep rolling replans or other final-boss variants. Mac runtime and the
 remaining complex moon combinations are tracked in
 [remaining acceptance goals](docs/remaining-goals.md).
+
+A further 34 original Conduit movement callbacks now match independently in
+complete context, private card trackers, physical points and gameplay RNG.
+This isolated component keeps the whole-battle physical guard: detached and dead
+contributors need retained tracker snapshots before player support can expand.
+See [Conduit movement calibration](tests/fixtures/conduit-movement.md).
 
 The original seventh-ring checkpoint now also wins while retaining its
 naturally purchased Holdover upgrade: 42 frozen inputs, Pyre104, fresh native
