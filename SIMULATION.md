@@ -1,13 +1,16 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 836 binary archives, including 776
-full battles and 60 component calibrations. The card index accepts 775 battles;
+Current curated inventory (2026-10-21): 838 binary archives, including 777
+full battles and 61 component calibrations. The card index accepts 776 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
-coverage and the optimal solver remain in progress.
+coverage for arbitrary combinations remains in progress. Exact deterministic
+search and probability policies now have explicit, scoped certificates and
+independent replay; see [exact search](tests/fixtures/exact-search.md) and
+[unknown draw policies](tests/fixtures/unknown-draw-policy.md).
 
 The original seventh-ring checkpoint now also wins while retaining its
 naturally purchased Holdover upgrade: 42 frozen inputs, Pyre104, fresh native
@@ -16,7 +19,18 @@ failure counters. Forty-eight detached native callback controls per battle
 verify the captured pending state, discard/recast conditions and opening/reset;
 natural returns match complete context/RNG and uninterrupted immutable chains.
 This also fixes starting Duality before temporary armor/avarice on summon.
-See [the Holdover evidence and remaining variant guards](tests/fixtures/holdover.md).
+Another 100 detached native operations cover five Holdover installation and
+replacement variants, discard cleanup and cloning with native source-cache
+side effects. Exhaustive search of the last card decision's one-EndTurn horizon
+also removes one unnecessary play. Its fresh 41-input native replay wins with
+Pyre104, matching every full-state/RNG successor with four zero counters.
+See [the Holdover evidence and remaining guards](tests/fixtures/holdover.md).
+
+`scripts/Check-SolverCompletion.ps1` checks these increments and both new search
+interfaces without invoking the full fixture regression. Native witnesses,
+model predictions and certificate scopes stay separate. Unknown future
+reshuffles/combat RNG, arbitrary mechanic combinations and universal native
+optimality are not established by these finite checks.
 
 The [naturally progressed fifth-ring checkpoint](tests/fixtures/campaign-progressed.md)
 now has a strict rolling victory: 59 Pyre HP, 26 decisions, an identical fresh
@@ -165,7 +179,7 @@ Scrap Metal and Unplayable Unpurgeable. They retain mechanism/rejection evidence
 and are not counted as successful plays. The fifteen previously guarded hidden
 unit-ability/internal definitions now have definition-matched native witnesses,
 including both Chomp feeding routes and both offered spike-crafting choices.
-Across all 668 definitions, 584 have direct native play evidence and 84 retain
+Across all 668 definitions, 585 have direct native play evidence and 83 retain
 mechanism evidence; partial, unsupported and unreviewed inventory entries are
 all zero. These counts do not imply complete support for arbitrary combinations
 or completion of the optimal solver.

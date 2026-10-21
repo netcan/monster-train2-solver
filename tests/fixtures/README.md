@@ -1,7 +1,7 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 836 archives (776 full battles and
-60 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 838 archives (777 full battles and
+61 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 `full-battle-progressed-ring7-holdover-{policy,win}.mt2f` closes the original
@@ -10,6 +10,19 @@ wins with Pyre104 after 33 plays/nine EndTurns. Both retain 48 isolated native
 callback controls, complete context/RNG matches and four zero failure counters.
 The winning route also calibrates starting Duality before temporary armor and
 avarice. See [Holdover evidence, commands and variant guards](holdover.md).
+
+`holdover-variants-calibration.mt2f` adds 100 original native operations covering
+five installation/replacement paths, both discard lifetimes, private state,
+cache rebuilds and ten clones including source-cache changes. The exact
+one-EndTurn search removes the final unnecessary card play; its independent
+`full-battle-progressed-ring7-holdover-exact-replay.mt2f` wins with Pyre104 after
+32 plays/nine EndTurns, with four zero counters and all full-state/RNG matches.
+The native archive is 81,479 bytes/14,151 nodes, SHA256
+`9d438efb48e4546c9c433a8909efa3aeaa89cb3fea66503c2febe4ffdd8dd659`.
+See [exact search and certificates](exact-search.md) and
+[unknown draw probability policies](unknown-draw-policy.md).
+`scripts/Check-SolverCompletion.ps1` is the focused acceptance entrypoint;
+it does not run the full regression inventory.
 
 `full-battle-progressed-ring8-gold-{search,replay,policy}.mt2f` closes natural
 eighth-ring rolling-advisor acceptance: 50 decisions, 39 plays, 11 EndTurns,

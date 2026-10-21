@@ -28,6 +28,7 @@ $fixtureNames = @('holdover-variants-calibration.mt2f', 'outer-boss-pyre-victory
     'full-battle-progressed-ring5-search.mt2f', 'full-battle-progressed-ring5-replay.mt2f', 'full-battle-progressed-ring5-policy.mt2f',
     'full-battle-progressed-ring7-search.mt2f', 'full-battle-progressed-ring7-replay.mt2f', 'full-battle-progressed-ring7-policy.mt2f',
     'full-battle-progressed-ring7-holdover-policy.mt2f', 'full-battle-progressed-ring7-holdover-win.mt2f',
+    'full-battle-progressed-ring7-holdover-exact-replay.mt2f',
     'full-battle-original-isolated-frozen-totem.mt2f', 'full-battle-original-isolated-royal-whelp.mt2f',
     'full-battle-original-isolated-consumer-of-crowns.mt2f', 'full-battle-original-isolated-steelsinger.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',
@@ -913,6 +914,7 @@ $generalFixtures = @($fixtures | Where-Object {
         'full-battle-original-first-card-cost.mt2f',
         'full-battle-progressed-ring7-holdover-policy.mt2f',
         'full-battle-progressed-ring7-holdover-win.mt2f',
+        'full-battle-progressed-ring7-holdover-exact-replay.mt2f',
         'full-battle-original-rebalance-valor.mt2f',
         'full-battle-original-first-imp-bonus.mt2f',
         'full-battle-original-moon-phase-rooms-gain-magic-power.mt2f',
@@ -2959,7 +2961,8 @@ foreach ($fixturePath in $originalPermafrostFixtures) {
     }
 }
 $holdoverFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @(
-    'full-battle-progressed-ring7-holdover-policy.mt2f', 'full-battle-progressed-ring7-holdover-win.mt2f') })
+    'full-battle-progressed-ring7-holdover-policy.mt2f', 'full-battle-progressed-ring7-holdover-win.mt2f',
+    'full-battle-progressed-ring7-holdover-exact-replay.mt2f') })
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'holdover-variants-calibration.mt2f' })) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --holdover-variants-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Native Holdover variant checks failed: $fixturePath" }
@@ -2967,11 +2970,14 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
 foreach ($fixturePath in $holdoverFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --holdover-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Native Holdover checks failed: $fixturePath" }
-    if ((Split-Path -Leaf $fixturePath) -eq 'full-battle-progressed-ring7-holdover-win.mt2f') {
+    if ((Split-Path -Leaf $fixturePath) -in @('full-battle-progressed-ring7-holdover-win.mt2f',
+        'full-battle-progressed-ring7-holdover-exact-replay.mt2f')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --starting-duality-only $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Native starting Duality checks failed: $fixturePath" }
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --rolling-advice-only $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Native Holdover frozen forecast checks failed: $fixturePath" }
+    }
+    if ((Split-Path -Leaf $fixturePath) -eq 'full-battle-progressed-ring7-holdover-win.mt2f') {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --exact-battle-only $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Exact solver certificate checks failed: $fixturePath" }
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --belief-battle-only $fixturePath

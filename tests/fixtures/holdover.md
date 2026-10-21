@@ -12,8 +12,9 @@ decision to decline Holdover.
 | --- | ---: | --- | ---: |
 | `full-battle-progressed-ring7-holdover-policy.mt2f` | 26 / 6 | loss | 67,461 / 11,414 |
 | `full-battle-progressed-ring7-holdover-win.mt2f` | 33 / 9 | win, Pyre 104 | 82,839 / 14,411 |
+| `full-battle-progressed-ring7-holdover-exact-replay.mt2f` | 32 / 9 | win, Pyre 104 | 81,479 / 14,151 |
 
-Both launches finish with `DEPTH-PASS`, settled terminal effects, four zero
+All three launches finish with `DEPTH-PASS`, settled terminal effects, four zero
 capture/mismatch/unsupported/pending counters, and original files unchanged.
 The manifest records each archive's exact SHA256. These are full native battles.
 
@@ -27,6 +28,17 @@ A fresh game process executed every input with zero search nodes and won
 against `Boss_Level7_Rax`. All frozen successors, actual states, forecasts and
 gameplay RNG match. This is an offline plan and native frozen-replay witness;
 it does not add a live advisor latency measurement or a global optimality claim.
+
+The [exhaustive solver](exact-search.md) subsequently explores all 36 states
+within the final card decision's one-EndTurn horizon: 30 terminal leaves and
+six horizon leaves. Its selected EndTurn omits the last unnecessary play.
+Freezing the other 40 original inputs and that EndTurn produces a 41-step plan
+from the same deployment root. A fresh native process
+`20261021-182647-a9f9b1fd` executes it in 174.05 seconds, wins with Pyre104 and
+matches all 41 successors, full states/RNG and the independent offline replay.
+The original input save hash is unchanged. This establishes the shortened
+route's native validity; the six horizon continuations prevent a whole-battle
+optimality certificate.
 
 `CardTraitRetain.retained` is captured as nullable `HoldoverPending`; missing
 metadata is rejected. Played discard arms the return. At normal pre-draw the
@@ -75,6 +87,9 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --holdover-variants-on
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --holdover-only tests/fixtures/full-battle-progressed-ring7-holdover-win.mt2f
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --starting-duality-only tests/fixtures/full-battle-progressed-ring7-holdover-win.mt2f
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --rolling-advice-only tests/fixtures/full-battle-progressed-ring7-holdover-win.mt2f
+
+# Focused upgrade, native replay, exact search and unknown-draw acceptance:
+pwsh -NoProfile -File scripts/Check-SolverCompletion.ps1 -SkipBuild
 
 # Restore the original purchased-upgrade checkpoint, then use its returned profile.
 pwsh -NoProfile -File scripts/Save-CampaignCheckpoint.ps1 -Restore -Archive tests/fixtures/campaign-progressed-ring7.zip

@@ -29,6 +29,15 @@ prevent a whole-battle certificate. Tests also reject certificates after missing
 definitions, node/time exhaustion and cancellation, and distinguish a zero-turn
 horizon from a terminal result. Every selected plan is replayed from its root.
 
+The horizon-optimal choice omits the original final card play. Appending its
+EndTurn to the first 40 original inputs yields a shortened 41-step plan.
+`full-battle-progressed-ring7-holdover-exact-replay.mt2f` retains its fresh native
+win with 32 plays/nine EndTurns, Pyre104, complete state/RNG equality, four zero
+failure counters and unchanged input/protected files. Its source process is
+`20261021-182647-a9f9b1fd`; the native run takes 174.05 seconds. This archive is
+native evidence of the chosen route, separate from the search certificate's
+one-EndTurn scope. See [Holdover evidence](holdover.md).
+
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --exact-battle-only tests/fixtures/full-battle-progressed-ring7-holdover-win.mt2f
 
