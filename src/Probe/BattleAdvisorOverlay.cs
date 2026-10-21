@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -36,8 +38,19 @@ namespace MonsterTrain2Poju.Probe
         internal int PanelVertices { get; private set; }
         internal int PanelPixels { get; private set; }
         internal int Failures { get; private set; }
+        internal sealed class Publication
+        {
+            public long Generation { get; set; }
+            public int Turn { get; set; }
+            public double CaptureMs { get; set; }
+            public double QueueMs { get; set; }
+            public double SearchMs { get; set; }
+            public double VerificationMs { get; set; }
+            public double EndToEndMs { get; set; }
+        }
+        internal List<Publication> Publications { get; } = new List<Publication>();
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
-        internal object Evidence => new { Captures, PurityFailures, Published, Invalidations, PlanningFrames, PanelVertices, PanelPixels, Failures, Horizon = horizon,
+        internal object Evidence => new { Captures, PurityFailures, Published, Invalidations, PlanningFrames, PanelVertices, PanelPixels, Failures, Publications, Horizon = horizon,
             Scenario = AllGameManagers.Instance?.GetSaveManager()?.GetCurrentScenarioData()?.name,
             InTestScenario = AllGameManagers.Instance?.GetSaveManager()?.InTestScenario,
             Seed = Environment.GetEnvironmentVariable("MT2_PROBE_SEED"),
@@ -164,9 +177,12 @@ namespace MonsterTrain2Poju.Probe
                 nextCapture = Time.realtimeSinceStartup + .5f;
                 try
                 {
+                    var capture = Stopwatch.StartNew();
                     BattleTurnState root = CaptureReadOnly(managers);
                     using var keys = new BattleStateKeys();
-                    session.Observe(root, keys.Key(root));
+                    string key = keys.Key(root);
+                    capture.Stop();
+                    session.Observe(root, key, capture.Elapsed);
                 }
                 catch (Exception error)
                 { session.Invalidate(); captureError = error.Message; log.LogError("ADVISOR-CAPTURE-FAIL " + error); }
@@ -176,6 +192,10 @@ namespace MonsterTrain2Poju.Probe
                 displayed = session.Current; Published++;
                 displayFrame = Time.frameCount;
                 body.text = Describe(displayed);
+                Publications.Add(new Publication { Generation = session.Generation, Turn = displayed.Root.Spawn.Turn,
+                    CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,
+                    SearchMs = displayed.Plan.Elapsed.TotalMilliseconds, VerificationMs = displayed.VerificationElapsed.TotalMilliseconds,
+                    EndToEndMs = displayed.ResponseElapsed.TotalMilliseconds });
                 log.LogInfo("ADVISOR-PUBLISHED generation=" + session.Generation + " steps=" + displayed.Plan.Steps.Count +
                     " elapsedMs=" + displayed.Plan.Elapsed.TotalMilliseconds.ToString("F1") + " capturePurityFailures=" + PurityFailures);
                 if (!screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")
@@ -205,11 +225,11 @@ namespace MonsterTrain2Poju.Probe
             if (paused || Failures > 0) throw new InvalidOperationException("Advisor is paused or failed.");
             using var keys = new BattleStateKeys();
             string key = keys.Key(root);
-            session.Observe(root, key);
             if (session.Status == BattleAdviceStatus.Unavailable) throw new InvalidOperationException(session.Error);
             return session.Current?.RootKey == key && ReferenceEquals(displayed, session.Current) && Time.frameCount > displayFrame + 1;
         }
         internal BattlePlanResult CurrentPlan => session.Current?.Plan ?? throw new InvalidOperationException("Advice is not ready.");
+        internal BattleAdvice CurrentAdvice => session.Current ?? throw new InvalidOperationException("Advice is not ready.");
 
         private void CapturePanel()
         {

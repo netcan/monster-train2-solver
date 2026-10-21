@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,8 +12,19 @@ namespace MonsterTrain2Poju.Model
         public BattleTurnState Root { get; }
         public string RootKey { get; }
         public BattlePlanResult Plan { get; }
-        internal BattleAdvice(BattleTurnState root, string key, BattlePlanResult plan)
-        { Root = root; RootKey = key; Plan = plan; }
+        public TimeSpan CaptureElapsed { get; }
+        public TimeSpan QueueElapsed { get; }
+        public TimeSpan VerificationElapsed { get; }
+        private readonly long requestedAt;
+        public TimeSpan ResponseElapsed => CaptureElapsed + Since(requestedAt);
+        internal static TimeSpan Since(long timestamp) => TimeSpan.FromSeconds(
+            (Stopwatch.GetTimestamp() - timestamp) / (double)Stopwatch.Frequency);
+        internal BattleAdvice(BattleTurnState root, string key, BattlePlanResult plan,
+            TimeSpan captureElapsed, TimeSpan queueElapsed, TimeSpan verificationElapsed, long requestedAt)
+        {
+            Root = root; RootKey = key; Plan = plan; CaptureElapsed = captureElapsed;
+            QueueElapsed = queueElapsed; VerificationElapsed = verificationElapsed; this.requestedAt = requestedAt;
+        }
     }
 
     // Owned by the UI thread. Only immutable model snapshots enter the single
@@ -25,6 +37,8 @@ namespace MonsterTrain2Poju.Model
         private BattleTurnState? pending;
         private string? pendingKey, currentKey;
         private long generation, workerGeneration;
+        private long pendingRequestedAt;
+        private TimeSpan pendingCaptureElapsed;
         private bool disposed;
         public BattleAdviceStatus Status { get; private set; }
         public BattleAdvice? Current { get; private set; }
@@ -42,7 +56,7 @@ namespace MonsterTrain2Poju.Model
         internal BattleAdviceSession(Func<BattleTurnState, CancellationToken, BattlePlanResult> search)
         { this.search = search ?? throw new ArgumentNullException(nameof(search)); }
 
-        public void Observe(BattleTurnState state, string fullStateKey)
+        public void Observe(BattleTurnState state, string fullStateKey, TimeSpan captureElapsed = default)
         {
             if (disposed) throw new ObjectDisposedException(nameof(BattleAdviceSession));
             if (state == null) throw new ArgumentNullException(nameof(state));
@@ -52,6 +66,7 @@ namespace MonsterTrain2Poju.Model
                 generation++; currentKey = fullStateKey;
                 Current = null; Error = null;
                 pending = state; pendingKey = fullStateKey;
+                pendingRequestedAt = Stopwatch.GetTimestamp(); pendingCaptureElapsed = captureElapsed;
                 cancellation?.Cancel();
                 Status = BattleAdviceStatus.Planning;
             }
@@ -90,17 +105,22 @@ namespace MonsterTrain2Poju.Model
             {
                 BattleTurnState root = pending;
                 string key = pendingKey!;
+                long requestedAt = pendingRequestedAt;
+                TimeSpan captureElapsed = pendingCaptureElapsed;
                 pending = null; pendingKey = null;
                 workerGeneration = generation;
                 cancellation = new CancellationTokenSource();
                 CancellationToken token = cancellation.Token;
                 worker = Task.Run(() =>
                 {
+                    TimeSpan queued = BattleAdvice.Since(requestedAt);
                     BattlePlanResult plan = search(root, token);
                     token.ThrowIfCancellationRequested();
+                    var verification = Stopwatch.StartNew();
                     Verify(root, plan);
+                    verification.Stop();
                     token.ThrowIfCancellationRequested();
-                    return new BattleAdvice(root, key, plan);
+                    return new BattleAdvice(root, key, plan, captureElapsed, queued, verification.Elapsed, requestedAt);
                 });
             }
         }
