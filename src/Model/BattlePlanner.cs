@@ -119,9 +119,11 @@ namespace MonsterTrain2Poju.Model
             bool Terminal(Node node) => node.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
             void Consider(Node node)
             {
-                if (node.Turns > fallback.Turns || node.Turns == fallback.Turns && node.Score < fallback.Score) fallback = node;
-                if ((Terminal(node) || node.Turns >= options.MaxTurns) && (best == null || node.Score < best.Score)) best = node;
+                if (node.Turns > fallback.Turns || node.Turns == fallback.Turns && Better(node, fallback)) fallback = node;
+                if ((Terminal(node) || node.Turns >= options.MaxTurns) && (best == null || Better(node, best))) best = node;
             }
+            bool Better(Node left, Node right) => left.Score < right.Score ||
+                left.Score == right.Score && left.PositionCost < right.PositionCost;
             Node Child(Node parent, BattleTurnState state, RoomOutcome outcome, BattleSearchStep step)
             {
                 var steps = parent.Steps.Concat(new[] { step }).ToArray();
@@ -196,7 +198,7 @@ namespace MonsterTrain2Poju.Model
                         }
                         // Short deterministic continuations turn promising partial
                         // branches into executable horizon recommendations early.
-                        foreach (Node child in children.OrderBy(child => child.Score).Take(2)) Rollout(child);
+                        foreach (Node child in children.OrderBy(child => child.Score).ThenBy(child => child.PositionCost).Take(2)) Rollout(child);
                     }
                     else actionLimit = true;
                     if (watch.Elapsed >= options.TimeLimit || cancellationToken.IsCancellationRequested) break;
@@ -204,7 +206,8 @@ namespace MonsterTrain2Poju.Model
                     if (ended.Supported) Add(Child(node, ended.State!, ended.Outcome, new BattleSearchStep(null, true)));
                     else Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported EndTurn."));
                 }
-                next = next.OrderBy(node => node.Score).ThenByDescending(node => node.Turns).ThenBy(node => node.Steps.Count).ToList();
+                next = next.OrderBy(node => node.Score).ThenBy(node => node.PositionCost)
+                    .ThenByDescending(node => node.Turns).ThenBy(node => node.Steps.Count).ToList();
                 pruned += Math.Max(0, next.Count - options.BeamWidth);
                 frontier = next.Take(options.BeamWidth).ToList();
 
@@ -233,8 +236,19 @@ namespace MonsterTrain2Poju.Model
             public int Turns { get; }
             public int Actions { get; }
             public double Score { get; }
+            public double PositionCost { get; }
             public Node(BattleTurnState state, RoomOutcome outcome, IReadOnlyList<BattleSearchStep> steps, int turns, int actions, double score)
-            { State = state; Outcome = outcome; Steps = steps; Turns = turns; Actions = actions; Score = score; }
+            {
+                State = state; Outcome = outcome; Steps = steps; Turns = turns; Actions = actions; Score = score;
+                // The public score caps positional value below a single Pyre
+                // HP. Keep useful actions distinguishable on that plateau,
+                // without changing archived scores or the survival ordering.
+                PositionCost = state.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
+                    .Sum(unit => unit.IsPyre ? 0d : unit.Team == CombatTeam.Enemy ?
+                        unit.Health + (double)(unit.Status("armor")?.Stacks ?? 0) :
+                        -(Math.Max(0d, unit.Attack) * (1d + Math.Max(0, unit.Status("multistrike")?.Stacks ?? 0)) +
+                            unit.Health * .1 + Math.Max(0, unit.Status("armor")?.Stacks ?? 0) * .1));
+            }
         }
     }
 }

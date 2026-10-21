@@ -1679,6 +1679,12 @@ if (args.Length == 3 && args[0] == "--planner-pair-only")
     BattlePlannerChecks.Pair(first.RootElement, second.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--planner-plateau-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PlannerPlateauChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--battle-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3130,6 +3136,11 @@ foreach (string path in args.Where(path => path.Contains("intrinsic-opening-draw
 {
     using var fixture = ModelJson.ReadFixture(path);
     IntrinsicOpeningDrawChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("planner-score-plateau-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    PlannerPlateauChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("card-modifier-calibration", StringComparison.OrdinalIgnoreCase)))
     CardModifierChecks.Native(path);
