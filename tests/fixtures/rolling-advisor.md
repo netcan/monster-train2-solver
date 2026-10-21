@@ -154,6 +154,9 @@ report expanded nodes and search time. Larger naturally progressed decks can
 consume the default budget on the initial no-card forecast before the card
 seed completes; an explicit longer budget permits measuring that limit.
 The node limit, legality, independent replay and victory gates still apply.
+`-TimeoutSeconds` independently bounds each native process (default 1,200);
+it does not increase the per-decision search budget. A direct invocation of
+`Run-FullBattleProbe.ps1` defaults to 600 seconds and can set its own timeout.
 `-SettleDeathDissolves` enables the existing observation protocol: it waits for
 original dissolve callbacks before the game's own turn-end removal flush.
 Retained actors then reflect native destruction, including cleared upgrade

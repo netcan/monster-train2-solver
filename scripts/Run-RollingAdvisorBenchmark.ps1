@@ -7,6 +7,7 @@ param(
     [ValidateRange(2, 3)] [int] $PlannerHorizon = 3,
     [ValidateRange(0, 2)] [int] $PlannerDeploymentRoom = 2,
     [ValidateRange(100, 30000)] [int] $PlannerTimeLimitMs = 3000,
+    [ValidateRange(60, 3600)] [int] $TimeoutSeconds = 1200,
     [string] $SourceTrace = '',
     [string] $ReplayTrace = '',
     [string] $BaselineTrace = '',
@@ -27,7 +28,7 @@ try {
     }
     $arguments = @{ Seed = $Seed; BattleDistance = $BattleDistance; NativeWorker = $NativeWorker
         SkipBuild = $true; PhysicalSpawnPoints = $true; BranchCardMasks = $true; Policy = 'units-spells-and-junk'
-        TimeoutSeconds = 900; PlannerHorizon = $PlannerHorizon; PlannerDeploymentRoom = $PlannerDeploymentRoom
+        TimeoutSeconds = $TimeoutSeconds; PlannerHorizon = $PlannerHorizon; PlannerDeploymentRoom = $PlannerDeploymentRoom
         PlannerTimeLimitMs = $PlannerTimeLimitMs }
     if ($InputProfile) { $arguments.InputProfile = $InputProfile }
     if ($SettleDeathDissolves) { $arguments.SettleDeathDissolves = $true }
