@@ -101,8 +101,24 @@ deployment root and match every successor, including legal deployment plays,
 without substituting later native snapshots. The no-card/policy runs retain
 seven/six EndTurns and zero/27 legal card actions, including five deployment
 plays in the policy. This accepts the battle model for
-these two continuations; eighth-ring advisor victory and outer-boss Pyre-entry
-routing remain open. Default capture guards remain in place.
+these two continuations. Outer-boss Pyre entry now has separate controlled
+component and frozen-EndTurn calibration; eighth-ring advisor victory remains
+open. Default capture guards remain in place.
+
+`campaign-progressed-ring8-gold.zip` retains a second legal preparation branch.
+It replays the same 42 accepted seventh-ring decisions with zero search nodes
+and zero differential counters, then declines purchases through the native
+merchant close buttons. Its 54 audited events retain all visible merchant
+offers, cached prices and availability. This preserves 245 gold for the deck's
+50-gold armor spells, 31 cards, three artifacts and seven native victories;
+the original branch instead spends 140/40 gold on `ExtraSpellUpgrades` and
+`MeatShield`. Neither preparation branch establishes a winning eighth-ring
+strategy. Protected game files remain unchanged and the cheat flag is false.
+The input save SHA256 is
+`FDE5F23D234C15C200187FCE899D5EB4598A260A72E37DBF2A6972850F717772`;
+ZIP SHA256 is
+`7F984A83965B016CC6E81168068A82CBE04A05AA62C1E4FAFB4491A50DA2CF15`.
+All 25 data/history members are hash-verified on restore.
 
 ## Reproduce
 
@@ -119,6 +135,8 @@ pwsh -NoProfile -File scripts/Check-RollingAdvisor.ps1 -ProgressedRing 7 -SkipBu
 # Continue the accepted frozen inputs through native rewards/map to ring eight:
 pwsh -NoProfile -File scripts/Run-CampaignProgress.ps1 -StopBeforeRing 8 -InputProfile <SupportedRing7Profile> -BattleReplay tests/fixtures/full-battle-progressed-ring7-search.mt2f -ExcludeUpgradeTrait CardTraitRetain -TimeoutSeconds 1200
 pwsh -NoProfile -File scripts/Save-CampaignCheckpoint.ps1 -Restore -Archive tests/fixtures/campaign-progressed-ring8.zip
+# Keep gold through the original merchant UI instead of buying the first offer:
+pwsh -NoProfile -File scripts/Run-CampaignProgress.ps1 -StopBeforeRing 8 -InputProfile <SupportedRing7Profile> -BattleReplay tests/fixtures/full-battle-progressed-ring7-search.mt2f -ExcludeUpgradeTrait CardTraitRetain -SkipMerchantPurchases -TimeoutSeconds 1200
 ```
 
 The campaign driver saves a separate direct child of `.probe-runs` before
@@ -130,6 +148,8 @@ Export a newly completed checkpoint with `Save-CampaignCheckpoint.ps1
 `-BattleReplay` requires an unchanged native BattleIntro input and stops before
 the immediately following ring. It checks the replay before campaign handoff;
 it does not repeat planning or substitute a terminal combat save for a new input.
+Merchant auditing reads cached `MerchantGoodState.GetCost`, rather than the
+randomized reward-price getter, and does not advance Rewards RNG.
 
 ## Retained preparation evidence
 

@@ -33,6 +33,7 @@ namespace MonsterTrain2Poju.Probe
         private int savedRing;
         private bool nativeLost;
         private readonly HashSet<string> declinedUpgrades = new HashSet<string>();
+        private readonly HashSet<string> auditedMerchantOffers = new HashSet<string>();
 
         internal CampaignProgressScenario(ManualLogSource log, bool afterBattle = false)
         {
@@ -152,7 +153,16 @@ namespace MonsterTrain2Poju.Probe
             if (screen is MerchantScreen merchant)
             {
                 var goods = Field<List<MerchantGoodUIBase>>(merchant, "goodUIs");
-                MerchantGoodUIBase? buy = goods.Where(x => x.gameObject.activeInHierarchy && x.GoodState != null &&
+                var visible = Enumerable.ToArray(goods.Where(x => x.gameObject.activeInHierarchy && x.GoodState != null));
+                string offerKey = save.GetCurrentDistance() + ":" + string.Join(";", visible.Select(x => x.GoodState.RewardData.GetID()));
+                bool skipPurchases = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_SKIP_MERCHANT_PURCHASES") == "1";
+                if (auditedMerchantOffers.Add(offerKey)) Record("merchant-offers", new {
+                    gold = save.GetGold(), skipPurchases,
+                    offers = visible.Select(x => new { reward = x.GoodState.RewardData.GetReplayDataID(),
+                        asset = RewardAsset(x.GoodState.RewardData), rewardType = x.GoodState.RewardData.GetType().Name,
+                        cost = x.GoodState.GetCost(Field<MerchantData>(x, "merchantData")),
+                        x.Affordable, x.Purchasable, x.Claimed, x.GoodState.Unlocked }).ToList() });
+                MerchantGoodUIBase? buy = skipPurchases ? null : goods.Where(x => x.gameObject.activeInHierarchy && x.GoodState != null &&
                     x.Affordable && x.Purchasable && !x.Claimed && x.GoodState.Unlocked &&
                     x is MerchantGoodDetailsUI && AcceptUpgrade(x)).FirstOrDefault();
                 if (buy != null) Click(buy.SelectableUI as GameUISelectableButton, "buy", new {
@@ -424,6 +434,8 @@ namespace MonsterTrain2Poju.Probe
         private static object DescribeDraft(IDraftableUI item) => item is CardUI card ? CardDescription(card.GetCardState()) :
             item is RelicInfoUI relic ? (object)new { relic = relic.relicData.name, id = relic.relicData.GetID() } :
             new { ui = item.GetType().Name, name = item.rootTransform.name };
+        private static string RewardAsset(GrantableRewardData reward) => reward is RelicRewardData relic ? relic.GetRelicData().name :
+            reward is CardRewardData card ? card.GetCardData().name : reward.name;
         private static int NodeValue(MapNodeData node) => node is MerchantData ? 60 :
             node is RewardNodeData reward ? 100 + reward.GetRewards().Sum(x => x is ChampionUpgradeRewardData ? 100 : 0) : 10;
         private void Finish(bool success, string message)

@@ -110,7 +110,10 @@ The historical later encounters use controlled native map jumps. New
 four/six/seven preceding native victories and all offered rewards/upgrades without
 map jumps or authored stats. Strict progressed-deck wins at rings five and
 seven are accepted separately. Outer-boss Pyre-entry routing and eighth-ring
-advisor victory remain outstanding.
+advisor victory remains outstanding; controlled Pyre-entry integration is
+described above. A second native preparation branch preserves 245 gold by
+declining merchant purchases, with complete offers/prices and the same accepted
+seventh-ring replay retained in `campaign-progressed-ring8-gold.zip`.
 
 ### Per-card evidence inventory
 
