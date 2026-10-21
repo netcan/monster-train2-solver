@@ -351,7 +351,8 @@ namespace MonsterTrain2Poju.Model
             var discardedIds = new HashSet<int>(context.Cards.Hand.Where(card => !retainedIds.Contains(card.InstanceId))
                 .Select(card => card.InstanceId));
             context = context.WithCardInstances(context.CardInstances?.Select(card => discardedIds.Contains(card.InstanceId)
-                ? card.OnDiscard(false) : card).ToArray());
+                ? card.OnDiscard(false, triggersOnUnplayed: CardRetainModel.TriggersOnUnplayed(card,
+                    outputPlayRules?.Cards.FirstOrDefault(rule => rule.DataId == card.DataId))) : card).ToArray());
             foreach (int discardedId in discardedIds) context = ConduitModel.Discarded(context, discardedId);
             CardCycleState cards = discard.State!;
             if (discard.PurgedCards.Count > 0)
@@ -571,6 +572,10 @@ namespace MonsterTrain2Poju.Model
                 context = count.Context!; drawPerTurn = count.Value;
             }
             // Deployment is turn zero. Native DrawOpeningHand runs on turn one:
+            TypedDrawResult held = CardRetainModel.PreDrawHand(context, outputPlayRules, opening: turn == 1);
+            if (!held.Supported) return Unsupported(held.UnsupportedReason!);
+            context = held.Context!;
+            // Opening-hand trait callbacks run after Holdover's ordinary pre-draw.
             // each Intrinsic card leaves the deck before the ordinary hand draw.
             if (turn == 1)
             {

@@ -70,6 +70,15 @@ internal static class CardCycleChecks
                 before = new CardCycleState(prepared.Hand, prepared.Draw, prepared.Discard, prepared.Rng, prepared.DrawModifier,
                     before.ExternalInteractions, prepared.BonusDraw, prepared.NextDrawUpgrades, prepared.NextUpgradeReferenceId, prepared.DeckDrawDisabledThisTurn);
                 drawContext = context.WithCards(before);
+                if (cycle.GetProperty("Kind").GetString() == "Draw" &&
+                    (!cycle.TryGetProperty("ApplyPreDrawTraits", out var preDraw) || preDraw.ValueKind == FixtureKind.Null || preDraw.GetBoolean()))
+                {
+                    BattlePlayRules? definitions = cycle.TryGetProperty("Definitions", out var rules) && rules.ValueKind != FixtureKind.Null
+                        ? rules.Deserialize<BattlePlayRules>() : null;
+                    var held = CardRetainModel.PreDrawHand(drawContext, definitions);
+                    Require(held.Supported, held.UnsupportedReason ?? "Holdover pre-draw failed.");
+                    drawContext = held.Context!; before = drawContext.Cards;
+                }
             }
             CardCycleResult result = cycle.GetProperty("Kind").GetString() == "Draw"
                 ? CardCycleModel.DrawHand(before, cycle.GetProperty("HandSize").GetInt32(),

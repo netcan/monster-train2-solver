@@ -658,7 +658,7 @@ namespace MonsterTrain2Poju.Model
                     foreach (int restoredCardId in recursion.RestoredCardIds)
                     {
                         CardInstanceState? restoredCard = changed.FindCard(restoredCardId);
-                        if (restoredCard?.ExhaustState != null)
+                        if (restoredCard != null && (restoredCard.ExhaustState != null || CardRetainModel.Present(restoredCard)))
                             changed = changed.WithCard(CardExhaustModel.ResetTraits(restoredCard));
                     }
                     state = WithContext(state, changed);

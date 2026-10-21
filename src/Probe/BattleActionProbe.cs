@@ -795,7 +795,7 @@ namespace MonsterTrain2Poju.Probe
                 else if ((!CardBranchMaskProbe.Enabled && (type == typeof(CardTraitEphemeral) || type == typeof(CardTraitPersistent) || type == typeof(CardTraitInfusion))) ||
                     type != typeof(CardTraitSelfPurge) && type != typeof(CardTraitExhaustState) && type != typeof(CardTraitScalingAddEnergy) &&
                     !(CardBranchMaskProbe.Enabled && (type == typeof(CardTraitTreasure) || type == typeof(CardTraitAddCardUpgradeOnMoonPhase) || type == typeof(CardTraitEphemeral) ||
-                        type == typeof(CardTraitScalingAddCards))) &&
+                        type == typeof(CardTraitScalingAddCards) || type == typeof(CardTraitRetain))) &&
                     type.GetMethod("OnCardDiscarded")?.DeclaringType != typeof(CardTraitState))
                     interactions.Add(type.Name + " hand discard callback/routing");
             }

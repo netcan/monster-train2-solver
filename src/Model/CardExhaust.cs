@@ -48,6 +48,8 @@ namespace MonsterTrain2Poju.Model
         public static bool HasConsume(CardInstanceState card) => RefreshTraits(card).CombinedTraits?.Any(trait => trait.RuntimeType == Trait) == true;
         internal static string? PermanentUpgradeError(CardInstanceState card, CardUpgradeModifier upgrade)
         {
+            if (upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardRetainModel.Trait) == true)
+                return "In-battle permanent Holdover installation requires separate native calibration.";
             if (upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true)
                 return "Permanent Corrupt State installation requires separate native calibration.";
             if (upgrade.Lifecycle?.RemovedRuntimeTypes.Any(type => type is "CardTraitEphemeral" or "CardTraitCopyOnPlay") == true)
@@ -143,6 +145,7 @@ namespace MonsterTrain2Poju.Model
         }
         public static CardInstanceState ResetTraits(CardInstanceState card)
         {
+            card = CardRetainModel.Reset(card);
             card = CardGraftedEquipmentModel.SetSevered(card, false);
             if (!HasConsume(card) || card.ExhaustState == null) return card;
             CardExhaustState state = card.ExhaustState; int active = ActiveBaseIndex(card);

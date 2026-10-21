@@ -17,6 +17,7 @@ namespace MonsterTrain2Poju.Model
         public string? HandCostTargetType { get; }
         public CardMoonUpgradeState? MoonPhaseUpgradeState { get; }
         public bool? GraftSevered { get; }
+        public bool? HoldoverPending { get; }
         public int StackMode { get; }
         public bool TemporaryReplacement { get; }
         public IReadOnlyList<string> ParameterUpgradeCastEffects { get; }
@@ -26,7 +27,8 @@ namespace MonsterTrain2Poju.Model
         public CardTraitValue(string runtimeType, string? declaredName, int definitionParamInt, int paramInt,
             bool removable, int stackMode, bool temporaryReplacement = false, IReadOnlyList<string>? parameterUpgradeCastEffects = null,
             bool? definitionRemovable = null, float? magicPowerScale = null, CardStatisticQuery? feedingQuery = null,
-            string? handCostTargetType = null, CardMoonUpgradeState? moonPhaseUpgradeState = null, bool? graftSevered = null)
+            string? handCostTargetType = null, CardMoonUpgradeState? moonPhaseUpgradeState = null, bool? graftSevered = null,
+            bool? holdoverPending = null)
         {
             RuntimeType = runtimeType; DeclaredName = declaredName; DefinitionParamInt = definitionParamInt; ParamInt = paramInt;
             Removable = removable; StackMode = stackMode; TemporaryReplacement = temporaryReplacement;
@@ -36,19 +38,24 @@ namespace MonsterTrain2Poju.Model
             HandCostTargetType = handCostTargetType;
             MoonPhaseUpgradeState = moonPhaseUpgradeState;
             GraftSevered = graftSevered;
+            HoldoverPending = holdoverPending;
             ParameterUpgradeCastEffects = Array.AsReadOnly((parameterUpgradeCastEffects ?? Array.Empty<string>()).ToArray());
         }
         internal CardTraitValue Retyped(CardTraitReplacement replacement, bool temporary) =>
             new CardTraitValue(replacement.NewRuntimeType, replacement.NewName, DefinitionParamInt, DefinitionParamInt,
                 DefinitionRemovable ?? Removable, StackMode, temporary, ParameterUpgradeCastEffects, DefinitionRemovable,
-                feedingQuery: FeedingQuery, handCostTargetType: HandCostTargetType, graftSevered: replacement.NewRuntimeType == CardGraftedEquipmentModel.Trait ? false : (bool?)null);
+                feedingQuery: FeedingQuery, handCostTargetType: HandCostTargetType, graftSevered: replacement.NewRuntimeType == CardGraftedEquipmentModel.Trait ? false : (bool?)null,
+                holdoverPending: replacement.NewRuntimeType == CardRetainModel.Trait ? false : (bool?)null);
         internal static CardTraitValue Dummy() => new CardTraitValue("CardTraitDummy", null, 0, 0, false, 0);
         internal CardTraitValue WithMoonUpgrade(CardMoonUpgradeState state) => new CardTraitValue(RuntimeType, DeclaredName,
             DefinitionParamInt, ParamInt, Removable, StackMode, TemporaryReplacement, ParameterUpgradeCastEffects,
-            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, state, GraftSevered);
+            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, state, GraftSevered, HoldoverPending);
         internal CardTraitValue WithGraftSevered(bool severed) => new CardTraitValue(RuntimeType, DeclaredName,
             DefinitionParamInt, ParamInt, Removable, StackMode, TemporaryReplacement, ParameterUpgradeCastEffects,
-            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, severed);
+            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, severed, HoldoverPending);
+        internal CardTraitValue WithHoldover(bool pending) => new CardTraitValue(RuntimeType, DeclaredName,
+            DefinitionParamInt, ParamInt, Removable, StackMode, TemporaryReplacement, ParameterUpgradeCastEffects,
+            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, GraftSevered, pending);
     }
 
     public sealed class CardTraitReplacement
@@ -118,7 +125,8 @@ namespace MonsterTrain2Poju.Model
                 // parameter, even when the persistent input has a changed parameter.
                 else added = new CardTraitValue(trait.RuntimeType, trait.DeclaredName, trait.DefinitionParamInt,
                     trait.DefinitionParamInt, trait.Removable, trait.StackMode, false, trait.ParameterUpgradeCastEffects,
-                    feedingQuery: trait.FeedingQuery, handCostTargetType: trait.HandCostTargetType);
+                    feedingQuery: trait.FeedingQuery, handCostTargetType: trait.HandCostTargetType,
+                    holdoverPending: trait.RuntimeType == CardRetainModel.Trait ? false : (bool?)null);
                 combined.Add(added); present.Add(added.RuntimeType);
             }
             if (present.Contains("CardTraitExhaustState") && present.Contains("CardTraitSelfPurge"))

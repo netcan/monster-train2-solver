@@ -699,6 +699,8 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
+            if (fullBattle && HoldoverCalibration.Enabled && !HoldoverCalibration.Prepared)
+                HoldoverCalibration.Prepare(managers, log);
             if (fullBattle && OriginalPropagateOnStatusEffectAppliedScenario.Acquired && !OriginalPropagateOnStatusEffectAppliedScenario.Prepared)
             {
                 OriginalPropagateOnStatusEffectAppliedScenario.PrepareCarrier(managers, log);

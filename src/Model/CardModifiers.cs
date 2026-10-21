@@ -350,11 +350,11 @@ namespace MonsterTrain2Poju.Model
             EffectCounters, DamageScalingTraits, StatusScalingTraits, UnitUpgradeScalingTraits, CapacityScalingTraits,
             EquippedUnitId, PlayedRoomUnitIds, RawPlayedRoomUnitIds, MaskDescriptor, ExhaustState,
             ForgeCountScalingTraits, RawCostOverride, CanBeCopied, TrainHealScalingTraits, GraftedEquipmentCardId);
-        public CardInstanceState OnDiscard(bool played, int? cost = null, bool suppressConsume = false)
+        public CardInstanceState OnDiscard(bool played, int? cost = null, bool suppressConsume = false, bool triggersOnUnplayed = false)
         {
             CardMoonUpgradeResult moon = CardMoonUpgradeModel.Update(this, 1, reset: true);
             if (!moon.Supported) throw new InvalidOperationException(moon.UnsupportedReason);
-            CardInstanceState source = moon.Card!;
+            CardInstanceState source = CardRetainModel.Discarded(moon.Card!, played, triggersOnUnplayed);
             CardInstanceState callback = played && !suppressConsume ? CardExhaustModel.MarkPlayedDiscard(source) : source;
             CardModifiers temporary = source.Temporary.OnDiscard();
             var result = new CardInstanceState(InstanceId, DataId, source.Permanent, temporary, played ? cost ?? LastPlayedCost : LastPlayedCost, LastForgedAmount,
@@ -388,6 +388,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? UnsupportedReason(CardInstanceState instance)
         {
+            string? retainError = CardRetainModel.Validate(instance);
+            if (retainError != null) return retainError;
             string? killError = CardKillTriggerModel.Validate(instance);
             if (killError != null) return killError;
             string? moonError = CardMoonUpgradeModel.Validate(instance);
@@ -437,6 +439,8 @@ namespace MonsterTrain2Poju.Model
             if (exhaustError != null) interactions.Add(exhaustError);
             string? moonError = CardMoonUpgradeModel.Validate(instance);
             if (moonError != null) interactions.Add(moonError);
+            string? retainError = CardRetainModel.Validate(instance);
+            if (retainError != null) interactions.Add(retainError);
             string? graftError = CardGraftedEquipmentModel.Validate(instance);
             if (graftError != null) interactions.Add(graftError);
             string? killError = CardKillTriggerModel.Validate(instance);

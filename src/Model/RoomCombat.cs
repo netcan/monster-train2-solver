@@ -4516,7 +4516,7 @@ namespace MonsterTrain2Poju.Model
                     foreach (int id in restored.RestoredCardIds)
                     {
                         CardInstanceState? card = context.FindCard(id);
-                        if (card?.ExhaustState != null) context = context.WithCard(CardExhaustModel.ResetTraits(card));
+                        if (card != null && (card.ExhaustState != null || CardRetainModel.Present(card))) context = context.WithCard(CardExhaustModel.ResetTraits(card));
                         Emit("Recursion", actor, actor, id);
                     }
                     return true;

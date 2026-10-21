@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CardTraitState trait in card.GetTraitStates())
                 {
                     // End-turn DiscardHand sets handDiscarded=true, which also suppresses Treasure.
-                    if (!(drawing && trait is CardTraitPermafrost) && !(CardBranchMaskProbe.Enabled && trait is CardTraitAddCardUpgradeOnMoonPhase) && !(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion || trait is CardTraitFreeze || trait is CardTraitScalingAddEnergy || trait is CardTraitScalingAddCards || trait is CardTraitTreasure)) &&
+                    if (!(drawing && trait is CardTraitPermafrost) && !(CardBranchMaskProbe.Enabled && trait is CardTraitAddCardUpgradeOnMoonPhase or CardTraitRetain) && !(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion || trait is CardTraitFreeze || trait is CardTraitScalingAddEnergy || trait is CardTraitScalingAddCards || trait is CardTraitTreasure)) &&
                         callbacks.Any(callback => trait.GetType().GetMethod(callback,
                         BindingFlags.Instance | BindingFlags.Public)?.DeclaringType != typeof(CardTraitState)))
                         interactions.Add(trait.GetType().Name + " " + kind + " callback");
@@ -88,7 +88,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalDiscardDrawScenario.Enabled ? cards.GetDrawingDeckCardsDisabledThisTurn() : (bool?)null);
         }
 
-        private IEnumerator Wrap(IEnumerator native, CardManager cards, string kind, int handSize)
+        private IEnumerator Wrap(IEnumerator native, CardManager cards, string kind, int handSize, bool applyPreDrawTraits = true)
         {
             FullBattleTrace? trace = FullBattleTrace.Active;
             Record? record = null;
@@ -115,18 +115,28 @@ namespace MonsterTrain2Poju.Probe
                     CardCycleState prepared = standbyContext == null ? before : EquipmentModel.ReturnStandby(standbyContext, livingIds!).Cards;
                     prepared = new CardCycleState(prepared.Hand, prepared.Draw, prepared.Discard, prepared.Rng, prepared.DrawModifier,
                         before.ExternalInteractions, prepared.BonusDraw, prepared.NextDrawUpgrades, prepared.NextUpgradeReferenceId, prepared.DeckDrawDisabledThisTurn);
-                    BattlePlayRules? definitions = standbyContext != null && RelicCorruptedAngelsModel.Enabled(standbyContext)
+                    BattlePlayRules? definitions = standbyContext != null && (RelicCorruptedAngelsModel.Enabled(standbyContext) ||
+                        standbyContext.CardInstances?.Any(CardRetainModel.Present) == true)
                         ? trace.CaptureDecision().PlayRules : null;
-                    TypedDrawResult? interleaved = definitions == null ? null :
-                        RelicCorruptedAngelsModel.DrawHand(standbyContext!.WithCards(prepared), handSize, definitions);
+                    string? retainError = null;
+                    CombatContext? preparedContext = standbyContext?.WithCards(prepared);
+                    if (standbyContext != null && applyPreDrawTraits)
+                    {
+                        TypedDrawResult held = CardRetainModel.PreDrawHand(preparedContext!, definitions);
+                        retainError = held.UnsupportedReason;
+                        if (held.Supported) { preparedContext = held.Context!; prepared = held.Context!.Cards; }
+                    }
+                    TypedDrawResult? interleaved = preparedContext == null || !RelicCorruptedAngelsModel.Enabled(preparedContext) ? null :
+                        RelicCorruptedAngelsModel.DrawHand(preparedContext, handSize, definitions!);
                     record = new Record
                     {
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(), Kind = kind,
                         HandSize = handSize, MaxHandSize = cards.GetMaxHandSize(), Before = before,
                         StandbyContext = standbyContext, LivingUnitIds = livingIds, Definitions = definitions,
+                        ApplyPreDrawTraits = applyPreDrawTraits,
                         EphemeralCardIds = ephemeralCardIds, PersistentCardIds = persistentCardIds,
                         InfusionCardIds = infusionCardIds, PurgedBefore = purgedBefore,
-                        Predicted = interleaved != null ? new CardCycleResult(interleaved.Context?.Cards, interleaved.UnsupportedReason)
+                        Predicted = retainError != null ? new CardCycleResult(null, retainError) : interleaved != null ? new CardCycleResult(interleaved.Context?.Cards, interleaved.UnsupportedReason)
                             : kind == "Draw" ? CardCycleModel.DrawHand(prepared, handSize, cards.GetMaxHandSize())
                             : CardCycleModel.DiscardHand(before, ephemeralCardIds, persistentCardIds, infusionCardIds)
                     };
@@ -207,6 +217,7 @@ namespace MonsterTrain2Poju.Probe
             public CardCycleState Before { get; set; } = null!;
             public CombatContext? StandbyContext { get; set; }
             public BattlePlayRules? Definitions { get; set; }
+            public bool? ApplyPreDrawTraits { get; set; }
             public int[]? LivingUnitIds { get; set; }
             public int[] EphemeralCardIds { get; set; } = Array.Empty<int>();
             public int[] PersistentCardIds { get; set; } = Array.Empty<int>();
@@ -221,8 +232,8 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(CardManager), nameof(CardManager.DrawHand))]
         private static class DrawPatch
         {
-            private static void Postfix(CardManager __instance, int handSize, ref IEnumerator __result)
-            { if (active != null) __result = active.Wrap(__result, __instance, "Draw", handSize); }
+            private static void Postfix(CardManager __instance, int handSize, bool applyPreDrawTraits, ref IEnumerator __result)
+            { if (active != null) __result = active.Wrap(__result, __instance, "Draw", handSize, applyPreDrawTraits); }
         }
 
         [HarmonyPatch(typeof(CardManager), nameof(CardManager.DrawCards))]

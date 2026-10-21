@@ -13,6 +13,7 @@ param(
     [switch] $Advisor,
     [switch] $RollingAdvice,
     [switch] $PreviewAttackTrace,
+    [switch] $HoldoverCalibration,
     [switch] $BossActionTargets,
     [switch] $BossActionControllers,
     [switch] $OuterBossPhases,
@@ -675,6 +676,7 @@ if ($OriginalLimitedRange) { $BranchCardMasks = $true; $Policy = 'units-spells-a
 if ($OriginalMonsterHandCosts) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnplayableCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPermafrostCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($HoldoverCalibration) { $BranchCardMasks = $true }
 if ($OriginalOverflowCards) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptRestricted) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusStackDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1366,6 +1368,7 @@ if ($OriginalLimitedRange) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lim
 if ($OriginalMonsterHandCosts) { $environment['MT2_PROBE_MODIFIERS'] = 'original-monster-hand-costs' }
 if ($OriginalUnplayableCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unplayable-cards' }
 if ($OriginalPermafrostCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-permafrost-cards' }
+if ($HoldoverCalibration) { $environment['MT2_PROBE_HOLDOVER_CALIBRATION'] = '1' }
 if ($OriginalOverflowCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-overflow-cards' }
 if ($OriginalCorruptRestricted) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupt-restricted' }
 if ($OriginalStatusStackDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-stack-damage' }
@@ -2991,6 +2994,13 @@ if ($OriginalOverflowCards -and (-not $trace.OriginalOverflowCardsPrepared -or -
 if ($OriginalPermafrostCards -and (-not $trace.OriginalPermafrostCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalPermafrostCardsDraws | Where-Object Control).Count -ne 6 -or -not $trace.OriginalPermafrostCardsQueriesUnchanged)) {
     throw 'Original Permafrost fixture lacks automatic Freeze, retention, repeated callbacks or redraw plays.'
+}
+if ($HoldoverCalibration -and (-not $trace.HoldoverCalibrationPrepared -or -not $trace.HoldoverControlsUnchanged -or
+    @($trace.HoldoverCallbacks | Where-Object Control).Count -ne 48 -or
+    @($trace.HoldoverCallbacks | Where-Object { $null -eq $_.Before -or $null -eq $_.After }).Count -ne 0 -or
+    @($trace.HoldoverCallbacks | Where-Object { -not $_.Control -and $_.Kind -eq 'PreDraw' -and
+        @($_.Before.MaskDescriptor.BaseTraits | Where-Object { $_.RuntimeType -eq 'CardTraitRetain' -and $_.HoldoverPending }).Count -gt 0 }).Count -eq 0)) {
+    throw 'Holdover calibration lacks complete restored controls or a positive natural pre-draw callback.'
 }
 if ($OriginalUnplayableCards -and (-not $trace.OriginalUnplayableCardsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3 -or
     @($trace.OriginalUnplayableCardsQueries).Count -ne 12 -or -not $trace.OriginalUnplayableCardsQueriesUnchanged)) {

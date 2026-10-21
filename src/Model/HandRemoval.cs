@@ -117,9 +117,14 @@ namespace MonsterTrain2Poju.Model
                         HandRemovalResult cast = onTreasure(context.WithOtherPiles(piles), token.InstanceId);
                         if (!cast.Supported) return cast;
                         context = cast.Context!; piles = cast.OtherPiles?.ToArray();
-                        context = context.WithCard(context.FindCard(token.InstanceId)!.OnDiscard(false));
+                        CardInstanceState discarded = context.FindCard(token.InstanceId)!;
+                        discarded = CardRetainModel.Discarded(discarded, triggeredByCard,
+                            CardRetainModel.TriggersOnUnplayed(discarded, definitions?.Cards.FirstOrDefault(rule => rule.DataId == token.DataId)));
+                        context = context.WithCard(discarded.OnDiscard(false));
                     }
-                    else if (instance != null) context = context.WithCard(instance.OnDiscard(false));
+                    else if (instance != null) context = context.WithCard(instance.OnDiscard(false,
+                        triggersOnUnplayed: CardRetainModel.TriggersOnUnplayed(instance,
+                            definitions?.Cards.FirstOrDefault(rule => rule.DataId == token.DataId))));
                     context = ConduitModel.Discarded(context, token.InstanceId);
                     CheckStandby(0);
                     if (callbackError != null) return Unsupported(callbackError);

@@ -19,7 +19,7 @@ namespace MonsterTrain2Poju.Model
             context = context.WithBattleRng(selected.State).WithOtherPiles(context.OtherPiles!.Select(pile =>
                 pile.Name is "Exhausted" or "Eaten" or "Standby" ? CardPileModel.Remove(pile, token.InstanceId) : pile).ToArray());
             CardInstanceState card = context.FindCard(token.InstanceId)!;
-            if (card.ExhaustState != null) context = context.WithCard(CardExhaustModel.ResetTraits(card));
+            if (card.ExhaustState != null || CardRetainModel.Present(card)) context = context.WithCard(CardExhaustModel.ResetTraits(card));
             CardCycleState cards = context.Cards;
             context = context.WithCards(new CardCycleState(cards.Hand, cards.Draw.Concat(new[] { token }).ToArray(), cards.Discard,
                 cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades,
