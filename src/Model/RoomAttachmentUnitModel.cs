@@ -158,7 +158,17 @@ namespace MonsterTrain2Poju.Model
                 RoomCapacityState? newCapacity = currentRooms.FirstOrDefault(room => room.RoomIndex == newRoom.RoomIndex);
                 if (previousUnit.Team == CombatTeam.Player && (oldCapacity?.Attachments?.Any(attachment => attachment.MoonPhase != null) == true ||
                     newCapacity?.Attachments?.Any(attachment => attachment.MoonPhase != null) == true))
-                    return Fail("Moving friendly units through moon-override rooms requires native callback calibration.");
+                {
+                    if (oldRoom.Preview || newRoom.Preview)
+                        return Fail("Friendly movement through moon-override rooms in preview requires native calibration.");
+                    foreach (RoomCapacityAttachmentState attachment in (oldCapacity?.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
+                        .Concat(newCapacity?.Attachments ?? Array.Empty<RoomCapacityAttachmentState>()))
+                        if (attachment.MoonPhase != null && RoomMoonPhaseModel.Validate(attachment.MoonPhase) is string error)
+                            return Fail(error);
+                    // Original spawn-point callbacks refresh resources only.
+                    // Bump performs the character refresh after its shift/sentry
+                    // callbacks; physical attachment synchronization does not.
+                }
                 if (oldCapacity == null || newCapacity == null) continue;
                 if ((oldCapacity.Attachments == null && oldCapacity.AttachmentsAddedFromCards > 0) ||
                     (newCapacity.Attachments == null && newCapacity.AttachmentsAddedFromCards > 0))

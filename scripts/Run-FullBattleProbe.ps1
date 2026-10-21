@@ -20,6 +20,7 @@ param(
     [switch] $ConduitMovement,
     [switch] $RoomMoonCallbacks,
     [switch] $RoomMoonCallbacksShade,
+    [switch] $RoomMoonMovement,
     [switch] $BossActionTargets,
     [switch] $BossActionControllers,
     [switch] $OuterBossPhases,
@@ -598,9 +599,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($RoomMoonMovement) { $RoomMoonCallbacksShade = $true }
 if ($RoomMoonCallbacksShade) { $RoomMoonCallbacks = $true }
 if ($RoomMoonCallbacks) {
-    $allowed = @('RoomMoonCallbacks', 'RoomMoonCallbacksShade', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('RoomMoonCallbacks', 'RoomMoonCallbacksShade', 'RoomMoonMovement', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'RoomMoonCallbacks is an isolated component calibration.' }
     $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1213,6 +1215,7 @@ $environment = @{
     MT2_PROBE_CONDUIT_MOVEMENT = $(if ($ConduitMovement) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_CALLBACKS = $(if ($RoomMoonCallbacks) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SHADE = $(if ($RoomMoonCallbacksShade) { '1' } else { '0' })
+    MT2_PROBE_ROOM_MOON_MOVEMENT = $(if ($RoomMoonMovement) { '1' } else { '0' })
     MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
     MT2_PROBE_PREVIEW_ATTACK_TRACE = $(if ($PreviewAttackTrace) { '1' } else { '0' })
@@ -1796,7 +1799,7 @@ while (-not $process.WaitForExit(250)) {
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
 if ($RoomMoonCallbacks) {
-    $componentPath = Join-Path $profile 'room-moon-callback-calibration.mt2f'
+    $componentPath = Join-Path $profile $(if ($RoomMoonMovement) { 'room-moon-movement-calibration.mt2f' } else { 'room-moon-callback-calibration.mt2f' })
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'ROOM-MOON-CALLBACK-NATIVE PASS' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Room moon native calibration failed; inspect $unityLog" }
@@ -1805,7 +1808,7 @@ if ($RoomMoonCallbacks) {
     try {
         $captured = $component.RootElement.ToObjectGraph()
         if (-not $captured.NativeCompleted -or -not $captured.RngUnchanged -or
-            -not $captured.PreviewUpdatesSuppressed -or @($captured.Rows).Count -ne $(if ($RoomMoonCallbacksShade) { 15 } else { 13 }) -or
+            -not $captured.PreviewUpdatesSuppressed -or @($captured.Rows).Count -ne $(if ($RoomMoonMovement) { 37 } elseif ($RoomMoonCallbacksShade) { 15 } else { 13 }) -or
             @($captured.ActorIds).Count -ne $(if ($RoomMoonCallbacksShade) { 6 } else { 3 }) -or
             [bool]$captured.ShadeCallbacks -ne [bool]$RoomMoonCallbacksShade) {
             throw 'Incomplete room moon callback calibration.'

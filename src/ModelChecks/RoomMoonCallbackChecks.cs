@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -11,9 +12,11 @@ internal static class RoomMoonCallbackChecks
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
             root.GetProperty("Boundary").GetString() == "AfterOriginalCoroutineAndTriggerQueue", "Incomplete native room moon capture.");
         bool shade = root.TryGetProperty("ShadeCallbacks", out FixtureValue shadeFlag) && shadeFlag.GetBoolean();
-        int refreshes = 0, shifts = 0, attachments = 0, mixed = 0, changed = 0, shadeChanges = 0;
+        bool movement = root.TryGetProperty("MovementControls", out FixtureValue movementFlag) && movementFlag.GetBoolean();
+        int refreshes = 0, shifts = 0, attachments = 0, mixed = 0, changed = 0, shadeChanges = 0, bumps = 0, maskChanges = 0;
         FixtureValue[] rows = root.GetProperty("Rows").EnumerateArray().ToArray();
-        Require(rows.Length == (shade ? 15 : 13) && root.GetProperty("ActorIds").GetArrayLength() == (shade ? 6 : 3), "Missing native controls.");
+        Require((!movement || shade) && rows.Length == (movement ? 37 : shade ? 15 : 13) &&
+            root.GetProperty("ActorIds").GetArrayLength() == (shade ? 6 : 3), "Missing native controls.");
         foreach (FixtureValue row in rows)
         {
             TrainCombatState before = row.GetProperty("Before").GetProperty("Train").Deserialize<TrainCombatState>()!;
@@ -26,6 +29,13 @@ internal static class RoomMoonCallbackChecks
                 if (refresh) return RoomMoonPhaseModel.Refresh(before, row.GetProperty("Characters").GetBoolean());
                 if (operation == "SetMoonPhase") return MoonPhaseTransitionModel.Apply(before, new CardActionEffect("SetMoonPhase", "Room",
                     row.GetProperty("Phase").GetInt32(), false, false, []), playerActionOnly: false);
+                if (operation == "Bump")
+                {
+                    Require(movement, "Unexpected movement outside its native calibration.");
+                    BumpResult moved = BumpModel.Apply(before, [row.GetProperty("UnitId").GetInt32()],
+                        row.GetProperty("Amount").GetInt32(), row.GetProperty("Rooms").Deserialize<RoomPlayRule[]>()!);
+                    return new MoonPhaseTransitionResult(moved.State, moved.UnsupportedReason);
+                }
                 if (operation == "Attach")
                 {
                     CardActionEffect effect = root.GetProperty("AttachmentEffect").Deserialize<CardActionEffect>()!;
@@ -63,7 +73,38 @@ internal static class RoomMoonCallbackChecks
             Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Room moon callback mutated its parent.");
             Require(row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")),
                 "Room moon callbacks consumed gameplay RNG.");
-            if (refresh) refreshes++; else if (operation == "SetMoonPhase") shifts++; else attachments++;
+            if (refresh) refreshes++;
+            else if (operation == "SetMoonPhase") shifts++;
+            else if (operation == "Bump")
+            {
+                bumps++;
+                int id = row.GetProperty("UnitId").GetInt32();
+                CombatUnit prior = before.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == id);
+                RoomCombatState room = actual.Rooms.Single(room => room.Units.Any(unit => unit.Id == id));
+                CombatUnit moved = room.Units.Single(unit => unit.Id == id);
+                if (row.GetProperty("Label").GetString() == "full-enters-mask")
+                    GuardedMovement(before, row, id);
+                Require(!before.Rooms.Single(old => old.Units.Any(unit => unit.Id == id)).RoomIndex.Equals(room.RoomIndex) &&
+                    (moved.MoonPhaseMask & 3) == RoomMoonPhaseModel.Effective(actual.Context, room.RoomIndex,
+                        actual.Context!.QueryFrame!.MoonPhase!.Value),
+                    "Native Bump did not refresh its moved character after changing rooms.");
+                if (prior.MoonPhaseMask != moved.MoonPhaseMask) maskChanges++;
+                if (row.GetProperty("Label").GetString() == "only-moved-character-refreshes-stale-phase")
+                {
+                    CombatUnit[] others = before.Rooms.SelectMany(item => item.Units).Where(unit => unit.Id != id).ToArray();
+                    Require(others.Any(unit => unit.Team == CombatTeam.Player && (unit.MoonPhaseMask & 2) != 0) &&
+                        actual.Context.QueryFrame.MoonPhase == 1 && (moved.MoonPhaseMask & 2) == 0,
+                        "Missing stale-phase target-only refresh control.");
+                    foreach (CombatUnit other in others)
+                    {
+                        CombatUnit current = actual.Rooms.SelectMany(item => item.Units).Single(unit => unit.Id == other.Id);
+                        Require(current.MoonPhaseMask == other.MoonPhaseMask &&
+                            JsonSerializer.Serialize(current.Modifiers) == JsonSerializer.Serialize(other.Modifiers),
+                            "Bump refreshed a non-target's understanding or upgrades.");
+                    }
+                }
+            }
+            else attachments++;
             if (actual.Rooms.SelectMany(room => room.Units).Any(unit => (unit.MoonPhaseMask & 3) == 3)) mixed++;
             changed += actual.Rooms.SelectMany(room => room.Units).Count(unit => before.Rooms.SelectMany(room => room.Units)
                 .Any(prior => prior.Id == unit.Id && prior.Modifiers!.Upgrades.Count != unit.Modifiers!.Upgrades.Count));
@@ -71,9 +112,33 @@ internal static class RoomMoonCallbackChecks
                 .Any(prior => prior.Id == unit.Id && prior.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade") !=
                     unit.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade")));
         }
-        Require(refreshes == 9 && shifts == 4 && mixed > 0 && changed > 0, "Missing refresh, shift, mixed mask or actual callback witnesses.");
-        Require(!shade || attachments == 2 && shadeChanges >= 12, "Missing explicit attachment/removal and original Nightingale callback changes.");
-        Console.WriteLine($"ROOM-MOON-CALLBACK PASS refreshes={refreshes} shifts={shifts} attachments={attachments} mixed={mixed} changedUpgrades={changed} shadeChanges={shadeChanges} parallelBranches=8 immutable=true");
+        Require(refreshes == (movement ? 15 : 9) && shifts == (movement ? 7 : 4) && mixed > 0 && changed > 0,
+            "Missing refresh, shift, mixed mask or actual callback witnesses.");
+        Require(!shade || attachments == (movement ? 4 : 2) && shadeChanges >= 12,
+            "Missing explicit attachment/removal and original Nightingale callback changes.");
+        Require(!movement || bumps == 11 && maskChanges >= 8, "Missing physical movement and understanding-change witnesses.");
+        Console.WriteLine($"ROOM-MOON-CALLBACK PASS refreshes={refreshes} shifts={shifts} attachments={attachments} bumps={bumps} maskChanges={maskChanges} mixed={mixed} changedUpgrades={changed} shadeChanges={shadeChanges} parallelBranches=8 immutable=true");
+    }
+    private static void GuardedMovement(TrainCombatState before, FixtureValue row, int id)
+    {
+        void Reject(Action<JsonNode> change, string boundary)
+        {
+            JsonNode altered = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
+            change(altered);
+            TrainCombatState state = altered.Deserialize<TrainCombatState>(ModelJson.Options)!;
+            BumpResult result = BumpModel.Apply(state, [id], row.GetProperty("Amount").GetInt32(),
+                row.GetProperty("Rooms").Deserialize<RoomPlayRule[]>()!);
+            Require(!result.Supported, "Uncalibrated movement accepted: " + boundary);
+        }
+        Reject(state => state["Rooms"]!.AsArray().SelectMany(room => room!["Units"]!.AsArray())
+            .Single(unit => unit!["Id"]!.GetValue<int>() == id)!["MoonPhaseMask"] = null, "missing prior mask");
+        Reject(state =>
+        {
+            foreach (JsonNode? room in state["Rooms"]!.AsArray()) room!["Preview"] = true;
+        }, "friendly preview");
+        Reject(state => state["Context"]!["RoomCapacities"]!.AsArray()
+            .Single(room => room!["RoomIndex"]!.GetValue<int>() == 0)!["Attachments"]![0]!["MoonPhase"]!["AdditionalMask"] = 2,
+            "unknown room moon rule");
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

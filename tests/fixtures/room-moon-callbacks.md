@@ -70,8 +70,8 @@ Installation adds the room upgrade before draining New gained callbacks;
 removal drops the room upgrade before draining New lost callbacks. The shared
 attachment model now performs these callbacks. Original Full-only and
 callback-free Eclipse action chains still pass. Stale Full understanding,
-enemy callbacks, other callback payloads, previews and friendly movement
-through moon rooms remain guarded. The integrated New-callback action chain
+enemy callbacks, other callback payloads and previews remain guarded. Friendly
+movement is calibrated separately below. The integrated New-callback action chain
 and real player entry require their own acceptance below.
 
 ```powershell
@@ -104,7 +104,7 @@ scripts/Run-FullBattleProbe.ps1 -EclipseChamberShadeCallbacks -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-callbacks-only tests/fixtures/full-battle-eclipse-chamber-shade-callbacks.mt2f
 ```
 
-Real player entry, previews and physical movement remain separate from this
+Real player entry, previews and physical movement require their separate
 authored fixed-policy acceptance. No Mac package is built.
 
 ## Real player rolling advice and fresh frozen replay
@@ -141,4 +141,38 @@ checker update. No full regression or Mac package build is performed.
 scripts/Run-FullBattleProbe.ps1 -EclipseChamberShadeCallbacks -PlayerAdvisor -RollingAdvice -PlannerDeploymentRoom 0 -PlannerHorizon 3 -PlannerTimeLimitMs 1000 -SkipBuild
 scripts/Run-FullBattleProbe.ps1 -EclipseChamberShadeCallbacks -PlayerAdvisor -RollingAdvice -RollingInput <source-profile>/full-battle.mt2f -PlannerDeploymentRoom 0 -PlannerHorizon 3 -PlannerTimeLimitMs 1000 -SkipBuild
 scripts/Check-PlayerAdvisor.ps1 -Case RoomMoon -SkipBuild
+```
+
+## Friendly physical movement through original room masks
+
+`room-moon-movement-calibration.mt2f` records profile
+`full-battle-no-cards-20261022-001933-f88e7ea7` (37.50 seconds), retaining
+the same six original Selene/Nightingale actors and unchanged original Eclipse.
+Thirty-seven complete native boundaries include eleven signed Bump moves,
+fifteen refreshes, seven global phase shifts and four installation/removal
+operations. Eight moves change cached understanding, with sixty upgrade-count
+changes across all operations and twenty-six New-upgrade presence changes.
+All complete train/context states and gameplay RNG match. Each row passes eight
+parallel immutable branches. Protected original files remain unchanged.
+
+Spawn-point callbacks refresh resources only. The original Bump coroutine then
+refreshes just its moved character after Shift/Sentry, comparing Full before
+New and retaining the native None bit. Its phase triggers stay queued until the
+ordinary queue drain. A deliberately stale global-phase control proves that
+unmoved actors retain their cached masks and upgrades; refreshing all actors
+at movement time would be incorrect. Up/down, two-floor movement, entering and
+leaving masks under both global phases, later no-op refreshes and a nonmasked
+control are included. Existing thirteen/fifteen-row callbacks and the original
+nineteen-operation Bump fixture still pass their focused checks.
+
+Missing cached masks, friendly previews and unknown room-mask rules are rejected
+by explicit negative controls. Enemy mask changes, other callback payloads and
+unit-owned moon resource traits remain guarded. This isolated component does
+not establish a full paid-card action chain or player rolling-advice acceptance
+with movement; those require their own native execution and independent replay.
+No full regression or Mac package build is performed.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -RoomMoonMovement -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-callback-only tests/fixtures/room-moon-movement-calibration.mt2f
 ```

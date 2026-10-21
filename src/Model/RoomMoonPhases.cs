@@ -62,6 +62,45 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool HasMask(TrainCombatState state) => state.Context?.RoomCapacities?.Any(room =>
             room.Attachments?.Any(attachment => attachment.MoonPhase != null) == true) == true;
+
+        // CardEffectBump updates just this actor after movement and shift/sentry
+        // callbacks. Its phase triggers stay queued until the ordinary queue drain.
+        internal static MoonPhaseTransitionResult RefreshMovedCharacter(TrainCombatState source, int id,
+            ICollection<RoomCombatModel.QueuedCharacterTrigger> pending)
+        {
+            RoomCombatState? room = source.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
+            CombatUnit? unit = room?.Units.FirstOrDefault(item => item.Id == id);
+            if (unit == null || unit.Health <= 0 ||
+                source.Context?.QueryFrame?.MoonPhaseTrackingActive != true || source.Context.QueryFrame.MoonPhase is not (1 or 2))
+                return new MoonPhaseTransitionResult(source);
+            if (!unit.MoonPhaseMask.HasValue)
+                return new MoonPhaseTransitionResult(null, "Movement moon understanding requires a captured prior mask.");
+            CardInstanceState? spawner = source.Context.FindCard(unit.SpawnerCardId);
+            if (spawner != null && (spawner.MaskDescriptor?.BaseTraits.Concat(spawner.MaskDescriptor.TemporaryTraits)
+                .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal)) == true ||
+                spawner.Permanent.Upgrades.Concat(spawner.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits
+                    .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal)) == true)))
+                return new MoonPhaseTransitionResult(null, "Moving units with moon resource traits requires native calibration.");
+            int mask = Effective(source.Context, room!.RoomIndex, source.Context.QueryFrame.MoonPhase.Value);
+            int prior = unit.MoonPhaseMask.Value;
+            if ((prior & 3) == (mask & 3)) return new MoonPhaseTransitionResult(source);
+            if (room.Preview || unit.Team != CombatTeam.Player)
+                return new MoonPhaseTransitionResult(null, "Enemy or preview movement moon understanding requires native calibration.");
+            string? error = ValidateCallbacks(source);
+            if (error != null) return new MoonPhaseTransitionResult(null, error);
+            CombatUnit changed = unit.WithMoonPhaseMask(mask);
+            void Queue(int bit, string gained, string lost)
+            {
+                if ((prior & bit) == (mask & bit)) return;
+                string kind = (mask & bit) != 0 ? gained : lost;
+                if (changed.Triggers.Any(trigger => trigger.Kind == kind))
+                    pending.Add(new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, changed, kind));
+            }
+            Queue(2, "OnMoonLit", "OnMoonlitLost"); Queue(1, "OnMoonShade", "OnMoonshadeLost");
+            return new MoonPhaseTransitionResult(new TrainCombatState(source.Rooms.Select(item => item.RoomIndex == room.RoomIndex
+                ? item.WithUnits(item.Units.Select(actor => actor.Id == id ? changed : actor).ToArray()) : item).ToArray(),
+                source.Movement, source.EnemySlotsPerRoom, source.Context));
+        }
         internal static string? ValidateCallbacks(TrainCombatState source)
         {
             if (source.Rooms.SelectMany(room => room.Units).SelectMany(unit => unit.Triggers)

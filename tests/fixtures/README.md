@@ -1,8 +1,16 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 855 archives (790 full battles and
-65 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-22): 856 archives (790 full battles and
+66 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`room-moon-movement-calibration.mt2f` adds 37 isolated native boundaries for
+friendly Bump through original Eclipse masks with original Selene/Nightingale
+callbacks. All complete states/RNG match: eleven moves, eight understanding
+changes, fifteen refreshes, seven global shifts and four attachment changes.
+Only the moved actor refreshes after Shift/Sentry; stale non-targets remain
+unchanged. Eight immutable branches per row and missing-mask/preview/unknown
+room-rule guards pass. See [scope and reproduction](room-moon-callbacks.md).
 
 `full-battle-player-boss-rolling-{search,replay}.mt2f` closes retained winning
 advice for the natural `Boss_Level8_AllyBuffer`: 50 decisions, 39 plays, eleven

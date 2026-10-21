@@ -3521,7 +3521,8 @@ foreach (string path in args.Where(path => path.Contains("conduit-movement-calib
     using var document = ModelJson.ReadFixture(path);
     ConduitMovementChecks.Native(document.RootElement);
 }
-foreach (string path in args.Where(path => path.Contains("room-moon-callback-calibration", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => path.Contains("room-moon-callback-calibration", StringComparison.OrdinalIgnoreCase) ||
+    path.Contains("room-moon-movement-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);
     RoomMoonCallbackChecks.Native(document.RootElement);

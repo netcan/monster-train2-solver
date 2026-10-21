@@ -247,6 +247,9 @@ namespace MonsterTrain2Poju.Model
                         if (!Drain()) return Fail(error!);
                     }
                 }
+                MoonPhaseTransitionResult understanding = RoomMoonPhaseModel.RefreshMovedCharacter(state, move.Id, queue);
+                if (!understanding.Supported) return Fail(understanding.UnsupportedReason!);
+                state = understanding.State!;
             }
             foreach (int id in attempted)
             {
