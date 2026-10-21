@@ -584,7 +584,7 @@ namespace MonsterTrain2Poju.Probe
         }
 
         internal static string CaptureSnapshot(string label, AllGameManagers managers, SaveManager save,
-            CombatManager combat, CardManager cards, ManualLogSource log)
+            CombatManager combat, CardManager cards, ManualLogSource log, bool writeLog = true, bool includePresentationRng = false)
         {
             var state = new StringBuilder(1024);
             state.Append("SMOKE-SNAPSHOT ").Append(label)
@@ -612,7 +612,7 @@ namespace MonsterTrain2Poju.Probe
             AppendUnits(state, "monsters", managers.GetMonsterManager());
             AppendRooms(state, managers.GetRoomManager());
             string stateText = state.ToString();
-            log.LogInfo(stateText);
+            if (writeLog) log.LogInfo(stateText);
 
             var rng = new StringBuilder(512).Append("SMOKE-RNG ").Append(label);
             FieldInfo[] fields = typeof(UnityEngine.Random.State).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -633,9 +633,10 @@ namespace MonsterTrain2Poju.Probe
                 rng.Append('}');
             }
             string rngText = rng.ToString();
-            log.LogInfo(rngText);
+            if (writeLog) log.LogInfo(rngText);
             return stateText.Substring(("SMOKE-SNAPSHOT " + label).Length) + "\n" +
-                Regex.Replace(rngText.Substring(("SMOKE-RNG " + label).Length), @"NonDeterministic=\{[^}]*\} ?", "");
+                (includePresentationRng ? rngText.Substring(("SMOKE-RNG " + label).Length) :
+                Regex.Replace(rngText.Substring(("SMOKE-RNG " + label).Length), @"NonDeterministic=\{[^}]*\} ?", ""));
         }
 
         private static void AppendCards(StringBuilder text, string name, List<CardState> cards)

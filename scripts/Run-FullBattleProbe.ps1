@@ -8,6 +8,10 @@ param(
     [ValidateRange(1, 2)]
     [int] $NativeWorker = 1,
     [switch] $Planner,
+    [switch] $Advisor,
+    [switch] $ShowWindow,
+    [ValidateRange(1, 2147483647)]
+    [int] $Seed = 424242,
     [ValidateRange(1, 20)]
     [int] $PlannerTurn = 2,
     [ValidateRange(2, 3)]
@@ -1101,6 +1105,9 @@ if (Test-Path -LiteralPath $preferencesPath) {
 }
 $environment = @{
     MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
+    MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })
+    MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
+    MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
     MT2_PROBE_PLANNER_HORIZON = "$PlannerHorizon"
     MT2_PROBE_PLANNER_INPUT = $(if ($PlannerInput) { (Resolve-Path -LiteralPath $PlannerInput).Path } else { '' })
@@ -1616,9 +1623,11 @@ if ($CardCatalog) {
         throw 'CardCatalog requires the no-cards baseline without authored mechanism scenarios.'
     }
 }
+$gameArguments = @('-logFile', $unityLog)
+if ($ShowWindow) { $gameArguments += @('-screen-fullscreen', '0', '-screen-width', '1280', '-screen-height', '800') }
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
-    -WorkingDirectory $gameRoot -ArgumentList @('-logFile', $unityLog) `
-    -Environment $environment -WindowStyle Hidden -PassThru
+    -WorkingDirectory $gameRoot -ArgumentList $gameArguments `
+    -Environment $environment -WindowStyle $(if ($ShowWindow) { 'Normal' } else { 'Hidden' }) -PassThru
 Write-Output "FULL-BATTLE-RUN pid=$($process.Id) worker=$NativeWorker policy=$Policy profile=$profile"
 while (-not $process.WaitForExit(250)) {
     if ($FailFastOnIsolatedUnitReject -and (Test-Path -LiteralPath $unityLog) -and
@@ -1655,6 +1664,12 @@ if ($Planner) {
         -not (Select-String -LiteralPath $unityLog -Pattern 'PLANNER-REPLAY-PASS' -Quiet)) {
         throw 'Native planner recommendation did not complete with every step verified.'
     }
+}
+if ($Advisor -and ($trace.Advisor.Captures -lt 1 -or $trace.Advisor.PurityFailures -ne 0 -or $trace.Advisor.Failures -gt 0 -or
+    $trace.Advisor.Published -lt 2 -or $trace.Advisor.Invalidations -lt 1 -or $trace.Advisor.PlanningFrames -lt 2 -or
+    ($null -ne $trace.Advisor.PanelVertices -and ($trace.Advisor.PanelVertices -lt 1 -or $trace.Advisor.PanelPixels -lt 1000)) -or
+    -not (Test-Path -LiteralPath (Join-Path $profile 'advisor-ready.png')))) {
+    throw 'Live advisor lacks pure capture, a rendered recommendation, background frames or action invalidation evidence.'
 }
 if ($TitanSkinCombat -and ($trace.ModifierScenario -ne 'titan-skin-combat' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'TITAN-SKIN-COMBAT-PREPARED .*starting titanskin stacks=2' -Quiet))) {

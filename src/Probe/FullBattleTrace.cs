@@ -1408,6 +1408,7 @@ namespace MonsterTrain2Poju.Probe
                 Turns = turns.Records,
                 Actions = actions.Records,
                 PlannerRuns = PlannerReplayScenario.Records,
+                Advisor = BattleAdvisorOverlay.Active?.Evidence,
                 RoomCapacityAttachmentCoverage = RoomCapacityAttachmentScenario.Evidence,
                 OriginalCarriageJackCoverage = OriginalCarriageJackScenario.Evidence,
                 OriginalFirstRoomAttachmentCoverage = OriginalFirstRoomAttachmentScenario.Evidence,

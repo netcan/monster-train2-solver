@@ -30,7 +30,7 @@ namespace MonsterTrain2Poju.Probe
 
         private enum Pass { Source, Branched, Direct }
 
-        private const int Seed = 424242;
+        private readonly int Seed = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_SEED") ?? "424242", CultureInfo.InvariantCulture);
         private const string StewardCardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
         private readonly ManualLogSource log;
         private readonly int depth;
@@ -631,7 +631,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 return;
             }
-            string? modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+            string modifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
             if (fullBattle && OriginalPropagateOnStatusEffectAppliedScenario.Acquired && !OriginalPropagateOnStatusEffectAppliedScenario.Prepared)
             {
                 OriginalPropagateOnStatusEffectAppliedScenario.PrepareCarrier(managers, log);
@@ -2556,6 +2556,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (PlannerReplayScenario.WaitingForWorker) return;
             if (IsUnitAndJunkPolicy())
             {
                 if (fullBattle && MagebladeScenario.Enabled && !MagebladeScenario.CaptureReady)
@@ -2598,6 +2599,8 @@ namespace MonsterTrain2Poju.Probe
                 if (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared)
                     damagePerHpAbilityInputPrepared = DamagePerHpScenario.SeedAbilityLastAttackerInput(managers, log);
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision();
+                try { if (PlannerReplayScenario.AwaitingAdvice(decision)) return; }
+                catch (Exception error) { throw new InvalidOperationException("Asynchronous advisor preparation failed.", error); }
                 if (fullBattle && RelicCardModifierScenario.CastTriggerUpgrade)
                     decision = RelicCardModifierScenario.PrepareCastTriggerCardInHand(decision, managers, cards!, log);
                 RelicStatusStackProbe.Matrix();

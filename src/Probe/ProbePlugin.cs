@@ -28,6 +28,7 @@ namespace MonsterTrain2Poju.Probe
         private void Awake()
         {
             log = Logger;
+            Application.quitting += () => BattleAdvisorOverlay.Active?.Dispose();
             EnchanterRemovalProbe.Configure(Logger);
             if (AppManager.PlatformServices != null)
             {
@@ -36,8 +37,11 @@ namespace MonsterTrain2Poju.Probe
 
             isolatedRoot = ValidateRoot(Environment.GetEnvironmentVariable(EnvironmentVariable));
             ProbeGameSpeed.Configure(Logger);
-            AudioListener.volume = 0f;
-            Logger.LogInfo("Isolated probe audio muted.");
+            if (Environment.GetEnvironmentVariable(ScenarioVariable) != "advisor")
+            {
+                AudioListener.volume = 0f;
+                Logger.LogInfo("Isolated probe audio muted.");
+            }
             try
             {
                 new Harmony(PluginId).PatchAll(typeof(ProbePlugin).Assembly);
@@ -59,8 +63,14 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE") == "1")
                     new FullBattleTrace(Logger);
+                if (BattleAdvisorOverlay.Enabled) new BattleAdvisorOverlay(Logger);
                 nativeReplayScenario = new NativeReplayScenario(Logger);
                 Logger.LogInfo("Native replay depth scenario armed.");
+            }
+            else if (scenarioName == "advisor")
+            {
+                new FullBattleTrace(Logger);
+                new BattleAdvisorOverlay(Logger);
             }
             else if (!string.IsNullOrEmpty(scenarioName))
             {
@@ -70,7 +80,7 @@ namespace MonsterTrain2Poju.Probe
 
         private void LateUpdate()
         {
-            if (patchInstalled) AudioListener.volume = 0f;
+            if (patchInstalled && Environment.GetEnvironmentVariable(ScenarioVariable) != "advisor") AudioListener.volume = 0f;
         }
 
         private static string ValidateRoot(string? raw)
@@ -139,6 +149,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 lastTickFrame = Time.frameCount;
                 scenario?.Tick();
+                BattleAdvisorOverlay.Active?.Tick();
                 nativeReplayScenario?.Tick();
             }
         }

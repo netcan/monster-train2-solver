@@ -5,6 +5,9 @@ param(
     [string] $Case = 'starter',
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
     [string] $SourceTrace = '',
+    [ValidateRange(1, 2147483647)] [int] $Seed = 424242,
+    [switch] $Advisor,
+    [switch] $ShowWindow,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -21,6 +24,7 @@ try {
         SkipBuild = $true; PhysicalSpawnPoints = $true; Planner = $true
         NativeWorker = $NativeWorker; PlannerTurn = 1; PlannerHorizon = 2
         Policy = 'units-spells-and-junk'
+        Seed = $Seed; Advisor = [bool]$Advisor; ShowWindow = [bool]$ShowWindow
     }
     switch ($Case) {
         'starter' { $arguments.PlannerTurn = 2; $arguments.PlannerHorizon = 3 }
@@ -48,6 +52,8 @@ try {
     if (-not $SourceTrace) { $SourceTrace = Invoke-NativePlan $arguments }
     $SourceTrace = (Resolve-Path -LiteralPath $SourceTrace).Path
     $arguments.PlannerInput = $SourceTrace
+    $arguments.Advisor = $false
+    $arguments.ShowWindow = $false
     $replayed = Invoke-NativePlan $arguments
     dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --planner-pair-only $SourceTrace $replayed
     if ($LASTEXITCODE -ne 0) { throw "Native planner pair failed: $Case" }

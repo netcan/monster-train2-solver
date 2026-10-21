@@ -45,6 +45,17 @@ namespace MonsterTrain2Poju.Probe
         private static int cursor;
         private static bool waiting;
         private static ManualLogSource? logger;
+        internal static bool WaitingForWorker => Enabled && BattleAdvisorOverlay.Active?.IsPlanning == true &&
+            (Records.Count == 0 || Records.Count == 1 && cursor == 1 && waiting && !Records[0].Completed);
+
+        internal static bool AwaitingAdvice(BattleTurnState state)
+        {
+            BattleAdvisorOverlay? advisor = BattleAdvisorOverlay.Active;
+            bool verifyRefresh = Records.Count == 1 && cursor == 1 && waiting && !Records[0].Completed;
+            return Enabled && (Records.Count == 0 || verifyRefresh) && advisor != null &&
+                state.Spawn.Turn >= int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "2", CultureInfo.InvariantCulture) &&
+                !advisor.ReadyFor(state);
+        }
 
         internal static bool TryChoose(BattleTurnState state, ManualLogSource log, out PlayCardAction? action)
         {
@@ -121,8 +132,9 @@ namespace MonsterTrain2Poju.Probe
             else
             {
                 using var keys = new BattleStateKeys();
-                BattlePlanResult plan = BattlePlanner.Plan(root, keys.Key,
-                    new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromSeconds(3)));
+                BattlePlanResult plan = BattleAdvisorOverlay.Active != null ? BattleAdvisorOverlay.Active.CurrentPlan :
+                    BattlePlanner.Plan(root, keys.Key,
+                        new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromSeconds(3)));
                 if (!plan.CompletedHorizon || plan.UnsupportedAttempts.Count != 0 || plan.Steps.Count == 0)
                     throw new InvalidOperationException("Native planner root has no complete supported recommendation: " +
                         string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));
