@@ -99,7 +99,7 @@ namespace MonsterTrain2Poju.Model
                 // that reference when destruction completes at the frame boundary.
                 context = context.WithEnchantments(new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom,
                     world.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
-                        actor.Unit.WithoutRemovedAttacker(new HashSet<int>()).WithTriggers(actor.Unit.Triggers.Select(trigger =>
+                        AfterDestruction(actor.Unit).WithoutRemovedAttacker(new HashSet<int>()).WithTriggers(actor.Unit.Triggers.Select(trigger =>
                             trigger.WithEffects(trigger.Effects.Select(effect => actor.Unit.DeathState?.IsDestroyed == true && effect.Enchantment != null
                                 ? effect.WithEnchantment(new EnchantmentRule(effect.Enchantment.Targeting, effect.Enchantment.StatusPool,
                                     effect.Enchantment.State, false, effect.Enchantment.HasParentCard)) : effect).ToArray())).ToArray()),
@@ -107,6 +107,12 @@ namespace MonsterTrain2Poju.Model
                     world.Preview, world.TestRng, true));
             }
             return CardSpellModel.WithContext(source, context);
+        }
+
+        private static CombatUnit AfterDestruction(CombatUnit unit)
+        {
+            if (unit.DeathState?.IsDestroyed != true) return unit;
+            return unit.AfterDestruction();
         }
 
         private static TrainCombatState ClearRemovedReferences(TrainCombatState source, HashSet<int> activeIds)

@@ -55,6 +55,13 @@ namespace MonsterTrain2Poju.Model
             Sentry = sentry;
             TroopAura = troopAura;
         }
+        // CharacterState.StateInformation.OnDestroy clears these collections;
+        // numeric values and trigger definitions remain on the retained actor.
+        internal UnitModifiers AfterDestruction() => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
+            RawSize, EquipmentLimit, CanBeHealed, IsClone, Array.Empty<CardUpgradeModifier>(), Array.Empty<StatisticCount>(),
+            SpawnerMatchesDefinition, DamageBuffFromStatusEffects, MagebladeDamagePerMagicPower, StatusAttackModifiers,
+            IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft,
+            SynergizeStatuses, Sentry, TroopAura);
         internal UnitModifiers WithStatusDamage(int amount) => new UnitModifiers(AttackDamage, AttackDamageAdded, DamageBuff,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition, amount,
             MagebladeDamagePerMagicPower, StatusAttackModifiers, IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft, SynergizeStatuses, Sentry, TroopAura);

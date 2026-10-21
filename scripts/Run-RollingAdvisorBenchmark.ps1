@@ -11,6 +11,7 @@ param(
     [string] $BaselineTrace = '',
     [string] $InputProfile = '',
     [switch] $RequireWin,
+    [switch] $SettleDeathDissolves,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -27,6 +28,7 @@ try {
         SkipBuild = $true; PhysicalSpawnPoints = $true; BranchCardMasks = $true; Policy = 'units-spells-and-junk'
         TimeoutSeconds = 900; PlannerHorizon = $PlannerHorizon; PlannerDeploymentRoom = $PlannerDeploymentRoom }
     if ($InputProfile) { $arguments.InputProfile = $InputProfile }
+    if ($SettleDeathDissolves) { $arguments.SettleDeathDissolves = $true }
     function Invoke-RollingNative([hashtable] $Parameters, [bool] $VictoryRequired = $false) {
         $output = @(& (Join-Path $PSScriptRoot 'Run-FullBattleProbe.ps1') @Parameters)
         $output | Where-Object { $_ -is [string] -and $_ -match '^FULL-BATTLE-(RUN|TIMING|INSPECTION)' } | Write-Host

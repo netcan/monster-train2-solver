@@ -1461,6 +1461,12 @@ if (args.Length == 1 && args[0] == "--no-player-units-status-pure")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--retired-unit-destruction-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RetiredUnitDestructionChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--corruption-status-only")
 {
     CorruptionStatusChecks.Native(args[1]);
@@ -3171,6 +3177,11 @@ CloneUpgradeRefreshChecks.Run();
 TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();
+foreach (string path in args.Where(path => path.Contains("retired-unit-destruction-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    RetiredUnitDestructionChecks.Native(fixture.RootElement);
+}
 foreach (string path in args.Where(path => path.Contains("corruption-status-calibration", StringComparison.OrdinalIgnoreCase)))
     CorruptionStatusChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("undying-boss-preview-calibration", StringComparison.OrdinalIgnoreCase)))

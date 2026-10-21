@@ -1,8 +1,17 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 801 archives (761 full battles and
-40 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 810 archives (764 full battles and
+46 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`retired-unit-destruction-calibration.mt2f` retains native EndTurns 2, 3 and 4
+from `full-battle-units-spells-and-junk-20261021-112619-4fac265b`. Three retired
+actors have cleared upgrade collections after Unity destruction; ten living
+upgrade controls retain theirs. `--retired-unit-destruction-only` checks exact
+EndTurn state, context and gameplay RNG plus source immutability. The original
+full capture reported those three model mismatches and is diagnostic evidence,
+not an accepted battle. Binary: 32,862 bytes, 4,110 nodes, SHA256
+`eae9c8162d4e7da63c67600342b8401409ef0d6be519738b326345e8e5fd09ab`.
 
 The separate [per-card inventory](card-coverage.md) covers all 668 original
 definitions and identifies the 563 native logbook entries. It records exact
