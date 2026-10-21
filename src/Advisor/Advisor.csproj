@@ -11,7 +11,7 @@
     <ProjectReference Include="../Model/Model.csproj" />
     <ProjectReference Include="../FixtureArchive/FixtureArchive.csproj" />
     <!-- Reuse the calibrated projections; never include the isolation/autoplay entry points. -->
-    <Compile Include="../Probe/*.cs" Exclude="../Probe/ProbePlugin.cs;../Probe/NativeReplayScenario.cs" Link="Capture/%(Filename)%(Extension)" />
+    <Compile Include="../Probe/*.cs" Exclude="../Probe/ProbePlugin.cs;../Probe/NativeReplayScenario.cs;../Probe/PlayerAdvisorProbe.cs" Link="Capture/%(Filename)%(Extension)" />
   </ItemGroup>
   <Import Project="../Probe/GameReferences.props" />
 </Project>

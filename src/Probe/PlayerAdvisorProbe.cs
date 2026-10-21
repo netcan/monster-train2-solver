@@ -1,0 +1,191 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using BepInEx.Logging;
+using HarmonyLib;
+using MonsterTrain2Poju.Model;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+namespace MonsterTrain2Poju.Probe
+{
+    // Isolated driver only: observe the separately loaded, unmodified player
+    // assembly. Never substitute the development overlay or its search result.
+    internal static class PlayerAdvisorProbe
+    {
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1";
+        private static object? advisor;
+        private static Type? type;
+        private static int phase, boundaryFrame, captureCount, publicationCount;
+        private static long initialGeneration;
+        private static ManualLogSource? log;
+        internal static bool InteractionsPassed { get; private set; }
+        internal static bool IsPlanning => Get<bool>("IsPlanning");
+        internal static BattleAdvice Advice => Get<BattleAdvice>("CurrentAdvice");
+        internal static object? Evidence => !Enabled ? null : new
+        {
+            Assembly = type?.Assembly.GetName().Name,
+            Version = type?.Assembly.GetName().Version?.ToString(),
+            InteractionsPassed,
+            Overlay = advisor == null ? null : Property("Evidence")
+        };
+
+        private static object? Property(string name) => AccessTools.Property(type!, name).GetValue(advisor);
+        private static T Get<T>(string name) { Resolve(); return (T)Property(name)!; }
+        private static T Field<T>(string name) => (T)AccessTools.Field(type!, name).GetValue(advisor);
+        private static object? Call(string name, params object[] args) => AccessTools.Method(type!, name).Invoke(advisor, args);
+        private static void Require(bool condition, string message)
+        { if (!condition) throw new InvalidOperationException("Player advisor acceptance: " + message); }
+        private static void Resolve()
+        {
+            if (advisor != null) return;
+            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().Single(item => item.GetName().Name == "MonsterTrain2Poju.Advisor");
+            type = assembly.GetType("MonsterTrain2Poju.Probe.BattleAdvisorOverlay", throwOnError: true)!;
+            advisor = AccessTools.Property(type, "Active").GetValue(null);
+            Require(advisor != null, "the real player entry point has not created an overlay");
+            Require(BattleAdvisorOverlay.Active == null, "a development overlay is also active");
+            log = BepInEx.Logging.Logger.CreateLogSource("PlayerAdvisorAcceptance");
+        }
+
+        internal static BattleTurnState Capture()
+        {
+            Resolve();
+            return (BattleTurnState)Call("CaptureReadOnly", AllGameManagers.Instance)!;
+        }
+
+        internal static PlayCardAction? NativeAction(PlayCardAction? action)
+        {
+            if (action == null) return null;
+            Resolve();
+            Type traceType = type!.Assembly.GetType("MonsterTrain2Poju.Probe.FullBattleTrace", true)!;
+            object trace = AccessTools.Property(traceType, "Active").GetValue(null)!;
+            int Card(int id)
+            {
+                if (id == 0) return 0;
+                var cards = (IReadOnlyList<CardState>)AccessTools.Property(traceType, "KnownCards").GetValue(trace)!;
+                CardState card = cards.Single(item => (int)AccessTools.Method(traceType, "CardId").Invoke(trace, new object[] { item }) == id);
+                return FullBattleTrace.Active!.CardId(card);
+            }
+            int Unit(int id)
+            {
+                if (id == 0) return 0;
+                var units = (IReadOnlyList<CharacterState>)AccessTools.Property(traceType, "KnownUnits").GetValue(trace)!;
+                CharacterState unit = units.Single(item => (int)AccessTools.Method(traceType, "UnitId").Invoke(trace, new object[] { item }) == id);
+                return FullBattleTrace.Active!.UnitId(unit);
+            }
+            Require(action.RecursionSelections.Count == 0 && action.MixSelections.Count == 0,
+                "this focused driver does not translate choice-card identities");
+            return new PlayCardAction(Card(action.CardInstanceId), action.RoomIndex, action.PlayerPosition,
+                Unit(action.TargetUnitId), Unit(action.ActivatorUnitId), action.TargetSpawnPointIndex,
+                activatorRoomIndex: action.ActivatorRoomIndex);
+        }
+
+        internal static bool ReadyFor()
+        {
+            Resolve();
+            Require(Get<int>("Failures") == 0 && Get<int>("PurityFailures") == 0, "player capture or overlay failed");
+            if (phase == 0)
+            {
+                if (!Ready()) return false;
+                initialGeneration = GetGeneration();
+                Call("CapturePanel");
+                Drag();
+                Click("暂停建议");
+                Require(Field<bool>("paused") && CurrentIsNull(), "pause retained a recommendation");
+                Hold(1); return false;
+            }
+            if (Time.frameCount <= boundaryFrame && phase is 1 or 3) return false;
+            if (phase == 1)
+            {
+                AssertHeld();
+                Click("隐藏破局建议"); Click("隐藏破局建议");
+                Require(Field<bool>("paused") && Field<bool>("panelVisible"), "showing cleared manual pause");
+                Click("暂停建议");
+                Require(!Field<bool>("paused") && CurrentIsNull(), "resume reused a recommendation");
+                phase = 2; return false;
+            }
+            if (phase == 2)
+            {
+                if (!IsPlanning) return false;
+                Click("隐藏破局建议");
+                Require(!Field<GameObject>("panel").activeSelf && CurrentIsNull(), "hide retained visible advice");
+                Hold(3); return false;
+            }
+            if (phase == 3)
+            {
+                AssertHeld(); Click("隐藏破局建议");
+                Require(Field<GameObject>("panel").activeSelf && CurrentIsNull(), "show reused hidden advice");
+                phase = 4; return false;
+            }
+            if (phase == 4)
+            {
+                if (!Ready()) return false;
+                Require(GetGeneration() > initialGeneration, "cancelled generation was republished");
+                initialGeneration = GetGeneration(); Click("重新计算");
+                Require(CurrentIsNull(), "refresh retained a recommendation");
+                phase = 5; return false;
+            }
+            if (!Ready()) return false;
+            if (!InteractionsPassed)
+            {
+                Require(GetGeneration() > initialGeneration, "refresh reused the preceding generation");
+                InteractionsPassed = true;
+                log!.LogInfo("PLAYER-ADVISOR-UI-PASS pause/resume hide/cancel/show refresh pointer-raycast drag/clamp generation=" + GetGeneration());
+            }
+            return true;
+        }
+
+        private static bool Ready()
+        {
+            if (CurrentIsNull()) return false;
+            // Both assemblies allocate their own capture identities. Compare
+            // the player publication with a fresh native capture in its own
+            // identity space; translate chosen inputs by native object identity.
+            BattleTurnState root = Capture();
+            using var keys = new BattleStateKeys();
+            Require(Advice.RootKey == keys.Key(root), "player advice is stale: " +
+                UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(Advice.Root), BattleTurnProbe.Comparable(root), "$"));
+            return (bool)Call("ReadyFor", root)!;
+        }
+        private static bool CurrentIsNull() => Field<BattleAdviceSession>("session").Current == null;
+        private static long GetGeneration() => Field<BattleAdviceSession>("session").Generation;
+        private static void Hold(int nextPhase)
+        {
+            phase = nextPhase; boundaryFrame = Time.frameCount + 8;
+            captureCount = Get<int>("Captures"); publicationCount = Get<int>("Published");
+        }
+        private static void AssertHeld()
+        {
+            Require(captureCount == Get<int>("Captures") && publicationCount == Get<int>("Published") && CurrentIsNull(),
+                "paused/hidden overlay captured or published");
+        }
+        private static void Click(string objectName)
+        {
+            Canvas.ForceUpdateCanvases();
+            GameObject canvas = Field<GameObject>("canvas");
+            Button button = canvas.GetComponentsInChildren<Button>(true).Single(item => item.name == objectName);
+            var pointer = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left,
+                position = RectTransformUtility.WorldToScreenPoint(null, button.transform.TransformPoint(((RectTransform)button.transform).rect.center)) };
+            var hits = new List<RaycastResult>(); EventSystem.current.RaycastAll(pointer, hits);
+            Require(hits.Count > 0 && ExecuteEvents.GetEventHandler<IPointerClickHandler>(hits[0].gameObject) == button.gameObject,
+                "button is blocked from pointer input: " + objectName);
+            Require(ExecuteEvents.Execute(button.gameObject, pointer, ExecuteEvents.pointerClickHandler), "button has no click handler");
+        }
+        private static void Drag()
+        {
+            GameObject panel = Field<GameObject>("panel"); RectTransform rect = panel.GetComponent<RectTransform>();
+            Vector2 before = rect.anchoredPosition;
+            GameObject title = panel.transform.Find("Title").gameObject;
+            var pointer = new PointerEventData(EventSystem.current) { delta = new Vector2(100000, -100000) };
+            Require(ExecuteEvents.Execute(title, pointer, ExecuteEvents.dragHandler), "title has no drag handler");
+            Rect bounds = ((RectTransform)rect.parent).rect;
+            Require(rect.anchoredPosition != before && Mathf.Approximately(rect.anchoredPosition.x, Mathf.Max(0, bounds.width - rect.rect.width)) &&
+                Mathf.Approximately(rect.anchoredPosition.y, -Mathf.Max(0, bounds.height - rect.rect.height)), "drag escaped canvas bounds");
+            pointer.delta = new Vector2(-100000, 100000); ExecuteEvents.Execute(title, pointer, ExecuteEvents.dragHandler);
+            Require(rect.anchoredPosition == Vector2.zero, "reverse drag escaped canvas bounds");
+            rect.anchoredPosition = before;
+        }
+    }
+}

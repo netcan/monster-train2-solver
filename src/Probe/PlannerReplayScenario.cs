@@ -45,13 +45,22 @@ namespace MonsterTrain2Poju.Probe
         private static int cursor;
         private static bool waiting;
         private static ManualLogSource? logger;
-        internal static bool WaitingForWorker => Enabled && BattleAdvisorOverlay.Active?.IsPlanning == true &&
+        internal static bool WaitingForWorker => Enabled &&
+#if DEVELOPMENT_PROBE
+            !PlayerAdvisorProbe.Enabled &&
+#endif
+            BattleAdvisorOverlay.Active?.IsPlanning == true &&
             (Records.Count == 0 || Records.Count == 1 && cursor == 1 && waiting && !Records[0].Completed);
 
         internal static bool AwaitingAdvice(BattleTurnState state)
         {
             BattleAdvisorOverlay? advisor = BattleAdvisorOverlay.Active;
             bool verifyRefresh = Records.Count == 1 && cursor == 1 && waiting && !Records[0].Completed;
+#if DEVELOPMENT_PROBE
+            if (Enabled && PlayerAdvisorProbe.Enabled && (Records.Count == 0 || verifyRefresh) &&
+                state.Spawn.Turn >= int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "2", CultureInfo.InvariantCulture))
+                return string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_INPUT")) && !PlayerAdvisorProbe.ReadyFor();
+#endif
             return Enabled && (Records.Count == 0 || verifyRefresh) && advisor != null &&
                 state.Spawn.Turn >= int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "2", CultureInfo.InvariantCulture) &&
                 !advisor.ReadyFor(state);
@@ -61,6 +70,9 @@ namespace MonsterTrain2Poju.Probe
         {
             action = null;
             if (!Enabled) return false;
+#if DEVELOPMENT_PROBE
+            if (PlayerAdvisorProbe.Enabled) state = PlayerAdvisorProbe.Capture();
+#endif
             logger = log;
             int start = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "2", CultureInfo.InvariantCulture);
             if (Records.Count == 0)
@@ -76,6 +88,9 @@ namespace MonsterTrain2Poju.Probe
             Step step = record.Steps[cursor++];
             waiting = true;
             action = step.Action;
+#if DEVELOPMENT_PROBE
+            if (PlayerAdvisorProbe.Enabled) action = PlayerAdvisorProbe.NativeAction(action);
+#endif
             return true; // A null action deliberately advances the native turn.
         }
 
@@ -89,6 +104,9 @@ namespace MonsterTrain2Poju.Probe
 
         private static void Observe(BattleTurnState actual, bool terminal)
         {
+#if DEVELOPMENT_PROBE
+            if (PlayerAdvisorProbe.Enabled) actual = PlayerAdvisorProbe.Capture();
+#endif
             Record record = Records.Single();
             BattleTurnState expected = record.Expected[cursor - 1];
             record.Actual.Add(actual);
@@ -132,7 +150,11 @@ namespace MonsterTrain2Poju.Probe
             else
             {
                 using var keys = new BattleStateKeys();
-                BattlePlanResult plan = BattleAdvisorOverlay.Active != null ? BattleAdvisorOverlay.Active.CurrentPlan :
+                BattlePlanResult plan =
+#if DEVELOPMENT_PROBE
+                    PlayerAdvisorProbe.Enabled ? PlayerAdvisorProbe.Advice.Plan :
+#endif
+                    BattleAdvisorOverlay.Active != null ? BattleAdvisorOverlay.Active.CurrentPlan :
                     BattlePlanner.Plan(root, keys.Key,
                         new BattlePlannerOptions(256, horizon, 8,
                             timeLimit: TimeSpan.FromMilliseconds(int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TIME_LIMIT_MS") ?? "3000", CultureInfo.InvariantCulture)),

@@ -43,7 +43,8 @@ try {
             $pe.PEHeaders.CoffHeader.Machine.ToString() -ne 'I386') { throw 'Expected portable AnyCPU IL assembly.' }
         $metadata = [Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($pe)
         $types = @($metadata.TypeDefinitions | ForEach-Object { $metadata.GetString($metadata.GetTypeDefinition($_).Name) })
-        if ($types -notcontains 'AdvisorPlugin' -or $types -contains 'ProbePlugin' -or $types -contains 'NativeReplayScenario') {
+        if ($types -notcontains 'AdvisorPlugin' -or $types -contains 'ProbePlugin' -or $types -contains 'NativeReplayScenario' -or
+            $types -contains 'PlayerAdvisorProbe') {
             throw 'Player assembly includes a missing or development entry point.'
         }
     } finally { $pe.Dispose(); $bytes.Dispose() }

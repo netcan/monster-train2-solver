@@ -1436,6 +1436,9 @@ namespace MonsterTrain2Poju.Probe
                 RollingDecisions = RollingAdviceScenario.Records,
                 BattleDistance = AllGameManagers.Instance!.GetSaveManager().GetCurrentDistance(),
                 Advisor = BattleAdvisorOverlay.Active?.Evidence,
+#if DEVELOPMENT_PROBE
+                PlayerAdvisor = PlayerAdvisorProbe.Evidence,
+#endif
                 RoomCapacityAttachmentCoverage = RoomCapacityAttachmentScenario.Evidence,
                 OriginalCarriageJackCoverage = OriginalCarriageJackScenario.Evidence,
                 OriginalFirstRoomAttachmentCoverage = OriginalFirstRoomAttachmentScenario.Evidence,

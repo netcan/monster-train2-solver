@@ -85,3 +85,47 @@ replacement DLLs on the game's volume and retains the previous complete plugin
 folder/launcher. Build version is read from `Advisor.csproj`; the package now
 contains the shared `poju-common.sh` helper in its checksum coverage. No full
 fixture regression was run for this increment.
+
+## Real player assembly acceptance
+
+`Run-FullBattleProbe.ps1 -PlayerAdvisor` loads the actual standalone player DLL
+with the isolated native input driver, without creating a development overlay.
+The driver reads the player's publication, checks its full root key against a
+fresh pure native capture, and executes its frozen steps through the game UI.
+Player and driver allocate separate capture IDs; native object references map
+chosen card/target/activator IDs between them. Expected and actual planner
+states stay in the player's identity space. The independent development trace
+continues to check native effects in its own identity space. Choice-card ID
+translation is deliberately rejected by this focused acceptance driver.
+
+The harness dispatches Unity pointer events to the actual buttons after checking
+the foremost raycast hit. It checks pause/resume, preservation of manual pause
+across hiding/showing, cancellation while searching, no captures/publications
+while paused or hidden, new generations after showing/refreshing, and dragging
+to both canvas boundaries. This checks Unity input routing and callbacks; it
+does not simulate hardware mouse input or establish Mac input compatibility.
+It also renders the actual player canvas. The acceptance bridge is excluded
+from the player assembly and rejected by package validation if present.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 `
+  -Policy units-spells-and-junk -PlayerAdvisor `
+  -PlannerHorizon 3 -PlannerTimeLimitMs 3000 -BinaryCapture -SkipBuild
+```
+
+Successful source profile:
+`.probe-runs/full-battle-units-spells-and-junk-20261021-193549-f77c2b1f`.
+The native battle wins in 106.29 seconds with 21 card actions, seven EndTurns,
+settled terminal effects, protected files unchanged and four zero counters.
+The player's 12-step, three-turn plan completes every native comparison;
+score is -79931.1 against the no-card baseline -73884.4. Four publications have
+zero capture-purity failures. The player's rendered canvas has 352 text vertices
+and 85,699 nonbackground pixels. `PLAYER-ADVISOR-UI-PASS` and
+`PLAYER-ADVISOR-PASS` both pass. This supersedes the earlier Windows player
+recommendation/render/Unity pointer-event gaps; macOS acceptance remains open.
+
+Two initial harness attempts correctly refused consumption: the first had
+different branch-mask capture settings, and the second exposed separate unit-ID
+allocation between assemblies. Neither is counted as successful evidence.
+Temporary player DLLs/config are archived inside the isolated run profile;
+the worker's prior config is restored even when acceptance fails.

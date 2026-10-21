@@ -11,6 +11,7 @@ param(
     [switch] $PlannerTacticalSeed,
     [switch] $DotNetPlanner,
     [switch] $Advisor,
+    [switch] $PlayerAdvisor,
     [switch] $RollingAdvice,
     [switch] $PreviewAttackTrace,
     [switch] $HoldoverCalibration,
@@ -590,6 +591,15 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($PlayerAdvisor) {
+    if ($Advisor -or $RollingAdvice -or $RollingInput -or $DotNetPlanner) {
+        throw 'PlayerAdvisor uses the real player overlay with a searched frozen-window Planner run.'
+    }
+    $Planner = $true
+    # Observe the same native mechanisms in the independent development trace.
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+}
 if ($OuterBossRelentless -and -not $OuterBossPhases) { throw '-OuterBossRelentless requires -OuterBossPhases.' }
 if ($OuterBossRelentlessHealth -and -not $OuterBossRelentless) { throw '-OuterBossRelentlessHealth requires -OuterBossRelentless.' }
 if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns requires -PhysicalSpawnPoints.' }
@@ -1101,6 +1111,10 @@ function Get-OriginalSignature {
 }
 
 $workerLockPath = Join-Path $workspace ".probe-runs\native-worker-$NativeWorker.lock"
+$playerCheckPlugin = $null
+$playerConfigPath = $null
+$playerConfigBackup = $null
+$process = $null
 try {
     $nativeWorkerLease = [IO.File]::Open($workerLockPath, [IO.FileMode]::OpenOrCreate,
         [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
@@ -1118,6 +1132,10 @@ if ($existingGame.Count -gt 0) {
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src\Probe\Probe.csproj') -c Release
     if ($LASTEXITCODE -ne 0) { throw 'Probe build failed.' }
+    if ($PlayerAdvisor) {
+        dotnet build (Join-Path $workspace 'src/Advisor/Advisor.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Player advisor build failed.' }
+    }
     if ($DotNetPlanner) {
         dotnet build (Join-Path $workspace 'src/FixtureTools/FixtureTools.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'External planner build failed.' }
@@ -1178,6 +1196,7 @@ $environment = @{
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"
     MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
     MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })
+    MT2_PROBE_PLAYER_ADVISOR = $(if ($PlayerAdvisor) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
@@ -1703,6 +1722,26 @@ if ($CardCatalog) {
     }
 }
 $gameArguments = @('-logFile', $unityLog)
+if ($PlayerAdvisor) {
+    $existingPlayer = @(Get-ChildItem -LiteralPath $pluginDir -Filter 'MonsterTrain2Poju.Advisor.dll' -File -Recurse)
+    if ($existingPlayer.Count -ne 0) { throw 'Remove the existing player advisor from this isolated worker before running PlayerAdvisor.' }
+    $playerCheckPlugin = Join-Path $pluginDir ('PojuPlayerCheck-' + [Guid]::NewGuid().ToString('N'))
+    $null = New-Item -ItemType Directory -Path $playerCheckPlugin
+    Copy-Item -LiteralPath (Join-Path $workspace 'src/Advisor/bin/Release/netstandard2.1/MonsterTrain2Poju.Advisor.dll') -Destination $playerCheckPlugin
+    $playerConfigPath = Join-Path $gameRoot 'BepInEx/config/netcan.monstertrain2.advisor.cfg'
+    $playerConfigBackup = Join-Path $profile 'original-player-advisor.cfg'
+    if (Test-Path -LiteralPath $playerConfigPath) { Move-Item -LiteralPath $playerConfigPath -Destination $playerConfigBackup }
+    @"
+[General]
+Enabled = true
+PauseWhenHidden = true
+[Search]
+Horizon = $PlannerHorizon
+TimeLimitMs = $PlannerTimeLimitMs
+PreferredFloor = $($PlannerDeploymentRoom + 1)
+TacticalSeed = $([bool]$PlannerTacticalSeed)
+"@ | Set-Content -LiteralPath $playerConfigPath -Encoding utf8
+}
 if ($ShowWindow) { $gameArguments += @('-screen-fullscreen', '0', '-screen-width', '1280', '-screen-height', '800') }
 $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList $gameArguments `
@@ -1754,6 +1793,19 @@ if ($Advisor -and ($trace.Advisor.Captures -lt 1 -or $trace.Advisor.PurityFailur
     ($null -ne $trace.Advisor.PanelVertices -and ($trace.Advisor.PanelVertices -lt 1 -or $trace.Advisor.PanelPixels -lt 1000)) -or
     -not (Test-Path -LiteralPath (Join-Path $profile 'advisor-ready.png')))) {
     throw 'Live advisor lacks pure capture, a rendered recommendation, background frames or action invalidation evidence.'
+}
+if ($PlayerAdvisor -and -not $PlannerInput) {
+    $playerEvidence = $trace.PlayerAdvisor.Overlay
+    if ($trace.PlayerAdvisor.Assembly -cne 'MonsterTrain2Poju.Advisor' -or -not $trace.PlayerAdvisor.InteractionsPassed -or
+        $playerEvidence.Captures -lt 1 -or $playerEvidence.PurityFailures -ne 0 -or $playerEvidence.Failures -ne 0 -or
+        $playerEvidence.Published -lt 4 -or $playerEvidence.Invalidations -lt 3 -or $playerEvidence.PlanningFrames -lt 2 -or
+        $playerEvidence.PanelVertices -lt 1 -or $playerEvidence.PanelPixels -lt 1000 -or
+        -not (Test-Path -LiteralPath (Join-Path $profile 'advisor-ready.png')) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'PLAYER-ADVISOR-UI-PASS' -Quiet) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'POJU-READY' -Quiet) -or $null -ne $trace.Advisor) {
+        throw 'Real player advisor did not pass isolated recommendation and pointer/state acceptance.'
+    }
+    Write-Output "PLAYER-ADVISOR-PASS version=$($trace.PlayerAdvisor.Version) publications=$($playerEvidence.Published)"
 }
 if ($TitanSkinCombat -and ($trace.ModifierScenario -ne 'titan-skin-combat' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'TITAN-SKIN-COMBAT-PREPARED .*starting titanskin stacks=2' -Quiet))) {
@@ -6498,5 +6550,14 @@ if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePasse
     throw "Full battle differential probe failed; inspect $tracePath and $unityLog"
 }
 } finally {
-    $nativeWorkerLease.Dispose()
+    try {
+        if ($PlayerAdvisor -and $playerCheckPlugin -and (Test-Path -LiteralPath $playerCheckPlugin)) {
+            if ($process -and -not $process.HasExited) { $process.Kill(); $process.WaitForExit() }
+            Move-Item -LiteralPath $playerCheckPlugin -Destination (Join-Path $profile 'player-plugin')
+            if ($playerConfigPath -and (Test-Path -LiteralPath $playerConfigPath)) {
+                Move-Item -LiteralPath $playerConfigPath -Destination (Join-Path $profile 'checked-player-advisor.cfg')
+            }
+            if ($playerConfigBackup -and (Test-Path -LiteralPath $playerConfigBackup)) { Move-Item -LiteralPath $playerConfigBackup -Destination $playerConfigPath }
+        }
+    } finally { $nativeWorkerLease.Dispose() }
 }
