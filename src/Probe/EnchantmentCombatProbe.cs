@@ -10,6 +10,32 @@ namespace MonsterTrain2Poju.Probe
     internal static class EnchantmentCombatProbe
     {
         private static readonly Type EntryType = AccessTools.Inner(typeof(CardEffectEnchant), "EnchantedState");
+        private static bool Bound(CardEffectEnchant effect)
+        {
+            var source = (CharacterState?)AccessTools.Field(typeof(CardEffectEnchant), "enchanterCharacter").GetValue(effect);
+            var managers = (ICoreGameManagers?)AccessTools.Field(typeof(CardEffectEnchant), "cachedCoreGameManagers").GetValue(effect);
+            return source != null && !managers.IsNullOrDestroyed() &&
+                AccessTools.Field(typeof(CardEffectEnchant), "cachedState").GetValue(effect) != null;
+        }
+        internal static bool AwaitingSourceDestruction(IEnumerable<CharacterState> units)
+        {
+            // Ordinary killed enemies can remain as live Unity objects until
+            // a later combat phase. Only a retired, still-bound aura depends
+            // on Unity.Destroy before the next complete snapshot is stable.
+            foreach (CharacterState owner in units)
+            {
+                if (owner == null || !owner.IsEnchanter) continue;
+                foreach (CharacterTriggerState trigger in (IEnumerable<CharacterTriggerState>)
+                    AccessTools.Field(typeof(CharacterState), "triggers").GetValue(owner))
+                    foreach (CardEffectState state in trigger.GetEffects())
+                    {
+                        if (state.GetCardEffect() is not CardEffectEnchant effect) continue;
+                        var source = (CharacterState?)AccessTools.Field(typeof(CardEffectEnchant), "enchanterCharacter").GetValue(effect);
+                        if (source != null && source.IsDestroyed && Bound(effect)) return true;
+                    }
+            }
+            return false;
+        }
         internal static EnchantmentRule? Definition(CardEffectData data)
         {
             if (data.GetEffectStateName() != "CardEffectEnchant") return null;
@@ -29,11 +55,7 @@ namespace MonsterTrain2Poju.Probe
             EnchantmentRule? definition = Definition(state.GetSourceCardEffectData());
             if (definition == null) return null;
             var effect = (CardEffectEnchant)state.GetCardEffect();
-            var source = (CharacterState?)AccessTools.Field(typeof(CardEffectEnchant), "enchanterCharacter").GetValue(effect);
-            var managers = (ICoreGameManagers?)AccessTools.Field(typeof(CardEffectEnchant), "cachedCoreGameManagers").GetValue(effect);
-            bool bound = source != null && !managers.IsNullOrDestroyed() &&
-                AccessTools.Field(typeof(CardEffectEnchant), "cachedState").GetValue(effect) != null;
-            return new EnchantmentRule(definition.Targeting, definition.StatusPool, Snapshot(effect), bound, state.GetParentCardState() != null);
+            return new EnchantmentRule(definition.Targeting, definition.StatusPool, Snapshot(effect), Bound(effect), state.GetParentCardState() != null);
         }
         internal static EnchantmentState Snapshot(CardEffectEnchant effect)
         {

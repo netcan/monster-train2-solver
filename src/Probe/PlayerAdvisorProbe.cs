@@ -38,6 +38,20 @@ namespace MonsterTrain2Poju.Probe
             }
         }
         internal static bool IsPlanning => Get<bool>("IsPlanning");
+        internal static string WaitState
+        {
+            get
+            {
+                Resolve();
+                Type traceType = type!.Assembly.GetType("MonsterTrain2Poju.Probe.FullBattleTrace", true)!;
+                object trace = AccessTools.Property(traceType, "Active").GetValue(null)!;
+                var units = (IReadOnlyList<CharacterState>)AccessTools.Property(traceType, "KnownUnits").GetValue(trace)!;
+                return " playerStatus=" + Field<BattleAdviceSession>("session").Status + " paused=" + Field<bool>("paused") +
+                    " captureError=" + Field<string?>("captureError") + " retainedDestroyed=" +
+                    string.Join(",", units.Where(unit => unit != null && unit.IsDestroyed).Select(unit =>
+                        unit.name + ":preview=" + unit.SpawnedInPreviewMode));
+            }
+        }
         internal static BattleAdvice Advice => Get<BattleAdvice>("CurrentAdvice");
         internal static BattleAdvisorOverlay.Publication LatestTiming =>
             JArray.FromObject(Get<object>("Publications")).Last!.ToObject<BattleAdvisorOverlay.Publication>()!;
@@ -139,6 +153,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool ReadyFor()
         {
             Resolve();
+            Require(Field<string?>("captureError") == null, "player capture failed: " + Field<string?>("captureError"));
             Require(Get<int>("Failures") == 0 && Get<int>("PurityFailures") == 0, "player capture or overlay failed");
             if (phase == 0)
             {

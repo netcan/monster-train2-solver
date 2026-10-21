@@ -132,7 +132,9 @@ namespace MonsterTrain2Poju.Probe
                     " handAnimating=" + current?.GetHandUI()?.AreAnyCardsAnimating() +
                     " preview=" + current?.GetSaveManager()?.PreviewMode + " isolatedPreview=" + PreviewRngIsolation.Active +
                     " playing=" + current?.GetReplayManager()?.IsCardPlaying() +
-                    " dirty=" + (current?.GetCombatManager() == null ? null : AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(current.GetCombatManager())));
+                    " dirty=" + (current?.GetCombatManager() == null ? null : AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(current.GetCombatManager())) +
+                    (PlayerAdvisorProbe.Enabled && current?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle
+                        ? PlayerAdvisorProbe.WaitState : ""));
             }
             if (stage == Stage.Quitting)
             {

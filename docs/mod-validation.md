@@ -1,13 +1,14 @@
 # Player Mod validation · 2026-10-21
 
 The player entry point is `src/Advisor/AdvisorPlugin.cs`. The 0.2.0 baseline below
-is followed by the 0.2.1 and 0.2.2 focused results.
+is followed by the 0.2.1, 0.2.2 and 0.2.3 focused results.
 It compiles against Mono game 2.2.1, module
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, as an AnyCPU netstandard2.1 assembly.
 The assembly excludes `ProbePlugin` and `NativeReplayScenario`. Startup selects
-ten observation/invalidation patches explicitly, including spawn-point copy
+eleven observation/invalidation patches explicitly, including spawn-point copy
 identity tracking, original source-trait capture for generated cards and shared
-reference tracking for queued next-draw upgrades. It does
+reference tracking for queued next-draw upgrades and native trigger creation
+order. It does
 not install every patch in its assembly.
 
 ## Focused results
@@ -352,3 +353,18 @@ The ZIP and its `.sha256` file are copied to `/tank` share root,
 `\\intel-n100.local\tank` (this workstation's `Z:`). Both network copies match
 their local SHA256 values. The previous 0.2.1 package remains available.
 Mac runtime acceptance remains unverified and the package retains its trial label.
+
+## Version 0.2.3: physical Conduit capture
+
+The player captures primary Conduit trackers, including dead or detached
+contributors, together with physical spawn points. An explicitly selected
+read-only `AddTrigger` observer preserves native trigger creation identities
+when relic callbacks prepend a new trigger to the visible list.
+
+The initial player diagnostic matched nine inputs, then stopped publishing:
+the native game retained a destroyed ordinary enemy as a live Unity object.
+Decision readiness now waits only for a retired, still-bound enchantment source
+whose Unity destruction changes the captured aura binding. Ordinary corpses do
+not block advice. The existing retired-unit destruction fixture still matches
+all six EndTurns, upgrade cleanup, aura unbinding and gameplay RNG. Failed
+diagnostics are not curated as accepted battles.
