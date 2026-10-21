@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 819 binary archives, including 767
-full battles and 52 component calibrations. The card index accepts 766 battles;
+Current curated inventory (2026-10-21): 821 binary archives, including 767
+full battles and 54 component calibrations. The card index accepts 766 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -44,7 +44,14 @@ legal card actions; a frozen replay starts at one settled native decision and
 compares every successor without injecting later native states. It reaches the
 original terminal loss with exact controller/aura/physical/context/RNG state.
 The raw source retains its two initial-spawn guards and is component evidence.
-Initial boss birth, natural eighth-ring victory, effect-bearing boss spells and
+Two separate `OuterBossBirthModel` calibrations now start after native
+`CreateHeroState` has returned and compare initial action selection, reserved
+casting-anchor placement, spawn callbacks and aura binding. They cover empty
+floors and three occupied floors; native birth chooses floor two without
+consuming BossActions RNG. The aura is bound with no cached status or targets
+at this boundary, including the occupied control. These samples do not model
+`CharacterState.Setup` or remove the deployment EndTurn guard.
+Initial instance creation/deployment integration, natural eighth-ring victory, effect-bearing boss spells and
 terminal boss-action callbacks remain unverified. Pyre-entry routing is guarded
 explicitly, and the default capture mode retains its previous coverage guards.
 Native upgrade-slot relics now pass battle validation because their only

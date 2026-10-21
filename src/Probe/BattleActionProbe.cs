@@ -60,6 +60,9 @@ namespace MonsterTrain2Poju.Probe
                 definitions = definitions.Concat(spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Where(unit => unit.Id == spawn.OuterBoss.UnitId).SelectMany(unit => unit.Triggers)
                     .SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)).Distinct().ToArray();
+            else if (OuterBossBirthProbe.CreatedDefinition is CombatUnit createdBoss)
+                definitions = definitions.Concat(createdBoss.Triggers.SelectMany(trigger => trigger.Effects)
+                    .SelectMany(effect => effect.CardPool)).Distinct().ToArray();
             definitions = definitions.Concat(nativeCards.Select(card => card.GetSpawnCharacterData()?.GetGraftedEquipment())
                 .Where(card => card != null).Select(card => card!.GetID())).Distinct().ToArray();
             definitions = definitions.Concat(nativeCards.SelectMany(card => card.GetCardStateModifiers().BoxedCardStates)

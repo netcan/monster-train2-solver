@@ -1,8 +1,34 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 819 archives (767 full battles and
-52 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 821 archives (767 full battles and
+54 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`outer-boss-birth-calibration.mt2f` and
+`outer-boss-occupied-birth-calibration.mt2f` retain the exact original boundary
+after `CreateHeroState` returns, before initial boss action/room setup. The
+created actor, original controller, intrinsic movement flags, physical identity,
+and full battle are model inputs. `--outer-boss-birth-only` compares the native
+initial-action latch, visit ages, reserved casting slot, spawn callbacks, aura
+binding, resources, card definitions and every RNG stream with immutable inputs.
+The controls have zero/three occupied floors and zero/one ally on the chosen
+floor two. Neither initial selection consumes BossActions RNG. At this boundary
+the aura is bound but has no targets or cached status; native `OnSpawn` does
+not fire `AfterSpawnEnchant`. Later aura refresh remains separate phase/turn
+evidence. Explicit movement flags preserve the native outer boss's automatic
+ascent flag while the ascent routine excludes it from ordinary enemy movement.
+OnSpawn Covenant effects, paired bosses and terminal birth callbacks are guarded.
+`CharacterState.Setup` and complete deployment EndTurn remain outside this
+created-actor boundary. Capture with `-OuterBossBirth -OuterBossTurns
+-PhysicalSpawnPoints`; ordinary capture guards are retained. The empty/occupied
+source diagnostics finish in native losses with 2/7 unsupported records, zero
+capture/mismatch/pending counters and protected files unchanged; the occupied
+source includes five legal deployment plays with guarded action snapshots.
+Sources: `20261021-133110-d2099434` (79.06 seconds) and
+`20261021-133110-1443b7ec` (191.04 seconds), run on isolated workers in parallel.
+Binary archives: 16,622/17,547 bytes, 2,081/2,230 nodes, SHA256
+`7868c9f4021d8c5a09cd6ee3e29701b0a29132adccb52ca41f3dbf4cbf0730db` and
+`276d26b0baca5c87b859ed095e1ab2322f0d33e9eb1149a9ba0608991b510c3f`.
 
 `outer-boss-turn-calibration.mt2f` retains the unchanged raw diagnostic from
 the opt-in `-OuterBossTurns -PhysicalSpawnPoints` mode. Five complete EndTurns

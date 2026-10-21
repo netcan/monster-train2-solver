@@ -49,10 +49,10 @@ namespace MonsterTrain2Poju.Probe
                 return anchor == null ? -1 : Field<List<SpawnPoint>>(group, "_primarySpawnPoints").IndexOf(anchor.SpawnPoint);
             }).ToArray();
         }
-        internal static OuterBossProgress CaptureProgress()
+        internal static OuterBossProgress CaptureProgress() => CaptureProgress(AllGameManagers.Instance.GetHeroManager().GetOuterTrainBossCharacter());
+        internal static OuterBossProgress CaptureProgress(CharacterState boss)
         {
             AllGameManagers managers = AllGameManagers.Instance;
-            CharacterState boss = managers.GetHeroManager().GetOuterTrainBossCharacter();
             BossState state = boss.GetBossState();
             BossActionController controller = Field<BossActionController>(state, "_bossActionController");
             OuterBossActionProgress Action(BossActionState action)

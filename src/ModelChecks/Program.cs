@@ -1461,6 +1461,13 @@ if (args.Length == 1 && args[0] == "--no-player-units-status-pure")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--outer-boss-birth-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OuterBossBirthChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--outer-boss-turn-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3205,6 +3212,12 @@ CloneUpgradeRefreshChecks.Run();
 TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();
+foreach (string path in args.Where(path => path.Contains("outer-boss-birth-calibration", StringComparison.OrdinalIgnoreCase) ||
+    path.Contains("outer-boss-occupied-birth-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OuterBossBirthChecks.Native(fixture.RootElement);
+}
 foreach (string path in args.Where(path => path.Contains("outer-boss-turn-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);
