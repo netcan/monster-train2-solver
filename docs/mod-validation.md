@@ -5,8 +5,9 @@ is followed by the 0.2.1 focused results.
 It compiles against Mono game 2.2.1, module
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, as an AnyCPU netstandard2.1 assembly.
 The assembly excludes `ProbePlugin` and `NativeReplayScenario`. Startup selects
-nine observation/invalidation patches explicitly, including spawn-point copy
-identity tracking and original source-trait capture for generated cards. It does
+ten observation/invalidation patches explicitly, including spawn-point copy
+identity tracking, original source-trait capture for generated cards and shared
+reference tracking for queued next-draw upgrades. It does
 not install every patch in its assembly.
 
 ## Focused results
@@ -243,6 +244,16 @@ reference and aura binding remain live until the frame ends. Reading that
 intermediate state caused a full-state discrepancy; the observer waits without
 changing the native cleanup. The fresh moon replay above uses this settlement
 gate and still matches all 38 inputs, full roots, successors, forecasts and RNG.
+
+The player now installs the read-only next-draw queue identity observer too.
+A final-boss diagnostic previously left `NextUpgradeReferenceId` at 1 after
+Soldier of Fortune while the model expected 2. Frozen diagnostic profile
+`full-battle-units-spells-and-junk-20261021-203527-1128a495` reaches all 12 recorded
+inputs and matches that successor at 2; it then stops because the diagnostic
+input ends before combat completion. This is a focused failure reproduction,
+not a completed battle acceptance. The original Soldier of Fortune model
+fixture also passes its paid/unaffordable draw, shared-upgrade and full-chain
+checks.
 
 This establishes the natural Luna Coven starter battle in the real player
 entry point. It does not establish every later moon deck, room/relic combination,

@@ -17,6 +17,7 @@ namespace MonsterTrain2Poju.Probe
         private static Record? current;
         private static readonly Dictionary<CardUpgradeState, int> sharedReferences = new Dictionary<CardUpgradeState, int>();
         private static int nextUpgradeReferenceId = 1;
+        internal static void InstallAdvisorPatches(Harmony harmony) => harmony.CreateClassProcessor(typeof(QueueIdentityPatch)).Patch();
         private static bool? branchReferences;
         private static bool BranchReferences
         {
