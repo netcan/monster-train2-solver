@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 789 archives (749 full battles and
+Current manifest inventory (2026-10-21): 801 archives (761 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,7 +14,7 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-archives. The card index accepts 748 full battles; one historical capture stays
+archives. The card index accepts 760 full battles; one historical capture stays
 excluded because its original mismatch counters are nonzero. Refresh/check with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
@@ -27,6 +27,14 @@ The [live advisor report](live-advisor.md) adds the interactive launcher,
 native panel render and three natural first-ring miniboss cases with independent
 fresh-process replay. It records action invalidation/replanning, background
 frames, capture purity, budget timings and explicit later-boss boundaries.
+
+The [full-battle rolling report](rolling-advisor.md) adds twelve native archives:
+four rolling-source/fresh-replay/completed-policy triples, 62 decisions to actual
+battle ends, three distinct actual bosses including ring five, native enemy
+Harvest/Incant buffs and natural aura lifecycle evidence. Ring-seven defeat
+occurs before its boss and does not count toward boss coverage. Measured total
+capture-to-publication latency and controlled map-navigation boundaries are
+recorded with the results. `scripts/Check-RollingAdvisor.ps1` runs only this gate.
 
 `full-battle-original-attack-overrides.mt2f` captures unchanged Irontongue and
 Equalizer on three authored hosts. Native victim HP/armor proves nine exact

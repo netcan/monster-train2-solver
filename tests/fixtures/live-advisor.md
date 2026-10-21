@@ -56,6 +56,14 @@ does not establish global optimality or hidden-draw probabilities.
 
 ## Natural encounter evidence
 
+The [full-battle rolling report](rolling-advisor.md) extends the earlier window
+tests below: a new recommendation supplies every executed first step until
+actual battle end. It includes three distinct actual bosses (rings one, two and
+five), an additional seventh-ring mechanic control, completed native policy
+comparisons and capture-to-publication timings. Later encounters use controlled
+native map navigation with the starter deck; the middle/later losses do not
+establish campaign wins.
+
 Six archives form three live-source/fresh-native-replay pairs. All six full
 battles are settled native wins, with CaptureFailures, Mismatches, Unsupported
 and Pending equal to zero. The replay processes search zero nodes and reproduce
@@ -112,5 +120,6 @@ The separate native benchmark driver automates inputs; the interactive launcher
 does not. The interactive entry was also smoke-tested through native startup,
 save-root redirection and a live game window without the autoplay driver.
 
-Later-ring/outer-train boss validation, unknown-draw planning, broader campaign
-combination coverage and a global optimality proof remain outside this evidence.
+Outer-train boss support, later-ring wins with progressed decks, unknown-draw
+planning, broader campaign combinations and global optimality remain outside
+the combined evidence.

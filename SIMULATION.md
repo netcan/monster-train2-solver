@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 789 binary archives, including 749
-full battles and 40 component calibrations. The card index accepts 748 battles;
+Current curated inventory (2026-10-21): 801 binary archives, including 761
+full battles and 40 component calibrations. The card index accepts 760 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -25,7 +25,15 @@ and target plus forecast Pyre HP, and invalidates advice after native actions.
 It includes an isolated manual launcher, a native Unity panel render, and three
 natural first-ring miniboss search/fresh-replay pairs. All six full battles
 pass with four failure counters zero. These cover two encounter types and one
-miniboss identity; later-ring/outer-train boss validation remains outstanding.
+miniboss identity. The newer [full-battle rolling acceptance](tests/fixtures/rolling-advisor.md)
+adds four source/replay/completed-policy triples and 62 newly computed native
+decisions through actual battle ends. Three distinct bosses enter actual rooms,
+including the fifth-ring boss. The first two encounters win with 73/34 Pyre HP
+versus the completed policy's 66/33; the fifth/seventh-ring starter-deck runs
+lose and tie that policy. The seventh-ring boss never enters and is not counted.
+Capture-to-UI-publication response has a 3893.4 ms median and 4492.3 ms P95.
+Later encounters use controlled native map jumps; progressed-deck campaign wins
+and outer-train boss support remain outstanding.
 
 ### Per-card evidence inventory
 

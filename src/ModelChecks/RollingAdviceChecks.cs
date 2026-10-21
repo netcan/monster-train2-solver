@@ -9,6 +9,10 @@ internal static class RollingAdviceChecks
     private static BattleTurnState State(FixtureValue value) => value.Deserialize<BattleTurnState>()!;
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
     private static string Key(BattleTurnState state, bool terminal = false) => BattleTurnChecks.Comparable(state, terminal);
+    private static string[] ActualBosses(FixtureValue fixture) => fixture.GetProperty("RollingDecisions").EnumerateArray()
+        .SelectMany(record => new[] { State(record.GetProperty("Root")), State(record.GetProperty("Actual")) })
+        .SelectMany(state => state.Spawn.Train.Rooms.Where(room => !room.Preview).SelectMany(room => room.Units))
+        .Where(unit => unit.IsBoss == true).Select(unit => unit.AssetKey).Distinct().ToArray();
     private static void Accepted(FixtureValue fixture)
     {
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
@@ -90,13 +94,38 @@ internal static class RollingAdviceChecks
                 Require(Key(State(first[index].GetProperty(field)), terminal) == Key(State(second[index].GetProperty(field)), terminal),
                     "Fresh rolling replay changed full state or RNG at " + field);
         }
-        BattleAdviceChecks.Native(source);
+        // A terminal pre-boss loss is still a useful full-battle mechanic control.
+        // Suite counts distinct bosses only from actual decision-room occupants.
+        BattleAdviceChecks.Native(source, requireBoss: false);
         Require(baseline.GetProperty("Policy").GetString() == "units-spells-and-junk", "Wrong fixed-policy baseline.");
         Require(source.GetProperty("BattleDistance").GetInt32() == baseline.GetProperty("BattleDistance").GetInt32(), "Baseline encounter distance differs.");
+        Require(source.GetProperty("BattleDistance").GetInt32() == replay.GetProperty("BattleDistance").GetInt32(), "Replay encounter distance differs.");
         FixtureValue[] baselineActions = baseline.GetProperty("Actions").EnumerateArray().ToArray();
         FixtureValue[] baselineTurns = baseline.GetProperty("Turns").EnumerateArray().ToArray();
         BattleTurnState baselineRoot = State((baselineActions.Length > 0 ? baselineActions[0] : baselineTurns[0]).GetProperty("Before"));
         Require(Key(State(first[0].GetProperty("Root"))) == Key(baselineRoot), "Fixed-policy baseline starts from a different battle state.");
+        BattleTurnState policyState = baselineRoot;
+        int actionIndex = 0;
+        RoomOutcome policyOutcome = RoomOutcome.Exchanged;
+        void Follow(FixtureValue record, BattleSearchStep step)
+        {
+            Require(Key(policyState) == Key(State(record.GetProperty("Before"))), "Fixed policy has a discontinuous native chain.");
+            policyState = BattlePlannerChecks.Replay(policyState, new[] { step }, out policyOutcome);
+            Require(policyOutcome == record.GetProperty("ActualOutcome").Deserialize<RoomOutcome>() &&
+                Key(policyState, Terminal(policyOutcome)) == Key(State(record.GetProperty("Actual")), Terminal(policyOutcome)),
+                "Completed fixed policy does not reproduce its native successor.");
+        }
+        foreach (FixtureValue turn in baselineTurns)
+        {
+            while (actionIndex < baselineActions.Length &&
+                State(baselineActions[actionIndex].GetProperty("Before")).Spawn.Turn == policyState.Spawn.Turn)
+            {
+                FixtureValue action = baselineActions[actionIndex++];
+                Follow(action, new BattleSearchStep(action.GetProperty("Action").Deserialize<PlayCardAction>(), false));
+            }
+            Follow(turn, new BattleSearchStep(null, true));
+        }
+        Require(actionIndex == baselineActions.Length && Terminal(policyOutcome), "Fixed policy did not finish all recorded inputs.");
         FixtureValue baselineTerminal = baselineTurns.Last().GetProperty("Actual");
         RoomOutcome baselineOutcome = baseline.GetProperty("NativeWon").GetBoolean() ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated;
         double baselineScore = BattlePlanner.Evaluate(State(baselineTerminal), baselineOutcome);
@@ -104,5 +133,55 @@ internal static class RollingAdviceChecks
         double actualScore = BattlePlanner.Evaluate(State(first.Last().GetProperty("Actual")), actualOutcome);
         Require(actualScore <= baselineScore, "Rolling advisor lost to the completed fixed policy.");
         Console.WriteLine($"ROLLING-ADVICE-PAIR PASS: all {first.Length} decisions reproduced independently; terminal score={actualScore}, completed native policy={baselineScore}.");
+    }
+    internal static void Suite(FixtureValue[] fixtures)
+    {
+        Require(fixtures.Length >= 9 && fixtures.Length % 3 == 0, "Need at least three source/replay/policy triples.");
+        var bosses = new HashSet<string>();
+        var buffTargets = new HashSet<string>();
+        bool laterRing = false;
+        bool retiredAura = false;
+        for (int index = 0; index < fixtures.Length; index += 3)
+        {
+            Pair(fixtures[index], fixtures[index + 1], fixtures[index + 2]);
+            string[] actualBosses = ActualBosses(fixtures[index]);
+            bosses.UnionWith(actualBosses);
+            laterRing |= actualBosses.Length > 0 && fixtures[index].GetProperty("BattleDistance").GetInt32() >= 4;
+            retiredAura |= fixtures[index].GetProperty("RollingDecisions").EnumerateArray()
+                .Select(record => State(record.GetProperty("Actual")).Spawn.Train.Context?.Enchantments)
+                .Any(world => world?.AutomaticLifecycle == true && world.RetainedUnits.Any(actor =>
+                    actor.Unit.DeathState?.IsDestroyed == true && actor.Unit.Triggers.SelectMany(trigger => trigger.Effects)
+                        .Any(effect => effect.Enchantment is { Bound: false })));
+            foreach (FixtureValue fixture in new[] { fixtures[index], fixtures[index + 2] })
+            {
+                foreach (FixtureValue stage in fixture.GetProperty("Stages").EnumerateArray())
+                    ObserveBuffs(stage.GetProperty("Before").Deserialize<RoomCombatState>()!,
+                        stage.GetProperty("Actual").Deserialize<RoomCombatState>()!, buffTargets);
+                foreach (FixtureValue action in fixture.GetProperty("Actions").EnumerateArray())
+                {
+                    BattleTurnState before = State(action.GetProperty("Before")), after = State(action.GetProperty("Actual"));
+                    foreach (RoomCombatState room in before.Spawn.Train.Rooms)
+                        ObserveBuffs(room, after.Spawn.Train.Rooms.Single(next => next.RoomIndex == room.RoomIndex), buffTargets);
+                }
+            }
+        }
+        Require(bosses.Count >= 3 && laterRing, "Need three distinct actual bosses including a middle/later ring.");
+        Require(buffTargets.SetEquals(new[] { "Self", "Room" }), "Missing positive native Harvest/Incant attack-buff witnesses.");
+        Require(retiredAura, "Missing native destruction and unbinding of a retained natural aura.");
+        Console.WriteLine("ROLLING-ADVICE-SUITE PASS actual bosses=" + string.Join(",", bosses.Order()));
+    }
+    private static void ObserveBuffs(RoomCombatState before, RoomCombatState after, HashSet<string> targets)
+    {
+        foreach (CombatUnit caster in before.Units.Where(unit => unit.Team == CombatTeam.Enemy))
+            foreach (CombatTrigger trigger in caster.Triggers)
+                foreach (var effect in trigger.Effects.Where(effect => effect.Type == "CardEffectBuffDamage" && effect.Value > 0))
+                    foreach (CombatUnit target in before.Units.Where(unit => unit.Team == CombatTeam.Enemy &&
+                        (effect.Action?.Target == "Room" || effect.Action?.Target == "Self" && unit.Id == caster.Id)))
+                    {
+                        CombatUnit? actual = after.Units.FirstOrDefault(unit => unit.Id == target.Id);
+                        if (actual?.Modifiers != null && target.Modifiers != null &&
+                            actual.Modifiers.DamageBuff > target.Modifiers.DamageBuff)
+                            targets.Add(effect.Action!.Target);
+                    }
     }
 }

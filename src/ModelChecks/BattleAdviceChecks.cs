@@ -4,7 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattleAdviceChecks
 {
-    internal static void Native(FixtureValue fixture)
+    internal static void Native(FixtureValue fixture, bool requireBoss = true)
     {
         FixtureValue advice = fixture.GetProperty("Advisor");
         void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
@@ -14,7 +14,7 @@ internal static class BattleAdviceChecks
             advice.GetProperty("PlanningFrames").GetInt32() >= 2, "Missing live publication, action invalidation/replanning or background frames.");
         Require(!advice.GetProperty("InTestScenario").GetBoolean() &&
             string.IsNullOrEmpty(fixture.GetProperty("ModifierScenario").GetString()), "Advisor benchmark authored the native encounter.");
-        Require(advice.GetProperty("Bosses").EnumerateArray().Any(boss => boss.GetProperty("Miniboss").GetBoolean() ||
+        if (requireBoss) Require(advice.GetProperty("Bosses").EnumerateArray().Any(boss => boss.GetProperty("Miniboss").GetBoolean() ||
             boss.GetProperty("OuterTrainBoss").GetBoolean()), "No natural boss was captured.");
         Require(!fixture.GetProperty("Actions").EnumerateArray().Any(action => action.GetProperty("ScenarioAction").GetBoolean()),
             "Advisor benchmark contains authored scenario plays.");

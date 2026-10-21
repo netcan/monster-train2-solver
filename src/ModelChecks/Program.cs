@@ -1640,6 +1640,13 @@ if (args.Length == 4 && args[0] == "--rolling-advice-pair-only")
     RollingAdviceChecks.Pair(source.RootElement, replay.RootElement, baseline.RootElement);
     return;
 }
+if (args.Length >= 10 && (args.Length - 1) % 3 == 0 && args[0] == "--rolling-advice-suite-only")
+{
+    var fixtures = args.Skip(1).Select(ModelJson.ReadFixture).ToArray();
+    try { RollingAdviceChecks.Suite(fixtures.Select(fixture => fixture.RootElement).ToArray()); }
+    finally { foreach (var fixture in fixtures) fixture.Dispose(); }
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-advice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
