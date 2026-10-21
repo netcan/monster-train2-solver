@@ -1771,6 +1771,13 @@ if (args.Length == 2 && args[0] == "--rolling-advice-only")
     RollingAdviceChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--player-moon-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerMoonPhaseChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--rolling-replay-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

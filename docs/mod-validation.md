@@ -202,3 +202,39 @@ used by the successful fresh native replay; the archived player DLL SHA256 is
 `5fe13c5448d2d128678d8908b717818bd73817921c175c89f2e9ef1586b4a00d`.
 The product version remains 0.2.1; this increment strengthens validation and
 does not establish Mac runtime acceptance.
+
+## Natural Luna Coven player battle
+
+Player capture now checks native moon-effect/trait signatures and the shared
+moon transition validator instead of requiring a development scenario switch.
+It captures unit moon masks only while the native deck activates moon tracking.
+Unknown effects and model restrictions remain explicit refusals, including
+Conduit with physical movement and uncalibrated room-mask callback combinations.
+
+`Run-FullBattleProbe.ps1 -PlayerAdvisor -RollingAdvice -PrimaryClan LunaCoven`
+selects the clan through the native run-setup handler. Only the disposable
+profile's clan unlock and moon tutorial marker are prepared; the game generates
+the starting deck, champion, relics and encounter without card/stat edits.
+`PrimaryClan` cannot be combined with a resumed checkpoint. The player acceptance
+bridge now reports an unavailable plan immediately instead of waiting for timeout.
+
+Search profile `full-battle-units-spells-and-junk-20261021-200103-eb0de862`
+wins in 282.64 seconds with 80 Pyre HP: 38 decisions, 31 card plays, seven EndTurns,
+40 publications and 483 pure captures. The UI checks pass (340 vertices,
+85,699 visible pixels). Fresh profile
+`full-battle-units-spells-and-junk-20261021-200558-4a5085d8` wins in 73.30 seconds
+using the same 38 frozen inputs with zero search nodes. Both runs settle terminal
+effects, preserve protected files and have zero capture/mismatch/unsupported/pending
+counters. Full roots, successors, published continuations and RNG match.
+
+The complete archives are committed as
+`tests/fixtures/full-battle-player-moon-search.mt2f` and
+`tests/fixtures/full-battle-player-moon-replay.mt2f`. Run
+`ModelChecks --player-moon-pair-only <search> <replay>` to verify both native
+sequences, both moon phases, repeated shifts, the retained native mask bit and
+Witchweave casts in each phase. The existing set/advance/unit-callback fixtures
+and pure transition controls also pass. No full regression was run.
+
+This establishes the natural Luna Coven starter battle in the real player
+entry point. It does not establish every later moon deck, room/relic combination,
+final boss or macOS runtime.

@@ -360,7 +360,7 @@ namespace MonsterTrain2Poju.Probe
                         OuterBossPhaseProbe.AnchorSlots(character, BossState.AttackPhase.Relentless))
                     : null, lastFeederId: triggers.Any(trigger => trigger.Kind == "OnEaten") || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ?
                         (character.GetLastFeederCharacter() == null ? 0 : UnitId(character.GetLastFeederCharacter())) : (int?)null,
-                    moonPhaseMask: EclipseChamberScenario.Enabled ? (int)character.GetMoonPhaseMask() : (int?)null);
+                    moonPhaseMask: EclipseChamberScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null);
         }
 
         internal CombatContext CaptureContext()

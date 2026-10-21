@@ -59,7 +59,7 @@ namespace MonsterTrain2Poju.Probe
                     interactions.Add("Opening hand trait callback");
             }
             bool moonPhaseTrackingActive = (bool)AccessTools.Field(typeof(PlayerManager), "isMoonPhaseTrackingActive").GetValue(player);
-            if (player.GetHasMoonPhaseCardEffect() && !OriginalMooncycleFaeScenario.Prepared && !OriginalMoonPhaseEnergyRelicScenario.IsolatedTrackingEnabled &&
+            if (player.GetHasMoonPhaseCardEffect() && !MoonPhaseCaptureProbe.Enabled && !OriginalMooncycleFaeScenario.Prepared && !OriginalMoonPhaseEnergyRelicScenario.IsolatedTrackingEnabled &&
                 !OriginalUnitPhaseUpgradeScenario.Prepared && !OriginalSupportUnitsScenario.IsolatedUnitOnly && OriginalEquipmentCardsScenario.IsolatedIds == null &&
                 !MoonPhaseCardScenario.Enabled && !MoonPhaseAdvanceScenario.Enabled && !MoonPhaseCallbackScenario.Enabled && !CardDuplicateScenario.Stardust &&
                 !OriginalMoonPhaseHealRelicScenario.Prepared && !OriginalMoonPhaseStatusRelicScenario.Prepared &&
@@ -77,6 +77,9 @@ namespace MonsterTrain2Poju.Probe
                     new UnityRng(words[0], words[1], words[2], words[3])));
             }
             EnemySpawnState spawn = spawning.Capture(includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
+            if (player.GetHasMoonPhaseCardEffect() && MoonPhaseCaptureProbe.Enabled &&
+                MoonPhaseCaptureProbe.Validate(managers, spawn.Train) is string moonError)
+                interactions.Add(moonError);
             trace.InvalidateCardRules();
             BattlePlayRules playRules = trace.CapturePlayRules(spawn);
             IReadOnlyList<CardToken> handTokens = spawn.Train.Context!.Cards.Hand;
