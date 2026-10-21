@@ -224,7 +224,7 @@ The refreshed 0.2.2 search profile
 wins in 304.33 seconds with 80 Pyre HP: 38 decisions, 31 card plays, seven EndTurns,
 40 publications and 486 pure captures. The UI checks pass (340 vertices,
 85,699 visible pixels). Fresh profile
-`full-battle-units-spells-and-junk-20261021-201819-8a16dad1` wins in 88.40 seconds
+`full-battle-units-spells-and-junk-20261021-202604-6e07f3d5` wins in 84.27 seconds
 using the same 38 frozen inputs with zero search nodes. Both runs settle terminal
 effects, preserve protected files and have zero capture/mismatch/unsupported/pending
 counters. Full roots, successors, published continuations and RNG match.
@@ -236,6 +236,13 @@ The complete archives are committed as
 sequences, both moon phases, repeated shifts, the retained native mask bit and
 Witchweave casts in each phase. The existing set/advance/unit-callback fixtures
 and pure transition controls also pass. No full regression was run.
+
+Player capture now also waits for native retired-character destruction at the
+frame boundary. A dead character can have `IsDestroyed == true` while its Unity
+reference and aura binding remain live until the frame ends. Reading that
+intermediate state caused a full-state discrepancy; the observer waits without
+changing the native cleanup. The fresh moon replay above uses this settlement
+gate and still matches all 38 inputs, full roots, successors, forecasts and RNG.
 
 This establishes the natural Luna Coven starter battle in the real player
 entry point. It does not establish every later moon deck, room/relic combination,

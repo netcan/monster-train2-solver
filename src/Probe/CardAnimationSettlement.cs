@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 
@@ -52,7 +53,12 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static bool Ready()
         {
-            if (!Pending) return true;
+            // Character cleanup schedules Unity.Destroy at the frame boundary.
+            // Until then a retired aura still has a live Unity reference and
+            // differs from the settled model despite the preview having ended.
+            bool characterCleanup = Enabled && FullBattleTrace.Active?.KnownUnits.Any(unit =>
+                unit != null && unit.IsDestroyed) == true;
+            if (!Pending && !characterCleanup) return true;
             DecisionWaits++; return false;
         }
     }
