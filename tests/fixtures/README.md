@@ -10,8 +10,12 @@ actors have cleared upgrade collections after Unity destruction; ten living
 upgrade controls retain theirs. `--retired-unit-destruction-only` checks exact
 EndTurn state, context and gameplay RNG plus source immutability. The original
 full capture reported those three model mismatches and is diagnostic evidence,
-not an accepted battle. Binary: 32,862 bytes, 4,110 nodes, SHA256
-`eae9c8162d4e7da63c67600342b8401409ef0d6be519738b326345e8e5fd09ab`.
+not an accepted battle. The `Settled` group retains exact EndTurns 5, 6 and 9
+from `full-battle-units-spells-and-junk-20261021-113434-4bb514cb`: original
+dissolve callbacks, positive native waits, dead-aura unbinding and the terminal
+boundary. That complete native run has zero differential counters but loses.
+Binary: 42,681 bytes, 5,484 nodes, SHA256
+`403c73a66cb79134b1410f99489e08fc033345502cf2e1a14270249b89a0fce3`.
 
 The separate [per-card inventory](card-coverage.md) covers all 668 original
 definitions and identifies the 563 native logbook entries. It records exact

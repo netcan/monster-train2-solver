@@ -32,6 +32,25 @@ internal static class RetiredUnitDestructionChecks
         }
         Require(cleared >= 3 && living > 0, "Missing three native destruction witnesses or living upgrade control.");
         BattleTurnChecks.Native(fixture);
+        FixtureValue settled = fixture.GetProperty("Settled");
+        Require(settled.GetProperty("DeathDissolveSettlementEnabled").GetBoolean(), "Native dissolve protocol was disabled.");
+        FixtureValue[] waits = settled.GetProperty("DeathDissolveSettlements").EnumerateArray().ToArray();
+        Require(waits.Any(wait => wait.GetProperty("FramesWaited").GetInt32() > 0 &&
+                wait.GetProperty("PendingUnitIds").GetArrayLength() > 0) &&
+            waits.All(wait => wait.GetProperty("Completed").GetBoolean() && wait.GetProperty("PendingAfter").GetInt32() == 0 &&
+                wait.GetProperty("Error").ValueKind == FixtureKind.Null), "Missing completed original native dissolve waits.");
+        Require(settled.GetProperty("DeathDissolveCallbacks").EnumerateArray().All(callback =>
+            callback.GetProperty("CompletedFrame").ValueKind == FixtureKind.Number &&
+            callback.GetProperty("Error").ValueKind == FixtureKind.Null), "Original dissolve callback did not complete.");
+        var auraTurn = settled.GetProperty("Turns")[1];
+        var auraBefore = auraTurn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var auraAfter = auraTurn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        CombatUnit aura = auraBefore.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .Single(unit => unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment?.Bound == true));
+        CombatUnit corpse = auraAfter.Spawn.Train.Context!.Enchantments!.RetainedUnits.Single(unit => unit.Unit.Id == aura.Id).Unit;
+        Require(corpse.DeathState?.IsDestroyed == true && corpse.Triggers.SelectMany(trigger => trigger.Effects)
+            .Any(effect => effect.Enchantment?.Bound == false), "Native enchantment did not unbind after original destruction.");
+        BattleTurnChecks.Native(settled);
         Console.WriteLine($"RETIRED-UNIT-DESTRUCTION PASS: {cleared} native cleared actors, {living} living upgrade controls, exact EndTurn/context/RNG and immutable roots.");
     }
 
