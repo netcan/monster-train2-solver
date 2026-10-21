@@ -10,8 +10,10 @@ successor. Ordinary policy seeding omits unit/room ability enumeration; the
 beam's full frontier still includes both. The strength seed ranks captured
 card stats and visible targets before applying effects, evaluating only as far
 as its first legal successor. Multi-stage card choices retain the ordinary
-branch enumerator. Each seed forecasts its first play once. The strength seed
-also forecasts after completing its first turn, so its coherent current-turn
+branch enumerator. The strength seed forecasts its first deployment play once.
+On later turns it finishes the current card sequence before forecasting, so a
+free ability or draw does not consume the budget in a premature idle forecast.
+It forecasts after completing its first turn, so its coherent current-turn
 sequence survives when later card choices exhaust the shared budget. It then
 completes its policy horizon without forecasting after every card.
 Checks compare the fixed lazy seed's exact
@@ -35,6 +37,10 @@ requires three legal first placements, a complete bounded middle-floor plan,
 exact replay and immutable source. A complete middle-floor heuristic model
 chain wins with 111 Pyre HP. This component is model strategy evidence;
 native rolling victory and frozen replay must be accepted separately.
+Its second exact native root is the first turn-one decision from the same
+capture. An eleven-node check must retain a current-turn Spike after the
+free ability/draw, finish the three-turn horizon, replay exactly and leave
+the source unchanged.
 
 `BattleStateKeys` hashes every public branch-state property and ordered
 collection, reusing shared immutable subtrees within one planning call. It

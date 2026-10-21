@@ -168,7 +168,11 @@ namespace MonsterTrain2Poju.Model
                 {
                     strength = Child(strength, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(chosen.Action, false));
                     Consider(strength);
-                    if (strength.Steps.Count == 1) Rollout(strength);
+                    // Deployment needs a cheap partial fallback while placing
+                    // several units. Later turns first finish their card sequence:
+                    // forecasting immediately after a free ability/draw can spend
+                    // the budget before the seed reaches its damaging or X card.
+                    if (source.Spawn.Turn == 0 && strength.Steps.Count == 1) Rollout(strength);
                 }
                 else
                 {
