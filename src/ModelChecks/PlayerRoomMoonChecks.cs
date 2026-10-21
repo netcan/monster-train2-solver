@@ -3,6 +3,19 @@ using MonsterTrain2Poju.Model;
 
 internal static class PlayerRoomMoonChecks
 {
+    internal static void MovementPair(FixtureValue source, FixtureValue replay)
+    {
+        Require(source.GetProperty("EclipseChamberMovement").GetBoolean() && replay.GetProperty("EclipseChamberMovement").GetBoolean(),
+            "Missing player room-moon movement captures.");
+        Pair(source, replay);
+        int moves = 0;
+        foreach (FixtureValue row in source.GetProperty("RollingDecisions").EnumerateArray())
+            if (row.GetProperty("Action").ValueKind != FixtureKind.Null && EclipseChamberChecks.MovementWitness(
+                row.GetProperty("Root").Deserialize<BattleTurnState>()!, row.GetProperty("Actual").Deserialize<BattleTurnState>()!,
+                row.GetProperty("Action").Deserialize<PlayCardAction>()!)) moves++;
+        Require(moves > 0, "Player advisor never executed a friendly move that changed original room-moon callbacks.");
+        Console.WriteLine($"PLAYER-ROOM-MOON-MOVEMENT PASS livePublishedCallbackMoves={moves} exactFrozenReplay=true");
+    }
     internal static void Pair(FixtureValue source, FixtureValue replay)
     {
         foreach (FixtureValue fixture in new[] { source, replay })

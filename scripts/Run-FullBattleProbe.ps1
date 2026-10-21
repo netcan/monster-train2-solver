@@ -76,6 +76,7 @@ param(
     [switch] $EclipseChamber,
     [switch] $EclipseChamberCallbacks,
     [switch] $EclipseChamberShadeCallbacks,
+    [switch] $EclipseChamberMovement,
     [switch] $OriginalRoomCards,
     [switch] $OriginalForgeCards,
     [switch] $OriginalStatusCards,
@@ -669,6 +670,7 @@ if ($SmallBox) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MagneticRelay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TranscendImp) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($FusedWeaponry) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($EclipseChamberMovement) { $EclipseChamberShadeCallbacks = $true; $PhysicalSpawnPoints = $true }
 if ($EclipseChamberShadeCallbacks) { $EclipseChamberCallbacks = $true }
 if ($EclipseChamberCallbacks) { $EclipseChamber = $true }
 if ($EclipseChamber) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1385,6 +1387,7 @@ if ($FusedWeaponry) { $environment['MT2_PROBE_MODIFIERS'] = 'fused-weaponry' }
 if ($EclipseChamber) { $environment['MT2_PROBE_MODIFIERS'] = 'eclipse-chamber' }
 if ($EclipseChamberCallbacks) { $environment['MT2_PROBE_ECLIPSE_CALLBACKS'] = '1' }
 if ($EclipseChamberShadeCallbacks) { $environment['MT2_PROBE_ECLIPSE_SHADE_CALLBACKS'] = '1' }
+if ($EclipseChamberMovement) { $environment['MT2_PROBE_ECLIPSE_MOVEMENT'] = '1' }
 if ($OriginalRoomCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-cards' }
 if ($OriginalForgeCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-cards' }
 if ($OriginalStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-cards' }
@@ -2815,6 +2818,10 @@ if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.Nat
       else { @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 }) -or
     @($trace.EclipseChamberRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Eclipse Chamber native evidence is incomplete.'
+}
+if ($EclipseChamberMovement -and (-not $trace.EclipseChamberMovement -or
+    (-not $RollingAdvice -and @($trace.Actions).Count -ne 12))) {
+    throw 'Eclipse movement capture lacks the complete paid original movement chain.'
 }
 if ($OriginalMonsterHandCosts -and (-not $trace.OriginalMonsterHandCostsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
     @($trace.OriginalMonsterHandCostsSamples).Count -ne 7 -or @($trace.OriginalMonsterHandCostsDeploymentQueries).Count -ne 8 -or -not $trace.OriginalMonsterHandCostsQueriesUnchanged)) {

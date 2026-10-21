@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Callbacks => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_CALLBACKS") == "1";
         internal static bool ShadeCallbacks => Callbacks && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_SHADE_CALLBACKS") == "1";
+        internal static bool Movement => ShadeCallbacks && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_MOVEMENT") == "1";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static readonly List<Record> Records = new List<Record>();
@@ -70,6 +71,29 @@ namespace MonsterTrain2Poju.Probe
             CardState moonrise = Add(MoonPhaseCardScenario.MoonriseId), eclipse = Add(DataId), later = Add(steward.GetID());
             CardState replace = Add(RoomCapacityAttachmentScenario.CardDataId), second = Add(DataId);
             CardIds = new[] { first, control, ordinaryCard, moonrise, eclipse, later, replace, second }.Select(FullBattleTrace.Active!.CardId).ToArray();
+            if (Movement)
+            {
+                Set(all.GetBalanceData(), "maxHandSize", 20);
+                CardState[] movementCards = new[] { Add("b67ca7bf-bd65-4d98-ae53-26397de1e355"),
+                    Add("01f1fe24-f72b-4749-833b-46796463cdd7"), Add("b67ca7bf-bd65-4d98-ae53-26397de1e355"),
+                    Add("01f1fe24-f72b-4749-833b-46796463cdd7") };
+                // Retain the paid originals across ordinary draws while the
+                // fixed policy reaches each movement. Definitions stay intact.
+                foreach (CardState card in movementCards)
+                {
+                    var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze");
+                    card.AddTemporaryTrait(freeze, managers.GetCoreManagers());
+                }
+                CardIds = CardIds.Concat(movementCards.Select(FullBattleTrace.Active!.CardId)).ToArray();
+                if (PlayerAdvisorProbe.Enabled)
+                {
+                    // Keep a deterministic authored hand order so the generic
+                    // tactical seed reaches Eclipse before the movement cards.
+                    int[] order = new[] { 0, 1, 2, 5, 3, 4, 8, 9, 10, 11, 6, 7 }.Select(index => CardIds[index]).ToArray();
+                    cards.GetHand().Sort((left, right) => Array.IndexOf(order, FullBattleTrace.Active!.CardId(left))
+                        .CompareTo(Array.IndexOf(order, FullBattleTrace.Active!.CardId(right))));
+                }
+            }
             // Settle native activation before the first decision. This isolates
             // room mask behavior from the separate mid-battle activation reset.
             var setup = new Stack<IEnumerator>(); setup.Push(managers.GetPlayerManager().HandleMoonPhaseResetMidBattle());
@@ -91,7 +115,16 @@ namespace MonsterTrain2Poju.Probe
             CombatContext context = source.Spawn.Train.Context!;
             for (int index = 0; index < ids.Length; index++)
                 if (context.Statistics!.Value(ids[index], "TimesPlayed", "ThisBattle") == 0)
+                {
+                    if (Movement && index >= 8)
+                    {
+                        int spawner = ids[index < 10 ? 0 : 5];
+                        CombatUnit target = source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == spawner);
+                        return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play =>
+                            play.CardInstanceId == ids[index] && play.TargetUnitId == target.Id);
+                    }
                     return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play => play.CardInstanceId == ids[index] && play.RoomIndex == (index == 1 ? 1 : 0));
+                }
             return null;
         }
         [HarmonyPatch(typeof(CardEffectUpdateMoonPhaseResource), nameof(CardEffectUpdateMoonPhaseResource.ApplyEffect))]

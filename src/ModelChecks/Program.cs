@@ -1165,6 +1165,12 @@ if (args.Length == 2 && args[0] == "--original-enthusiastic-fan-only")
     Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
     return;
 }
+if (args.Length == 2 && args[0] == "--eclipse-movement-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EclipseChamberChecks.Movement(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--eclipse-callbacks-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1787,6 +1793,13 @@ if (args.Length == 2 && args[0] == "--conduit-movement-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     ConduitMovementChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--player-room-moon-movement-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerRoomMoonChecks.MovementPair(source.RootElement, replay.RootElement);
     return;
 }
 if (args.Length == 3 && args[0] == "--player-room-moon-pair-only")
@@ -3526,6 +3539,11 @@ foreach (string path in args.Where(path => path.Contains("room-moon-callback-cal
 {
     using var document = ModelJson.ReadFixture(path);
     RoomMoonCallbackChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-chamber-movement.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    EclipseChamberChecks.Movement(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("holdover-variants-calibration", StringComparison.OrdinalIgnoreCase)))
 {

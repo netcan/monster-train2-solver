@@ -9,7 +9,16 @@ internal static class EclipseChamberChecks
         CombatContext context = source.Spawn.Train.Context!;
         for (int index = 0; index < ids.Length; index++)
             if (context.Statistics!.Value(ids[index], "TimesPlayed", "ThisBattle") == 0)
+            {
+                if (index >= 8)
+                {
+                    int spawner = ids[index < 10 ? 0 : 5];
+                    CombatUnit target = source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == spawner);
+                    return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play =>
+                        play.CardInstanceId == ids[index] && play.TargetUnitId == target.Id);
+                }
                 return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play => play.CardInstanceId == ids[index] && play.RoomIndex == (index == 1 ? 1 : 0));
+            }
         return null;
     }
     internal static (int Characters, int Support) Refreshes(FixtureValue root)
@@ -84,7 +93,9 @@ internal static class EclipseChamberChecks
         Require(characters == 2 && support > 0, "Missing original full refresh and queued support-card controls.");
         int[] ids = root.GetProperty("EclipseChamberCardIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(ids.Length == 8 && actions.Length == 8, "Missing deployment, original Moonrise, two Eclipses, replacement or later birth.");
+        bool movement = root.TryGetProperty("EclipseChamberMovement", out FixtureValue movementFlag) && movementFlag.GetBoolean();
+        Require(ids.Length == (movement ? 12 : 8) && actions.Length == ids.Length,
+            "Missing deployment, original Moonrise, two Eclipses, replacement, later birth or calibrated movement.");
         BattleTurnState After(int index) => actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         foreach (int index in new[] { 4, 5, 7 })
         {
@@ -148,6 +159,50 @@ internal static class EclipseChamberChecks
                 "Original New lost upgrade retained after replacement or leaked to the control floor.");
         }
         Console.WriteLine($"ECLIPSE-CALLBACK-CHAIN PASS authoredCarriers=true nativeOriginalPayloads=true callbackActors=3 mixedMasks=true outsideFloor=true shadeCallbacks={shade}");
+    }
+    internal static void Movement(FixtureValue root)
+    {
+        Require(root.GetProperty("EclipseChamberMovement").GetBoolean(), "Missing original movement scenario.");
+        Callbacks(root);
+        int moved = 0, callbacks = 0;
+        foreach (FixtureValue row in root.GetProperty("Actions").EnumerateArray().Skip(8))
+        {
+            BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            PlayCardAction action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            string expected = moved % 2 == 0 ? "b67ca7bf-bd65-4d98-ae53-26397de1e355" : "01f1fe24-f72b-4749-833b-46796463cdd7";
+            Require(before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId == expected,
+                "Missing both original paid up/down pairs.");
+            int origin = before.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == action.TargetUnitId)).RoomIndex;
+            int destination = after.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == action.TargetUnitId)).RoomIndex;
+            Require(destination - origin == (moved % 2 == 0 ? 1 : -1), "Paid original card did not move its target.");
+            if (MovementWitness(before, after, action)) callbacks++;
+            moved++;
+        }
+        Require(moved == 4 && callbacks > 0, "Missing paid movement with actual callback changes.");
+        Console.WriteLine($"ECLIPSE-MOVEMENT-CHAIN PASS originalMovementCards=4 movedCallbackActors=2 changedCallbacks={callbacks} mixedMasks=true exactCompleteChain=true");
+    }
+    internal static bool MovementWitness(BattleTurnState before, BattleTurnState after, PlayCardAction action)
+    {
+        string dataId = before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId;
+        int direction = dataId == "b67ca7bf-bd65-4d98-ae53-26397de1e355" ? 1 :
+            dataId == "01f1fe24-f72b-4749-833b-46796463cdd7" ? -1 : 0;
+        if (direction == 0) return false;
+        RoomCombatState origin = before.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == action.TargetUnitId));
+        RoomCombatState destination = after.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == action.TargetUnitId));
+        CombatUnit old = origin.Units.Single(unit => unit.Id == action.TargetUnitId);
+        CombatUnit current = destination.Units.Single(unit => unit.Id == action.TargetUnitId);
+        if (old.Team != CombatTeam.Player || !old.Triggers.Any(trigger => trigger.Kind == "OnMoonShade") ||
+            origin.RoomIndex == destination.RoomIndex || (old.MoonPhaseMask & 1) == (current.MoonPhaseMask & 1)) return false;
+        Require(destination.RoomIndex - origin.RoomIndex == direction &&
+            current.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade") == ((current.MoonPhaseMask & 1) != 0) &&
+            (current.MoonPhaseMask & 4) == (old.MoonPhaseMask & 4), "Paid movement callback upgrade or cached phase differs.");
+        foreach (CombatUnit other in before.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Id != old.Id))
+        {
+            CombatUnit unchanged = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == other.Id);
+            Require(unchanged.MoonPhaseMask == other.MoonPhaseMask, "Paid movement refreshed a non-target's cached moon mask.");
+        }
+        return true;
     }
     private static void Equal<T>(T predicted, T actual, string label)
     {

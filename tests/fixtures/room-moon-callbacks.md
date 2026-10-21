@@ -176,3 +176,31 @@ No full regression or Mac package build is performed.
 scripts/Run-FullBattleProbe.ps1 -RoomMoonMovement -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-callback-only tests/fixtures/room-moon-movement-calibration.mt2f
 ```
+
+## Paid original movement action chain
+
+`full-battle-eclipse-chamber-movement.mt2f` records profile
+`full-battle-units-spells-and-junk-20261022-002823-51609a45` (83.87 seconds).
+Two unchanged Hidden Passage definitions and two unchanged Dripfall definitions
+join the existing authored Silent callback carriers. A temporary Freeze trait
+on these four owned spell instances keeps them in hand until paid; the harness
+hand limit is twenty. Original spell/room/callback definitions remain intact.
+
+Twelve paid plays and five EndTurns win with Pyre80. All complete native action
+and turn states/RNG, two full refreshes, eighteen resource-only refreshes,
+physical movement and sixteen immutable full chains match. One Full-moon exit
+removes the original Nightingale upgrade. The other three moves occur under
+global New and preserve the upgrade, providing actual no-change controls.
+Both callback carriers return to the original masked floor; six later Silent
+growth and six floor/subtype controls still match. Native terminal effects
+settle, protected files stay unchanged and all four failure counters are zero.
+
+The initial diagnostic omitted physical points and executed no movement. A
+second diagnostic lacked Freeze retention and executed only three of four
+intended moves. Neither is curated. Real player rolling-advice movement remains
+a separate gate; a winning player run that never uses Eclipse cannot close it.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberMovement -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-movement-only tests/fixtures/full-battle-eclipse-chamber-movement.mt2f
+```

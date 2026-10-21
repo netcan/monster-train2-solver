@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 856 archives (790 full battles and
+Current manifest inventory (2026-10-22): 857 archives (791 full battles and
 66 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -11,6 +11,14 @@ changes, fifteen refreshes, seven global shifts and four attachment changes.
 Only the moved actor refreshes after Shift/Sentry; stale non-targets remain
 unchanged. Eight immutable branches per row and missing-mask/preview/unknown
 room-rule guards pass. See [scope and reproduction](room-moon-callbacks.md).
+
+`full-battle-eclipse-chamber-movement.mt2f` extends that mechanism to twelve
+paid plays and five EndTurns, winning with Pyre80. Two original Hidden Passage
+and two original Dripfall casts move two callback carriers up/down. Full-moon
+movement removes an original New upgrade; subsequent New-moon moves preserve
+it. All complete action/turn states, eighteen support refreshes, physical
+compactions and sixteen independent full chains match. The four owned movement
+cards carry a temporary Freeze shim; their original definitions are unchanged.
 
 `full-battle-player-boss-rolling-{search,replay}.mt2f` closes retained winning
 advice for the natural `Boss_Level8_AllyBuffer`: 50 decisions, 39 plays, eleven
