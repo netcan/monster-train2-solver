@@ -131,6 +131,14 @@ pwsh -NoProfile -File scripts/Run-RollingAdvisorBenchmark.ps1 -BattleDistance 4 
 four triples, three actual boss identities including a middle/later distance,
 positive Harvest/Incant buffs and retained aura destruction/unbinding.
 
+Progressed-deck victory acceptance uses `-InputProfile` and `-RequireWin`.
+The latter rejects a lost source before starting a fresh replay, requires both
+native runs to win, and requires an actual room boss in the source. It retains
+all existing full-state, gameplay-RNG and completed-policy checks. Historical
+loss controls still use the ordinary pair checker. `-PlannerHorizon 2` or `3`
+sets the bounded forecast without changing the native battle or its rewards.
+Known fifth-ring loss captures were used to verify both rejection paths.
+
 Validation for this change used these focused checks, advice-session
 cancellation/staleness checks, native enchantment-world/lifecycle calibrations,
 and existing random-aura death/revival EndTurn witnesses. No full battle

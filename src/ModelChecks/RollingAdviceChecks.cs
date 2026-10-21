@@ -78,6 +78,14 @@ internal static class RollingAdviceChecks
             "Some native inputs bypassed rolling advice.");
         Console.WriteLine($"ROLLING-ADVICE PASS mode={records[0].GetProperty("Mode").GetString()} decisions={records.Length} cards={cards} turns={turns} outcome={outcome}");
     }
+    internal static void VictoryPair(FixtureValue source, FixtureValue replay, FixtureValue baseline)
+    {
+        Require(source.GetProperty("NativeWon").GetBoolean() && replay.GetProperty("NativeWon").GetBoolean(),
+            "Progressed battle acceptance requires an actual native victory and winning fresh replay.");
+        Require(ActualBosses(source).Length > 0, "The winning battle must exercise an actual native boss.");
+        Pair(source, replay, baseline);
+        Console.WriteLine("ROLLING-ADVICE-VICTORY PASS: actual boss, native victory and winning fresh frozen replay.");
+    }
     internal static void Pair(FixtureValue source, FixtureValue replay, FixtureValue baseline)
     {
         Native(source); Native(replay); Accepted(baseline);

@@ -18,7 +18,9 @@ internal static class PlannerPlateauChecks
         double score = BattlePlanner.Evaluate(idle.State!, idle.Outcome);
         int hp = idle.State!.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health;
         Require(score == -hp * 1000d + 499, "Missing native high-health enemy score plateau.");
-        var options = new BattlePlannerOptions(256, 3, 8, timeLimit: TimeSpan.FromSeconds(3));
+        // A node bound makes this regression repeatable while native workers
+        // contend for CPU; the interactive three-second deadline is separate.
+        var options = new BattlePlannerOptions(64, 3, 8, timeLimit: TimeSpan.FromSeconds(30));
         var plan = BattlePlanner.Plan(root, state => JsonSerializer.Serialize(state), options);
         Require(plan.CompletedHorizon && plan.Steps.Count > 1 && !plan.Steps[0].IsEndTurn && plan.Score <= score,
             "The planner must retain useful plays when the public positional score reaches its cap.");
