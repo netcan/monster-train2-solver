@@ -24,10 +24,15 @@ namespace MonsterTrain2Poju.Probe
         private readonly int horizon;
         private readonly int timeLimitMs;
         private readonly bool playerSession;
+        private readonly bool pauseWhenHidden;
         private readonly KeyCode toggleKey;
         private bool ManualSession => playerSession || Environment.GetEnvironmentVariable("MT2_PROBE_SCENARIO") == "advisor";
         private GameObject canvas = null!;
-        private Text body = null!, pauseLabel = null!;
+        private GameObject panel = null!;
+        private Text body = null!, pauseLabel = null!, toggleLabel = null!;
+        private Font? uiFont;
+        private bool panelVisible = true;
+        private bool HiddenPause => pauseWhenHidden && !panelVisible;
         private BattleAdvice? displayed;
         private int displayFrame;
         private float nextCapture;
@@ -71,6 +76,7 @@ namespace MonsterTrain2Poju.Probe
         {
             this.log = log;
             playerSession = settings != null;
+            pauseWhenHidden = settings?.PauseWhenHidden ?? true;
             toggleKey = settings?.ToggleKey ?? KeyCode.F8;
             horizon = settings?.Horizon ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_HORIZON") ?? "3");
             timeLimitMs = settings?.TimeLimitMs ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TIME_LIMIT_MS") ?? "3000");
@@ -88,7 +94,7 @@ namespace MonsterTrain2Poju.Probe
             }
             Active = this;
             if (playerSession) new FullBattleTrace(log);
-            log.LogInfo("ADVISOR-READY background model worker; F8 toggles overlay; no automatic plays.");
+            log.LogInfo("ADVISOR-READY background model worker; " + toggleKey + " toggles overlay; no automatic plays.");
         }
 
         private void EnsureUi()
@@ -104,11 +110,11 @@ namespace MonsterTrain2Poju.Probe
             CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.matchWidthOrHeight = .5f;
-            var panel = new GameObject("Advice panel", typeof(RectTransform), typeof(Image)); panel.transform.SetParent(canvas.transform, false);
+            panel = new GameObject("Advice panel", typeof(RectTransform), typeof(Image)); panel.transform.SetParent(canvas.transform, false);
             RectTransform rect = panel.GetComponent<RectTransform>(); rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0, 1);
             rect.anchoredPosition = new Vector2(20, -20); rect.sizeDelta = new Vector2(460, 365);
             panel.GetComponent<Image>().color = new Color(.045f, .06f, .09f, .97f);
-            Font font = Font.CreateDynamicFontFromOSFont(new[] { "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei", "Noto Sans CJK SC", "Arial" }, 18);
+            Font font = uiFont ??= Font.CreateDynamicFontFromOSFont(new[] { "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei", "Noto Sans CJK SC", "Arial" }, 18);
             Text Label(string name, string text, float y, float height, int size)
             {
                 var child = new GameObject(name, typeof(RectTransform), typeof(Text)); child.transform.SetParent(panel.transform, false);
@@ -119,15 +125,20 @@ namespace MonsterTrain2Poju.Probe
                 label.horizontalOverflow = HorizontalWrapMode.Wrap; label.verticalOverflow = VerticalWrapMode.Truncate;
                 return label;
             }
-            Label("Title", "怪物火车 · 战局建议", 14, 34, 23);
+            Text titleLabel = Label("Title", "怪物火车 · 战局建议", 14, 34, 23);
+            titleLabel.raycastTarget = true;
+            titleLabel.gameObject.AddComponent<AdvisorPanelDrag>().Target = rect;
             Text scope = Label("Scope", "已知牌序 · 未来 " + horizon + " 回合 · " + toggleKey + " 显示/隐藏", 52, 28, 15);
             scope.color = new Color(.55f, .72f, .84f);
             body = Label("Recommendation", "进入战斗后自动计算建议。", 92, 208, 18);
-            Text Button(string title, float x, Action click)
+            Text Button(string title, float x, Action click, bool launcher = false)
             {
-                var button = new GameObject(title, typeof(RectTransform), typeof(Image), typeof(Button)); button.transform.SetParent(panel.transform, false);
-                RectTransform place = button.GetComponent<RectTransform>(); place.anchorMin = place.anchorMax = place.pivot = new Vector2(0, 1);
-                place.anchoredPosition = new Vector2(x, -315); place.sizeDelta = new Vector2(200, 32);
+                var button = new GameObject(title, typeof(RectTransform), typeof(Image), typeof(Button));
+                button.transform.SetParent(launcher ? canvas.transform : panel.transform, false);
+                RectTransform place = button.GetComponent<RectTransform>();
+                place.anchorMin = place.anchorMax = place.pivot = new Vector2(launcher ? 1 : 0, 1);
+                place.anchoredPosition = launcher ? new Vector2(-20, -20) : new Vector2(x, -315);
+                place.sizeDelta = launcher ? new Vector2(160, 34) : new Vector2(200, 32);
                 button.GetComponent<Image>().color = new Color(.12f, .22f, .29f);
                 button.GetComponent<Button>().onClick.AddListener(() => click());
                 var child = new GameObject("Label", typeof(RectTransform), typeof(Text)); child.transform.SetParent(button.transform, false);
@@ -138,11 +149,22 @@ namespace MonsterTrain2Poju.Probe
                 return label;
             }
             Button("重新计算", 18, () => { paused = false; pauseLabel.text = "暂停建议"; Invalidate(); });
-            pauseLabel = Button("暂停建议", 242, () => { paused = !paused; Invalidate(); pauseLabel.text = paused ? "恢复建议" : "暂停建议"; });
+            pauseLabel = Button(paused ? "恢复建议" : "暂停建议", 242, () => { paused = !paused; Invalidate(); pauseLabel.text = paused ? "恢复建议" : "暂停建议"; });
+            toggleLabel = Button(panelVisible ? "隐藏破局建议" : "显示破局建议", 0, () => SetPanelVisible(!panelVisible), launcher: true);
+            panel.SetActive(panelVisible);
         }
 
         internal void Keyboard()
-        { if (canvas != null && Input.GetKeyDown(toggleKey)) canvas.SetActive(!canvas.activeSelf); }
+        { if (canvas != null && Input.GetKeyDown(toggleKey)) SetPanelVisible(!panelVisible); }
+
+        private void SetPanelVisible(bool visible)
+        {
+            if (panelVisible == visible) return;
+            panelVisible = visible;
+            if (panel != null) panel.SetActive(visible);
+            if (toggleLabel != null) toggleLabel.text = visible ? "隐藏破局建议" : "显示破局建议";
+            if (pauseWhenHidden) Invalidate();
+        }
 
         private static bool Ready(AllGameManagers managers)
         {
@@ -173,17 +195,21 @@ namespace MonsterTrain2Poju.Probe
             Keyboard();
             AllGameManagers? managers = AllGameManagers.Instance;
             if (managers == null || LoadingScreen.IsWorking())
-            { session.Invalidate(); displayed = null; session.Poll(); return; }
+            {
+                session.Invalidate(); displayed = null; session.Poll();
+                if (body != null) body.text = "等待场景加载完成…";
+                return;
+            }
             EnsureUi();
             bool inBattle = managers?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle;
             if (!inBattle && wasInBattle && ManualSession)
             { new FullBattleTrace(log); manualBattleKey = null; }
             wasInBattle = inBattle;
-            if (paused || managers == null || !Ready(managers))
+            if (paused || HiddenPause || managers == null || !Ready(managers))
             {
                 if (session.Status != BattleAdviceStatus.Idle) Invalidate();
                 session.Poll();
-                body.text = paused ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。";
+                body.text = paused || HiddenPause ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。";
                 return;
             }
             if (ManualSession)
@@ -195,8 +221,8 @@ namespace MonsterTrain2Poju.Probe
             }
             session.Poll();
             if (session.Status == BattleAdviceStatus.Planning) PlanningFrames++;
-            int start = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "0");
-            if (!playerSession && Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR") == "1" && managers.GetCombatManager().GetTurnCount() < start) return;
+            if (!playerSession && Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR") == "1" &&
+                managers.GetCombatManager().GetTurnCount() < int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "0")) return;
             if (Time.realtimeSinceStartup >= nextCapture && captureError == null)
             {
                 nextCapture = Time.realtimeSinceStartup + .5f;
@@ -222,6 +248,7 @@ namespace MonsterTrain2Poju.Probe
                     CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,
                     SearchMs = displayed.Plan.Elapsed.TotalMilliseconds, VerificationMs = displayed.VerificationElapsed.TotalMilliseconds,
                     EndToEndMs = displayed.ResponseElapsed.TotalMilliseconds });
+                if (playerSession && Publications.Count > 128) Publications.RemoveAt(0);
                 log.LogInfo((playerSession ? "POJU-ADVICE" : "ADVISOR-PUBLISHED") + " generation=" + session.Generation + " steps=" + displayed.Plan.Steps.Count +
                     " elapsedMs=" + displayed.Plan.Elapsed.TotalMilliseconds.ToString("F1") + " capturePurityFailures=" + PurityFailures);
                 if (!playerSession && !screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")
@@ -248,7 +275,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal bool ReadyFor(BattleTurnState root)
         {
-            if (paused || Failures > 0) throw new InvalidOperationException("Advisor is paused or failed.");
+            if (paused || HiddenPause || Failures > 0) throw new InvalidOperationException("Advisor is paused or failed.");
             using var keys = new BattleStateKeys();
             string key = keys.Key(root);
             if (session.Status == BattleAdviceStatus.Unavailable) throw new InvalidOperationException(session.Error);
@@ -359,6 +386,11 @@ namespace MonsterTrain2Poju.Probe
         private static class SelectionPatch { private static void Prefix() => NativeAction(); }
 
         public void Dispose()
-        { session.Dispose(); if (canvas != null) UnityEngine.Object.Destroy(canvas); Active = null; }
+        {
+            session.Dispose();
+            if (canvas != null) UnityEngine.Object.Destroy(canvas);
+            if (uiFont != null) UnityEngine.Object.Destroy(uiFont);
+            Active = null;
+        }
     }
 }

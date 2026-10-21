@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Advisor
     public sealed class AdvisorPlugin : BaseUnityPlugin
     {
         public const string PluginId = "netcan.monstertrain2.advisor";
-        public const string Version = "0.2.0";
+        public const string Version = "0.2.1";
         private Harmony? harmony;
         private BattleAdvisorOverlay? overlay;
 
@@ -29,6 +29,7 @@ namespace MonsterTrain2Poju.Advisor
                     DeploymentRoom = Config.Bind("Search", "PreferredFloor", 3,
                         new ConfigDescription("优先部署层（1 为底层）。", new AcceptableValueRange<int>(1, 3))).Value - 1,
                     TacticalSeed = Config.Bind("Search", "TacticalSeed", false, "启用额外战术候选，可能增加计算时间。").Value,
+                    PauseWhenHidden = Config.Bind("General", "PauseWhenHidden", true, "隐藏面板时暂停计算，重新显示后按最新局面计算。").Value,
                     ToggleKey = Config.Bind("General", "ToggleKey", KeyCode.F8, "面板显示/隐藏按键；Mac 键盘可能需要 Fn+F8。").Value
                 };
                 AdvisorRuntime.PlayerSession = true;

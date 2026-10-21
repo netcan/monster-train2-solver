@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
         internal int TimeLimitMs { get; set; } = 3000;
         internal int DeploymentRoom { get; set; } = 2;
         internal bool TacticalSeed { get; set; }
+        internal bool PauseWhenHidden { get; set; } = true;
         internal KeyCode ToggleKey { get; set; } = KeyCode.F8;
     }
 }
