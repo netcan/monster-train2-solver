@@ -1461,6 +1461,11 @@ if (args.Length == 1 && args[0] == "--no-player-units-status-pure")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--corruption-status-only")
+{
+    CorruptionStatusChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--undying-boss-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1698,6 +1703,12 @@ if (args.Length == 2 && args[0] == "--planner-plateau-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     PlannerPlateauChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length is 2 or 3 && args[0] == "--rolling-forecast-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattleHeuristicChecks.RollingForecast(fixture.RootElement, args.Length == 3 ? int.Parse(args[2]) : 256);
     return;
 }
 if (args.Length == 2 && args[0] == "--heuristic-forecast-only")
@@ -3153,6 +3164,8 @@ CloneUpgradeRefreshChecks.Run();
 TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();
+foreach (string path in args.Where(path => path.Contains("corruption-status-calibration", StringComparison.OrdinalIgnoreCase)))
+    CorruptionStatusChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("undying-boss-preview-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);

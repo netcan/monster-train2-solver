@@ -453,7 +453,7 @@ namespace MonsterTrain2Poju.Model
             "armor", "damage shield", "dazed", "stealth", "ambush", "multistrike", "burst",
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
-            "buff", "debuff", "regen", "poison", "decay", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
+            "buff", "debuff", "regen", "poison", "decay", "corruption", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
             "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment"
@@ -3158,10 +3158,11 @@ namespace MonsterTrain2Poju.Model
                         Heal(unit, amount, "Regen");
                     }
                     // Stealth shares the native post-combat poison stage and is consumed even without an opponent.
-                    foreach (CombatStatus status in unit.RegisteredStatuses().OrderBy(status => status.Id == "unstable" ? 4 : 0).ToArray())
+                    foreach (CombatStatus status in unit.RegisteredStatuses().OrderBy(status => status.Id == "unstable" ? 4 :
+                        status.Id == "corruption" ? 2 : 0).ToArray())
                     {
                         if (!unit.Alive || !unit.Has(status.Id) || !Active(status)) continue;
-                        if (status.Id == "poison" || status.Id == "decay")
+                        if (status.Id is "poison" or "decay" or "corruption")
                         {
                             if (source.Deployment && status.RemoveWhenTriggered && !status.RemoveDuringDeployment)
                             {
@@ -3173,7 +3174,7 @@ namespace MonsterTrain2Poju.Model
                             }
                             int amount = StatusMagnitude(unit, status.Id);
                             Trigger(unit, status.Id, 1);
-                            Damage(null, unit, amount, status.Id == "decay" ? "Decay" : "Poison");
+                            Damage(null, unit, amount, status.Id == "decay" ? "Decay" : status.Id == "corruption" ? "Corruption" : "Poison");
                         }
                         else if (status.Id == "unstable" && !unit.Has("blastresistant") &&
                             unit.Count("unstable") >= unit.Health && !unit.Has("untouchable"))
