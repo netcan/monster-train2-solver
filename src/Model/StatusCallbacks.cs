@@ -94,24 +94,29 @@ namespace MonsterTrain2Poju.Model
             CombatUnit current = empty;
             bool inRoom = true;
             var orderedApplications = applications.Where(status => cardStatus == null || status.Id != "cardless")
+                .OrderByDescending(status => status.Id == "duality")
                 .Select(status => (Status: status, SourceCardId: 0,
-                AllowStackModifiers: true, FromEffectType: (string?)null)).ToList();
+                AllowStackModifiers: true, FromEffectType: (string?)null, Starting: true)).ToList();
             if (cardStatus != null)
             {
                 orderedApplications.Add((cardStatus.Status, cardStatus.SourceCardId, cardStatus.AllowStackModifiers,
-                    cardStatus.FromEffectType));
+                    cardStatus.FromEffectType, false));
                 orderedApplications.AddRange(applications.Where(status => status.Id == "cardless").Select(status =>
-                    (Status: status, SourceCardId: 0, AllowStackModifiers: true, FromEffectType: (string?)null)));
+                    (Status: status, SourceCardId: 0, AllowStackModifiers: true, FromEffectType: (string?)null, Starting: true)));
             }
             foreach (var application in orderedApplications)
             {
                 CombatStatus status = application.Status;
                 if (status.Stacks <= 0) continue;
+                if (application.Starting && current.Status("duality")?.Stacks > 0 && status.Id != "armor" && status.DisplayCategory == null)
+                    return "Starting Duality application requires native status display-category metadata.";
                 RoomCombatState scope = inRoom ? initializing : new RoomCombatState(initializing.RoomIndex, initializing.Deployment,
                     initializing.Units.Concat(new[] { current }).ToArray(), initializing.ExternalInteractions, initializing.Context,
                     initializing.Preview, initializing.ActiveCompanionBossIds);
                 RoomCombatResult added = StatusApplicationModel.ApplyRetained(scope, template.Id, status, application.SourceCardId,
-                    spawnEffect: true, fromEffectType: application.FromEffectType, allowStackModifiers: application.AllowStackModifiers);
+                    spawnEffect: true, fromEffectType: application.FromEffectType, allowStackModifiers: application.AllowStackModifiers,
+                    doubleForDuality: application.Starting && current.Status("duality")?.Stacks > 0 &&
+                        (status.Id == "armor" || status.DisplayCategory is "Positive" or "Negative"));
                 if (!added.Supported) return added.UnsupportedReason;
                 initializing = added.State!;
                 current = initializing.Units.FirstOrDefault(unit => unit.Id == template.Id) ??
@@ -126,6 +131,7 @@ namespace MonsterTrain2Poju.Model
                 cardStatus?.Status.Id == "horde" && cardStatus.Status.Stacks > 0;
             bool purify = applications.Any(status => status.Id == "purify" && status.Stacks > 0) ||
                 cardStatus?.Status.Id == "purify" && cardStatus.Status.Stacks > 0;
+            bool duality = applications.Any(status => status.Id == "duality" && status.Stacks > 0);
             bool relicStacks = initializing.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0 || relic.StatusMagnitudes?.Count > 0) == true;
             bool statusDamage = template.Modifiers?.DamageBuffFromStatusEffects.HasValue == true;
             bool magebladeDamage = template.Modifiers?.MagebladeDamagePerMagicPower.HasValue == true;
@@ -133,15 +139,15 @@ namespace MonsterTrain2Poju.Model
             // Keep their definition metadata, but discard the template's registry slots.
             bool skippedStartingStatus = applications.Any(status => status.Stacks <= 0) ||
                 template.StatusRegistry?.Any(status => status.Stacks <= 0) == true;
-            if (horde || purify || relicStacks || statusDamage || magebladeDamage || skippedStartingStatus || initializing.Context?.Enchantments != null || cardStatus != null)
+            if (horde || purify || duality || relicStacks || statusDamage || magebladeDamage || skippedStartingStatus || initializing.Context?.Enchantments != null || cardStatus != null)
             {
                 CombatUnit value = current;
                 var initialized = new CombatUnit(value.Id, value.AssetKey, value.Team, value.BaseAttack, value.Health, value.MaxHealth,
                     value.CanAttack, value.IsPyre, value.EndsBattleOnDeath, value.Statuses, value.Triggers, value.SpawnerCardId, value.Size,
                     template.StatusImmunities, value.Subtypes, value.Modifiers, value.IsBoss, value.LastAttackerId, value.StatusRegistry,
                     value.EquipmentCards, value.NextTriggerId, value.Ability, value.StatusDictionary, value.AbilityRules, value.HordeDefinition, value.IsSpawning, value.SacrificeCardId, value.DeathState, bumpRules: value.BumpRules, lastFeederId: value.LastFeederId, moonPhaseMask: value.MoonPhaseMask);
-                if (horde || purify || relicStacks || statusDamage || magebladeDamage || skippedStartingStatus || cardStatus != null) update?.Invoke(initialized);
-                if (relicStacks || statusDamage || magebladeDamage || initializing.Context?.Enchantments != null)
+                if (horde || purify || duality || relicStacks || statusDamage || magebladeDamage || skippedStartingStatus || cardStatus != null) update?.Invoke(initialized);
+                if (duality || relicStacks || statusDamage || magebladeDamage || initializing.Context?.Enchantments != null)
                 {
                     initializing = EnchantmentWorldModel.Sync(new RoomCombatState(source.RoomIndex, source.Deployment,
                         initializing.Units.Select(unit => unit.Id == template.Id ? initialized : unit).ToArray(),

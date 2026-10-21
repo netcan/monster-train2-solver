@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--starting-duality-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    StartingDualityChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--holdover-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
