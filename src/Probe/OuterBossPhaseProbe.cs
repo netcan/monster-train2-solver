@@ -13,7 +13,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class OuterBossPhaseProbe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_PHASES") == "1";
-        internal static bool TurnsEnabled => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_TURNS") == "1";
+        internal static bool TurnsEnabled => PlayerOuterBossProbe.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_TURNS") == "1";
         internal static bool CaptureAnchors => Enabled || TurnsEnabled;
         internal static bool ModelsLiveBoss
         {

@@ -256,7 +256,7 @@ namespace MonsterTrain2Poju.Probe
             var characters = new List<CharacterState>();
             room.AddCharactersToList(characters, Team.Type.Heroes);
             room.AddCharactersToList(characters, Team.Type.Monsters);
-            if (includeOuterBossForBump && outerBossHere && !characters.Contains(outerBoss!)) characters.Add(outerBoss!);
+            if ((includeOuterBossForBump || OuterBossPhaseProbe.ModelsLiveBoss) && outerBossHere && !characters.Contains(outerBoss!)) characters.Add(outerBoss!);
             var units = new List<CombatUnit>();
             foreach (CharacterState character in characters)
             {

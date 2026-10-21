@@ -52,7 +52,7 @@ namespace MonsterTrain2Poju.Probe
             var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
             OuterBossProgress? outerBoss = OuterBossPhaseProbe.ModelsLiveBoss ? OuterBossPhaseProbe.CaptureProgress() : null;
             OuterBossSpawnDefinition? queuedOuterBoss = null;
-            if (OuterBossBirthProbe.Enabled && heroes.GetOuterTrainBossCharacter() == null &&
+            if ((OuterBossBirthProbe.Enabled || PlayerOuterBossProbe.Enabled) && heroes.GetOuterTrainBossCharacter() == null &&
                 managers.GetCombatManager().GetTurnCount() <= 1 && pattern.GetBossType() != SpawnPatternData.BossType.None)
             {
                 CharacterData data = pattern.GetOuterTrainBossCharacter((bool)AccessTools.Field(typeof(HeroManager), "harderOuterTrainBossEnabled").GetValue(heroes));
