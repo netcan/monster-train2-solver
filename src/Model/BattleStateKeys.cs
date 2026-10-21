@@ -22,6 +22,7 @@ namespace MonsterTrain2Poju.Model
         private readonly SHA256 hash = SHA256.Create();
 
         public string Key(BattleTurnState state) => Value(state);
+        public string SnapshotKey(object? snapshot) => Value(snapshot);
         public void Dispose() => hash.Dispose();
 
         private string Value(object? value)
