@@ -78,8 +78,9 @@ The calibration compares this source side effect separately from the clone.
 No detached card enters the live deck. The complete decision, all native/Unity
 RNG streams and frame stay unchanged. The host is the isolated no-card battle
 `20261021-181338-b0a16581`: settled terminal result, all four counters zero,
-original files unchanged. A separate [80-operation permanent calibration](permanent-traits.md)
-also covers all four native Holdover/Corrupt stack modes, repeated installation,
+original files unchanged. A separate [176-operation permanent calibration](permanent-traits.md)
+also covers all four native stack modes for Holdover, Corrupt, Consume,
+Distinct and Ephemeral, repeated installation,
 clobber protection and exact native modified-trait flags. Missing private state
 remains an explicit rejection boundary.
 

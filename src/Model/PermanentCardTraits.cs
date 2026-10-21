@@ -11,11 +11,12 @@ namespace MonsterTrain2Poju.Model
         {
             var lifecycle = upgrade.Lifecycle; prepared = upgrade;
             if (lifecycle == null) return descriptor;
-            var bases = CardExhaustModel.RefreshTraits(source.WithMaskDescriptor(descriptor)).BaseTraits.ToList();
-            var temporary = descriptor.TemporaryTraits.ToList(); var modified = new List<string>();
-            bool Relevant(string type) => type is CardRetainModel.Trait or CardCorruptStateModel.Trait or "CardTraitDistinct" or "CardTraitEphemeral";
+            bool Relevant(string type) => type is CardRetainModel.Trait or CardCorruptStateModel.Trait or
+                "CardTraitExhaustState" or "CardTraitDistinct" or "CardTraitEphemeral";
             bool Removal(string type) => type is "CardTraitEphemeral" or "CardTraitCopyOnPlay";
             if (!lifecycle.AddedTraits.Any(trait => Relevant(trait.RuntimeType)) && !lifecycle.RemovedRuntimeTypes.Any(Removal)) return descriptor;
+            var bases = CardExhaustModel.RefreshTraits(source.WithMaskDescriptor(descriptor)).BaseTraits.ToList();
+            var temporary = descriptor.TemporaryTraits.ToList(); var modified = new List<string>();
             CardMaskDescriptor Current() => descriptor.WithHoldover(bases, temporary, descriptor.HoldoverUpgradePending);
             CardTraitValue[] Active() => CardExhaustModel.RefreshTraits(source.WithMaskDescriptor(Current())).CombinedTraits!.ToArray();
             bool Add(CardTraitValue data)

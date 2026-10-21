@@ -24,10 +24,12 @@ See [exact search and certificates](exact-search.md) and
 `scripts/Check-SolverCompletion.ps1` is the focused acceptance entrypoint;
 it does not run the full regression inventory.
 
-`permanent-trait-calibration.mt2f` adds 80 detached native operations for all
-four Holdover/Corrupt permanent stack modes, repeated installation, clobber
+`permanent-trait-calibration.mt2f` adds 176 detached native operations for all
+four permanent stack modes of Holdover, Corrupt, Consume, Distinct and Ephemeral,
+repeated installation, clobber
 protection and Ephemeral/CopyOnPlay removal. Temporary and nonremovable trait
-controls retain complete private/card state and native modified-trait flags.
+controls retain complete private/card state and native modified-trait flags,
+including Consume's retained card identity across parameter changes/replacement.
 See [permanent trait evidence](permanent-traits.md).
 
 `full-battle-progressed-ring8-gold-{search,replay,policy}.mt2f` closes natural

@@ -3917,8 +3917,8 @@ if ($PermanentTraits) {
             $permanentData.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
             $permanentData.GetProperty('FrameBefore').GetInt32() -ne $permanentData.GetProperty('FrameAfter').GetInt32() -or
             -not $permanentData.GetProperty('RngBefore').ContentEquals($permanentData.GetProperty('RngAfter')) -or
-            $permanentData.GetProperty('Rows').GetArrayLength() -ne 80) { throw 'Incomplete or mutating permanent trait calibration.' }
-        Write-Output 'NATIVE-PERMANENT-TRAITS-CAPTURE PASS: 80 native operations; unchanged decision/RNG/frame.'
+            $permanentData.GetProperty('Rows').GetArrayLength() -ne 176) { throw 'Incomplete or mutating permanent trait calibration.' }
+        Write-Output 'NATIVE-PERMANENT-TRAITS-CAPTURE PASS: 176 native operations; unchanged decision/RNG/frame.'
     } finally { $permanentArchive.Dispose() }
 }
 if ($HoldoverVariants) {

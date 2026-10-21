@@ -40,7 +40,8 @@ namespace MonsterTrain2Poju.Probe
                 card.ApplyPermanentUpgrade(upgrade, save, ignoreUpgradeAnimation: true);
                 rows.Add(new { Group = group, Before = before, Upgrade = payload, Actual = State(card) });
             }
-            foreach (string trait in new[] { CardRetainModel.Trait, CardCorruptStateModel.Trait })
+            foreach (string trait in new[] { CardRetainModel.Trait, CardCorruptStateModel.Trait,
+                "CardTraitExhaustState", "CardTraitDistinct", "CardTraitEphemeral" })
             foreach (int mode in new[] { 0, 1, 2, 3 })
             foreach (bool present in new[] { false, true })
             foreach (bool avoid in new[] { false, true })
@@ -51,6 +52,11 @@ namespace MonsterTrain2Poju.Probe
                 {
                     foreach (var retained in card.GetTraitStates().OfType<CardTraitRetain>())
                         AccessTools.Field(typeof(CardTraitRetain), "retained").SetValue(retained, true);
+                    foreach (var consumed in card.GetTraitStates().OfType<CardTraitExhaustState>())
+                    {
+                        AccessTools.Field(typeof(CardTraitExhaustState), "isExhausted").SetValue(consumed, true);
+                        AccessTools.Field(typeof(CardTraitExhaustState), "exhaustedCard").SetValue(consumed, card);
+                    }
                     var upgrade = new CardUpgradeState(); upgrade.Setup(); upgrade.SetAvoidClobberingExistingTraits(avoid);
                     upgrade.GetTraitDataUpgrades().Add(Data(trait, mode, 3));
                     Apply(trait + "/" + mode + "/" + present + "/" + avoid, card, upgrade);

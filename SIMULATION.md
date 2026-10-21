@@ -26,11 +26,12 @@ also removes one unnecessary play. Its fresh 41-input native replay wins with
 Pyre104, matching every full-state/RNG successor with four zero counters.
 See [the Holdover evidence and remaining guards](tests/fixtures/holdover.md).
 
-Eighty additional detached native permanent-upgrade operations cover all four
-Holdover/Corrupt stack modes, repeated installation, clobber protection and
+176 additional detached native permanent-upgrade operations cover all four
+Holdover/Corrupt/Consume/Distinct/Ephemeral stack modes, repeated installation, clobber protection and
 Ephemeral/CopyOnPlay removal with temporary/nonremovable controls. The model
 retains native dummy slots, runtime parameters, private pending state and the
-upgrade's modified-trait flags. See
+upgrade's modified-trait flags. Consume controls also retain the native private
+exhausted-card reference across surviving instances and clear it on replacement. See
 [permanent trait calibration](tests/fixtures/permanent-traits.md).
 
 `scripts/Check-SolverCompletion.ps1` checks these increments and both new search

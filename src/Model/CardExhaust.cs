@@ -59,15 +59,13 @@ namespace MonsterTrain2Poju.Model
                 trait.RuntimeType is CardRetainModel.Trait or CardCorruptStateModel.Trait) == true ||
                 upgrade.Lifecycle?.RemovedRuntimeTypes.Any(type => type is "CardTraitEphemeral" or "CardTraitCopyOnPlay") == true))
                 return "Permanent trait installation/removal requires captured branch-owned trait state.";
-            CardTraitValue[] markers = upgrade.Lifecycle?.AddedTraits.Where(trait => trait.RuntimeType is "CardTraitDistinct" or "CardTraitEphemeral").ToArray() ?? Array.Empty<CardTraitValue>();
-            if (markers.Length > 0 && (card.MaskDescriptor == null || markers.Any(trait => trait.StackMode != 0)))
-                return "Permanent Distinct/Ephemeral installation requires captured traits and a non-stacking definition.";
+            if (card.MaskDescriptor == null && upgrade.Lifecycle?.AddedTraits.Any(trait =>
+                trait.RuntimeType is "CardTraitDistinct" or "CardTraitEphemeral") == true)
+                return "Permanent Distinct/Ephemeral installation requires captured branch-owned traits.";
             CardTraitValue[] additions = upgrade.Lifecycle?.AddedTraits.Where(trait => trait.RuntimeType == Trait).ToArray() ?? Array.Empty<CardTraitValue>();
             if (additions.Length == 0) return null;
             if (card.MaskDescriptor == null || card.ExhaustState == null)
                 return "Permanent Consume installation requires branch-owned trait and private-state metadata.";
-            if (additions.Any(trait => trait.StackMode != 0))
-                return "Permanent Consume stack modes other than non-stacking installation are not modeled.";
             return null;
         }
         internal static CardMaskDescriptor? InstallPermanentTraits(CardInstanceState source,
@@ -75,10 +73,7 @@ namespace MonsterTrain2Poju.Model
         {
             preparedUpgrades = addedUpgrades;
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
-            CardTraitValue[] added = addedUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())
-                .Where(trait => trait.RuntimeType == Trait).ToArray();
             if (descriptor == null) return null;
-            if (added.Length > 0 && !HasConsume(source)) descriptor = descriptor.WithBaseTraits(descriptor.BaseTraits.Concat(added).ToArray());
             var prepared = new List<CardUpgradeModifier>();
             foreach (var upgrade in addedUpgrades)
             {
