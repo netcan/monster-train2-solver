@@ -1,1 +1,2 @@
 tests/fixtures/*.mt2f binary
+packaging/macos/*.command text eol=lf
