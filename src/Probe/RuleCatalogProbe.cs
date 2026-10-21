@@ -67,6 +67,22 @@ namespace MonsterTrain2Poju.Probe
                 Looping = pattern.GetIsLoopingScenario(),
                 Waves = waveDefinitions,
                 Specials = specialDefinitions,
+                OuterBosses = characters.Values.Where(unit => unit.IsOuterTrainBoss())
+                    .OrderBy(unit => unit.GetAssetKey(), StringComparer.Ordinal).Select(unit => new
+                    {
+                        AssetKey = unit.GetAssetKey(),
+                        ValidAttackPhases = unit.GetValidBossAttackPhase().ToString(),
+                        RoomModifiers = unit.GetRoomModifiersData().Select(RoomModifier).ToArray(),
+                        Groups = unit.GetBossActionData().Select(group => new
+                        {
+                            Repeats = group.GetNumRepeats(),
+                            Actions = group.GetActions().Select(action => new
+                            {
+                                Behavior = action.GetActionBehaviorName(), Team = action.GetParamTeamType().ToString(),
+                                Effects = action.GetActionEffectData().Select(Effect).ToArray()
+                            }).ToArray()
+                        }).ToArray()
+                    }).ToArray(),
                 StatusRules = new[] { "armor", "valor", "pyregel", "decay", "conduit", "corruption" }.Select(id =>
                 {
                     StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(id)!;

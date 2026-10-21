@@ -56,7 +56,7 @@ namespace MonsterTrain2Poju.Probe
                 managers.GetCombatManager().GetTurnCount() <= 1 && pattern.GetBossType() != SpawnPatternData.BossType.None)
             {
                 CharacterData data = pattern.GetOuterTrainBossCharacter((bool)AccessTools.Field(typeof(HeroManager), "harderOuterTrainBossEnabled").GetValue(heroes));
-                if (data.GetAssetKey() == "Boss_Level8_AllyBuffer")
+                if (OuterBossPhaseProbe.Supports(data))
                 {
                     OuterBossSpawnDefinition candidate = OuterBossBirthProbe.Definition(data);
                     if (candidate.Actor.ExternalInteractions.Count == 0) queuedOuterBoss = candidate;

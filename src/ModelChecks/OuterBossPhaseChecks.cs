@@ -4,7 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class OuterBossPhaseChecks
 {
-    internal static void Native(FixtureValue fixture)
+    internal static void Native(FixtureValue fixture, string expectedBoss = "Boss_Level8_AllyBuffer", bool earlyDefeat = false)
     {
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
             fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
@@ -28,6 +28,8 @@ internal static class OuterBossPhaseChecks
         {
             OuterBossPhaseState before = row.GetProperty("Before").Deserialize<OuterBossPhaseState>()!;
             OuterBossPhaseState actual = row.GetProperty("Actual").Deserialize<OuterBossPhaseState>()!;
+            Require(before.Boss.AssetKey == expectedBoss && actual.Boss.AssetKey == expectedBoss,
+                "Unexpected native boss definition at the phase boundary.");
             string phase = row.GetProperty("Phase").GetString()!;
             if (count == 0) occupied = before.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre);
@@ -60,8 +62,8 @@ internal static class OuterBossPhaseChecks
         if (!forced && transitions > 0)
             Require(fixture.TryGetProperty("ForcedSpawnQueueEmpty", out _) && fixture.GetProperty("QueueControls").GetArrayLength() == 0,
                 "Natural relentless transition lacks explicit control-free provenance.");
-        Require(count >= (forced ? 6 : occupied ? 9 : 11) && pre >= (forced ? 3 : occupied ? 5 : 6) &&
-            post >= (forced ? 3 : occupied ? 4 : 5) && moves >= (forced ? 2 : occupied ? 4 : 5) &&
+        Require(count >= (earlyDefeat ? 5 : forced ? 6 : occupied ? 9 : 11) && pre >= (earlyDefeat ? 3 : forced ? 3 : occupied ? 5 : 6) &&
+            post >= (earlyDefeat ? 2 : forced ? 3 : occupied ? 4 : 5) && moves >= (earlyDefeat ? 2 : forced ? 2 : occupied ? 4 : 5) &&
             initial == 1 && (forced || transitions > 0 ? transitions == 1 && destroyed >= 2 : destroyed == 0 && (!occupied || auraTargets > 0)),
             "Missing native initial action, moving casting actions or post-combat no-op controls.");
         Console.WriteLine($"OUTER-BOSS-PHASE PASS: {count} settled native actions ({pre} pre, {post} post), {moves} moves, {initial} initial latch, {auraTargets} new live aura targets, {transitions} relentless transitions, {destroyed} destroyed rooms; explicit control={forced}; complete battle/controller/RNG equality and immutable parents.");

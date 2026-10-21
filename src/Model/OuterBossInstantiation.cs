@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState train = old.Train; OuterBossSpawnDefinition definition = source.Definition;
             EnemyDefinition actor = definition.Actor; OuterBossProgress boss = definition.Boss;
             if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));
-            if (actor.Unit.AssetKey != "Boss_Level8_AllyBuffer" || actor.Unit.Id != 0 || boss.UnitId != 0 ||
+            if (!OuterBossDefinitions.Supports(actor.Unit.AssetKey) || actor.Unit.Id != 0 || boss.UnitId != 0 ||
                 boss.AssetKey != actor.Unit.AssetKey || boss.Room != -1 || boss.Phase != "Casting" ||
                 old.OuterBoss != null || train.Context?.SpawnPoints == null || actor.Unit.BumpRules?.OuterBoss != true ||
                 actor.Unit.Statuses.Count != 0 || actor.Unit.Ability != null || actor.Unit.Modifiers?.Upgrades.Count != 0 ||

@@ -31,6 +31,8 @@ namespace MonsterTrain2Poju.Probe
         {
             EnemyDefinition actor = EnemySpawningProbe.Definition(data, true);
             var interactions = actor.ExternalInteractions.Where(value => value != "Spawned outer Boss actions").ToList();
+            if (!OuterBossPhaseProbe.Supports(data))
+                interactions.Add("Outer-boss definition or action signature requires separate calibration.");
             AllGameManagers managers = AllGameManagers.Instance;
             if (managers.GetSaveManager().GetCovenantsForSpawnPattern().Count > 0)
                 interactions.Add("Outer-boss OnSpawn Covenant effects require separate calibration.");

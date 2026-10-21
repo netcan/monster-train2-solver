@@ -76,7 +76,7 @@ namespace MonsterTrain2Poju.Model
             OuterBossPhaseResult Fail(string reason) => new OuterBossPhaseResult(null, reason);
             BattleTurnState battle = source.Battle; OuterBossProgress boss = source.Boss;
             TrainCombatState train = battle.Spawn.Train;
-            if (boss.AssetKey != "Boss_Level8_AllyBuffer" || boss.Phase != "Casting" ||
+            if (!OuterBossDefinitions.Supports(boss.AssetKey) || boss.Phase != "Casting" ||
                 boss.Actions.Count != boss.Controller.Groups.Count || boss.Actions.Count != 1 ||
                 boss.Actions[0].Count != 1 || !boss.Actions[0][0].Empty || boss.DestroyActions.Count != 1 ||
                 battle.PlayRules == null || train.Context?.SpawnPoints == null)

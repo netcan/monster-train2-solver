@@ -41,13 +41,18 @@ namespace MonsterTrain2Poju.Model
 
     internal static class EnchantmentWorldModel
     {
-        internal static RoomCombatState Sync(RoomCombatState source, IReadOnlyList<CombatUnit>? retainedUnits = null)
+        internal static RoomCombatState Sync(RoomCombatState source, IReadOnlyList<CombatUnit>? retainedUnits = null,
+            IReadOnlyList<CombatUnit>? externalUnits = null)
         {
             EnchantmentWorld? world = source.Context?.Enchantments;
             if (world == null) return source;
             var currentIds = source.Units.Select(unit => unit.Id).ToHashSet();
+            // A room can damage or heal a live actor on another floor. Keep
+            // that actor in its physical room while publishing its new state.
+            var external = externalUnits?.Count > 0 ? externalUnits.ToDictionary(unit => unit.Id) : null;
             var rooms = world.Rooms.Select(room => room.RoomIndex == source.RoomIndex ? source :
-                new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Where(unit => !currentIds.Contains(unit.Id)).ToArray(),
+                new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Where(unit => !currentIds.Contains(unit.Id))
+                    .Select(unit => external != null && external.TryGetValue(unit.Id, out CombatUnit? changed) ? changed : unit).ToArray(),
                     room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             var liveIds = rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
             var retained = world.RetainedUnits.Where(actor => !liveIds.Contains(actor.Unit.Id)).ToList();

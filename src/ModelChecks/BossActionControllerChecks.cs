@@ -4,11 +4,11 @@ using MonsterTrain2Poju.Model;
 
 internal static class BossActionControllerChecks
 {
-    internal static void Native(FixtureValue fixture)
+    internal static void Native(FixtureValue fixture, string expectedBoss = "Boss_Level8_AllyBuffer", int minimumOperations = 10)
     {
         Require(fixture.GetProperty("Schema").GetInt32() == 1 && fixture.GetProperty("DecisionUnchanged").GetBoolean() &&
             fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
-            fixture.GetProperty("Definition").GetProperty("Boss").GetString() == "Boss_Level8_AllyBuffer",
+            fixture.GetProperty("Definition").GetProperty("Boss").GetString() == expectedBoss,
             "Native boss controller build, owner or state restoration differs.");
         Require(fixture.GetProperty("Errors").GetArrayLength() == 0 &&
             fixture.GetProperty("FrameBefore").GetInt32() == fixture.GetProperty("FrameAfter").GetInt32() &&
@@ -39,7 +39,7 @@ internal static class BossActionControllerChecks
                 if (before.Groups.Any(value => value.Executable.Any(flag => !flag)) && operation == "DecideNext") skipped++;
             }
         }
-        Require(natural >= 10 && operations.SetEquals(new[] { "DecideInitial", "DecideNext", "Perform" }) &&
+        Require(natural >= minimumOperations && operations.SetEquals(new[] { "DecideInitial", "DecideNext", "Perform" }) &&
             controls == 1152 && frozen > 0 && destroyed > 0 && exhausted > 0 && skipped > 0,
             "Missing native boss initial latch, destruction group, exhausted final group or invalid-action controls.");
         Console.WriteLine($"BOSS-CONTROLLER PASS: {natural} actual operations, {controls} detached transitions; " +

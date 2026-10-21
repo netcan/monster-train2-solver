@@ -1,8 +1,14 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 859 archives (793 full battles and
-66 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-22): 863 archives (794 full battles and
+69 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-outer-boss-fragile-no-cards.mt2f` and its three component archives
+calibrate original Fragile creation, initial placement, casting movement, enemy
+buff aura and remote Pyre damage. Four complete EndTurns match a native loss;
+all four failure counters are zero. This map-jump diagnostic does not establish
+a naturally progressed player victory. See [boss variant scope](outer-boss-variants.md).
 
 `full-battle-player-room-moon-movement-{search,replay}.mt2f` closes the player
 movement gate with an authored hand: thirty decisions, twenty-five plays, five

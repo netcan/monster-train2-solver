@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Model
             BattleTurnState battle = source.Battle; OuterBossProgress boss = source.CreatedBoss; CombatUnit unit = source.CreatedUnit;
             TrainCombatState train = battle.Spawn.Train;
             if (source.ExternalInteractions.Count > 0) return Fail(string.Join("; ", source.ExternalInteractions));
-            if (boss.AssetKey != "Boss_Level8_AllyBuffer" || boss.Phase != "Casting" || boss.Room != -1 || boss.UnitId != unit.Id ||
+            if (!OuterBossDefinitions.Supports(boss.AssetKey) || boss.Phase != "Casting" || boss.Room != -1 || boss.UnitId != unit.Id ||
                 unit.BumpRules?.OuterBoss != true || unit.Health <= 0 || unit.DeathState?.IsDestroyed == true ||
                 unit.BumpRules.PairedBossUnitId != 0 || source.CreatedMovement?.UnitId != unit.Id || source.CreatedMovement.Speed != 1 ||
                 source.CreatedMovement.CompanionBoss || boss.Controller.Groups.Count != 1 || boss.DestroyActions.Count != 1 ||

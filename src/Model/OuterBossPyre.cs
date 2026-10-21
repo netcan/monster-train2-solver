@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState train = battle.Spawn.Train;
             int pyre = train.Rooms.Count - 1;
             CombatUnit? actor = train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == boss.UnitId);
-            if (boss.AssetKey != "Boss_Level8_AllyBuffer" || boss.Phase != "Relentless" || boss.Room != pyre - 1 ||
+            if (!OuterBossDefinitions.Supports(boss.AssetKey) || boss.Phase != "Relentless" || boss.Room != pyre - 1 ||
                 actor?.BumpRules?.OuterBoss != true || actor.BumpRules.PairedBossUnitId != 0 || actor.Health <= 0 ||
                 actor.Status("rooted") != null || actor.Status("immobile") != null || train.Context?.SpawnPoints == null ||
                 battle.PlayRules == null || battle.PlayRules.Rooms.Any(room => !room.IsPyre && room.Enabled))

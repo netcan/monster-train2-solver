@@ -2415,7 +2415,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     RoomCombatState synced = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom ||
                         externalTurnActorIds.Contains(unit.Source.Id))
-                        .Select(unit => unit.Freeze()).ToArray());
+                        .Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                     context = synced.Context!; originalWorld = context.Enchantments!;
                     EnchantmentCombatState prepared = originalWorld.Frame(context);
                     foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && !unit.Removed &&
@@ -3331,7 +3331,7 @@ namespace MonsterTrain2Poju.Model
                     if (queued.RoomIndex != source.RoomIndex)
                     {
                         RoomCombatState synced = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
-                            .Select(unit => unit.Freeze()).ToArray());
+                            .Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                         context = synced.Context;
                         RoomCombatState? remote = context?.Enchantments?.Rooms.FirstOrDefault(room => room.RoomIndex == queued.RoomIndex);
                         if (remote == null)
@@ -4069,6 +4069,9 @@ namespace MonsterTrain2Poju.Model
                 units.Where(unit => unit.Alive && unit.InRoom && !externalTurnActorIds.Contains(unit.Source.Id))
                     .Select(unit => unit.Freeze()).ToArray(), source.ExternalInteractions, context, source.Preview, CompanionBossSnapshot());
 
+            private CombatUnit[] ExternalEnchantmentUnits() => units.Where(unit => externalTurnActorIds.Contains(unit.Source.Id))
+                .Select(unit => unit.Freeze()).ToArray();
+
             private void ImportEnchantmentRoom(RoomCombatState state)
             {
                 context = state.Context;
@@ -4083,7 +4086,7 @@ namespace MonsterTrain2Poju.Model
             private bool UpdateEnchantments(int? onlySourceId = null)
             {
                 RoomCombatState current = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
-                    .Select(unit => unit.Freeze()).ToArray());
+                    .Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                 RoomCombatResult result = EnchantmentWorldModel.Update(current, onlySourceId);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
                 ImportEnchantmentRoom(result.State!);
@@ -4094,7 +4097,7 @@ namespace MonsterTrain2Poju.Model
             private bool UpdateEnchantmentEffect(int unitId, int triggerIndex, int effectIndex)
             {
                 RoomCombatState current = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
-                    .Select(unit => unit.Freeze()).ToArray());
+                    .Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                 RoomCombatResult result = EnchantmentWorldModel.UpdateEffect(current, unitId, triggerIndex, effectIndex);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
                 ImportEnchantmentRoom(result.State!);
@@ -5219,7 +5222,7 @@ namespace MonsterTrain2Poju.Model
                         context = context!.WithCard(card.WithPlayedRoomUnits(card.PlayedRoomUnitIds.Where(id => !removedIds.Contains(id)).ToArray()));
                 }
                 RoomCombatState state = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom ||
-                    externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray());
+                    externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                 state = state.WithCompanionBosses(CompanionBossSnapshot());
                 context = state.Context;
                 return unsupportedReason != null

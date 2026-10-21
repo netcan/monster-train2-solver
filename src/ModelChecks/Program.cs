@@ -1545,6 +1545,16 @@ if (args.Length >= 2 && args[0] == "--outer-boss-pyre-only")
     return;
 }
 
+if (args.Length == 5 && args[0] == "--outer-boss-fragile-only")
+{
+    using var battle = ModelJson.ReadFixture(args[1]);
+    using var birth = ModelJson.ReadFixture(args[2]);
+    using var phases = ModelJson.ReadFixture(args[3]);
+    using var controller = ModelJson.ReadFixture(args[4]);
+    OuterBossVariantChecks.Fragile(battle.RootElement, birth.RootElement, phases.RootElement, controller.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--outer-boss-birth-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1563,6 +1573,15 @@ if (args.Length == 2 && args[0] == "--outer-boss-turn-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     OuterBossTurnChecks.Native(fixture.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--outer-boss-variant-phase-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    string boss = fixture.RootElement.GetProperty("Actions")[0].GetProperty("Before").GetProperty("Boss").GetProperty("AssetKey").GetString()!;
+    if (!OuterBossDefinitions.Supports(boss)) throw new InvalidOperationException("Uncalibrated outer-boss phase definition.");
+    OuterBossPhaseChecks.Native(fixture.RootElement, boss);
     return;
 }
 
@@ -3382,6 +3401,27 @@ foreach (string path in args.Where(path => path.Contains("full-battle-original-c
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();
+foreach (string path in args.Where(path => path.Contains("full-battle-outer-boss-fragile-no-cards", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OuterBossVariantChecks.Battle(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("outer-boss-fragile-birth-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OuterBossBirthChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("outer-boss-fragile-phase-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    bool partial = !fixture.RootElement.GetProperty("ForcedSpawnQueueEmpty").GetBoolean();
+    OuterBossPhaseChecks.Native(fixture.RootElement, "Boss_Level8_Fragile", earlyDefeat: partial);
+}
+foreach (string path in args.Where(path => path.Contains("boss-action-fragile-controller-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    BossActionControllerChecks.Native(fixture.RootElement, "Boss_Level8_Fragile", minimumOperations: 6);
+}
 foreach (string path in args.Where(path => path.Contains("outer-boss-pyre-turn-calibration", StringComparison.OrdinalIgnoreCase) ||
     path.Contains("outer-boss-pyre-victory-turn-calibration", StringComparison.OrdinalIgnoreCase)))
 {

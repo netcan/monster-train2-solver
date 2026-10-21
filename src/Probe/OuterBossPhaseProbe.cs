@@ -20,10 +20,20 @@ namespace MonsterTrain2Poju.Probe
             get
             {
                 CharacterState? boss = AllGameManagers.Instance?.GetHeroManager()?.GetOuterTrainBossCharacter();
-                return TurnsEnabled && boss != null && boss.IsAlive && !boss.IsDestroyed && boss.GetSourceCharacterData().name == "Boss_Level8_AllyBuffer";
+                return TurnsEnabled && boss != null && boss.IsAlive && !boss.IsDestroyed && Supports(boss.GetSourceCharacterData());
             }
         }
         private static bool ForceRelentless => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS") == "1";
+        internal static bool Supports(CharacterData data)
+        {
+            var groups = data.GetBossActionData();
+            if (!OuterBossDefinitions.Supports(data.GetAssetKey()) || groups.Count != 1 ||
+                groups[0].GetNumRepeats() != 0 || groups[0].GetActions().Count != 1) return false;
+            BossActionData action = groups[0].GetActions()[0];
+            return action.GetActionBehaviorName() == "RandomOccupiedBossActionBehavior" &&
+                action.GetParamTeamType() == Team.Type.Monsters && action.GetActionEffectData().Count == 0 &&
+                data.GetRoomModifiersData().Count == 0;
+        }
         internal sealed class Record
         {
             public string Phase { get; set; } = "";

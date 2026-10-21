@@ -4,7 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class OuterBossTurnChecks
 {
-    internal static void Deployment(FixtureValue fixture)
+    internal static void Deployment(FixtureValue fixture, string expectedBoss = "Boss_Level8_AllyBuffer", int minimumTurns = 5)
     {
         Require(fixture.GetProperty("OuterBossTurnsEnabled").GetBoolean() &&
             fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
@@ -13,7 +13,7 @@ internal static class OuterBossTurnChecks
         FixtureValue[] turns = fixture.GetProperty("Turns").EnumerateArray().ToArray();
         FixtureValue[] actions = fixture.GetProperty("Actions").EnumerateArray().ToArray();
         BattleTurnState deployment = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
-        Require(deployment.Spawn.Turn == 0 && deployment.Spawn.QueuedOuterBoss?.Boss.AssetKey == "Boss_Level8_AllyBuffer" &&
+        Require(deployment.Spawn.Turn == 0 && deployment.Spawn.QueuedOuterBoss?.Boss.AssetKey == expectedBoss &&
             deployment.Spawn.OuterBoss == null, "Missing authored queued boss at the natural deployment decision.");
         BattleTurnState firstTurn = turns[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         Require(firstTurn.Spawn.Turn == 1 && firstTurn.Spawn.OuterBoss != null && firstTurn.Spawn.QueuedOuterBoss == null,
@@ -46,7 +46,7 @@ internal static class OuterBossTurnChecks
             current = ended.State!;
         }
         RoomOutcome terminal = fixture.GetProperty("NativeWon").GetBoolean() ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated;
-        Require(actionIndex == actions.Length && turns.Length >= 5 && JsonSerializer.Serialize(root, ModelJson.Options) == parent &&
+        Require(actionIndex == actions.Length && turns.Length >= minimumTurns && JsonSerializer.Serialize(root, ModelJson.Options) == parent &&
             turns[^1].GetProperty("ActualOutcome").GetInt32() == (int)terminal,
             "Complete deployment replay missed actions, mutated its root or failed to reach the native terminal outcome.");
         if (terminal == RoomOutcome.BattleWon)
