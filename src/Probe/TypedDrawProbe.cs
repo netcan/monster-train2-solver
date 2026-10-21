@@ -17,10 +17,28 @@ namespace MonsterTrain2Poju.Probe
         private static Record? current;
         private static readonly Dictionary<CardUpgradeState, int> sharedReferences = new Dictionary<CardUpgradeState, int>();
         private static int nextUpgradeReferenceId = 1;
-        private static bool TrackReferences => Enabled || SoldierOfFortuneScenario.Enabled || OriginalDrawUpgradeScalingScenario.Enabled || OriginalDiscardDrawScenario.Enabled || OriginalCorruptedAngelsScenario.CostOrder != null || OriginalSupportSpellsScenario.IsolatedIds != null;
+        private static bool? branchReferences;
+        private static bool BranchReferences
+        {
+            get
+            {
+                if (!CardBranchMaskProbe.Enabled) return false;
+                if (branchReferences.HasValue) return branchReferences.Value;
+                string? replay = Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT");
+                if (string.IsNullOrEmpty(replay)) return (branchReferences = true).Value;
+                // Frozen replays retain their source capture schema. A legacy
+                // missing queue stays unknown; it is never treated as empty.
+                using var document = MonsterTrain2Poju.Fixtures.FixtureDocument.Read(replay!);
+                var cards = document.RootElement.GetProperty("RollingDecisions").EnumerateArray().First()
+                    .GetProperty("Root").GetProperty("Spawn").GetProperty("Train").GetProperty("Context").GetProperty("Cards");
+                return (branchReferences = cards.TryGetProperty("NextUpgradeReferenceId", out var reference) && reference.ValueKind ==
+                    MonsterTrain2Poju.Fixtures.FixtureKind.Number).Value;
+            }
+        }
+        private static bool TrackReferences => BranchReferences || Enabled || SoldierOfFortuneScenario.Enabled || OriginalDrawUpgradeScalingScenario.Enabled || OriginalDiscardDrawScenario.Enabled || OriginalCorruptedAngelsScenario.CostOrder != null || OriginalSupportSpellsScenario.IsolatedIds != null;
         internal static int? NextUpgradeReferenceId => TrackReferences ? nextUpgradeReferenceId : (int?)null;
         internal static int? SharedReferenceId(CardUpgradeState upgrade) => TrackReferences && sharedReferences.TryGetValue(upgrade, out int id) ? id : (int?)null;
-        private static bool Recording => (Enabled && TypedDrawScenario.Prepared || SoldierOfFortuneScenario.Prepared || OriginalDrawUpgradeScalingScenario.Prepared || OriginalDiscardDrawScenario.Prepared) && FullBattleTrace.Active != null &&
+        private static bool Recording => (BranchReferences || Enabled && TypedDrawScenario.Prepared || SoldierOfFortuneScenario.Prepared || OriginalDrawUpgradeScalingScenario.Prepared || OriginalDiscardDrawScenario.Prepared) && FullBattleTrace.Active != null &&
             !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
 
         internal static TypedDrawRule DrawRule(CardEffectData effect) => new TypedDrawRule(effect.GetTargetCardType().ToString(),
@@ -41,7 +59,7 @@ namespace MonsterTrain2Poju.Probe
         {
             var queue = (IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextDrawnTempCardUpgrades").GetValue(cards);
             NextDrawUpgradeRule[] values = queue.Select(UpgradeRule).ToArray();
-            return values.Length == 0 && !Enabled && !SoldierOfFortuneScenario.Enabled && !OriginalDrawUpgradeScalingScenario.Enabled && !OriginalDiscardDrawScenario.Enabled && OriginalSupportSpellsScenario.IsolatedIds == null ? null : values;
+            return values.Length == 0 && !TrackReferences ? null : values;
         }
 
         internal sealed class Record

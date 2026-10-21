@@ -14,6 +14,15 @@ evidence and does not count toward boss coverage.
 
 ## Replanning and independent verification
 
+New branch-mask captures include the actual next-draw upgrade queue and its
+allocation identity. Natural campaign cards can therefore use the existing
+typed-draw model without an isolated scenario flag. Frozen legacy replays
+retain their omitted/null queue schema rather than treating unknown state as
+empty. A naturally progressed seventh-ring run at
+`.probe-runs/full-battle-units-spells-and-junk-20261021-105845-d8f29b7d`
+completed with zero mismatch/unsupported/capture/pending counters and 56
+individual native draw records, but lost; it is diagnostic evidence only.
+
 The native test driver waits for a newly published, read-only-capture-guarded
 recommendation. It executes only that publication's first card/EndTurn, waits
 for the native action to settle, compares the complete successor state and
