@@ -331,3 +331,24 @@ and activation. Run
 `scripts/Check-PlayerAdvisor.ps1 -Case OuterBoss -SkipBuild` for the manifest-
 verified focused gate, or omit `-Case` to check both the moon and boss pairs.
 No full fixture regression is needed for this player-capture increment.
+
+## Delivered 0.2.2 trial package
+
+`results/mod-dist/0.2.2-validated/PojuAdvisor-0.2.2-macOS.zip` is 2,919,431 bytes,
+packaged from clean source `a1c96934370209dd01961bc287d49b381cb618cb` using the
+native-validated binaries. ZIP SHA256 is
+`224237d214c88293d34f8451534d22face1742c043148dbfb3782a63fe8a27e6`.
+The package checker passes all 12 files, complete checksums, LF shell scripts,
+AnyCPU IL metadata, the player entry point and exclusion of the test bridge.
+All three ZIP DLLs exactly match the fresh final-boss replay payload:
+
+| DLL | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | `0e257b05ff04e5992e15c496ed38fe053ab9fe25b4626f66d2d0ad16dec6abe9` |
+| Model.dll | `de2ccc1553f50b23f89356a0ceddc85471d39bb8adad1ce6a5f2aa83911df5b2` |
+| FixtureArchive.dll | `9da684f8af93795b507e5ddd3aed1b29d23def54054611fc73298856ab93147d` |
+
+The ZIP and its `.sha256` file are copied to `/tank` share root,
+`\\intel-n100.local\tank` (this workstation's `Z:`). Both network copies match
+their local SHA256 values. The previous 0.2.1 package remains available.
+Mac runtime acceptance remains unverified and the package retains its trial label.
