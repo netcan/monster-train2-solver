@@ -3,6 +3,47 @@ using MonsterTrain2Poju.Model;
 
 internal static class PlayerOuterBossChecks
 {
+    internal static void WinningPair(FixtureValue source, FixtureValue replay)
+    {
+        Pair(source, replay);
+        FixtureValue[] records = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        FixtureValue[] frozen = replay.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(records.Length > 2, "Missing winning rolling publications.");
+        using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+        for (int index = 0; index < records.Length; index++)
+        {
+            FixtureValue record = records[index];
+            bool retained = record.GetProperty("ReusedWinningContinuation").GetBoolean();
+            Require(record.GetProperty("PlannedOutcome").Deserialize<RoomOutcome>() == RoomOutcome.BattleWon &&
+                retained == (index > 0) &&
+                record.GetProperty("Timing").GetProperty("ReusedWinningContinuation").GetBoolean() == retained,
+                "Rolling advice lost the verified win or mislabeled its source.");
+            Require(frozen[index].GetProperty("ReusedWinningContinuation").GetBoolean() == retained,
+                "Frozen replay changed the historical publication source.");
+            if (!retained)
+            {
+                Require(record.GetProperty("Nodes").GetInt32() > 0 &&
+                    record.GetProperty("Timing").GetProperty("SearchMs").GetDouble() > 0,
+                    "The initial winning publication did not search.");
+                continue;
+            }
+            Require(record.GetProperty("Nodes").GetInt32() == 0 &&
+                record.GetProperty("Timing").GetProperty("SearchMs").GetDouble() == 0 &&
+                record.GetProperty("PolicyBaselineScore").ValueKind == FixtureKind.Null,
+                "A retained publication claimed new search work or a root-specific baseline.");
+            Require(keys.Key(records[index - 1].GetProperty("Expected").Deserialize<BattleTurnState>()!) ==
+                keys.Key(record.GetProperty("Root").Deserialize<BattleTurnState>()!),
+                "Retained advice changed full battle state or RNG beyond the unused preview allocator.");
+            FixtureValue[] prior = records[index - 1].GetProperty("PlanSteps").EnumerateArray().Skip(1).ToArray();
+            FixtureValue[] current = record.GetProperty("PlanSteps").EnumerateArray().ToArray();
+            Require(prior.Length == current.Length && prior.Zip(current).All(pair => pair.First.ContentEquals(pair.Second)) &&
+                records[0].GetProperty("Planned").ContentEquals(record.GetProperty("Planned")) &&
+                records[0].GetProperty("Score").ContentEquals(record.GetProperty("Score")),
+                "Retained advice changed its proven suffix, terminal state or score.");
+        }
+        Console.WriteLine($"PLAYER-BOSS-WINNING-CONTINUATION PASS decisions={records.Length} retained={records.Length - 1}: every publication wins; full roots/RNG, exact suffixes and fresh native replay verified.");
+    }
+
     internal static void Pair(FixtureValue source, FixtureValue replay)
     {
         foreach (FixtureValue fixture in new[] { source, replay })
