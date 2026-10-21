@@ -3199,6 +3199,7 @@ TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();
 foreach (string path in args.Where(path => path.Contains("outer-boss-phase-calibration", StringComparison.OrdinalIgnoreCase) ||
+    path.Contains("outer-boss-relentless-phase-calibration", StringComparison.OrdinalIgnoreCase) ||
     path.Contains("outer-boss-occupied-phase-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);

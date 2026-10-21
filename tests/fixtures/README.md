@@ -1,8 +1,27 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 817 archives (767 full battles and
-50 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 818 archives (767 full battles and
+51 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`outer-boss-relentless-phase-calibration.mt2f` retains eight settled native phases
+under the Instant protocol: four pre-combat actions, four post-combat actions,
+three moves, one Casting-to-Relentless transition, three destroyed floors and
+six new live aura targets. This is an explicit isolated control: on turn two,
+only the native spawn-wave cursor is set from two to its native wave count of
+eight. The retained `QueueControls` labels this input; the original boss action,
+phase transition, movement and room-destruction routines execute normally.
+It is component evidence and does not establish a natural eighth-ring victory.
+The checker compares complete battle/controller/physical/RNG states and immutable
+parents. Native casting/relentless anchor-to-group-slot maps are captured from
+each room, including same-room anchor changes. Post-action logical removals
+preserve upgrade collections and aura bindings until their native Unity frame
+boundary; existing quiet EndTurn destruction checks still pass. The source loses
+with 62 unsupported stages, zero capture/mismatch/pending counters and original
+files unchanged. `-OuterBossRelentless` requires `-OuterBossPhases`.
+Binary: 28,688 bytes, 4,852 nodes, SHA256
+`623e90848eeaec7aaa1ad79d8ef9c30d93cf5da3281324c5ceb55ecc36bfafb8`.
+Focused selector for all three phase archives: `--outer-boss-phase-only`.
 
 `outer-boss-occupied-phase-calibration.mt2f` adds nine settled native casting
 phases with normal legal card plays and player units. Its five pre-combat actions,
@@ -24,8 +43,9 @@ the complete battle, physical points, aura targets, action/controller cursors,
 all captured RNG streams and immutable parent branches. The native boundary is
 after the following `RemoveDeadCharacters`; moving actions also complete the
 existing frame-removal model for already destroyed actors. Captures include the
-outer boss in both the train and the aura world. Relentless transition, room
-destruction and EndTurn integration remain guarded. The source diagnostic loses
+outer boss in both the train and the aura world. The separate controlled sample
+covers relentless transition/destruction; EndTurn integration remains guarded.
+The source diagnostic loses
 with 42 unsupported stages and zero capture/mismatch/pending counters; original
 files remain unchanged. Binary: 23,605 bytes, 3,554 nodes, SHA256
 `0627f728d8d265679767fffcdee1a1ad6adbaaa3d39ee5d388a1d20aae86c599`.
@@ -38,7 +58,8 @@ and destruction-group progression execute native code. The checker compares
 all cursors and native next-action identities, exact RNG/frame restoration and
 immutable model parents. Its retained `Boss_Level8_AllyBuffer` definition has
 one zero-repeat group, one occupied-floor action and no action effects. This
-component does not yet integrate the controller with combat or room destruction.
+component checks controller progression independently of the phase fixtures;
+whole-EndTurn integration remains separate.
 Its source battle remains a losing, 54-unsupported-stage diagnostic with zero
 capture/mismatch/pending counters and original files unchanged. Binary: 9,379
 bytes, 2,536 nodes, SHA256
@@ -52,9 +73,10 @@ and 3,024 synchronous detached action/visit-state controls covering all three
 native behaviors, including 216 post-action floor changes. Native decision,
 BossState identity/visits, frame and gameplay/global RNG are restored exactly;
 the focused checker recomputes every result and checks immutable model inputs.
-It covers targeting with the captured movement speed of one. Boss spell/action
-groups, movement execution, room destruction and complete EndTurn integration
-remain guarded. The source eighth-ring run loses, has 54 unsupported stages
+It covers targeting with the captured movement speed of one. The separate phase
+fixtures cover empty-action execution, movement and room destruction. Boss spells
+with effects and complete EndTurn integration remain guarded. The source eighth-ring
+run loses, has 54 unsupported stages
 and is diagnostic evidence; it is not curated as an accepted full battle.
 Original game files are unchanged. Binary: 24,183 bytes, 8,521 nodes, SHA256
 `14a7a279d84e84b92358f200095cb9688e3ca0b986659a33a05d55394bb2e36f`.

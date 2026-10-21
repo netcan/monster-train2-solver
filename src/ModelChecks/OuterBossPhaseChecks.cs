@@ -10,7 +10,17 @@ internal static class OuterBossPhaseChecks
             fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
             fixture.GetProperty("Boundary").GetString() == "AfterBossActionRemoveDeadCharacters" &&
             fixture.GetProperty("Errors").GetArrayLength() == 0, "Native outer-boss phase build or settled boundary differs.");
-        int count = 0, pre = 0, post = 0, moves = 0, initial = 0, auraTargets = 0;
+        bool forced = fixture.TryGetProperty("ForcedSpawnQueueEmpty", out FixtureValue flag) && flag.GetBoolean();
+        if (forced)
+        {
+            FixtureValue controls = fixture.GetProperty("QueueControls");
+            Require(controls.GetArrayLength() == 1 && controls[0].GetProperty("Kind").GetString() == "ForceSpawnQueueEmpty" &&
+                controls[0].GetProperty("Turn").GetInt32() == 2 &&
+                controls[0].GetProperty("PhaseBefore").GetInt32() < controls[0].GetProperty("PhaseAfter").GetInt32() &&
+                controls[0].GetProperty("PhaseAfter").GetInt32() == controls[0].GetProperty("NativeWaveCount").GetInt32(),
+                "Missing explicit isolated spawn-queue control provenance.");
+        }
+        int count = 0, pre = 0, post = 0, moves = 0, initial = 0, auraTargets = 0, transitions = 0, destroyed = 0;
         bool occupied = false;
         foreach (FixtureValue row in fixture.GetProperty("Actions").EnumerateArray())
         {
@@ -31,6 +41,9 @@ internal static class OuterBossPhaseChecks
             if (phase == "BossActionPreCombat") pre++; else post++;
             if (before.Boss.Room != actual.Boss.Room) moves++;
             if (before.Boss.Controller.InitialAction != null) initial++;
+            if (before.Boss.Phase == "Casting" && actual.Boss.Phase == "Relentless") transitions++;
+            destroyed += before.Battle.PlayRules!.Rooms.Count(room => room.Enabled &&
+                !actual.Battle.PlayRules!.Rooms.Single(after => after.RoomIndex == room.RoomIndex).Enabled);
             CombatUnit beforeBoss = before.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == before.Boss.UnitId);
             CombatUnit afterBoss = actual.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == actual.Boss.UnitId);
             var previousTargets = beforeBoss.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
@@ -42,10 +55,11 @@ internal static class OuterBossPhaseChecks
                 appliedTargets.Contains(unit.Id) && unit.Team == CombatTeam.Player && unit.Status("debuff")?.Stacks == 5);
             count++;
         }
-        Require(count >= (occupied ? 9 : 11) && pre >= (occupied ? 5 : 6) && post >= (occupied ? 4 : 5) &&
-            moves >= (occupied ? 4 : 5) && initial == 1 && (!occupied || auraTargets > 0),
+        Require(count >= (forced ? 6 : occupied ? 9 : 11) && pre >= (forced ? 3 : occupied ? 5 : 6) &&
+            post >= (forced ? 3 : occupied ? 4 : 5) && moves >= (forced ? 2 : occupied ? 4 : 5) &&
+            initial == 1 && (forced ? transitions == 1 && destroyed >= 2 : transitions == 0 && destroyed == 0 && (!occupied || auraTargets > 0)),
             "Missing native initial action, moving casting actions or post-combat no-op controls.");
-        Console.WriteLine($"OUTER-BOSS-PHASE PASS: {count} settled native actions ({pre} pre, {post} post), {moves} moves, {initial} initial latch, {auraTargets} new live aura targets; complete battle/controller/RNG equality and immutable parents.");
+        Console.WriteLine($"OUTER-BOSS-PHASE PASS: {count} settled native actions ({pre} pre, {post} post), {moves} moves, {initial} initial latch, {auraTargets} new live aura targets, {transitions} relentless transitions, {destroyed} destroyed rooms; explicit control={forced}; complete battle/controller/RNG equality and immutable parents.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

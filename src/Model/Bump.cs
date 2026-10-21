@@ -11,10 +11,16 @@ namespace MonsterTrain2Poju.Model
         public bool OuterBoss { get; }
         public bool OuterBossRelentlessPhase { get; }
         public int PairedBossUnitId { get; }
+        public IReadOnlyList<int>? CastingAnchorSlots { get; }
+        public IReadOnlyList<int>? RelentlessAnchorSlots { get; }
+        public bool ShouldSerializeCastingAnchorSlots() => CastingAnchorSlots != null;
+        public bool ShouldSerializeRelentlessAnchorSlots() => RelentlessAnchorSlots != null;
         public UnitBumpRules(bool loops, bool companionBoss, bool outerBoss, bool outerBossRelentlessPhase = false,
-            int pairedBossUnitId = 0)
+            int pairedBossUnitId = 0, IReadOnlyList<int>? castingAnchorSlots = null, IReadOnlyList<int>? relentlessAnchorSlots = null)
         { Loops = loops; CompanionBoss = companionBoss; OuterBoss = outerBoss;
-            OuterBossRelentlessPhase = outerBossRelentlessPhase; PairedBossUnitId = pairedBossUnitId; }
+            OuterBossRelentlessPhase = outerBossRelentlessPhase; PairedBossUnitId = pairedBossUnitId;
+            CastingAnchorSlots = castingAnchorSlots == null ? null : Array.AsReadOnly(castingAnchorSlots.ToArray());
+            RelentlessAnchorSlots = relentlessAnchorSlots == null ? null : Array.AsReadOnly(relentlessAnchorSlots.ToArray()); }
     }
 
     public sealed class BumpResult

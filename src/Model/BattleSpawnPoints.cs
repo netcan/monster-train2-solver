@@ -154,7 +154,11 @@ namespace MonsterTrain2Poju.Model
             BattleSpawnPoints updated = BattleSpawnPoints.FromWorld(source, result.State!);
             if (operation == "Set" && target?.OuterBossAnchor == true)
             {
-                var shadow = MoveOuterBossGroupSlot(source, updated, unitId, target);
+                UnitBumpRules? rules = known.TryGetValue(unitId, out CombatUnit? actor) ? actor.BumpRules : null;
+                IReadOnlyList<int>? anchors = rules?.OuterBossRelentlessPhase == true ? rules.RelentlessAnchorSlots : rules?.CastingAnchorSlots;
+                if (anchors != null && (target.RoomIndex >= anchors.Count || anchors[target.RoomIndex] < 0))
+                    return Reject("Missing native Boss anchor for the target room and attack phase.");
+                var shadow = MoveOuterBossGroupSlot(source, updated, unitId, target, anchors?[target.RoomIndex]);
                 if (!shadow.Supported) return shadow;
                 updated = shadow.State!;
             }
@@ -162,12 +166,12 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static BattleSpawnPointResult MoveOuterBossGroupSlot(BattleSpawnPoints source,
-            BattleSpawnPoints updated, int unitId, SpawnPointReference target)
+            BattleSpawnPoints updated, int unitId, SpawnPointReference target, int? anchorSlot)
         {
             UnitSpawnPointState? boss = source.Units.SingleOrDefault(unit => unit.UnitId == unitId);
             if (boss?.OuterBoss != true || boss.Current?.OuterBossAnchor != true)
                 return Reject("Outer Boss anchor movement is missing its captured Boss state.");
-            if (boss.Current.RoomIndex == target.RoomIndex) return new BattleSpawnPointResult(updated);
+            if (boss.Current.RoomIndex == target.RoomIndex && !anchorSlot.HasValue) return new BattleSpawnPointResult(updated);
 
             SpawnPointGroupState[] owners = source.Groups.Where(group => group.Team == CombatTeam.Enemy &&
                 !group.PreviewCopyId.HasValue && group.Occupants.Contains(unitId)).ToArray();
@@ -181,9 +185,11 @@ namespace MonsterTrain2Poju.Model
                 return Reject("Outer Boss physical occupancy is not in a reserved hero point.");
             SpawnPointGroupState? destination = updated.Group(target.RoomIndex, CombatTeam.Enemy);
             if (destination == null) return Reject("Outer Boss destination hero points were not captured.");
-            int destinationIndex = Enumerable.Range(0, destination.Occupants.Count).Where(index =>
+            int destinationIndex = anchorSlot ?? Enumerable.Range(0, destination.Occupants.Count).Where(index =>
                 destination.Outside[index] && destination.Occupants[index] == 0).DefaultIfEmpty(-1).First();
-            if (destinationIndex < 0) return Reject("Outer Boss destination has no free reserved hero point.");
+            if (destinationIndex < 0 || destinationIndex >= destination.Occupants.Count || !destination.Outside[destinationIndex] ||
+                destination.Occupants[destinationIndex] != 0 && destination.Occupants[destinationIndex] != unitId)
+                return Reject("Outer Boss destination has no free reserved hero point for its attack phase.");
 
             var groups = updated.Groups.Select(group =>
             {
@@ -191,6 +197,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     int[] occupants = group.Occupants.ToArray();
                     occupants[originIndex] = 0;
+                    if (origin.RoomIndex == destination.RoomIndex) occupants[destinationIndex] = unitId;
                     return new SpawnPointGroupState(group.RoomIndex, group.Team, group.InnerCount, group.GroupCount,
                         occupants, group.Outside, group.PreviewCopyId);
                 }

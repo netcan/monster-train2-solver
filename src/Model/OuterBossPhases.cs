@@ -59,9 +59,15 @@ namespace MonsterTrain2Poju.Model
     }
     public static class OuterBossPhaseModel
     {
-        // The natural ring-eight capture currently proves casting actions. Keep the
-        // relentless transition and room destruction guarded until independently observed.
+        // Natural casting captures and explicit native queue controls calibrate
+        // these phase boundaries independently of whole-EndTurn integration.
         public static OuterBossPhaseResult Apply(OuterBossPhaseState source, bool preCombat)
+        {
+            if (source.Boss.Phase == "Relentless" || preCombat && source.Battle.Spawn.Phase >= source.Battle.Spawn.Waves.Count)
+                return OuterBossRelentlessPhaseModel.Apply(source, preCombat);
+            return Casting(source, preCombat);
+        }
+        private static OuterBossPhaseResult Casting(OuterBossPhaseState source, bool preCombat)
         {
             OuterBossPhaseResult Fail(string reason) => new OuterBossPhaseResult(null, reason);
             BattleTurnState battle = source.Battle; OuterBossProgress boss = source.Boss;
@@ -71,8 +77,6 @@ namespace MonsterTrain2Poju.Model
                 boss.Actions[0].Count != 1 || !boss.Actions[0][0].Empty || boss.DestroyActions.Count != 1 ||
                 battle.PlayRules == null || train.Context?.SpawnPoints == null)
                 return Fail("Outer boss phase requires the calibrated empty-action casting definition and physical room rules.");
-            if (preCombat && battle.Spawn.Phase >= battle.Spawn.Waves.Count)
-                return Fail("Outer boss relentless transition and room destruction require native phase calibration.");
             if (!preCombat) return new OuterBossPhaseResult(source);
             string? error = TrainCombatModel.Validate(train);
             if (error != null) return Fail(error);
@@ -122,7 +126,7 @@ namespace MonsterTrain2Poju.Model
             }
             if (!Move(target.TargetRoom) || !Move(target.PostActionRoom)) return Fail(error!);
             train = room != boss.Room && battle.CanonicalDecisionReferences
-                ? TrainCombatModel.CompleteFrameRemovals(train) : EnchantmentWorldModel.Rebase(train);
+                ? TrainCombatModel.CompleteFrameRemovals(train, battle.Spawn.PendingDestroyedUnitIds) : EnchantmentWorldModel.Rebase(train);
             BossActionControllerResult performed = BossActionControllerModel.Apply(decided.State, "Perform");
             if (!performed.Supported) return Fail(performed.UnsupportedReason!);
             var reset = new OuterBossActionProgress(action.Behavior, action.TargetTeam, 0, 0, false, false, action.Empty);

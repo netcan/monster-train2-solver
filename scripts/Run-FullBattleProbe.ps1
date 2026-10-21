@@ -14,6 +14,7 @@ param(
     [switch] $BossActionTargets,
     [switch] $BossActionControllers,
     [switch] $OuterBossPhases,
+    [switch] $OuterBossRelentless,
     [string] $RollingInput = '',
     [string] $InputProfile = '',
     [ValidateRange(0, 20)] [int] $BattleDistance = 0,
@@ -580,6 +581,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($OuterBossRelentless -and -not $OuterBossPhases) { throw '-OuterBossRelentless requires -OuterBossPhases.' }
 if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
 if ($RollingAdvice) {
     if ($Planner) { throw 'RollingAdvice and a frozen-window Planner run are separate test modes.' }
@@ -1147,6 +1149,7 @@ $environment = @{
     MT2_PROBE_BOSS_ACTION_TARGETS = $(if ($BossActionTargets) { '1' } else { '0' })
     MT2_PROBE_BOSS_ACTION_CONTROLLERS = $(if ($BossActionControllers) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_PHASES = $(if ($OuterBossPhases) { '1' } else { '0' })
+    MT2_PROBE_OUTER_BOSS_RELENTLESS = $(if ($OuterBossRelentless) { '1' } else { '0' })
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"
     MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
     MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })

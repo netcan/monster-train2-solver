@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class OuterBossPhaseProbe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_PHASES") == "1";
+        private static bool ForceRelentless => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS") == "1";
         internal sealed class Record
         {
             public string Phase { get; set; } = "";
@@ -22,9 +23,22 @@ namespace MonsterTrain2Poju.Probe
         }
         private static readonly List<Record> Records = new List<Record>();
         private static readonly List<string> Errors = new List<string>();
+        private static readonly List<object> QueueControls = new List<object>();
         private static Record? pending;
         private static T Field<T>(object owner, string name) => (T)AccessTools.Field(owner.GetType(), name).GetValue(owner);
         private static bool Capturing => Enabled && FullBattleTrace.Active != null && !AllGameManagers.Instance.GetSaveManager().PreviewMode;
+        internal static int[]? AnchorSlots(CharacterState unit, BossState.AttackPhase phase)
+        {
+            if (!Enabled || !unit.IsOuterTrainBoss()) return null;
+            RoomManager rooms = AllGameManagers.Instance.GetRoomManager();
+            return Enumerable.Range(0, rooms.GetNumRooms()).Select(index =>
+            {
+                RoomState room = rooms.GetRoom(index);
+                ShinyShoe.BossAnchor? anchor = Field<ShinyShoe.BossAnchor[]>(room, "_bossAnchors").FirstOrDefault(value => value.AttackPhase == phase);
+                var group = Field<SpawnPointGroup>(room, "heroSpawnPointGroup");
+                return anchor == null ? -1 : Field<List<SpawnPoint>>(group, "_primarySpawnPoints").IndexOf(anchor.SpawnPoint);
+            }).ToArray();
+        }
         private static OuterBossPhaseState Capture()
         {
             AllGameManagers managers = AllGameManagers.Instance;
@@ -56,6 +70,18 @@ namespace MonsterTrain2Poju.Probe
                 try
                 {
                     if (pending != null) throw new InvalidOperationException("Previous native outer-boss phase has not settled.");
+                    CombatManager combat = AllGameManagers.Instance.GetCombatManager();
+                    if (ForceRelentless && QueueControls.Count == 0 && combat.GetTurnCount() == 2 &&
+                        combat.GetCombatPhase() == CombatManager.Phase.BossActionPreCombat)
+                    {
+                        HeroManager heroes = AllGameManagers.Instance.GetHeroManager();
+                        SpawnPatternData pattern = Field<SpawnPatternData>(heroes, "spawnPattern");
+                        var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(AllGameManagers.Instance.GetSaveManager(), waves);
+                        int previous = Field<int>(heroes, "spawnPatternPhase");
+                        AccessTools.Field(typeof(HeroManager), "spawnPatternPhase").SetValue(heroes, waves.Count);
+                        QueueControls.Add(new { Kind = "ForceSpawnQueueEmpty", Turn = combat.GetTurnCount(),
+                            PhaseBefore = previous, PhaseAfter = waves.Count, NativeWaveCount = waves.Count });
+                    }
                     row = new Record { Phase = AllGameManagers.Instance.GetCombatManager().GetCombatPhase().ToString(), Before = Capture() };
                     pending = row; Records.Add(row);
                 }
@@ -78,11 +104,13 @@ namespace MonsterTrain2Poju.Probe
         {
             if (!Enabled) return;
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
-                Boundary = "AfterBossActionRemoveDeadCharacters", Actions = Records, Errors }))
+                Boundary = "AfterBossActionRemoveDeadCharacters", ForcedSpawnQueueEmpty = ForceRelentless,
+                QueueControls, Actions = Records, Errors }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "outer-boss-phase-calibration.mt2f"))) document.Write(output);
             int incomplete = Records.Count(row => row.Actual == null);
             log.LogInfo("OUTER-BOSS-PHASE-CAPTURE actions=" + Records.Count + " pending=" + incomplete + " errors=" + Errors.Count);
             if (Records.Count == 0 || incomplete != 0 || Errors.Count != 0) throw new InvalidOperationException("Native outer-boss phase capture failed.");
+            if (ForceRelentless && QueueControls.Count != 1) throw new InvalidOperationException("Missing explicit native spawn-queue control.");
         }
         [HarmonyPatch(typeof(HeroManager), nameof(HeroManager.PerformBossAction))]
         private static class ActionPatch

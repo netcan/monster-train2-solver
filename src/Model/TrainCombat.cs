@@ -75,7 +75,8 @@ namespace MonsterTrain2Poju.Model
             return ClearRemovedReferences(source, activeIds);
         }
 
-        internal static TrainCombatState CompleteFrameRemovals(TrainCombatState source)
+        internal static TrainCombatState CompleteFrameRemovals(TrainCombatState source,
+            IReadOnlyCollection<int>? completedDestructionIds = null)
         {
             source = ProcessRemovals(source);
             BattleSpawnPoints? points = source.Context?.SpawnPoints;
@@ -99,6 +100,7 @@ namespace MonsterTrain2Poju.Model
                 // that reference when destruction completes at the frame boundary.
                 context = context.WithEnchantments(new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom,
                     world.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
+                        completedDestructionIds != null && !completedDestructionIds.Contains(actor.Unit.Id) ? actor.Unit :
                         AfterDestruction(actor.Unit).WithoutRemovedAttacker(new HashSet<int>()).WithTriggers(actor.Unit.Triggers.Select(trigger =>
                             trigger.WithEffects(trigger.Effects.Select(effect => actor.Unit.DeathState?.IsDestroyed == true && effect.Enchantment != null
                                 ? effect.WithEnchantment(new EnchantmentRule(effect.Enchantment.Targeting, effect.Enchantment.StatusPool,
@@ -496,7 +498,7 @@ namespace MonsterTrain2Poju.Model
             }
         }
 
-        private static TrainCombatResult DestroyAscendedRoom(TrainCombatState source, int roomIndex)
+        internal static TrainCombatResult DestroyAscendedRoom(TrainCombatState source, int roomIndex)
         {
             RoomCombatState? originalRoom = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
             if (originalRoom == null) return Unsupported("Missing room destroyed by relentless ascension.");

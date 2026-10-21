@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 817 binary archives, including 767
-full battles and 50 component calibrations. The card index accepts 766 battles;
+Current curated inventory (2026-10-21): 818 binary archives, including 767
+full battles and 51 component calibrations. The card index accepts 766 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -32,10 +32,13 @@ combines targeting, controller progression and movement across 11 settled native
 casting phases, including aura state, physical points and every captured RNG
 stream. Nine additional native phases with normal legal card plays retain four
 new live corruption-aura targets, proving explicit movement-order refresh and
-reserved-anchor source ordering. All twenty phases match complete states and
-immutable parents.
-Relentless transition, room destruction and EndTurn integration remain guarded;
-the source diagnostic loses with 42 unsupported stages and zero other counters.
+reserved-anchor source ordering. Eight additional Instant-protocol phases use an
+explicit isolated spawn-queue control and prove the relentless transition,
+three destroyed floors, phase-specific native anchor slots and same-frame
+destruction boundaries. All 28 phases match complete states and immutable
+parents. The controlled capture is component evidence; natural eighth-ring
+victory, whole-EndTurn integration, effect-bearing boss spells and terminal
+boss-action callbacks remain unverified. Source battles remain guarded diagnostics.
 Native upgrade-slot relics now pass battle validation because their only
 consumer is the already calibrated campaign upgrade-slot interface; acquired
 card upgrades are captured normally. The six-owner campaign calibration passes.

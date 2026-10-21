@@ -277,6 +277,14 @@ namespace MonsterTrain2Poju.Model
             modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
 
+        internal CombatUnit WithOuterBossPhase(bool canAttack, bool relentless) => new CombatUnit(Id, AssetKey, Team,
+            BaseAttack, Health, MaxHealth, canAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId,
+            Size, StatusImmunities, Subtypes, Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards,
+            NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId,
+            DeathState, BumpRules == null ? null : new UnitBumpRules(BumpRules.Loops, BumpRules.CompanionBoss,
+                BumpRules.OuterBoss, relentless, BumpRules.PairedBossUnitId, BumpRules.CastingAnchorSlots,
+                BumpRules.RelentlessAnchorSlots), LastFeederId, MoonPhaseMask);
+
         internal CombatUnit WithEndsBattleOnDeath(bool endsBattleOnDeath) => endsBattleOnDeath == EndsBattleOnDeath ? this :
             new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, endsBattleOnDeath,
                 Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, LastAttackerId,
