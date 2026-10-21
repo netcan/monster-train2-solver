@@ -2431,6 +2431,11 @@ namespace MonsterTrain2Poju.Model
                 preview.Damage(preview.units.Single(unit => unit.Source.Id == actor.Source.Id),
                     preview.units.Single(unit => unit.Source.Id == target.Source.Id), actor.Attack, "Attack");
                 if (originalWorld?.AutomaticLifecycle == true) preview.DrainLocalTriggerQueue();
+                // RunBossKillPreview removes its temporary dead Pyre before the
+                // kill camera. The native removal batch updates auras throughout
+                // the train, including effects outside the restored local room.
+                if (originalWorld?.AutomaticLifecycle == true && preview.units.Any(unit => unit.Source.IsPyre && !unit.Alive))
+                { preview.UpdateEnchantments(); preview.DrainLocalTriggerQueue(); }
                 if (preview.unsupportedReason != null) { unsupportedReason = "Boss kill preview: " + preview.unsupportedReason; return; }
                 // Native restores characters, but CardStatistics is shared: queries can refresh its
                 // membership and SetAttackDamageDealt survives, including nested retaliation.
