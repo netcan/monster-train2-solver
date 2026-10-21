@@ -1,8 +1,8 @@
 # Conduit physical movement component
 
-`conduit-movement-calibration.mt2f` records 34 actual `CharacterState.SetSpawnPoint`
+`conduit-movement-calibration.mt2f` records 38 primary `CharacterState.SetSpawnPoint`
 calls in an isolated game 2.2.1 process. Native profile
-`full-battle-no-cards-20261021-213928-2176fff4` completes in 33.75 seconds and
+`full-battle-no-cards-20261021-214325-31331eb1` completes in 52.94 seconds and
 preserves the protected original files. The boundary is immediately after the
 native call returns; this archive is a component calibration, not a battle win.
 
@@ -23,9 +23,18 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --conduit-movement-onl
 
 The independent checker reproduces complete contexts, physical point ownership,
 the contributor's private tracked-card and multiplied-card collections, and all
-captured gameplay RNG streams. Parent snapshots stay immutable. The 34 rows have
-eight tracking additions, nine clears, seventeen unchanged controls, five
-detach/reattach operations and three dead-character operations.
+captured gameplay RNG streams. Parent snapshots stay immutable. The 38 rows have
+eight tracking additions, nine clears, twenty-one unchanged controls, six
+detach/reattach operations and four dead-character operations. Four controls
+repeat exactly the same point (including null and an empty tracker on a selected
+floor); these must not dispatch a movement callback.
+
+Three additional controls use the original `SetTemporaryStateEnabled` lifecycle:
+leave the selected floor, move within it, and detach while previewing. Their
+copied modifiers have empty trackers, original hand upgrades and gameplay RNG
+stay unchanged, and cancellation restores the complete context and combat actors.
+The checker independently allocates copied point identities, applies the physical
+move, and restores primary ownership; only the copied-point counter advances.
 
 Native order matters: entering a selected floor adds hand tracking even for a
 dead actor. Dead actors are excluded from the room contributor enumeration while
@@ -39,6 +48,6 @@ component currently emits it. `ConduitModel.Validate` continues to reject
 physical whole-battle contexts until integrated callbacks and preview lifecycle
 have independent native acceptance.
 
-This does not establish preview movement, mixed conduits, room-mask callbacks,
-arbitrary multiplier/trait combinations or an integrated player action chain.
+This does not establish complete combat preview, mixed conduits, room-mask
+callbacks, arbitrary multiplier/trait combinations or an integrated player action chain.
 The existing original Conduit relic fixture remains a separate affected check.

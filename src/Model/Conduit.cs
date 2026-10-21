@@ -177,6 +177,7 @@ namespace MonsterTrain2Poju.Model
         {
             if (context.ConduitRetained == null)
                 throw new InvalidOperationException("Conduit movement requires captured retained private trackers.");
+            if (SamePoint(from, to)) return context;
             ConduitUnitState? contributor = context.MagicPower?.Where(row => row.Team == team)
                 .SelectMany(row => row.Conduit?.Units ?? Array.Empty<ConduitUnitState>())
                 .Concat(context.ConduitRetained.Where(value => value.Team == team).Select(value => value.Contributor))
@@ -184,6 +185,10 @@ namespace MonsterTrain2Poju.Model
             if (contributor == null) return context;
             return MoveCapturedContributor(context, contributor, team, from, to, !contributor.Active).Context;
         }
+        private static bool SamePoint(SpawnPointReference? first, SpawnPointReference? second) => first == null
+            ? second == null : second != null && first.RoomIndex == second.RoomIndex && first.Team == second.Team &&
+                first.Index == second.Index && first.PreviewCopyId == second.PreviewCopyId &&
+                first.OuterBossAnchor == second.OuterBossAnchor;
         internal static CombatContext Updated(CombatContext context, int cardId)
         {
             context = RoomSpellUpgradeModel.Updated(context, cardId);

@@ -58,9 +58,46 @@ internal static class ConduitMovementChecks
             Require(ConduitModel.Validate(before.Context) != null, "Uncalibrated whole-battle physical guard was removed.");
             rows++;
         }
-        Require(rows == 34 && entered > 0 && cleared > 0 && unchanged > 0 && detached >= 4 && dead == 3 && retained >= 5,
+        Require(rows == 38 && entered > 0 && cleared > 0 && unchanged > 0 && detached >= 4 && dead == 4 && retained >= 5,
             "Missing selected/unselected, detached, dead or unchanged native controls.");
-        Console.WriteLine($"CONDUIT-MOVEMENT PASS rows={rows} entered={entered} cleared={cleared} unchanged={unchanged} detached={detached} dead={dead} retained={retained}: snapshot-only prediction, exact context, private trackers, physical points, RNG and immutable parents; whole-battle guard retained.");
+        int previews = 0;
+        foreach (FixtureValue row in root.GetProperty("Previews").EnumerateArray())
+        {
+            TrainCombatState before = row.GetProperty("Before").GetProperty("Train").Deserialize<TrainCombatState>()!;
+            TrainCombatState actual = row.GetProperty("Actual").GetProperty("Train").Deserialize<TrainCombatState>()!;
+            string parent = JsonSerializer.Serialize(before), label = row.GetProperty("Label").GetString()!;
+            BattleSpawnPoints original = before.Context!.SpawnPoints!, selected = original.BeginPreview();
+            SpawnPointReference? nativeTarget = row.GetProperty("Target").Deserialize<SpawnPointReference>();
+            SpawnPointReference? target = nativeTarget == null ? null : new SpawnPointReference(nativeTarget.RoomIndex,
+                CombatTeam.Player, nativeTarget.Index, selected.SelectedGroup(nativeTarget.RoomIndex, CombatTeam.Player)!.PreviewCopyId);
+            Equal(target, nativeTarget, label + " independent preview point identity");
+            var scope = new RoomCombatState(0, false, before.Rooms.SelectMany(room => room.Units).ToArray(), [],
+                before.Context.WithSpawnPoints(selected), preview: true);
+            BattleSpawnPointResult moved = BattleSpawnPointModel.Apply(selected, scope, "Set", CombatTeam.Player,
+                row.GetProperty("UnitId").GetInt32(), target: target);
+            Require(moved.Supported, moved.Error ?? "Preview move failed.");
+            CombatContext predicted = before.Context.WithSpawnPoints(BattleSpawnPoints.EndPreview(original, moved.State!, clearBirths: true));
+            Equal(predicted, actual.Context, label + " restored full context/points/trackers");
+            Equal(before.Rooms.SelectMany(room => room.Units).ToArray(), actual.Rooms.SelectMany(room => room.Units).ToArray(),
+                label + " restored combat actors");
+            foreach (string name in new[] { "Entered", "Inside" })
+            {
+                FixtureValue value = row.GetProperty(name);
+                ConduitUnitState copied = (name == "Inside" ? value.GetProperty("Contributor") : value).Deserialize<ConduitUnitState>()!;
+                Require(copied.Power == 4 && copied.Active && copied.Cards.Count == 0 && copied.MultipliedCards.Count == 0,
+                    label + " preview modifier must have an empty private tracker.");
+            }
+            Require(row.GetProperty("BeforeUpgrades").ContentEquals(row.GetProperty("Inside").GetProperty("Upgrades")) &&
+                row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Inside").GetProperty("Rng")) &&
+                row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")),
+                label + " preview changed primary hand upgrades or gameplay RNG.");
+            Equal(row.GetProperty("Before").GetProperty("Contributor").Deserialize<ConduitUnitState>(),
+                row.GetProperty("Actual").GetProperty("Contributor").Deserialize<ConduitUnitState>(), label + " primary tracker restored");
+            Require(JsonSerializer.Serialize(before) == parent, "Preview movement mutated its parent.");
+            previews++;
+        }
+        Require(previews == 3, "Missing native preview movement controls.");
+        Console.WriteLine($"CONDUIT-MOVEMENT PASS rows={rows} entered={entered} cleared={cleared} unchanged={unchanged} detached={detached} dead={dead} retained={retained} previews={previews}: snapshot-only prediction, exact context, private trackers, physical points, RNG and immutable parents; whole-battle guard retained.");
     }
     private static void Equal<T>(T predicted, T actual, string label)
     {

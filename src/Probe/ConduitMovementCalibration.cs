@@ -19,6 +19,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Started, Completed;
         internal static string? Error;
         private static readonly List<object> rows = new List<object>();
+        private static readonly List<object> previews = new List<object>();
         private static CharacterState actor = null!;
         private static AllGameManagers Managers => AllGameManagers.Instance!;
         private static FullBattleTrace Trace => FullBattleTrace.Active!;
@@ -51,6 +52,26 @@ namespace MonsterTrain2Poju.Probe
         }
         private static void Select(int room) => AccessTools.Method(typeof(RoomUI), "InnerSetSelectedRoom")
             .Invoke(Managers.GetRoomManager().GetRoomUI(), new object[] { room, false });
+        private static object[] HandUpgrades() => Managers.GetCardManager().GetHand().Select(card => (object)new
+        {
+            CardId = Trace.CardId(card),
+            Upgrades = card.GetTemporaryCardStateModifiers().GetCardUpgrades().Select(upgrade => new
+            { Damage = upgrade.GetAttackDamage(), Heal = upgrade.GetAdditionalHeal() }).ToArray()
+        }).ToArray();
+        private static void Preview(string label, int? room, int point)
+        {
+            object before = Snapshot(), upgrades = HandUpgrades();
+            var temporary = AccessTools.Method(typeof(CombatManager), "SetTemporaryStateEnabled");
+            temporary.Invoke(Managers.GetCombatManager(), new object[] { true, new List<CharacterState> { actor }, false });
+            object entered = ConduitProbe.CaptureUnit(actor, Trace)!;
+            SpawnPoint? destination = room.HasValue ? Managers.GetRoomManager().GetRoom(room.Value).GetMonsterPoint(point) : null;
+            SpawnPointReference? target = BattleSpawnPointProbe.Reference(destination);
+            actor.SetSpawnPoint(destination, false, false);
+            object inside = new { Contributor = ConduitProbe.CaptureUnit(actor, Trace), Upgrades = HandUpgrades(), Rng = Rng() };
+            temporary.Invoke(Managers.GetCombatManager(), new object[] { false, new List<CharacterState> { actor }, false });
+            previews.Add(new { Label = label, UnitId = Trace.UnitId(actor), Target = target, Before = before,
+                BeforeUpgrades = upgrades, Entered = entered, Inside = inside, Actual = Snapshot() });
+        }
         internal static void Start(ManualLogSource log)
         { Started = true; Managers.GetSaveManager().StartCoroutine(Run(log)); }
         private static IEnumerator Run(ManualLogSource log)
@@ -100,16 +121,28 @@ namespace MonsterTrain2Poju.Probe
                 Move("dead-enters-selected", rooms.GetRoom(0).GetMonsterPoint(1));
                 Move("dead-detaches", null);
                 actor.SetHealth(hp, maximum);
-                bool rngUnchanged = rows.All(row => JToken.DeepEquals(JObject.FromObject(row)["Before"]!["Rng"], JObject.FromObject(row)["Actual"]!["Rng"]));
-                if (!rngUnchanged || rows.Count != 34 || !plain.CanScaleWithMagicPower())
+                actor.SetSpawnPoint(rooms.GetRoom(0).GetMonsterPoint(0), false, false); Select(0);
+                Move("same-point-tracked", actor.GetSpawnPoint());
+                actor.GetRoomStateModifiers<RoomStateConduitModifier>().Single().ClearTracking(Managers.GetCoreManagers());
+                Move("same-point-empty-selected", actor.GetSpawnPoint());
+                actor.SetHealth(0, maximum);
+                Move("dead-same-point-empty-selected", actor.GetSpawnPoint());
+                actor.SetHealth(hp, maximum); actor.SetSpawnPoint(null, false, false);
+                Move("detached-same-null", null);
+                actor.SetSpawnPoint(rooms.GetRoom(0).GetMonsterPoint(0), false, false); Select(0);
+                Preview("preview-leaves-selected", 1, 0);
+                Preview("preview-within-selected", 0, 1);
+                Preview("preview-detaches", null, 0);
+                bool rngUnchanged = rows.Concat(previews).All(row => JToken.DeepEquals(JObject.FromObject(row)["Before"]!["Rng"], JObject.FromObject(row)["Actual"]!["Rng"]));
+                if (!rngUnchanged || rows.Count != 38 || previews.Count != 3 || !plain.CanScaleWithMagicPower())
                     throw new InvalidOperationException("Conduit movement controls or gameplay RNG changed.");
                 using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
                     GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                     Boundary = "AfterNativeSetSpawnPointReturn", NativeCompleted = true, RngUnchanged = rngUnchanged,
-                    PlainCardId = Trace.CardId(plain), StrongerCardId = Trace.CardId(stronger), Rows = rows }))
+                    PlainCardId = Trace.CardId(plain), StrongerCardId = Trace.CardId(stronger), Rows = rows, Previews = previews }))
                 using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "conduit-movement-calibration.mt2f"))) document.Write(output);
                 Completed = true;
-                log.LogInfo("CONDUIT-MOVEMENT-NATIVE PASS rows=" + rows.Count + " gameplayRngUnchanged=true");
+                log.LogInfo("CONDUIT-MOVEMENT-NATIVE PASS rows=" + rows.Count + " previews=" + previews.Count + " gameplayRngUnchanged=true");
             }
             catch (Exception error) { Error = error.ToString(); log.LogError(Error); }
         }

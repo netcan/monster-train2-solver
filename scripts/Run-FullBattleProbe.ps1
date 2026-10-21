@@ -1785,9 +1785,9 @@ if ($ConduitMovement) {
     $component = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
     try {
         $captured = $component.RootElement.ToObjectGraph()
-        if (-not $captured.NativeCompleted -or -not $captured.RngUnchanged -or @($captured.Rows).Count -ne 34) { throw 'Incomplete Conduit movement calibration.' }
+        if (-not $captured.NativeCompleted -or -not $captured.RngUnchanged -or @($captured.Rows).Count -ne 38 -or @($captured.Previews).Count -ne 3) { throw 'Incomplete Conduit movement calibration.' }
     } finally { $component.Dispose() }
-    [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; Rows = 34; OriginalFilesUnchanged = $true; ModelAcceptance = 'Pending independent focused checker'; Trace = $componentPath } | ConvertTo-Json
+    [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; Rows = 38; Previews = 3; OriginalFilesUnchanged = $true; ModelAcceptance = 'Pending independent focused checker'; Trace = $componentPath } | ConvertTo-Json
     return
 }
 $tracePath = Join-Path $profile $(if ($BinaryCapture) { 'full-battle.mt2f' } else { 'full-battle.json' })
