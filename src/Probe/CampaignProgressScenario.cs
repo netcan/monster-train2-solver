@@ -32,6 +32,8 @@ namespace MonsterTrain2Poju.Probe
         private int quitCode;
         private int savedRing;
         private bool nativeLost;
+        private bool? runWon;
+        private bool runReturned;
         private readonly HashSet<string> declinedUpgrades = new HashSet<string>();
         private readonly HashSet<string> auditedMerchantOffers = new HashSet<string>();
 
@@ -76,6 +78,9 @@ namespace MonsterTrain2Poju.Probe
             SaveManager? save = m?.GetSaveManager();
             ScreenManager? screens = m?.GetScreenManager();
             if (save == null || screens == null) return;
+            if (runReturned && runWon.HasValue && !LoadingScreen.IsWorking() &&
+                screens.GetTopScreen() is ScreenName.GameOver or ScreenName.Unlock)
+            { Finish(runWon.Value, "Native campaign completed: " + (runWon.Value ? "victory" : "defeat")); return; }
             if (nativeLost) { Finish(false, "Native campaign battle lost; retained pre-battle checkpoint is unchanged."); return; }
             if (Time.realtimeSinceStartup > heartbeat)
             {
@@ -193,7 +198,10 @@ namespace MonsterTrain2Poju.Probe
                 story.TryToFastForward(); return;
             }
             if (save.GetGameSequence() == SaveData.GameSequence.GameOver)
-            { Finish(false, "Native campaign lost at distance " + save.GetCurrentDistance()); return; }
+            {
+                if (!runWon.HasValue) ObserveRunOutcome(save, save.IsVictoriousAfterGameOver());
+                return;
+            }
             if (screen is GameScreen game && save.GetGameSequence() == SaveData.GameSequence.BattlePostCombatRewards)
             { Click(game.GetVictoryUI().GetCollectButton(), "collect-victory"); return; }
             if (screen is MapScreen map)
@@ -444,6 +452,32 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo((success ? "CAMPAIGN-PASS " : "CAMPAIGN-FAIL ") + message);
             quitCode = success ? 0 : 1;
             quitAt = Time.realtimeSinceStartup + 5f; Application.Quit(quitCode);
+        }
+        private void ObserveRunOutcome(SaveManager save, bool nativeVictory)
+        {
+            if (runWon.HasValue) return;
+            SaveManager.VictoryType victory = save.GetVictoryTypeAfterGameOver();
+            runWon = nativeVictory && save.IsVictoriousAfterGameOver() && !SaveManager.WasDevCheatUsed;
+            // FinishRun may rotate both the active slot and its backup. Retain
+            // the game's own serialized data while all completed records exist.
+            var data = (SaveData)AccessTools.Property(typeof(SaveManager), "ActiveSaveData").GetValue(save);
+            string snapshot = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "completed-save-singlePlayer.json");
+            if (File.Exists(snapshot)) throw new IOException("Completed native snapshot already exists.");
+            File.WriteAllText(snapshot, JsonUtility.ToJson(data));
+            Record("run-outcome", new { won = runWon.Value, nativeVictory, victoryType = victory.ToString(), distance = save.GetCurrentDistance(),
+                cheat = SaveManager.WasDevCheatUsed, battlesWon = save.GetNumBattlesWon(),
+                battles = save.GetBattleRecords().Select(battle => new { battle.battleIndex, battle.loopIndex,
+                    won = battle.WonBattle(), battle.bossHPRemaining, battle.turnsLasted }).ToList() });
+        }
+        [HarmonyPatch(typeof(GameStateManager), nameof(GameStateManager.EndGame))]
+        private static class RunOutcomePatch
+        {
+            private static void Prefix(GameStateManager.EndGameReason endGameReason)
+            {
+                if (active != null)
+                    active.ObserveRunOutcome(AllGameManagers.Instance.GetSaveManager(), endGameReason == GameStateManager.EndGameReason.Victory);
+            }
+            private static void Postfix() { if (active != null) active.runReturned = true; }
         }
         [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.StopCombat))]
         private static class BattleOutcomePatch

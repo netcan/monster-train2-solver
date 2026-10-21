@@ -21,5 +21,6 @@
     <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.InputLegacyModule.dll" Private="false" />
     <Reference Include="UnityEngine.TextRenderingModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.TextRenderingModule.dll" Private="false" />
     <Reference Include="UnityEngine.ImageConversionModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.ImageConversionModule.dll" Private="false" />
+    <Reference Include="UnityEngine.JSONSerializeModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.JSONSerializeModule.dll" Private="false" />
   </ItemGroup>
 </Project>

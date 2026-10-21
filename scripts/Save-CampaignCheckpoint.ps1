@@ -3,6 +3,7 @@
 param(
     [Parameter(Mandatory, ParameterSetName = 'Export')] [string] $Profile,
     [Parameter(Mandatory)] [string] $Archive,
+    [Parameter(ParameterSetName = 'Export')] [switch] $CompletedRun,
     [Parameter(Mandatory, ParameterSetName = 'Restore')] [switch] $Restore
 )
 $ErrorActionPreference = 'Stop'
@@ -28,26 +29,50 @@ if ($Restore) {
             if ((Get-SHA256 $bytes) -cne $file.SHA256) { throw "Checkpoint hash mismatch: $($file.Path)" }
             $files[$file.Path] = $bytes
         }
-        $destination = Join-Path $profilesRoot ('restored-campaign-ring' + $manifest.Ring + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+        $prefix = if ($manifest.StateKind -eq 'CompletedNativeRun') { 'restored-completed-campaign-' } else { 'restored-campaign-ring' + $manifest.Ring + '-' }
+        $destination = Join-Path $profilesRoot ($prefix + [Guid]::NewGuid().ToString('N').Substring(0, 8))
         $null = New-Item -ItemType Directory -Path (Join-Path $destination 'saves')
         foreach ($path in $files.Keys) { [IO.File]::WriteAllBytes((Join-Path $destination $path), $files[$path]) }
         [IO.File]::WriteAllText((Join-Path $destination 'checkpoint-manifest.json'), ($manifest | ConvertTo-Json -Depth 8))
-        [pscustomobject]@{ Profile = $destination; Ring = $manifest.Ring; Seed = $manifest.Seed; FilesVerified = $files.Count } | ConvertTo-Json -Compress
+        [pscustomobject]@{ Profile = $destination; Ring = $manifest.Ring; Seed = $manifest.Seed; StateKind = $manifest.StateKind;
+            FilesVerified = $files.Count } | ConvertTo-Json -Compress
     } finally { $zip.Dispose() }
     return
 }
 $Profile = (Resolve-Path -LiteralPath $Profile).Path.TrimEnd('\')
 if ((Split-Path $Profile -Parent) -ine $profilesRoot) { throw 'Profile must be a direct child of .probe-runs.' }
 $savePath = Join-Path $Profile 'saves/save-singlePlayer.json'
+if ($CompletedRun) {
+    $summary = Get-Content -LiteralPath (Join-Path $Profile 'campaign-summary.json') -Raw | ConvertFrom-Json
+    $audit = @(Get-Content -LiteralPath (Join-Path $Profile 'campaign-audit.jsonl') | ForEach-Object { $_ | ConvertFrom-Json })
+    $outcome = @($audit | Where-Object kind -EQ 'run-outcome')
+    if (-not $summary.NativePassed -or -not $summary.OriginalFilesUnchanged -or -not $summary.BattleReplayPassed -or
+        -not $summary.NativeCampaignWon -or $summary.NativeVictoryType -ne 'Standard' -or
+        $outcome.Count -ne 1 -or -not $outcome[0].data.won -or -not $outcome[0].data.nativeVictory -or $outcome[0].data.cheat -or
+        $outcome[0].data.battlesWon -ne 8 -or $audit[-1].kind -ne 'complete' -or
+        @($outcome[0].data.battles | Where-Object { -not $_.won }).Count -gt 0 -or
+        (($outcome[0].data.battles.battleIndex | Sort-Object) -join ',') -ne '0,1,2,3,4,5,6,7') {
+        throw 'Expected a completed unmodified native eight-battle Standard victory and full replay/choice history.'
+    }
+    # Native FinishRun may replace both slots. Use the serialized native data
+    # retained at EndGame, before reset, without changing the game's save flow.
+    $savePath = Join-Path $Profile 'completed-save-singlePlayer.json'
+}
 $save = Get-Content -LiteralPath $savePath -Raw | ConvertFrom-Json
 $distance = [int]$save.runState.distance
-if ($save.gameSequence -ne 6 -or $save.wasDevCheatUsed -or $distance -lt 1) { throw 'Expected an unmodified progressed native BattleIntro save.' }
+if ($save.wasDevCheatUsed -or $distance -lt 1 -or ($CompletedRun -and $distance -ne 8) -or
+    (-not $CompletedRun -and $save.gameSequence -ne 6)) { throw 'Expected an unmodified progressed native save at the requested boundary.' }
 $completed = @($save.completedBattles | Sort-Object battleIndex)
 if ($completed.Count -ne $distance -or @($completed | Where-Object bossHPRemaining -GT 0).Count -gt 0 -or
     (($completed.battleIndex -join ',') -ne ((0..($distance - 1)) -join ','))) { throw 'The native save does not contain every preceding battle victory.' }
 $members = [ordered]@{}
 foreach ($name in @('saves/save-singlePlayer.json', 'metagameSave.json', 'preferences.json', 'preferences-local.json')) {
     $members[$name] = [IO.File]::ReadAllBytes((Join-Path $Profile $name))
+}
+if ($CompletedRun) {
+    $members['completed-save-singlePlayer.json'] = [IO.File]::ReadAllBytes($savePath)
+    $members['campaign-summary.json'] = [IO.File]::ReadAllBytes((Join-Path $Profile 'campaign-summary.json'))
+    $members['campaign-battle-replay.mt2f'] = [IO.File]::ReadAllBytes((Join-Path $Profile 'full-battle.mt2f'))
 }
 # Bundle the retained native choice history and each predecessor's input hash.
 $cursor = $Profile; $visited = @{}; $depth = 0
@@ -72,6 +97,7 @@ if (@($members.Keys | Where-Object { $_ -like '*campaign-audit.jsonl' }).Count -
 $manifest = [ordered]@{ Schema = 1; Ring = $distance + 1; Seed = $save.startingConditions.seed;
     CompletedBattles = $completed.Count; DeckCards = $save.deckState.Count; Relics = $save.blessings.Count;
     Files = @($members.Keys | ForEach-Object { [pscustomobject]@{ Path = $_; Bytes = $members[$_].Length; SHA256 = Get-SHA256 $members[$_] } }) }
+if ($CompletedRun) { $manifest.StateKind = 'CompletedNativeRun'; $manifest.Ring = 8; $manifest.NativeVictoryType = $summary.NativeVictoryType }
 $members['checkpoint-manifest.json'] = [Text.Encoding]::UTF8.GetBytes(($manifest | ConvertTo-Json -Depth 8))
 $zip = [IO.Compression.ZipFile]::Open($Archive, [IO.Compression.ZipArchiveMode]::Create)
 try {

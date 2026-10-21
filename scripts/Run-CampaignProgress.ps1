@@ -7,11 +7,14 @@ param(
     [string] $BattleReplay = '',
     [string[]] $ExcludeUpgradeTrait = @(),
     [switch] $SkipMerchantPurchases,
+    [switch] $OuterBossTurns,
+    [switch] $OuterBossBirth,
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
     [ValidateRange(60, 7200)] [int] $TimeoutSeconds = 1800,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
 $workspace = Split-Path $PSScriptRoot -Parent
 $profilesRoot = [IO.Path]::GetFullPath((Join-Path $workspace '.probe-runs')).TrimEnd('\')
 $gameRoot = Join-Path $workspace $(if ($NativeWorker -eq 1) { '.sandbox-game' } else { '.sandbox-game-worker2' })
@@ -61,6 +64,7 @@ $savePath = Join-Path $profile 'saves/save-singlePlayer.json'
 [pscustomobject]@{ InputProfile = $source; InputSaveSHA256 = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash;
     StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker; ExcludeUpgradeTrait = $ExcludeUpgradeTrait;
     SkipMerchantPurchases = [bool]$SkipMerchantPurchases;
+    OuterBossTurns = [bool]$OuterBossTurns; OuterBossBirth = [bool]$OuterBossBirth;
     BattleReplay = $BattleReplay; BattleReplaySHA256 = $(if ($BattleReplay) { (Get-FileHash -LiteralPath $BattleReplay -Algorithm SHA256).Hash } else { $null }) } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-input.json')
 foreach ($assembly in @('Probe', 'Model', 'FixtureArchive')) {
@@ -81,6 +85,8 @@ $settings = @{
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
     MT2_PROBE_CAMPAIGN_SKIP_MERCHANT_PURCHASES = $(if ($SkipMerchantPurchases) { '1' } else { '0' })
     MT2_PROBE_BRANCH_CARD_MASKS = '1'; MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'; MT2_PROBE_GAME_SPEED = 'Instant'
+    MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBossTurns) { '1' } else { '0' })
+    MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })
 }
 if ($InputProfile) { $settings.MT2_PROBE_RESUME_RUN = '1' }
 if ($BattleReplay) {
@@ -120,10 +126,13 @@ if ($BattleReplay -and (Test-Path -LiteralPath (Join-Path $profile 'full-battle.
             $_['Difference'] -or $null -eq $_['Actual'] }).Count -eq 0
 }
 $passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $replayPassed
+$runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
 $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCode = $process.ExitCode;
     BattleReplayPassed = $replayPassed;
+    NativeCampaignWon = $runOutcome.Count -eq 1 -and $runOutcome[0].data.won -eq $true;
+    NativeVictoryType = $(if ($runOutcome.Count -eq 1) { $runOutcome[0].data.victoryType } else { $null });
     OriginalFilesUnchanged = $unchanged; Events = $audit.Count; BattlesWon = @($audit | Where-Object { $_.kind -eq 'battle-outcome' -and $_.data.won }).Count;
-    FinalSaveSHA256 = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash }
+    FinalSaveSHA256 = $(if (Test-Path -LiteralPath $savePath) { (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash } else { $null }) }
 $summary | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-summary.json')
 $summary | ConvertTo-Json -Compress
 if (-not $passed) { throw "Native campaign did not complete: $profile" }
