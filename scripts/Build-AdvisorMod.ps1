@@ -8,7 +8,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
-$version = '0.2.0'
+$project = [xml] (Get-Content -LiteralPath (Join-Path $workspace 'src/Advisor/Advisor.csproj') -Raw)
+$version = $project.SelectSingleNode('/Project/PropertyGroup/Version').InnerText
 $runtimeName = 'BepInEx_macos_universal_5.4.23.5.zip'
 $runtimeSha = '01c2ae782eb016dfd6c345a18dbd2dcafffb3d9d318449d6486689f426b4a323'
 if (-not $OutputDirectory) {
@@ -42,7 +43,7 @@ foreach ($name in @('MonsterTrain2Poju.Advisor', 'Model', 'FixtureArchive')) {
 $actualVersion = [Reflection.AssemblyName]::GetAssemblyName((Join-Path $plugin 'MonsterTrain2Poju.Advisor.dll')).Version
 if ($actualVersion -ne [Version] "$version.0") { throw "Unexpected plugin version: $actualVersion" }
 Copy-Item -LiteralPath $runtime -Destination (Join-Path $package 'runtime')
-Copy-Item -LiteralPath (Join-Path $workspace 'packaging/macos/install.command'), (Join-Path $workspace 'packaging/macos/Start-Poju.command') -Destination $package
+Copy-Item -LiteralPath (Join-Path $workspace 'packaging/macos/install.command'), (Join-Path $workspace 'packaging/macos/Start-Poju.command'), (Join-Path $workspace 'packaging/macos/poju-common.sh') -Destination $package
 Copy-Item -LiteralPath (Join-Path $workspace 'docs/macOS.md') -Destination (Join-Path $package 'README-中文.md')
 Copy-Item -LiteralPath (Join-Path $workspace 'packaging/THIRD-PARTY-NOTICES.md') -Destination $package
 Invoke-WebRequest 'https://raw.githubusercontent.com/BepInEx/BepInEx/v5.4.23.5/LICENSE' -OutFile (Join-Path $package 'licenses/BepInEx-LICENSE.txt')

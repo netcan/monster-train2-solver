@@ -6,7 +6,7 @@ $archive = [IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath $Packag
 try {
     $expected = @('BepInEx/plugins/PojuAdvisor/MonsterTrain2Poju.Advisor.dll',
         'BepInEx/plugins/PojuAdvisor/Model.dll', 'BepInEx/plugins/PojuAdvisor/FixtureArchive.dll',
-        'runtime/BepInEx_macos_universal_5.4.23.5.zip', 'install.command', 'Start-Poju.command',
+        'runtime/BepInEx_macos_universal_5.4.23.5.zip', 'install.command', 'Start-Poju.command', 'poju-common.sh',
         'README-中文.md', 'THIRD-PARTY-NOTICES.md', 'licenses/BepInEx-LICENSE.txt', 'BUILD.json', 'SHA256SUMS')
     if (Compare-Object $expected @($archive.Entries.FullName)) { throw 'Unexpected or missing package contents.' }
     if (@($archive.Entries.FullName | Sort-Object -Unique).Count -ne $expected.Count) { throw 'Duplicate ZIP entries.' }
@@ -28,7 +28,7 @@ try {
         finally { $stream.Dispose() }
         if ($actual -cne $hash) { throw "Payload checksum differs: $name" }
     }
-    foreach ($name in @('install.command', 'Start-Poju.command')) {
+    foreach ($name in @('install.command', 'Start-Poju.command', 'poju-common.sh')) {
         $script = Read-Entry $name
         if (-not $script.StartsWith("#!/bin/bash`n") -or $script.Contains("`r")) { throw "Invalid shell encoding/line endings: $name" }
     }

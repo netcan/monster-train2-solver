@@ -32,36 +32,19 @@ file "$binary"
 printf '游戏架构：%s\n' "$architectures"
 printf 'Mono 程序集：%s\n' "$managed"
 (cd "$package_root" && shasum -a 256 -c SHA256SUMS) || fail '安装包校验失败，请重新获取。'
+source "$package_root/poju-common.sh"
+poju_check_existing_runtime "$game_root" || exit 1
 if [ "$check_only" -eq 1 ]; then
     printf '\n环境检查通过，尚未写入游戏目录。实际加载和建议效果仍需游戏内确认。\n'
     exit 0
 fi
 
 if [ ! -f "$game_root/BepInEx/core/BepInEx.dll" ]; then
-    for path in "$game_root/libdoorstop.dylib" "$game_root/run_bepinex.sh" "$game_root/BepInEx/core"; do
-        [ ! -e "$path" ] || fail '检测到不完整或其他版本的 BepInEx，请先整理现有安装，再重试。'
-    done
     unzip -n -q "$package_root/runtime/BepInEx_macos_universal_5.4.23.5.zip" -d "$game_root"
 fi
-[ -f "$game_root/run_bepinex.sh" ] && [ -f "$game_root/libdoorstop.dylib" ] || fail '现有 BepInEx 缺少 macOS 启动文件。此包需要 BepInEx 5 Mono。'
-plugin_dir="$game_root/BepInEx/plugins/PojuAdvisor"
-backup_dir="$game_root/BepInEx/PojuBackups/$(date +%Y%m%d-%H%M%S)-$$"
-for dll in MonsterTrain2Poju.Advisor.dll Model.dll FixtureArchive.dll; do
-    if [ -f "$plugin_dir/$dll" ]; then
-        mkdir -p "$backup_dir"
-        cp -p "$plugin_dir/$dll" "$backup_dir/"
-    fi
-done
-if [ -f "$game_root/Start-Poju.command" ]; then
-    mkdir -p "$backup_dir"
-    cp -p "$game_root/Start-Poju.command" "$backup_dir/"
-fi
-mkdir -p "$plugin_dir"
-for dll in MonsterTrain2Poju.Advisor.dll Model.dll FixtureArchive.dll; do
-    cp "$package_root/BepInEx/plugins/PojuAdvisor/$dll" "$plugin_dir/$dll"
-done
-cp "$package_root/Start-Poju.command" "$game_root/Start-Poju.command"
-chmod u+x "$game_root/Start-Poju.command" "$game_root/run_bepinex.sh"
+poju_check_existing_runtime "$game_root" || exit 1
+poju_install_plugin "$package_root" "$game_root"
+chmod u+x "$game_root/run_bepinex.sh"
 printf '\n安装完成。在 Steam 游戏属性 → 启动选项填入：\n"%s/Start-Poju.command" %%command%%\n' "$game_root"
 printf '\n进入战斗后显示中文建议；Fn+F8 显示/隐藏。日志：%s/BepInEx/LogOutput.log\n' "$game_root"
 printf '卸载：移走 BepInEx/plugins/PojuAdvisor，清除上述 Steam 启动选项。\n'
