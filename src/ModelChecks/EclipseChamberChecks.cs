@@ -12,12 +12,8 @@ internal static class EclipseChamberChecks
                 return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play => play.CardInstanceId == ids[index] && play.RoomIndex == (index == 1 ? 1 : 0));
         return null;
     }
-    internal static void Native(FixtureValue root)
+    internal static (int Characters, int Support) Refreshes(FixtureValue root)
     {
-        Require(root.GetProperty("EclipseChamberPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
-            root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed original Eclipse witness.");
-        foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
-            Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int characters = 0, support = 0;
         foreach (FixtureValue row in root.GetProperty("EclipseChamberRecords").EnumerateArray())
         {
@@ -47,10 +43,27 @@ internal static class EclipseChamberChecks
                     TrainCombatResult drained = TrainCombatModel.ApplyCharacterQueue(state, queue);
                     Require(drained.Supported, drained.UnsupportedReason ?? "Incoming moon queue unsupported.");
                     state = drained.State!;
-                    Require(row.GetProperty("PendingAfter").GetInt32() == 0, "Refresh boundary retains unmodeled queued work.");
                 }
                 var result = RoomMoonPhaseModel.Refresh(state, refresh);
                 Require(result.Supported, result.UnsupportedReason ?? "Refresh unsupported.");
+                if (row.TryGetProperty("PendingAfter", out FixtureValue pendingAfter))
+                {
+                    int queued = 0;
+                    foreach (CombatUnit unit in state.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0))
+                    {
+                        CombatUnit updated = result.State!.Rooms.SelectMany(room => room.Units).Single(item => item.Id == unit.Id);
+                        foreach (int bit in new[] { 2, 1 })
+                        {
+                            if ((unit.MoonPhaseMask & bit) == (updated.MoonPhaseMask & bit)) continue;
+                            string kind = bit == 2 ? (updated.MoonPhaseMask & bit) != 0 ? "OnMoonLit" : "OnMoonlitLost" :
+                                (updated.MoonPhaseMask & bit) != 0 ? "OnMoonShade" : "OnMoonshadeLost";
+                            Require(unit.Triggers.Where(trigger => trigger.Kind == kind).All(trigger => trigger.Effects.Count == 0),
+                                "Intermediate refresh retains a callback with effects; use the settled component boundary.");
+                            queued++;
+                        }
+                    }
+                    Require(pendingAfter.GetInt32() == queued, "Native refresh pending no-op callback count differs.");
+                }
                 Equal(result.State, after, "native complete resource/character refresh");
             }
             Replay(); Parallel.For(0, 16, _ => Replay());
@@ -59,6 +72,15 @@ internal static class EclipseChamberChecks
                 "Resource refresh must not advance global phase or RNG.");
             if (refresh) characters++; else support++;
         }
+        return (characters, support);
+    }
+    internal static void Native(FixtureValue root)
+    {
+        Require(root.GetProperty("EclipseChamberPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
+            root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed original Eclipse witness.");
+        foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
+        var (characters, support) = Refreshes(root);
         Require(characters == 2 && support > 0, "Missing original full refresh and queued support-card controls.");
         int[] ids = root.GetProperty("EclipseChamberCardIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();

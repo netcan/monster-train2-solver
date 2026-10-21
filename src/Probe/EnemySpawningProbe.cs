@@ -237,7 +237,8 @@ namespace MonsterTrain2Poju.Probe
                 if (record.Predicted.Supported)
                 {
                     record.Difference = JToken.DeepEquals(Comparable(record.Predicted.State!), Comparable(record.Actual))
-                        ? null : "Spawned units, wave phase/cache, resources or RNG differ";
+                        ? null : UnitPlayModelProbe.FirstDifference(Comparable(record.Predicted.State!), Comparable(record.Actual), "$") ??
+                            "Spawned units, wave phase/cache, resources or RNG differ";
                     log.LogInfo("SPAWN-MODEL-" + (record.Difference == null ? "MATCH" : "MISMATCH") + " index=" + record.Index);
                 }
                 else log.LogInfo("SPAWN-MODEL-UNSUPPORTED " + record.Predicted.UnsupportedReason);

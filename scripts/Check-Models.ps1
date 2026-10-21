@@ -7,7 +7,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$fixtureNames = @('room-moon-callback-calibration.mt2f', 'room-moon-callback-calibration-shade.mt2f', 'full-battle-player-conduit-search.mt2f', 'full-battle-player-conduit-replay.mt2f',
+$fixtureNames = @('room-moon-callback-calibration.mt2f', 'room-moon-callback-calibration-shade.mt2f',
+    'full-battle-player-room-moon-search.mt2f', 'full-battle-player-room-moon-replay.mt2f', 'full-battle-player-conduit-search.mt2f', 'full-battle-player-conduit-replay.mt2f',
     'conduit-movement-calibration.mt2f', 'full-battle-player-boss-search.mt2f', 'full-battle-player-boss-replay.mt2f',
     'full-battle-player-moon-search.mt2f', 'full-battle-player-moon-replay.mt2f', 'permanent-trait-calibration.mt2f', 'holdover-variants-calibration.mt2f', 'outer-boss-pyre-victory-calibration.mt2f', 'outer-boss-pyre-victory-turn-calibration.mt2f',
     'outer-boss-natural-relentless-phase-calibration.mt2f', 'full-battle-progressed-ring8-gold-frozen-win.mt2f', 'full-battle-progressed-ring8-gold-no-cards.mt2f',

@@ -13,17 +13,18 @@ internal static class RollingAdviceChecks
         .SelectMany(record => new[] { State(record.GetProperty("Root")), State(record.GetProperty("Actual")) })
         .SelectMany(state => state.Spawn.Train.Rooms.Where(room => !room.Preview).SelectMany(room => room.Units))
         .Where(unit => unit.IsBoss == true).Select(unit => unit.AssetKey).Distinct().ToArray();
-    private static void Accepted(FixtureValue fixture, bool conduitCalibration = false)
+    private static void Accepted(FixtureValue fixture, bool conduitCalibration = false, string? calibration = null)
     {
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(fixture.GetProperty(counter).GetInt32() == 0, "Rolling native capture has nonzero " + counter);
         Require(fixture.GetProperty("TerminalEffectsSettled").GetBoolean(), "Rolling battle did not settle.");
-        Require(conduitCalibration ? fixture.GetProperty("ModifierScenario").GetString() == "original-conduit-relics" :
+        string? expected = conduitCalibration ? "original-conduit-relics" : calibration;
+        Require(expected != null ? fixture.GetProperty("ModifierScenario").GetString() == expected :
             string.IsNullOrEmpty(fixture.GetProperty("ModifierScenario").GetString()), "Unexpected rolling encounter calibration.");
     }
-    internal static void Native(FixtureValue fixture, bool conduitCalibration = false)
+    internal static void Native(FixtureValue fixture, bool conduitCalibration = false, string? calibration = null)
     {
-        Accepted(fixture, conduitCalibration);
+        Accepted(fixture, conduitCalibration, calibration);
         FixtureValue[] records = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         Require(records.Length > 1, "Missing complete rolling decision sequence.");
         BattleTurnState? previous = null;
@@ -87,9 +88,9 @@ internal static class RollingAdviceChecks
         Pair(source, replay, baseline);
         Console.WriteLine("ROLLING-ADVICE-VICTORY PASS: actual boss, native victory and winning fresh frozen replay.");
     }
-    internal static void FrozenPair(FixtureValue source, FixtureValue replay, bool conduitCalibration = false)
+    internal static void FrozenPair(FixtureValue source, FixtureValue replay, bool conduitCalibration = false, string? calibration = null)
     {
-        Native(source, conduitCalibration); Native(replay, conduitCalibration);
+        Native(source, conduitCalibration, calibration); Native(replay, conduitCalibration, calibration);
         FixtureValue[] first = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         FixtureValue[] second = replay.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         Require(first.Length == second.Length, "Fresh rolling replay has a different decision count.");

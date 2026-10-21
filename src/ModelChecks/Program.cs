@@ -1789,6 +1789,13 @@ if (args.Length == 2 && args[0] == "--conduit-movement-only")
     ConduitMovementChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--player-room-moon-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerRoomMoonChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--player-conduit-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

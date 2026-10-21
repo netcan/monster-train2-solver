@@ -238,8 +238,11 @@ namespace MonsterTrain2Poju.Model
                     MoonPhaseStatusModel.IsTracking(context, rooms.SelectMany(room => room)))
                 {
                     int liveIndex = rooms[index].FindIndex(actor => actor.Id == unit.Id);
+                    // Native heroes initialize off-train, before their physical
+                    // placement. Room overrides enter understanding only during
+                    // the later global/resource refresh, not this spawn boundary.
                     if (liveIndex >= 0) rooms[index][liveIndex] = MoonPhaseStatusModel.WithPhase(rooms[index][liveIndex], moon)
-                        .WithMoonPhaseMask(RoomMoonPhaseModel.Effective(context, index, moon));
+                        .WithMoonPhaseMask(moon);
                 }
                 return null;
             }

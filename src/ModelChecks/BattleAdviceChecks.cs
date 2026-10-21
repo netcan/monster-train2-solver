@@ -4,7 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattleAdviceChecks
 {
-    internal static void Native(FixtureValue fixture, bool requireBoss = true, bool conduitCalibration = false)
+    internal static void Native(FixtureValue fixture, bool requireBoss = true, bool conduitCalibration = false, string? calibration = null)
     {
         void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
         FixtureValue advice = fixture.GetProperty("Advisor");
@@ -18,8 +18,9 @@ internal static class BattleAdviceChecks
             "Live capture changed native state or RNG.");
         Require(advice.GetProperty("Published").GetInt32() >= 2 && advice.GetProperty("Invalidations").GetInt32() > 0 &&
             advice.GetProperty("PlanningFrames").GetInt32() >= 2, "Missing live publication, action invalidation/replanning or background frames.");
+        string? expected = conduitCalibration ? "original-conduit-relics" : calibration;
         Require(!advice.GetProperty("InTestScenario").GetBoolean() &&
-            (conduitCalibration ? fixture.GetProperty("ModifierScenario").GetString() == "original-conduit-relics" :
+            (expected != null ? fixture.GetProperty("ModifierScenario").GetString() == expected :
                 string.IsNullOrEmpty(fixture.GetProperty("ModifierScenario").GetString())), "Unexpected advisor encounter calibration.");
         if (requireBoss) Require(advice.GetProperty("Bosses").EnumerateArray().Any(boss => boss.GetProperty("Miniboss").GetBoolean() ||
             boss.GetProperty("OuterTrainBoss").GetBoolean()), "No natural boss was captured.");

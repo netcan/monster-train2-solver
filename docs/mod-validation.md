@@ -406,3 +406,32 @@ Conduit replay payload:
 
 The ZIP and checksum are copied to `/tank` root with network hashes verified;
 0.2.2 remains available. Mac runtime acceptance is still outstanding.
+
+## Room moon masks with original Full/New callbacks
+
+The actual player entry now passes a complete authored Eclipse encounter with
+original Selene and Nightingale callback payloads. Source profile
+`full-battle-units-spells-and-junk-20261021-230548-15477baa` completes 23 rolling
+decisions (18 plays, five EndTurns) in 178.82 seconds, winning with Pyre80.
+It records 25 publications, 246 pure captures, 352 panel vertices and 85,699
+visible pixels, with native pause/hide/refresh/pointer interaction checks passing.
+
+Fresh profile `full-battle-units-spells-and-junk-20261021-230904-1abf02f5` repeats
+all 23 frozen inputs with zero search nodes in 84.21 seconds and wins with Pyre80.
+It records 55 pure captures and no publications. Complete roots, successors,
+forecasts and gameplay RNG match. Both settle terminal effects, preserve
+protected files and retain zero capture/mismatch/unsupported/pending counters.
+All three player DLL hashes match between profiles.
+
+The pair checker independently reproduces seven native spawn boundaries in each
+process and observes both phases, five callback actors, mixed masks and four
+enemy births under an active mask. Heroes initialize their phase off-train;
+the extra room phase enters on a later refresh. Earlier diagnostics exposing
+four spawn-mask mismatches were not curated. Authored carriers establish this
+combination, not arbitrary late-game natural decks, enemy moon callbacks,
+preview callbacks or friendly movement through masked rooms.
+
+Archives: `full-battle-player-room-moon-{search,replay}.mt2f`. Run
+`scripts/Check-PlayerAdvisor.ps1 -Case RoomMoon -SkipBuild` for the manifest-
+verified pair gate. Existing Moon and Conduit player gates also pass.
+Per the user's request, no further Mac packages are built.

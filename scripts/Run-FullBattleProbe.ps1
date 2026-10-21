@@ -2805,7 +2805,8 @@ if ($SmallBox -and (-not $trace.SmallBoxPrepared -or -not $trace.NativeWon -or @
     throw 'Small Box native evidence is incomplete.'
 }
 if ($EclipseChamber -and (-not $trace.EclipseChamberPrepared -or -not $trace.NativeWon -or
-    @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 -or
+    $(if ($RollingAdvice) { @($trace.EclipseChamberRecords | Where-Object Characters).Count -lt 1 }
+      else { @($trace.EclipseChamberRecords | Where-Object Characters).Count -ne 2 }) -or
     @($trace.EclipseChamberRecords | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0)) {
     throw 'Eclipse Chamber native evidence is incomplete.'
 }

@@ -106,3 +106,39 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-callbacks-on
 
 Real player entry, previews and physical movement remain separate from this
 authored fixed-policy acceptance. No Mac package is built.
+
+## Real player rolling advice and fresh frozen replay
+
+`full-battle-player-room-moon-{search,replay}.mt2f` records the actual player
+entry with authored Silent callback carriers and unchanged original room/spell
+and callback payloads. Source profile
+`full-battle-units-spells-and-junk-20261021-230548-15477baa` wins in 178.82 seconds:
+23 rolling decisions, 18 plays, five EndTurns, 25 publications and 246 pure
+captures. The UI interaction gate passes with 352 text vertices and 85,699
+visible pixels. Fresh profile
+`full-battle-units-spells-and-junk-20261021-230904-1abf02f5` repeats the same
+inputs with zero search nodes in 84.21 seconds, recording 55 pure captures and
+no publications. Both win with Pyre80, settled terminal effects, unchanged
+protected files and all four failure counters zero. Their three player DLL
+hashes match each other exactly. This is not a natural-deck acceptance.
+
+The focused pair check matches all inputs, roots, successors, complete forecasts
+and gameplay RNG, plus all seven native spawn boundaries in each process. Five
+callback actors, both global phases, an original Eclipse cast, 46 mixed-mask
+snapshots, 123 New upgrade and 82 Full upgrade snapshots provide live witnesses.
+Four distinct enemies also initialize beneath Full/New room masks. Native hero
+creation initializes understanding off-train with only the global phase; the
+later refresh adds the room bit. The model now preserves that spawn boundary.
+An intermediate full-refresh row leaves one no-op enemy phase callback queued;
+the checker predicts its count and rejects pending callbacks with effects.
+
+The earlier source/replay diagnostic had four spawn-mask mismatches and is not
+curated. Winning and matching only final action boundaries were insufficient.
+Existing natural-moon and Conduit player pair gates also pass after the shared
+checker update. No full regression or Mac package build is performed.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberShadeCallbacks -PlayerAdvisor -RollingAdvice -PlannerDeploymentRoom 0 -PlannerHorizon 3 -PlannerTimeLimitMs 1000 -SkipBuild
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberShadeCallbacks -PlayerAdvisor -RollingAdvice -RollingInput <source-profile>/full-battle.mt2f -PlannerDeploymentRoom 0 -PlannerHorizon 3 -PlannerTimeLimitMs 1000 -SkipBuild
+scripts/Check-PlayerAdvisor.ps1 -Case RoomMoon -SkipBuild
+```

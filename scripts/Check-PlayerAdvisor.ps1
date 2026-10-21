@@ -1,8 +1,8 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Moon', 'OuterBoss', 'Conduit')]
-    [string[]] $Case = @('Moon', 'OuterBoss', 'Conduit'),
+    [ValidateSet('Moon', 'OuterBoss', 'Conduit', 'RoomMoon')]
+    [string[]] $Case = @('Moon', 'OuterBoss', 'Conduit', 'RoomMoon'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -14,7 +14,7 @@ if (-not $SkipBuild) {
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
 $manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests/fixtures/manifest.tsv') -Delimiter "`t"
 foreach ($name in $Case) {
-    $prefix = switch ($name) { 'Moon' { 'player-moon' }; 'OuterBoss' { 'player-boss' }; 'Conduit' { 'player-conduit' } }
+    $prefix = switch ($name) { 'Moon' { 'player-moon' }; 'OuterBoss' { 'player-boss' }; 'Conduit' { 'player-conduit' }; 'RoomMoon' { 'player-room-moon' } }
     $search = Join-Path $workspace "tests/fixtures/full-battle-$prefix-search.mt2f"
     $replay = Join-Path $workspace "tests/fixtures/full-battle-$prefix-replay.mt2f"
     foreach ($path in @($search, $replay)) {
