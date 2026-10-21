@@ -167,7 +167,15 @@ namespace MonsterTrain2Poju.Probe
                     Finish(trace.CaptureFailures == 0 && trace.Pending == 0 && trace.Mismatches == 0 && trace.Unsupported == 0,
                         "Full native battle finished; won=" + trace.NativeWon + "; unsupported stages=" + trace.Unsupported);
                 }
-                catch (Exception error) { Finish(false, "Could not export settled full battle: " + error); }
+                catch (Exception error)
+                {
+                    // Keep the failing terminal root/successor and component
+                    // comparisons available for focused diagnosis. The error
+                    // and nonzero mismatch counters still reject acceptance.
+                    try { trace.Write(); }
+                    catch (Exception exportError) { log.LogError("ROLLING-DIAGNOSTIC-EXPORT-FAIL " + exportError); }
+                    Finish(false, "Could not export settled full battle: " + error);
+                }
                 return;
             }
             if (Time.realtimeSinceStartup > deadline)

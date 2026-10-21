@@ -253,7 +253,7 @@ namespace MonsterTrain2Poju.Probe
             return result.ToString();
         }
 
-        private static string? FirstDifference(JToken expected, JToken actual, string path)
+        internal static string? FirstDifference(JToken expected, JToken actual, string path)
         {
             if (expected.Type != actual.Type)
             {

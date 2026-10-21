@@ -109,7 +109,9 @@ namespace MonsterTrain2Poju.Probe
             decision.Actual = actual; waiting = false;
             if (!Equal(decision.Expected, actual, terminal))
             {
-                decision.Difference = "Rolling native state differs after decision " + Records.Count;
+                decision.Difference = "Rolling native state differs after decision " + Records.Count + ": " +
+                    UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(decision.Expected, terminal),
+                        BattleTurnProbe.Comparable(actual, terminal), "$");
                 throw new InvalidOperationException(decision.Difference);
             }
         }
