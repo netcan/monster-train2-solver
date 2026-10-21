@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 841 binary archives, including 779
-full battles and 62 component calibrations. The card index accepts 778 battles;
+Current curated inventory (2026-10-21): 843 binary archives, including 781
+full battles and 62 component calibrations. The card index accepts 780 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -11,6 +11,15 @@ coverage for arbitrary combinations remains in progress. Exact deterministic
 search and probability policies now have explicit, scoped certificates and
 independent replay; see [exact search](tests/fixtures/exact-search.md) and
 [unknown draw policies](tests/fixtures/unknown-draw-policy.md).
+
+The real 0.2.2 player assembly now accepts the calibrated natural Luna Coven
+starter and `Boss_Level8_AllyBuffer` final encounter. The moon battle's 38 rolling
+inputs and the final battle's complete 50-input player publication both win and
+match fresh native frozen replays in full state/RNG. Final-boss acceptance uses
+12 turns, a 30-second search budget and tactical seed; it does not establish
+winning deep rolling replans or other final-boss variants. Mac runtime and the
+remaining complex moon combinations are tracked in
+[remaining acceptance goals](docs/remaining-goals.md).
 
 The original seventh-ring checkpoint now also wins while retaining its
 naturally purchased Holdover upgrade: 42 frozen inputs, Pyre104, fresh native

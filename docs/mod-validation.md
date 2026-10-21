@@ -285,3 +285,49 @@ These driver changes are excluded from the player assembly and package.
 Player probes load both shared dependencies from the Advisor build output and
 archive all three loaded DLLs. This keeps the native replay and package byte
 identical even if an intervening checker build refreshes another output tree.
+
+## Natural final-boss player plan
+
+Player capture accepts the original `Boss_Level8_AllyBuffer` definition through
+the same calibrated queued-birth, action-controller, physical-anchor and
+enchantment-world projections as the native model. It does not enable the
+development boss-forcing patches. Other boss definitions and unsupported
+payloads retain their existing refusal.
+
+The input is the unmodified naturally progressed checkpoint
+`campaign-ring8-20261021-140958-4b20355b-before-ring8`, after seven native wins.
+The real in-process player uses 12 turns, a 30,000 ms budget, preferred room 2
+and tactical seed. Its third initial publication finds a complete 50-input win
+in 24,784.5 ms; full forecast verification takes another 14,738.2 ms. The four
+actual publications take 37.2–47.1 seconds from capture to publication.
+The configured search budget is not a bound on total response latency.
+
+Source profile `full-battle-units-spells-and-junk-20261021-205527-92aaa977`
+wins in 606.83 seconds with 21 Pyre HP, 39 card actions and 11 EndTurns.
+The player records four publications, 279 pure captures, 296 text vertices and
+85,699 visible pixels. Native UI checks, action-triggered refresh and every
+full-state/RNG successor pass. Terminal effects settle, protected files stay
+unchanged, and capture/mismatch/unsupported/pending counters are all zero.
+
+Fresh replay profile `full-battle-units-spells-and-junk-20261021-210553-12f4d7bf`
+wins in 246.13 seconds with the same 39 card actions, 11 EndTurns and 21 Pyre HP.
+Its planner record has zero search nodes; no new recommendation selects an input.
+Every input, root, successor, complete forecast and gameplay RNG matches the
+source. Terminal effects settle, protected files remain unchanged and all four
+failure counters are zero. The three archived player DLL hashes equal the
+Advisor output used for packaging. Both complete archives are curated as
+`full-battle-player-boss-search.mt2f` and `full-battle-player-boss-replay.mt2f`.
+
+This is one complete real player publication, followed by frozen execution after
+checking the first action's new publication. It is not an acceptance of winning
+rolling replans under a 30-second budget. An earlier rolling diagnostic matched
+its first five inputs but was stopped before completion; shorter 10-second
+searches returned losing forecasts. Neither diagnostic is curated as a win.
+
+The pair checker independently replays every source and frozen input and checks
+the queued boss at turn zero, both Casting/Relentless phases, newly generated
+Entropy Scourges with captured source traits, and native unit-ability creation
+and activation. Run
+`scripts/Check-PlayerAdvisor.ps1 -Case OuterBoss -SkipBuild` for the manifest-
+verified focused gate, or omit `-Case` to check both the moon and boss pairs.
+No full fixture regression is needed for this player-capture increment.
