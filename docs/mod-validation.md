@@ -180,3 +180,25 @@ without requiring a fixed-policy baseline or claiming an improvement over one.
 The existing development ring-one search/replay control passes this checker too.
 Only focused checks are run; no full fixture regression is needed for this
 acceptance-driver increment.
+
+The fresh whole-battle replay profile is
+`full-battle-units-spells-and-junk-20261021-194538-e963d99e` (64.85 seconds).
+It executes the same 27 frozen inputs with zero search nodes in every replay
+record, wins with 80 Pyre HP, settles terminal effects and preserves protected
+files; all four failure counters are zero. `--rolling-replay-pair-only` passes
+every input, root, successor, complete published forecast and RNG comparison
+across the two native processes. The source player overlay reports 350 pure
+captures and 29 publications. This covers a natural first battle, not arbitrary
+decks, later encounters or macOS execution.
+
+The refreshed trial package is
+`results/mod-dist/0.2.1-validated/PojuAdvisor-0.2.1-macOS.zip`, 2,918,539 bytes,
+from clean source `e12ce8ef27cff5d749bf860b819e59cd3378b4a2`.
+ZIP SHA256:
+`20576252143c348118f4fd694ad48559b6c83c858729d8e9f1ea2e5e307f80ac`.
+Package validation passes all 12 files, checksums, AnyCPU metadata and exclusion
+of the player acceptance bridge. All three packaged DLL hashes equal the files
+used by the successful fresh native replay; the archived player DLL SHA256 is
+`5fe13c5448d2d128678d8908b717818bd73817921c175c89f2e9ef1586b4a00d`.
+The product version remains 0.2.1; this increment strengthens validation and
+does not establish Mac runtime acceptance.
