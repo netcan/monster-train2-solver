@@ -9,6 +9,12 @@ $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
     'full-battle-planner-starter-search.mt2f', 'full-battle-planner-starter-replay.mt2f',
+    'full-battle-planner-relics-search.mt2f', 'full-battle-planner-relics-replay.mt2f',
+    'full-battle-planner-ability-search.mt2f', 'full-battle-planner-ability-replay.mt2f',
+    'full-battle-planner-moon-search.mt2f', 'full-battle-planner-moon-replay.mt2f',
+    'full-battle-planner-history-search.mt2f', 'full-battle-planner-history-replay.mt2f',
+    'full-battle-original-isolated-frozen-totem.mt2f', 'full-battle-original-isolated-royal-whelp.mt2f',
+    'full-battle-original-isolated-consumer-of-crowns.mt2f', 'full-battle-original-isolated-steelsinger.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',
     'full-battle-unplayed-card-effects.mt2f', 'full-battle-train-heal.mt2f', 'full-battle-status-upgrade.mt2f',
     'full-battle-overheal.mt2f', 'full-battle-corruption.mt2f', 'full-battle-corruption-unit-trigger.mt2f',

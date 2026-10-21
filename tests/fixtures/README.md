@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-19): 582 archives (542 full battles and
+Current manifest inventory (2026-10-21): 783 archives (743 full battles and
 40 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -14,8 +14,14 @@ these provide mechanism evidence and do not count as direct card plays.
 The [native legality index](card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
-581 indexed archives. Refresh/check the index with
+archives. The card index accepts 742 full battles; one historical capture stays
+excluded because its original mismatch counters are nonzero. Refresh/check with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
+
+The [planner benchmark report](planner-benchmarks.md) documents five offline
+two/three-turn cases and ten native search/replay archives. It includes measured
+budget/quality results, controlled-scenario boundaries, and a single command
+for searching, executing and independently replaying each case.
 
 `full-battle-original-attack-overrides.mt2f` captures unchanged Irontongue and
 Equalizer on three authored hosts. Native victim HP/armor proves nine exact
