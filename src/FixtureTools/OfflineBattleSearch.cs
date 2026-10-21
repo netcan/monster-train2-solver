@@ -1,0 +1,190 @@
+using System.Diagnostics;
+using System.Security.Cryptography;
+using MonsterTrain2Poju.Capture;
+using MonsterTrain2Poju.Fixtures;
+using MonsterTrain2Poju.Model;
+
+// Generates candidates cheaply from one native deployment snapshot. These are
+// model predictions; only a fresh game process can establish native acceptance.
+internal static class OfflineBattleSearch
+{
+    internal static void Freeze(string input, string actionsJson, string output)
+    {
+        if (File.Exists(output)) throw new IOException("Output already exists: " + output);
+        using var source = FixtureDocument.Read(input);
+        foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(source.RootElement.GetProperty(counter).GetInt32() == 0, "Native input has nonzero " + counter);
+        Require(source.RootElement.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native source did not settle.");
+        FixtureValue[] nativeActions = source.RootElement.GetProperty("Actions").EnumerateArray().ToArray();
+        BattleTurnState root = (nativeActions.Length > 0 ? nativeActions[0] : source.RootElement.GetProperty("Turns")[0])
+            .GetProperty("Before").Deserialize<BattleTurnState>()!;
+        Require(root.Spawn.Turn == 0, "Frozen whole-battle actions require the native deployment root.");
+        Step[] steps = System.Text.Json.JsonSerializer.Deserialize<Step[]>(actionsJson)!;
+        Require(steps.Length is > 0 and <= 256, "Expected 1..256 frozen actions.");
+        var decisions = new List<Decision>();
+        BattleTurnState current = root;
+        RoomOutcome outcome = RoomOutcome.Exchanged;
+        foreach (Step step in steps)
+        {
+            Require(!Terminal(outcome) && step.IsEndTurn == (step.Action == null), "Invalid action or action after terminal outcome.");
+            BattleTurnState next = Apply(current, step.Action, step.IsEndTurn, out outcome);
+            decisions.Add(new Decision { Root = current, Action = step.Action, IsEndTurn = step.IsEndTurn,
+                Expected = next, Outcome = outcome, PlanSteps = new[] { step }, Planned = next, PlannedOutcome = outcome,
+                Score = BattlePlanner.Evaluate(next, outcome), Nodes = 0, Generation = decisions.Count + 1 });
+            current = next;
+        }
+        Require(Terminal(outcome), "Frozen actions end before the battle's terminal outcome.");
+        using (var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelPrediction",
+            SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            Strategy = "external-frozen-actions", Root = root, Final = current, Outcome = outcome,
+            RollingDecisions = decisions }))
+        using (var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) document.Write(stream);
+        Verify(output);
+    }
+    internal static void Run(string input, string output, int horizon, int milliseconds, int floor)
+    {
+        if (horizon is < 1 or > 16 || milliseconds is < 1 or > 60000 || floor is < 0 or > 2)
+            throw new ArgumentOutOfRangeException(nameof(horizon), "Horizon 1..16, budget 1..60000 ms and room 0..2 required.");
+        if (File.Exists(output)) throw new IOException("Output already exists: " + output);
+        using var source = FixtureDocument.Read(input);
+        FixtureValue trace = source.RootElement;
+        foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(trace.GetProperty(counter).GetInt32() == 0, "Native input has nonzero " + counter);
+        Require(trace.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native input did not settle.");
+        BattleTurnState root;
+        if (trace.TryGetProperty("RollingDecisions", out FixtureValue rolling) && rolling.GetArrayLength() > 0)
+            root = rolling[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        else
+        {
+            FixtureValue[] actions = trace.GetProperty("Actions").EnumerateArray().ToArray();
+            root = (actions.Length > 0 ? actions[0] : trace.GetProperty("Turns")[0]).GetProperty("Before").Deserialize<BattleTurnState>()!;
+        }
+        Require(root.Spawn.Turn == 0, "Offline whole-battle planning requires the native deployment root.");
+        using var rootKeys = new BattleStateKeys();
+        string immutable = rootKeys.Key(root);
+        var options = new BattlePlannerOptions(256, horizon, 8, 12, TimeSpan.FromMilliseconds(milliseconds), floor);
+        var decisions = new List<Decision>();
+        var unsupported = new HashSet<string>(StringComparer.Ordinal);
+        var timer = Stopwatch.StartNew();
+        BattleTurnState current = root;
+        RoomOutcome outcome = RoomOutcome.Exchanged;
+        while (!Terminal(outcome) && decisions.Count < 256)
+        {
+            using var keys = new BattleStateKeys();
+            BattlePlanResult plan = BattlePlanner.Plan(current, keys.Key, options);
+            foreach (UnsupportedActionAttempt attempt in plan.UnsupportedAttempts) unsupported.Add(attempt.Reason);
+            Require(plan.Steps.Count > 0, "Planner produced no executable first step.");
+            BattleSearchStep step = plan.Steps[0];
+            BattleTurnState next = Apply(current, step.Action, step.IsEndTurn, out outcome);
+            decisions.Add(new Decision { Root = current, Action = step.Action, IsEndTurn = step.IsEndTurn,
+                Expected = next, Outcome = outcome, PlanSteps = plan.Steps.Select(item => new Step { Action = item.Action, IsEndTurn = item.IsEndTurn }).ToArray(), Planned = plan.State, PlannedOutcome = plan.Outcome,
+                Score = plan.Score, PolicyBaselineScore = plan.PolicyBaselineScore, Nodes = plan.ExpandedNodes, Generation = decisions.Count + 1 });
+            current = next;
+            if (step.IsEndTurn) Console.WriteLine($"OFFLINE-TURN turn={current.Spawn.Turn} decisions={decisions.Count} outcome={outcome} " +
+                $"pyre={current.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault()}");
+        }
+        Require(Terminal(outcome), "Offline search exceeded 256 decisions without a terminal result.");
+        using var freshKeys = new BattleStateKeys();
+        Require(immutable == freshKeys.Key(root), "Planning mutated its native root.");
+        using (var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelPrediction",
+            SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            Horizon = horizon, MillisecondsPerDecision = milliseconds, DeploymentRoom = floor,
+            Root = root, Final = current, Outcome = outcome, ElapsedSeconds = timer.Elapsed.TotalSeconds,
+            UnsupportedReasons = unsupported.Order(StringComparer.Ordinal).ToArray(), RollingDecisions = decisions }))
+        using (var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) document.Write(stream);
+        Verify(output);
+        Console.WriteLine($"OFFLINE-PLAN outcome={outcome} decisions={decisions.Count} unsupported={unsupported.Count} seconds={timer.Elapsed.TotalSeconds:F2} output={output}");
+    }
+
+    internal static void Verify(string input)
+    {
+        using var document = FixtureDocument.Read(input);
+        FixtureValue trace = document.RootElement;
+        Require(trace.GetProperty("Schema").GetInt32() == 1 && trace.GetProperty("EvidenceKind").GetString() == "ModelPrediction",
+            "Expected an offline prediction, not native acceptance evidence.");
+        using var keys = new BattleStateKeys();
+        BattleTurnState current = trace.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        BattleTurnState root = current;
+        string immutable = keys.Key(root);
+        RoomOutcome outcome = RoomOutcome.Exchanged;
+        FixtureValue[] decisions = trace.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(decisions.Length is > 0 and <= 256, "Missing bounded frozen decisions.");
+        foreach (FixtureValue row in decisions)
+        {
+            Require(!Terminal(outcome) && keys.Key(current) == keys.Key(row.GetProperty("Root").Deserialize<BattleTurnState>()!),
+                "Frozen model root differs or follows a terminal outcome.");
+            bool end = row.GetProperty("IsEndTurn").GetBoolean();
+            Require(end == (row.GetProperty("Action").ValueKind == FixtureKind.Null), "Invalid frozen first step.");
+            current = Apply(current, end ? null : row.GetProperty("Action").Deserialize<PlayCardAction>(), end, out outcome);
+            Require(outcome == (RoomOutcome)row.GetProperty("Outcome").GetInt32() &&
+                keys.Key(current) == keys.Key(row.GetProperty("Expected").Deserialize<BattleTurnState>()!), "Frozen successor differs.");
+        }
+        Require(Terminal(outcome) && outcome == (RoomOutcome)trace.GetProperty("Outcome").GetInt32() &&
+            keys.Key(current) == keys.Key(trace.GetProperty("Final").Deserialize<BattleTurnState>()!), "Frozen terminal state differs.");
+        using var freshKeys = new BattleStateKeys();
+        Require(immutable == freshKeys.Key(root), "Frozen replay mutated its root.");
+        Console.WriteLine($"OFFLINE-VERIFY PASS: {decisions.Length} frozen successors, terminal outcome and complete state/RNG; native validation required.");
+    }
+
+    internal static void VerifyNative(string prediction, string native)
+    {
+        Verify(prediction);
+        using var source = FixtureDocument.Read(prediction);
+        using var replay = FixtureDocument.Read(native);
+        FixtureValue trace = replay.RootElement;
+        foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(trace.GetProperty(counter).GetInt32() == 0, "Fresh native replay has nonzero " + counter);
+        Require(trace.GetProperty("TerminalEffectsSettled").GetBoolean(), "Fresh native replay did not settle.");
+        FixtureValue[] first = source.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        FixtureValue[] second = trace.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(first.Length == second.Length, "Fresh native replay used a different decision count.");
+        for (int index = 0; index < first.Length; index++)
+        {
+            Require(second[index].GetProperty("Mode").GetString() == "replay" && second[index].GetProperty("Nodes").GetInt32() == 0 &&
+                second[index].GetProperty("Actual").ValueKind == FixtureKind.Object &&
+                second[index].GetProperty("Difference").ValueKind == FixtureKind.Null, "Fresh native decision is incomplete or differs.");
+            foreach (string name in new[] { "Root", "Action", "IsEndTurn", "Expected", "Outcome", "PlanSteps", "Planned", "PlannedOutcome",
+                "Score", "PolicyBaselineScore", "Generation" })
+                Require(first[index].GetProperty(name).ContentEquals(second[index].GetProperty(name)),
+                    "Fresh native replay changed frozen decision " + index + " field " + name);
+        }
+        Require(trace.GetProperty("NativeWon").GetBoolean() ==
+            ((RoomOutcome)source.RootElement.GetProperty("Outcome").GetInt32() == RoomOutcome.BattleWon), "Native terminal outcome differs.");
+        Console.WriteLine($"OFFLINE-NATIVE PASS: {first.Length} unchanged frozen decisions and zero-node fresh native replay, four zero failure counters and matching terminal outcome.");
+    }
+
+    private static BattleTurnState Apply(BattleTurnState source, PlayCardAction? action, bool end, out RoomOutcome outcome)
+    {
+        if (end)
+        {
+            BattleTurnResult result = BattleTurnModel.EndTurn(source);
+            Require(result.Supported, "Unsupported EndTurn: " + result.UnsupportedReason);
+            outcome = result.Outcome; return result.State!;
+        }
+        BattleActionResult played = BattleActionModel.PlayCard(source, action!);
+        Require(played.Supported, "Unsupported action: " + played.Reason);
+        outcome = played.Outcome; return played.State!;
+    }
+    private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
+    private static void Require(bool condition, string message) { if (!condition) throw new InvalidDataException(message); }
+    private sealed class Decision
+    {
+        public BattleTurnState Root { get; set; } = null!;
+        public PlayCardAction? Action { get; set; }
+        public bool IsEndTurn { get; set; }
+        public BattleTurnState Expected { get; set; } = null!;
+        public RoomOutcome Outcome { get; set; }
+        public IReadOnlyList<Step> PlanSteps { get; set; } = null!;
+        public BattleTurnState Planned { get; set; } = null!;
+        public RoomOutcome PlannedOutcome { get; set; }
+        public double Score { get; set; }
+        public double? PolicyBaselineScore { get; set; }
+        public int Nodes { get; set; }
+        public long Generation { get; set; }
+    }
+    private sealed class Step
+    {
+        public PlayCardAction? Action { get; set; }
+        public bool IsEndTurn { get; set; }
+    }
+}

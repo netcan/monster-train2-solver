@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\FixtureArchive\FixtureArchive.csproj" />
+    <ProjectReference Include="..\Model\Model.csproj" />
     <Compile Include="..\Probe\NativeFixtureCapture.cs" Link="NativeFixtureCapture.cs" />
     <Reference Include="Newtonsoft.Json" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\Newtonsoft.Json.dll" />
   </ItemGroup>
