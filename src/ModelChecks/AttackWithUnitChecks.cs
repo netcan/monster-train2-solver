@@ -51,13 +51,20 @@ internal static class AttackWithUnitChecks
         CombatUnit pyre = new(12, "pyre", CombatTeam.Player, 45, 80, 80, true, true, false, [new("sweep", 1)]);
         CombatUnit pyreFloorEnemy = Unit(13, "pyre-floor-enemy", CombatTeam.Enemy, 1, 100);
         TrainCombatState crossRoom = Train([Unit(3, "selected-floor-decoy", CombatTeam.Enemy, 1, 100)], [pyre, pyreFloorEnemy]);
-        var pyreAttack = new CardActionEffect("AttackWithUnit", "Pyre", 0, false, false, [], useSelectedRoom: true);
+        var pyreAttack = new CardActionEffect("AttackWithUnit", "Pyre", 0, false, false, [], useSelectedRoom: true,
+            suppressPyreRoomFocus: true);
         TrainSpellResult selectedRoom = CardSpellModel.Apply(crossRoom, 0, [pyreAttack], 0);
         Require(selectedRoom.Supported && selectedRoom.State!.Rooms[0].Units.Single(unit => unit.Id == 3).Health == 55 &&
             selectedRoom.State.Rooms[3].Units.Single(unit => unit.Id == 13).Health == 100 &&
             selectedRoom.State.Rooms[3].Units.Single(unit => unit.Id == 12).Health == 80 &&
             selectedRoom.State.Rooms.All(room => ReferenceEquals(room.Context, selectedRoom.State.Context)),
             "The Pyre attack used the Pyre's room instead of the card-selected room.");
+
+        var focusedPyreAttack = new CardActionEffect("AttackWithUnit", "Pyre", 0, false, false, [], useSelectedRoom: true);
+        TrainSpellResult focusedRoom = CardSpellModel.Apply(crossRoom, 0, [focusedPyreAttack], 0);
+        Require(focusedRoom.Supported && focusedRoom.State!.Rooms[0].Units.Single(unit => unit.Id == 3).Health == 100 &&
+            focusedRoom.State.Rooms[3].Units.Single(unit => unit.Id == 13).Health == 55,
+            "An ordinary Pyre-targeted effect must focus the Pyre's room before attacking.");
 
         CombatUnit remoteActor = Actor();
         TrainCombatState externalRoot = new([

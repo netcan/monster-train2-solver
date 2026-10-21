@@ -170,7 +170,11 @@ namespace MonsterTrain2Poju.Model
                 {
                     HandRemovalResult fired = onExhausted(context.WithOtherPiles(piles));
                     if (!fired.Supported) { callbackError = fired.UnsupportedReason; return; }
-                    context = fired.Context!; piles = fired.OtherPiles!.ToArray();
+                    context = fired.Context!;
+                    // Legacy callers keep piles outside CombatContext. A
+                    // callback without replacement piles retains that state.
+                    piles = (fired.OtherPiles ?? context.OtherPiles ?? piles).ToArray();
+                    context = context.WithOtherPiles(piles);
                 }
                 if (runQueue) RunTriggerQueue();
                 standby = piles.Single(pile => pile.Name == "Standby");
