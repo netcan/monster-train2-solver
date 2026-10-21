@@ -162,6 +162,17 @@ namespace MonsterTrain2Poju.Model
                 if (!shadow.Supported) return shadow;
                 updated = shadow.State!;
             }
+            else if ((operation == "Remove" || operation == "Set" && target == null) &&
+                source.Units.SingleOrDefault(unit => unit.UnitId == unitId)?.Current is SpawnPointReference anchor && anchor.OuterBossAnchor)
+            {
+                // Boss anchors have a separate reserved hero-point occupant.
+                // SetSpawnPoint(null) clears both references on native death.
+                updated = updated.WithState(updated.Groups.Select(points => points.RoomIndex == anchor.RoomIndex &&
+                    points.Team == CombatTeam.Enemy && !points.PreviewCopyId.HasValue
+                    ? new SpawnPointGroupState(points.RoomIndex, points.Team, points.InnerCount, points.GroupCount,
+                        points.Occupants.Select(id => id == unitId ? 0 : id).ToArray(), points.Outside, points.PreviewCopyId)
+                    : points).ToArray(), updated.Units);
+            }
             return new BattleSpawnPointResult(updated, pivotMoves: result.PivotMoves);
         }
 

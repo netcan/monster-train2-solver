@@ -1,8 +1,21 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 826 archives (769 full battles and
-57 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 828 archives (769 full battles and
+59 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`outer-boss-pyre-victory-{calibration,turn-calibration}.mt2f` add the victory
+side of the same Pyre-entry boundary. Alongside the explicit turn-two queue
+control, `-OuterBossRelentlessHealth 1` sets the native boss's current HP to one
+without changing its max HP or authored definition. Both controls are retained.
+The model matches immediate Pyre combat, the boss's two physical anchor references
+being cleared, death/aura/controller state, terminal victory and Pyre13. Three
+complete frozen EndTurns start at one post-control root and match every successor
+without later native injection. Source `20261021-141702-32b25d04` took 57.15 seconds
+and preserves protected game files. Its sole mismatch is the intentional mid-turn
+control; capture/unsupported/pending are zero. These are controlled component
+victories, not natural eighth-ring wins. Check with `--outer-boss-pyre-only` and
+`--outer-boss-pyre-turn-only`. The existing terminal-loss samples also still pass.
 
 `outer-boss-pyre-turn-calibration.mt2f` retains the complete unchanged diagnostic
 from `20261021-135324-4dde3c8f`. `--outer-boss-pyre-turn-only` starts from one
@@ -47,8 +60,8 @@ The no-card control has seven EndTurns; the occupied policy has six EndTurns and
 workers in 79.01/191.25 seconds. Binary archives are 44,957/71,962 bytes with
 6,680/12,502 nodes; exact hashes are in the manifest.
 These are accepted battle-model losses, not winning-advisor
-evidence. Natural eighth-ring victory and outer-boss Pyre-entry routing remain
-open. Default capture guards remain; the two older guarded component sources
+evidence. Natural eighth-ring victory remains open; controlled Pyre-entry
+integration is covered separately above. Default capture guards remain; the two older guarded component sources
 below retain their historical boundaries.
 
 `outer-boss-instantiation-calibration.mt2f` extends the birth boundary backwards

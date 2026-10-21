@@ -102,6 +102,14 @@ namespace MonsterTrain2Poju.Probe
                         AccessTools.Field(typeof(HeroManager), "spawnPatternPhase").SetValue(heroes, waves.Count);
                         QueueControls.Add(new { Kind = "ForceSpawnQueueEmpty", Turn = combat.GetTurnCount(),
                             PhaseBefore = previous, PhaseAfter = waves.Count, NativeWaveCount = waves.Count });
+                        if (int.TryParse(Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS_HEALTH"), out int health) && health > 0)
+                        {
+                            CharacterState boss = heroes.GetOuterTrainBossCharacter();
+                            int beforeHealth = boss.GetHP();
+                            boss.SetHealth(health, boss.GetMaxHP());
+                            QueueControls.Add(new { Kind = "SetOuterBossHealth", Turn = combat.GetTurnCount(),
+                                HealthBefore = beforeHealth, HealthAfter = boss.GetHP(), MaxHealth = boss.GetMaxHP() });
+                        }
                     }
                     row = new Record { Phase = AllGameManagers.Instance.GetCombatManager().GetCombatPhase().ToString(), Before = Capture() };
                     pending = row; Records.Add(row);
@@ -131,7 +139,8 @@ namespace MonsterTrain2Poju.Probe
             int incomplete = Records.Count(row => row.Actual == null);
             log.LogInfo("OUTER-BOSS-PHASE-CAPTURE actions=" + Records.Count + " pending=" + incomplete + " errors=" + Errors.Count);
             if (Records.Count == 0 || incomplete != 0 || Errors.Count != 0) throw new InvalidOperationException("Native outer-boss phase capture failed.");
-            if (ForceRelentless && QueueControls.Count != 1) throw new InvalidOperationException("Missing explicit native spawn-queue control.");
+            if (ForceRelentless && QueueControls.Count(value => value.GetType().GetProperty("Kind")?.GetValue(value) as string == "ForceSpawnQueueEmpty") != 1)
+                throw new InvalidOperationException("Missing explicit native spawn-queue control.");
         }
         [HarmonyPatch(typeof(HeroManager), nameof(HeroManager.PerformBossAction))]
         private static class ActionPatch

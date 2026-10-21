@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 826 binary archives, including 769
-full battles and 57 component calibrations. The card index accepts 768 battles;
+Current curated inventory (2026-10-21): 828 binary archives, including 769
+full battles and 59 component calibrations. The card index accepts 768 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -78,6 +78,13 @@ floor destruction and terminal Pyre entry, without injecting later native states
 The original diagnostic retains its historical control mismatch and old Pyre
 guard; it is component evidence. Nonterminal tower continuations and paired
 bosses remain guarded. The default capture mode retains its previous guards.
+Two additional component archives cover a controlled Pyre-entry victory: the
+explicit queue control also sets native current boss HP to one. The model clears
+both the boss anchor reference and its reserved hero-point occupant on death,
+matching the native victory with Pyre13. A frozen post-control root reproduces
+three full EndTurns and all terminal state/RNG. The raw diagnostic retains its
+one intentional control mismatch; this does not establish a natural ring-eight
+victory.
 Native upgrade-slot relics now pass battle validation because their only
 consumer is the already calibrated campaign upgrade-slot interface; acquired
 card upgrades are captured normally. The six-owner campaign calibration passes.
@@ -109,8 +116,8 @@ The historical later encounters use controlled native map jumps. New
 [natural campaign checkpoints](tests/fixtures/campaign-progressed.md) preserve
 four/six/seven preceding native victories and all offered rewards/upgrades without
 map jumps or authored stats. Strict progressed-deck wins at rings five and
-seven are accepted separately. Outer-boss Pyre-entry routing and eighth-ring
-advisor victory remains outstanding; controlled Pyre-entry integration is
+seven are accepted separately. Eighth-ring advisor victory remains outstanding;
+controlled Pyre-entry integration is
 described above. A second native preparation branch preserves 245 gold by
 declining merchant purchases, with complete offers/prices and the same accepted
 seventh-ring replay retained in `campaign-progressed-ring8-gold.zip`.
