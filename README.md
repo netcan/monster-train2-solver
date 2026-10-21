@@ -24,3 +24,4 @@ pwsh -NoProfile -File scripts/Check-AdvisorPackage.ps1 -Package <输出的ZIP路
 
 模拟器和求解器的原生校准证据与边界见 [SIMULATION.md](SIMULATION.md)。
 卡牌和遗物的证据覆盖不等于任意组合均可求解。
+[剩余验收目标](docs/remaining-goals.md) 区分玩家版已验证行为和待完成的自然对局支持。

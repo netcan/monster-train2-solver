@@ -592,10 +592,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 if ($PlayerAdvisor) {
-    if ($Advisor -or $RollingAdvice -or $RollingInput -or $DotNetPlanner) {
-        throw 'PlayerAdvisor uses the real player overlay with a searched frozen-window Planner run.'
+    if ($Advisor -or $DotNetPlanner) {
+        throw 'PlayerAdvisor uses the real in-process player overlay without a development advisor.'
     }
-    $Planner = $true
+    $Planner = -not [bool]$RollingAdvice
     # Observe the same native mechanisms in the independent development trace.
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -609,7 +609,7 @@ if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires Rolli
 if ($RollingAdvice) {
     if ($Planner) { throw 'RollingAdvice and a frozen-window Planner run are separate test modes.' }
     $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
-    $PlannerTurn = 0; $Advisor = -not [bool]$RollingInput
+    $PlannerTurn = 0; $Advisor = -not [bool]$RollingInput -and -not [bool]$PlayerAdvisor
 }
 if (($OriginalStartRoomAttachment -and $OriginalStartRoomAttachmentFloor2) -or
     ($OriginalStartRoomAttachment -and $OriginalStartRoomAttachmentFloor3) -or
@@ -1794,7 +1794,7 @@ if ($Advisor -and ($trace.Advisor.Captures -lt 1 -or $trace.Advisor.PurityFailur
     -not (Test-Path -LiteralPath (Join-Path $profile 'advisor-ready.png')))) {
     throw 'Live advisor lacks pure capture, a rendered recommendation, background frames or action invalidation evidence.'
 }
-if ($PlayerAdvisor -and -not $PlannerInput) {
+if ($PlayerAdvisor -and -not $PlannerInput -and -not $RollingInput) {
     $playerEvidence = $trace.PlayerAdvisor.Overlay
     if ($trace.PlayerAdvisor.Assembly -cne 'MonsterTrain2Poju.Advisor' -or -not $trace.PlayerAdvisor.InteractionsPassed -or
         $playerEvidence.Captures -lt 1 -or $playerEvidence.PurityFailures -ne 0 -or $playerEvidence.Failures -ne 0 -or

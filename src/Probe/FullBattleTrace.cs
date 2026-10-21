@@ -684,6 +684,9 @@ namespace MonsterTrain2Poju.Probe
                 catch (Exception error) { CaptureFailure(error); }
             }
             log.LogInfo("BATTLE-TERMINAL won=" + won + " pyre=" + AllGameManagers.Instance!.GetSaveManager().GetTowerHP());
+#if DEVELOPMENT_PROBE
+            PlayerAdvisorProbe.CaptureTerminal();
+#endif
             // Tick exports once, after this native coroutine and its pending
             // observation wrappers have returned. Exporting here would duplicate
             // the entire capture and could still include an unfinished wrapper.

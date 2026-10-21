@@ -5,6 +5,7 @@ using System.Reflection;
 using BepInEx.Logging;
 using HarmonyLib;
 using MonsterTrain2Poju.Model;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -21,9 +22,12 @@ namespace MonsterTrain2Poju.Probe
         private static int phase, boundaryFrame, captureCount, publicationCount;
         private static long initialGeneration;
         private static ManualLogSource? log;
+        private static BattleTurnState? terminal;
         internal static bool InteractionsPassed { get; private set; }
         internal static bool IsPlanning => Get<bool>("IsPlanning");
         internal static BattleAdvice Advice => Get<BattleAdvice>("CurrentAdvice");
+        internal static BattleAdvisorOverlay.Publication LatestTiming =>
+            JArray.FromObject(Get<object>("Publications")).Last!.ToObject<BattleAdvisorOverlay.Publication>()!;
         internal static object? Evidence => !Enabled ? null : new
         {
             Assembly = type?.Assembly.GetName().Name,
@@ -54,6 +58,10 @@ namespace MonsterTrain2Poju.Probe
             Resolve();
             return (BattleTurnState)Call("CaptureReadOnly", AllGameManagers.Instance)!;
         }
+
+        internal static void CaptureTerminal()
+        { if (Enabled) terminal = Capture(); }
+        internal static BattleTurnState Terminal => terminal ?? throw new InvalidOperationException("Player terminal capture is missing.");
 
         internal static PlayCardAction? NativeAction(PlayCardAction? action)
         {

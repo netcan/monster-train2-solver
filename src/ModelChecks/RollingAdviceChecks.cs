@@ -86,9 +86,9 @@ internal static class RollingAdviceChecks
         Pair(source, replay, baseline);
         Console.WriteLine("ROLLING-ADVICE-VICTORY PASS: actual boss, native victory and winning fresh frozen replay.");
     }
-    internal static void Pair(FixtureValue source, FixtureValue replay, FixtureValue baseline)
+    internal static void FrozenPair(FixtureValue source, FixtureValue replay)
     {
-        Native(source); Native(replay); Accepted(baseline);
+        Native(source); Native(replay);
         FixtureValue[] first = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         FixtureValue[] second = replay.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         Require(first.Length == second.Length, "Fresh rolling replay has a different decision count.");
@@ -108,6 +108,12 @@ internal static class RollingAdviceChecks
             Require(Key(State(first[index].GetProperty("Planned")), plannedTerminal) ==
                 Key(State(second[index].GetProperty("Planned")), plannedTerminal), "Fresh replay changed the full forecast state or RNG.");
         }
+        Console.WriteLine("ROLLING-FROZEN-PAIR PASS: every input, root, successor, forecast and RNG matches in independent native processes.");
+    }
+    internal static void Pair(FixtureValue source, FixtureValue replay, FixtureValue baseline)
+    {
+        FrozenPair(source, replay); Accepted(baseline);
+        FixtureValue[] first = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         // A terminal pre-boss loss is still a useful full-battle mechanic control.
         // Suite counts distinct bosses only from actual decision-room occupants.
         BattleAdviceChecks.Native(source, requireBoss: false);

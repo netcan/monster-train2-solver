@@ -105,7 +105,7 @@ namespace MonsterTrain2Poju.Probe
         private static void Observe(BattleTurnState actual, bool terminal)
         {
 #if DEVELOPMENT_PROBE
-            if (PlayerAdvisorProbe.Enabled) actual = PlayerAdvisorProbe.Capture();
+            if (PlayerAdvisorProbe.Enabled) actual = terminal ? PlayerAdvisorProbe.Terminal : PlayerAdvisorProbe.Capture();
 #endif
             Record record = Records.Single();
             BattleTurnState expected = record.Expected[cursor - 1];

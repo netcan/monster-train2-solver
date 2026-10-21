@@ -129,3 +129,54 @@ different branch-mask capture settings, and the second exposed separate unit-ID
 allocation between assemblies. Neither is counted as successful evidence.
 Temporary player DLLs/config are archived inside the isolated run profile;
 the worker's prior config is restored even when acceptance fails.
+
+### Independent frozen-window replay
+
+The next fresh process uses the recorded player sequence without consuming new
+search results:
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 `
+  -Policy units-spells-and-junk -PlayerAdvisor -BinaryCapture -SkipBuild `
+  -PlannerInput .probe-runs/full-battle-units-spells-and-junk-20261021-193549-f77c2b1f/full-battle.mt2f
+dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- `
+  --planner-pair-only `
+  .probe-runs/full-battle-units-spells-and-junk-20261021-193549-f77c2b1f/full-battle.mt2f `
+  .probe-runs/full-battle-units-spells-and-junk-20261021-193815-14a08f1f/full-battle.mt2f
+```
+
+Replay profile: `full-battle-units-spells-and-junk-20261021-193815-14a08f1f`.
+It wins in 72.20 seconds, with 21 actions, seven EndTurns, settled terminal
+effects, protected files unchanged and four zero counters. The independent
+model checker passes all 12 steps in both processes, identical roots, frozen
+inputs, final full state and RNG; the replay record has zero search nodes.
+The observing player worker can still run in this replay process, but none of
+its newly computed recommendations chooses an input.
+
+### Whole-battle player advice
+
+`-PlayerAdvisor -RollingAdvice` consumes only the first step of each new real
+player publication, then requires a new matching publication for the next input.
+Its native terminal capture occurs after `StopCombatLoop`, before encounter
+cleanup can reset player capture identities. This capture hook exists only in
+the isolated development driver.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 `
+  -PlayerAdvisor -RollingAdvice -PlannerHorizon 3 -PlannerTimeLimitMs 3000 `
+  -BinaryCapture -SkipBuild -TimeoutSeconds 300
+```
+
+Source profile: `full-battle-units-spells-and-junk-20261021-194138-1f85eb5c`.
+The unmodified natural encounter wins in 220.43 seconds. All 27 inputs (20 card
+actions and seven EndTurns) come from player advice; 29 publications include
+the initial UI checks. Terminal effects settle, protected files remain unchanged,
+and capture/mismatch/unsupported/pending counters are all zero. The independent
+`--rolling-advice-only` checker replays every chosen action and every published
+continuation, verifies their states/RNG and confirms the final native victory.
+
+`--rolling-replay-pair-only <search> <replay>` checks the two native sequences
+without requiring a fixed-policy baseline or claiming an improvement over one.
+The existing development ring-one search/replay control passes this checker too.
+Only focused checks are run; no full fixture regression is needed for this
+acceptance-driver increment.

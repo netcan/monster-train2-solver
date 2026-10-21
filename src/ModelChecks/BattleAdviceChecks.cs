@@ -6,8 +6,14 @@ internal static class BattleAdviceChecks
 {
     internal static void Native(FixtureValue fixture, bool requireBoss = true)
     {
-        FixtureValue advice = fixture.GetProperty("Advisor");
         void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
+        FixtureValue advice = fixture.GetProperty("Advisor");
+        if (advice.ValueKind == FixtureKind.Null && fixture.TryGetProperty("PlayerAdvisor", out FixtureValue player))
+        {
+            Require(player.GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&
+                player.GetProperty("InteractionsPassed").GetBoolean(), "Real player entry point or UI acceptance is missing.");
+            advice = player.GetProperty("Overlay");
+        }
         Require(advice.GetProperty("Captures").GetInt32() > 0 && advice.GetProperty("PurityFailures").GetInt32() == 0,
             "Live capture changed native state or RNG.");
         Require(advice.GetProperty("Published").GetInt32() >= 2 && advice.GetProperty("Invalidations").GetInt32() > 0 &&

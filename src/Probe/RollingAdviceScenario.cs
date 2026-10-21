@@ -33,7 +33,11 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_ADVICE") == "1";
         private static bool Replay => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT"));
-        internal static bool WaitingForWorker => Enabled && !Replay && BattleAdvisorOverlay.Active?.IsPlanning == true;
+        internal static bool WaitingForWorker => Enabled && !Replay &&
+#if DEVELOPMENT_PROBE
+            !PlayerAdvisorProbe.Enabled &&
+#endif
+            BattleAdvisorOverlay.Active?.IsPlanning == true;
         internal static List<Decision> Records { get; } = new List<Decision>();
         private static FixtureValue[]? frozen;
         private static bool waiting;
@@ -42,6 +46,13 @@ namespace MonsterTrain2Poju.Probe
         internal static bool AwaitingAdvice(BattleTurnState root)
         {
             if (!Enabled) return false;
+#if DEVELOPMENT_PROBE
+            if (PlayerAdvisorProbe.Enabled)
+            {
+                if (waiting) Observe(PlayerAdvisorProbe.Capture(), false);
+                return !Replay && !PlayerAdvisorProbe.ReadyFor();
+            }
+#endif
             Observe(root, false);
             return !Replay && !BattleAdvisorOverlay.Active!.ReadyFor(root);
         }
@@ -50,6 +61,9 @@ namespace MonsterTrain2Poju.Probe
         {
             action = null;
             if (!Enabled) return false;
+#if DEVELOPMENT_PROBE
+            if (PlayerAdvisorProbe.Enabled) root = PlayerAdvisorProbe.Capture();
+#endif
             if (Records.Count >= 256) throw new InvalidOperationException("Rolling advice exceeded the battle decision limit.");
             Decision decision;
             if (Replay)
@@ -68,13 +82,24 @@ namespace MonsterTrain2Poju.Probe
             }
             else
             {
-                BattleAdvisorOverlay advisor = BattleAdvisorOverlay.Active!;
-                if (!advisor.ReadyFor(root)) throw new InvalidOperationException("Rolling driver consumed stale advice.");
-                BattleAdvice advice = advisor.CurrentAdvice;
+                BattleAdvice advice;
+                BattleAdvisorOverlay.Publication timing;
+#if DEVELOPMENT_PROBE
+                if (PlayerAdvisorProbe.Enabled)
+                {
+                    if (!PlayerAdvisorProbe.ReadyFor()) throw new InvalidOperationException("Rolling driver consumed stale player advice.");
+                    advice = PlayerAdvisorProbe.Advice; timing = PlayerAdvisorProbe.LatestTiming;
+                }
+                else
+#endif
+                {
+                    BattleAdvisorOverlay advisor = BattleAdvisorOverlay.Active!;
+                    if (!advisor.ReadyFor(root)) throw new InvalidOperationException("Rolling driver consumed stale advice.");
+                    advice = advisor.CurrentAdvice; timing = advisor.Publications.Last();
+                }
                 BattlePlanResult plan = advice.Plan;
                 PlannerReplayScenario.Step[] steps = plan.Steps.Select(step => new PlannerReplayScenario.Step
                     { Action = step.Action, IsEndTurn = step.IsEndTurn }).ToArray();
-                BattleAdvisorOverlay.Publication timing = advisor.Publications.Last();
                 if (Records.Count > 0 && timing.Generation <= Records.Last().Generation)
                     throw new InvalidOperationException("Rolling action did not consume a new publication.");
                 decision = new Decision { Root = root, Action = steps[0].Action, IsEndTurn = steps[0].IsEndTurn,
@@ -95,6 +120,9 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             Records.Add(decision); waiting = true; action = decision.Action;
+#if DEVELOPMENT_PROBE
+            if (PlayerAdvisorProbe.Enabled) action = PlayerAdvisorProbe.NativeAction(action);
+#endif
             log.LogInfo("ROLLING-CHOOSE mode=" + decision.Mode + " decision=" + Records.Count + " turn=" + root.Spawn.Turn +
                 " endTurn=" + decision.IsEndTurn + " generation=" + decision.Generation + " nodes=" + decision.Nodes +
                 " searchMs=" + decision.Timing?.SearchMs + " responseMs=" + decision.Timing?.EndToEndMs);
@@ -122,7 +150,11 @@ namespace MonsterTrain2Poju.Probe
         {
             if (!Enabled || terminalObserved) return;
             if (Records.Count == 0 || !waiting) throw new InvalidOperationException("Native battle ended without a rolling action.");
-            Observe(FullBattleTrace.Active!.CaptureDecision(), true);
+            Observe(
+#if DEVELOPMENT_PROBE
+                PlayerAdvisorProbe.Enabled ? PlayerAdvisorProbe.Terminal :
+#endif
+                FullBattleTrace.Active!.CaptureDecision(), true);
             if (Records.Last().Outcome is not (RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated))
                 throw new InvalidOperationException("Rolling model did not predict native combat completion.");
             if (Replay && frozen!.Length != Records.Count) throw new InvalidOperationException("Native battle ended before the frozen rolling sequence.");
