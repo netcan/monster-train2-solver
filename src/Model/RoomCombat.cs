@@ -2651,7 +2651,7 @@ namespace MonsterTrain2Poju.Model
                 if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: target.Alive));
-                if (!source.Preview && !target.Alive && IsTerminalBossDeath(target))
+                if (!source.Preview && !target.Alive && target.Count("undying") <= 0 && IsTerminalBossDeath(target))
                 { battleWon = true; context = context?.WithBossesDead(); }
                 Emit(kind, actor, target, damage);
                 if (attackingTrigger && actor != null && actor != target)
@@ -4096,7 +4096,8 @@ namespace MonsterTrain2Poju.Model
                 string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
                 bool scaleUpgrade = false, bool accumulateScaledUpgradeRecord = true)
             {
-                RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(UpgradeRoom(target), target.Source.Id, upgrade, lifetime,
+                RoomCombatState upgradeRoom = UpgradeRoom(target);
+                RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(upgradeRoom, target.Source.Id, upgrade, lifetime,
                     remove, roomCapacity, sourceCardId, kind, (state, changed, sacrifice) =>
                     {
                         context = state.Context;
@@ -4104,7 +4105,11 @@ namespace MonsterTrain2Poju.Model
                         {
                             CombatUnit? live = state.Units.FirstOrDefault(unit => unit.Id == other.Source.Id);
                             if (live != null) other.Apply(live);
-                            else { other.InRoom = false; other.Removed = true; }
+                            // OnAttacking can upgrade the attacker between lethal
+                            // damage and the victim's Undying revival. A dying unit
+                            // excluded from this settlement was not removed by it.
+                            else if (upgradeRoom.Units.Any(unit => unit.Id == other.Source.Id))
+                            { other.InRoom = false; other.Removed = true; }
                         }
                         bool wasAlive = target.Alive;
                         target.Apply(changed);

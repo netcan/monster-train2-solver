@@ -1551,6 +1551,7 @@ namespace MonsterTrain2Poju.Probe
                 AbilityCardOperations = AbilityCardProbe.Records,
                 AbilityCardAccesses = AbilityCardProbe.Accesses,
                 UnitTurns = UnitTurnBeginProbe.Records,
+                PreviewAttackDiagnostic = PreviewAttackDiagnostic.Records,
                 TeamTurnBegins = TeamTurnBeginProbe.Records,
                 PreHandDiscards = PreHandDiscardProbe.Records,
                 PreCombats = PreCombatProbe.Records,
