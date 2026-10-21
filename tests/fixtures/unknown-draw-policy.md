@@ -27,6 +27,9 @@ two decisions expand four hypothetical states and produce two revealed
 observation branches. The actual-order hypothesis also matches its original
 native EndTurn state/RNG. Independent policy replay matches the weighted value,
 and deliberately corrupted probabilities are rejected.
+Weighted scores use compensated summation. Verification also rejects a
+one-health score error at the evaluator's 1e12 win/loss scale; 4,096 unequal
+weighted aliases supply a numerical control without extra battle expansions.
 
 A separate controlled evaluator uses the accepted native deployment root,
 two hidden-order hypotheses with probabilities 0.25/0.75, and two legal original

@@ -86,14 +86,14 @@ namespace MonsterTrain2Poju.Model
             }
             BattleBeliefPolicy Leaf(IReadOnlyList<BattleBeliefWorld> worlds, bool complete)
             {
-                double total = worlds.Sum(world => world.Weight), value = 0;
+                double total = worlds.Sum(world => world.Weight); var value = new CompensatedSum();
                 foreach (var world in worlds)
                 {
                     double score = evaluate(world.State, world.Outcome);
                     if (double.IsNaN(score) || double.IsInfinity(score)) throw new InvalidOperationException("Belief scores must be finite.");
-                    value += world.Weight / total * score;
+                    value.Add(world.Weight / total * score);
                 }
-                return new BattleBeliefPolicy(null, false, true, value, complete,
+                return new BattleBeliefPolicy(null, false, true, value.Value, complete,
                     worlds.All(world => Terminal(world.Outcome)), Array.Empty<BattleBeliefBranch>());
             }
             BattleBeliefPolicy Visit(IReadOnlyList<BattleBeliefWorld> worlds, int remaining)
@@ -132,9 +132,10 @@ namespace MonsterTrain2Poju.Model
                         branches.Add(new BattleBeliefBranch(group.Key, posterior.Sum(world => world.Weight) / mass, Visit(posterior, remaining - 1)));
                     }
                     if (!branches.All(branch => branch.Policy.CompletedHorizon)) continue;
-                    double value = branches.Sum(branch => branch.Probability * branch.Policy.ExpectedScore);
-                    if (best == null || value < best.ExpectedScore)
-                        best = new BattleBeliefPolicy(successors[0].Action, successors[0].EndTurn, false, value, true,
+                    var value = new CompensatedSum();
+                    foreach (var branch in branches) value.Add(branch.Probability * branch.Policy.ExpectedScore);
+                    if (best == null || value.Value < best.ExpectedScore)
+                        best = new BattleBeliefPolicy(successors[0].Action, successors[0].EndTurn, false, value.Value, true,
                             branches.All(branch => branch.Policy.AllTerminal), branches);
                 }
                 return best ?? Leaf(worlds, false);

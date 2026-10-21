@@ -42,6 +42,20 @@ internal static class BattleBeliefChecks
         bool rejected = false;
         try { BattleBeliefReplay.Verify(belief, corrupted); } catch (InvalidOperationException) { rejected = true; }
         Require(rejected, "Independent replay accepted a corrupted posterior probability.");
+        var wrongScore = new BattleBeliefPolicy(plan.Policy.Action, plan.Policy.IsEndTurn, false,
+            plan.Policy.ExpectedScore + 1, true, plan.Policy.AllTerminal, plan.Policy.Branches);
+        rejected = false;
+        try { BattleBeliefReplay.Verify(belief, wrongScore); } catch (InvalidOperationException) { rejected = true; }
+        Require(rejected, "Large terminal-score scale hid a one-health expected-value error.");
+        // Unequal weights across many aliases exercise summation stability at
+        // the terminal win/loss scale, without adding model expansions.
+        var many = new BattleBelief(Enumerable.Range(1, 4096).Select(index =>
+            new BattleBeliefWorld(root, index)).ToArray(), true, "WeightedAliasNumericalControl");
+        var weighted = BattleBeliefPlanner.Plan(many, new BattleBeliefOptions(maxDecisions: 0),
+            (_, _) => -1e12 - 104);
+        BattleBeliefReplay.Verify(many, weighted.Policy, (_, _) => -1e12 - 104);
+        Require(Math.Abs(weighted.Policy.ExpectedScore - (-1e12 - 104)) < 0.01,
+            "Many weighted hypotheses lost terminal health precision.");
         var sampled = DrawOrderBelief.Create(root, 1);
         var estimate = BattleBeliefPlanner.Plan(sampled, new BattleBeliefOptions(64, 1, TimeSpan.FromSeconds(15)));
         Require(!sampled.ExhaustiveDistribution && !estimate.CertifiedFiniteHorizonOptimal,
