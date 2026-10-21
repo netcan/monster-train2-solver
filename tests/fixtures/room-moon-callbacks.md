@@ -72,9 +72,37 @@ attachment model now performs these callbacks. Original Full-only and
 callback-free Eclipse action chains still pass. Stale Full understanding,
 enemy callbacks, other callback payloads, previews and friendly movement
 through moon rooms remain guarded. The integrated New-callback action chain
-and real player entry remain separate acceptance steps.
+and real player entry require their own acceptance below.
 
 ```powershell
 scripts/Run-FullBattleProbe.ps1 -RoomMoonCallbacksShade -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-callback-only tests/fixtures/room-moon-callback-calibration-shade.mt2f
 ```
+
+## Combined Full/New original payload action chain
+
+`full-battle-eclipse-chamber-shade-callbacks.mt2f` records profile
+`full-battle-units-spells-and-junk-20261021-225815-f36d4137` (61.87 seconds).
+Three authored Silent carriers retain the two original Selene triggers plus
+the two original Nightingale triggers. The original definitions are unchanged.
+Eight plays and five EndTurns win with Pyre80, zero failure counters, settled
+terminal effects and unchanged protected files. All complete native action
+boundaries, sixteen immutable branches, six Silent growth witnesses and six
+floor/subtype controls pass. New upgrades appear after installation/later birth
+and disappear after replacement while the control floor remains unchanged.
+
+The refresh observer also captures the incoming native character-trigger queue.
+Both full-refresh calls inherit one pending New gained trigger from attachment
+installation; native monster resource refresh drains it before refreshing
+understanding. The checker independently drains that captured queue and then
+models the refresh. A previous diagnostic without the incoming queue was not
+curated: action boundaries matched, but its intermediate refresh inputs omitted
+queued work. Empty-queue legacy fixtures continue to pass their own check.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberShadeCallbacks -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-callbacks-only tests/fixtures/full-battle-eclipse-chamber-shade-callbacks.mt2f
+```
+
+Real player entry, previews and physical movement remain separate from this
+authored fixed-policy acceptance. No Mac package is built.

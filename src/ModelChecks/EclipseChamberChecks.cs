@@ -28,7 +28,28 @@ internal static class EclipseChamberChecks
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
             void Replay()
             {
-                var result = RoomMoonPhaseModel.Refresh(before, refresh);
+                TrainCombatState state = before;
+                if (row.TryGetProperty("PendingBefore", out FixtureValue pending))
+                {
+                    var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
+                    foreach (FixtureValue item in pending.EnumerateArray())
+                    {
+                        Require(!item.GetProperty("HasSpecialContext").GetBoolean() && item.GetProperty("CanAttackOrHeal").GetBoolean() &&
+                            item.GetProperty("Kind").GetString() is "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost",
+                            "Uncalibrated incoming refresh queue.");
+                        int roomIndex = item.GetProperty("RoomIndex").GetInt32();
+                        CombatUnit unit = state.Rooms.Single(room => room.RoomIndex == roomIndex).Units.Single(unit => unit.Id == item.GetProperty("UnitId").GetInt32());
+                        queue.Add(new RoomCombatModel.QueuedCharacterTrigger(roomIndex, unit, item.GetProperty("Kind").GetString()!,
+                            canFireTriggers: item.GetProperty("CanFireTriggers").GetBoolean(), triggerCount: item.GetProperty("TriggerCount").GetInt32()));
+                    }
+                    // Monster resource refresh drains the incoming native queue
+                    // before the optional character-understanding refresh.
+                    TrainCombatResult drained = TrainCombatModel.ApplyCharacterQueue(state, queue);
+                    Require(drained.Supported, drained.UnsupportedReason ?? "Incoming moon queue unsupported.");
+                    state = drained.State!;
+                    Require(row.GetProperty("PendingAfter").GetInt32() == 0, "Refresh boundary retains unmodeled queued work.");
+                }
+                var result = RoomMoonPhaseModel.Refresh(state, refresh);
                 Require(result.Supported, result.UnsupportedReason ?? "Refresh unsupported.");
                 Equal(result.State, after, "native complete resource/character refresh");
             }
@@ -88,7 +109,23 @@ internal static class EclipseChamberChecks
             "Missing three live callback actors, mixed masks or original phase upgrades.");
         Require(states.Any(state => state.Spawn.Train.Rooms[1].Units.Any(unit => unit.Triggers.Any(trigger =>
                 trigger.Kind == "OnMoonLit") && unit.MoonPhaseMask == 6)), "Missing outside-floor callback control.");
-        Console.WriteLine("ECLIPSE-CALLBACK-CHAIN PASS authoredCarriers=true nativeOriginalPayloads=true callbackActors=3 mixedMasks=true outsideFloor=true");
+        bool shade = root.TryGetProperty("EclipseChamberShadeCallbacks", out FixtureValue shadeFlag) && shadeFlag.GetBoolean();
+        if (shade)
+        {
+            Require(root.GetProperty("EclipseChamberRecords").EnumerateArray().Count(row =>
+                row.GetProperty("PendingBefore").EnumerateArray().Any(item => item.GetProperty("Kind").GetString() == "OnMoonShade")) == 2,
+                "Missing both incoming native attachment callback queues.");
+            Require(actors.All(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnMoonShade") &&
+                unit.Triggers.Any(trigger => trigger.Kind == "OnMoonshadeLost")), "Missing original New callback payloads.");
+            foreach (int index in new[] { 4, 5, 7 })
+                Require(states[index].Spawn.Train.Rooms[0].Units.Where(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnMoonShade"))
+                    .All(unit => unit.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade")),
+                    "Original New gained upgrade missing after installation or later birth.");
+            Require(states[6].Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit =>
+                unit.Modifiers!.Upgrades.All(upgrade => upgrade.AssetKey != "Nightingale_Upgrade")),
+                "Original New lost upgrade retained after replacement or leaked to the control floor.");
+        }
+        Console.WriteLine($"ECLIPSE-CALLBACK-CHAIN PASS authoredCarriers=true nativeOriginalPayloads=true callbackActors=3 mixedMasks=true outsideFloor=true shadeCallbacks={shade}");
     }
     private static void Equal<T>(T predicted, T actual, string label)
     {
