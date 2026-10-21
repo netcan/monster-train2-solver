@@ -17,6 +17,7 @@ param(
     [switch] $OuterBossRelentless,
     [switch] $OuterBossTurns,
     [switch] $OuterBossBirth,
+    [switch] $OuterBossPyre,
     [string] $RollingInput = '',
     [string] $InputProfile = '',
     [ValidateRange(0, 20)] [int] $BattleDistance = 0,
@@ -586,6 +587,7 @@ $ErrorActionPreference = 'Stop'
 if ($OuterBossRelentless -and -not $OuterBossPhases) { throw '-OuterBossRelentless requires -OuterBossPhases.' }
 if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns requires -PhysicalSpawnPoints.' }
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
+if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
 if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
 if ($RollingAdvice) {
     if ($Planner) { throw 'RollingAdvice and a frozen-window Planner run are separate test modes.' }
@@ -1156,6 +1158,7 @@ $environment = @{
     MT2_PROBE_OUTER_BOSS_RELENTLESS = $(if ($OuterBossRelentless) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBossTurns) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })
+    MT2_PROBE_OUTER_BOSS_PYRE = $(if ($OuterBossPyre) { '1' } else { '0' })
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"
     MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
     MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })

@@ -1,8 +1,23 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 824 archives (769 full battles and
-55 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 825 archives (769 full battles and
+56 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`outer-boss-pyre-calibration.mt2f` uses the explicit native spawn-queue control
+to reach three destroyed floors and the next pre-combat Pyre entry. The model
+matches movement to the reserved Pyre anchor, ascend/shift/sentry callbacks,
+immediate tower combat, prior-frame destruction and the native terminal loss.
+Native terminal stop cancels the active movement coroutine; the probe records
+that cancellation separately from a normal return and captures after the
+acknowledged stop. All battle/controller/physical/aura/RNG state and room rules
+match; the deleted native card manager's terminal card-definition cache is
+excluded. Source `20261021-135324-4dde3c8f` took 66.51 seconds and left protected
+files unchanged. Its full diagnostic retains one mismatch caused by the explicit
+mid-turn queue control and one guarded deployment-to-Pyre EndTurn; this component
+does not claim a natural complete-battle acceptance. Validate with
+`--outer-boss-pyre-only`, capture with `-OuterBossPyre -OuterBossPhases
+-OuterBossRelentless -OuterBossBirth -OuterBossTurns -PhysicalSpawnPoints`.
 
 `full-battle-progressed-ring8-no-cards.mt2f` and
 `full-battle-progressed-ring8-policy.mt2f` use the legal `campaign-progressed-ring8.zip`

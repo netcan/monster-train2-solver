@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 824 binary archives, including 769
-full battles and 55 component calibrations. The card index accepts 768 battles;
+Current curated inventory (2026-10-21): 825 binary archives, including 769
+full battles and 56 component calibrations. The card index accepts 768 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -65,7 +65,13 @@ failure counters zero. Their frozen model replays begin at a single deployment
 root, including deployment card plays, and match every successor through the
 native terminal losses. These establish full deployment integration for this
 original boss. Natural eighth-ring victory, effect-bearing boss spells and
-terminal boss-action callbacks remain unverified. Pyre-entry routing is guarded
+terminal boss-action callbacks remain unverified. `OuterBossPyreModel` separately
+matches an isolated native Pyre-entry loss after the explicit spawn-queue control:
+reserved-anchor movement, ascend/shift/sentry callbacks, immediate tower combat,
+frame-bound destruction and terminal state match. Native stops the combat loop
+and cancels the movement coroutine, so capture uses the acknowledged terminal
+stop. The terminal card-definition cache is excluded; all room rules and gameplay
+state remain compared. Complete EndTurn integration of this boundary is still guarded
 explicitly, and the default capture mode retains its previous coverage guards.
 Native upgrade-slot relics now pass battle validation because their only
 consumer is the already calibrated campaign upgrade-slot interface; acquired

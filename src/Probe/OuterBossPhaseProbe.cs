@@ -34,6 +34,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<Record> Records = new List<Record>();
         private static readonly List<string> Errors = new List<string>();
         private static readonly List<object> QueueControls = new List<object>();
+        internal static IReadOnlyList<object> Controls => QueueControls;
         private static Record? pending;
         private static T Field<T>(object owner, string name) => (T)AccessTools.Field(owner.GetType(), name).GetValue(owner);
         private static bool Capturing => Enabled && FullBattleTrace.Active != null && !AllGameManagers.Instance.GetSaveManager().PreviewMode;

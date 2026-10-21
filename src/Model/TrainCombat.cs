@@ -727,6 +727,23 @@ namespace MonsterTrain2Poju.Model
             }
         }
 
+        internal static TrainCombatResult ResolvePyreCombat(TrainCombatState source)
+        {
+            string? error = Validate(source);
+            if (error != null) return Unsupported(error);
+            RoomCombatState[] rooms = source.Rooms.ToArray();
+            int pyre = rooms.Length - 1;
+            bool external = NeedsTowerTargets(rooms[pyre]);
+            var targets = external ? TowerTargets(rooms[pyre], rooms) : Array.Empty<(int RoomIndex, CombatUnit Unit)>();
+            RoomCombatResult result = RoomCombatModel.Resolve(rooms[pyre],
+                refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
+                updateSelectedRoom: false, externalTargets: external ? targets : null);
+            if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+            rooms[pyre] = result.State!;
+            if (external) ApplyTowerUpdates(rooms, targets, result.RetainedUnits);
+            return new TrainCombatResult(Freeze(source, rooms, result.State!.Context), result.Outcome, new[] { result });
+        }
+
         private static (int RoomIndex, CombatUnit Unit)[] TowerTargets(RoomCombatState activeRoom,
             IReadOnlyList<RoomCombatState> rooms, int excludedUnitId = 0) => rooms
             .Where(room => room.RoomIndex != activeRoom.RoomIndex)

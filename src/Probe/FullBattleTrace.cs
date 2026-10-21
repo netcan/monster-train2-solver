@@ -668,6 +668,7 @@ namespace MonsterTrain2Poju.Probe
             actions.Complete();
             turns.Complete(won ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated);
             Checkpoint("terminal");
+            OuterBossPyreProbe.CompleteTerminal();
             if (won && OriginalBalatroEventCavendishScenario.Prepared)
             {
                 try { OriginalBalatroEventCavendishScenario.CaptureCardlessCallbacks(AllGameManagers.Instance!, log); }
@@ -685,6 +686,7 @@ namespace MonsterTrain2Poju.Probe
             BossActionControllerProbe.Write(this, log);
             OuterBossPhaseProbe.Write(log);
             OuterBossBirthProbe.Write(log);
+            OuterBossPyreProbe.Write(log);
             CharacterRemovalProbe.Write();
             PhysicalPlaneProbe.Write();
             EnchantmentSourceOrderProbe.Write();
