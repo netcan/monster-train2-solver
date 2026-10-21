@@ -31,6 +31,7 @@ namespace MonsterTrain2Poju.Probe
         private int eventIndex;
         private int quitCode;
         private int savedRing;
+        private bool nativeLost;
 
         internal CampaignProgressScenario(ManualLogSource log)
         {
@@ -65,6 +66,7 @@ namespace MonsterTrain2Poju.Probe
             SaveManager? save = m?.GetSaveManager();
             ScreenManager? screens = m?.GetScreenManager();
             if (save == null || screens == null) return;
+            if (nativeLost) { Finish(false, "Native campaign battle lost; retained pre-battle checkpoint is unchanged."); return; }
             if (Time.realtimeSinceStartup > heartbeat)
             {
                 heartbeat = Time.realtimeSinceStartup + 15f;
@@ -232,7 +234,9 @@ namespace MonsterTrain2Poju.Probe
             {
                 battleDistance = save.GetCurrentDistance(); lastTurn = combat.GetTurnCount();
                 Record("turn", new { distance = battleDistance, turn = lastTurn, pyre = m.GetPlayerManager().GetTowerHP(),
-                    hand = cards.GetHand().Select(CardDescription).ToList() });
+                    hand = cards.GetHand().Select(CardDescription).ToList(),
+                    units = m.GetMonsterManager().GetCharactersReadOnly().Select(UnitDescription).ToList(),
+                    enemies = m.GetHeroManager().GetCharactersReadOnly().Select(UnitDescription).ToList() });
             }
             var choices = new List<(CardState card, int room, SpawnPoint? drop, double score)>();
             foreach (CardState card in cards.GetHand())
@@ -264,14 +268,42 @@ namespace MonsterTrain2Poju.Probe
                     double score = card.GetCardType() == CardType.Monster ? 1000 + CardValue(card) + r * 50 : 100;
                     CharacterState? target = drop?.GetCharacterState();
                     if (card.GetCardType() == CardType.Monster)
-                        score += card.GetAssetName().Contains("Steward") ? -(drop?.GetIndexInRoom() ?? 0) : (drop?.GetIndexInRoom() ?? 0);
+                    {
+                        // Put a healthier body in front of an existing fragile
+                        // attacker, using only visible native card/unit stats.
+                        bool tank = card.GetHealth() > units.Where(x => x.GetTeamType() == Team.Type.Monsters)
+                            .Select(x => (float)x.GetHP()).DefaultIfEmpty(0).Max();
+                        score += (tank ? -1 : 1) * (drop?.GetIndexInRoom() ?? 0);
+                        if (tank && units.Any(x => x.GetSpawnerCard()?.IsChampionCard() == true))
+                            score += 100 + card.GetHealth() * 2;
+                    }
                     else if (target != null)
-                        score += target.GetTeamType() == Team.Type.Heroes ? 400 - target.GetHP() : 150 + target.GetAttackDamage();
+                    {
+                        // Native targeting permits several damage and buff
+                        // spells on either team. Legality alone is not utility.
+                        bool harmful = card.GetEffectStates().Any(effect =>
+                            effect.GetSourceCardEffectData().GetEffectStateName() is "CardEffectDamage" or "CardEffectKill" ||
+                            effect.GetParamStatusEffectStackData().Any(status =>
+                                m.GetStatusEffectManager().GetStatusEffectDataById(status.statusId)?.GetDisplayCategory() ==
+                                    StatusEffectData.DisplayCategory.Negative));
+                        if (harmful != (target.GetTeamType() == Team.Type.Heroes)) continue;
+                        score += target.GetTeamType() == Team.Type.Heroes ? 400 - target.GetHP() :
+                            150 + target.GetAttackDamage() + (target.GetSpawnerCard()?.IsChampionCard() == true ? 500 : 0);
+                        if (!harmful && target.GetSpawnerCard()?.IsChampionCard() == true && card.IsConsumeRemainingEnergyCostType())
+                            score += 800;
+                    }
                     else score += units.Count(x => x.GetTeamType() == Team.Type.Heroes) * 25 + r;
+                    if (card.GetCardType() == CardType.Spell && card.GetCostWithoutAnyModifications() == 0 &&
+                        !card.IsConsumeRemainingEnergyCostType() && card.GetEffectStates().Any(effect =>
+                            effect.GetSourceCardEffectData().GetEffectStateName() is "CardEffectDraw" or "CardEffectDrawType"))
+                        score += 1600;
                     choices.Add((card, r, drop, score));
                 }
             }
             var best = choices.OrderByDescending(x => x.score).FirstOrDefault();
+            // Deployment precedes abilities; useful abilities precede ordinary
+            // spells so that those spells cannot spend all of their ember first.
+            if ((best.card == null || best.card.GetCardType() != CardType.Monster) && PlayAbility(m, save, combat, cards)) return;
             if (best.card != null)
             {
                 if (rooms.GetSelectedRoom() != best.room)
@@ -280,15 +312,45 @@ namespace MonsterTrain2Poju.Probe
                 }
                 var error = default(CommonSelectionBehavior.SelectionError);
                 int index = cards.GetHand().IndexOf(best.card);
+                int? point = best.drop?.GetIndexInRoom();
+                CharacterState? target = best.drop?.GetCharacterState();
+                string? targetName = target?.GetSourceCharacterData().name, targetTeam = target?.GetTeamType().ToString();
                 if (!cards.PlayCard(index, best.drop, ref error)) throw new InvalidOperationException("Native campaign card rejected: " + error);
-                Record("play", new { card = best.card.GetAssetName(), room = best.room, point = best.drop?.GetIndexInRoom() });
+                Record("play", new { card = best.card.GetAssetName(), room = best.room, point, target = targetName, targetTeam });
                 return;
             }
-            foreach (CharacterState actor in m.GetMonsterManager().GetCharactersReadOnly())
-                if (actor.CanActivateUnitAbility() && actor.ActivateUnitAbility(cards))
-                { Record("ability", new { unit = actor.GetSourceCharacterData().name }); return; }
             Command("Command_EndTurn").Invoke(null, null);
             Record("end-turn", new { distance = battleDistance, turn = lastTurn });
+        }
+
+        private bool PlayAbility(AllGameManagers m, SaveManager save, CombatManager combat, CardManager cards)
+        {
+            foreach (CharacterState actor in m.GetMonsterManager().GetCharactersReadOnly())
+            {
+                if (!actor.CanActivateUnitAbility()) continue;
+                CardState ability = actor.GetUnitAbilityCardState();
+                RoomState room = actor.GetCurrentRoom();
+                if (ability == null || room == null || !room.IsRoomEnabled()) continue;
+                var drops = new List<SpawnPoint?>();
+                if (ability.GetTargetHighlightType() == TargetHighlightType.Room && TargetHelper.IsCardDropTargetRoom(ability)) drops.Add(null);
+                else if (ability.GetTargetHighlightType() == TargetHighlightType.Character)
+                {
+                    var targets = new List<CharacterState>(); combat.GetTargetCharacters(targets, ability, room, actor);
+                    drops.AddRange(targets.OrderByDescending(x => x.GetAttackDamage()).Select(x => x.GetSpawnPoint()));
+                }
+                foreach (SpawnPoint? drop in drops)
+                {
+                    if (!combat.TestEffects(ability.GetEffectStates(), room.GetRoomIndex(), ability, actor, drop, actor, null, out _)) continue;
+                    RoomManager rooms = m.GetRoomManager();
+                    if (rooms.GetSelectedRoom() != room.GetRoomIndex())
+                    { selectingRoom = room.GetRoomIndex(); save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(selectingRoom.Value)); return true; }
+                    if (!cards.PlayAnyCard(ability, out _, actor, drop, ignoreCost: false, discardCard: false,
+                        fromDirectPlay: true, characterThatActivatedAbility: actor)) throw new InvalidOperationException("Native ability play rejected.");
+                    Record("ability", new { unit = actor.GetSourceCharacterData().name, ability = ability.GetAssetName(), room = room.GetRoomIndex() });
+                    return true;
+                }
+            }
+            return false;
         }
 
         private bool Click(GameUISelectableButton? button, string kind, object? data = null)
@@ -321,6 +383,14 @@ namespace MonsterTrain2Poju.Probe
         private static object CardDescription(CardState card) => new { asset = card.GetAssetName(), id = card.GetID(),
             attack = card.GetTotalAttackDamage(), health = card.GetHealth(), size = card.GetSize(),
             upgrades = card.GetCardStateModifiers().GetCardUpgrades().Select(x => x.GetAssetName()).ToList() };
+        private static object UnitDescription(CharacterState unit)
+        {
+            var statuses = new List<CharacterState.StatusEffectStack>(); unit.GetStatusEffects(ref statuses);
+            return new { unit = unit.GetSourceCharacterData().name, room = unit.GetCurrentRoomIndex(),
+                point = unit.GetSpawnPoint()?.GetIndexInRoom(), hp = unit.GetHP(), attack = unit.GetAttackDamage(),
+                statuses = statuses.Select(x => new { id = x.State.GetStatusId(), count = x.Count }).ToList(),
+                ability = unit.GetUnitAbilityCardState()?.GetAssetName(), available = unit.CanActivateUnitAbility() };
+        }
         private static object DescribeDraft(IDraftableUI item) => item is CardUI card ? CardDescription(card.GetCardState()) :
             item is RelicInfoUI relic ? (object)new { relic = relic.relicData.name, id = relic.relicData.GetID() } :
             new { ui = item.GetType().Name, name = item.rootTransform.name };
@@ -339,6 +409,7 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix(bool combatWon)
             {
                 if (active == null || AllGameManagers.Instance.GetSaveManager().PreviewMode) return;
+                if (!combatWon) active.nativeLost = true;
                 active.Record("battle-outcome", new { won = combatWon, distance = AllGameManagers.Instance.GetSaveManager().GetCurrentDistance(),
                     pyre = AllGameManagers.Instance.GetPlayerManager().GetTowerHP() });
             }

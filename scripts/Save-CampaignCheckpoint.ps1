@@ -51,7 +51,7 @@ foreach ($name in @('saves/save-singlePlayer.json', 'metagameSave.json', 'prefer
 }
 # Bundle the retained native choice history and each predecessor's input hash.
 $cursor = $Profile; $visited = @{}; $depth = 0
-while ((Split-Path $cursor -Parent) -ieq $profilesRoot -and -not $visited.ContainsKey($cursor)) {
+while ((Split-Path $cursor -Parent) -ieq $profilesRoot -and (Test-Path -LiteralPath $cursor) -and -not $visited.ContainsKey($cursor)) {
     $visited[$cursor] = $true
     foreach ($name in @('campaign-audit.jsonl', 'campaign-parent-audit.jsonl', 'campaign-input.json', 'native-checkpoint-input.json')) {
         $path = Join-Path $cursor $name
