@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 815 binary archives, including 767
-full battles and 48 component calibrations. The card index accepts 766 battles;
+Current curated inventory (2026-10-21): 816 binary archives, including 767
+full battles and 49 component calibrations. The card index accepts 766 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -27,9 +27,12 @@ exact RNG and immutable inputs. Its three targeting behaviors include visit-age
 priority, initial-action reuse and post-action floor changes. The separate
 `BossActionControllerModel` matches 14 real controller calls and 1,152 detached
 native transitions, including initial-action retention, repeat exhaustion,
-invalid-action skipping and the destruction group. These components do not yet
-integrate boss spells, action-group progression, movement or room destruction
-into EndTurn. The diagnostic eighth-ring battle remains guarded.
+invalid-action skipping and the destruction group. `OuterBossPhaseModel` now
+combines targeting, controller progression and movement across 11 settled native
+casting phases, including aura state, physical points and every captured RNG
+stream. It also retains five post-combat no-op controls and immutable parents.
+Relentless transition, room destruction and EndTurn integration remain guarded;
+the source diagnostic loses with 42 unsupported stages and zero other counters.
 Native upgrade-slot relics now pass battle validation because their only
 consumer is the already calibrated campaign upgrade-slot interface; acquired
 card upgrades are captured normally. The six-owner campaign calibration passes.

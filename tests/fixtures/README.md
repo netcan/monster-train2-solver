@@ -1,8 +1,21 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 815 archives (767 full battles and
-48 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 816 archives (767 full battles and
+49 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`outer-boss-phase-calibration.mt2f` retains 11 settled native casting phases for
+`Boss_Level8_AllyBuffer`: six pre-combat actions, five post-combat no-ops, five
+floor changes and one reused initial action. `--outer-boss-phase-only` compares
+the complete battle, physical points, aura targets, action/controller cursors,
+all captured RNG streams and immutable parent branches. The native boundary is
+after the following `RemoveDeadCharacters`; moving actions also complete the
+existing frame-removal model for already destroyed actors. Captures include the
+outer boss in both the train and the aura world. Relentless transition, room
+destruction and EndTurn integration remain guarded. The source diagnostic loses
+with 42 unsupported stages and zero capture/mismatch/pending counters; original
+files remain unchanged. Binary: 23,605 bytes, 3,554 nodes, SHA256
+`0627f728d8d265679767fffcdee1a1ad6adbaaa3d39ee5d388a1d20aae86c599`.
 
 `boss-action-controller-calibration.mt2f` retains 14 actual eighth-ring boss
 controller calls and 1,152 detached transitions through the original controller

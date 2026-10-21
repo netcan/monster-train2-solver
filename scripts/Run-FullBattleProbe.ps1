@@ -13,6 +13,7 @@ param(
     [switch] $PreviewAttackTrace,
     [switch] $BossActionTargets,
     [switch] $BossActionControllers,
+    [switch] $OuterBossPhases,
     [string] $RollingInput = '',
     [string] $InputProfile = '',
     [ValidateRange(0, 20)] [int] $BattleDistance = 0,
@@ -1145,6 +1146,7 @@ $environment = @{
     MT2_PROBE_PREVIEW_ATTACK_TRACE = $(if ($PreviewAttackTrace) { '1' } else { '0' })
     MT2_PROBE_BOSS_ACTION_TARGETS = $(if ($BossActionTargets) { '1' } else { '0' })
     MT2_PROBE_BOSS_ACTION_CONTROLLERS = $(if ($BossActionControllers) { '1' } else { '0' })
+    MT2_PROBE_OUTER_BOSS_PHASES = $(if ($OuterBossPhases) { '1' } else { '0' })
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"
     MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
     MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })

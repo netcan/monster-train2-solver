@@ -46,7 +46,7 @@ namespace MonsterTrain2Poju.Probe
         internal int NextPhaseSequence() => ++phaseSequence;
         internal TrainCombatState CaptureTrain(bool includeOuterBossForBump = false) =>
             trainCombat.Capture(includeOuterBossForBump: includeOuterBossForBump);
-        internal TrainCombatState CaptureEnchantmentRooms() => trainCombat.Capture(false);
+        internal TrainCombatState CaptureEnchantmentRooms() => trainCombat.Capture(false, includeOuterBossForBump: OuterBossPhaseProbe.Enabled);
         internal void InvalidateCardRules() => actions.InvalidateRules();
         internal EnemySpawnState CaptureSpawnPhase() => spawning.CapturePhase();
         internal EnemySpawnState CaptureCanonicalSpawn() => spawning.Capture();
@@ -343,6 +343,7 @@ namespace MonsterTrain2Poju.Probe
                 character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()),
                 new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning, character.SacrificeCard == null ? 0 : CardId(character.SacrificeCard), DeathSignalProbe.Capture(character),
                 SentryAttackProbe.Definition(character.GetSourceCharacterData()) != null || TroopAuraProbe.Definition(character.GetSourceCharacterData()) != null || BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || (OriginalReactiveUnitsScenario.Enabled && team == CombatTeam.Enemy) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
+                    || OuterBossPhaseProbe.Enabled
                     ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss(),
                         character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless,
                         pairedBoss == null ? 0 : UnitId(pairedBoss))
@@ -680,6 +681,7 @@ namespace MonsterTrain2Poju.Probe
         {
             BossActionTargetProbe.Write(this, log);
             BossActionControllerProbe.Write(this, log);
+            OuterBossPhaseProbe.Write(log);
             CharacterRemovalProbe.Write();
             PhysicalPlaneProbe.Write();
             EnchantmentSourceOrderProbe.Write();

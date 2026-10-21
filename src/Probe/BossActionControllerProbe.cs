@@ -28,7 +28,7 @@ namespace MonsterTrain2Poju.Probe
         }
         private static T Field<T>(object owner, string name) => (T)AccessTools.Field(owner.GetType(), name).GetValue(owner);
         private static void Set(object owner, string name, object? value) => AccessTools.Field(owner.GetType(), name).SetValue(owner, value);
-        private static BossActionControllerProgress Snapshot(BossActionController controller, RoomManager rooms)
+        internal static BossActionControllerProgress Snapshot(BossActionController controller, RoomManager rooms)
         {
             List<ActionGroupState> groups = Field<List<ActionGroupState>>(controller, "_actionGroups");
             ActionGroupState destroy = Field<ActionGroupState>(controller, "_roomDestroyActionGroup");
