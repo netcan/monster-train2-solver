@@ -1,8 +1,22 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 828 archives (769 full battles and
-59 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 831 archives (771 full battles and
+60 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-progressed-ring8-gold-frozen-win.mt2f` is a natural eighth-ring
+victory from `campaign-progressed-ring8-gold.zip`: 50 frozen decisions, 39 plays,
+11 EndTurns, Pyre4. Fresh native source `20261021-143435-844a5de6` took 329.38
+seconds with all four failure counters zero and protected files unchanged.
+`--outer-boss-deployment-only` independently replays the full chain from one root.
+`outer-boss-natural-relentless-phase-calibration.mt2f` retains its 19 exact native
+phases, including the unforced transition, eight moves, five new aura targets and
+two destroyed rooms; `--outer-boss-phase-only` checks complete state/RNG equality
+and immutable inputs. No queue/HP controls were used. The same gold checkpoint's
+no-card baseline is retained as `full-battle-progressed-ring8-gold-no-cards.mt2f`
+(source `20261021-141434-869df8b1`, 64.10 seconds, four zero counters, terminal loss).
+The winning frozen route establishes native battle coverage; rolling advisor
+acceptance is separate.
 
 `outer-boss-pyre-victory-{calibration,turn-calibration}.mt2f` add the victory
 side of the same Pyre-entry boundary. Alongside the explicit turn-two queue
@@ -60,7 +74,7 @@ The no-card control has seven EndTurns; the occupied policy has six EndTurns and
 workers in 79.01/191.25 seconds. Binary archives are 44,957/71,962 bytes with
 6,680/12,502 nodes; exact hashes are in the manifest.
 These are accepted battle-model losses, not winning-advisor
-evidence. Natural eighth-ring victory remains open; controlled Pyre-entry
+evidence. Natural eighth-ring victory is covered above; controlled Pyre-entry
 integration is covered separately above. Default capture guards remain; the two older guarded component sources
 below retain their historical boundaries.
 

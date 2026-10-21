@@ -45,10 +45,15 @@ internal static class OuterBossTurnChecks
             Compare(ended.Supported, ended.State, ended.Outcome, row, "frozen deployment EndTurn " + turn, ended.UnsupportedReason);
             current = ended.State!;
         }
+        RoomOutcome terminal = fixture.GetProperty("NativeWon").GetBoolean() ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated;
         Require(actionIndex == actions.Length && turns.Length >= 5 && JsonSerializer.Serialize(root, ModelJson.Options) == parent &&
-            turns[^1].GetProperty("ActualOutcome").GetInt32() == (int)RoomOutcome.PlayerDefeated,
-            "Complete deployment replay missed actions, mutated its root or failed to reach the native terminal loss.");
-        Console.WriteLine($"OUTER-BOSS-DEPLOYMENT PASS: {turns.Length} complete EndTurns/{actionIndex} legal actions from one deployment root, authored creation and initial placement through native terminal loss; complete controller/aura/physical/context/RNG equality and immutable inputs.");
+            turns[^1].GetProperty("ActualOutcome").GetInt32() == (int)terminal,
+            "Complete deployment replay missed actions, mutated its root or failed to reach the native terminal outcome.");
+        if (terminal == RoomOutcome.BattleWon)
+            Require(current.Spawn.OuterBoss == null && current.Spawn.Train.Context!.AllScenarioBossesDead == true &&
+                current.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.IsPyre && unit.Health > 0),
+                "Native victory retained a live boss or lost the Pyre.");
+        Console.WriteLine($"OUTER-BOSS-DEPLOYMENT PASS: {turns.Length} complete EndTurns/{actionIndex} legal actions from one deployment root, authored creation and initial placement through native {terminal}; complete controller/aura/physical/context/RNG equality and immutable inputs.");
     }
 
     internal static void Native(FixtureValue fixture)

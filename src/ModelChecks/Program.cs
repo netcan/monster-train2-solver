@@ -3270,7 +3270,8 @@ foreach (string path in args.Where(path => path.Contains("full-battle-progressed
 }
 foreach (string path in args.Where(path => path.Contains("outer-boss-phase-calibration", StringComparison.OrdinalIgnoreCase) ||
     path.Contains("outer-boss-relentless-phase-calibration", StringComparison.OrdinalIgnoreCase) ||
-    path.Contains("outer-boss-occupied-phase-calibration", StringComparison.OrdinalIgnoreCase)))
+    path.Contains("outer-boss-occupied-phase-calibration", StringComparison.OrdinalIgnoreCase) ||
+    path.Contains("outer-boss-natural-relentless-phase-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);
     OuterBossPhaseChecks.Native(fixture.RootElement);

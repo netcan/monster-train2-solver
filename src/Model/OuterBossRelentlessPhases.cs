@@ -42,6 +42,7 @@ namespace MonsterTrain2Poju.Model
                     new RoomCombatState(floor.RoomIndex, floor.Deployment, floor.Units.Select(unit => unit.Id == value.Id ? value : unit).ToArray(),
                         floor.ExternalInteractions, context, floor.Preview, floor.ActiveCompanionBossIds)).ToArray(),
                     train.Movement, train.EnemySlotsPerRoom, context), context);
+                train = EnchantmentWorldModel.Rebase(train);
             }
             void Select(int floor)
             {

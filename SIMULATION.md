@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 828 binary archives, including 769
-full battles and 59 component calibrations. The card index accepts 768 battles;
+Current curated inventory (2026-10-21): 831 binary archives, including 771
+full battles and 60 component calibrations. The card index accepts 770 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -17,6 +17,17 @@ seventh-ring checkpoint now also wins against `Boss_Level7_Rax`: 111 Pyre HP,
 42 decisions, the same winning fresh native replay and a completed losing
 policy baseline. Its explicit search budget is 10,000 ms per decision; the
 default remains 3,000 ms. All three seventh-ring captures have zero counters.
+
+The gold-preserving natural eighth-ring checkpoint now has a complete frozen
+native victory against `Boss_Level8_AllyBuffer`: 50 decisions (39 legal plays,
+11 EndTurns), Pyre4, all four failure counters zero and protected files unchanged.
+The 329.38-second fresh native run reproduces every model successor from one
+deployment root. Its 19 native boss phases include the natural relentless
+transition, eight moves, five new aura targets and two destroyed floors, without
+queue/HP controls. Rebasing the shared enchantment world after changing the boss
+actor prevents callback settlement from restoring stale casting-phase bump rules
+when the boss already occupies its new phase's floor. Rolling advisor victory
+is being validated separately; this frozen route establishes natural coverage.
 
 The accepted frozen seventh-ring sequence now continues through native rewards
 and map choices to a legal eighth-ring BattleIntro input: seven preceding wins,
@@ -64,8 +75,8 @@ captures run complete battles from the natural eighth-ring input with all four
 failure counters zero. Their frozen model replays begin at a single deployment
 root, including deployment card plays, and match every successor through the
 native terminal losses. These establish full deployment integration for this
-original boss. Natural eighth-ring victory, effect-bearing boss spells and
-terminal boss-action callbacks remain unverified. `OuterBossPyreModel` separately
+original boss. Effect-bearing boss spells and terminal boss-action callbacks
+remain unverified. `OuterBossPyreModel` separately
 matches an isolated native Pyre-entry loss after the explicit spawn-queue control:
 reserved-anchor movement, ascend/shift/sentry callbacks, immediate tower combat,
 frame-bound destruction and terminal state match. Native stops the combat loop

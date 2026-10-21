@@ -8,6 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('outer-boss-pyre-victory-calibration.mt2f', 'outer-boss-pyre-victory-turn-calibration.mt2f',
+    'outer-boss-natural-relentless-phase-calibration.mt2f', 'full-battle-progressed-ring8-gold-frozen-win.mt2f', 'full-battle-progressed-ring8-gold-no-cards.mt2f',
     'outer-boss-pyre-turn-calibration.mt2f', 'outer-boss-pyre-calibration.mt2f', 'outer-boss-instantiation-calibration.mt2f', 'outer-boss-birth-calibration.mt2f', 'outer-boss-occupied-birth-calibration.mt2f', 'outer-boss-turn-calibration.mt2f', 'outer-boss-relentless-phase-calibration.mt2f', 'outer-boss-occupied-phase-calibration.mt2f', 'outer-boss-phase-calibration.mt2f', 'boss-action-controller-calibration.mt2f', 'boss-action-target-calibration.mt2f', 'retired-unit-destruction-calibration.mt2f', 'planner-deployment-calibration.mt2f', 'planner-score-plateau-calibration.mt2f', 'corruption-status-calibration.mt2f', 'undying-boss-preview-calibration.mt2f', 'intrinsic-opening-draw-calibration.mt2f',
     'full-battle-progressed-ring8-no-cards.mt2f', 'full-battle-progressed-ring8-policy.mt2f',
     'full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 'full-battle-units-and-junk.mt2f',
