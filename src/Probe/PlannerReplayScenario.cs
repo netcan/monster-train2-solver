@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
             public List<BattleTurnState> Actual { get; set; } = new List<BattleTurnState>();
             public double Score { get; set; }
             public double BaselineScore { get; set; }
+            public double? PolicyBaselineScore { get; set; }
             public int Horizon { get; set; }
             public int Nodes { get; set; }
             public int Duplicates { get; set; }
@@ -114,6 +115,8 @@ namespace MonsterTrain2Poju.Probe
                         Action = step.GetProperty("Action").ValueKind == FixtureKind.Null ? null : Read<PlayCardAction>(step.GetProperty("Action")) });
                 record.Planned = Read<BattleTurnState>(original.GetProperty("Planned"));
                 record.Score = original.GetProperty("Score").GetDouble();
+                if (original.TryGetProperty("PolicyBaselineScore", out FixtureValue policy) && policy.ValueKind == FixtureKind.Number)
+                    record.PolicyBaselineScore = policy.GetDouble();
             }
             else
             {
@@ -127,6 +130,7 @@ namespace MonsterTrain2Poju.Probe
                 record.Planned = plan.State; record.Score = plan.Score; record.Nodes = plan.ExpandedNodes;
                 record.Duplicates = plan.DuplicateStates; record.BeamPruned = plan.BeamPruned;
                 record.ElapsedMs = plan.Elapsed.TotalMilliseconds; record.TimedOut = plan.TimedOut;
+                record.PolicyBaselineScore = plan.PolicyBaselineScore;
             }
             BattleTurnState current = root;
             RoomOutcome outcome = RoomOutcome.Exchanged;
@@ -158,6 +162,8 @@ namespace MonsterTrain2Poju.Probe
             }
             record.BaselineScore = BattlePlanner.Evaluate(current, outcome);
             if (record.Score > record.BaselineScore) throw new InvalidOperationException("Planner recommendation lost its baseline.");
+            if (record.PolicyBaselineScore.HasValue && record.Score > record.PolicyBaselineScore.Value)
+                throw new InvalidOperationException("Planner recommendation lost its completed fixed-policy seed.");
             Records.Add(record);
             log.LogInfo("PLANNER-READY mode=" + record.Mode + " turn=" + root.Spawn.Turn + " steps=" + record.Steps.Count +
                 " nodes=" + record.Nodes + " duplicates=" + record.Duplicates);

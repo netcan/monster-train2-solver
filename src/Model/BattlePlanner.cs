@@ -43,18 +43,20 @@ namespace MonsterTrain2Poju.Model
         public bool ReachedNodeLimit { get; }
         public bool ReachedActionLimit { get; }
         public bool CompletedHorizon { get; }
+        public double? PolicyBaselineScore { get; }
         public IReadOnlyList<UnsupportedActionAttempt> UnsupportedAttempts { get; }
 
         internal BattlePlanResult(BattleTurnState state, RoomOutcome outcome, IReadOnlyList<BattleSearchStep> steps,
             double score, int turns, int nodes, int duplicates, int beamPruned, TimeSpan elapsed,
             bool timedOut, bool cancelled, bool nodeLimit, bool actionLimit, bool completed,
-            IReadOnlyList<UnsupportedActionAttempt> unsupported)
+            IReadOnlyList<UnsupportedActionAttempt> unsupported, double? policyBaselineScore)
         {
             State = state; Outcome = outcome; Steps = Array.AsReadOnly(steps.ToArray()); Score = score;
             TurnsCompleted = turns; ExpandedNodes = nodes; DuplicateStates = duplicates; BeamPruned = beamPruned;
             Elapsed = elapsed; TimedOut = timedOut; Cancelled = cancelled; ReachedNodeLimit = nodeLimit;
             ReachedActionLimit = actionLimit; CompletedHorizon = completed;
             UnsupportedAttempts = Array.AsReadOnly(unsupported.ToArray());
+            PolicyBaselineScore = policyBaselineScore;
         }
     }
 
@@ -92,6 +94,8 @@ namespace MonsterTrain2Poju.Model
             var root = new Node(source, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), 0, 0, Score(source, RoomOutcome.Exchanged));
             Node fallback = root;
             Node? best = null;
+            double? policyBaselineScore = null;
+            var seedFrontiers = new Dictionary<BattleTurnState, BattleActionEnumeration>();
 
             bool Stop()
             {
@@ -141,6 +145,40 @@ namespace MonsterTrain2Poju.Model
             }
             Rollout(root);
 
+            // Seed the existing fixed play policy as well as the no-card path.
+            // Reuse its cached successors rather than applying a selected card
+            // twice. Charge all work to the same budgets, retaining partial
+            // rollout improvements if the complete seed cannot finish in time.
+            Node policy = root;
+            while (!Stop() && policy.Turns < options.MaxTurns && !Terminal(policy))
+            {
+                nodes++;
+                PlayCardAction? action = null;
+                BattleActionEnumeration? actions = null;
+                if (policy.Actions < options.MaxActionsPerTurn)
+                {
+                    actions = BattleActionModel.EnumerateActions(policy.State);
+                    seedFrontiers[policy.State] = actions;
+                    foreach (UnsupportedActionAttempt attempt in actions.UnsupportedAttempts) Unsupported(attempt);
+                    action = BattleActionModel.ChooseUnitSpellAndJunkFromCandidates(policy.State, actions.SupportedActions);
+                }
+                else actionLimit = true;
+                if (action != null)
+                {
+                    SupportedActionCandidate chosen = actions!.SupportedCandidates.First(candidate => ReferenceEquals(candidate.Action, action));
+                    policy = Child(policy, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(action, false));
+                    Consider(policy); Rollout(policy);
+                }
+                else
+                {
+                    BattleTurnResult ended = BattleTurnModel.EndTurn(policy.State);
+                    if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported policy EndTurn.")); break; }
+                    policy = Child(policy, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
+                    Consider(policy);
+                }
+            }
+            if (policy.Turns >= options.MaxTurns || Terminal(policy)) policyBaselineScore = policy.Score;
+
             var frontier = new List<Node> { root };
             seen.Add("0|" + stateKey(source));
             while (frontier.Count > 0 && !Stop())
@@ -152,7 +190,8 @@ namespace MonsterTrain2Poju.Model
                     nodes++;
                     if (node.Actions < options.MaxActionsPerTurn)
                     {
-                        BattleActionEnumeration actions = BattleActionModel.EnumerateActions(node.State);
+                        BattleActionEnumeration actions = seedFrontiers.TryGetValue(node.State, out BattleActionEnumeration cached)
+                            ? cached : BattleActionModel.EnumerateActions(node.State);
                         foreach (UnsupportedActionAttempt attempt in actions.UnsupportedAttempts) Unsupported(attempt);
                         var children = new List<Node>();
                         foreach (SupportedActionCandidate candidate in actions.SupportedCandidates)
@@ -189,7 +228,7 @@ namespace MonsterTrain2Poju.Model
             timedOut |= watch.Elapsed >= options.TimeLimit;
             Node selected = best ?? fallback;
             return new BattlePlanResult(selected.State, selected.Outcome, selected.Steps, selected.Score, selected.Turns,
-                nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null, unsupported);
+                nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null, unsupported, policyBaselineScore);
         }
 
         private sealed class Node

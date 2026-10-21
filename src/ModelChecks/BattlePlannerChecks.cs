@@ -41,6 +41,8 @@ internal static class BattlePlannerChecks
             "Native final planner state differs.");
         Require(BattlePlanner.Evaluate(state, outcome) == record.GetProperty("Score").GetDouble() &&
             record.GetProperty("Score").GetDouble() <= record.GetProperty("BaselineScore").GetDouble(), "Planner score/baseline differs.");
+        if (record.TryGetProperty("PolicyBaselineScore", out FixtureValue policy) && policy.ValueKind == FixtureKind.Number)
+            Require(record.GetProperty("Score").GetDouble() <= policy.GetDouble(), "Native recommendation lost the fixed-policy seed.");
         Console.WriteLine($"NATIVE-PLANNER PASS mode={record.GetProperty("Mode").GetString()} steps={steps.Length} turns={turns} " +
             $"score={record.GetProperty("Score").GetDouble()} baseline={record.GetProperty("BaselineScore").GetDouble()} " +
             $"pyre={state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health}");
@@ -100,6 +102,8 @@ internal static class BattlePlannerChecks
             if (baselineOutcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate) break;
         }
         Require(plan.Score <= BattlePlanner.Evaluate(baseline, baselineOutcome), "Planner lost its executable no-card fallback.");
+        Require(!plan.PolicyBaselineScore.HasValue || plan.Score <= plan.PolicyBaselineScore.Value,
+            "Planner lost its completed fixed-policy seed.");
 
         var cancelled = new CancellationToken(true);
         BattlePlanResult stopped = BattlePlanner.Plan(root, Key, options, cancellationToken: cancelled);
@@ -119,7 +123,7 @@ internal static class BattlePlannerChecks
         Console.WriteLine($"BATTLE-PLANNER PASS turn={root.Spawn.Turn} horizon={horizon} completed={plan.TurnsCompleted} " +
             $"nodes={plan.ExpandedNodes} duplicates={plan.DuplicateStates} beamPruned={plan.BeamPruned} " +
             $"elapsedMs={plan.Elapsed.TotalMilliseconds:F1} timeout={plan.TimedOut} score={plan.Score} " +
-            $"baseline={BattlePlanner.Evaluate(baseline, baselineOutcome)} steps={plan.Steps.Count} outcome={plan.Outcome}");
+            $"baseline={BattlePlanner.Evaluate(baseline, baselineOutcome)} policy={plan.PolicyBaselineScore} steps={plan.Steps.Count} outcome={plan.Outcome}");
     }
 
     internal static BattleTurnState Replay(BattleTurnState root, IReadOnlyList<BattleSearchStep> steps, out RoomOutcome outcome)

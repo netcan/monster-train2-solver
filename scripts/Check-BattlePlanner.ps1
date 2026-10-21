@@ -21,4 +21,10 @@ try {
         dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --battle-planner-only "tests/fixtures/$($case.Archive)" $case.Turn $case.Horizon
         if ($LASTEXITCODE -ne 0) { throw "Planner case failed: $($case.Archive)" }
     }
+    foreach ($searched in Get-ChildItem -LiteralPath tests/fixtures -Filter 'full-battle-planner-*-search.mt2f') {
+        $replayed = Join-Path $searched.DirectoryName ($searched.Name -replace '-search\.mt2f$', '-replay.mt2f')
+        if (-not (Test-Path -LiteralPath $replayed)) { throw "Missing independent replay: $replayed" }
+        dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --planner-pair-only $searched.FullName $replayed
+        if ($LASTEXITCODE -ne 0) { throw "Independent native planner replay failed: $($searched.Name)" }
+    }
 } finally { Pop-Location }

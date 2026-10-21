@@ -1435,10 +1435,13 @@ namespace MonsterTrain2Poju.Model
                 }
             return ChooseUnitSpellAndJunkPlay(source);
         }
-        private static PlayCardAction? ChoosePlay(BattleTurnState source, bool spells, Func<CardToken, bool>? includeCard = null)
+        internal static PlayCardAction? ChooseUnitSpellAndJunkFromCandidates(BattleTurnState source, IReadOnlyList<PlayCardAction> plays)
+            => ChoosePlay(source, true, plays: plays);
+        private static PlayCardAction? ChoosePlay(BattleTurnState source, bool spells, Func<CardToken, bool>? includeCard = null,
+            IReadOnlyList<PlayCardAction>? plays = null)
         {
             if (source.PlayRules == null) return null;
-            IReadOnlyList<PlayCardAction> plays = EnumerateSupportedPlays(source);
+            plays ??= EnumerateSupportedPlays(source);
             int roomCount = source.PlayRules.Rooms.Count(room => !room.IsPyre);
             if (roomCount == 0) return null;
             // A deterministic verification policy: rotate floors each turn, summon before clearing junk.

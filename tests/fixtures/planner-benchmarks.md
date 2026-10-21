@@ -2,7 +2,12 @@
 
 `BattlePlanner` returns a model-verified executable recommendation under node,
 time, beam-width and per-turn action budgets. It seeds a complete no-card
-continuation and completes promising branches to the requested horizon early.
+continuation and the existing units/spells/junk policy, and completes promising
+branches to the requested horizon early. The fixed-policy seed uses the cached
+enumeration successors; the beam can reuse the seed's frontiers. Both seeds
+consume the same planning budgets. A completed fixed-policy seed is reported
+as `PolicyBaselineScore`; a null value means the seed did not finish within
+the budget, not that the recommendation beat that policy.
 Win precedes survival; surviving Pyre HP precedes the bounded positional
 ordering term. Wins also prefer higher remaining Pyre HP.
 
@@ -41,6 +46,13 @@ battle improves from Pyre 74 to Pyre 79 at the three-EndTurn horizon (scores
 -73884.4 and -78898.9). This is a model result awaiting a fresh native execution
 of that selected alternative. The remaining cases preserve or improve their
 no-card model score; small ordering-score improvements are not HP gains.
+
+After seeding the existing fixed policy, the ordinary offline case reaches
+Pyre 80 at the same horizon within the three-second budget, with score
+-79919.3 and eleven steps. Its completed fixed-policy seed has the same score.
+This supersedes the initial Pyre-79 model-only recommendation above. It proves
+preservation of this baseline, not a strict improvement over it. The assertion
+also requires every result to retain any completed fixed-policy seed's score.
 
 Run only these checks with:
 
