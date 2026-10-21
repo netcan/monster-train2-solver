@@ -5,6 +5,60 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattlePlannerChecks
 {
+    internal static void NativePlan(FixtureValue fixture)
+    {
+        foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(fixture.GetProperty(counter).GetInt32() == 0, "Native planner capture has nonzero " + counter);
+        Require(fixture.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native battle did not settle.");
+        FixtureValue record = fixture.GetProperty("PlannerRuns").EnumerateArray().Single();
+        Require(record.GetProperty("Completed").GetBoolean() && record.GetProperty("Difference").ValueKind == FixtureKind.Null,
+            "The native game did not complete every planned step.");
+        BattleTurnState state = record.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        FixtureValue[] steps = record.GetProperty("Steps").EnumerateArray().ToArray();
+        FixtureValue[] actual = record.GetProperty("Actual").EnumerateArray().ToArray();
+        FixtureValue[] expected = record.GetProperty("Expected").EnumerateArray().ToArray();
+        RoomOutcome[] outcomes = record.GetProperty("Outcomes").Deserialize<RoomOutcome[]>()!;
+        Require(steps.Length > 0 && actual.Length == steps.Length && expected.Length == steps.Length && outcomes.Length == steps.Length,
+            "Planner step evidence is incomplete.");
+        int turns = 0;
+        RoomOutcome outcome = RoomOutcome.Exchanged;
+        for (int index = 0; index < steps.Length; index++)
+        {
+            bool end = steps[index].GetProperty("IsEndTurn").GetBoolean();
+            PlayCardAction? action = end ? null : steps[index].GetProperty("Action").Deserialize<PlayCardAction>()!;
+            Require(end == (steps[index].GetProperty("Action").ValueKind == FixtureKind.Null), "Invalid frozen plan step.");
+            state = Replay(state, new[] { new BattleSearchStep(action, end) }, out outcome);
+            if (end) turns++;
+            bool terminal = outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
+            string wanted = BattleTurnChecks.Comparable(state, terminal);
+            Require(outcome == outcomes[index] && wanted == BattleTurnChecks.Comparable(actual[index].Deserialize<BattleTurnState>()!, terminal) &&
+                wanted == BattleTurnChecks.Comparable(expected[index].Deserialize<BattleTurnState>()!, terminal),
+                "Independent planner/native replay differs at step " + index);
+        }
+        bool finished = outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
+        Require(finished || turns == record.GetProperty("Horizon").GetInt32(), "Native plan stopped short of its horizon.");
+        Require(BattleTurnChecks.Comparable(state, finished) == BattleTurnChecks.Comparable(record.GetProperty("Planned").Deserialize<BattleTurnState>()!, finished),
+            "Native final planner state differs.");
+        Require(BattlePlanner.Evaluate(state, outcome) == record.GetProperty("Score").GetDouble() &&
+            record.GetProperty("Score").GetDouble() <= record.GetProperty("BaselineScore").GetDouble(), "Planner score/baseline differs.");
+        Console.WriteLine($"NATIVE-PLANNER PASS mode={record.GetProperty("Mode").GetString()} steps={steps.Length} turns={turns} " +
+            $"score={record.GetProperty("Score").GetDouble()} baseline={record.GetProperty("BaselineScore").GetDouble()} " +
+            $"pyre={state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health}");
+    }
+
+    internal static void Pair(FixtureValue searched, FixtureValue replayed)
+    {
+        NativePlan(searched); NativePlan(replayed);
+        FixtureValue first = searched.GetProperty("PlannerRuns").EnumerateArray().Single(), second = replayed.GetProperty("PlannerRuns").EnumerateArray().Single();
+        Require(second.GetProperty("Mode").GetString() == "replay" && second.GetProperty("Nodes").GetInt32() == 0,
+            "The fresh process must execute the frozen plan without searching again.");
+        Require(first.GetProperty("Steps").ContentEquals(second.GetProperty("Steps")), "Fresh native process used a different plan.");
+        foreach (string name in new[] { "Root", "Planned" })
+            Require(BattleTurnChecks.Comparable(first.GetProperty(name).Deserialize<BattleTurnState>()!) ==
+                BattleTurnChecks.Comparable(second.GetProperty(name).Deserialize<BattleTurnState>()!), "Fresh native " + name + " differs.");
+        Console.WriteLine("NATIVE-PLANNER-PAIR PASS: identical root, frozen actions, final full state and RNG in independent native processes.");
+    }
+
     internal static void Native(FixtureValue fixture, int turn, int horizon)
     {
         FixtureValue[] rows = fixture.GetProperty("Actions").EnumerateArray().ToArray();

@@ -7,6 +7,12 @@ param(
     [string] $GameSpeed = 'Instant',
     [ValidateRange(1, 2)]
     [int] $NativeWorker = 1,
+    [switch] $Planner,
+    [ValidateRange(1, 20)]
+    [int] $PlannerTurn = 2,
+    [ValidateRange(2, 3)]
+    [int] $PlannerHorizon = 3,
+    [string] $PlannerInput = '',
     [ValidateRange(60, 3600)]
     [int] $TimeoutSeconds = 600,
     [switch] $SpawnPoints,
@@ -1094,6 +1100,10 @@ if (Test-Path -LiteralPath $preferencesPath) {
     $preferences | ConvertTo-Json -Depth 32 -Compress | Set-Content -LiteralPath $preferencesPath -NoNewline -Encoding utf8
 }
 $environment = @{
+    MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
+    MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
+    MT2_PROBE_PLANNER_HORIZON = "$PlannerHorizon"
+    MT2_PROBE_PLANNER_INPUT = $(if ($PlannerInput) { (Resolve-Path -LiteralPath $PlannerInput).Path } else { '' })
     MT2_PROBE_DATA_DIR = $profile
     MT2_PROBE_SCENARIO = 'native-replay'
     MT2_PROBE_FULL_BATTLE = '1'
@@ -1638,6 +1648,14 @@ if ($BinaryCapture) {
 }
 $inspectionTimer.Stop()
 Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.TotalSeconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture))"
+if ($Planner) {
+    $plannerRuns = @($trace.PlannerRuns)
+    if ($plannerRuns.Count -ne 1 -or -not $plannerRuns[0].Completed -or $null -ne $plannerRuns[0].Difference -or
+        @($plannerRuns[0].Steps).Count -eq 0 -or @($plannerRuns[0].Steps).Count -ne @($plannerRuns[0].Actual).Count -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'PLANNER-REPLAY-PASS' -Quiet)) {
+        throw 'Native planner recommendation did not complete with every step verified.'
+    }
+}
 if ($TitanSkinCombat -and ($trace.ModifierScenario -ne 'titan-skin-combat' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'TITAN-SKIN-COMBAT-PREPARED .*starting titanskin stacks=2' -Quiet))) {
     throw 'Titan Skin native combat setup did not run.'

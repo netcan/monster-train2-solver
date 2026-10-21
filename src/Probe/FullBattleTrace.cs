@@ -1407,6 +1407,7 @@ namespace MonsterTrain2Poju.Probe
                 Spawns = spawning.Records,
                 Turns = turns.Records,
                 Actions = actions.Records,
+                PlannerRuns = PlannerReplayScenario.Records,
                 RoomCapacityAttachmentCoverage = RoomCapacityAttachmentScenario.Evidence,
                 OriginalCarriageJackCoverage = OriginalCarriageJackScenario.Evidence,
                 OriginalFirstRoomAttachmentCoverage = OriginalFirstRoomAttachmentScenario.Evidence,

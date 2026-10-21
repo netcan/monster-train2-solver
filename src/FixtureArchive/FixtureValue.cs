@@ -79,6 +79,7 @@ public readonly struct FixtureValue
     public float GetSingle() => float.Parse(Number(), CultureInfo.InvariantCulture);
     public double GetDouble() => double.Parse(Number(), CultureInfo.InvariantCulture);
     public decimal GetDecimal() => decimal.Parse(Number(), NumberStyles.Float, CultureInfo.InvariantCulture);
+    public string GetNumberText() => Number();
     internal string Number() { Require(FixtureKind.Number); return Node.Text!; }
 #if NET8_0_OR_GREATER
     public T? Deserialize<T>() => (T?)FixtureHydrator.Read(this, typeof(T));

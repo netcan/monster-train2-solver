@@ -134,6 +134,7 @@ namespace MonsterTrain2Poju.Probe
             }
             if (fullBattle && FullBattleTrace.Active?.NativeWon != null)
             {
+                PlannerReplayScenario.ObserveTerminal();
                 FullBattleTrace trace = FullBattleTrace.Active;
                 try
                 {
@@ -2944,6 +2945,7 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = EquipmentScenario.ChooseBuffTarget(decision, pendingPlay) ?? pendingPlay;
                 if (fullBattle && OriginalFirstImpBonusScenario.Enabled)
                     pendingPlay = OriginalFirstImpBonusScenario.Choose(decision) ?? pendingPlay;
+                if (PlannerReplayScenario.TryChoose(decision, log, out PlayCardAction? planned)) pendingPlay = planned;
                 if (pendingPlay != null)
                 {
                     RoomManager rooms = managers.GetRoomManager()!;

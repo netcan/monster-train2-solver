@@ -1626,6 +1626,19 @@ if (args.Length == 2 && args[0] == "--train-heal-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--planner-replay-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattlePlannerChecks.NativePlan(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--planner-pair-only")
+{
+    using var first = ModelJson.ReadFixture(args[1]);
+    using var second = ModelJson.ReadFixture(args[2]);
+    BattlePlannerChecks.Pair(first.RootElement, second.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--battle-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

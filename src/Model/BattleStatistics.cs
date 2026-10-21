@@ -160,6 +160,9 @@ namespace MonsterTrain2Poju.Model
 
         public BattleStatistics WithEndTurnEnergy(int energy) => Copy(energy: energy);
         public BattleStatistics WithLastAttackDamage(int damage) => Copy(lastDamage: damage);
+        internal BattleStatistics ClearHandPlayHistory() => Copy(
+            handPlayed: HandCardsPlayedThisTurn == null ? null : Array.Empty<int>(),
+            handLast: HandCardsPlayedLastTurn == null ? null : Array.Empty<int>());
 
         public BattleStatistics NextTurn(int gold) => Copy(values: Values.Where(value => value.Duration == "ThisBattle")
             .Concat(Values.Where(value => value.Duration == "ThisTurn").Select(value =>
