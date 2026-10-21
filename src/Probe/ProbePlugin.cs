@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool rootLogged;
         private static TwoTurnScenario? scenario;
         private static NativeReplayScenario? nativeReplayScenario;
+        private static CampaignProgressScenario? campaignScenario;
         private static int lastTickFrame = -1;
 
         private void Awake()
@@ -71,6 +72,10 @@ namespace MonsterTrain2Poju.Probe
             {
                 new FullBattleTrace(Logger);
                 new BattleAdvisorOverlay(Logger);
+            }
+            else if (scenarioName == "campaign")
+            {
+                campaignScenario = new CampaignProgressScenario(Logger);
             }
             else if (!string.IsNullOrEmpty(scenarioName))
             {
@@ -151,6 +156,7 @@ namespace MonsterTrain2Poju.Probe
                 scenario?.Tick();
                 BattleAdvisorOverlay.Active?.Tick();
                 nativeReplayScenario?.Tick();
+                campaignScenario?.Tick();
             }
         }
 

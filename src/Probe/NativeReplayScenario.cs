@@ -222,6 +222,18 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
                 CheatManager.SetupConsoleCommands(save, screen);
+                if (Environment.GetEnvironmentVariable("MT2_PROBE_RESUME_RUN") == "1")
+                {
+                    int targetDistance = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_DISTANCE") ?? "0", CultureInfo.InvariantCulture);
+                    if (!save.HasRun(RunType.Class) || save.GetCurrentDistance() != targetDistance ||
+                        save.GetGameSequence() != SaveData.GameSequence.BattleIntro)
+                        throw new InvalidOperationException("A resumed battle requires a matching native BattleIntro checkpoint.");
+                    save.ContinueRunWithReplay(RunType.Class);
+                    battleRoutePrepared = true;
+                    log.LogInfo("ROLLING-NATIVE-CHECKPOINT distance=" + targetDistance);
+                    Enter(Stage.NaturalMap, 240f);
+                    return;
+                }
                 completeFtue.Invoke(null, null);
                 setSeed.Invoke(null, new object[] { Seed.ToString(CultureInfo.InvariantCulture) });
                 newRun.Invoke(null, null);

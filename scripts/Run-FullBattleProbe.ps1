@@ -11,6 +11,7 @@ param(
     [switch] $Advisor,
     [switch] $RollingAdvice,
     [string] $RollingInput = '',
+    [string] $InputProfile = '',
     [ValidateRange(0, 20)] [int] $BattleDistance = 0,
     [switch] $ShowWindow,
     [ValidateRange(1, 2147483647)]
@@ -1104,7 +1105,27 @@ $pluginDir = Join-Path $gameRoot 'BepInEx\plugins'
 Copy-Item -LiteralPath (Join-Path $workspace 'src\Probe\bin\Release\netstandard2.1\Probe.dll') -Destination $pluginDir -Force
 Copy-Item -LiteralPath (Join-Path $workspace 'src\Model\bin\Release\netstandard2.1\Model.dll') -Destination $pluginDir -Force
 Copy-Item -LiteralPath (Join-Path $workspace 'src\FixtureArchive\bin\Release\netstandard2.1\FixtureArchive.dll') -Destination $pluginDir -Force
-Copy-Item -LiteralPath (Join-Path $workspace '.probe-baseline') -Destination $profile -Recurse
+if ($InputProfile) {
+    $checkpoint = (Resolve-Path -LiteralPath $InputProfile).Path.TrimEnd('\')
+    if ((Split-Path $checkpoint -Parent) -ine (Join-Path $workspace '.probe-runs')) {
+        throw 'InputProfile must be a direct child of this workspace .probe-runs directory.'
+    }
+    $checkpointSave = Join-Path $checkpoint 'saves/save-singlePlayer.json'
+    $checkpointData = Get-Content -LiteralPath $checkpointSave -Raw | ConvertFrom-Json
+    if ($checkpointData.gameSequence -ne 6 -or $checkpointData.runState.distance -ne $BattleDistance) {
+        throw 'InputProfile must be a native BattleIntro checkpoint at BattleDistance.'
+    }
+    $null = New-Item -ItemType Directory -Path $profile
+    foreach ($item in Get-ChildItem -LiteralPath $checkpoint) {
+        if ($item.Name -in @('saves', 'metagameSave.json', 'preferences.json', 'preferences-local.json')) {
+            Copy-Item -LiteralPath $item.FullName -Destination $profile -Recurse
+        }
+    }
+    [pscustomobject]@{ InputProfile = $checkpoint; SHA256 = (Get-FileHash -LiteralPath $checkpointSave -Algorithm SHA256).Hash } |
+        ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'native-checkpoint-input.json')
+} else {
+    Copy-Item -LiteralPath (Join-Path $workspace '.probe-baseline') -Destination $profile -Recurse
+}
 $preferencesPath = Join-Path $profile 'preferences.json'
 if (Test-Path -LiteralPath $preferencesPath) {
     $preferences = Get-Content -LiteralPath $preferencesPath -Raw | ConvertFrom-Json
@@ -1113,6 +1134,7 @@ if (Test-Path -LiteralPath $preferencesPath) {
     $preferences | ConvertTo-Json -Depth 32 -Compress | Set-Content -LiteralPath $preferencesPath -NoNewline -Encoding utf8
 }
 $environment = @{
+    MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"

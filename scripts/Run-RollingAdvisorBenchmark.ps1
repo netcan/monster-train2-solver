@@ -7,6 +7,7 @@ param(
     [string] $SourceTrace = '',
     [string] $ReplayTrace = '',
     [string] $BaselineTrace = '',
+    [string] $InputProfile = '',
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -22,6 +23,7 @@ try {
     $arguments = @{ Seed = $Seed; BattleDistance = $BattleDistance; NativeWorker = $NativeWorker
         SkipBuild = $true; PhysicalSpawnPoints = $true; BranchCardMasks = $true; Policy = 'units-spells-and-junk'
         TimeoutSeconds = 900 }
+    if ($InputProfile) { $arguments.InputProfile = $InputProfile }
     function Invoke-RollingNative([hashtable] $Parameters) {
         $output = @(& (Join-Path $PSScriptRoot 'Run-FullBattleProbe.ps1') @Parameters)
         $output | Where-Object { $_ -is [string] -and $_ -match '^FULL-BATTLE-(RUN|TIMING|INSPECTION)' } | Write-Host
