@@ -204,3 +204,47 @@ a separate gate; a winning player run that never uses Eclipse cannot close it.
 scripts/Run-FullBattleProbe.ps1 -EclipseChamberMovement -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-movement-only tests/fixtures/full-battle-eclipse-chamber-movement.mt2f
 ```
+
+## Player advice with friendly room-mask movement
+
+`full-battle-player-room-moon-movement-{search,replay}.mt2f` records real player
+assembly publications with the same original effects, authored carriers and
+four owned Freeze shims. The authored hand is ordered so the generic tactical
+seed reaches Eclipse before the movement cards. Source profile
+`full-battle-units-spells-and-junk-20261022-003336-e5a057dd` wins in 211.32 seconds:
+thirty decisions, twenty-five plays, five EndTurns, Pyre80, thirty-two
+publications, 285 pure captures and 1,620 complete native decision contexts.
+The actual panel renders 300 text vertices and 85,699 visible pixels.
+
+Five moves of a callback carrier execute original New gained/lost payloads.
+One later callback-free champion enters the mask without gaining a Nightingale
+upgrade, providing an ordinary-unit control. These six mask changes must not
+be counted as six callback changes or two callback actors. Five callback
+actors, both global phases, one original Eclipse cast and 110 mixed-mask
+snapshots appear across the whole battle. After the first winning search,
+twenty-nine exact roots retain its verified suffix. Their median/P95 response
+is 0.93/1.32 seconds; the first consumed response is 5.98 seconds.
+
+Fresh profile `full-battle-units-spells-and-junk-20261022-004005-67a70205`
+repeats the thirty inputs with zero search nodes and no publications in 111.34
+seconds. It records 69 pure captures and 520 complete native contexts, winning
+with Pyre80. All three loaded DLL hashes match the source. Both native runs
+have `DEPTH-PASS`, settled effects, unchanged protected files and four zero
+failure counters. The focused checker matches every input, root, successor,
+published forecast, gameplay RNG and all seven native spawn boundaries.
+
+This movement case does not capture enemy birth under mixed masks. The earlier
+`RoomMoon` pair retains its separate requirement for at least two such births;
+the movement pair instead requires repeated actual callback moves in both
+directions and the callback-free mask-change control. A previous player run
+never cast Eclipse. An intermediate frozen run matched all inputs but its
+PowerShell host failed the post-run assembly load; neither is curated.
+This is authored-hand acceptance with a six-turn/10,000-ms tactical budget,
+not a natural late-game deck or default-budget performance claim. No full
+regression or Mac package build is performed.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberMovement -PlayerAdvisor -RollingAdvice -PlannerTacticalSeed -PlannerDeploymentRoom 0 -PlannerHorizon 6 -PlannerTimeLimitMs 10000 -SkipBuild
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberMovement -PlayerAdvisor -RollingAdvice -RollingInput <source-profile>/full-battle.mt2f -PlannerTacticalSeed -PlannerDeploymentRoom 0 -PlannerHorizon 6 -PlannerTimeLimitMs 10000 -SkipBuild
+scripts/Check-PlayerAdvisor.ps1 -Case RoomMoonMovement -SkipBuild
+```

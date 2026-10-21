@@ -7,16 +7,30 @@ internal static class PlayerRoomMoonChecks
     {
         Require(source.GetProperty("EclipseChamberMovement").GetBoolean() && replay.GetProperty("EclipseChamberMovement").GetBoolean(),
             "Missing player room-moon movement captures.");
-        Pair(source, replay);
-        int moves = 0;
+        Pair(source, replay, requireMaskedEnemyBirths: false);
+        int moves = 0, ordinary = 0;
+        var actors = new HashSet<int>();
+        bool gained = false, lost = false;
         foreach (FixtureValue row in source.GetProperty("RollingDecisions").EnumerateArray())
-            if (row.GetProperty("Action").ValueKind != FixtureKind.Null && EclipseChamberChecks.MovementWitness(
-                row.GetProperty("Root").Deserialize<BattleTurnState>()!, row.GetProperty("Actual").Deserialize<BattleTurnState>()!,
-                row.GetProperty("Action").Deserialize<PlayCardAction>()!)) moves++;
-        Require(moves > 0, "Player advisor never executed a friendly move that changed original room-moon callbacks.");
-        Console.WriteLine($"PLAYER-ROOM-MOON-MOVEMENT PASS livePublishedCallbackMoves={moves} exactFrozenReplay=true");
+        {
+            if (row.GetProperty("Action").ValueKind == FixtureKind.Null) continue;
+            BattleTurnState before = row.GetProperty("Root").Deserialize<BattleTurnState>()!;
+            BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            PlayCardAction action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            if (!EclipseChamberChecks.MovementWitness(before, after, action))
+            {
+                if (EclipseChamberChecks.MovementWitness(before, after, action, requireCallbacks: false)) ordinary++;
+                continue;
+            }
+            moves++; actors.Add(action.TargetUnitId);
+            int? mask = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId).MoonPhaseMask;
+            gained |= (mask & 1) != 0; lost |= (mask & 1) == 0;
+        }
+        Require(moves >= 4 && ordinary > 0 && gained && lost,
+            "Missing repeated player-published callbacks, a callback-free movement control or both original New callback directions.");
+        Console.WriteLine($"PLAYER-ROOM-MOON-MOVEMENT PASS livePublishedCallbackMoves={moves} actors={actors.Count} ordinaryControls={ordinary} newGained=true newLost=true exactFrozenReplay=true");
     }
-    internal static void Pair(FixtureValue source, FixtureValue replay)
+    internal static void Pair(FixtureValue source, FixtureValue replay, bool requireMaskedEnemyBirths = true)
     {
         foreach (FixtureValue fixture in new[] { source, replay })
         {
@@ -86,7 +100,8 @@ internal static class PlayerRoomMoonChecks
                     maskedEnemyBirths.Add(unit.Id);
                 }
         }
-        Require(maskedEnemyBirths.Count >= 2, "Missing native off-train enemy initialization beneath an active Full/New room mask.");
+        Require(!requireMaskedEnemyBirths || maskedEnemyBirths.Count >= 2,
+            "Missing native off-train enemy initialization beneath an active Full/New room mask.");
         Console.WriteLine($"PLAYER-ROOM-MOON PASS authoredCarriers=true originalCallbacks=true phases=2 actors={actors.Count} casts={casts} mixedSnapshots={mixed} newUpgrades={newUpgrades} fullUpgrades={fullUpgrades} maskedEnemyBirths={maskedEnemyBirths.Count}");
     }
     private static void Require(bool condition, string message)

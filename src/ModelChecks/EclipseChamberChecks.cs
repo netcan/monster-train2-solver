@@ -182,7 +182,7 @@ internal static class EclipseChamberChecks
         Require(moved == 4 && callbacks > 0, "Missing paid movement with actual callback changes.");
         Console.WriteLine($"ECLIPSE-MOVEMENT-CHAIN PASS originalMovementCards=4 movedCallbackActors=2 changedCallbacks={callbacks} mixedMasks=true exactCompleteChain=true");
     }
-    internal static bool MovementWitness(BattleTurnState before, BattleTurnState after, PlayCardAction action)
+    internal static bool MovementWitness(BattleTurnState before, BattleTurnState after, PlayCardAction action, bool requireCallbacks = true)
     {
         string dataId = before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId;
         int direction = dataId == "b67ca7bf-bd65-4d98-ae53-26397de1e355" ? 1 :
@@ -192,10 +192,10 @@ internal static class EclipseChamberChecks
         RoomCombatState destination = after.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == action.TargetUnitId));
         CombatUnit old = origin.Units.Single(unit => unit.Id == action.TargetUnitId);
         CombatUnit current = destination.Units.Single(unit => unit.Id == action.TargetUnitId);
-        if (old.Team != CombatTeam.Player || !old.Triggers.Any(trigger => trigger.Kind == "OnMoonShade") ||
+        if (old.Team != CombatTeam.Player || old.Triggers.Any(trigger => trigger.Kind == "OnMoonShade") != requireCallbacks ||
             origin.RoomIndex == destination.RoomIndex || (old.MoonPhaseMask & 1) == (current.MoonPhaseMask & 1)) return false;
         Require(destination.RoomIndex - origin.RoomIndex == direction &&
-            current.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade") == ((current.MoonPhaseMask & 1) != 0) &&
+            current.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade") == (requireCallbacks && (current.MoonPhaseMask & 1) != 0) &&
             (current.MoonPhaseMask & 4) == (old.MoonPhaseMask & 4), "Paid movement callback upgrade or cached phase differs.");
         foreach (CombatUnit other in before.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Id != old.Id))
         {

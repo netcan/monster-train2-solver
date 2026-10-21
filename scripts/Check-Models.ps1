@@ -8,6 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-player-boss-rolling-search.mt2f', 'full-battle-player-boss-rolling-replay.mt2f',
+    'full-battle-player-room-moon-movement-search.mt2f', 'full-battle-player-room-moon-movement-replay.mt2f',
     'room-moon-callback-calibration.mt2f', 'room-moon-callback-calibration-shade.mt2f', 'room-moon-movement-calibration.mt2f',
     'full-battle-player-room-moon-search.mt2f', 'full-battle-player-room-moon-replay.mt2f', 'full-battle-player-conduit-search.mt2f', 'full-battle-player-conduit-replay.mt2f',
     'conduit-movement-calibration.mt2f', 'full-battle-player-boss-search.mt2f', 'full-battle-player-boss-replay.mt2f',

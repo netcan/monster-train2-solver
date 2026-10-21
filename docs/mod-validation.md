@@ -542,3 +542,37 @@ All three loaded player DLL hashes match between the two processes:
 
 Only focused checks and the coverage metadata refresh are run. No full
 regression or Mac package build is performed.
+
+### Player advice after friendly movement through moon rooms
+
+On 2026-10-22, actual player publications execute original Hidden Passage and
+Dripfall through an original Eclipse mask with authored callback carriers.
+Source `full-battle-units-spells-and-junk-20261022-003336-e5a057dd` completes
+thirty decisions (twenty-five plays/five EndTurns), winning with Pyre80 in
+211.32 seconds. It records 32 publications, 285 pure captures, 1,620 complete
+contexts and a panel with 300 vertices/85,699 pixels. Five actual moves change
+original New callback upgrades; one ordinary champion move changes its mask
+without adding that upgrade. Twenty-nine later publications retain the
+verified winning suffix; median/P95 response is 0.93/1.32 seconds, with the
+first consumed response taking 5.98 seconds.
+
+Fresh `full-battle-units-spells-and-junk-20261022-004005-67a70205` repeats all
+thirty frozen inputs in 111.34 seconds, winning with Pyre80, 69 pure captures,
+520 complete contexts and zero publications/search nodes. Complete states,
+forecasts, gameplay RNG and all seven native spawn boundaries match. Both
+runs settle terminal effects, keep protected originals unchanged, contain
+`DEPTH-PASS` and have all four failure counters zero. Their three loaded DLL
+hashes match exactly:
+
+| DLL | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | `e9a9735246edf23e063b687e9498334c5a21144ac0168cd1473d72db7b00d332` |
+| Model.dll | `ab5a32f9a6716d631fdab93bfbfb11ee27c3f4552cf87d2c58ca708b08ff7f41` |
+| FixtureArchive.dll | `4d9b8e584aa6441a490a150f3c769c16266a3d8c022090c0104c97991abd1a95` |
+
+Run `scripts/Check-PlayerAdvisor.ps1 -Case RoomMoonMovement -SkipBuild`.
+The harness orders an authored hand, retains four owned movement cards with
+temporary Freeze, and uses a six-turn/10,000-ms tactical budget. It does not
+establish a natural late-game deck, mixed-mask enemy births in this case or
+default-budget performance. The earlier RoomMoon birth gate remains intact.
+No full regression or Mac package build is performed.

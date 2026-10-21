@@ -1,8 +1,17 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 857 archives (791 full battles and
+Current manifest inventory (2026-10-22): 859 archives (793 full battles and
 66 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-player-room-moon-movement-{search,replay}.mt2f` closes the player
+movement gate with an authored hand: thirty decisions, twenty-five plays, five
+EndTurns and Pyre80 in both native processes. Five original New callback moves
+and one callback-free mask-change control execute from actual publications.
+Twenty-nine source decisions retain the winning suffix; median/P95 response
+is 0.93/1.32 seconds. The first consumed response takes 5.98 seconds. All full
+states, RNG and seven spawn boundaries match; this case has no masked-enemy
+birth witness and preserves that separate existing acceptance gate.
 
 `room-moon-movement-calibration.mt2f` adds 37 isolated native boundaries for
 friendly Bump through original Eclipse masks with original Selene/Nightingale
