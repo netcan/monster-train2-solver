@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 831 binary archives, including 771
-full battles and 60 component calibrations. The card index accepts 770 battles;
+Current curated inventory (2026-10-21): 834 binary archives, including 774
+full battles and 60 component calibrations. The card index accepts 773 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -18,16 +18,24 @@ seventh-ring checkpoint now also wins against `Boss_Level7_Rax`: 111 Pyre HP,
 policy baseline. Its explicit search budget is 10,000 ms per decision; the
 default remains 3,000 ms. All three seventh-ring captures have zero counters.
 
-The gold-preserving natural eighth-ring checkpoint now has a complete frozen
-native victory against `Boss_Level8_AllyBuffer`: 50 decisions (39 legal plays,
-11 EndTurns), Pyre4, all four failure counters zero and protected files unchanged.
-The 329.38-second fresh native run reproduces every model successor from one
-deployment root. Its 19 native boss phases include the natural relentless
-transition, eight moves, five new aura targets and two destroyed floors, without
+The gold-preserving natural eighth-ring checkpoint now has a complete rolling
+advisor victory against `Boss_Level8_AllyBuffer`: 50 decisions (39 legal plays,
+11 EndTurns), Pyre21, an identical fresh zero-search native replay and a completed
+losing fixed-policy baseline. All three have four zero failure counters and
+protected files unchanged. The 12-turn, 10,000-ms bounded tactical seed uses
+the opt-in isolated .NET planner; capture-to-publication median/P95 are
+11.1/12.9 seconds. The fresh replay additionally completes the native Standard
+campaign, retaining all eight ordered victories without cheats in a hash-verified
+portable completion archive. This closes the natural eighth-ring acceptance.
+
+The earlier 329.38-second frozen route remains separate evidence with Pyre4.
+It reproduces every model successor from one deployment root. Its 19 native boss
+phases include the natural relentless transition, eight moves, five new aura
+targets and two destroyed floors, without
 queue/HP controls. Rebasing the shared enchantment world after changing the boss
 actor prevents callback settlement from restoring stale casting-phase bump rules
-when the boss already occupies its new phase's floor. Rolling advisor victory
-is being validated separately; this frozen route establishes natural coverage.
+when the boss already occupies its new phase's floor. No queue or HP controls
+are used in either natural victory.
 
 The accepted frozen seventh-ring sequence now continues through native rewards
 and map choices to a legal eighth-ring BattleIntro input: seven preceding wins,
@@ -126,10 +134,9 @@ Capture-to-UI-publication response has a 3893.4 ms median and 4492.3 ms P95.
 The historical later encounters use controlled native map jumps. New
 [natural campaign checkpoints](tests/fixtures/campaign-progressed.md) preserve
 four/six/seven preceding native victories and all offered rewards/upgrades without
-map jumps or authored stats. Strict progressed-deck wins at rings five and
-seven are accepted separately. Eighth-ring advisor victory remains outstanding;
-controlled Pyre-entry integration is
-described above. A second native preparation branch preserves 245 gold by
+map jumps or authored stats. Strict progressed-deck wins at rings five, seven
+and eight are accepted separately. Controlled Pyre-entry integration is
+described above. The second native preparation branch preserves 245 gold by
 declining merchant purchases, with complete offers/prices and the same accepted
 seventh-ring replay retained in `campaign-progressed-ring8-gold.zip`.
 

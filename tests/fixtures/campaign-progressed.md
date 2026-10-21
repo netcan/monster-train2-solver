@@ -68,7 +68,8 @@ a 10,000 ms shared search budget per decision, with the existing 256-node
 limit. Source/replay native elapsed times are 1,085.12/199.41 seconds; policy
 elapsed time is 213.37 seconds. The default 3,000 ms budget is preserved and
 its earlier zero-difference seventh-ring runs lost. This establishes a bounded
-winning continuation; global optimality and outer-train bosses remain open.
+winning continuation; global optimality remains unproven. The later natural
+eighth-ring outer-boss acceptance is described below.
 
 The probe stops at settled combat before campaign victory/reward persistence.
 Its output save still has six completed battles, so continuing to a legal
@@ -102,8 +103,8 @@ without substituting later native snapshots. The no-card/policy runs retain
 seven/six EndTurns and zero/27 legal card actions, including five deployment
 plays in the policy. This accepts the battle model for
 these two continuations. Outer-boss Pyre entry now has separate controlled
-component and frozen-EndTurn calibration; eighth-ring advisor victory remains
-open. Default capture guards remain in place.
+component and frozen-EndTurn calibration; at that earlier milestone eighth-ring
+advisor victory remained open. Default capture guards remain in place.
 
 `campaign-progressed-ring8-gold.zip` retains a second legal preparation branch.
 It replays the same 42 accepted seventh-ring decisions with zero search nodes
@@ -112,13 +113,82 @@ merchant close buttons. Its 54 audited events retain all visible merchant
 offers, cached prices and availability. This preserves 245 gold for the deck's
 50-gold armor spells, 31 cards, three artifacts and seven native victories;
 the original branch instead spends 140/40 gold on `ExtraSpellUpgrades` and
-`MeatShield`. Neither preparation branch establishes a winning eighth-ring
-strategy. Protected game files remain unchanged and the cheat flag is false.
+`MeatShield`. The gold branch now has an accepted frozen native eighth-ring
+victory with Pyre4: 50 decisions, including 39 plays and 11 EndTurns, all four
+failure counters zero. Its archive is
+`full-battle-progressed-ring8-gold-frozen-win.mt2f`; the later rolling-advisor
+acceptance is described below. Protected game files remain unchanged and the cheat flag is false.
 The input save SHA256 is
 `FDE5F23D234C15C200187FCE899D5EB4598A260A72E37DBF2A6972850F717772`;
 ZIP SHA256 is
 `7F984A83965B016CC6E81168068A82CBE04A05AA62C1E4FAFB4491A50DA2CF15`.
 All 25 data/history members are hash-verified on restore.
+
+The gold input now also has its own accepted rolling group,
+`full-battle-progressed-ring8-gold-{search,replay,policy}.mt2f`. Live source
+`full-battle-units-spells-and-junk-20261021-145947-7ab0de83` defeats the actual
+`Boss_Level8_AllyBuffer` with Pyre21 in 50 decisions (39 plays/11 EndTurns).
+All four failure counters and 930 capture-purity checks are zero; original
+files are unchanged. The explicit budget is 12 EndTurns/10,000 ms/256 nodes,
+with the top-floor tactical seed and opt-in isolated .NET planner. Full native
+elapsed time is 1,075.27 seconds; capture-to-UI median/P95 are 11.1/12.9 seconds.
+No queue/HP controls, map jumps, authored card definitions or combat stats are
+used. The completed fixed policy from the same root loses after 32 plays and
+six EndTurns (source `20261021-144046-60bef415`, 242.02 seconds).
+
+Fresh native profile `campaign-ring9-20261021-151751-8086c74a` searches zero
+nodes, preserves every frozen action and forecast, and reproduces the same
+Pyre21 victory with full state/RNG equality. It then continues through the
+game's own standard run completion. Focused
+`Check-RollingAdvisor.ps1 -ProgressedRing 8 -SkipBuild` checks the complete
+source/replay chains and the completed same-input policy comparison.
+The strict pair checker passes all 50 decisions and every frozen continuation;
+terminal evaluator scores are -1,000,000,000,021 for the advisor and
+1,000,000,000,000 for the completed losing policy (lower is better).
+This focused acceptance and the manifest/card-index checks do not rerun the
+full regression inventory.
+
+## Native run completion
+
+`Run-CampaignProgress.ps1 -StopBeforeRing 9` can hand an accepted eighth-ring
+frozen sequence back to the game's own victory, map and end-run flow. It observes
+`GameStateManager.EndGame` before native `FinishRun` resets the active slot,
+retains the actual victory reason/type and each completed battle, then waits
+for the native GameOver/unlock UI. A standard victory is accepted using the
+game's own victory API; a true-final-boss victory is a distinct native result.
+No victory type is authored. The outer-boss replay needs the explicit
+`-OuterBossBirth -OuterBossTurns` capture flags, as in battle acceptance.
+
+`Save-CampaignCheckpoint.ps1 -CompletedRun` bundles the completed standard
+eight-battle run after checking its native replay summary, victory callback,
+eight ordered winning records and unchanged protected files. Native `FinishRun`
+can replace both the active slot and its backup; the archive retains that slot
+and a native eight-win snapshot serialized at EndGame before reset, together
+with the battle replay, audit and preparation history. Its manifest
+uses `StateKind=CompletedNativeRun`. Restore verifies every member hash and
+labels it as a completed-run profile; the earlier BattleIntro archives remain
+the inputs for reproducing battles.
+
+The retained `campaign-completed-ring8.zip` is this native `Standard` victory:
+all eight ordered native battle records are wins, the cheat flag is false,
+the eighth replay retains Pyre21 and the original profile files are unchanged.
+The active slot's native reset is preserved alongside
+`completed-save-singlePlayer.json`, serialized using the game's own
+`JsonUtility` at EndGame before that reset. The completed snapshot retains
+31 deck cards, three relics and the original seed 424242. All 48 data/history
+members are hash-verified on restore. ZIP SHA256 is
+`249469AAFFF652AB00107B5556FA80C5D99C2412CFC435E29F0546946E0500F2`;
+completed snapshot SHA256 is
+`DA169B1E971EC6E5A7473F643505AE1F5A0A88F218A165DAE3BF2D28F2F982AC`.
+This is an eight-battle standard run; the separate true-final-boss route is not
+claimed by this result.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-CampaignProgress.ps1 -InputProfile <GoldRing8Profile> -BattleReplay tests/fixtures/full-battle-progressed-ring8-gold-search.mt2f -StopBeforeRing 9 -OuterBossBirth -OuterBossTurns -TimeoutSeconds 1200
+pwsh -NoProfile -File scripts/Save-CampaignCheckpoint.ps1 -CompletedRun -Profile <CompletedProfile> -Archive <NewCompletion.zip>
+pwsh -NoProfile -File scripts/Save-CampaignCheckpoint.ps1 -Restore -Archive <NewCompletion.zip>
+pwsh -NoProfile -File scripts/Save-CampaignCheckpoint.ps1 -Restore -Archive tests/fixtures/campaign-completed-ring8.zip
+```
 
 ## Reproduce
 

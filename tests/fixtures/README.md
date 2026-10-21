@@ -1,8 +1,21 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 831 archives (771 full battles and
+Current manifest inventory (2026-10-21): 834 archives (774 full battles and
 60 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-progressed-ring8-gold-{search,replay,policy}.mt2f` closes natural
+eighth-ring rolling-advisor acceptance: 50 decisions, 39 plays, 11 EndTurns,
+Pyre21 in both the live source and fresh frozen native replay. The identical-input
+completed fixed policy loses after 32 plays/six EndTurns. All three have zero
+capture/mismatch/unsupported/pending counters; 930 guarded source captures have
+zero purity failures. The opt-in .NET backend uses a 12-turn/10,000-ms tactical
+seed; capture-to-publication median/P95 are 11.1/12.9 seconds. Check only this
+triple with `scripts/Check-RollingAdvisor.ps1 -ProgressedRing 8 -SkipBuild`.
+The fresh replay also completes the game's Standard eight-battle run;
+`campaign-completed-ring8.zip` retains its native result, completed save snapshot,
+replay and full preparation history with per-member hash verification. See
+[campaign evidence](campaign-progressed.md) and [rolling acceptance](rolling-advisor.md).
 
 `full-battle-progressed-ring8-gold-frozen-win.mt2f` is a natural eighth-ring
 victory from `campaign-progressed-ring8-gold.zip`: 50 frozen decisions, 39 plays,
@@ -15,8 +28,8 @@ two destroyed rooms; `--outer-boss-phase-only` checks complete state/RNG equalit
 and immutable inputs. No queue/HP controls were used. The same gold checkpoint's
 no-card baseline is retained as `full-battle-progressed-ring8-gold-no-cards.mt2f`
 (source `20261021-141434-869df8b1`, 64.10 seconds, four zero counters, terminal loss).
-The winning frozen route establishes native battle coverage; rolling advisor
-acceptance is separate.
+The earlier Pyre4 frozen route establishes separate native battle coverage;
+the new Pyre21 rolling acceptance is described above.
 
 `outer-boss-pyre-victory-{calibration,turn-calibration}.mt2f` add the victory
 side of the same Pyre-entry boundary. Alongside the explicit turn-two queue

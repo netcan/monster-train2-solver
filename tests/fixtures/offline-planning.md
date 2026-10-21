@@ -40,8 +40,10 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-planner-onl
 `policy-battle` freezes the seed's actions without search; its output is still a
 model prediction. The planner's rolling 12-turn/10,000-ms candidate completed
 50 decisions with zero unsupported reasons and model Pyre21 in 163.84 seconds,
-including independent replay of all forecasts. This is separate from the
-accepted external frozen route's natural native Pyre4 victory.
+including independent replay of all forecasts. The subsequent live rolling
+source also wins natively with Pyre21 after the same 50 decisions; its accepted
+trace is `full-battle-progressed-ring8-gold-search.mt2f`. The earlier external
+frozen route's Pyre4 victory remains separate evidence.
 
 For native rolling acceptance, `Run-FullBattleProbe.ps1` and
 `Run-RollingAdvisorBenchmark.ps1` accept `-PlannerTacticalSeed` and explicit
@@ -67,8 +69,12 @@ Requests/results remain in the profile as `advisor-*.input.mt2f` and
 `advisor-*.output.mt2f`. `FixtureTools plan-once <request> <new-result>` reproduces
 one request independently. A native request calibration took 7,014 ms for search
 and 2,490 ms for its separate replay. Initial live publications took about 12
-seconds, versus 45–48 seconds in the earlier in-process trial. These are initial
-observations, not whole-battle acceptance or a latency guarantee. External
+seconds, versus 45–48 seconds in the earlier in-process trial. The completed
+natural eighth-ring source takes 1,075.27 seconds including native actions,
+captures and final export. Its 50 executed publications have capture-to-UI
+median 11,089.0 ms, P95 12,868.8 ms and range 4,615.3–13,385.2 ms. All four
+failure counters and 930 capture-purity checks are zero, with original files
+unchanged. These are local observations without a latency guarantee. External
 publication `SearchMs` includes process startup, search, independent replay and
 result decoding; each result retains separate `ModelSearchMs` and
 `ModelVerificationMs`. The usual native capture guard, driver and replay
