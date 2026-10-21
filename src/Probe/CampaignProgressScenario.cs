@@ -32,6 +32,7 @@ namespace MonsterTrain2Poju.Probe
         private int quitCode;
         private int savedRing;
         private bool nativeLost;
+        private readonly HashSet<string> declinedUpgrades = new HashSet<string>();
 
         internal CampaignProgressScenario(ManualLogSource log)
         {
@@ -145,7 +146,7 @@ namespace MonsterTrain2Poju.Probe
                 var goods = Field<List<MerchantGoodUIBase>>(merchant, "goodUIs");
                 MerchantGoodUIBase? buy = goods.Where(x => x.gameObject.activeInHierarchy && x.GoodState != null &&
                     x.Affordable && x.Purchasable && !x.Claimed && x.GoodState.Unlocked &&
-                    x is MerchantGoodDetailsUI).FirstOrDefault();
+                    x is MerchantGoodDetailsUI && AcceptUpgrade(x)).FirstOrDefault();
                 if (buy != null) Click(buy.SelectableUI as GameUISelectableButton, "buy", new {
                     gold = save.GetGold(), reward = buy.GoodState.RewardData.GetReplayDataID(),
                     rewardType = buy.GoodState.RewardData.GetType().Name });
@@ -357,6 +358,25 @@ namespace MonsterTrain2Poju.Probe
         {
             if (button == null || !button.gameObject.activeInHierarchy || !button.CanBeActivated() || !ReplayManager.TryClickButton(button)) return false;
             Record(kind, data ?? new { }); return true;
+        }
+        private bool AcceptUpgrade(MerchantGoodUIBase good)
+        {
+            if (good.GoodState.RewardData is not EnhancerRewardData reward) return true;
+            string[] excluded = (Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS") ?? "")
+                .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            var rejected = new List<string>();
+            foreach (RelicEffectData effect in reward.GetRelicData().GetEffects())
+            {
+                CardUpgradeData? upgrade = effect.GetParamCardUpgradeData();
+                if (upgrade is null) continue;
+                foreach (CardTraitData trait in upgrade.GetTraitDataUpgrades())
+                    if (Array.IndexOf(excluded, trait.GetTraitStateName()) >= 0) rejected.Add(trait.GetTraitStateName());
+            }
+            string[] traits = Enumerable.ToArray(Enumerable.Distinct(rejected));
+            if (traits.Length == 0) return true;
+            if (declinedUpgrades.Add(reward.GetReplayDataID()))
+                Record("decline-upgrade", new { reward = reward.GetReplayDataID(), traits });
+            return false;
         }
         private void SaveCheckpoint(int ring)
         {

@@ -4,6 +4,7 @@ param(
     [ValidateRange(1, 9)] [int] $StopBeforeRing = 5,
     [int] $Seed = 424242,
     [string] $InputProfile = '',
+    [string[]] $ExcludeUpgradeTrait = @(),
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
     [ValidateRange(60, 7200)] [int] $TimeoutSeconds = 1800,
     [switch] $SkipBuild
@@ -48,7 +49,7 @@ if (Test-Path -LiteralPath (Join-Path $source 'campaign-audit.jsonl')) {
 }
 $savePath = Join-Path $profile 'saves/save-singlePlayer.json'
 [pscustomobject]@{ InputProfile = $source; InputSaveSHA256 = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash;
-    StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker } |
+    StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker; ExcludeUpgradeTrait = $ExcludeUpgradeTrait } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-input.json')
 foreach ($assembly in @('Probe', 'Model', 'FixtureArchive')) {
     Copy-Item -LiteralPath (Join-Path $workspace "src/Probe/bin/Release/netstandard2.1/$assembly.dll") -Destination (Join-Path $gameRoot 'BepInEx/plugins') -Force
@@ -65,6 +66,7 @@ foreach ($name in @($start.Environment.Keys)) {
 $settings = @{
     MT2_PROBE_DATA_DIR = $profile; MT2_PROBE_SCENARIO = 'campaign'; MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_CAMPAIGN_STOP_RING = "$StopBeforeRing"; MT2_PROBE_SETTLE_CARD_ANIMATIONS = '1'
+    MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
     MT2_PROBE_BRANCH_CARD_MASKS = '1'; MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'; MT2_PROBE_GAME_SPEED = 'Instant'
 }
 if ($InputProfile) { $settings.MT2_PROBE_RESUME_RUN = '1' }
