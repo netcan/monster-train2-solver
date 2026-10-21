@@ -45,6 +45,8 @@ namespace MonsterTrain2Poju.Model
         }
         internal OuterBossProgress WithRoom(int room) => room == Room ? this : new OuterBossProgress(UnitId, AssetKey,
             Phase, ValidAttackPhases, BaseCanAttack, room, MovementSpeed, VisitedRooms, Controller, Actions, DestroyActions);
+        internal OuterBossProgress WithIdentity(int id) => new OuterBossProgress(id, AssetKey,
+            Phase, ValidAttackPhases, BaseCanAttack, Room, MovementSpeed, VisitedRooms, Controller, Actions, DestroyActions);
     }
     public sealed class OuterBossPhaseState
     {

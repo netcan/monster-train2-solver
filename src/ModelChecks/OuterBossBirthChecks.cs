@@ -14,6 +14,18 @@ internal static class OuterBossBirthChecks
         FixtureValue row = fixture.GetProperty("Births")[0];
         Require(row.GetProperty("NativeReturned").GetBoolean(), "Native boss birth did not return.");
         OuterBossCreationState before = row.GetProperty("Before").Deserialize<OuterBossCreationState>()!;
+        if (row.TryGetProperty("Instantiation", out FixtureValue creation) && creation.ValueKind != FixtureKind.Null)
+        {
+            OuterBossInstantiationState input = creation.Deserialize<OuterBossInstantiationState>()!;
+            string immutable = JsonSerializer.Serialize(input, ModelJson.Options);
+            OuterBossInstantiationResult instantiated = OuterBossInstantiationModel.Apply(input);
+            Require(instantiated.Supported, "Boss instance creation unsupported: " + instantiated.UnsupportedReason);
+            string? creationDiff = ModelJson.Difference(JsonSerializer.Serialize(instantiated.State, ModelJson.Options),
+                JsonSerializer.Serialize(before, ModelJson.Options));
+            Require(creationDiff == null && JsonSerializer.Serialize(input, ModelJson.Options) == immutable,
+                "Boss instance creation differs or mutated input: " + creationDiff);
+            Console.WriteLine("OUTER-BOSS-INSTANTIATION PASS: authored definition, shared identity, unplaced physical registration and complete created-actor/battle equality.");
+        }
         OuterBossPhaseState actual = row.GetProperty("Actual").Deserialize<OuterBossPhaseState>()!;
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
         OuterBossPhaseResult result = OuterBossBirthModel.Apply(before);
@@ -35,7 +47,7 @@ internal static class OuterBossBirthChecks
             auras[0].State.CachedStatus == null && born.Triggers.Where(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))
                 .All(trigger => !trigger.HasTriggered) && (occupiedFloors == 0 || chosenPlayers > 0),
             "Native birth must bind its aura without firing AfterSpawnEnchant or eagerly applying targets.");
-        Console.WriteLine($"OUTER-BOSS-BIRTH PASS: initial action, room {actual.Boss.Room}, {occupiedFloors} occupied floors/{chosenPlayers} selected allies, deferred aura binding, physical birth and full battle/controller/RNG equality; immutable created-actor boundary. CharacterState.Setup remains separate.");
+        Console.WriteLine($"OUTER-BOSS-BIRTH PASS: initial action, room {actual.Boss.Room}, {occupiedFloors} occupied floors/{chosenPlayers} selected allies, deferred aura binding, physical birth and full battle/controller/RNG equality; immutable boundary.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

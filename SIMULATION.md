@@ -51,7 +51,13 @@ floors and three occupied floors; native birth chooses floor two without
 consuming BossActions RNG. The aura is bound with no cached status or targets
 at this boundary, including the occupied control. These samples do not model
 `CharacterState.Setup` or remove the deployment EndTurn guard.
-Initial instance creation/deployment integration, natural eighth-ring victory, effect-bearing boss spells and
+`outer-boss-instantiation-calibration.mt2f` additionally starts before native
+`CreateHeroState`: the model takes the authored original definition, allocates
+the shared unit identity and registers an unplaced physical owner. Its complete
+created actor, controller, movement and battle match the native return exactly.
+This covers the original no-status/no-ability/no-room-modifier boss without
+creation substitutions, Covenant effects or moon tracking. Deployment integration,
+natural eighth-ring victory, effect-bearing boss spells and
 terminal boss-action callbacks remain unverified. Pyre-entry routing is guarded
 explicitly, and the default capture mode retains its previous coverage guards.
 Native upgrade-slot relics now pass battle validation because their only

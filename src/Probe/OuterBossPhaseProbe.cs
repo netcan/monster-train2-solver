@@ -40,6 +40,10 @@ namespace MonsterTrain2Poju.Probe
         internal static int[]? AnchorSlots(CharacterState unit, BossState.AttackPhase phase)
         {
             if (!CaptureAnchors || !unit.IsOuterTrainBoss()) return null;
+            return AnchorSlots(phase);
+        }
+        internal static int[] AnchorSlots(BossState.AttackPhase phase)
+        {
             RoomManager rooms = AllGameManagers.Instance.GetRoomManager();
             return Enumerable.Range(0, rooms.GetNumRooms()).Select(index =>
             {
@@ -55,6 +59,16 @@ namespace MonsterTrain2Poju.Probe
             AllGameManagers managers = AllGameManagers.Instance;
             BossState state = boss.GetBossState();
             BossActionController controller = Field<BossActionController>(state, "_bossActionController");
+            object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(boss);
+            return CaptureProgress(controller, FullBattleTrace.Active!.UnitId(boss), boss.GetSourceCharacterData(),
+                state.GetCurrentAttackPhase().ToString(), (int)Field<BossState.AttackPhase>(boss, "validBossAttackPhase"),
+                Field<bool>(primary, "canAttack"), boss.GetCurrentRoomIndex(), boss.GetMovementSpeed(), state.GetVisitedRoomRecord());
+        }
+        internal static OuterBossProgress Definition(CharacterData data) => CaptureProgress(new BossActionController(data.GetBossActionData()),
+            0, data, "Casting", (int)data.GetValidBossAttackPhase(), data.GetCanAttack(), -1, 1, Array.Empty<int>());
+        private static OuterBossProgress CaptureProgress(BossActionController controller, int id, CharacterData data,
+            string phase, int validPhases, bool canAttack, int room, int speed, IReadOnlyList<int> visits)
+        {
             OuterBossActionProgress Action(BossActionState action)
             {
                 object behavior = Field<object>(action, "_actionBehavior");
@@ -63,11 +77,8 @@ namespace MonsterTrain2Poju.Probe
                     action.GetTargetedRoomIndex(), action.GetPostActionRoomIndex(), Field<bool>(action, "_setupAsInitialAction"),
                     action.IsRoomDestroyAction(), action.IsEmptyAction());
             }
-            object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(boss);
-            return new OuterBossProgress(FullBattleTrace.Active!.UnitId(boss), boss.GetSourceCharacterData().GetAssetKey(),
-                state.GetCurrentAttackPhase().ToString(), (int)Field<BossState.AttackPhase>(boss, "validBossAttackPhase"),
-                Field<bool>(primary, "canAttack"), boss.GetCurrentRoomIndex(), boss.GetMovementSpeed(), state.GetVisitedRoomRecord(),
-                BossActionControllerProbe.Snapshot(controller, managers.GetRoomManager()),
+            return new OuterBossProgress(id, data.GetAssetKey(), phase, validPhases, canAttack, room, speed, visits,
+                BossActionControllerProbe.Snapshot(controller, AllGameManagers.Instance.GetRoomManager()),
                 Field<List<ActionGroupState>>(controller, "_actionGroups").Select(group => (IReadOnlyList<OuterBossActionProgress>)group.GetActions().Select(Action).ToArray()).ToArray(),
                 Field<ActionGroupState>(controller, "_roomDestroyActionGroup").GetActions().Select(Action).ToArray());
         }

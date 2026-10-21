@@ -1,0 +1,63 @@
+using System;
+using System.Linq;
+
+namespace MonsterTrain2Poju.Model
+{
+    public sealed class OuterBossSpawnDefinition
+    {
+        public EnemyDefinition Actor { get; }
+        public OuterBossProgress Boss { get; }
+        public OuterBossSpawnDefinition(EnemyDefinition actor, OuterBossProgress boss) { Actor = actor; Boss = boss; }
+    }
+    public sealed class OuterBossInstantiationState
+    {
+        public BattleTurnState Battle { get; }
+        public OuterBossSpawnDefinition Definition { get; }
+        public OuterBossInstantiationState(BattleTurnState battle, OuterBossSpawnDefinition definition)
+        { Battle = battle; Definition = definition; }
+    }
+    public sealed class OuterBossInstantiationResult
+    {
+        public OuterBossCreationState? State { get; }
+        public string? UnsupportedReason { get; }
+        public bool Supported => State != null;
+        internal OuterBossInstantiationResult(OuterBossCreationState? state, string? reason = null)
+        { State = state; UnsupportedReason = reason; }
+    }
+    public static class OuterBossInstantiationModel
+    {
+        public static OuterBossInstantiationResult Apply(OuterBossInstantiationState source)
+        {
+            OuterBossInstantiationResult Fail(string reason) => new OuterBossInstantiationResult(null, reason);
+            BattleTurnState battle = source.Battle; EnemySpawnState old = battle.Spawn;
+            TrainCombatState train = old.Train; OuterBossSpawnDefinition definition = source.Definition;
+            EnemyDefinition actor = definition.Actor; OuterBossProgress boss = definition.Boss;
+            if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));
+            if (actor.Unit.AssetKey != "Boss_Level8_AllyBuffer" || actor.Unit.Id != 0 || boss.UnitId != 0 ||
+                boss.AssetKey != actor.Unit.AssetKey || boss.Room != -1 || boss.Phase != "Casting" ||
+                old.OuterBoss != null || train.Context?.SpawnPoints == null || actor.Unit.BumpRules?.OuterBoss != true ||
+                actor.Unit.Statuses.Count != 0 || actor.Unit.Ability != null || actor.Unit.Modifiers?.Upgrades.Count != 0 ||
+                actor.CompanionBoss || battle.MoonPhaseTrackingActive == true)
+                return Fail("Outer-boss instantiation requires the calibrated original definition without creation modifiers or moon tracking.");
+            string? invalid = UnitIdentityModel.Validate(train.Context, train.Rooms.SelectMany(room => room.Units), old.NextUnitId);
+            if (invalid != null) return Fail(invalid);
+            UnitIdentityAllocation allocation = UnitIdentityModel.Allocate(train.Context, old.NextUnitId);
+            if (!allocation.Supported) return Fail(allocation.UnsupportedReason!);
+            CombatContext context = allocation.Context!;
+            BattleSpawnPoints points = context.SpawnPoints!;
+            context = context.WithSpawnPoints(points.WithState(points.Groups, points.Units.Append(
+                new UnitSpawnPointState(allocation.UnitId, null, null, outerBoss: true)).ToArray()));
+            train = CardSpellModel.WithContext(train, context);
+            var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng,
+                allocation.NextUnitId, old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn,
+                old.FirstTreasureRoom, old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds);
+            var next = new BattleTurnState(spawn, battle.Energy, battle.EnergyPerTurn, battle.DrawPerTurn,
+                battle.ForgePoints, battle.DragonsHoard, battle.MoonPhase, battle.RngStreams, battle.OtherPiles,
+                battle.ExternalInteractions, battle.PlayRules, battle.BattlePreviewEnabled, battle.UiRngIsolated,
+                battle.CanonicalDecisionReferences, battle.CanonicalPhysicalReferences, battle.SelectedRoom, battle.MoonPhaseTrackingActive);
+            return new OuterBossInstantiationResult(new OuterBossCreationState(next, actor.Create(allocation.UnitId),
+                boss.WithIdentity(allocation.UnitId), actor.ExternalInteractions,
+                new EnemyMovement(allocation.UnitId, 1, actor.Ascends, actor.Loops, actor.CompanionBoss)));
+        }
+    }
+}

@@ -1,8 +1,19 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 821 archives (767 full battles and
-54 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 822 archives (767 full battles and
+55 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`outer-boss-instantiation-calibration.mt2f` extends the birth boundary backwards
+across native `CreateHeroState`. Authored unit/controller definitions are inputs;
+the model allocates the shared identity and registers the unplaced physical owner.
+The entire created actor, controller, intrinsic movement and battle match exactly,
+including immutable inputs and every random stream. Creation substitutions,
+Covenant effects, room modifiers, starting statuses/abilities and active moon
+tracking remain guarded. Source `20261021-134138-493b28ff` took 65.43 seconds,
+finished in a native loss with only the two deployment guards, zero other failure
+counters and protected files unchanged. This is component evidence; full deployment
+EndTurn remains separate. Validate with `--outer-boss-birth-only`.
 
 `outer-boss-birth-calibration.mt2f` and
 `outer-boss-occupied-birth-calibration.mt2f` retain the exact original boundary

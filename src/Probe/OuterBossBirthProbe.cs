@@ -15,16 +15,32 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_BIRTH") == "1";
         private sealed class Record
         {
+            public OuterBossInstantiationState? Instantiation { get; set; }
             public OuterBossCreationState? Before { get; set; }
             public OuterBossPhaseState? Actual { get; set; }
             public bool NativeReturned { get; set; }
             internal CharacterState? Created;
             internal CombatUnit? Definition;
+            internal OuterBossSpawnDefinition? Template;
         }
         private static readonly List<Record> Records = new List<Record>();
         private static readonly List<string> Errors = new List<string>();
         private static Record? pending;
-        internal static CombatUnit? CreatedDefinition => pending?.Definition;
+        internal static CombatUnit? CreatedDefinition => pending?.Definition ?? pending?.Template?.Actor.Unit;
+        internal static OuterBossSpawnDefinition Definition(CharacterData data)
+        {
+            EnemyDefinition actor = EnemySpawningProbe.Definition(data, true);
+            var interactions = actor.ExternalInteractions.Where(value => value != "Spawned outer Boss actions").ToList();
+            AllGameManagers managers = AllGameManagers.Instance;
+            if (managers.GetSaveManager().GetCovenantsForSpawnPattern().Count > 0)
+                interactions.Add("Outer-boss OnSpawn Covenant effects require separate calibration.");
+            if (managers.GetRelicManager().GetRelicEffects(new List<RelicEffectOnSpawnHeroSubstitution>()).Count > 0)
+                interactions.Add("Outer-boss creation substitutions require separate calibration.");
+            if (data.GetRoomModifiersData().Count > 0)
+                interactions.Add("Outer-boss creation room modifiers require separate calibration.");
+            return new OuterBossSpawnDefinition(new EnemyDefinition(actor.Unit, actor.Ascends, actor.Loops,
+                interactions, actor.CompanionBoss), OuterBossPhaseProbe.Definition(data));
+        }
         private static bool Capturing => Enabled && FullBattleTrace.Active != null && !AllGameManagers.Instance.GetSaveManager().PreviewMode;
         private static IEnumerator ObserveBirth(IEnumerator native)
         {
@@ -52,6 +68,11 @@ namespace MonsterTrain2Poju.Probe
         }
         private static IEnumerator ObserveCreation(IEnumerator native, Record row)
         {
+            try
+            {
+                row.Instantiation = new OuterBossInstantiationState(FullBattleTrace.Active!.CaptureDecision(true, true), row.Template!);
+            }
+            catch (Exception error) { Errors.Add(error.ToString()); }
             try { while (native.MoveNext()) yield return native.Current; }
             finally
             {
@@ -92,6 +113,7 @@ namespace MonsterTrain2Poju.Probe
                 __state = null;
                 if (!Capturing || pending == null || !heroData.IsOuterTrainBoss()) return;
                 Record row = pending; __state = row;
+                row.Template = Definition(heroData);
                 Action<CharacterState, CharacterData> callback = afterCharacterCreated;
                 afterCharacterCreated = (unit, data) => { row.Created = unit; callback?.Invoke(unit, data); };
             }
