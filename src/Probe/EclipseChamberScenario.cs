@@ -85,6 +85,7 @@ namespace MonsterTrain2Poju.Probe
                     card.AddTemporaryTrait(freeze, managers.GetCoreManagers());
                 }
                 CardIds = CardIds.Concat(movementCards.Select(FullBattleTrace.Active!.CardId)).ToArray();
+#if DEVELOPMENT_PROBE
                 if (PlayerAdvisorProbe.Enabled)
                 {
                     // Keep a deterministic authored hand order so the generic
@@ -93,6 +94,7 @@ namespace MonsterTrain2Poju.Probe
                     cards.GetHand().Sort((left, right) => Array.IndexOf(order, FullBattleTrace.Active!.CardId(left))
                         .CompareTo(Array.IndexOf(order, FullBattleTrace.Active!.CardId(right))));
                 }
+#endif
             }
             // Settle native activation before the first decision. This isolates
             // room mask behavior from the separate mid-battle activation reset.
