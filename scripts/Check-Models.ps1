@@ -13,6 +13,9 @@ $fixtureNames = @('full-battle-steward-once.mt2f', 'full-battle-no-cards.mt2f', 
     'full-battle-planner-ability-search.mt2f', 'full-battle-planner-ability-replay.mt2f',
     'full-battle-planner-moon-search.mt2f', 'full-battle-planner-moon-replay.mt2f',
     'full-battle-planner-history-search.mt2f', 'full-battle-planner-history-replay.mt2f',
+    'full-battle-advisor-424242-search.mt2f', 'full-battle-advisor-424242-replay.mt2f',
+    'full-battle-advisor-424243-search.mt2f', 'full-battle-advisor-424243-replay.mt2f',
+    'full-battle-advisor-424244-search.mt2f', 'full-battle-advisor-424244-replay.mt2f',
     'full-battle-original-isolated-frozen-totem.mt2f', 'full-battle-original-isolated-royal-whelp.mt2f',
     'full-battle-original-isolated-consumer-of-crowns.mt2f', 'full-battle-original-isolated-steelsinger.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',
@@ -3295,8 +3298,13 @@ foreach ($fixturePath in $originalGrosMichelFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Gros Michel checks failed ($mode): $fixturePath" }
     }
 }
-$plannerFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -like 'full-battle-planner-*.mt2f' })
+$plannerFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -like 'full-battle-planner-*.mt2f' -or (Split-Path -Leaf $_) -like 'full-battle-advisor-*.mt2f' })
 foreach ($fixturePath in $plannerFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --planner-replay-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Native planner checks failed: $fixturePath" }
+}
+$advisorFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -like 'full-battle-advisor-*-search.mt2f' })
+foreach ($fixturePath in $advisorFixtures) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --native-advice-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Native live advisor checks failed: $fixturePath" }
 }

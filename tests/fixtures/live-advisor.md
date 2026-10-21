@@ -1,0 +1,116 @@
+# Live battle advisor
+
+Launch the interactive copied game with:
+
+```powershell
+pwsh -NoProfile -File scripts/Run-BattleAdvisor.ps1
+```
+
+Play normally. The panel shows the next card/ability, floor, deployment slot
+or target, and the forecast Pyre HP after up to three EndTurns. F8 hides/shows
+the panel; its buttons refresh or pause recommendations. `-Horizon 2` selects
+two EndTurns. The overlay does not play cards automatically.
+
+The command prints its isolated `Profile`. Pass that same directory with
+`-Profile .probe-runs/advisor-<timestamp>-<suffix>` to resume that progress.
+Omitting `-Profile` creates a new copy of `.probe-baseline`. `-NativeWorker 2`
+uses the second game copy, and `-SkipBuild` reuses built assemblies. The
+installed game's plugins, original saves and preferences are not deployment
+targets. The interactive launcher clears inherited probe/calibration variables,
+enables snapshot metadata and physical spawn references, and respects the
+profile's native game speed and audio settings.
+
+![Actual Unity advisor panel rendered offscreen and cropped](advisor-panel.png)
+
+The image is the actual native Unity UI for seed 424243, rendered to a dedicated
+texture and cropped to the panel. Occluded/locked Windows sessions returned
+black desktop screenshots; this image is not a full-game desktop screenshot.
+The capture has 328 text vertices and 83,011 non-background pixels before
+cropping. The Canvas uses a GraphicRaycaster and a blocking panel image.
+
+## Execution and freshness
+
+`BattleAdviceSession` accepts only immutable model snapshots. One background
+worker runs the bounded planner and independently replays every selected step
+before publishing a complete continuation. Unity/game APIs stay on the main
+thread. Node/time budgets, complete no-card fallback and completed fixed-policy
+seeds retain the planner's existing semantics.
+
+Card plays, EndTurn, floor selection, undo and restart invalidate advice.
+Quiet native state is checked every half second; full-state keys retain unit
+and card identities, histories, selected floor and gameplay RNG. New requests
+cancel obsolete work and retain only the latest pending snapshot. Generation
+checks reject results even if an old worker finishes after cancellation.
+Cancellation waits for an atomic expansion to finish on the worker; the UI
+thread never waits for that worker. Undo/restart and new manual battles reset
+the capture identities. Scene changes recreate a cleared panel without ending
+the static advice service. A failed/incomplete calculation hides its advice;
+the user can continue playing and refresh or resume the panel.
+
+Each live capture compares native resources, piles, units/statuses and rooms,
+every native RNG stream including presentation streams, Unity RNG state and
+frame before/after projection. This checks the captured state boundary, not
+every private engine field. Comparison failures hide advice and remain failures
+in the evidence. A result is advisory, uses known captured deck order/RNG and
+does not establish global optimality or hidden-draw probabilities.
+
+## Natural encounter evidence
+
+Six archives form three live-source/fresh-native-replay pairs. All six full
+battles are settled native wins, with CaptureFailures, Mismatches, Unsupported
+and Pending equal to zero. The replay processes search zero nodes and reproduce
+every frozen step, full intermediate state, planning-window state and RNG.
+Each live source publishes an initial recommendation, invalidates it after
+the first action and publishes a newly computed recommendation. The test
+driver then continues the original frozen sequence for independent replay.
+The overlay's refreshed result is also independently model-replayed.
+
+These are three naturally generated first-ring battles from seeds 424242,
+424243 and 424244, covering Junker and Horde encounters. `InTestScenario` is
+false, modifier setup is empty, and no scenario-authored card plays are present.
+Every battle naturally spawns `Boss_Level1_Basic`, marked native `IsMiniboss`.
+They are not three distinct campaign bosses and do not validate later-ring
+or outer-train boss encounters. Native speed is Instant for acceptance runs;
+the interactive launcher preserves the user's own speed.
+
+| Seed | Encounter | Window / no-card Pyre HP | Steps | Search ms | Completed fixed-policy seed |
+| --- | --- | --- | ---: | ---: | --- |
+| 424242 | Level1BattleJunker | 80 / 74 | 10 | 3130.8 | Incomplete; comparison unknown |
+| 424243 | Level1BattleHorde | 73 / 73 | 12 | 3922.9 | Same score, -72931.5 |
+| 424244 | Level1BattleHorde | 80 / 73 | 12 | 3642.8 | Same score, -79949 |
+
+All roots are turn two with a three-EndTurn horizon. The Pyre values describe
+the planning window, not terminal battle HP. Seed 424243 improves only the
+positional score over its no-card baseline. Search uses a three-second soft
+budget; an atomic expansion can overrun it. These measurements exclude main
+thread capture and the worker's independent plan verification, so they are not
+end-to-end response deadlines. Incomplete fixed-policy seeds are not reported
+as beaten. Retained continuations are never worse than a completed seed.
+
+| Seed | Source suffix (20261021) | Fresh replay suffix | Pure captures | Publications | Invalidations | Frames while planning |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| 424242 | 083959-e3bd5377 | 084117-36bf3696 | 41 | 2 | 27 | 1238 |
+| 424243 | 084209-8cac8d3b | 084323-2580fe5c | 45 | 2 | 26 | 2216 |
+| 424244 | 083921-ad59cd38 | 084313-c20dc45d | 44 | 2 | 28 | 1698 |
+
+All source purity-failure counters are zero. Runs use the
+`.probe-runs/full-battle-units-spells-and-junk-` prefix. Retained binaries are
+`full-battle-advisor-<seed>-search.mt2f` and `-replay.mt2f`; sizes, hashes and
+node counts are in `manifest.tsv`. Sources span UI revisions: the 424243
+source additionally records the explicit offscreen render counters. The pure
+advice-session tests separately cover rejected late results, latest-snapshot
+coalescing, one worker, budget fallback, failure and nonblocking disposal.
+
+Run only the focused checks, or create a fresh native pair:
+
+```powershell
+pwsh -NoProfile -File scripts/Check-BattleAdvisor.ps1
+pwsh -NoProfile -File scripts/Run-PlannerBenchmark.ps1 -Case starter -Advisor -Seed 424243
+```
+
+The separate native benchmark driver automates inputs; the interactive launcher
+does not. The interactive entry was also smoke-tested through native startup,
+save-root redirection and a live game window without the autoplay driver.
+
+Later-ring/outer-train boss validation, unknown-draw planning, broader campaign
+combination coverage and a global optimality proof remain outside this evidence.

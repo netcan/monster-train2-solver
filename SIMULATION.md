@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 783 binary archives, including 743
-full battles and 40 component calibrations. The card index accepts 742 battles;
+Current curated inventory (2026-10-21): 789 binary archives, including 749
+full battles and 40 component calibrations. The card index accepts 748 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -18,6 +18,14 @@ mismatch, unsupported and pending counters. The starter planning window retains
 80 Pyre HP versus 74 for its no-card baseline, matching the completed fixed
 policy. These include controlled mechanic setups, use captured deck order/RNG,
 and do not establish global optimality or a hidden-draw policy.
+
+The [interactive battle advisor](tests/fixtures/live-advisor.md) now captures
+quiet live decisions, plans on one model worker, displays the next card/ability
+and target plus forecast Pyre HP, and invalidates advice after native actions.
+It includes an isolated manual launcher, a native Unity panel render, and three
+natural first-ring miniboss search/fresh-replay pairs. All six full battles
+pass with four failure counters zero. These cover two encounter types and one
+miniboss identity; later-ring/outer-train boss validation remains outstanding.
 
 ### Per-card evidence inventory
 

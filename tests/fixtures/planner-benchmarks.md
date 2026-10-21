@@ -143,6 +143,7 @@ The native three-second search can choose a different plan than the offline
 three-second benchmark because their runtimes and CPU contention differ.
 The frozen sequence establishes cross-process reproducibility. The roughly
 3.00-3.27 second observed searches are soft-budget measurements, not a hard
-three-second deadline. This milestone covers the probe/command-line workflow;
-an interactive in-game recommendation UI and hidden-draw planning remain future
-work.
+three-second deadline. This milestone covers the probe/command-line workflow.
+The subsequent [live advisor milestone](live-advisor.md) adds an interactive
+native overlay, action invalidation/replanning and natural miniboss pairs.
+Hidden-draw planning remains future work.

@@ -4,7 +4,10 @@ Fixed native regression inputs live in `tests/fixtures/` and are read by
 `scripts/Check-Models.ps1`. Historical `results/` paths below refer to local
 investigation logs, catalogs and benchmarks; that output directory is ignored.
 
-This is an isolated feasibility experiment, not an in-game solver. The probe
+The original feasibility experiment is described below. Current implementation
+status is in [SIMULATION.md](SIMULATION.md); the [live battle advisor](tests/fixtures/live-advisor.md)
+now provides an isolated interactive overlay backed by bounded model planning.
+The historical probe
 plugin lives in `src/Probe`, the copied game is in `.sandbox-game`, isolated
 profiles are in `.probe-runs`, and captured Unity logs are in `results`.
 

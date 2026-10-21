@@ -4,6 +4,26 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattleAdviceChecks
 {
+    internal static void Native(FixtureValue fixture)
+    {
+        FixtureValue advice = fixture.GetProperty("Advisor");
+        void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
+        Require(advice.GetProperty("Captures").GetInt32() > 0 && advice.GetProperty("PurityFailures").GetInt32() == 0,
+            "Live capture changed native state or RNG.");
+        Require(advice.GetProperty("Published").GetInt32() >= 2 && advice.GetProperty("Invalidations").GetInt32() > 0 &&
+            advice.GetProperty("PlanningFrames").GetInt32() >= 2, "Missing live publication, action invalidation/replanning or background frames.");
+        Require(!advice.GetProperty("InTestScenario").GetBoolean() &&
+            string.IsNullOrEmpty(fixture.GetProperty("ModifierScenario").GetString()), "Advisor benchmark authored the native encounter.");
+        Require(advice.GetProperty("Bosses").EnumerateArray().Any(boss => boss.GetProperty("Miniboss").GetBoolean() ||
+            boss.GetProperty("OuterTrainBoss").GetBoolean()), "No natural boss was captured.");
+        Require(!fixture.GetProperty("Actions").EnumerateArray().Any(action => action.GetProperty("ScenarioAction").GetBoolean()),
+            "Advisor benchmark contains authored scenario plays.");
+        if (advice.TryGetProperty("Failures", out FixtureValue failures)) Require(failures.GetInt32() == 0, "Live advisor failed.");
+        if (advice.TryGetProperty("PanelVertices", out FixtureValue vertices))
+            Require(vertices.GetInt32() > 0 && advice.GetProperty("PanelPixels").GetInt32() >= 1000, "Live native UI render is empty.");
+        Console.WriteLine($"NATIVE-ADVICE PASS seed={advice.GetProperty("Seed").GetString()} scenario={advice.GetProperty("Scenario").GetString()} published={advice.GetProperty("Published").GetInt32()} captures={advice.GetProperty("Captures").GetInt32()} purityFailures=0");
+    }
+
     internal static void Run(FixtureValue fixture)
     {
         FixtureValue record = fixture.GetProperty("PlannerRuns").EnumerateArray().First();

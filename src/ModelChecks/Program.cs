@@ -1626,6 +1626,12 @@ if (args.Length == 2 && args[0] == "--train-heal-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--native-advice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattleAdviceChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--battle-advice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
