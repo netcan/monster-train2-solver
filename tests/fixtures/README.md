@@ -1,8 +1,15 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 810 archives (764 full battles and
+Current manifest inventory (2026-10-21): 813 archives (767 full battles and
 46 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+The three `full-battle-progressed-ring7-{search,replay,policy}.mt2f` archives
+retain the natural checkpoint's strict seventh-ring victory: actual boss
+`Boss_Level7_Rax`, 111 Pyre HP, 42 decisions, identical independent native
+replay and a completed losing policy baseline. All three have zero capture,
+mismatch, unsupported and pending counters. See [campaign evidence and
+reproduction](campaign-progressed.md); hashes and sizes are in the manifest.
 
 `retired-unit-destruction-calibration.mt2f` retains native EndTurns 2, 3 and 4
 from `full-battle-units-spells-and-junk-20261021-112619-4fac265b`. Three retired

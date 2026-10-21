@@ -22,6 +22,7 @@ $fixtureNames = @('retired-unit-destruction-calibration.mt2f', 'planner-deployme
     'full-battle-rolling-advisor-ring5-search.mt2f', 'full-battle-rolling-advisor-ring5-replay.mt2f', 'full-battle-rolling-advisor-ring5-policy.mt2f',
     'full-battle-rolling-advisor-ring7-search.mt2f', 'full-battle-rolling-advisor-ring7-replay.mt2f', 'full-battle-rolling-advisor-ring7-policy.mt2f',
     'full-battle-progressed-ring5-search.mt2f', 'full-battle-progressed-ring5-replay.mt2f', 'full-battle-progressed-ring5-policy.mt2f',
+    'full-battle-progressed-ring7-search.mt2f', 'full-battle-progressed-ring7-replay.mt2f', 'full-battle-progressed-ring7-policy.mt2f',
     'full-battle-original-isolated-frozen-totem.mt2f', 'full-battle-original-isolated-royal-whelp.mt2f',
     'full-battle-original-isolated-consumer-of-crowns.mt2f', 'full-battle-original-isolated-steelsinger.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',

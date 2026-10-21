@@ -31,8 +31,8 @@ source's 275 guarded captures have zero purity failures.
 
 Check this group with `--rolling-advice-victory-pair-only` and the search,
 replay and policy archives in that order. The input checkpoint alone does
-not prove these results. This is the first accepted naturally progressed
-middle-ring victory; seventh-ring rolling victory remains outstanding.
+not prove these results. These archives retain the naturally progressed
+fifth-ring victory; the separately accepted seventh-ring group is below.
 
 `campaign-progressed-ring7.zip` preserves six natural preparation wins. Its
 fifth and sixth victories finished at 69 and 48 Pyre HP. Strict rolling
@@ -52,6 +52,27 @@ The ZIP SHA256 is
 all 14 data/history members were verified on restore. A prepared checkpoint
 does not itself establish a rolling-advisor victory.
 
+The supported input now has its own strict victory group,
+`full-battle-progressed-ring7-{search,replay,policy}.mt2f`. The rolling advisor
+defeats the actually present `Boss_Level7_Rax`, retaining 111 Pyre HP after
+32 card/ability plays and ten EndTurns. A fresh native process searches zero
+nodes and reproduces all 42 decisions, full state, gameplay RNG and victory.
+The completed fixed policy plays 30 actions/six EndTurns and loses. All three
+runs finish with `DEPTH-PASS`, settled terminal effects and zero capture,
+mismatch, unsupported and pending counters; all launchers verify original
+files unchanged. The search has 839 guarded captures and zero purity failures.
+
+This run explicitly uses the middle floor, three EndTurns of lookahead and
+a 10,000 ms shared search budget per decision, with the existing 256-node
+limit. Source/replay native elapsed times are 1,085.12/199.41 seconds; policy
+elapsed time is 213.37 seconds. The default 3,000 ms budget is preserved and
+its earlier zero-difference seventh-ring runs lost. This establishes a bounded
+winning continuation; global optimality and outer-train bosses remain open.
+
+The probe stops at settled combat before campaign victory/reward persistence.
+Its output save still has six completed battles, so continuing to a legal
+eighth-ring checkpoint requires the native campaign transitions separately.
+
 ## Reproduce
 
 ```powershell
@@ -59,6 +80,11 @@ pwsh -NoProfile -File scripts/Run-CampaignProgress.ps1 -StopBeforeRing 5
 pwsh -NoProfile -File scripts/Save-CampaignCheckpoint.ps1 -Restore -Archive tests/fixtures/campaign-progressed-ring5.zip
 # Use the restored Profile returned above:
 pwsh -NoProfile -File scripts/Run-RollingAdvisorBenchmark.ps1 -InputProfile <Profile> -BattleDistance 4 -RequireWin
+# Seventh-ring supported input and its explicit budget:
+pwsh -NoProfile -File scripts/Save-CampaignCheckpoint.ps1 -Restore -Archive tests/fixtures/campaign-progressed-ring7-supported.zip
+pwsh -NoProfile -File scripts/Run-RollingAdvisorBenchmark.ps1 -InputProfile <ReturnedProfile> -BattleDistance 6 -PlannerDeploymentRoom 1 -PlannerTimeLimitMs 10000 -SettleDeathDissolves -RequireWin
+# Check only the retained seventh-ring triple:
+pwsh -NoProfile -File scripts/Check-RollingAdvisor.ps1 -ProgressedRing 7 -SkipBuild
 ```
 
 The campaign driver saves a separate direct child of `.probe-runs` before

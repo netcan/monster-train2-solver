@@ -1,16 +1,19 @@
 # Full-battle rolling advisor
 
-Validated on 2026-10-21: four complete native encounters, each with a rolling
-advisor source, an independent frozen-input replay and a completed native
-`units-spells-and-junk` policy baseline. All twelve archives are settled
+Validated on 2026-10-21: four historical controls and two naturally progressed
+victory groups, each with a rolling advisor source, an independent frozen-input
+replay and a completed native `units-spells-and-junk` policy baseline. All
+eighteen archives are settled
 `DEPTH-PASS` captures with CaptureFailures, Mismatches, Unsupported and Pending
 equal to zero. The launcher also verifies the original game files/preferences
 remain unchanged.
 
-The three distinct **actually present** boss identities are
-`Boss_Level1_Basic`, `Boss_Level2_BigStats` and `Boss_Level5_Reanimate`.
-The seventh-ring control ends before its boss enters; it contributes mechanic
-evidence and does not count toward boss coverage.
+The four distinct actually present boss identities are `Boss_Level1_Basic`,
+`Boss_Level2_BigStats`, `Boss_Level5_Reanimate` and `Boss_Level7_Rax`.
+The historical seventh-ring control ends before its boss enters; it contributes
+mechanic evidence. The [natural campaign groups](campaign-progressed.md) win
+at rings five/seven with 59/111 Pyre HP and reproduce all 26/42 decisions in
+fresh native processes. Their completed fixed-policy baselines both lose.
 
 ## Replanning and independent verification
 
@@ -87,8 +90,8 @@ binding loss. Native temporary lethal Pyre previews also update auras outside
 the locally restored room. A failed seventh-ring baseline exposed that last
 case; a fresh baseline passed after the fix. The failed trace is not curated.
 
-Outer-train/queued final-boss spawning remains explicitly unsupported. Boss
-mechanic combinations, later-ring wins with progressed decks, unknown draws,
+Outer-train/queued final-boss spawning remains explicitly unsupported. Additional
+boss mechanic combinations, unknown draws,
 random-branch probabilities and global optimality remain unproven.
 
 ## Response latency
@@ -101,7 +104,7 @@ to settle, the initial half-second observation interval, the optional diagnostic
 panel PNG and physical screen presentation. It is a capture-to-UI-publication
 measurement, not an input-to-photon deadline.
 
-Across all 62 decisions, the median is **3893.4 ms**, nearest-rank P95
+Across the 62 historical control decisions, the median is **3893.4 ms**, nearest-rank P95
 **4492.3 ms**, range **3238.0–4572.8 ms**. The three-second search budget is
 soft: atomic expansions may overrun, and the remaining stages add latency.
 Native acceptance speed is Instant. These measurements are local observations,
@@ -132,13 +135,15 @@ Run the focused acceptance suite, or create a new complete triple:
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-RollingAdvisor.ps1
+pwsh -NoProfile -File scripts/Check-RollingAdvisor.ps1 -ProgressedRing 7 -SkipBuild
 pwsh -NoProfile -File scripts/Run-RollingAdvisorBenchmark.ps1 -BattleDistance 4 -Seed 424242
 ```
 
 `-SourceTrace`, `-ReplayTrace` and `-BaselineTrace` reuse completed captures;
 `-NativeWorker 2` selects the second isolated game copy. The suite checks all
-four triples, three actual boss identities including a middle/later distance,
-positive Harvest/Incant buffs and retained aura destruction/unbinding.
+four historical triples plus both strict natural victory groups, four actual
+boss identities, positive Harvest/Incant buffs and retained aura destruction/
+unbinding. `-ProgressedRing 5` or `7` checks only that retained victory group.
 
 Progressed-deck victory acceptance uses `-InputProfile` and `-RequireWin`.
 The latter rejects a lost source before starting a fresh replay, requires both

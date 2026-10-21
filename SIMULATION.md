@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 810 binary archives, including 764
-full battles and 46 component calibrations. The card index accepts 763 battles;
+Current curated inventory (2026-10-21): 813 binary archives, including 767
+full battles and 46 component calibrations. The card index accepts 766 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -13,7 +13,10 @@ The [naturally progressed fifth-ring checkpoint](tests/fixtures/campaign-progres
 now has a strict rolling victory: 59 Pyre HP, 26 decisions, an identical fresh
 native replay and a completed losing fixed-policy baseline. All three full
 battles have zero capture/mismatch/unsupported/pending counters. The natural
-seventh-ring victory remains outstanding.
+seventh-ring checkpoint now also wins against `Boss_Level7_Rax`: 111 Pyre HP,
+42 decisions, the same winning fresh native replay and a completed losing
+policy baseline. Its explicit search budget is 10,000 ms per decision; the
+default remains 3,000 ms. All three seventh-ring captures have zero counters.
 
 The [bounded multi-turn planner](tests/fixtures/planner-benchmarks.md) now has
 five captured-state benchmarks and five search/independent-native-replay pairs.
@@ -32,7 +35,7 @@ It includes an isolated manual launcher, a native Unity panel render, and three
 natural first-ring miniboss search/fresh-replay pairs. All six full battles
 pass with four failure counters zero. These cover two encounter types and one
 miniboss identity. The newer [full-battle rolling acceptance](tests/fixtures/rolling-advisor.md)
-adds four source/replay/completed-policy triples and 62 newly computed native
+retains four historical source/replay/completed-policy triples and 62 computed native
 decisions through actual battle ends. Three distinct bosses enter actual rooms,
 including the fifth-ring boss. The first two encounters win with 73/34 Pyre HP
 versus the completed policy's 66/33; the fifth/seventh-ring starter-deck runs
@@ -41,8 +44,8 @@ Capture-to-UI-publication response has a 3893.4 ms median and 4492.3 ms P95.
 The historical later encounters use controlled native map jumps. New
 [natural campaign checkpoints](tests/fixtures/campaign-progressed.md) preserve
 four/six preceding native victories and all offered rewards/upgrades without
-map jumps or authored stats. Strict progressed-deck rolling wins and
-outer-train boss support remain outstanding.
+map jumps or authored stats. Strict progressed-deck wins at rings five and
+seven are accepted separately. Outer-train boss support remains outstanding.
 
 ### Per-card evidence inventory
 
