@@ -20,7 +20,6 @@
     <Reference Include="UnityEngine.UIModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.UIModule.dll" Private="false" />
     <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.InputLegacyModule.dll" Private="false" />
     <Reference Include="UnityEngine.TextRenderingModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.TextRenderingModule.dll" Private="false" />
-    <Reference Include="UnityEngine.ScreenCaptureModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.ScreenCaptureModule.dll" Private="false" />
     <Reference Include="UnityEngine.ImageConversionModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.ImageConversionModule.dll" Private="false" />
   </ItemGroup>
 </Project>

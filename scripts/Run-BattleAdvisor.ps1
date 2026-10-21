@@ -40,7 +40,7 @@ foreach ($name in @($start.Environment.Keys)) {
 }
 $settings = @{
     MT2_PROBE_DATA_DIR = $Profile; MT2_PROBE_SCENARIO = 'advisor'
-    MT2_PROBE_GAME_SPEED = 'Normal'; MT2_PROBE_PLANNER_HORIZON = "$Horizon"
+    MT2_PROBE_PLANNER_HORIZON = "$Horizon"
     MT2_PROBE_BRANCH_CARD_MASKS = '1'; MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'
     MT2_PROBE_SETTLE_CARD_ANIMATIONS = '1'
 }

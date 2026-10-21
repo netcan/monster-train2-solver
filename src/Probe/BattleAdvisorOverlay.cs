@@ -27,6 +27,7 @@ namespace MonsterTrain2Poju.Probe
         private float nextCapture;
         private bool paused, wasInBattle, screenshotTaken;
         private string? captureError;
+        private string? manualBattleKey;
         internal int Captures { get; private set; }
         internal int PurityFailures { get; private set; }
         internal int Published { get; private set; }
@@ -138,7 +139,7 @@ namespace MonsterTrain2Poju.Probe
             EnsureUi();
             bool inBattle = managers?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle;
             if (!inBattle && wasInBattle && Environment.GetEnvironmentVariable("MT2_PROBE_SCENARIO") == "advisor")
-                new FullBattleTrace(log);
+            { new FullBattleTrace(log); manualBattleKey = null; }
             wasInBattle = inBattle;
             if (paused || managers == null || !Ready(managers))
             {
@@ -146,6 +147,13 @@ namespace MonsterTrain2Poju.Probe
                 session.Poll();
                 body.text = paused ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。";
                 return;
+            }
+            if (Environment.GetEnvironmentVariable("MT2_PROBE_SCENARIO") == "advisor")
+            {
+                SaveManager save = managers.GetSaveManager();
+                string battle = save.GetShareCode() + ":" + save.GetCurrentDistance();
+                if (manualBattleKey != battle || FullBattleTrace.Active?.NativeWon != null)
+                { new FullBattleTrace(log); manualBattleKey = battle; Invalidate(); }
             }
             session.Poll();
             if (session.Status == BattleAdviceStatus.Planning) PlanningFrames++;
@@ -246,7 +254,8 @@ namespace MonsterTrain2Poju.Probe
             BattlePlanResult plan = advice.Plan;
             int hp = plan.State.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
             var text = new StringBuilder();
-            text.Append(plan.Outcome == RoomOutcome.BattleWon ? "预计获胜" : plan.Outcome == RoomOutcome.PlayerDefeated ? "预计战败" : "规划窗口结束")
+            text.Append(plan.Outcome == RoomOutcome.BattleWon ? "预计获胜" : plan.Outcome == RoomOutcome.PlayerDefeated ? "预计战败" :
+                plan.Outcome == RoomOutcome.Stalemate ? "预计僵持" : "规划窗口结束")
                 .Append(" · 火炉 ").Append(hp).Append(" 血\n\n下一步：\n");
             BattleSearchStep step = plan.Steps[0];
             if (step.IsEndTurn) text.Append("结束回合");
@@ -292,7 +301,9 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(BattleHud), "EndTurn")]
         private static class EndTurnPatch { private static void Prefix() => NativeAction(); }
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.UndoTurn))]
-        private static class UndoPatch { private static void Prefix() => NativeAction(); }
+        private static class UndoPatch { private static void Prefix() { NativeAction(); if (Active != null) Active.manualBattleKey = null; } }
+        [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.RestartBattle))]
+        private static class RestartPatch { private static void Prefix() { NativeAction(); if (Active != null) Active.manualBattleKey = null; } }
         [HarmonyPatch(typeof(RoomManager), nameof(RoomManager.RoomSelectionChanged))]
         private static class SelectionPatch { private static void Prefix() => NativeAction(); }
 
