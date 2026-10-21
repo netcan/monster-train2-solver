@@ -12,16 +12,18 @@ namespace MonsterTrain2Poju.Model
         public int MaxTurns { get; }
         public int BeamWidth { get; }
         public int MaxActionsPerTurn { get; }
+        public int PreferredDeploymentRoom { get; }
         public TimeSpan TimeLimit { get; }
 
         public BattlePlannerOptions(int maxNodes = 2048, int maxTurns = 3, int beamWidth = 16,
-            int maxActionsPerTurn = 12, TimeSpan? timeLimit = null)
+            int maxActionsPerTurn = 12, TimeSpan? timeLimit = null, int preferredDeploymentRoom = 2)
         {
-            if (maxNodes < 1 || maxTurns < 1 || beamWidth < 1 || maxActionsPerTurn < 1)
+            if (maxNodes < 1 || maxTurns < 1 || beamWidth < 1 || maxActionsPerTurn < 1 || preferredDeploymentRoom < 0)
                 throw new ArgumentOutOfRangeException(nameof(maxNodes));
             TimeLimit = timeLimit ?? TimeSpan.FromSeconds(2);
             if (TimeLimit <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timeLimit));
             MaxNodes = maxNodes; MaxTurns = maxTurns; BeamWidth = beamWidth; MaxActionsPerTurn = maxActionsPerTurn;
+            PreferredDeploymentRoom = preferredDeploymentRoom;
         }
     }
 
@@ -157,7 +159,8 @@ namespace MonsterTrain2Poju.Model
                 SupportedActionCandidate? chosen = null;
                 if (strength.Actions < options.MaxActionsPerTurn)
                 {
-                    chosen = BattleHeuristicPolicy.Choose(strength.State, out IReadOnlyList<UnsupportedActionAttempt> omitted);
+                    chosen = BattleHeuristicPolicy.Choose(strength.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
+                        options.PreferredDeploymentRoom);
                     foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                 }
                 else actionLimit = true;
@@ -173,6 +176,9 @@ namespace MonsterTrain2Poju.Model
                     if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported strength-seed EndTurn.")); break; }
                     strength = Child(strength, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
                     Consider(strength);
+                    // Retain the seed's complete current-turn card sequence
+                    // even if its later card choices exhaust the shared budget.
+                    if (strength.Turns == 1) Rollout(strength);
                 }
             }
 

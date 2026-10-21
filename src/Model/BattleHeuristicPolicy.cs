@@ -9,7 +9,7 @@ namespace MonsterTrain2Poju.Model
     public static class BattleHeuristicPolicy
     {
         public static SupportedActionCandidate? Choose(BattleTurnState source,
-            out IReadOnlyList<UnsupportedActionAttempt> unsupported)
+            out IReadOnlyList<UnsupportedActionAttempt> unsupported, int preferredDeploymentRoom = 2)
         {
             var omitted = new List<UnsupportedActionAttempt>();
             unsupported = omitted;
@@ -82,7 +82,7 @@ namespace MonsterTrain2Poju.Model
                 if (rule.SpawnUnit is CombatUnit unit)
                     return 1000 + (unit.Modifiers?.IsChampion == true ? 500 : 0) + unit.Attack * 2 + unit.Health;
                 if (rule.CostType == "ConsumeRemainingEnergy" && rule.Effects.Any(effect =>
-                    effect.AllowPlayer && effect.Statuses.Any(status => status.DisplayCategory == "Positive"))) return 1500;
+                    effect.AllowPlayer && effect.Statuses.Any(status => status.DisplayCategory == "Positive"))) return 900;
                 return 100;
             }
             double TargetPriority(PlayCardAction action, CardPlayRule rule)
@@ -92,7 +92,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     CombatUnit[] allies = room.Units.Where(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0).ToArray();
                     bool tank = unit.Health > allies.Select(unit => unit.Health).DefaultIfEmpty(0).Max();
-                    return action.RoomIndex * 50 + (tank ? -1 : 1) * action.PlayerPosition +
+                    return -Math.Abs(action.RoomIndex - preferredDeploymentRoom) * 50 + (tank ? -1 : 1) * action.PlayerPosition +
                         (tank && allies.Any(unit => unit.Modifiers?.IsChampion == true) ? 100 + unit.Health * 2 : 0);
                 }
                 CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
@@ -100,6 +100,8 @@ namespace MonsterTrain2Poju.Model
                 bool harmful = rule.Effects.Any(effect => effect.Type is "Damage" or "Kill" ||
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
                 if (harmful != (target.Team == CombatTeam.Enemy)) return -1e6;
+                if (!harmful && rule.Effects.Any(effect => effect.Type == "FloorRearrange"))
+                    return target.Health + Math.Max(0, target.Status("armor")?.Stacks ?? 0);
                 return harmful ? 400 - target.Health : 150 + target.Attack + (target.Modifiers?.IsChampion == true ? 500 : 0);
             }
         }

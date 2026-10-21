@@ -53,6 +53,7 @@ namespace MonsterTrain2Poju.Probe
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
         internal object Evidence => new { Captures, PurityFailures, Published, Invalidations, PlanningFrames, PanelVertices, PanelPixels, Failures, Publications,
             Error = session.Error, UnavailableRoot = session.Status == BattleAdviceStatus.Unavailable ? lastCapture : null, Horizon = horizon,
+            PreferredDeploymentRoom = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2"),
             Scenario = AllGameManagers.Instance?.GetSaveManager()?.GetCurrentScenarioData()?.name,
             InTestScenario = AllGameManagers.Instance?.GetSaveManager()?.InTestScenario,
             Seed = Environment.GetEnvironmentVariable("MT2_PROBE_SEED"),
@@ -63,7 +64,8 @@ namespace MonsterTrain2Poju.Probe
         {
             this.log = log;
             horizon = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_HORIZON") ?? "3");
-            session = new BattleAdviceSession(new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromSeconds(3)));
+            session = new BattleAdviceSession(new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromSeconds(3),
+                preferredDeploymentRoom: int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2")));
             Active = this;
             log.LogInfo("ADVISOR-READY background model worker; F8 toggles overlay; no automatic plays.");
         }

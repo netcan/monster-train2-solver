@@ -21,6 +21,7 @@ param(
     [int] $PlannerTurn = 2,
     [ValidateRange(2, 3)]
     [int] $PlannerHorizon = 3,
+    [ValidateRange(0, 2)] [int] $PlannerDeploymentRoom = 2,
     [string] $PlannerInput = '',
     [ValidateRange(60, 3600)]
     [int] $TimeoutSeconds = 600,
@@ -1146,6 +1147,7 @@ $environment = @{
     MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
     MT2_PROBE_PLANNER_HORIZON = "$PlannerHorizon"
+    MT2_PROBE_PLANNER_DEPLOYMENT_ROOM = "$PlannerDeploymentRoom"
     MT2_PROBE_PLANNER_INPUT = $(if ($PlannerInput) { (Resolve-Path -LiteralPath $PlannerInput).Path } else { '' })
     MT2_PROBE_DATA_DIR = $profile
     MT2_PROBE_SCENARIO = 'native-replay'

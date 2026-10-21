@@ -4,10 +4,14 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattleHeuristicChecks
 {
-    internal static void RollingForecast(FixtureValue fixture, int maxNodes)
+    private static BattleTurnState CapturedRoot(FixtureValue fixture) =>
+        (fixture.TryGetProperty("Root", out var root) ? root :
+            fixture.GetProperty("RollingDecisions")[0].GetProperty("Root")).Deserialize<BattleTurnState>()!;
+
+    internal static void RollingForecast(FixtureValue fixture, int maxNodes, int preferredDeploymentRoom = 2)
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        BattleTurnState root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        BattleTurnState root = CapturedRoot(fixture);
         string original = JsonSerializer.Serialize(root);
         BattleTurnState state = root;
         var steps = new List<BattleSearchStep>();
@@ -16,7 +20,8 @@ internal static class BattleHeuristicChecks
         {
             using var keys = new BattleStateKeys();
             BattlePlanResult plan = BattlePlanner.Plan(state, keys.Key,
-                new BattlePlannerOptions(maxNodes, 3, 8, timeLimit: TimeSpan.FromSeconds(3)));
+                new BattlePlannerOptions(maxNodes, 3, 8, timeLimit: TimeSpan.FromSeconds(3),
+                    preferredDeploymentRoom: preferredDeploymentRoom));
             if (!plan.CompletedHorizon || plan.Steps.Count == 0) throw new InvalidOperationException("No complete rolling forecast.");
             BattleSearchStep step = plan.Steps[0];
             state = BattlePlannerChecks.Replay(state, new[] { step }, out RoomOutcome outcome);
@@ -37,11 +42,10 @@ internal static class BattleHeuristicChecks
 
     // Fast offline strategy diagnosis from a captured native root. This does
     // not count as a native victory or independent native replay acceptance.
-    internal static void Forecast(FixtureValue fixture)
+    internal static RoomOutcome Forecast(FixtureValue fixture, int preferredDeploymentRoom = 2)
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        BattleTurnState root = fixture.GetProperty("RollingDecisions").EnumerateArray().First()
-            .GetProperty("Root").Deserialize<BattleTurnState>()!;
+        BattleTurnState root = CapturedRoot(fixture);
         string original = JsonSerializer.Serialize(root);
         BattleTurnState state = root;
         RoomOutcome outcome = RoomOutcome.Exchanged;
@@ -49,7 +53,7 @@ internal static class BattleHeuristicChecks
         var omittedReasons = new HashSet<string>();
         for (int decision = 0; decision < 200; decision++)
         {
-            var chosen = BattleHeuristicPolicy.Choose(state, out var omitted);
+            var chosen = BattleHeuristicPolicy.Choose(state, out var omitted, preferredDeploymentRoom);
             foreach (var attempt in omitted) omittedReasons.Add(attempt.Reason);
             if (chosen != null)
             {
@@ -69,7 +73,7 @@ internal static class BattleHeuristicChecks
                 if (JsonSerializer.Serialize(replay) != JsonSerializer.Serialize(state) || outcome != replayOutcome ||
                     JsonSerializer.Serialize(root) != original) throw new InvalidOperationException("Heuristic forecast replay or source immutability failed.");
                 Console.WriteLine($"HEURISTIC-FORECAST outcome={outcome} decisions={steps.Count} score={BattlePlanner.Evaluate(state, outcome)} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} omittedReasons={string.Join("; ", omittedReasons)}; model-only diagnosis.");
-                return;
+                return outcome;
             }
         }
         throw new InvalidOperationException("Heuristic forecast exceeded 200 decisions.");

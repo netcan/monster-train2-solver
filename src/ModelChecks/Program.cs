@@ -1699,22 +1699,29 @@ if (args.Length == 4 && args[0] == "--rolling-advice-victory-pair-only")
     RollingAdviceChecks.VictoryPair(source.RootElement, replay.RootElement, baseline.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--planner-deployment-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PlannerDeploymentChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--planner-plateau-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     PlannerPlateauChecks.Native(fixture.RootElement);
     return;
 }
-if (args.Length is 2 or 3 && args[0] == "--rolling-forecast-only")
+if (args.Length is >= 2 and <= 4 && args[0] == "--rolling-forecast-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    BattleHeuristicChecks.RollingForecast(fixture.RootElement, args.Length == 3 ? int.Parse(args[2]) : 256);
+    BattleHeuristicChecks.RollingForecast(fixture.RootElement, args.Length >= 3 ? int.Parse(args[2]) : 256,
+        args.Length == 4 ? int.Parse(args[3]) : 2);
     return;
 }
-if (args.Length == 2 && args[0] == "--heuristic-forecast-only")
+if (args.Length is 2 or 3 && args[0] == "--heuristic-forecast-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    BattleHeuristicChecks.Forecast(fixture.RootElement);
+    BattleHeuristicChecks.Forecast(fixture.RootElement, args.Length == 3 ? int.Parse(args[2]) : 2);
     return;
 }
 if (args.Length == 4 && args[0] == "--battle-planner-only")
@@ -3175,6 +3182,11 @@ foreach (string path in args.Where(path => path.Contains("intrinsic-opening-draw
 {
     using var fixture = ModelJson.ReadFixture(path);
     IntrinsicOpeningDrawChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("planner-deployment-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    PlannerDeploymentChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("planner-score-plateau-calibration", StringComparison.OrdinalIgnoreCase)))
 {

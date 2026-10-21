@@ -5,6 +5,7 @@ param(
     [ValidateRange(1, 2147483647)] [int] $Seed = 424242,
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
     [ValidateRange(2, 3)] [int] $PlannerHorizon = 3,
+    [ValidateRange(0, 2)] [int] $PlannerDeploymentRoom = 2,
     [string] $SourceTrace = '',
     [string] $ReplayTrace = '',
     [string] $BaselineTrace = '',
@@ -24,7 +25,7 @@ try {
     }
     $arguments = @{ Seed = $Seed; BattleDistance = $BattleDistance; NativeWorker = $NativeWorker
         SkipBuild = $true; PhysicalSpawnPoints = $true; BranchCardMasks = $true; Policy = 'units-spells-and-junk'
-        TimeoutSeconds = 900; PlannerHorizon = $PlannerHorizon }
+        TimeoutSeconds = 900; PlannerHorizon = $PlannerHorizon; PlannerDeploymentRoom = $PlannerDeploymentRoom }
     if ($InputProfile) { $arguments.InputProfile = $InputProfile }
     function Invoke-RollingNative([hashtable] $Parameters, [bool] $VictoryRequired = $false) {
         $output = @(& (Join-Path $PSScriptRoot 'Run-FullBattleProbe.ps1') @Parameters)

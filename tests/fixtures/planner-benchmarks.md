@@ -10,15 +10,31 @@ successor. Ordinary policy seeding omits unit/room ability enumeration; the
 beam's full frontier still includes both. The strength seed ranks captured
 card stats and visible targets before applying effects, evaluating only as far
 as its first legal successor. Multi-stage card choices retain the ordinary
-branch enumerator. Each seed forecasts its first play once, then completes
-its policy horizon without repeatedly ending the same future turns after
-every card. Checks compare the fixed lazy seed's exact
+branch enumerator. Each seed forecasts its first play once. The strength seed
+also forecasts after completing its first turn, so its coherent current-turn
+sequence survives when later card choices exhaust the shared budget. It then
+completes its policy horizon without forecasting after every card.
+Checks compare the fixed lazy seed's exact
 choice and successor against the existing full-enumeration policy. All seeds
 consume the same planning budgets. A completed fixed-policy seed is reported
 as `PolicyBaselineScore`; a null value means the seed did not finish within
 the budget, not that the recommendation beat that policy.
 Win precedes survival; surviving Pyre HP precedes the bounded positional
 ordering term. Wins also prefer higher remaining Pyre HP.
+
+`PreferredDeploymentRoom` ranks the strength seed's legal placements; the
+ordinary frontier still explores all legal rooms. The default remains room
+2. `-PlannerDeploymentRoom 1` on the rolling benchmark selects the middle
+room and retains that preference in source evidence. Units precede buffs
+that consume all remaining energy, and front-rearrangement spells rank
+visible health/armor when choosing a tank.
+
+`planner-deployment-calibration.mt2f` preserves the exact initial root from
+the natural seventh-ring loss `20261021-105845-d8f29b7d`. Its focused checker
+requires three legal first placements, a complete bounded middle-floor plan,
+exact replay and immutable source. A complete middle-floor heuristic model
+chain wins with 111 Pyre HP. This component is model strategy evidence;
+native rolling victory and frozen replay must be accepted separately.
 
 `BattleStateKeys` hashes every public branch-state property and ordered
 collection, reusing shared immutable subtrees within one planning call. It
