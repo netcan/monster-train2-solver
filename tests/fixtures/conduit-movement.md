@@ -47,7 +47,7 @@ means the complete capture contains no retained modifier. Physical capture now
 emits it whenever Conduit is enabled. `WithSpawnPoints` dispatches the calibrated
 callback automatically, skips preview card changes and same-point no-ops, and
 retains private state across detach/reattach. Incomplete captures and enemy
-Conduit physical movement remain guarded. Player Conduit capture is still disabled.
+Conduit physical movement remain guarded. Player Conduit capture is enabled in 0.2.3.
 
 ## Integrated physical battle
 
@@ -71,5 +71,25 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-conduit-rel
 ```
 
 This does not establish complete combat preview, mixed conduits, room-mask
-callbacks, arbitrary multiplier/trait combinations or an integrated player action chain.
+callbacks or arbitrary multiplier/trait combinations.
 The existing original Conduit relic fixture remains a separate affected check.
+
+## Player action chain and independent replay
+
+`full-battle-player-conduit-search.mt2f` records the actual 0.2.3 player entry
+point (profile `full-battle-units-spells-and-junk-20261021-221018-514570eb`,
+265.04 seconds): 24 card actions, six EndTurns, 32 publications, 398 pure
+captures and a native win with 80 Pyre HP. The independent frozen replay
+`full-battle-player-conduit-replay.mt2f` takes 93.11 seconds, performs the same
+30 inputs with zero planner nodes and wins with 80 HP. Both settle terminal
+effects and retain zero capture/mismatch/unsupported/pending counters.
+
+The focused pair gate matches every input, complete root/successor, forecast
+and gameplay RNG. It also independently checks all 14 relic births, 96 live
+contributor snapshots, 37 multi-contributor rooms and 12 upgraded card plays.
+The native relic owners are unchanged; their Steward/equipment carriers are
+authored. This is functional player calibration, not a natural-deck encounter.
+
+```powershell
+scripts/Check-PlayerAdvisor.ps1 -Case Conduit -SkipBuild
+```

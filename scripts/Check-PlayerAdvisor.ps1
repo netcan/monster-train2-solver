@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Moon', 'OuterBoss', 'Conduit')]
-    [string[]] $Case = @('Moon', 'OuterBoss'),
+    [string[]] $Case = @('Moon', 'OuterBoss', 'Conduit'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'

@@ -330,7 +330,7 @@ the queued boss at turn zero, both Casting/Relentless phases, newly generated
 Entropy Scourges with captured source traits, and native unit-ability creation
 and activation. Run
 `scripts/Check-PlayerAdvisor.ps1 -Case OuterBoss -SkipBuild` for the manifest-
-verified focused gate, or omit `-Case` to check both the moon and boss pairs.
+verified focused gate, or omit `-Case` to check moon, boss and Conduit pairs.
 No full fixture regression is needed for this player-capture increment.
 
 ## Delivered 0.2.2 trial package
@@ -368,3 +368,41 @@ whose Unity destruction changes the captured aura binding. Ordinary corpses do
 not block advice. The existing retired-unit destruction fixture still matches
 all six EndTurns, upgrade cleanup, aura unbinding and gameplay RNG. Failed
 diagnostics are not curated as accepted battles.
+
+Source profile `full-battle-units-spells-and-junk-20261021-221018-514570eb`
+completes 30 rolling decisions (24 card actions, six EndTurns) in 265.04 seconds
+and wins with 80 Pyre HP. The real player records 32 publications, 398 pure
+captures, 300 panel vertices and 85,699 visible pixels. Native UI interactions
+pass, 275 compactions and 2,765 complete physical decision captures are recorded,
+terminal effects settle, original files remain unchanged and all four failure
+counters are zero.
+
+Fresh profile `full-battle-units-spells-and-junk-20261021-221504-75c1e557`
+repeats all 30 inputs with zero planner nodes in 93.11 seconds, again winning
+with 80 HP. It records 70 pure captures, no publications and 550 physical
+decision captures; all counters remain zero and terminal effects settle.
+The focused pair checker matches every root, input, successor, forecast and
+gameplay RNG, independently verifies 14 relic births and observes 96 contributor
+snapshots, 37 rooms with multiple contributors and 12 upgraded card plays.
+Original relic definitions are unchanged, but carriers are authored controls;
+this does not establish a natural Conduit deck or arbitrary combinations.
+
+Both archives are curated as `full-battle-player-conduit-{search,replay}.mt2f`.
+Run `scripts/Check-PlayerAdvisor.ps1 -Case Conduit -SkipBuild` for this focused gate.
+
+## Delivered 0.2.3 trial package
+
+`results/mod-dist/0.2.3-validated/PojuAdvisor-0.2.3-macOS.zip` is 2,927,620 bytes,
+from clean source `e8499e053edad73807dbdc679beaf77ecf7fd2a9`. ZIP SHA256:
+`8e0d2c0ce1b61a8664fc8ce4e19040d7a599c61fd25bb158399952885440794e`.
+All 12 files pass package checks. All three DLLs exactly match the fresh
+Conduit replay payload:
+
+| DLL | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | `841e2b3e33df115e8050232c7a1c1b0b2e8ce2827b4f450cf87ced98441e0981` |
+| Model.dll | `54b693d24c310c19fa292899bcb21a606991ab72843d8fca070f5c7432fe788b` |
+| FixtureArchive.dll | `41d034870b67b28e6202d76b735ae1577c1fbe1bdb44aacdf1530c972f14f53e` |
+
+The ZIP and checksum are copied to `/tank` root with network hashes verified;
+0.2.2 remains available. Mac runtime acceptance is still outstanding.
