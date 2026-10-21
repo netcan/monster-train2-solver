@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
         private bool paused, wasInBattle, screenshotTaken;
         private string? captureError;
         private string? manualBattleKey;
+        private BattleTurnState? lastCapture;
         internal int Captures { get; private set; }
         internal int PurityFailures { get; private set; }
         internal int Published { get; private set; }
@@ -50,7 +51,8 @@ namespace MonsterTrain2Poju.Probe
         }
         internal List<Publication> Publications { get; } = new List<Publication>();
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
-        internal object Evidence => new { Captures, PurityFailures, Published, Invalidations, PlanningFrames, PanelVertices, PanelPixels, Failures, Publications, Horizon = horizon,
+        internal object Evidence => new { Captures, PurityFailures, Published, Invalidations, PlanningFrames, PanelVertices, PanelPixels, Failures, Publications,
+            Error = session.Error, UnavailableRoot = session.Status == BattleAdviceStatus.Unavailable ? lastCapture : null, Horizon = horizon,
             Scenario = AllGameManagers.Instance?.GetSaveManager()?.GetCurrentScenarioData()?.name,
             InTestScenario = AllGameManagers.Instance?.GetSaveManager()?.InTestScenario,
             Seed = Environment.GetEnvironmentVariable("MT2_PROBE_SEED"),
@@ -179,6 +181,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     var capture = Stopwatch.StartNew();
                     BattleTurnState root = CaptureReadOnly(managers);
+                    lastCapture = root;
                     using var keys = new BattleStateKeys();
                     string key = keys.Key(root);
                     capture.Stop();

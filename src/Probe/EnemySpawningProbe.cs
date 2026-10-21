@@ -28,6 +28,19 @@ namespace MonsterTrain2Poju.Probe
 
         internal EnemySpawnState CapturePhase() => CaptureState(false, false, false);
 
+        internal static bool RequiresEnchantmentWorld()
+        {
+            AllGameManagers managers = AllGameManagers.Instance!;
+            SaveManager save = managers.GetSaveManager();
+            var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(managers.GetHeroManager());
+            if (pattern == null) return false;
+            var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
+            return waves.SelectMany(wave => ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
+                    .GetValue(wave)).Cast<SpawnGroupData>())
+                .SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()))
+                .Any(character => character.GetTriggers().Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectEnchant")));
+        }
+
         private EnemySpawnState CaptureState(bool canonicalReferences, bool includeOuterBossForBump,
             bool ignoreOuterBossSpawnInteraction)
         {
@@ -123,9 +136,9 @@ namespace MonsterTrain2Poju.Probe
                 statusImmunities: data.GetStatusEffectImmunities(), subtypes: data.GetSubtypes().Select(subtype => subtype.Key).ToArray(),
                 modifiers: UnitModifierProbe.Definition(data), isBoss: data.IsMiniboss() || data.IsOuterTrainBoss(), lastAttackerId: 0, statusRegistry: statuses, equipmentCards: Array.Empty<int>(), nextTriggerId: triggers.Count, ability: ability, statusDictionary: new StatusDictionaryState(statuses.Select(status => (string?)status.Id).ToArray(), Array.Empty<int>()), abilityRules: AbilityLifecycleProbe.Rules(data), hordeDefinition: new HordeBaseStats(data.GetAttackDamage(), data.GetHealth()), isSpawning: false, sacrificeCardId: 0, deathState: new UnitDeathState(false, false, true, isSacrifice: false, statisticsListenerOnce: true,
                     isDespawned: captureBirthLifecycle || OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ||
-                        FullBattleTrace.Active != null && RoomDeathEffectProbe.RequiresBirthWorld(FullBattleTrace.Active) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? false : (bool?)null,
+                        FullBattleTrace.Active != null && (FullBattleTrace.Active.CapturesNativeEnchantments || RoomDeathEffectProbe.RequiresBirthWorld(FullBattleTrace.Active)) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? false : (bool?)null,
                     isDestroyed: captureBirthLifecycle || OriginalOpeningMorselsScenario.Enabled || HordeMergeScenario.Enabled || BumpScenario.Enabled || EnchantmentBattleScenario.Prepared ||
-                        FullBattleTrace.Active != null && RoomDeathEffectProbe.RequiresBirthWorld(FullBattleTrace.Active) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? false : (bool?)null),
+                        FullBattleTrace.Active != null && (FullBattleTrace.Active.CapturesNativeEnchantments || RoomDeathEffectProbe.RequiresBirthWorld(FullBattleTrace.Active)) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? false : (bool?)null),
                     bumpRules: SentryAttackProbe.Definition(data) != null || TroopAuraProbe.Definition(data) != null || BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || OriginalReactiveUnitsScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) ? new UnitBumpRules(data.GetLoopsBetweenTrainFloors(), data.IsCompanionBoss(), data.IsOuterTrainBoss()) : null,
                     lastFeederId: data.GetTriggers().Any(trigger => trigger.GetTrigger() == CharacterTriggerData.Trigger.OnEaten) || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ? 0 : (int?)null, moonPhaseMask: EclipseChamberScenario.Enabled ? (int)PlayerManager.MoonPhase.None : (int?)null),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());

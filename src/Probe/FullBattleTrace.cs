@@ -82,6 +82,8 @@ namespace MonsterTrain2Poju.Probe
             return id;
         }
         private bool calibrated;
+        private bool? nativeEnchantmentWorld;
+        internal bool CapturesNativeEnchantments => nativeEnchantmentWorld ??= EnemySpawningProbe.RequiresEnchantmentWorld();
         internal static FullBattleTrace? Active { get; private set; }
         internal bool? NativeWon { get; private set; }
         private bool? stoppingOutcome;
@@ -387,7 +389,7 @@ namespace MonsterTrain2Poju.Probe
                 int decisionStart = BattleSpawnPointProbe.Decisions.Count;
                 otherPiles = CaptureOtherPiles();
                 RoomEchoProbe.Discover();
-                enchantments = EnchantmentBattleScenario.Prepared || OriginalSupportUnitsScenario.CapturesEnchantments || RoomDeathEffectProbe.RequiresBirthWorld(this) || RoomPreCombatProbe.RequiresWorld(this) || TroopAuraProbe.RequiresWorld(this)
+                enchantments = CapturesNativeEnchantments || EnchantmentBattleScenario.Prepared || OriginalSupportUnitsScenario.CapturesEnchantments || RoomDeathEffectProbe.RequiresBirthWorld(this) || RoomPreCombatProbe.RequiresWorld(this) || TroopAuraProbe.RequiresWorld(this)
                     ? EnchantmentBattleScenario.CaptureWorld(this) : null;
                 abilityCache = AbilityCardProbe.Capture(this);
                 bonusDraw = BonusDrawProbe.Capture(cards, this);

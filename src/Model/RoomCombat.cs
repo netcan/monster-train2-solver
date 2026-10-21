@@ -1324,6 +1324,19 @@ namespace MonsterTrain2Poju.Model
                                 return "Triggered train healing requires fixed Pyre targeting and captured healing rules without source-trait scaling.";
                             continue;
                         }
+                        if (effect.Type == "CardEffectBuffDamage")
+                        {
+                            // Native enemy Harvest/Incant has no source card traits.
+                            // Keep other target modes and parent-card scaling guarded.
+                            if (unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 || unit.Modifiers == null ||
+                                effect.Action is not { Type: "BuffAttack", Range: null } buff ||
+                                buff.Target is not ("Self" or "Room") || buff.Value != effect.Value ||
+                                buff.Target == "Room" && (!buff.AllowEnemy || buff.AllowPlayer))
+                                return "Triggered attack buffs require a captured fixed enemy self/room buff without parent-card traits.";
+                            string? buffFilter = buff.Target == "Self" ? null : buff.Filters?.Validate();
+                            if (buffFilter != null) return buffFilter;
+                            continue;
+                        }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
                             effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules" or "CardEffectSynergizeStatusEffects") &&
                             effect.Type is not ("CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
@@ -4310,6 +4323,7 @@ namespace MonsterTrain2Poju.Model
                 action.Type == "PlayUnitTrigger" ? true :
                 action.Type == "AdjustCorruption" ? RoomCorruptionModel.Test(CurrentRoom(), action) :
                 action.Type is "AdjustMaxHealth" or "BuffHealth" ? true :
+                action.Type == "BuffAttack" ? targets.UnitIds.Any(id => units.Any(unit => unit.Source.Id == id && unit.Alive && unit.Source.CanAttack)) :
                 action.Type == "Null" ? targets.UnitIds.Count > 0 || action.NullTargetless :
                 action.Type == "TransferAllStatusesFromUnit" ? targets.UnitIds.Count > 0 && TriggeredStatusTransferModel.Validate(action) == null :
                 action.Type == "RemoveStatus" ? StatusRemovalModel.Test(CurrentRoom(), action, targets.UnitIds) :
@@ -4797,6 +4811,20 @@ namespace MonsterTrain2Poju.Model
                 }
                 int amount = action.Type == "AdjustCapacity" || action.Type == ForgePointsModel.Effect && source.Preview
                     ? action.Value : SampleActionAmount(action);
+                if (action.Type == "BuffAttack")
+                {
+                    foreach (int id in targets.UnitIds)
+                    {
+                        WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == id && unit.Alive && unit.Source.CanAttack);
+                        if (target == null) continue;
+                        RoomCombatResult changed = UnitAttackModel.Apply(CurrentRoom(), id, amount);
+                        if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
+                        context = changed.State!.Context;
+                        foreach (CombatUnit unit in changed.State.Units) units.First(current => current.Source.Id == unit.Id).Apply(unit);
+                        Emit("BuffAttack", actor, target, amount);
+                    }
+                    return true;
+                }
                 if (action.Type is "AdjustMaxHealth" or "BuffHealth")
                 {
                     string? healthError = TriggeredHealthModel.Validate(effect);

@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -128,7 +129,9 @@ namespace MonsterTrain2Poju.Model
         internal static void Verify(BattleTurnState root, BattlePlanResult plan)
         {
             if (plan.Cancelled || !plan.CompletedHorizon || plan.Steps.Count == 0)
-                throw new InvalidOperationException("No complete verified continuation within the planning budget.");
+                throw new InvalidOperationException("No complete verified continuation within the planning budget. turns=" +
+                    plan.TurnsCompleted + " nodes=" + plan.ExpandedNodes + " elapsedMs=" + plan.Elapsed.TotalMilliseconds +
+                    " reasons=" + string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));
             BattleTurnState replayed = root;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             foreach (BattleSearchStep step in plan.Steps)

@@ -181,6 +181,11 @@ namespace MonsterTrain2Poju.Probe
             }
             catch (Exception ex)
             {
+                if (RollingAdviceScenario.Enabled)
+                {
+                    try { FullBattleTrace.Active?.Write(); }
+                    catch (Exception exportError) { log.LogError("ROLLING-DIAGNOSTIC-EXPORT-FAIL " + exportError); }
+                }
                 Finish(false, "Error in " + stage + ": " + (ex is TargetInvocationException ? ex.InnerException ?? ex : ex));
             }
         }

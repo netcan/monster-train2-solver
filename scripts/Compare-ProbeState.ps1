@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string] $Archive,
-    [ValidateSet('Actions', 'Stages', 'Turns', 'TrainPhases', 'Spawns', 'CardCycles')]
+    [ValidateSet('Actions', 'Stages', 'Turns', 'TrainPhases', 'Spawns', 'CardCycles', 'RollingDecisions')]
     [string] $Collection = 'Turns',
     [ValidateRange(-1, 2147483647)][int] $Index = -1,
     [ValidateRange(1, 1000)][int] $MaxDifferences = 30
@@ -39,7 +39,8 @@ try {
     $indices = if ($Index -ge 0) { @($Index) } else { @(0..($rows.Count - 1)) }
     foreach ($rowIndex in $indices) {
         $row = $rows[$rowIndex]
-        $differences = @(Compare-Value $row.Predicted.State $row.Actual "`$.$Collection[$rowIndex]" | Select-Object -First $MaxDifferences)
+        $predicted = if ($Collection -eq 'RollingDecisions') { $row['Expected'] } else { $row['Predicted']['State'] }
+        $differences = @(Compare-Value $predicted $row['Actual'] "`$.$Collection[$rowIndex]" | Select-Object -First $MaxDifferences)
         if ($differences.Count -gt 0) { $differences; break }
     }
 }
