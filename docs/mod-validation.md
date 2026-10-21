@@ -5,8 +5,9 @@ is followed by the 0.2.1 focused results.
 It compiles against Mono game 2.2.1, module
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, as an AnyCPU netstandard2.1 assembly.
 The assembly excludes `ProbePlugin` and `NativeReplayScenario`. Startup selects
-eight observation/invalidation patches explicitly, including spawn-point copy
-identity tracking. It does not install every patch in its assembly.
+nine observation/invalidation patches explicitly, including spawn-point copy
+identity tracking and original source-trait capture for generated cards. It does
+not install every patch in its assembly.
 
 ## Focused results
 

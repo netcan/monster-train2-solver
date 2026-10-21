@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Advisor
     public sealed class AdvisorPlugin : BaseUnityPlugin
     {
         public const string PluginId = "netcan.monstertrain2.advisor";
-        public const string Version = "0.2.1";
+        public const string Version = "0.2.2";
         private Harmony? harmony;
         private BattleAdvisorOverlay? overlay;
 
@@ -38,6 +38,7 @@ namespace MonsterTrain2Poju.Advisor
                 // would activate development instrumentation and is not a player entry point.
                 FullBattleTrace.InstallAdvisorPatches(harmony);
                 BattleSpawnPointProbe.InstallAdvisorPatches(harmony);
+                CardSourceTraitProbe.InstallAdvisorPatches(harmony);
                 BattleAdvisorOverlay.InstallAdvisorPatches(harmony);
                 overlay = new BattleAdvisorOverlay(Logger, settings);
                 Logger.LogInfo("POJU-READY version=" + Version + " platform=" + Application.platform +

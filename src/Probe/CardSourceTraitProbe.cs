@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
             internal Source(CardData data) { Traits = data.GetTraits().Select(Capture).ToArray(); }
         }
         private static readonly ConditionalWeakTable<CardState, Source> Sources = new ConditionalWeakTable<CardState, Source>();
+        internal static void InstallAdvisorPatches(Harmony harmony) => harmony.CreateClassProcessor(typeof(SetupPatch)).Patch();
         internal static CardSourceTrait[]? Capture(CardState card) => Sources.TryGetValue(card, out Source source) ? source.Traits : null;
         internal static CardSourceTrait Capture(CardTraitData trait) => new CardSourceTrait(trait.GetTraitStateName(),
             trait.GetParamInt(), trait.GetParamInt2(), trait.GetParamInt3(), trait.GetParamBool(), trait.GetParamStr(),
