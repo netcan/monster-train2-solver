@@ -85,6 +85,7 @@ namespace MonsterTrain2Poju.Probe
         private bool? nativeEnchantmentWorld;
         internal bool CapturesNativeEnchantments => nativeEnchantmentWorld ??= EnemySpawningProbe.RequiresEnchantmentWorld();
         internal static FullBattleTrace? Active { get; private set; }
+        internal void Detach() { if (Active == this) Active = null; }
         internal bool? NativeWon { get; private set; }
         private bool? stoppingOutcome;
         internal bool? TerminalEffectsSettled { get; private set; }

@@ -53,7 +53,7 @@ foreach ($name in @('saves/save-singlePlayer.json', 'metagameSave.json', 'prefer
 $cursor = $Profile; $visited = @{}; $depth = 0
 while ((Split-Path $cursor -Parent) -ieq $profilesRoot -and (Test-Path -LiteralPath $cursor) -and -not $visited.ContainsKey($cursor)) {
     $visited[$cursor] = $true
-    foreach ($name in @('campaign-audit.jsonl', 'campaign-parent-audit.jsonl', 'campaign-input.json', 'native-checkpoint-input.json')) {
+    foreach ($name in @('campaign-audit.jsonl', 'campaign-parent-audit.jsonl', 'campaign-input.json', 'native-checkpoint-input.json', 'campaign-battle-replay.mt2f')) {
         $path = Join-Path $cursor $name
         $memberName = if ($depth -eq 0) { $name } else { "history-$depth-$name" }
         if (Test-Path -LiteralPath $path) { $members[$memberName] = [IO.File]::ReadAllBytes($path) }

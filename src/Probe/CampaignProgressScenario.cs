@@ -34,7 +34,7 @@ namespace MonsterTrain2Poju.Probe
         private bool nativeLost;
         private readonly HashSet<string> declinedUpgrades = new HashSet<string>();
 
-        internal CampaignProgressScenario(ManualLogSource log)
+        internal CampaignProgressScenario(ManualLogSource log, bool afterBattle = false)
         {
             this.log = log; active = this;
             stopRing = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STOP_RING") ?? "5");
@@ -42,6 +42,14 @@ namespace MonsterTrain2Poju.Probe
             auditPath = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "campaign-audit.jsonl");
             lastProgress = Time.realtimeSinceStartup;
             Record("start", new { seed, stopRing, resume = Environment.GetEnvironmentVariable("MT2_PROBE_RESUME_RUN") == "1" });
+            if (afterBattle)
+            {
+                started = true;
+                Record("battle-replay-complete", new { decisions = RollingAdviceScenario.Records.Count,
+                    archive = "full-battle.mt2f", searchNodes = RollingAdviceScenario.Records.Sum(x => x.Nodes) });
+                Record("battle-outcome", new { won = true, distance = AllGameManagers.Instance.GetSaveManager().GetCurrentDistance(),
+                    pyre = AllGameManagers.Instance.GetPlayerManager().GetTowerHP() });
+            }
         }
 
         private void Record(string kind, object data)
@@ -389,6 +397,8 @@ namespace MonsterTrain2Poju.Probe
                 File.Copy(file, Path.Combine(destination, "saves", Path.GetFileName(file)));
             foreach (string name in new[] { "metagameSave.json", "preferences.json", "preferences-local.json", "campaign-input.json", "campaign-parent-audit.jsonl" })
                 if (File.Exists(Path.Combine(root, name))) File.Copy(Path.Combine(root, name), Path.Combine(destination, name));
+            if (Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_REPLAY") == "1")
+                File.Copy(Path.Combine(root, "full-battle.mt2f"), Path.Combine(destination, "campaign-battle-replay.mt2f"));
             byte[] bytes = File.ReadAllBytes(Path.Combine(destination, "saves", "save-singlePlayer.json"));
             string hash;
             using (SHA256 sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");

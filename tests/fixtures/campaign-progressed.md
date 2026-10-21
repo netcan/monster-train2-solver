@@ -73,6 +73,24 @@ The probe stops at settled combat before campaign victory/reward persistence.
 Its output save still has six completed battles, so continuing to a legal
 eighth-ring checkpoint requires the native campaign transitions separately.
 
+`campaign-progressed-ring8.zip` now retains that continuation. The campaign
+launcher replays the accepted seventh-ring sequence in a fresh native process,
+checks every root/successor and gameplay RNG, then lets the original combat-end,
+victory, reward and map coroutines continue. The replay searches zero nodes,
+reproduces all 42 decisions and wins with 111 Pyre HP; its capture, mismatch,
+unsupported and pending counters are zero. The campaign completes 52 audited
+events and verifies original game files unchanged. It saves BattleIntro at
+distance seven with all seven preceding native wins and no cheat flag.
+
+The eighth-ring input save SHA256 is
+`682051D891549EC76DC716A49119CAD67E9F8EF838A5BDF23C62499CB5231083`;
+the ZIP SHA256 is
+`3C02949FC5AEDD2B6D8A8AFAE60890FAB2F2B1E482BE0C12DB30DA7A94AA0406`.
+All 25 data/history members were verified on restore. The package also retains
+`campaign-battle-replay.mt2f`, the actual replay capture before campaign handoff.
+This is a legal eighth-ring input, not an eighth-ring model/victory acceptance.
+Outer-train boss actions and their battle-phase integration remain guarded.
+
 ## Reproduce
 
 ```powershell
@@ -85,6 +103,9 @@ pwsh -NoProfile -File scripts/Save-CampaignCheckpoint.ps1 -Restore -Archive test
 pwsh -NoProfile -File scripts/Run-RollingAdvisorBenchmark.ps1 -InputProfile <ReturnedProfile> -BattleDistance 6 -PlannerDeploymentRoom 1 -PlannerTimeLimitMs 10000 -SettleDeathDissolves -RequireWin
 # Check only the retained seventh-ring triple:
 pwsh -NoProfile -File scripts/Check-RollingAdvisor.ps1 -ProgressedRing 7 -SkipBuild
+# Continue the accepted frozen inputs through native rewards/map to ring eight:
+pwsh -NoProfile -File scripts/Run-CampaignProgress.ps1 -StopBeforeRing 8 -InputProfile <SupportedRing7Profile> -BattleReplay tests/fixtures/full-battle-progressed-ring7-search.mt2f -ExcludeUpgradeTrait CardTraitRetain -TimeoutSeconds 1200
+pwsh -NoProfile -File scripts/Save-CampaignCheckpoint.ps1 -Restore -Archive tests/fixtures/campaign-progressed-ring8.zip
 ```
 
 The campaign driver saves a separate direct child of `.probe-runs` before
@@ -93,6 +114,9 @@ does not overwrite its input. The battle launcher requires a native
 BattleIntro save at the requested distance and records the input save hash.
 Export a newly completed checkpoint with `Save-CampaignCheckpoint.ps1
 -Profile <Profile> -Archive <new.zip>`.
+`-BattleReplay` requires an unchanged native BattleIntro input and stops before
+the immediately following ring. It checks the replay before campaign handoff;
+it does not repeat planning or substitute a terminal combat save for a new input.
 
 ## Retained preparation evidence
 

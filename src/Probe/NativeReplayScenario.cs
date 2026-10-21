@@ -164,8 +164,14 @@ namespace MonsterTrain2Poju.Probe
                         return;
                     }
                     trace.Write();
-                    Finish(trace.CaptureFailures == 0 && trace.Pending == 0 && trace.Mismatches == 0 && trace.Unsupported == 0,
-                        "Full native battle finished; won=" + trace.NativeWon + "; unsupported stages=" + trace.Unsupported);
+                    bool passed = trace.CaptureFailures == 0 && trace.Pending == 0 && trace.Mismatches == 0 && trace.Unsupported == 0;
+                    if (passed && Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_REPLAY") == "1")
+                    {
+                        if (trace.NativeWon != true) { Finish(false, "Campaign continuation requires a native victory."); return; }
+                        log.LogInfo("DEPTH-PASS Full native replay victory; continuing native campaign transitions.");
+                        ProbePlugin.ContinueCampaignAfterVictory();
+                    }
+                    else Finish(passed, "Full native battle finished; won=" + trace.NativeWon + "; unsupported stages=" + trace.Unsupported);
                 }
                 catch (Exception error)
                 {

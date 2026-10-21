@@ -26,6 +26,16 @@ namespace MonsterTrain2Poju.Probe
         private static CampaignProgressScenario? campaignScenario;
         private static int lastTickFrame = -1;
 
+        internal static void ContinueCampaignAfterVictory()
+        {
+            // The accepted combat snapshot has already been exported. Leave the
+            // native StopCombat coroutine running so rewards and saves persist.
+            FullBattleTrace.Active?.Detach();
+            BattleAdvisorOverlay.Active?.Dispose();
+            nativeReplayScenario = null;
+            campaignScenario = new CampaignProgressScenario(log!, afterBattle: true);
+        }
+
         private void Awake()
         {
             log = Logger;

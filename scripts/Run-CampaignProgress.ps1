@@ -4,6 +4,7 @@ param(
     [ValidateRange(1, 9)] [int] $StopBeforeRing = 5,
     [int] $Seed = 424242,
     [string] $InputProfile = '',
+    [string] $BattleReplay = '',
     [string[]] $ExcludeUpgradeTrait = @(),
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
     [ValidateRange(60, 7200)] [int] $TimeoutSeconds = 1800,
@@ -22,6 +23,14 @@ if ($InputProfile) {
     $source = (Resolve-Path -LiteralPath $InputProfile).Path.TrimEnd('\')
     if ((Split-Path $source -Parent) -ine $profilesRoot) { throw 'InputProfile must be a direct child of .probe-runs.' }
     if (-not (Test-Path -LiteralPath (Join-Path $source 'saves/save-singlePlayer.json'))) { throw 'InputProfile has no native save.' }
+}
+if ($BattleReplay) {
+    if (-not $InputProfile) { throw 'BattleReplay requires a native InputProfile.' }
+    $BattleReplay = (Resolve-Path -LiteralPath $BattleReplay).Path
+    $inputSave = Get-Content -LiteralPath (Join-Path $source 'saves/save-singlePlayer.json') -Raw | ConvertFrom-Json
+    if ($inputSave.gameSequence -ne 6 -or $inputSave.wasDevCheatUsed -or $StopBeforeRing -ne ([int]$inputSave.runState.distance + 2)) {
+        throw 'BattleReplay must continue an unmodified BattleIntro checkpoint to the immediately following ring.'
+    }
 }
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/Probe/Probe.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
@@ -49,7 +58,8 @@ if (Test-Path -LiteralPath (Join-Path $source 'campaign-audit.jsonl')) {
 }
 $savePath = Join-Path $profile 'saves/save-singlePlayer.json'
 [pscustomobject]@{ InputProfile = $source; InputSaveSHA256 = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash;
-    StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker; ExcludeUpgradeTrait = $ExcludeUpgradeTrait } |
+    StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker; ExcludeUpgradeTrait = $ExcludeUpgradeTrait;
+    BattleReplay = $BattleReplay; BattleReplaySHA256 = $(if ($BattleReplay) { (Get-FileHash -LiteralPath $BattleReplay -Algorithm SHA256).Hash } else { $null }) } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-input.json')
 foreach ($assembly in @('Probe', 'Model', 'FixtureArchive')) {
     Copy-Item -LiteralPath (Join-Path $workspace "src/Probe/bin/Release/netstandard2.1/$assembly.dll") -Destination (Join-Path $gameRoot 'BepInEx/plugins') -Force
@@ -70,6 +80,20 @@ $settings = @{
     MT2_PROBE_BRANCH_CARD_MASKS = '1'; MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'; MT2_PROBE_GAME_SPEED = 'Instant'
 }
 if ($InputProfile) { $settings.MT2_PROBE_RESUME_RUN = '1' }
+if ($BattleReplay) {
+    $settings.MT2_PROBE_SCENARIO = 'native-replay'
+    $settings.MT2_PROBE_CAMPAIGN_AFTER_REPLAY = '1'
+    $settings.MT2_PROBE_BATTLE_DISTANCE = [string]$inputSave.runState.distance
+    $settings.MT2_PROBE_FULL_BATTLE = '1'
+    $settings.MT2_PROBE_FULL_BATTLE_POLICY = 'units-spells-and-junk'
+    $settings.MT2_PROBE_DIRECT_BRANCH = '1'
+    $settings.MT2_PROBE_DEPTH = '100'
+    $settings.MT2_PROBE_TARGET_TURN = '0'
+    $settings.MT2_PROBE_ROLLING_ADVICE = '1'
+    $settings.MT2_PROBE_ROLLING_INPUT = $BattleReplay
+    $settings.MT2_PROBE_SETTLE_DEATH_DISSOLVES = '1'
+    $settings.MT2_PROBE_BINARY_CAPTURE = '1'
+}
 foreach ($entry in $settings.GetEnumerator()) { $start.Environment[$entry.Key] = $entry.Value }
 $process = [Diagnostics.Process]::Start($start)
 Write-Host "CAMPAIGN-RUN Profile=$profile ProcessId=$($process.Id)"
@@ -79,9 +103,22 @@ while (-not $process.WaitForExit(1000)) {
 }
 $originalAfter = Get-OriginalHashes
 $unchanged = (($originalBefore -join "`n") -ceq ($originalAfter -join "`n"))
-$audit = @(Get-Content -LiteralPath (Join-Path $profile 'campaign-audit.jsonl') | ForEach-Object { $_ | ConvertFrom-Json })
-$passed = $process.ExitCode -eq 0 -and $audit[-1].kind -eq 'complete' -and $unchanged
+$auditPath = Join-Path $profile 'campaign-audit.jsonl'
+$audit = @(if (Test-Path -LiteralPath $auditPath) { Get-Content -LiteralPath $auditPath | ForEach-Object { $_ | ConvertFrom-Json } })
+$replayPassed = -not $BattleReplay
+if ($BattleReplay -and (Test-Path -LiteralPath (Join-Path $profile 'full-battle.mt2f'))) {
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'full-battle.mt2f'))
+    try { $trace = $document.RootElement.ToObjectGraph() } finally { $document.Dispose() }
+    $decisions = @($trace['RollingDecisions'])
+    $replayPassed = $trace['NativeWon'] -eq $true -and $trace['TerminalEffectsSettled'] -eq $true -and
+        $trace['CaptureFailures'] -eq 0 -and $trace['Mismatches'] -eq 0 -and $trace['Unsupported'] -eq 0 -and $trace['Pending'] -eq 0 -and
+        $decisions.Count -gt 0 -and @($decisions | Where-Object { $_['Mode'] -ne 'replay' -or $_['Nodes'] -ne 0 -or
+            $_['Difference'] -or $null -eq $_['Actual'] }).Count -eq 0
+}
+$passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $replayPassed
 $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCode = $process.ExitCode;
+    BattleReplayPassed = $replayPassed;
     OriginalFilesUnchanged = $unchanged; Events = $audit.Count; BattlesWon = @($audit | Where-Object { $_.kind -eq 'battle-outcome' -and $_.data.won }).Count;
     FinalSaveSHA256 = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash }
 $summary | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-summary.json')
