@@ -9,10 +9,13 @@ param(
     [int] $NativeWorker = 1,
     [switch] $Planner,
     [switch] $Advisor,
+    [switch] $RollingAdvice,
+    [string] $RollingInput = '',
+    [ValidateRange(0, 20)] [int] $BattleDistance = 0,
     [switch] $ShowWindow,
     [ValidateRange(1, 2147483647)]
     [int] $Seed = 424242,
-    [ValidateRange(1, 20)]
+    [ValidateRange(0, 20)]
     [int] $PlannerTurn = 2,
     [ValidateRange(2, 3)]
     [int] $PlannerHorizon = 3,
@@ -570,6 +573,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
+if ($RollingAdvice) {
+    if ($Planner) { throw 'RollingAdvice and a frozen-window Planner run are separate test modes.' }
+    $Policy = 'units-spells-and-junk'; $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+    $PlannerTurn = 0; $Advisor = -not [bool]$RollingInput
+}
 if (($OriginalStartRoomAttachment -and $OriginalStartRoomAttachmentFloor2) -or
     ($OriginalStartRoomAttachment -and $OriginalStartRoomAttachmentFloor3) -or
     ($OriginalStartRoomAttachmentFloor2 -and $OriginalStartRoomAttachmentFloor3)) {
@@ -1104,6 +1113,9 @@ if (Test-Path -LiteralPath $preferencesPath) {
     $preferences | ConvertTo-Json -Depth 32 -Compress | Set-Content -LiteralPath $preferencesPath -NoNewline -Encoding utf8
 }
 $environment = @{
+    MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
+    MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
+    MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"
     MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
     MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
@@ -1664,6 +1676,11 @@ if ($Planner) {
         -not (Select-String -LiteralPath $unityLog -Pattern 'PLANNER-REPLAY-PASS' -Quiet)) {
         throw 'Native planner recommendation did not complete with every step verified.'
     }
+}
+if ($RollingAdvice -and (@($trace.RollingDecisions).Count -eq 0 -or
+    @($trace.RollingDecisions | Where-Object { $null -eq $_.Actual -or $null -ne $_.Difference }).Count -ne 0 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'ROLLING-REPLAY-PASS' -Quiet))) {
+    throw 'Rolling advisor did not complete every native decision through terminal combat.'
 }
 if ($Advisor -and ($trace.Advisor.Captures -lt 1 -or $trace.Advisor.PurityFailures -ne 0 -or $trace.Advisor.Failures -gt 0 -or
     $trace.Advisor.Published -lt 2 -or $trace.Advisor.Invalidations -lt 1 -or $trace.Advisor.PlanningFrames -lt 2 -or

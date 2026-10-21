@@ -180,7 +180,7 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("PLANNER-READY mode=" + record.Mode + " turn=" + root.Spawn.Turn + " steps=" + record.Steps.Count +
                 " nodes=" + record.Nodes + " duplicates=" + record.Duplicates);
         }
-        private static T Read<T>(FixtureValue value) => Token(value).ToObject<T>()!;
+        internal static T Read<T>(FixtureValue value) => Token(value).ToObject<T>()!;
         private static JToken Token(FixtureValue value)
         {
             if (value.ValueKind == FixtureKind.Object)

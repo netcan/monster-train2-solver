@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using BepInEx.Logging;
+using HarmonyLib;
 using MonsterTrain2Poju.Model;
 using ShinyShoe;
 using ShinyShoe.Loading;
@@ -72,6 +73,7 @@ namespace MonsterTrain2Poju.Probe
         private List<string>? sourceEntries;
         private PlayCardAction? pendingPlay;
         private bool damagePerHpAbilityInputPrepared;
+        private bool battleRoutePrepared;
 
         internal NativeReplayScenario(ManualLogSource log)
         {
@@ -122,7 +124,11 @@ namespace MonsterTrain2Poju.Probe
                 log.LogInfo("DEPTH-WAIT stage=" + stage + " pass=" + pass +
                     " turn=" + (current?.GetCombatManager()?.GetTurnCount().ToString() ?? "none") +
                     " sequence=" + (current?.GetSaveManager()?.GetGameSequence().ToString() ?? "none") +
-                    " loading=" + LoadingScreen.IsWorking());
+                    " loading=" + LoadingScreen.IsWorking() + " screen=" + current?.GetScreenManager()?.GetTopScreen() +
+                    " endTurn=" + current?.GetCombatManager()?.ShouldShowEndTurnButton() +
+                    " drawn=" + current?.GetCombatManager()?.HaveCardsBeenDrawnForCurrentTurn() +
+                    " triggers=" + current?.GetCombatManager()?.IsRunningTriggerQueue +
+                    " animations=" + CardAnimationSettlement.Ready());
             }
             if (stage == Stage.Quitting)
             {
@@ -134,10 +140,11 @@ namespace MonsterTrain2Poju.Probe
             }
             if (fullBattle && FullBattleTrace.Active?.NativeWon != null)
             {
-                PlannerReplayScenario.ObserveTerminal();
                 FullBattleTrace trace = FullBattleTrace.Active;
                 try
                 {
+                    PlannerReplayScenario.ObserveTerminal();
+                    RollingAdviceScenario.ObserveTerminal(log);
                     if (OriginalForgeConservationScenario.Enabled && !OriginalForgeConservationScenario.NaturalCompleted)
                     {
                         if (Time.realtimeSinceStartup > deadline) Finish(false, "Natural forge-conservation combat-end callback did not complete.");
@@ -185,6 +192,13 @@ namespace MonsterTrain2Poju.Probe
             ScreenManager? screen = managers?.GetScreenManager();
             if (save == null || screen == null)
             {
+                return;
+            }
+            if (battleRoutePrepared && !LoadingScreen.IsWorking() && screen.GetTopScreen() == ScreenName.Reward &&
+                screen.GetScreen(ScreenName.Reward) is RewardScreen reward)
+            {
+                if (ReplayManager.TryClickButton(reward.GetSkipButton())) log.LogInfo("ROLLING-MAP-REWARD skip");
+                else if (ReplayManager.TryClickButton(reward.GetCollectButton())) log.LogInfo("ROLLING-MAP-REWARD collect");
                 return;
             }
             if (stage == Stage.Menu)
@@ -255,6 +269,22 @@ namespace MonsterTrain2Poju.Probe
                 }
                 lastMapAttempt = Time.realtimeSinceStartup;
                 MapScreen? map = screen.GetScreen(ScreenName.Map) as MapScreen;
+                int targetDistance = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_DISTANCE") ?? "0", CultureInfo.InvariantCulture);
+                if (!battleRoutePrepared && map != null)
+                {
+                    battleRoutePrepared = true;
+                    log.LogInfo("ROLLING-NATIVE-ROUTE " + string.Join(";", Enumerable.Range(0, save.GetRunLength())
+                        .Select(index => index + ":" + save.GetScenarioData(index)?.name)));
+                    if (targetDistance > 0)
+                    {
+                        // Use the native map's navigation; scenario assets, boss
+                        // stats, starting deck and relics remain unmodified.
+                        AccessTools.Method(typeof(MapScreen), "Cheat_SetDistance").Invoke(map, new object[] { targetDistance });
+                        map.ChooseBranch(MapScreen.BranchSelection.LeftBranch);
+                        log.LogInfo("ROLLING-MAP-JUMP distance=" + targetDistance + " scenario=" + save.GetCurrentScenarioData()?.name);
+                        return;
+                    }
+                }
                 int section = save.GetCurrentDistance() + 1;
                 if (map != null && map.TryGetBattleNodeUI(section, out MapBattleNodeUI node))
                 {
@@ -2556,7 +2586,21 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
-            if (PlannerReplayScenario.WaitingForWorker) return;
+            if (PlannerReplayScenario.WaitingForWorker || RollingAdviceScenario.WaitingForWorker) return;
+            if (RollingAdviceScenario.Enabled)
+            {
+                BattleTurnState root = FullBattleTrace.Active!.CaptureDecision();
+                if (RollingAdviceScenario.AwaitingAdvice(root)) return;
+                RollingAdviceScenario.TryChoose(root, log, out pendingPlay);
+                if (pendingPlay == null) AdvanceTurn(combat);
+                else if (managers.GetRoomManager().GetSelectedRoom() != pendingPlay.RoomIndex)
+                {
+                    save.StartCoroutine(managers.GetRoomManager().GetRoomUI().SetSelectedRoom(pendingPlay.RoomIndex));
+                    Enter(Stage.SelectingRoom, 20f);
+                }
+                else PlayPendingPolicyCard(managers, cards!);
+                return;
+            }
             if (IsUnitAndJunkPolicy())
             {
                 if (fullBattle && MagebladeScenario.Enabled && !MagebladeScenario.CaptureReady)

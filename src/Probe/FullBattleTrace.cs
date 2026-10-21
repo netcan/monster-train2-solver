@@ -1408,6 +1408,8 @@ namespace MonsterTrain2Poju.Probe
                 Turns = turns.Records,
                 Actions = actions.Records,
                 PlannerRuns = PlannerReplayScenario.Records,
+                RollingDecisions = RollingAdviceScenario.Records,
+                BattleDistance = AllGameManagers.Instance!.GetSaveManager().GetCurrentDistance(),
                 Advisor = BattleAdvisorOverlay.Active?.Evidence,
                 RoomCapacityAttachmentCoverage = RoomCapacityAttachmentScenario.Evidence,
                 OriginalCarriageJackCoverage = OriginalCarriageJackScenario.Evidence,

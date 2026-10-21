@@ -1626,6 +1626,20 @@ if (args.Length == 2 && args[0] == "--train-heal-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--rolling-advice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RollingAdviceChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 4 && args[0] == "--rolling-advice-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    using var baseline = ModelJson.ReadFixture(args[3]);
+    RollingAdviceChecks.Pair(source.RootElement, replay.RootElement, baseline.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-advice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
