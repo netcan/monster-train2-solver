@@ -43,6 +43,8 @@ namespace MonsterTrain2Poju.Model
             Actions = Array.AsReadOnly(actions.Select(group => (IReadOnlyList<OuterBossActionProgress>)Array.AsReadOnly(group.ToArray())).ToArray());
             DestroyActions = Array.AsReadOnly(destroyActions.ToArray());
         }
+        internal OuterBossProgress WithRoom(int room) => room == Room ? this : new OuterBossProgress(UnitId, AssetKey,
+            Phase, ValidAttackPhases, BaseCanAttack, room, MovementSpeed, VisitedRooms, Controller, Actions, DestroyActions);
     }
     public sealed class OuterBossPhaseState
     {
@@ -135,7 +137,8 @@ namespace MonsterTrain2Poju.Model
             EnemySpawnState old = battle.Spawn;
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng,
                 old.NextUnitId, old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn,
-                old.FirstTreasureRoom, old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds);
+                old.FirstTreasureRoom, old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds,
+                old.OuterBoss == null ? null : progress);
             var streams = battle.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                 stream.Name == "BossActions" ? target.Rng : stream.Name == "Battle" ? train.Context!.BattleRng : stream.State)).ToArray();
             return new OuterBossPhaseResult(new OuterBossPhaseState(new BattleTurnState(spawn, battle.Energy, battle.EnergyPerTurn,

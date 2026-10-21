@@ -146,7 +146,7 @@ namespace MonsterTrain2Poju.Probe
             CombatContext? context = ComparableContext(state.Spawn.Train.Context);
             BattlePlayRules? playRules = state.PlayRules;
             if (state.ForgePoints == 0) playRules = playRules?.WithForgeEligibility(null);
-            return JToken.FromObject(new
+            JObject result = JObject.FromObject(new
             {
                 Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
                 Movement = state.Spawn.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), Context = context,
@@ -157,6 +157,8 @@ namespace MonsterTrain2Poju.Probe
                 state.BattlePreviewEnabled, state.UiRngIsolated,
                 state.CanonicalPhysicalReferences
             });
+            if (state.Spawn.OuterBoss != null) result["OuterBoss"] = JToken.FromObject(state.Spawn.OuterBoss);
+            return result;
         }
 
         internal static CombatContext? ComparableContext(CombatContext? context)

@@ -13,6 +13,16 @@ namespace MonsterTrain2Poju.Probe
     internal static class OuterBossPhaseProbe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_PHASES") == "1";
+        internal static bool TurnsEnabled => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_TURNS") == "1";
+        internal static bool CaptureAnchors => Enabled || TurnsEnabled;
+        internal static bool ModelsLiveBoss
+        {
+            get
+            {
+                CharacterState? boss = AllGameManagers.Instance?.GetHeroManager()?.GetOuterTrainBossCharacter();
+                return TurnsEnabled && boss != null && boss.IsAlive && !boss.IsDestroyed && boss.GetSourceCharacterData().name == "Boss_Level8_AllyBuffer";
+            }
+        }
         private static bool ForceRelentless => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS") == "1";
         internal sealed class Record
         {
@@ -29,7 +39,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool Capturing => Enabled && FullBattleTrace.Active != null && !AllGameManagers.Instance.GetSaveManager().PreviewMode;
         internal static int[]? AnchorSlots(CharacterState unit, BossState.AttackPhase phase)
         {
-            if (!Enabled || !unit.IsOuterTrainBoss()) return null;
+            if (!CaptureAnchors || !unit.IsOuterTrainBoss()) return null;
             RoomManager rooms = AllGameManagers.Instance.GetRoomManager();
             return Enumerable.Range(0, rooms.GetNumRooms()).Select(index =>
             {
@@ -39,7 +49,7 @@ namespace MonsterTrain2Poju.Probe
                 return anchor == null ? -1 : Field<List<SpawnPoint>>(group, "_primarySpawnPoints").IndexOf(anchor.SpawnPoint);
             }).ToArray();
         }
-        private static OuterBossPhaseState Capture()
+        internal static OuterBossProgress CaptureProgress()
         {
             AllGameManagers managers = AllGameManagers.Instance;
             CharacterState boss = managers.GetHeroManager().GetOuterTrainBossCharacter();
@@ -54,15 +64,15 @@ namespace MonsterTrain2Poju.Probe
                     action.IsRoomDestroyAction(), action.IsEmptyAction());
             }
             object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(boss);
-            var progress = new OuterBossProgress(FullBattleTrace.Active!.UnitId(boss), boss.GetSourceCharacterData().GetAssetKey(),
+            return new OuterBossProgress(FullBattleTrace.Active!.UnitId(boss), boss.GetSourceCharacterData().GetAssetKey(),
                 state.GetCurrentAttackPhase().ToString(), (int)Field<BossState.AttackPhase>(boss, "validBossAttackPhase"),
                 Field<bool>(primary, "canAttack"), boss.GetCurrentRoomIndex(), boss.GetMovementSpeed(), state.GetVisitedRoomRecord(),
                 BossActionControllerProbe.Snapshot(controller, managers.GetRoomManager()),
                 Field<List<ActionGroupState>>(controller, "_actionGroups").Select(group => (IReadOnlyList<OuterBossActionProgress>)group.GetActions().Select(Action).ToArray()).ToArray(),
                 Field<ActionGroupState>(controller, "_roomDestroyActionGroup").GetActions().Select(Action).ToArray());
-            return new OuterBossPhaseState(FullBattleTrace.Active!.CaptureDecision(includeOuterBossForBump: true,
-                ignoreOuterBossSpawnInteraction: true), progress);
         }
+        private static OuterBossPhaseState Capture() => new OuterBossPhaseState(FullBattleTrace.Active!.CaptureDecision(
+            includeOuterBossForBump: true, ignoreOuterBossSpawnInteraction: true), CaptureProgress());
         private static IEnumerator Observe(IEnumerator native)
         {
             Record? row = null;

@@ -149,7 +149,7 @@ namespace MonsterTrain2Poju.Model
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping,
                 old.Rng, train.Context?.NextUnitId ?? old.NextUnitId, old.Treasures, old.TreasuresRemaining,
                 old.TreasureEnabled, old.FirstTreasureTurn, old.FirstTreasureRoom, old.Turn, old.ExternalInteractions,
-                old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds);
+                old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds, old.OuterBoss);
             BattleRngStream[] streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                 stream.Name == "Battle" ? train.Context!.BattleRng : stream.State)).ToArray();
             return new BattleTurnResult(new BattleTurnState(spawn, source.Energy, source.EnergyPerTurn,
@@ -200,6 +200,7 @@ namespace MonsterTrain2Poju.Model
             if (spawningStream == null) return Unsupported("Missing spawning seed.");
             EnemySpawnState spawn = source.Spawn;
             BattlePlayRules? outputPlayRules = source.PlayRules;
+            UnityRng? outerBossRng = source.RngStreams.FirstOrDefault(stream => stream.Name == "BossActions")?.State;
             string? uiRangeError = CardSpellModel.UnisolatedUiRangeReason(source);
             if (uiRangeError != null) return Unsupported(uiRangeError);
             CardPileState[] otherPiles = source.OtherPiles.ToArray();
@@ -411,6 +412,8 @@ namespace MonsterTrain2Poju.Model
                 spawn = spawned.State!; train = spawn.Train;
                 if (Terminal(spawned.Outcome)) return Finish(spawned.Outcome, 0, source.MoonPhase);
             }
+            string? postBossError = ResolveOuterBoss(false, source.MoonPhase);
+            if (postBossError != null) return Unsupported(postBossError);
             string moon = source.MoonPhase == "Full" ? "New" : "Full";
             context = train.Context!;
             int turn = checked(spawn.Turn + 1);
@@ -469,6 +472,8 @@ namespace MonsterTrain2Poju.Model
             // Native queues each team's PreCombat after spawning/rollover, before energy and draw.
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
             {
+                if (team == CombatTeam.Enemy && spawn.OuterBoss != null && outputPlayRules?.Rooms.All(room => room.IsPyre || !room.Enabled) == true)
+                    return Unsupported("Outer boss Pyre-entry pre-combat routing requires native calibration.");
                 TrainCombatResult triggers = TrainCombatModel.PreCombat(train, team);
                 if (!triggers.Supported) return Unsupported(triggers.UnsupportedReason!);
                 if (!RouteDeadUnits(train, triggers)) return Unsupported("Pre-combat deaths require standby card routing.");
@@ -497,6 +502,9 @@ namespace MonsterTrain2Poju.Model
                 if (Terminal(bossAction.Outcome)) return Finish(bossAction.Outcome, 0, moon);
                 context = train.Context!;
             }
+            string? preBossError = ResolveOuterBoss(true, moon);
+            if (preBossError != null) return Unsupported(preBossError);
+            context = train.Context!;
             if (context.Resources != null)
             {
                 RelicResourceResult resourceEnergy = RelicResourceModel.StartTurn(context,
@@ -641,7 +649,7 @@ namespace MonsterTrain2Poju.Model
                     outputPlayRules = outputPlayRules?.WithCapacities(finalContext.RoomCapacities);
                 BattleRngStream[] streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? finalContext.BattleRng : stream.Name == "CardDraw" ? finalContext.Cards.Rng :
-                    stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
+                    stream.Name == "Spawning" ? spawn.Rng : stream.Name == "BossActions" && outerBossRng.HasValue ? outerBossRng.Value : stream.State)).ToArray();
                 CardPileState[] piles = Terminal(outcome) && outcome != RoomOutcome.Stalemate
                     ? otherPiles.Select(CardPileModel.Clear).ToArray()
                     : otherPiles;
@@ -669,6 +677,31 @@ namespace MonsterTrain2Poju.Model
                     finalContext.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, phase, streams, piles, source.ExternalInteractions, outputPlayRules,
                     source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                     selectedRoom, finalContext.QueryFrame?.MoonPhaseTrackingActive ?? source.MoonPhaseTrackingActive), outcome);
+            }
+
+            string? ResolveOuterBoss(bool preCombat, string moonPhase)
+            {
+                if (spawn.OuterBoss == null) return null;
+                if (outputPlayRules == null || !outerBossRng.HasValue) return "Missing outer-boss room rules or random stream.";
+                train = WithContext(train, EnergyModel.SetPhase(train.Context!, preCombat ? "BossActionPreCombat" : "BossActionPostCombat"), spawn.Turn == 0);
+                spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
+                var streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
+                    stream.Name == "BossActions" ? outerBossRng.Value : stream.Name == "Battle" ? train.Context!.BattleRng :
+                    stream.Name == "CardDraw" ? train.Context!.Cards.Rng : stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
+                var boundary = new BattleTurnState(spawn, train.Context!.QueryFrame?.Energy ?? 0, source.EnergyPerTurn,
+                    source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard,
+                    moonPhase, streams, otherPiles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled,
+                    source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
+                    train.Context.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom, source.MoonPhaseTrackingActive);
+                OuterBossPhaseResult action = OuterBossPhaseModel.Apply(new OuterBossPhaseState(boundary, spawn.OuterBoss!), preCombat);
+                if (!action.Supported) return action.UnsupportedReason;
+                TrainCombatState prior = train;
+                spawn = action.State!.Battle.Spawn; train = spawn.Train;
+                if (!RouteDeadUnits(prior, new TrainCombatResult(train, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>())))
+                    return "Outer boss action requires native unit-death card routing.";
+                outputPlayRules = action.State.Battle.PlayRules;
+                outerBossRng = action.State.Battle.RngStreams.Single(stream => stream.Name == "BossActions").State;
+                return null;
             }
 
             bool RouteDeadUnits(TrainCombatState before, TrainCombatResult result)
@@ -712,7 +745,7 @@ namespace MonsterTrain2Poju.Model
         private static EnemySpawnState WithTrain(EnemySpawnState spawn, TrainCombatState train, int turn, UnityRng rng) =>
             new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, rng, train.Context?.NextUnitId ?? spawn.NextUnitId,
                 spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
-                spawn.FirstTreasureRoom, turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds);
+                spawn.FirstTreasureRoom, turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds, spawn.OuterBoss);
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
         private static BattleTurnResult Unsupported(string reason) => new BattleTurnResult(null, RoomOutcome.Unsupported, reason);

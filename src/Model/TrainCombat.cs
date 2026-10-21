@@ -317,6 +317,9 @@ namespace MonsterTrain2Poju.Model
                 int highestRoomIndexMovedInto = -1;
                 foreach (CombatUnit enemy in rooms[index].Where(unit => unit.Team == CombatTeam.Enemy).ToArray())
                 {
+                    // HeroManager.AddMovableCharactersToList excludes outer bosses;
+                    // their own action phases choose and move their reserved anchors.
+                    if (enemy.BumpRules?.OuterBoss == true) continue;
                     if (!rooms[index].Any(unit => unit.Id == enemy.Id)) continue;
                     if (onlyUnitId.HasValue && enemy.Id != onlyUnitId) continue;
                     if (!moved.Add(enemy.Id)) continue;

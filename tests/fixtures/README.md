@@ -1,8 +1,28 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 818 archives (767 full battles and
-51 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 819 archives (767 full battles and
+52 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`outer-boss-turn-calibration.mt2f` retains the unchanged raw diagnostic from
+the opt-in `-OuterBossTurns -PhysicalSpawnPoints` mode. Five complete EndTurns
+after the original boss has spawned, four floor changes and 26 normal legal
+card actions match native state. The focused `--outer-boss-turn-only` checker
+also replays the frozen actions and EndTurns from one settled turn-one root;
+later native Before states are never injected as model successors. Controller
+cursors, aura targets, physical points, resources, card definitions/piles and
+all gameplay RNG remain equal through the original terminal loss. Ordinary
+enemy ascent excludes the outer boss, and complete turns invoke its post-combat
+and next pre-combat actions. Reachable boss-generated Scourge definitions are
+captured before their first creation, and birth templates use the same movement
+metadata as live units. Initial boss birth remains guarded: the unchanged raw
+trace retains exactly two unsupported records (initial spawning and deployment
+EndTurn), zero capture failures/mismatches/pending records and protected files
+unchanged. It is component evidence, not an accepted full battle or victory.
+Pyre-entry pre-combat routing and terminal boss-action callbacks remain guarded.
+Native source: `20261021-132155-b16b8922`, 159.02 seconds. Binary: 69,337 bytes,
+12,038 nodes, SHA256
+`ea04dbfab4331a6e9ee4580c93d4cf9460559bf18f241476c2718e9082d154de`.
 
 `outer-boss-relentless-phase-calibration.mt2f` retains eight settled native phases
 under the Instant protocol: four pre-combat actions, four post-combat actions,
@@ -44,7 +64,8 @@ all captured RNG streams and immutable parent branches. The native boundary is
 after the following `RemoveDeadCharacters`; moving actions also complete the
 existing frame-removal model for already destroyed actors. Captures include the
 outer boss in both the train and the aura world. The separate controlled sample
-covers relentless transition/destruction; EndTurn integration remains guarded.
+covers relentless transition/destruction; complete live-boss EndTurns are
+calibrated separately, while initial boss birth remains guarded.
 The source diagnostic loses
 with 42 unsupported stages and zero capture/mismatch/pending counters; original
 files remain unchanged. Binary: 23,605 bytes, 3,554 nodes, SHA256
@@ -59,7 +80,7 @@ all cursors and native next-action identities, exact RNG/frame restoration and
 immutable model parents. Its retained `Boss_Level8_AllyBuffer` definition has
 one zero-repeat group, one occupied-floor action and no action effects. This
 component checks controller progression independently of the phase fixtures;
-whole-EndTurn integration remains separate.
+complete live-boss EndTurns are calibrated in the separate turn archive.
 Its source battle remains a losing, 54-unsupported-stage diagnostic with zero
 capture/mismatch/pending counters and original files unchanged. Binary: 9,379
 bytes, 2,536 nodes, SHA256
@@ -75,7 +96,7 @@ BossState identity/visits, frame and gameplay/global RNG are restored exactly;
 the focused checker recomputes every result and checks immutable model inputs.
 It covers targeting with the captured movement speed of one. The separate phase
 fixtures cover empty-action execution, movement and room destruction. Boss spells
-with effects and complete EndTurn integration remain guarded. The source eighth-ring
+with effects, initial boss birth and terminal routing remain guarded. The source eighth-ring
 run loses, has 54 unsupported stages
 and is diagnostic evidence; it is not curated as an accepted full battle.
 Original game files are unchanged. Binary: 24,183 bytes, 8,521 nodes, SHA256

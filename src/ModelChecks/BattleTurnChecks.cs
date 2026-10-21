@@ -253,7 +253,7 @@ internal static class BattleTurnChecks
     {
         // Room selection and this allocator belong to UI previews, not battle decisions.
         CombatContext? context = ComparableContext(state.Spawn.Train.Context);
-        return JsonSerializer.Serialize(new
+        string result = JsonSerializer.Serialize(new
         {
             Rooms = state.Spawn.Train.Rooms.Select(room => new { room.RoomIndex, room.Deployment, room.Units }).ToArray(),
             Movement = state.Spawn.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), Context = context,
@@ -265,6 +265,10 @@ internal static class BattleTurnChecks
             state.BattlePreviewEnabled, state.UiRngIsolated,
             state.CanonicalPhysicalReferences
         });
+        if (state.Spawn.OuterBoss == null) return result;
+        var enriched = System.Text.Json.Nodes.JsonNode.Parse(result)!.AsObject();
+        enriched["OuterBoss"] = JsonSerializer.SerializeToNode(state.Spawn.OuterBoss);
+        return enriched.ToJsonString();
     }
     internal static object? ComparablePlayRules(BattlePlayRules? rules, bool compareRoomEnabled, bool compareForgeEligibility = true)
     {

@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 818 binary archives, including 767
-full battles and 51 component calibrations. The card index accepts 766 battles;
+Current curated inventory (2026-10-21): 819 binary archives, including 767
+full battles and 52 component calibrations. The card index accepts 766 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -36,9 +36,17 @@ reserved-anchor source ordering. Eight additional Instant-protocol phases use an
 explicit isolated spawn-queue control and prove the relentless transition,
 three destroyed floors, phase-specific native anchor slots and same-frame
 destruction boundaries. All 28 phases match complete states and immutable
-parents. The controlled capture is component evidence; natural eighth-ring
-victory, whole-EndTurn integration, effect-bearing boss spells and terminal
-boss-action callbacks remain unverified. Source battles remain guarded diagnostics.
+parents. The separate opt-in `-OuterBossTurns` mode now carries boss/controller
+progress through complete EndTurns, skips ordinary ascent for the outer boss,
+and applies its post-combat and next pre-combat actions at the native boundaries.
+`outer-boss-turn-calibration.mt2f` retains five live-boss EndTurns and 26 normal
+legal card actions; a frozen replay starts at one settled native decision and
+compares every successor without injecting later native states. It reaches the
+original terminal loss with exact controller/aura/physical/context/RNG state.
+The raw source retains its two initial-spawn guards and is component evidence.
+Initial boss birth, natural eighth-ring victory, effect-bearing boss spells and
+terminal boss-action callbacks remain unverified. Pyre-entry routing is guarded
+explicitly, and the default capture mode retains its previous coverage guards.
 Native upgrade-slot relics now pass battle validation because their only
 consumer is the already calibrated campaign upgrade-slot interface; acquired
 card upgrades are captured normally. The six-owner campaign calibration passes.

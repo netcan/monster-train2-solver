@@ -46,7 +46,7 @@ namespace MonsterTrain2Poju.Probe
         internal int NextPhaseSequence() => ++phaseSequence;
         internal TrainCombatState CaptureTrain(bool includeOuterBossForBump = false) =>
             trainCombat.Capture(includeOuterBossForBump: includeOuterBossForBump);
-        internal TrainCombatState CaptureEnchantmentRooms() => trainCombat.Capture(false, includeOuterBossForBump: OuterBossPhaseProbe.Enabled);
+        internal TrainCombatState CaptureEnchantmentRooms() => trainCombat.Capture(false, includeOuterBossForBump: OuterBossPhaseProbe.CaptureAnchors);
         internal void InvalidateCardRules() => actions.InvalidateRules();
         internal EnemySpawnState CaptureSpawnPhase() => spawning.CapturePhase();
         internal EnemySpawnState CaptureCanonicalSpawn() => spawning.Capture();
@@ -83,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
         }
         private bool calibrated;
         private bool? nativeEnchantmentWorld;
-        internal bool CapturesNativeEnchantments => nativeEnchantmentWorld ??= EnemySpawningProbe.RequiresEnchantmentWorld();
+        internal bool CapturesNativeEnchantments => OuterBossPhaseProbe.TurnsEnabled || (nativeEnchantmentWorld ??= EnemySpawningProbe.RequiresEnchantmentWorld());
         internal static FullBattleTrace? Active { get; private set; }
         internal void Detach() { if (Active == this) Active = null; }
         internal bool? NativeWon { get; private set; }
@@ -241,7 +241,7 @@ namespace MonsterTrain2Poju.Probe
             if (room.Attachments.Count > 0 && !RoomCapacityProbe.SupportsAttachments(room)) interactions.Add("Room attachments");
             CharacterState? outerBoss = heroes.GetOuterTrainBossCharacter();
             bool outerBossHere = outerBoss != null && outerBoss.IsAlive && outerBoss.GetCurrentRoomIndex() == room.GetRoomIndex();
-            if (outerBossHere && !includeOuterBossForBump)
+            if (outerBossHere && !includeOuterBossForBump && !OuterBossPhaseProbe.ModelsLiveBoss)
                 interactions.Add("Outer train boss");
             if (heroes.HasNextBoss()) interactions.Add("Queued final bosses");
             var characters = new List<CharacterState>();
@@ -343,7 +343,7 @@ namespace MonsterTrain2Poju.Probe
                 character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()),
                 new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning, character.SacrificeCard == null ? 0 : CardId(character.SacrificeCard), DeathSignalProbe.Capture(character),
                 SentryAttackProbe.Definition(character.GetSourceCharacterData()) != null || TroopAuraProbe.Definition(character.GetSourceCharacterData()) != null || BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || (OriginalReactiveUnitsScenario.Enabled && team == CombatTeam.Enemy) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
-                    || OuterBossPhaseProbe.Enabled
+                    || OuterBossPhaseProbe.CaptureAnchors
                     ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss(),
                         character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless,
                         pairedBoss == null ? 0 : UnitId(pairedBoss),
@@ -728,6 +728,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalNefariousOverflowPrepared = MixScenario.NefariousOverflowMode && MixScenario.Prepared,
                 OriginalUncontrolledGroupPrepared = MixScenario.UncontrolledGroupMode && MixScenario.Prepared,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
+                OuterBossTurnsEnabled = OuterBossPhaseProbe.TurnsEnabled,
                 OriginalCarriageJackPrepared = OriginalCarriageJackScenario.Prepared,
                 OriginalTwoChargesOnCardConsumedPrepared = OriginalTwoChargesOnCardConsumedScenario.Prepared,
                 OriginalTwoChargesOnCardConsumedCoverage = OriginalTwoChargesOnCardConsumedScenario.Evidence,
