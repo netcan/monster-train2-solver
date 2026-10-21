@@ -95,7 +95,6 @@ namespace MonsterTrain2Poju.Model
             Node fallback = root;
             Node? best = null;
             double? policyBaselineScore = null;
-            var seedFrontiers = new Dictionary<BattleTurnState, BattleActionEnumeration>();
 
             bool Stop()
             {
@@ -153,20 +152,16 @@ namespace MonsterTrain2Poju.Model
             while (!Stop() && policy.Turns < options.MaxTurns && !Terminal(policy))
             {
                 nodes++;
-                PlayCardAction? action = null;
-                BattleActionEnumeration? actions = null;
+                SupportedActionCandidate? chosen = null;
                 if (policy.Actions < options.MaxActionsPerTurn)
                 {
-                    actions = BattleActionModel.EnumerateActions(policy.State);
-                    seedFrontiers[policy.State] = actions;
-                    foreach (UnsupportedActionAttempt attempt in actions.UnsupportedAttempts) Unsupported(attempt);
-                    action = BattleActionModel.ChooseUnitSpellAndJunkFromCandidates(policy.State, actions.SupportedActions);
+                    chosen = BattleActionModel.ChooseUnitSpellAndJunkCandidate(policy.State, out IReadOnlyList<UnsupportedActionAttempt> omitted);
+                    foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                 }
                 else actionLimit = true;
-                if (action != null)
+                if (chosen != null)
                 {
-                    SupportedActionCandidate chosen = actions!.SupportedCandidates.First(candidate => ReferenceEquals(candidate.Action, action));
-                    policy = Child(policy, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(action, false));
+                    policy = Child(policy, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(chosen.Action, false));
                     Consider(policy); Rollout(policy);
                 }
                 else
@@ -180,7 +175,7 @@ namespace MonsterTrain2Poju.Model
             if (policy.Turns >= options.MaxTurns || Terminal(policy)) policyBaselineScore = policy.Score;
 
             var frontier = new List<Node> { root };
-            seen.Add("0|" + stateKey(source));
+            if (!Stop()) seen.Add("0|" + stateKey(source));
             while (frontier.Count > 0 && !Stop())
             {
                 var next = new List<Node>();
@@ -190,8 +185,7 @@ namespace MonsterTrain2Poju.Model
                     nodes++;
                     if (node.Actions < options.MaxActionsPerTurn)
                     {
-                        BattleActionEnumeration actions = seedFrontiers.TryGetValue(node.State, out BattleActionEnumeration cached)
-                            ? cached : BattleActionModel.EnumerateActions(node.State);
+                        BattleActionEnumeration actions = BattleActionModel.EnumerateActions(node.State);
                         foreach (UnsupportedActionAttempt attempt in actions.UnsupportedAttempts) Unsupported(attempt);
                         var children = new List<Node>();
                         foreach (SupportedActionCandidate candidate in actions.SupportedCandidates)

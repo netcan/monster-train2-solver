@@ -1149,7 +1149,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         // Unsupported attempts are kept separate from legal actions so callers can detect an incomplete search frontier.
-        public static BattleActionEnumeration EnumerateActions(BattleTurnState source, int? onlyCardId = null)
+        public static BattleActionEnumeration EnumerateActions(BattleTurnState source, int? onlyCardId = null, bool includeAbilities = true)
         {
             var actions = new List<SupportedActionCandidate>();
             var unsupported = new List<UnsupportedActionAttempt>();
@@ -1203,12 +1203,15 @@ namespace MonsterTrain2Poju.Model
                         new PlayCardAction(card.InstanceId, room.RoomIndex, position), rule!))
                         Attempt(branch);
             }
-            BattleActionEnumeration abilities = UnitAbilityModel.EnumerateActivations(source);
-            actions.AddRange(abilities.SupportedCandidates);
-            unsupported.AddRange(abilities.UnsupportedAttempts);
-            BattleActionEnumeration roomAbilities = RoomAbilityModel.EnumerateActivations(source);
-            actions.AddRange(roomAbilities.SupportedCandidates);
-            unsupported.AddRange(roomAbilities.UnsupportedAttempts);
+            if (includeAbilities)
+            {
+                BattleActionEnumeration abilities = UnitAbilityModel.EnumerateActivations(source);
+                actions.AddRange(abilities.SupportedCandidates);
+                unsupported.AddRange(abilities.UnsupportedAttempts);
+                BattleActionEnumeration roomAbilities = RoomAbilityModel.EnumerateActivations(source);
+                actions.AddRange(roomAbilities.SupportedCandidates);
+                unsupported.AddRange(roomAbilities.UnsupportedAttempts);
+            }
             return new BattleActionEnumeration(actions, unsupported);
 
             void Attempt(PlayCardAction action)
@@ -1435,13 +1438,26 @@ namespace MonsterTrain2Poju.Model
                 }
             return ChooseUnitSpellAndJunkPlay(source);
         }
-        internal static PlayCardAction? ChooseUnitSpellAndJunkFromCandidates(BattleTurnState source, IReadOnlyList<PlayCardAction> plays)
-            => ChoosePlay(source, true, plays: plays);
+        internal static SupportedActionCandidate? ChooseUnitSpellAndJunkCandidate(BattleTurnState source,
+            out IReadOnlyList<UnsupportedActionAttempt> unsupported)
+        {
+            var queried = new Dictionary<int, BattleActionEnumeration>();
+            IReadOnlyList<PlayCardAction> Choices(CardToken card)
+            {
+                if (!queried.TryGetValue(card.InstanceId, out BattleActionEnumeration frontier))
+                    queried.Add(card.InstanceId, frontier = EnumerateActions(source, card.InstanceId, includeAbilities: false));
+                return frontier.SupportedActions;
+            }
+            PlayCardAction? selected = ChoosePlay(source, true, cardPlays: Choices);
+            unsupported = queried.Values.SelectMany(frontier => frontier.UnsupportedAttempts).ToArray();
+            return selected == null ? null : queried.Values.SelectMany(frontier => frontier.SupportedCandidates)
+                .First(candidate => ReferenceEquals(candidate.Action, selected));
+        }
         private static PlayCardAction? ChoosePlay(BattleTurnState source, bool spells, Func<CardToken, bool>? includeCard = null,
-            IReadOnlyList<PlayCardAction>? plays = null)
+            Func<CardToken, IReadOnlyList<PlayCardAction>>? cardPlays = null)
         {
             if (source.PlayRules == null) return null;
-            plays ??= EnumerateSupportedPlays(source);
+            IReadOnlyList<PlayCardAction>? plays = cardPlays == null ? EnumerateSupportedPlays(source) : null;
             int roomCount = source.PlayRules.Rooms.Count(room => !room.IsPyre);
             if (roomCount == 0) return null;
             // A deterministic verification policy: rotate floors each turn, summon before clearing junk.
@@ -1452,6 +1468,7 @@ namespace MonsterTrain2Poju.Model
                 if (includeCard != null && !includeCard(card)) continue;
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
                 if (rule?.Effect != effect) continue;
+                IReadOnlyList<PlayCardAction> choices = cardPlays == null ? plays! : cardPlays(card);
                 IEnumerable<int> roomOrder = Enumerable.Range(0, roomCount).Select(offset => (source.Spawn.Turn + offset) % roomCount);
                 if (effect == "Spell" && !CardSpellModel.RequiresUnitTarget(rule.Effects))
                 {
@@ -1469,7 +1486,7 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (!CardSpellModel.RequiresUnitTarget(rule.Effects))
                         {
-                            PlayCardAction? roomSpell = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
+                            PlayCardAction? roomSpell = choices.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
                                 action.RoomIndex == roomIndex && action.TargetUnitId == 0);
                             if (roomSpell != null) return roomSpell;
                             continue;
@@ -1480,14 +1497,14 @@ namespace MonsterTrain2Poju.Model
                             !unit.IsPyre && unit.Team == (damage ? CombatTeam.Enemy : CombatTeam.Player)).ToArray();
                         foreach (CombatUnit target in damage ? targets : targets.Reverse())
                         {
-                            PlayCardAction? cast = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
+                            PlayCardAction? cast = choices.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
                                 action.RoomIndex == roomIndex && action.TargetUnitId == target.Id);
                             if (cast != null) return cast;
                         }
                         continue;
                     }
                     int position = effect == "SpawnMonster" ? (source.Spawn.Turn + card.InstanceId) % (count + 1) : -1;
-                    PlayCardAction? choice = plays.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
+                    PlayCardAction? choice = choices.FirstOrDefault(action => action.CardInstanceId == card.InstanceId &&
                         action.RoomIndex == roomIndex && action.PlayerPosition == position);
                     if (choice != null) return choice;
                 }

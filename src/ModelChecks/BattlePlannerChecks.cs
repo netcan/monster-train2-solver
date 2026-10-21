@@ -67,6 +67,11 @@ internal static class BattlePlannerChecks
         BattleTurnState root = rows.Select(row => row.GetProperty("Before").Deserialize<BattleTurnState>()!)
             .First(state => state.Spawn.Turn >= turn);
         string original = Key(root);
+        SupportedActionCandidate? lazy = BattleActionModel.ChooseUnitSpellAndJunkCandidate(root, out _);
+        PlayCardAction? full = BattleActionModel.ChooseUnitSpellAndJunkPlay(root);
+        Require(JsonSerializer.Serialize(lazy?.Action) == JsonSerializer.Serialize(full), "Lazy policy changed the existing policy choice.");
+        if (lazy != null) Require(Key(lazy.Result.State!) == Key(BattleActionModel.PlayCard(root, lazy.Action).State!),
+            "Lazy policy successor differs from applying its selected action.");
         using var keys = new BattleStateKeys();
         using var independentKeys = new BattleStateKeys();
         Require(keys.Key(root) == independentKeys.Key(rows.Select(row => row.GetProperty("Before").Deserialize<BattleTurnState>()!)
