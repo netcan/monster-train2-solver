@@ -6,6 +6,7 @@ param(
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
     [ValidateRange(2, 3)] [int] $PlannerHorizon = 3,
     [ValidateRange(0, 2)] [int] $PlannerDeploymentRoom = 2,
+    [ValidateRange(100, 30000)] [int] $PlannerTimeLimitMs = 3000,
     [string] $SourceTrace = '',
     [string] $ReplayTrace = '',
     [string] $BaselineTrace = '',
@@ -26,7 +27,8 @@ try {
     }
     $arguments = @{ Seed = $Seed; BattleDistance = $BattleDistance; NativeWorker = $NativeWorker
         SkipBuild = $true; PhysicalSpawnPoints = $true; BranchCardMasks = $true; Policy = 'units-spells-and-junk'
-        TimeoutSeconds = 900; PlannerHorizon = $PlannerHorizon; PlannerDeploymentRoom = $PlannerDeploymentRoom }
+        TimeoutSeconds = 900; PlannerHorizon = $PlannerHorizon; PlannerDeploymentRoom = $PlannerDeploymentRoom
+        PlannerTimeLimitMs = $PlannerTimeLimitMs }
     if ($InputProfile) { $arguments.InputProfile = $InputProfile }
     if ($SettleDeathDissolves) { $arguments.SettleDeathDissolves = $true }
     function Invoke-RollingNative([hashtable] $Parameters, [bool] $VictoryRequired = $false) {

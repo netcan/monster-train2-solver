@@ -148,6 +148,17 @@ loss controls still use the ordinary pair checker. `-PlannerHorizon 2` or `3`
 sets the bounded forecast without changing the native battle or its rewards.
 Known fifth-ring loss captures were used to verify both rejection paths.
 
+`-PlannerTimeLimitMs` explicitly selects the shared search budget (100-30,000 ms;
+default 3,000). Native advice evidence records that budget, and rolling logs
+report expanded nodes and search time. Larger naturally progressed decks can
+consume the default budget on the initial no-card forecast before the card
+seed completes; an explicit longer budget permits measuring that limit.
+The node limit, legality, independent replay and victory gates still apply.
+`-SettleDeathDissolves` enables the existing observation protocol: it waits for
+original dissolve callbacks before the game's own turn-end removal flush.
+Retained actors then reflect native destruction, including cleared upgrade
+collections and unbound enchantments; no gameplay effects are suppressed.
+
 Validation for this change used these focused checks, advice-session
 cancellation/staleness checks, native enchantment-world/lifecycle calibrations,
 and existing random-aura death/revival EndTurn witnesses. No full battle

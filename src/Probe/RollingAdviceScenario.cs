@@ -95,7 +95,8 @@ namespace MonsterTrain2Poju.Probe
             }
             Records.Add(decision); waiting = true; action = decision.Action;
             log.LogInfo("ROLLING-CHOOSE mode=" + decision.Mode + " decision=" + Records.Count + " turn=" + root.Spawn.Turn +
-                " endTurn=" + decision.IsEndTurn + " generation=" + decision.Generation + " responseMs=" + decision.Timing?.EndToEndMs);
+                " endTurn=" + decision.IsEndTurn + " generation=" + decision.Generation + " nodes=" + decision.Nodes +
+                " searchMs=" + decision.Timing?.SearchMs + " responseMs=" + decision.Timing?.EndToEndMs);
             return true;
         }
 
