@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool Replay => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT"));
         internal static bool WaitingForWorker => Enabled && !Replay && BattleAdvisorOverlay.Active?.IsPlanning == true;
         internal static List<Decision> Records { get; } = new List<Decision>();
-        private static Decision[]? frozen;
+        private static FixtureValue[]? frozen;
         private static bool waiting;
         private static bool terminalObserved;
 
@@ -57,11 +57,12 @@ namespace MonsterTrain2Poju.Probe
                 if (frozen == null)
                 {
                     using var document = FixtureDocument.Read(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT")!);
-                    frozen = document.RootElement.GetProperty("RollingDecisions").EnumerateArray()
-                        .Select(PlannerReplayScenario.Read<Decision>).ToArray();
+                    frozen = document.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
                 }
                 if (Records.Count >= frozen.Length) throw new InvalidOperationException("Frozen rolling sequence ended before native combat.");
-                decision = frozen[Records.Count];
+                // Decode only the next input. Prior native observations are
+                // replaced below; expanding them eagerly duplicates whole states.
+                decision = PlannerReplayScenario.ReadWithoutNativeObservation<Decision>(frozen[Records.Count]);
                 if (!Equal(decision.Root, root, false)) throw new InvalidOperationException("Fresh rolling replay root differs at decision " + Records.Count);
                 decision.Mode = "replay"; decision.Nodes = 0; decision.Actual = null; decision.Timing = null;
             }

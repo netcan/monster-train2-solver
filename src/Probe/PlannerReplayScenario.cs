@@ -184,6 +184,9 @@ namespace MonsterTrain2Poju.Probe
                 " nodes=" + record.Nodes + " duplicates=" + record.Duplicates);
         }
         internal static T Read<T>(FixtureValue value) => Token(value).ToObject<T>()!;
+        internal static T ReadWithoutNativeObservation<T>(FixtureValue value) =>
+            new JObject(value.EnumerateObject().Where(property => property.Name is not "Actual" and not "Timing")
+                .Select(property => new JProperty(property.Name, Token(property.Value)))).ToObject<T>()!;
         private static JToken Token(FixtureValue value)
         {
             if (value.ValueKind == FixtureKind.Object)

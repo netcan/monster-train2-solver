@@ -101,6 +101,12 @@ internal static class RollingAdviceChecks
             foreach (string field in new[] { "Root", "Expected", "Actual" })
                 Require(Key(State(first[index].GetProperty(field)), terminal) == Key(State(second[index].GetProperty(field)), terminal),
                     "Fresh rolling replay changed full state or RNG at " + field);
+            foreach (string field in new[] { "PlanSteps", "PlannedOutcome", "Score", "PolicyBaselineScore", "Generation" })
+                Require(first[index].GetProperty(field).ContentEquals(second[index].GetProperty(field)),
+                    "Fresh rolling replay changed the frozen forecast field " + field);
+            bool plannedTerminal = Terminal(first[index].GetProperty("PlannedOutcome").Deserialize<RoomOutcome>());
+            Require(Key(State(first[index].GetProperty("Planned")), plannedTerminal) ==
+                Key(State(second[index].GetProperty("Planned")), plannedTerminal), "Fresh replay changed the full forecast state or RNG.");
         }
         // A terminal pre-boss loss is still a useful full-battle mechanic control.
         // Suite counts distinct bosses only from actual decision-room occupants.
