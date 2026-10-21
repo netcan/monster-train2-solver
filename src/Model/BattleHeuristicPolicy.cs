@@ -31,15 +31,44 @@ namespace MonsterTrain2Poju.Model
                     SupportedActionCandidate? ability = Ability();
                     if (ability != null) return ability;
                 }
-                BattleActionEnumeration actions = BattleActionModel.EnumerateActions(source, choice.card.InstanceId, includeAbilities: false);
-                omitted.AddRange(actions.UnsupportedAttempts);
-                SupportedActionCandidate? selected = actions.SupportedCandidates
-                    .Where(candidate => TargetPriority(candidate.Action, choice.rule!) > -1e5)
-                    .OrderByDescending(candidate => TargetPriority(candidate.Action, choice.rule!)).FirstOrDefault();
-                if (selected != null) return selected;
+                // Rank visible targets before applying effects. This seed only
+                // needs its first legal successor; evaluating every placement
+                // first consumed most of an interactive planning budget.
+                foreach (PlayCardAction action in Targets(choice.card, choice.rule!)
+                    .Where(action => TargetPriority(action, choice.rule!) > -1e5)
+                    .OrderByDescending(action => TargetPriority(action, choice.rule!)))
+                {
+                    BattleActionResult result = BattleActionModel.PlayCard(source, action);
+                    if (result.Supported) return new SupportedActionCandidate(action, result);
+                    if (result.Rejection == ActionRejection.Unsupported)
+                        omitted.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported strength-seed action."));
+                }
+                // Multi-stage choices use the ordinary complete branch
+                // enumerator; the simple target seed never invents choices.
+                if (choice.rule!.Effects.Any(effect => effect.Recursion != null || effect.SpikeRecipe != null))
+                {
+                    BattleActionEnumeration actions = BattleActionModel.EnumerateActions(source, choice.card.InstanceId, includeAbilities: false);
+                    omitted.AddRange(actions.UnsupportedAttempts);
+                    var selected = actions.SupportedCandidates.Where(candidate => TargetPriority(candidate.Action, choice.rule!) > -1e5)
+                        .OrderByDescending(candidate => TargetPriority(candidate.Action, choice.rule!)).FirstOrDefault();
+                    if (selected != null) return selected;
+                }
             }
             return checkedAbilities ? null : Ability();
 
+            IEnumerable<PlayCardAction> Targets(CardToken card, CardPlayRule rule)
+            {
+                bool targeted = CardSpellModel.RequiresUnitTarget(rule.Effects.Concat(rule.OnCastEffects).ToArray());
+                foreach (RoomCombatState room in source.Spawn.Train.Rooms)
+                {
+                    int players = room.Units.Count(unit => unit.Team == CombatTeam.Player);
+                    int first = rule.Effect == "SpawnMonster" ? 0 : -1;
+                    int last = rule.Effect == "SpawnMonster" ? players : -1;
+                    foreach (int target in targeted ? room.Units.Where(unit => unit.Health > 0).Select(unit => unit.Id) : new[] { 0 })
+                    for (int position = first; position <= last; position++)
+                        yield return new PlayCardAction(card.InstanceId, room.RoomIndex, position, target);
+                }
+            }
             SupportedActionCandidate? Ability()
             {
                 BattleActionEnumeration abilities = UnitAbilityModel.EnumerateActivations(source);

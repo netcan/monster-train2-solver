@@ -164,7 +164,8 @@ namespace MonsterTrain2Poju.Model
                 if (chosen != null)
                 {
                     strength = Child(strength, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(chosen.Action, false));
-                    Consider(strength); Rollout(strength);
+                    Consider(strength);
+                    if (strength.Steps.Count == 1) Rollout(strength);
                 }
                 else
                 {
@@ -177,8 +178,10 @@ namespace MonsterTrain2Poju.Model
 
             // Seed the existing fixed play policy as well as the no-card path.
             // Reuse its cached successors rather than applying a selected card
-            // twice. Charge all work to the same budgets, retaining partial
-            // rollout improvements if the complete seed cannot finish in time.
+            // twice. Forecast the first play once, then spend the budget on
+            // completing the seed instead of re-ending the same future turns
+            // after every card. The no-card horizon remains an executable
+            // fallback if either seed cannot finish in time.
             Node policy = root;
             while (!Stop() && policy.Turns < options.MaxTurns && !Terminal(policy))
             {
@@ -193,7 +196,8 @@ namespace MonsterTrain2Poju.Model
                 if (chosen != null)
                 {
                     policy = Child(policy, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(chosen.Action, false));
-                    Consider(policy); Rollout(policy);
+                    Consider(policy);
+                    if (policy.Steps.Count == 1) Rollout(policy);
                 }
                 else
                 {

@@ -8,6 +8,7 @@ internal static class BattleHeuristicChecks
     // not count as a native victory or independent native replay acceptance.
     internal static void Forecast(FixtureValue fixture)
     {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
         BattleTurnState root = fixture.GetProperty("RollingDecisions").EnumerateArray().First()
             .GetProperty("Root").Deserialize<BattleTurnState>()!;
         string original = JsonSerializer.Serialize(root);
@@ -36,7 +37,7 @@ internal static class BattleHeuristicChecks
                 var replay = BattlePlannerChecks.Replay(root, steps, out var replayOutcome);
                 if (JsonSerializer.Serialize(replay) != JsonSerializer.Serialize(state) || outcome != replayOutcome ||
                     JsonSerializer.Serialize(root) != original) throw new InvalidOperationException("Heuristic forecast replay or source immutability failed.");
-                Console.WriteLine($"HEURISTIC-FORECAST outcome={outcome} decisions={steps.Count} score={BattlePlanner.Evaluate(state, outcome)} omittedReasons={string.Join("; ", omittedReasons)}; model-only diagnosis.");
+                Console.WriteLine($"HEURISTIC-FORECAST outcome={outcome} decisions={steps.Count} score={BattlePlanner.Evaluate(state, outcome)} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} omittedReasons={string.Join("; ", omittedReasons)}; model-only diagnosis.");
                 return;
             }
         }

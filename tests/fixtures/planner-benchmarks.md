@@ -2,12 +2,18 @@
 
 `BattlePlanner` returns a model-verified executable recommendation under node,
 time, beam-width and per-turn action budgets. It seeds a complete no-card
-continuation and the existing units/spells/junk policy, and completes promising
+continuation, a visible-strength/unit-ability policy and the existing
+units/spells/junk policy, and completes promising
 branches to the requested horizon early. The fixed-policy seed evaluates only
 the hand cards needed to select its next action and reuses that action's cached
 successor. Ordinary policy seeding omits unit/room ability enumeration; the
-beam's full frontier still includes both. Checks compare the lazy seed's exact
-choice and successor against the existing full-enumeration policy. Both seeds
+beam's full frontier still includes both. The strength seed ranks captured
+card stats and visible targets before applying effects, evaluating only as far
+as its first legal successor. Multi-stage card choices retain the ordinary
+branch enumerator. Each seed forecasts its first play once, then completes
+its policy horizon without repeatedly ending the same future turns after
+every card. Checks compare the fixed lazy seed's exact
+choice and successor against the existing full-enumeration policy. All seeds
 consume the same planning budgets. A completed fixed-policy seed is reported
 as `PolicyBaselineScore`; a null value means the seed did not finish within
 the budget, not that the recommendation beat that policy.
