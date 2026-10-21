@@ -49,6 +49,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
             if (PlayerAdvisorProbe.Enabled)
             {
+                if (!PlayerAdvisorProbe.CaptureInitialized) return true;
                 if (waiting) Observe(PlayerAdvisorProbe.Capture(), false);
                 return !Replay && !PlayerAdvisorProbe.ReadyFor();
             }
@@ -77,8 +78,9 @@ namespace MonsterTrain2Poju.Probe
                 // Decode only the next input. Prior native observations are
                 // replaced below; expanding them eagerly duplicates whole states.
                 decision = PlannerReplayScenario.ReadWithoutNativeObservation<Decision>(frozen[Records.Count]);
-                if (!Equal(decision.Root, root, false)) throw new InvalidOperationException("Fresh rolling replay root differs at decision " + Records.Count);
-                decision.Mode = "replay"; decision.Nodes = 0; decision.Actual = null; decision.Timing = null;
+                if (!Equal(decision.Root, root, false)) throw new InvalidOperationException("Fresh rolling replay root differs at decision " + Records.Count + ": " +
+                    UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(decision.Root), BattleTurnProbe.Comparable(root), "$"));
+                decision.Mode = "replay"; decision.Nodes = 0; decision.Actual = null; decision.Timing = null; decision.Difference = null;
             }
             else
             {

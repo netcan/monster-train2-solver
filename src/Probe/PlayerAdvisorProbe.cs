@@ -24,6 +24,18 @@ namespace MonsterTrain2Poju.Probe
         private static ManualLogSource? log;
         private static BattleTurnState? terminal;
         internal static bool InteractionsPassed { get; private set; }
+        internal static bool CaptureInitialized
+        {
+            get
+            {
+                Resolve();
+                // Let the real overlay establish its per-battle identity space
+                // before a fast frozen driver can issue the first native input.
+                SaveManager save = AllGameManagers.Instance.GetSaveManager();
+                return Field<bool>("wasInBattle") && Field<string?>("manualBattleKey") ==
+                    save.GetShareCode() + ":" + save.GetCurrentDistance();
+            }
+        }
         internal static bool IsPlanning => Get<bool>("IsPlanning");
         internal static BattleAdvice Advice => Get<BattleAdvice>("CurrentAdvice");
         internal static BattleAdvisorOverlay.Publication LatestTiming =>
@@ -33,8 +45,31 @@ namespace MonsterTrain2Poju.Probe
             Assembly = type?.Assembly.GetName().Name,
             Version = type?.Assembly.GetName().Version?.ToString(),
             InteractionsPassed,
+            EnchantmentBindings = advisor == null ? null : Bindings(),
             Overlay = advisor == null ? null : Property("Evidence")
         };
+
+        private static object[] Bindings()
+        {
+            Type traceType = type!.Assembly.GetType("MonsterTrain2Poju.Probe.FullBattleTrace", true)!;
+            object trace = AccessTools.Property(traceType, "Active").GetValue(null)!;
+            var units = (IReadOnlyList<CharacterState>)AccessTools.Property(traceType, "KnownUnits").GetValue(trace)!;
+            int Id(CharacterState value) => (int)AccessTools.Method(traceType, "UnitId").Invoke(trace, new object[] { value });
+            var result = new List<object>();
+            foreach (CharacterState owner in units)
+                foreach (CharacterTriggerState trigger in (IEnumerable<CharacterTriggerState>)AccessTools.Field(typeof(CharacterState), "triggers").GetValue(owner))
+                    foreach (CardEffectState state in trigger.GetEffects())
+                    {
+                        if (state.GetCardEffect() is not CardEffectEnchant effect) continue;
+                        var source = (CharacterState?)AccessTools.Field(typeof(CardEffectEnchant), "enchanterCharacter").GetValue(effect);
+                        result.Add(new { Owner = Id(owner), OwnerUnityAlive = owner != null, OwnerDestroyed = owner.IsDestroyed,
+                            OwnerPreviewBorn = owner.SpawnedInPreviewMode,
+                            Source = ReferenceEquals(source, null) ? 0 : Id(source!), SourceUnityAlive = source != null,
+                            SourceDestroyed = ReferenceEquals(source, null) ? (bool?)null : source!.IsDestroyed,
+                            SameOwner = ReferenceEquals(owner, source) });
+                    }
+            return result.ToArray();
+        }
 
         private static object? Property(string name) => AccessTools.Property(type!, name).GetValue(advisor);
         private static T Get<T>(string name) { Resolve(); return (T)Property(name)!; }

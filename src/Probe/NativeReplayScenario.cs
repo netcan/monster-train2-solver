@@ -3397,9 +3397,11 @@ namespace MonsterTrain2Poju.Probe
         {
             // Planning and its independent full-path verification share this
             // wait stage. A long explicit planner budget needs room for both.
-            if (next == Stage.Battle && BattleAdvisorOverlay.Enabled &&
+            if (next == Stage.Battle && (BattleAdvisorOverlay.Enabled || PlayerAdvisorProbe.Enabled) &&
                 float.TryParse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TIME_LIMIT_MS"), out float budgetMs))
-                seconds = Math.Max(seconds, 60f + 2f * budgetMs / 1000f);
+                // The player UI matrix consumes three complete publications;
+                // each publication also verifies its full forecast independently.
+                seconds = Math.Max(seconds, 60f + (PlayerAdvisorProbe.Enabled && !PlayerAdvisorProbe.InteractionsPassed ? 6f : 2f) * budgetMs / 1000f);
             stage = next;
             deadline = Time.realtimeSinceStartup + seconds;
         }

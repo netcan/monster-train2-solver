@@ -225,7 +225,7 @@ The refreshed 0.2.2 search profile
 wins in 304.33 seconds with 80 Pyre HP: 38 decisions, 31 card plays, seven EndTurns,
 40 publications and 486 pure captures. The UI checks pass (340 vertices,
 85,699 visible pixels). Fresh profile
-`full-battle-units-spells-and-junk-20261021-202604-6e07f3d5` wins in 84.27 seconds
+`full-battle-units-spells-and-junk-20261021-203819-580f52ed` wins in 83.65 seconds
 using the same 38 frozen inputs with zero search nodes. Both runs settle terminal
 effects, preserve protected files and have zero capture/mismatch/unsupported/pending
 counters. Full roots, successors, published continuations and RNG match.
@@ -254,6 +254,14 @@ input ends before combat completion. This is a focused failure reproduction,
 not a completed battle acceptance. The original Soldier of Fortune model
 fixture also passes its paid/unaffordable draw, shared-upgrade and full-chain
 checks.
+
+The frozen driver waits for the separately loaded overlay to establish its
+native battle identity space before issuing inputs. Deep player UI checks also
+receive time for all three publications and their full forecast verification.
+The source plan's configured budget is unchanged. Frozen root errors include
+the first differing field, and a diagnostic source's old error is cleared before
+the new observation. Both player acceptance checkers explicitly require the
+player assembly in source and replay processes.
 
 This establishes the natural Luna Coven starter battle in the real player
 entry point. It does not establish every later moon deck, room/relic combination,

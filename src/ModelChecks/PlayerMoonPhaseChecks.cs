@@ -5,6 +5,9 @@ internal static class PlayerMoonPhaseChecks
 {
     internal static void Pair(FixtureValue source, FixtureValue replay)
     {
+        foreach (FixtureValue fixture in new[] { source, replay })
+            Require(fixture.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor",
+                "Moon acceptance must load the separate player assembly in both processes.");
         RollingAdviceChecks.FrozenPair(source, replay);
         BattleAdviceChecks.Native(source, requireBoss: false);
         Require(source.GetProperty("NativeWon").GetBoolean() && replay.GetProperty("NativeWon").GetBoolean(),
