@@ -1461,6 +1461,13 @@ if (args.Length == 1 && args[0] == "--no-player-units-status-pure")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--outer-boss-pyre-turn-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OuterBossPyreChecks.Turns(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--outer-boss-pyre-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3226,6 +3233,11 @@ CloneUpgradeRefreshChecks.Run();
 TrainCombatChecks.Run();
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();
+foreach (string path in args.Where(path => path.Contains("outer-boss-pyre-turn-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OuterBossPyreChecks.Turns(fixture.RootElement);
+}
 foreach (string path in args.Where(path => path.Contains("outer-boss-pyre-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);

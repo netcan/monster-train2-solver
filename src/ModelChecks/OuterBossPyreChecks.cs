@@ -4,6 +4,41 @@ using MonsterTrain2Poju.Model;
 
 internal static class OuterBossPyreChecks
 {
+    internal static void Turns(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            fixture.GetProperty("OuterBossTurnsEnabled").GetBoolean() && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+            fixture.GetProperty("Pending").GetInt32() == 0 && fixture.GetProperty("Mismatches").GetInt32() == 1 &&
+            fixture.GetProperty("Unsupported").GetInt32() == 1 && fixture.GetProperty("Actions").GetArrayLength() == 0,
+            "Requires the original isolated diagnostic with its historical queue-control mismatch and Pyre guard.");
+        FixtureValue[] turns = fixture.GetProperty("Turns").EnumerateArray().ToArray();
+        Require(turns.Length == 5, "Unexpected controlled native turn count.");
+        BattleTurnState controlBefore = turns[1].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState controlAfter = turns[1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        Require(controlBefore.Spawn.Turn == 1 && controlBefore.Spawn.Phase < controlBefore.Spawn.Waves.Count &&
+            controlAfter.Spawn.Turn == 2 && controlAfter.Spawn.Phase == controlAfter.Spawn.Waves.Count &&
+            controlAfter.Spawn.OuterBoss?.Phase == "Relentless", "Missing the explicit mid-turn native queue control.");
+        BattleTurnState root = turns[2].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState current = root;
+        string immutable = JsonSerializer.Serialize(root, ModelJson.Options);
+        foreach (FixtureValue row in turns.Skip(2))
+        {
+            BattleTurnResult result = BattleTurnModel.EndTurn(current);
+            Require(result.Supported, "Controlled frozen EndTurn unsupported: " + result.UnsupportedReason);
+            BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            bool terminal = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+            string? diff = ModelJson.Difference(BattleTurnChecks.Comparable(result.State!, terminal), BattleTurnChecks.Comparable(actual, terminal));
+            Require(diff == null && result.Outcome == (RoomOutcome)row.GetProperty("ActualOutcome").GetInt32(),
+                "Controlled frozen EndTurn differs: " + diff);
+            current = result.State!;
+        }
+        Require(JsonSerializer.Serialize(root, ModelJson.Options) == immutable &&
+            current.PlayRules!.Rooms.Count(room => !room.IsPyre && !room.Enabled) == 3 &&
+            turns[^1].GetProperty("ActualOutcome").GetInt32() == (int)RoomOutcome.PlayerDefeated,
+            "Missing immutable root, three destroyed floors or native terminal Pyre loss.");
+        Console.WriteLine("OUTER-BOSS-PYRE-TURN PASS: three complete native EndTurns from one post-control root, floor destruction through next pre-combat Pyre combat and terminal loss; exact successors without native reinjection.");
+    }
+
     internal static void Native(FixtureValue fixture)
     {
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&

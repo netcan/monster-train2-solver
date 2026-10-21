@@ -1,8 +1,20 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-21): 825 archives (769 full battles and
-56 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-21): 826 archives (769 full battles and
+57 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`outer-boss-pyre-turn-calibration.mt2f` retains the complete unchanged diagnostic
+from `20261021-135324-4dde3c8f`. `--outer-boss-pyre-turn-only` starts from one
+turn-two native decision after the explicit spawn-queue control, then matches
+three complete EndTurns without injecting later native states. It destroys all
+three ordinary floors and resolves the next pre-combat Pyre movement/combat to
+the native terminal loss, including complete controller/aura/physical/context/RNG
+equality and an immutable root. The historical one mismatch (mid-turn control)
+and one unsupported (the former Pyre guard) remain in the raw capture; they are
+not presented as natural full-battle acceptance. The model's Pyre guard has been
+replaced only for the calibrated original unpaired relentless boss. Nonterminal
+tower continuations remain explicitly guarded.
 
 `outer-boss-pyre-calibration.mt2f` uses the explicit native spawn-queue control
 to reach three destroyed floors and the next pre-combat Pyre entry. The model

@@ -1,7 +1,7 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 825 binary archives, including 769
-full battles and 56 component calibrations. The card index accepts 768 battles;
+Current curated inventory (2026-10-21): 826 binary archives, including 769
+full battles and 57 component calibrations. The card index accepts 768 battles;
 one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
@@ -71,8 +71,13 @@ reserved-anchor movement, ascend/shift/sentry callbacks, immediate tower combat,
 frame-bound destruction and terminal state match. Native stops the combat loop
 and cancels the movement coroutine, so capture uses the acknowledged terminal
 stop. The terminal card-definition cache is excluded; all room rules and gameplay
-state remain compared. Complete EndTurn integration of this boundary is still guarded
-explicitly, and the default capture mode retains its previous coverage guards.
+state remain compared. The boundary is now integrated after enemy PreCombat
+callbacks, before boss actions and new-turn energy/draw. A frozen replay from
+one post-control turn-two root matches three complete native EndTurns, including
+floor destruction and terminal Pyre entry, without injecting later native states.
+The original diagnostic retains its historical control mismatch and old Pyre
+guard; it is component evidence. Nonterminal tower continuations and paired
+bosses remain guarded. The default capture mode retains its previous guards.
 Native upgrade-slot relics now pass battle validation because their only
 consumer is the already calibrated campaign upgrade-slot interface; acquired
 card upgrades are captured normally. The six-owner campaign calibration passes.

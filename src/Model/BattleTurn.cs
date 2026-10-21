@@ -477,14 +477,31 @@ namespace MonsterTrain2Poju.Model
             // Native queues each team's PreCombat after spawning/rollover, before energy and draw.
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
             {
-                if (team == CombatTeam.Enemy && spawn.OuterBoss != null && outputPlayRules?.Rooms.All(room => room.IsPyre || !room.Enabled) == true)
-                    return Unsupported("Outer boss Pyre-entry pre-combat routing requires native calibration.");
                 TrainCombatResult triggers = TrainCombatModel.PreCombat(train, team);
                 if (!triggers.Supported) return Unsupported(triggers.UnsupportedReason!);
                 if (!RouteDeadUnits(train, triggers)) return Unsupported("Pre-combat deaths require standby card routing.");
                 train = triggers.State!;
                 spawn = WithTrain(spawn, train, turn, spawn.Rng);
                 if (Terminal(triggers.Outcome)) return Finish(triggers.Outcome, 0, moon);
+                if (team == CombatTeam.Enemy && spawn.OuterBoss != null && outputPlayRules?.Rooms.All(room => room.IsPyre || !room.Enabled) == true)
+                {
+                    var streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
+                        stream.Name == "BossActions" && outerBossRng.HasValue ? outerBossRng.Value :
+                        stream.Name == "Battle" ? train.Context!.BattleRng : stream.Name == "CardDraw" ? train.Context!.Cards.Rng :
+                        stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
+                    var boundary = new BattleTurnState(spawn, train.Context!.QueryFrame?.Energy ?? 0, source.EnergyPerTurn,
+                        source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard,
+                        moon, streams, otherPiles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled,
+                        source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
+                        train.Context.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom, source.MoonPhaseTrackingActive);
+                    OuterBossPyreResult tower = OuterBossPyreModel.Apply(new OuterBossPhaseState(boundary, spawn.OuterBoss));
+                    if (!tower.Supported) return Unsupported(tower.UnsupportedReason!);
+                    if (!RouteDeadUnits(train, new TrainCombatResult(tower.State!.Spawn.Train, tower.Outcome, Array.Empty<RoomCombatResult>())))
+                        return Unsupported("Outer boss Pyre combat requires native death/card routing.");
+                    spawn = tower.State.Spawn; train = spawn.Train; outputPlayRules = tower.State.PlayRules;
+                    if (Terminal(tower.Outcome)) return Finish(tower.Outcome, 0, moon);
+                    return Unsupported("Nonterminal outer-boss Pyre combat requires native continuation calibration.");
+                }
             }
             context = train.Context!;
             if (context.Cards.DeckDrawDisabledThisTurn.HasValue)
