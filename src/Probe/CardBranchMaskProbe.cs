@@ -7,7 +7,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class CardBranchMaskProbe
     {
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_BRANCH_CARD_MASKS") == "1";
+        internal static bool Enabled => AdvisorRuntime.PlayerSession || Environment.GetEnvironmentVariable("MT2_PROBE_BRANCH_CARD_MASKS") == "1";
         internal static readonly List<object> Records = new List<object>();
         internal static CardMaskDescriptor? Capture(CardState card)
         {

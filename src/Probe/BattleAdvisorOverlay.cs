@@ -23,6 +23,9 @@ namespace MonsterTrain2Poju.Probe
         private readonly BattleAdviceSession session;
         private readonly int horizon;
         private readonly int timeLimitMs;
+        private readonly bool playerSession;
+        private readonly KeyCode toggleKey;
+        private bool ManualSession => playerSession || Environment.GetEnvironmentVariable("MT2_PROBE_SCENARIO") == "advisor";
         private GameObject canvas = null!;
         private Text body = null!, pauseLabel = null!;
         private BattleAdvice? displayed;
@@ -64,15 +67,17 @@ namespace MonsterTrain2Poju.Probe
             Bosses = FullBattleTrace.Active?.KnownUnits.Where(unit => unit.IsMiniboss() || unit.IsOuterTrainBoss())
                 .Select(unit => new { Name = unit.GetSourceCharacterData()?.name, Miniboss = unit.IsMiniboss(), OuterTrainBoss = unit.IsOuterTrainBoss() }).ToArray() };
 
-        internal BattleAdvisorOverlay(ManualLogSource log)
+        internal BattleAdvisorOverlay(ManualLogSource log, PlayerAdvisorSettings? settings = null)
         {
             this.log = log;
-            horizon = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_HORIZON") ?? "3");
-            timeLimitMs = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TIME_LIMIT_MS") ?? "3000");
+            playerSession = settings != null;
+            toggleKey = settings?.ToggleKey ?? KeyCode.F8;
+            horizon = settings?.Horizon ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_HORIZON") ?? "3");
+            timeLimitMs = settings?.TimeLimitMs ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TIME_LIMIT_MS") ?? "3000");
             if (timeLimitMs < 100 || timeLimitMs > 30000) throw new ArgumentOutOfRangeException(nameof(timeLimitMs));
-            int floor = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2");
-            bool tactical = Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1";
-            string? externalTool = Environment.GetEnvironmentVariable("MT2_PROBE_DOTNET_PLANNER");
+            int floor = settings?.DeploymentRoom ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2");
+            bool tactical = settings?.TacticalSeed ?? Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1";
+            string? externalTool = playerSession ? null : Environment.GetEnvironmentVariable("MT2_PROBE_DOTNET_PLANNER");
             if (string.IsNullOrEmpty(externalTool))
                 session = new BattleAdviceSession(new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromMilliseconds(timeLimitMs),
                     preferredDeploymentRoom: floor, useTacticalSeed: tactical));
@@ -82,6 +87,7 @@ namespace MonsterTrain2Poju.Probe
                 session = new BattleAdviceSession(external.Search, external.Verify);
             }
             Active = this;
+            if (playerSession) new FullBattleTrace(log);
             log.LogInfo("ADVISOR-READY background model worker; F8 toggles overlay; no automatic plays.");
         }
 
@@ -102,7 +108,7 @@ namespace MonsterTrain2Poju.Probe
             RectTransform rect = panel.GetComponent<RectTransform>(); rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0, 1);
             rect.anchoredPosition = new Vector2(20, -20); rect.sizeDelta = new Vector2(460, 365);
             panel.GetComponent<Image>().color = new Color(.045f, .06f, .09f, .97f);
-            Font font = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei", "Noto Sans CJK SC", "Arial" }, 18);
+            Font font = Font.CreateDynamicFontFromOSFont(new[] { "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei", "Noto Sans CJK SC", "Arial" }, 18);
             Text Label(string name, string text, float y, float height, int size)
             {
                 var child = new GameObject(name, typeof(RectTransform), typeof(Text)); child.transform.SetParent(panel.transform, false);
@@ -114,7 +120,7 @@ namespace MonsterTrain2Poju.Probe
                 return label;
             }
             Label("Title", "怪物火车 · 战局建议", 14, 34, 23);
-            Text scope = Label("Scope", "已知牌序 · 未来 " + horizon + " 回合 · F8 显示/隐藏", 52, 28, 15);
+            Text scope = Label("Scope", "已知牌序 · 未来 " + horizon + " 回合 · " + toggleKey + " 显示/隐藏", 52, 28, 15);
             scope.color = new Color(.55f, .72f, .84f);
             body = Label("Recommendation", "进入战斗后自动计算建议。", 92, 208, 18);
             Text Button(string title, float x, Action click)
@@ -136,7 +142,7 @@ namespace MonsterTrain2Poju.Probe
         }
 
         internal void Keyboard()
-        { if (canvas != null && Input.GetKeyDown(KeyCode.F8)) canvas.SetActive(!canvas.activeSelf); }
+        { if (canvas != null && Input.GetKeyDown(toggleKey)) canvas.SetActive(!canvas.activeSelf); }
 
         private static bool Ready(AllGameManagers managers)
         {
@@ -170,7 +176,7 @@ namespace MonsterTrain2Poju.Probe
             { session.Invalidate(); displayed = null; session.Poll(); return; }
             EnsureUi();
             bool inBattle = managers?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle;
-            if (!inBattle && wasInBattle && Environment.GetEnvironmentVariable("MT2_PROBE_SCENARIO") == "advisor")
+            if (!inBattle && wasInBattle && ManualSession)
             { new FullBattleTrace(log); manualBattleKey = null; }
             wasInBattle = inBattle;
             if (paused || managers == null || !Ready(managers))
@@ -180,7 +186,7 @@ namespace MonsterTrain2Poju.Probe
                 body.text = paused ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。";
                 return;
             }
-            if (Environment.GetEnvironmentVariable("MT2_PROBE_SCENARIO") == "advisor")
+            if (ManualSession)
             {
                 SaveManager save = managers.GetSaveManager();
                 string battle = save.GetShareCode() + ":" + save.GetCurrentDistance();
@@ -190,7 +196,7 @@ namespace MonsterTrain2Poju.Probe
             session.Poll();
             if (session.Status == BattleAdviceStatus.Planning) PlanningFrames++;
             int start = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "0");
-            if (Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR") == "1" && managers.GetCombatManager().GetTurnCount() < start) return;
+            if (!playerSession && Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR") == "1" && managers.GetCombatManager().GetTurnCount() < start) return;
             if (Time.realtimeSinceStartup >= nextCapture && captureError == null)
             {
                 nextCapture = Time.realtimeSinceStartup + .5f;
@@ -216,9 +222,9 @@ namespace MonsterTrain2Poju.Probe
                     CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,
                     SearchMs = displayed.Plan.Elapsed.TotalMilliseconds, VerificationMs = displayed.VerificationElapsed.TotalMilliseconds,
                     EndToEndMs = displayed.ResponseElapsed.TotalMilliseconds });
-                log.LogInfo("ADVISOR-PUBLISHED generation=" + session.Generation + " steps=" + displayed.Plan.Steps.Count +
+                log.LogInfo((playerSession ? "POJU-ADVICE" : "ADVISOR-PUBLISHED") + " generation=" + session.Generation + " steps=" + displayed.Plan.Steps.Count +
                     " elapsedMs=" + displayed.Plan.Elapsed.TotalMilliseconds.ToString("F1") + " capturePurityFailures=" + PurityFailures);
-                if (!screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")
+                if (!playerSession && !screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")
                 {
                     CapturePanel(); screenshotTaken = true;
                 }
@@ -335,6 +341,11 @@ namespace MonsterTrain2Poju.Probe
         {
             if (Active != null && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
                 Active.Invalidate();
+        }
+        internal static void InstallAdvisorPatches(Harmony harmony)
+        {
+            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch) })
+                harmony.CreateClassProcessor(patch).Patch();
         }
         [HarmonyPatch(typeof(CardManager), nameof(CardManager.PlayAnyCard))]
         private static class CardPlayedPatch { private static void Prefix() => NativeAction(); }

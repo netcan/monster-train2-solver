@@ -131,6 +131,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal FullBattleTrace(ManualLogSource log)
         {
+            if (AdvisorRuntime.PlayerSession) BattleSpawnPointProbe.ResetAdvisorSession();
             this.log = log;
             projection = new UnitPlayModelProbe(log);
             cardCycles = new CardCycleProbe(log, projection);
@@ -139,6 +140,12 @@ namespace MonsterTrain2Poju.Probe
             turns = new BattleTurnProbe(this, spawning, cardCycles, projection, log);
             actions = new BattleActionProbe(this, projection, log);
             Active = this;
+        }
+
+        internal static void InstallAdvisorPatches(Harmony harmony)
+        {
+            harmony.CreateClassProcessor(typeof(CardIdentityPatch)).Patch();
+            harmony.CreateClassProcessor(typeof(MonsterIdentityPatch)).Patch();
         }
 
         internal void Checkpoint(string label)

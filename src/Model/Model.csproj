@@ -8,5 +8,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="ModelChecks" />
     <InternalsVisibleTo Include="Probe" />
+    <InternalsVisibleTo Include="MonsterTrain2Poju.Advisor" />
   </ItemGroup>
 </Project>

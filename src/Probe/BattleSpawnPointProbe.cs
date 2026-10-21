@@ -50,8 +50,13 @@ namespace MonsterTrain2Poju.Probe
         private static readonly Dictionary<SpawnPoint, SpawnPointReference> pointReferences = new Dictionary<SpawnPoint, SpawnPointReference>();
         private static readonly Dictionary<int, Copy> copies = new Dictionary<int, Copy>();
         internal static readonly List<DecisionRecord> Decisions = new List<DecisionRecord>();
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_PHYSICAL_SPAWNPOINTS") == "1";
+        internal static bool Enabled => AdvisorRuntime.PlayerSession || Environment.GetEnvironmentVariable("MT2_PROBE_PHYSICAL_SPAWNPOINTS") == "1";
         internal static int NextPreviewCopyId => copies.Count + 1;
+        internal static void ResetAdvisorSession()
+        {
+            pointReferences.Clear(); copies.Clear(); Decisions.Clear(); Compactions.Clear();
+        }
+        internal static void InstallAdvisorPatches(Harmony harmony) => harmony.CreateClassProcessor(typeof(CopyPatch)).Patch();
         private static int TrackCopy(SpawnPointGroup group)
         {
             var points = (List<SpawnPoint>)AccessTools.Field(typeof(SpawnPointGroup), "_temporarySpawnPoints").GetValue(group);
@@ -173,7 +178,7 @@ namespace MonsterTrain2Poju.Probe
                 new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview)).ToArray(), copies.Count + 1);
             int[] allCopies = CopyIds(planes.SelectMany(unit => new[] { unit.Primary, unit.Preview, unit.Temporary })
                 .Where(state => state != null).Cast<UnitSpawnPointState>()).Concat(currentCopies).Distinct().OrderBy(id => id).ToArray();
-            Decisions.Add(new DecisionRecord { Raw = raw, Canonical = canonical, LivingUnitIds = living,
+            if (!AdvisorRuntime.PlayerSession) Decisions.Add(new DecisionRecord { Raw = raw, Canonical = canonical, LivingUnitIds = living,
                 Planes = new PlaneSnapshot { Groups = groups.Concat(allCopies.Select(id => CopyGroup(trace, id))).ToArray(),
                     Units = planes.ToArray(), CurrentCopyIds = currentCopies.ToArray() } });
             return canonical;

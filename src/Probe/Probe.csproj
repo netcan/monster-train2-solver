@@ -4,23 +4,10 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
-    <GameDir Condition="'$(GameDir)' == ''">F:\SteamLibrary\steamapps\common\Monster Train 2</GameDir>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Model\Model.csproj" />
     <ProjectReference Include="..\FixtureArchive\FixtureArchive.csproj" />
-    <Reference Include="BepInEx" HintPath="$(GameDir)\BepInEx\core\BepInEx.dll" Private="false" />
-    <Reference Include="0Harmony" HintPath="$(GameDir)\BepInEx\core\0Harmony.dll" Private="false" />
-    <Reference Include="Assembly-CSharp" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\Assembly-CSharp.dll" Private="false" />
-    <Reference Include="Newtonsoft.Json" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\Newtonsoft.Json.dll" Private="false" />
-    <Reference Include="UnityEngine" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.dll" Private="false" />
-    <Reference Include="UnityEngine.CoreModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.CoreModule.dll" Private="false" />
-    <Reference Include="UnityEngine.AudioModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.AudioModule.dll" Private="false" />
-    <Reference Include="UnityEngine.UI" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.UI.dll" Private="false" />
-    <Reference Include="UnityEngine.UIModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.UIModule.dll" Private="false" />
-    <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.InputLegacyModule.dll" Private="false" />
-    <Reference Include="UnityEngine.TextRenderingModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.TextRenderingModule.dll" Private="false" />
-    <Reference Include="UnityEngine.ImageConversionModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.ImageConversionModule.dll" Private="false" />
-    <Reference Include="UnityEngine.JSONSerializeModule" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\UnityEngine.JSONSerializeModule.dll" Private="false" />
   </ItemGroup>
+  <Import Project="GameReferences.props" />
 </Project>

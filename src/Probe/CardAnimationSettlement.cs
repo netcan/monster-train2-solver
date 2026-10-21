@@ -7,7 +7,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class CardAnimationSettlement
     {
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_SETTLE_CARD_ANIMATIONS") == "1";
+        internal static bool Enabled => AdvisorRuntime.PlayerSession || Environment.GetEnvironmentVariable("MT2_PROBE_SETTLE_CARD_ANIMATIONS") == "1";
         internal static int PreviewWaits, DecisionWaits;
         internal static int ScheduledMovements;
         private static readonly MethodInfo isActive = AccessTools.Method(AccessTools.TypeByName("DG.Tweening.TweenExtensions"), "IsActive");
