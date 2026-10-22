@@ -24,9 +24,10 @@ This pair exercises Casting and original corruption on live player units;
 the separate [native calibration](outer-boss-corrupter.md) covers the attack
 multiplier, Relentless, floor destruction and Pyre combat.
 
-The player gate now admits the three calibrated ordinary Level8 definitions
-with the existing controller and payload validation. Titan Trial and Entropy
-definitions retain their guards. This bounded loss pair does not grant winning
+The player gate now admits all six calibrated Level8 definitions, including
+the independently accepted Trial pairs, with existing controller/payload
+validation. Level9 and uncalibrated Covenant birth effects retain their guards.
+This bounded loss pair does not grant winning
 or natural-progression acceptance; the existing winning checker still requires
 two native victories. No full fixture regression or Mac build is performed.
 

@@ -29,8 +29,10 @@ internal static class OuterBossTrialChecks
             trial.GetProperty("Substitutions").EnumerateArray().Any(mapping =>
                 mapping.GetProperty("Before").GetString() == "Boss_Level8_" + variant && mapping.GetProperty("After").GetString() == boss),
             "Missing explicit native trial flag, original substitution mapping or unchanged scene/RNG provenance.");
-        FixtureValue first = battle.GetProperty("Actions").GetArrayLength() > 0 ? battle.GetProperty("Actions")[0] : battle.GetProperty("Turns")[0];
-        BattleTurnState root = first.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        FixtureValue rootValue = battle.GetProperty("RollingDecisions").GetArrayLength() > 0
+            ? battle.GetProperty("RollingDecisions")[0].GetProperty("Root")
+            : (battle.GetProperty("Actions").GetArrayLength() > 0 ? battle.GetProperty("Actions")[0] : battle.GetProperty("Turns")[0]).GetProperty("Before");
+        BattleTurnState root = rootValue.Deserialize<BattleTurnState>()!;
         CombatRelicState sin = root.Spawn.Train.Context!.Relics!.Single(relic => relic.DataId == trial.GetProperty("SinDataId").GetString());
         Require(root.Spawn.Turn == 0 && root.Spawn.QueuedOuterBoss?.Boss.AssetKey == boss &&
             root.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 80 &&

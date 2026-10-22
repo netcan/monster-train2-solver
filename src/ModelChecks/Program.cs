@@ -1697,6 +1697,13 @@ if (args.Length == 3 && args[0] == "--player-boss-corrupter-bounded-pair-only")
     return;
 }
 
+if (args.Length == 4 && args[0] == "--player-boss-trial-bounded-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[2]);
+    using var replay = ModelJson.ReadFixture(args[3]);
+    PlayerOuterBossChecks.TrialBoundedPair(args[1], source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 6 && args[0] == "--outer-boss-trial-only")
 {
     using var battle = ModelJson.ReadFixture(args[2]);

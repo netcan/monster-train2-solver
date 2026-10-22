@@ -59,5 +59,6 @@ scripts/Check-OuterBossCorrupter.ps1 -SkipBuild
 
 The real player publication/UI and independent 24-input replay now also pass;
 see [bounded player evidence](player-corrupter-bounded.md). The player gate
-admits all three ordinary Level8 definitions. Titan Trial and Entropy
-definitions retain their guards. No Mac package is built.
+admits all six calibrated Level8 definitions after the independent
+[Trial player pairs](player-trials-bounded.md). Level9 and uncalibrated Covenant
+birth effects retain their guards. No Mac package is built.

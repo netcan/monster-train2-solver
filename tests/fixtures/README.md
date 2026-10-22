@@ -94,8 +94,10 @@ See [outer-boss validation](outer-boss-variants.md).
 
 The three Level8 Titan Trials now add 21 native archives: original sin/substituted
 birth, strengthened callbacks, 66 independently replayed casting inputs and
-separate controlled Relentless/floor/Pyre routes. Player acceptance remains
-pending. See [Trial evidence](outer-boss-trials.md).
+separate controlled Relentless/floor/Pyre routes. The actual player pairs add
+53 exact inputs and full forecasts/RNG, zero counters and UI checks. All three
+bounded pairs lose. See [Trial evidence](outer-boss-trials.md) and
+[player acceptance](player-trials-bounded.md).
 
 `full-battle-natural-ring7-tactical-win.mt2f` verifies a natural Rax victory:
 57 plays/ten EndTurns and Pyre46, with all frozen inputs and full state/RNG

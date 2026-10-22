@@ -2,8 +2,10 @@
 
 The three exact `Boss_Level8_{AllyBuffer,Fragile,Corrupter}_TitanTrial`
 definitions have native birth, casting, full paid chains, independent replay,
-Relentless, floor destruction and Pyre combat evidence. The player gate still
-admits the three ordinary definitions pending separate actual-player pairs.
+Relentless, floor destruction and Pyre combat evidence. Separate actual-player
+pairs now also cover 53 inputs, full forecasts and UI checks; see
+[bounded player evidence](player-trials-bounded.md). The player gate admits all
+six calibrated Level8 definitions.
 Entropy Level9 and uncalibrated outer-boss Covenant effects remain guarded.
 
 The isolated driver selects the original Ring8 scenario from the run's own

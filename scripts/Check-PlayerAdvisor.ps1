@@ -1,8 +1,8 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'FragileBounded', 'CorrupterBounded', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
-    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'FragileBounded', 'CorrupterBounded', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
+    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'FragileBounded', 'CorrupterBounded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
+    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'FragileBounded', 'CorrupterBounded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -20,6 +20,9 @@ foreach ($name in $Case) {
         'OuterBossRolling' { 'player-boss-rolling' }
         'FragileBounded' { 'player-boss-fragile-bounded' }
         'CorrupterBounded' { 'player-boss-corrupter-bounded' }
+        'TrialAllyBuffer' { 'player-boss-trial-allybuffer-bounded' }
+        'TrialFragile' { 'player-boss-trial-fragile-bounded' }
+        'TrialCorrupter' { 'player-boss-trial-corrupter-bounded' }
         'Conduit' { 'player-conduit' }
         'RoomMoon' { 'player-room-moon' }
         'RoomMoonMovement' { 'player-room-moon-movement' }
@@ -51,7 +54,9 @@ foreach ($name in $Case) {
         elseif ($name -in @('MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic')) { '--player-moon-room-spells-pair-only' }
         elseif ($name -in @('TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')) { '--player-terminal-copy-pair-only' }
         else { "--$prefix-pair-only" }
-    dotnet $checker $mode $search $replay
+    $modeArguments = if ($name.StartsWith('Trial')) { @('--player-boss-trial-bounded-pair-only', $name.Substring(5), $search, $replay) }
+        else { @($mode, $search, $replay) }
+    dotnet $checker @modeArguments
     if ($LASTEXITCODE -ne 0) { throw "Player $name acceptance failed." }
 }
 Write-Output "PLAYER-ADVISOR-FOCUSED PASS cases=$($Case -join ','); no full regression executed."

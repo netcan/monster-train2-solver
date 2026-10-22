@@ -164,7 +164,8 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    P95 为 1.25/1.77 秒；自然牌组组合及玩家发布敌方升降仍需分别验收。
    详见 [导流校准](../tests/fixtures/conduit-movement.md)。
 3. **其他终局 Boss。** 玩家入口目前开放已校准的
-   `Boss_Level8_AllyBuffer`、`Boss_Level8_Fragile` 和 `Boss_Level8_Corrupter`，其他定义继续保留外部/排队
+   `Boss_Level8_AllyBuffer`、`Boss_Level8_Fragile`、`Boss_Level8_Corrupter` 及其三个
+   Titan Trial 版本，其他定义继续保留外部/排队
    Boss 保护。Fragile 已有完整有界建议与独立原生重放，自然胜局仍待补齐。
    普通 Corrupter 的原生模型现已补齐：原始回合开始腐化、攻击后翻倍、出生、
    9 个施法阶段边界，以及 18 次出牌/6 次回合结束的完整败局均匹配。全新进程
@@ -180,8 +181,13 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    现也通过原始罪孽遗物替换、出生、强化载荷、控制器及完整付费链：独立新进程
    重放共 66 个输入，完整状态/RNG 匹配，六个进程四项失败计数均为零。
    三组受控无情场景另验证各 8 个阶段边界、三层摧毁和火炉战斗；明确清空出怪
-   队列并提高火炉血量，不计自然胜局。Trial 玩家入口仍待独立实际建议/重放验收，
-   原生 Covenant 出生保护和 Level9 Entropy 保护保持。详见
+   队列并提高火炉血量，不计自然胜局。三个 Trial 的真实玩家建议及独立重放也已
+   验收：共 53 个输入、完整预测/状态/RNG 匹配，六个进程四项失败计数为零，面板
+   操作与纯读取通过。3 回合/3 秒软预算下，响应中位数为 4.43–4.77 秒、P95 为
+   5.53–5.78 秒；三局均败，不算自然胜局。详见
+   [Trial 玩家验收](../tests/fixtures/player-trials-bounded.md)。
+   原生 Covenant 出生保护和 Level9 真终局保护保持；后者涉及 Dominion、Savagery
+   及三个共享生命的 Entropy 实体，不能只按三个动作组为空的定义放行。详见
    [Trial 校准](../tests/fixtures/outer-boss-trials.md)。
    详见 [Corrupter 原生校准](../tests/fixtures/outer-boss-corrupter.md)。
    Fragile 已完成原生出生、8 次控制器操作、1152 次隔离转换，以及 4 个完整

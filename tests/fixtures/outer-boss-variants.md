@@ -11,8 +11,10 @@ Entropy actors have no action groups and remain outside this model.
 
 All three Trial definitions now have separate original-sin substitution,
 birth/controller/casting, complete paid chains and fresh replay, plus explicit
-controlled Relentless/floor/Pyre evidence. Actual player pairs remain pending;
-see [Trial calibration](outer-boss-trials.md).
+controlled Relentless/floor/Pyre evidence. Their actual player pairs also pass
+53 inputs, full forecasts/RNG and UI checks; all six Level8 definitions enter
+player capture. See [Trial calibration](outer-boss-trials.md) and
+[player evidence](player-trials-bounded.md).
 
 ## Fragile baseline
 

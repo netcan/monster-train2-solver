@@ -108,6 +108,29 @@ internal static class PlayerOuterBossChecks
         Console.WriteLine($"PLAYER-CORRUPTER-BOUNDED PASS decisions={records.Length}: original scene selection, bounded player publication/UI and independent complete native replay; natural progression/winning acceptance remains separate.");
     }
 
+    internal static void TrialBoundedPair(string variant, FixtureValue source, FixtureValue replay)
+    {
+        string boss = OuterBossTrialChecks.Boss(variant);
+        CheckPair(source, replay, boss, requireVictory: false, requireRelentless: false);
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            OuterBossTrialChecks.Control(fixture, variant);
+            FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
+            Require(overlay.GetProperty("Horizon").GetInt32() == 3 && overlay.GetProperty("TimeLimitMs").GetInt32() == 3000 &&
+                overlay.GetProperty("TacticalSeed").GetBoolean(), "Wrong bounded trial player configuration.");
+        }
+        FixtureValue[] records = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        CombatUnit original = records[0].GetProperty("Root").Deserialize<BattleTurnState>()!.Spawn.QueuedOuterBoss!.Actor.Unit;
+        Require(original.AssetKey == boss && original.BaseAttack == (variant == "AllyBuffer" ? 35 : variant == "Fragile" ? 30 : 20) &&
+            original.MaxHealth == (variant == "AllyBuffer" ? 3800 : variant == "Fragile" ? 3000 : 2800), "Original player trial stats changed.");
+        Require(variant == "Corrupter" ? original.Triggers.Single(trigger => trigger.Kind == "OnTurnBegin").Effects.Single().Action!.Statuses.Single().Stacks == 4 :
+            original.Triggers.SelectMany(trigger => trigger.Effects).Single(effect => effect.Enchantment != null).Enchantment!.StatusPool.Single().Stacks ==
+                (variant == "AllyBuffer" ? 10 : 6), "Original strengthened trial payload changed.");
+        Require(records.Any(record => record.GetProperty("Nodes").GetInt32() > 0 &&
+            record.GetProperty("Timing").GetProperty("SearchMs").GetDouble() > 0), "Player trial source did not perform real search.");
+        Console.WriteLine($"PLAYER-TRIAL-BOUNDED PASS variant={variant} decisions={records.Length}: original trial sin/substitution, bounded actual-player publications/UI, complete forecasts and independent native replay; natural progression/winning acceptance remains separate.");
+    }
+
     private static void CheckPair(FixtureValue source, FixtureValue replay, string expectedBoss, bool requireVictory, bool requireRelentless = true)
     {
         foreach (FixtureValue fixture in new[] { source, replay })
@@ -173,13 +196,20 @@ internal static class PlayerOuterBossChecks
             Require(generatedSourceTraits, "Missing new native Entropy Scourge source traits.");
             Require(abilitySourceTraits && activations > 0, "Missing native ability source traits or activations.");
         }
-        else if (expectedBoss == "Boss_Level8_Fragile")
+        else if (expectedBoss == "Boss_Level8_AllyBuffer_TitanTrial")
+        {
+            Require(generatedSourceTraits && states.Any(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Any(unit => unit.Team == CombatTeam.Player && unit.Status("debuff")?.Stacks == 10)),
+                "Missing original trial Scourge source traits or moving debuff10 aura.");
+        }
+        else if (expectedBoss is "Boss_Level8_Fragile" or "Boss_Level8_Fragile_TitanTrial")
         {
             Require(states.Any(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
-                .Any(unit => unit.Team == CombatTeam.Enemy && unit.Status("buff")?.Stacks == 3)),
+                .Any(unit => unit.Team == CombatTeam.Enemy && unit.Status("buff")?.Stacks ==
+                    (expectedBoss == "Boss_Level8_Fragile_TitanTrial" ? 6 : 3))),
                 "Missing the original Fragile aura in the live player encounter.");
         }
-        else if (expectedBoss == "Boss_Level8_Corrupter")
+        else if (expectedBoss is "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial")
         {
             Require(states.Any(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Team == CombatTeam.Player && unit.Status("corruption")?.Stacks > 0)),
