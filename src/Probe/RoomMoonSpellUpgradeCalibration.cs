@@ -51,6 +51,8 @@ namespace MonsterTrain2Poju.Probe
             string[] originals = { "108b9153-0236-4ba2-ad20-d03a991bbd57", "753f20a2-c625-47b3-be4b-8600b673841e",
                 "8757357b-c36f-476d-88de-b9a481d89fcb", "87e45427-921e-45d3-b4c4-9c156a83cedf", "cbf4d65d-afdb-4fd8-a7ce-216d58a6b486" };
             int[] ids = originals.Select(id => Trace.CardId(cards.AddNewCard(data.FindCardData(id)!, CardPile.HandPile, false, false, animate: false))).ToArray();
+            if (RoomMoonCallbackCalibration.SpellAdvance)
+                ids = ids.Concat(new[] { Trace.CardId(cards.AddNewCard(data.FindCardData("e9fa09e5-13bd-4826-a8e5-969332cbfbbf")!, CardPile.HandPile, false, false, animate: false)) }).ToArray();
             CardState storm = cards.GetHand().Single(card => Trace.CardId(card) == ids[0]);
             CardUpgradeData numeric = data.GetAllCardUpgradeData().First(item => item.GetBonusDamage() > 0 && item.GetTraitDataUpgrades().Count == 0 &&
                 item.GetCardTriggerUpgrades().Count == 0 && item.GetStatusEffectUpgrades().Count == 0);
@@ -83,9 +85,11 @@ namespace MonsterTrain2Poju.Probe
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId, NativeCompleted = true, RngUnchanged = unchanged,
                 PreviewUpdatesSuppressed = Managers.GetCombatManager()!.SuppressCombatPreviewUpdates, Boundary = "AfterOriginalCoroutineAndTriggerQueue",
-                SpellUpgradeControls = true, ShadeCallbacks = false, MovementControls = false, EnemyControls = false,
+                SpellUpgradeControls = true, SpellAdvanceControls = RoomMoonCallbackCalibration.SpellAdvance,
+                ShadeCallbacks = false, MovementControls = false, EnemyControls = false,
                 ActorIds = Array.Empty<int>(), CardIds = ids, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0], Rows = rows }))
-            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "room-moon-spell-upgrade-calibration.mt2f"))) document.Write(output);
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                RoomMoonCallbackCalibration.SpellAdvance ? "room-moon-spell-advance-calibration.mt2f" : "room-moon-spell-upgrade-calibration.mt2f"))) document.Write(output);
             log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS spellUpgrades=true rows=" + rows.Count + " gameplayRngUnchanged=" + unchanged);
         }
     }

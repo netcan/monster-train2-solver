@@ -3836,7 +3836,8 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-ch
     using var document = ModelJson.ReadFixture(path);
     MixedConduitChecks.Native(document.RootElement);
 }
-foreach (string path in args.Where(path => path.EndsWith("room-moon-spell-upgrade-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => path.EndsWith("room-moon-spell-upgrade-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("room-moon-spell-advance-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);
     RoomMoonSpellUpgradeChecks.Native(document.RootElement);
@@ -3847,6 +3848,8 @@ foreach (string path in args.Where(path => path.EndsWith("player-moon-room-turn-
     PlayerMoonRoomSpellChecks.TurnBoundary(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-original-moon-card-upgrades-room-mask.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-original-moon-card-upgrades-lunacy.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-original-moon-card-upgrades-lunacy-replay.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-original-moon-card-upgrades-room-mask-replay.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-original-moon-card-upgrades-replay.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

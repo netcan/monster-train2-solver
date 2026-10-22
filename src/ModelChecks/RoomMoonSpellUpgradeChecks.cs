@@ -11,9 +11,10 @@ internal static class RoomMoonSpellUpgradeChecks
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
             root.GetProperty("Boundary").GetString() == "AfterOriginalCoroutineAndTriggerQueue", "Missing native room spell upgrade controls.");
         int[] ids = root.GetProperty("CardIds").Deserialize<int[]>()!;
-        Require(ids.Length == 5 && root.GetProperty("Rows").GetArrayLength() == 15, "Missing five original spells or controls.");
+        bool advance = root.TryGetProperty("SpellAdvanceControls", out FixtureValue flag) && flag.GetBoolean();
+        Require(ids.Length == (advance ? 6 : 5) && root.GetProperty("Rows").GetArrayLength() == 15, "Missing original spells or controls.");
         int witnesses = 0, changes = 0, exclusive = 0, additive = 0, selections = 0;
-        bool guardsChecked = false;
+        bool guardsChecked = false, advanceGuardChecked = false;
         foreach (FixtureValue row in root.GetProperty("Rows").EnumerateArray())
         {
             TrainCombatState before = row.GetProperty("Before").GetProperty("Train").Deserialize<TrainCombatState>()!;
@@ -72,7 +73,28 @@ internal static class RoomMoonSpellUpgradeChecks
                     "Unknown room masks bypassed the spell upgrade guard.");
                 guardsChecked = true;
             }
-            foreach (int id in ids)
+            if (advance)
+            {
+                CardInstanceState lunacy = after.FindCard(ids[5])!, priorLunacy = before.Context!.FindCard(ids[5])!;
+                Require(lunacy.DataId == "e9fa09e5-13bd-4826-a8e5-969332cbfbbf" &&
+                    lunacy.MaskDescriptor!.SourceTraits!.Count(trait => trait.Type == CardMoonAdvanceScalingModel.Trait) == 1 &&
+                    CardMoonAdvanceScalingModel.Adjust(after, ids[5], 0).Supported &&
+                    JsonSerializer.Serialize(priorLunacy, ModelJson.Options) == JsonSerializer.Serialize(lunacy, ModelJson.Options),
+                    "Original Lunacy resource refresh changed its card state or scaling signature.");
+                if (!advanceGuardChecked)
+                {
+                    var malformed = System.Text.Json.Nodes.JsonNode.Parse(parent)!;
+                    var source = malformed["Context"]!["CardInstances"]!.AsArray()
+                        .Single(node => node!["InstanceId"]!.GetValue<int>() == ids[5])!["MaskDescriptor"]!["SourceTraits"]!.AsArray()
+                        .Single(node => node!["Type"]!.GetValue<string>() == CardMoonAdvanceScalingModel.Trait)!;
+                    source["Float"] = 2;
+                    TrainCombatState unknown = JsonSerializer.Deserialize<TrainCombatState>(malformed.ToJsonString(), ModelJson.Options)!;
+                    Require(!RoomMoonPhaseModel.Refresh(unknown, false).Supported,
+                        "Uncalibrated Lunacy parameters bypassed the resource refresh guard.");
+                    advanceGuardChecked = true;
+                }
+            }
+            foreach (int id in ids.Take(5))
             {
                 CardInstanceState card = after.FindCard(id)!;
                 CardSourceTrait[] sources = card.MaskDescriptor!.SourceTraits!.Where(trait => trait.Type == CardMoonUpgradeModel.Trait).ToArray();
@@ -99,8 +121,8 @@ internal static class RoomMoonSpellUpgradeChecks
             Require(numeric.Stats.Damage == numeric.CloneDamageBase * ((phase & 2) != 0 ? 5 : 1), "Selected-room refresh lost stronger magic-power rescaling.");
             if (operation == "Select") selections++;
         }
-        Require(changes > 0 && exclusive > 0 && additive > 0 && selections == 6 && guardsChecked, "Missing changed upgrades, both room modes, guard or selection controls.");
-        Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells=5 traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
+        Require(changes > 0 && exclusive > 0 && additive > 0 && selections == 6 && guardsChecked && (!advance || advanceGuardChecked), "Missing changed upgrades, both room modes, guard or selection controls.");
+        Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells={ids.Length} lunacyResourceControls={advance} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

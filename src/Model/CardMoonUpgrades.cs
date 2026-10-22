@@ -45,6 +45,10 @@ namespace MonsterTrain2Poju.Model
                     roomMask: roomMask);
                 if (!result.Supported) { error = result.UnsupportedReason; return source; }
                 context = context.WithCard(result.Card!);
+                // Managing a moon upgrade reapplies magic-power traits with the
+                // native managers, dispatching CardUpdated to selected-room
+                // modifiers. Conduit must rebuild its tracked upgrade as well.
+                if (!ReferenceEquals(card, result.Card)) context = ConduitModel.Updated(context, token.InstanceId);
             }
             return context;
         }

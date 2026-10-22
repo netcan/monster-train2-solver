@@ -38,10 +38,20 @@ namespace MonsterTrain2Poju.Model
             if (source.Rooms.Any(room => room.Preview))
                 return new MoonPhaseTransitionResult(null, "Room moon-phase refresh previews require separate native calibration.");
             if (context.CardInstances?.Any(card => (card.MaskDescriptor?.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits)
-                    .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal) && trait.RuntimeType != CardMoonUpgradeModel.Trait) == true) ||
+                    .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal) &&
+                        trait.RuntimeType != CardMoonUpgradeModel.Trait && trait.RuntimeType != CardMoonAdvanceScalingModel.Trait) == true) ||
                     card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits
                         .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal)) == true)) == true)
                 return new MoonPhaseTransitionResult(null, "Moon resource refresh trait callbacks require native calibration.");
+            foreach (CardInstanceState card in context.CardInstances ?? Array.Empty<CardInstanceState>())
+                if (card.MaskDescriptor?.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits)
+                    .Any(trait => trait.RuntimeType == CardMoonAdvanceScalingModel.Trait) == true)
+                {
+                    // Original Lunacy inherits the empty resource-refresh callback;
+                    // its paid-cost scaling only runs when advancing the phase.
+                    StatisticQueryResult validated = CardMoonAdvanceScalingModel.Adjust(context, card.InstanceId, 0);
+                    if (!validated.Supported) return new MoonPhaseTransitionResult(null, validated.UnsupportedReason);
+                }
             context = CardMoonUpgradeModel.RefreshHand(context, out string? cardError);
             if (cardError != null) return new MoonPhaseTransitionResult(null, cardError);
             source = CardSpellModel.WithContext(source, context);

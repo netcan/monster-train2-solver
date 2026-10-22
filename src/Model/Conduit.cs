@@ -223,13 +223,17 @@ namespace MonsterTrain2Poju.Model
         internal static CombatContext Updated(CombatContext context, int cardId)
         {
             context = RoomSpellUpgradeModel.Updated(context, cardId);
-            context = Drawn(context, [cardId]);
             if (!Captured(context)) return context;
             foreach (var room in context.MagicPower!.Where(room => room.RoomIndex == context.QueryFrame?.SelectedRoomIndex).ToArray())
             foreach (var unit in room.Conduit!.Units.Where(unit => unit.Cards.Contains(cardId)))
             {
                 context = Clear(context, room.RoomIndex, room.Team, unit.UnitId, cardId);
                 context = Add(context, room.RoomIndex, room.Team, unit.UnitId, [cardId]);
+                // Native Dictionary.Remove/Add reuses the just-freed entry;
+                // updating this card keeps its original enumeration position.
+                ConduitRoomState updated = context.MagicPower!.Single(row => row.RoomIndex == room.RoomIndex && row.Team == room.Team).Conduit!;
+                context = Put(context, room.RoomIndex, room.Team, updated.Units.Select(value => value.UnitId != unit.UnitId ? value :
+                    new ConduitUnitState(value.UnitId, value.Power, value.Active, unit.Cards, value.MultipliedCards)).ToArray());
             }
             return context;
         }

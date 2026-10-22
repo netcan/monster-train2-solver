@@ -129,3 +129,50 @@ remain separate acceptance tasks. No Mac package or full regression is built.
 ```powershell
 scripts/Check-PlayerAdvisor.ps1 -Case MoonRoomSpells -SkipBuild
 ```
+
+## Original Lunacy with room refresh and paid phase advances
+
+`room-moon-spell-advance-calibration.mt2f` adds unchanged original Lunacy to
+the five-spell component. Source `full-battle-no-cards-20261022-150949-47c8e3a5`
+exits normally in 29.85 seconds and preserves protected originals. All fifteen
+refresh/global-phase/selection/Eclipse install/remove boundaries preserve the
+complete Lunacy instance and gameplay RNG, while the five spell upgrades retain
+the existing 105 trait snapshots and forty active changes. Eight immutable
+branches match each boundary; altered Lunacy scaling parameters remain rejected.
+
+The old room-refresh guard rejected Lunacy merely because its trait name
+contains `MoonPhase`. Its original `CardTraitScalingAdvanceMoonPhase` inherits
+the empty resource callback; only the separately calibrated paid-cost advance
+callback changes the global phase. The guard now accepts that captured original
+signature and continues rejecting other parameters and resource traits.
+
+`full-battle-original-moon-card-upgrades-lunacy{,-replay}.mt2f` retains source
+`full-battle-units-spells-and-junk-20261022-151750-f4b2e802` (101.31 seconds)
+and fresh process `full-battle-units-spells-and-junk-20261022-152015-0acb7aa2`
+(95.75 seconds). Both win at Pyre80 after twenty plays/five EndTurns, settle,
+exit normally, preserve protected originals and have four zero failure counters.
+All twenty-five frozen inputs, complete states and RNG match the zero-node
+fresh replay and sixteen immutable model branches.
+
+Three unchanged Lunacy instances pay 2, 3 and 0 energy on Eclipse floor zero,
+advance the global phase by even/odd/zero counts, grant exactly 2/3/0 Conduit
+and enter discard. Twenty complete native hand-resource callbacks per process
+also expose a missing immediate notification: managing a moon upgrade reapplies
+magic power with native managers, which dispatches `CardUpdated` to Conduit.
+The model now rebuilds that tracked upgrade while preserving its native dictionary
+position; unchanged phase upgrades dispatch no extra notification. The retained
+Celestial Storm switches Conduit damage 10 to 2 and back as its stronger-magic
+trait changes. Whole-battle refresh had previously hidden this intermediate gap.
+The individual callback comparisons include private contributor order, multiplied
+card sets, every card upgrade and RNG; no comparison fields are omitted.
+
+These are controlled durable-unit/energy scenes, not natural-deck or actual
+player acceptance for this composition. Old five-spell room and original Lunacy
+baselines pass focused checks. No full regression or Mac build is performed.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -RoomMoonSpellAdvance -SkipBuild
+scripts/Run-FullBattleProbe.ps1 -OriginalMoonCardUpgradesLunacy -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-spell-upgrades-only tests/fixtures/room-moon-spell-advance-calibration.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-lunacy.mt2f
+```

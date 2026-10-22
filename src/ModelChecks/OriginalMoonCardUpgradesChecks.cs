@@ -17,6 +17,7 @@ internal static class OriginalMoonCardUpgradesChecks
     internal static void Native(FixtureValue root)
     {
         bool roomMask = root.TryGetProperty("OriginalMoonCardUpgradesRoomMask", out FixtureValue maskFlag) && maskFlag.GetBoolean();
+        bool lunacy = root.TryGetProperty("OriginalMoonCardUpgradesLunacy", out FixtureValue lunacyFlag) && lunacyFlag.GetBoolean();
         Require(root.GetProperty("OriginalMoonCardUpgradesPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing settled original moon upgrade battle.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
@@ -29,7 +30,28 @@ internal static class OriginalMoonCardUpgradesChecks
             BattleActionResult attempted = BattleActionModel.PlayCard(last, new PlayCardAction(ids[5], 1, targetUnitId: target.Id));
             Console.WriteLine("MOON-UPGRADE-NEXT-ACTION: " + attempted.Reason);
         }
-        Require(ids.Length == (roomMask ? 17 : 16) && actions.Length == (roomMask ? 16 : 15) && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
+        Require(ids.Length == (lunacy ? 21 : roomMask ? 17 : 16) && actions.Length == (lunacy ? 20 : roomMask ? 16 : 15) && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
+        if (lunacy)
+        {
+            Require(roomMask, "Lunacy composition requires the original room mask.");
+            foreach ((int index, int paid) in new[] { (17, 2), (19, 3), (20, 0) })
+            {
+                FixtureValue row = actions.Single(row => row.GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == ids[index]);
+                BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(before.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "e9fa09e5-13bd-4826-a8e5-969332cbfbbf" &&
+                    before.Energy == paid && after.Energy == 0 &&
+                    after.MoonPhase == (paid % 2 == 0 ? before.MoonPhase : before.MoonPhase == "New" ? "Full" : "New"),
+                    "Original masked Lunacy lost its actual paid cost, zero/even/odd phase progression or native definition.");
+                int target = row.GetProperty("Action").GetProperty("TargetUnitId").GetInt32();
+                CombatUnit prior = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == target);
+                CombatUnit next = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == target);
+                Require((next.Status("conduit")?.Stacks ?? 0) - (prior.Status("conduit")?.Stacks ?? 0) == paid &&
+                    after.Spawn.Train.Context.Cards.Discard.Any(token => token.InstanceId == ids[index]),
+                    "Original Lunacy must grant the actually paid Conduit amount and discard after the phase callbacks.");
+            }
+            Console.WriteLine("LUNACY-ROOM-MASK PASS originalPaidCosts=2,3,0 fullNativeStateAndRng=true");
+        }
         foreach (FixtureValue row in hands)
         {
             CombatContext before = row.GetProperty("Before").Deserialize<CombatContext>()!, actual = row.GetProperty("After").Deserialize<CombatContext>()!;

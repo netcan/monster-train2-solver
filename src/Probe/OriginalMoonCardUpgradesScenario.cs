@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "original-moon-card-upgrades";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool RoomMask => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_ROOM_MASK") == "1";
+        internal static bool Lunacy => RoomMask && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_LUNACY") == "1";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static readonly List<HandSample> Hands = new List<HandSample>();
@@ -56,6 +57,12 @@ namespace MonsterTrain2Poju.Probe
             var created = new List<CardState> { Add(steward.GetID()), Add(steward.GetID()), Add(originals[2]), Add(battery.GetID()), Add(newMoon.GetID()) };
             created.AddRange(originals.Select(Add)); created.Add(Add(fullMoon.GetID())); created.AddRange(originals.Select(Add));
             if (RoomMask) created.Add(Add(EclipseChamberScenario.DataId));
+            if (Lunacy)
+            {
+                CardData refill = Authored(4, "CardEffectGainEnergy", 3);
+                created.AddRange(new[] { Add("e9fa09e5-13bd-4826-a8e5-969332cbfbbf"), Add(refill.GetID()),
+                    Add("e9fa09e5-13bd-4826-a8e5-969332cbfbbf"), Add("e9fa09e5-13bd-4826-a8e5-969332cbfbbf") });
+            }
             foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardUpgradeData numeric = all.GetAllCardUpgradeData().First(upgrade => upgrade.GetBonusDamage() > 0 && upgrade.GetTraitDataUpgrades().Count == 0 &&
                 upgrade.GetCardTriggerUpgrades().Count == 0 && upgrade.GetStatusEffectUpgrades().Count == 0);
@@ -72,7 +79,7 @@ namespace MonsterTrain2Poju.Probe
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
             if (RoomMask && index == 5 && source.Spawn.Train.Context!.Statistics!.Value(ids[16], "TimesPlayed", "ThisBattle") == 0) index = 16;
             CombatUnit? target = index is 5 or 11 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[1]) :
-                index is 6 or 12 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[0]) : null;
+                index is 6 or 12 or 17 or 19 or 20 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[0]) : null;
             int roomIndex = index == 1 ? 1 : target == null ? 0 : source.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == target.Id)).RoomIndex;
             var action = new PlayCardAction(ids[index], roomIndex, playerPosition: index < 2 ? 0 : -1, targetUnitId: target?.Id ?? 0);
             BattleActionResult result = BattleActionModel.PlayCard(source, action);
