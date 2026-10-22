@@ -96,7 +96,8 @@ namespace MonsterTrain2Poju.Model
                         (tank && allies.Any(unit => unit.Modifiers?.IsChampion == true) ? 100 + unit.Health * 2 : 0);
                 }
                 CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
-                if (target == null) return room.Units.Count(unit => unit.Team == CombatTeam.Enemy) * 25 + action.RoomIndex;
+                if (target == null) return RoomDamageValue(source, action, rule) ??
+                    room.Units.Count(unit => unit.Team == CombatTeam.Enemy) * 25 + action.RoomIndex;
                 bool harmful = rule.Effects.Any(effect => effect.Type is "Damage" or "Kill" ||
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
                 if (harmful != (target.Team == CombatTeam.Enemy)) return -1e6;
@@ -104,6 +105,23 @@ namespace MonsterTrain2Poju.Model
                     return target.Health + Math.Max(0, target.Status("armor")?.Stacks ?? 0);
                 return harmful ? 400 - target.Health : 150 + target.Attack + (target.Modifiers?.IsChampion == true ? 500 : 0);
             }
+        }
+
+        internal static double? RoomDamageValue(BattleTurnState source, PlayCardAction action, CardPlayRule rule)
+        {
+            // Estimate a single room damage effect against visible health/armor
+            // instead of treating every enemy alike.
+            // This only orders legal candidates; the model still executes and
+            // verifies the chosen successor, including all damage callbacks.
+            if (rule.Effects.Count != 1 || rule.OnCastEffects.Count != 0) return null;
+            CardActionEffect effect = rule.Effects[0];
+            if (effect.Type != "Damage" || effect.Target != "Room" || !effect.AllowEnemy || effect.AllowPlayer || effect.Value <= 0)
+                return null;
+            CardTargets targets = CardTargetModel.Collect(source.Spawn.Train, action.RoomIndex, effect, Array.Empty<int>(), firstEffect: true);
+            if (!targets.Supported) return null;
+            return source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Where(unit => targets.UnitIds.Contains(unit.Id) && unit.Team == CombatTeam.Enemy && unit.Health > 0)
+                .Sum(unit => Math.Min((double)effect.Value, unit.Health + Math.Max(0d, unit.Status("armor")?.Stacks ?? 0)));
         }
     }
 }

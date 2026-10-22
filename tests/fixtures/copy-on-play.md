@@ -148,6 +148,59 @@ scripts/Run-FullBattleProbe.ps1 -CopyOnPlayTerminalPurge -CopyOnPlayTerminalCons
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --terminal-purge-copy-only tests/fixtures/full-battle-terminal-purge-copy.mt2f
 ```
 
+## Actual player terminal Consume recommendations
+
+The separately loaded, unmodified Advisor now publishes and executes both
+terminal paths through the native card UI. A controlled 2000-attack boss makes
+three no-card turns lose. Earlier deployment and four EndTurns use the fixed
+setup policy; the actual player forecast starts at turn4. These are bounded
+forecast windows, not rolling recommendations from deployment.
+
+`full-battle-player-terminal-copy-consume-{search,replay}.mt2f` comes from
+profiles `full-battle-units-spells-and-junk-20261022-145908-746836e1` (59.16 seconds)
+and `full-battle-units-spells-and-junk-20261022-150033-259257a3` (49.66 seconds).
+Both win at Pyre79 with six plays/four EndTurns. Four frozen forecast steps
+end in the original Flicker killing the125HP boss and creating its new hand
+copy. This uses the existing opt-in tactical seed, horizon3 and configured
+3000ms budget; the consumed winning search takes295.2ms.
+
+`full-battle-player-terminal-purge-copy-consume-{search,replay}.mt2f` comes from
+profiles `full-battle-units-spells-and-junk-20261022-145600-a36e9661` (69.51 seconds)
+and `full-battle-units-spells-and-junk-20261022-145908-c50c7a70` (53.06 seconds).
+Both win at Pyre79 with seven plays/four EndTurns. Five frozen forecast steps
+include both casts against the2000HP boss, ending in the temporary copy's two
+purge callbacks. This uses the default seed/horizon3 and configured3000ms
+budget; the search actually takes3582.8ms because an atomic expansion can
+overrun the soft deadline. Fresh processes replay the same canonical root,
+actions, final state and RNG with zero search nodes.
+
+Both pairs settle, exit normally, preserve originals and retain four zero
+failure counters. Native UI pause/resume, hide/cancel/show, refresh, raycast
+and drag checks pass; four publications and zero capture purity failures
+prove real player observations. Complete raw action/turn chains, seven enemy
+birth boundaries and sixteen immutable branches also match.
+
+The first default search on the2000HP control lost after casting the original
+at a low-HP crowd on another floor. Its settled, zero-mismatch defeat remains
+`player-terminal-copy-target-calibration.mt2f`, not an accepted victory. It
+checks the full losing native chain and the repaired model continuation.
+Single-effect room damage candidates now use estimated useful health/armor
+damage instead of enemy count or preferred floor. Targets still use native
+filters and the chosen action executes through the unchanged model. Both
+default and tactical seeds choose the boss in this diagnostic; the full
+default plan wins and independently replays. Existing natural Ring7 and
+AllyBuffer tactical wins, target-team controls and the score plateau check
+pass focused regression. Unmodeled payloads remain guarded.
+
+```powershell
+scripts/Check-PlayerAdvisor.ps1 -Case TerminalCopyConsume,TerminalPurgeCopyConsume -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --terminal-copy-target-only tests/fixtures/player-terminal-copy-target-calibration.mt2f
+```
+
+Non-Consume player terminal paths, other callback orders/counts and natural
+final-boss combinations remain separate acceptance targets. No full regression
+or Mac package is built.
+
 ## Ordinary movement capture and tactical targets
 
 The refreshed natural archive also includes Bump metadata whenever physical

@@ -11,6 +11,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_COPY_ON_PLAY_TERMINAL") == "1";
         internal static bool Consume => Environment.GetEnvironmentVariable("MT2_PROBE_COPY_ON_PLAY_TERMINAL_CONSUME") == "1";
         internal static bool PurgeCopy => Environment.GetEnvironmentVariable("MT2_PROBE_COPY_ON_PLAY_TERMINAL_PURGE") == "1";
+        internal static bool LethalBoss => Environment.GetEnvironmentVariable("MT2_PROBE_COPY_ON_PLAY_TERMINAL_THREAT") == "1";
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -20,6 +21,9 @@ namespace MonsterTrain2Poju.Probe
             AccessTools.Field(typeof(CharacterData), "attackDamage").SetValue(steward.GetSpawnCharacterData(), 20);
             if (PurgeCopy)
                 AccessTools.Field(typeof(CharacterData), "health").SetValue(
+                    all.GetAllCharacterData().Single(unit => unit.GetAssetKey() == "Boss_Level1_Basic"), 2000);
+            if (LethalBoss)
+                AccessTools.Field(typeof(CharacterData), "attackDamage").SetValue(
                     all.GetAllCharacterData().Single(unit => unit.GetAssetKey() == "Boss_Level1_Basic"), 2000);
             foreach (var card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
             cards.GetDrawPile().Clear();
@@ -38,7 +42,7 @@ namespace MonsterTrain2Poju.Probe
             var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); spell.AddTemporaryTrait(freeze, managers.GetCoreManagers());
             CardIds = new[] { first, second, spell }.Select(FullBattleTrace.Active!.CardId).ToArray();
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
-            log.LogInfo("COPY-ON-PLAY-TERMINAL-PREPARED original copy upgrade, frozen original Flicker, authored +1000 power/durable Stewards; Consume=" + Consume + " PurgeCopy=" + PurgeCopy);
+            log.LogInfo("COPY-ON-PLAY-TERMINAL-PREPARED original copy upgrade, frozen original Flicker, authored +1000 power/durable Stewards; Consume=" + Consume + " PurgeCopy=" + PurgeCopy + " LethalBoss=" + LethalBoss);
         }
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
