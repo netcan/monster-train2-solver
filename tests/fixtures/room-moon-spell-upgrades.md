@@ -251,3 +251,40 @@ scripts/Run-FullBattleProbe.ps1 -OriginalMoonCardUpgradesCostRelic -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-spell-upgrades-only tests/fixtures/room-moon-spell-cost-relic-calibration.mt2f
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-cost-relic.mt2f
 ```
+
+## Actual player entry with the original cost relic
+
+`full-battle-player-moon-room-cost-relic-{search,replay}.mt2f` retains source
+`full-battle-units-spells-and-junk-20261022-155319-df842f92` (653.33 seconds)
+and direct player replay `full-battle-units-spells-and-junk-20261022-161031-c18a9bf1`
+(198.96 seconds). Both win at Pyre80 after forty-five plays/seven EndTurns,
+settle, exit normally, preserve protected originals and have four zero failure
+counters. All fifty-two original player inputs, roots, successors, forecasts
+and gameplay RNG match; the fresh process searches no nodes. Each process
+casts nine original Lunacy cards for paid costs 4/3/20/3/3/3/3/3/3, and
+publishes both original discounted Blight/Junk plays followed by their purge.
+The focused pair gate checks the unchanged relic signatures and both offsets
+at every player boundary, all five moon spells, both Eclipse modes and sixteen
+immutable complete model chains.
+
+The real assembly publishes fifty-four times and takes 621 pure captures,
+including the existing panel, pause/resume, hide/cancel/show, refresh, pointer
+and drag controls. The first twelve deployment predictions are legal bounded
+routes; the first winning search is at turn one (5.32 seconds search, 10.27
+seconds including capture/verification). Thirty-nine later publications retain
+the winning continuation, with median/P95 response 1.11/2.66 seconds.
+
+Player capture owns a separate instance registry from the isolation trace.
+The checker resolves the two unchanged card identities in the player's initial
+root, and the fresh process replays the source `RollingDecisions` directly.
+The isolation-action freeze is retained only as a diagnostic: it rebases card
+IDs and predictions and does not establish exact player publication replay.
+
+This remains the controlled durable-unit/energy scene with six-turn/ten-second
+tactical settings. Natural late-game decks and default-budget performance remain
+separate acceptance tasks. No full regression or Mac build is performed.
+
+```powershell
+scripts/Check-PlayerAdvisor.ps1 -Case MoonRoomCostRelic -SkipBuild
+scripts/Run-FullBattleProbe.ps1 -PlayerAdvisor -RollingAdvice -OriginalMoonCardUpgradesCostRelic -RollingInput tests/fixtures/full-battle-player-moon-room-cost-relic-search.mt2f -PlannerHorizon 6 -PlannerTimeLimitMs 10000 -PlannerTacticalSeed -SkipBuild
+```
