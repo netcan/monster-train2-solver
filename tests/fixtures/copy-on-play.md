@@ -35,8 +35,9 @@ order rather than creating the card before recording the original discard.
 
 Support is restricted to the original single-copy parameter upgrade on spells
 without authored traits or other installed trait state, optionally with Consume
-before CopyOnPlay. Other callback combinations/orders, discard-removing
-temporary upgrades, multiple copies and terminal copy routing remain guarded.
+before CopyOnPlay. One ordinary temporary Freeze is also calibrated below.
+Other callback combinations/orders, discard-removing temporary upgrades and
+multiple copies remain guarded.
 This controlled victory does not establish natural Ring7 or player acceptance.
 
 ## Natural Ring7 combination
@@ -61,9 +62,51 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-copy-on-play
   tests/fixtures/full-battle-natural-ring7-copy-on-play.mt2f
 ```
 
-This closes the combined mechanism mismatch, not the Ring7 player-victory
-goal. The natural checkpoint still needs a winning route before Fragile
-player acceptance can proceed.
+This fixed-policy archive closes the combined mechanism mismatch and remains
+a loss. Subsequent `full-battle-natural-ring7-tactical-win.mt2f` and
+`full-battle-player-natural-ring7-{search,replay}.mt2f` establish natural Ring7
+victories separately. A natural Fragile victory remains outstanding.
+
+## Copies created after native victory
+
+The ordinary source/replay pair is
+`full-battle-terminal-copy-on-play{,-replay}.mt2f`, profiles
+`full-battle-units-spells-and-junk-20261022-143247-8e8a8190` (43.22 seconds) and
+`full-battle-units-spells-and-junk-20261022-143651-9c5a4aad` (47.87 seconds).
+The Consume pair is `full-battle-terminal-copy-on-play-consume{,-replay}.mt2f`,
+profiles `full-battle-units-spells-and-junk-20261022-143247-bac98a0c` (44.73 seconds)
+and `full-battle-units-spells-and-junk-20261022-143651-c61bafae` (49.20 seconds).
+All four win at Pyre80 after three plays/four EndTurns, settle, exit normally,
+preserve protected originals and retain four zero failure counters. Each fresh
+process executes seven independently frozen inputs without searching.
+
+The original Flicker receives the original copy upgrade, optional original
+ChaosScepter before it, an authored +1000 numeric upgrade and one temporary
+Freeze. Two authored durable Stewards keep the natural first boss reachable.
+Freeze retains the unplayed card through four complete EndTurns; OnCardPlayed
+removes it before discard/copy. A boss-killing cast still creates exactly one
+new hand identity with the temporary purge upgrade. The original routes once
+to discard or exhausted, and the copy inherits numeric/Consume modifiers while
+excluding the original copying upgrade. Complete terminal state, statistics,
+card registry and RNG match sixteen immutable branches and full native chains.
+
+The model now preserves Freeze cleanup in the registry after terminal card
+clearing and does not re-add hand play history already cleared by the game.
+The frozen driver also reuses the settled StopCombatLoop snapshot: capturing
+later during export observes native EndOfCombat instead of the modeled action
+boundary. This changes observation timing, without dropping phase comparisons.
+Earlier failed diagnostic profiles remain unaccepted whole battles. The original
+nonterminal copy and original Permafrost fixtures pass focused regression.
+
+These are controlled mechanic calibrations; natural final bosses, other
+discard callbacks/orders/counts, terminal purge copies and actual player
+terminal-copy recommendations require separate witnesses.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -CopyOnPlayTerminal -SkipBuild
+scripts/Run-FullBattleProbe.ps1 -CopyOnPlayTerminalConsume -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --terminal-copy-only tests/fixtures/full-battle-terminal-copy-on-play.mt2f
+```
 
 Focused affected checks also pass: 2,134 native trait refresh states, pure
 composition controls, ten native clone/upgrade refresh generations and the

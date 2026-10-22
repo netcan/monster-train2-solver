@@ -159,7 +159,9 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 PlayerAdvisorProbe.Enabled ? PlayerAdvisorProbe.Terminal :
 #endif
-                FullBattleTrace.Active!.CaptureDecision(), true);
+                // Export can run after native UI advances to EndOfCombat.
+                // Reuse the settled StopCombatLoop boundary already captured.
+                FullBattleTrace.Active!.TerminalDecision ?? throw new InvalidOperationException("Native terminal checkpoint is missing."), true);
             if (Records.Last().Outcome is not (RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated))
                 throw new InvalidOperationException("Rolling model did not predict native combat completion.");
             if (Replay && frozen!.Length != Records.Count) throw new InvalidOperationException("Native battle ended before the frozen rolling sequence.");

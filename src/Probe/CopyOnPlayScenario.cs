@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
+            if (CopyOnPlayTerminalScenario.Enabled) { CopyOnPlayTerminalScenario.Prepare(managers, log); return; }
             var save = managers.GetSaveManager();
             var all = save.GetAllGameData();
             var upgrade = all.GetAllCardUpgradeData().Single(item => item.name == "CreateSpellCopyWithPurge");
@@ -47,6 +48,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal static PlayCardAction? Choose(BattleTurnState source)
         {
+            if (CopyOnPlayTerminalScenario.Enabled) return CopyOnPlayTerminalScenario.Choose(source);
             var plays = BattleActionModel.EnumerateSupportedPlays(source).ToArray();
             return plays.FirstOrDefault(action => source.Spawn.Train.Context!.CardInstances?.Any(card =>
                     card.InstanceId == action.CardInstanceId && card.Permanent.Upgrades.Any(upgrade => upgrade.DataId == CardCopyOnPlayModel.UpgradeId)) == true) ??

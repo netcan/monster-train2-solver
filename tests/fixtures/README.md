@@ -1,12 +1,18 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 906 archives (828 full battles and
+Current manifest inventory (2026-10-22): 910 archives (832 full battles and
 78 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 Run `scripts/Check-FixtureCatalog.ps1` for a fast byte/hash/registration audit;
 it never simulates a battle. Both model and completion entry points use this
 same catalog check. Use focused fixture/player cases for behavioral changes.
+
+`full-battle-terminal-copy-on-play{,-consume}{,-replay}.mt2f` adds ordinary
+and Consume copies generated after the original Flicker kills a native boss.
+All four controlled battles win at Pyre80 with three plays/four EndTurns;
+seven frozen inputs, terminal card identities/piles/statistics, complete RNG
+and sixteen immutable full chains match. See [copy on play](copy-on-play.md).
 
 The opposing moon callback pair `full-battle-eclipse-chamber-enemy-callbacks{,-replay}.mt2f`
 verifies 13 plays/five EndTurns and Pyre80 in two fresh native processes.

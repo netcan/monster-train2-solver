@@ -825,7 +825,9 @@ namespace MonsterTrain2Poju.Model
             BattleStatistics? playedStatistics = terminal ? context.Statistics?.RefreshDeckAfterCardTerminal() : context.Statistics;
             playedStatistics = terminal && playedStatistics != null && !playedStatistics.TrackedCards.Contains(card.InstanceId)
                 ? playedStatistics.RecordPlayedCard(card.InstanceId) : playedStatistics?.Increment(card.InstanceId, "TimesPlayed");
-            if (source.Spawn.Train.Context?.EnergyState?.Phase == "MonsterTurn") playedStatistics = playedStatistics?.RecordHandCardPlayed(card.InstanceId);
+            // PlayCard records its hand history before queued effects resolve;
+            // native terminal ClearCards has already erased it at this boundary.
+            if (!terminal && source.Spawn.Train.Context?.EnergyState?.Phase == "MonsterTurn") playedStatistics = playedStatistics?.RecordHandCardPlayed(card.InstanceId);
             context = context.WithStatistics(playedStatistics);
             train = CardSpellModel.WithContext(train, context);
             if (rule.OnCastEffects.Count > 0)
@@ -960,8 +962,10 @@ namespace MonsterTrain2Poju.Model
                 CardInstanceState unfrozen = RelicFreezeHandUpgradeModel.Played(discardInstance);
                 if (!ReferenceEquals(unfrozen, discardInstance))
                 {
-                    context = context.WithCardInstances(context.CardInstances?.Select(instance =>
-                        instance.InstanceId == unfrozen.InstanceId ? unfrozen : instance).ToArray());
+                    // Terminal clearing removes the resolving card from live
+                    // instances; its fallback must retain OnCardPlayed cleanup.
+                    playingInstance = unfrozen;
+                    context = context.WithCard(unfrozen);
                     discardInstance = unfrozen;
                 }
             }
@@ -1061,8 +1065,6 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             bool copyOnDiscard = !skipNaturalDiscard && discardInstance != null && CardCopyOnPlayModel.Present(discardInstance);
-            if (terminal && copyOnDiscard)
-                return Unsupported("Terminal copy-on-play routing requires native calibration.");
             BattleStatistics? statistics = context.Statistics;
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
             if (!skipNaturalDiscard) statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");

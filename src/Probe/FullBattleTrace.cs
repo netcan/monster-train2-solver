@@ -89,6 +89,7 @@ namespace MonsterTrain2Poju.Probe
         internal bool? NativeWon { get; private set; }
         private bool? stoppingOutcome;
         internal bool? TerminalEffectsSettled { get; private set; }
+        internal BattleTurnState? TerminalDecision { get; private set; }
         private int captureFailures;
         internal int CaptureFailures => RelicSpawnStatusProbe.Records.Count(record => !record.Completed || record.After == null) + SpawnEnchantScenario.Records.Count(record => !record.Completed || record.After == null) + (HeroCopyScenario.Error == null ? 0 : 1) + (UnitCopyScenario.Error == null ? 0 : 1) + (UnitCloneScenario.Error == null ? 0 : 1) + (BumpScenario.Error == null ? 0 : 1) + (HordeMergeScenario.Error == null ? 0 : 1) + (RevivalScenario.Error == null ? 0 : 1) + RevivalProbe.Records.Count(record => record.Error != null) + TriggeredSummonProbe.Damages.Count(record => record.Error != null) + TriggeredSummonProbe.Records.Count(record => record.Error != null) + BattleSpawnPointProbe.Compactions.Count(record => record.Error != null) + SpawnPointScenario.Records.Count(record => !record.Completed) + (SpawnPointScenario.Error == null ? 0 : 1) + PoolSummonProbe.Records.Count(record => !record.Completed) + FreshSpawnerProbe.Records.Count(record => !record.Completed) + FreshSpawnerProbe.Checks.Count(record => !record.Completed) + SpawnUpgradeProbe.Records.Count(record => !record.Completed) + (MultiSummonScenario.Error == null ? 0 : 1) + UnitBirthProbe.Clones.Count(record => !record.Completed) + UnitBirthProbe.Records.Count(record => !record.Completed) + (RallyScenario.Error == null ? 0 : 1) + (DyingHordeUpgradeScenario.Error == null ? 0 : 1) + (HordeUpgradeScenario.Error == null ? 0 : 1) + (HordeDeathScenario.Error == null ? 0 : 1) + (HordeRemovalScenario.Error == null ? 0 : 1) + (HarvestScenario.Error == null ? 0 : 1) + (EquipmentScenario.Error == null ? 0 : 1) + (ConditionalTriggerScenario.Error == null ? 0 : 1) + captureFailures + (TriggerMutationScenario.Error == null ? 0 : 1) + (DirectUnitUpgradeScenario.Error == null ? 0 : 1) + UncontrolledGroupGrowthProbe.Records.Count(record => record.Error != null) + DamageScalingScenario.Samples.Count(sample => sample.CaptureError != null) +
             StatusScalingScenario.Samples.Count(sample => sample.CaptureError != null) + StatusScalingScenario.Applications.Count(sample => sample.CaptureError != null) +
@@ -690,6 +691,9 @@ namespace MonsterTrain2Poju.Probe
             actions.Complete();
             turns.Complete(won ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated);
             Checkpoint("terminal");
+#if DEVELOPMENT_PROBE
+            if (RollingAdviceScenario.Enabled && !PlayerAdvisorProbe.Enabled) TerminalDecision = CaptureDecision();
+#endif
             OuterBossPyreProbe.CompleteTerminal();
             if (won && OriginalBalatroEventCavendishScenario.Prepared)
             {
@@ -786,6 +790,9 @@ namespace MonsterTrain2Poju.Probe
                 TerminalCaptureBoundary = "AfterStopCombatLoop",
                 TerminalEffectsSettled,
                 NativeEffectSettlement = NativeEffectSettlement.Evidence,
+                CopyOnPlayTerminal = CopyOnPlayTerminalScenario.Enabled,
+                CopyOnPlayTerminalConsume = CopyOnPlayTerminalScenario.Consume,
+                CopyOnPlayTerminalCardIds = CopyOnPlayTerminalScenario.CardIds,
                 Policy = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY"),
                 ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
                 OriginalChampionStartTurnHealSchema = OriginalChampionStartTurnHealScenario.Prepared ? 208 : 0,

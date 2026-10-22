@@ -36,6 +36,13 @@ if (args.Length == 2 && args[0] == "--natural-movement-capture-only")
     return;
 }
 
+if (args.Length == 2 && args[0] is "--terminal-copy-boundary-only" or "--terminal-copy-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--terminal-copy-boundary-only") TerminalCopyOnPlayChecks.Boundary(fixture.RootElement);
+    else TerminalCopyOnPlayChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] is "--copy-on-play-only" or "--natural-copy-on-play-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3845,6 +3852,11 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-train-heal
 {
     using var document = ModelJson.ReadFixture(path);
     EmberTrainHealChecks.XCost(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("full-battle-terminal-copy-on-play", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    TerminalCopyOnPlayChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-copy-on-play", StringComparison.OrdinalIgnoreCase)))
 {

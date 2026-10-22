@@ -20,8 +20,11 @@ namespace MonsterTrain2Poju.Model
             if (traits.Length == 0) return null;
             if (card.MaskDescriptor!.SourceTraits == null || card.MaskDescriptor.SourceTraits.Count != 0 ||
                 card.MaskDescriptor.BaseTraits.Any(trait => trait.RuntimeType is not (Trait or "CardTraitExhaustState")) ||
-                card.MaskDescriptor.TemporaryTraits.Count != 0 || card.MaskDescriptor.PermanentReplacements.Count != 0)
-                return "Copy-on-play currently requires an original spell without authored traits or other installed trait state.";
+                card.MaskDescriptor.TemporaryTraits.Count > 1 || card.MaskDescriptor.TemporaryTraits.Any(trait =>
+                    trait.RuntimeType != "CardTraitFreeze" || trait.DeclaredName != "CardTraitFreeze" || trait.ParamInt != 0 ||
+                    trait.DefinitionParamInt != 0 || trait.StackMode != 0 || !trait.Removable || trait.DefinitionRemovable != true ||
+                    trait.TemporaryReplacement) || card.MaskDescriptor.PermanentReplacements.Count != 0)
+                return "Copy-on-play requires a spell without authored traits, optionally with one ordinary temporary Freeze.";
             if (card.MaskDescriptor!.Definition.CardType != "Spell" || card.GraftedEquipmentCardId.HasValue ||
                 !card.CanBeCopied.HasValue || traits.Length != 1 || traits[0].DeclaredName != Trait || traits[0].ParamInt != 1 ||
                 traits[0].StackMode != 1 || traits[0].CopyOnPlayUpgrade is not CardUpgradeModifier upgrade ||
