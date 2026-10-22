@@ -189,6 +189,9 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    原生 Covenant 出生保护和 Level9 真终局保护保持；后者涉及 Dominion、Savagery
    及三个共享生命的 Entropy 实体，不能只按三个动作组为空的定义放行。详见
    [Trial 校准](../tests/fixtures/outer-boss-trials.md)。
+   已采集五个原始实体的创建顺序、物理楼层、三个 Entropy 锚点和生命链接，
+   纯读取/RNG 检查通过；这仍是出生观察，不算整场支持。接着校准生命写入、
+   预览与跨层阶段。详见 [Level9 出生证据](../tests/fixtures/true-final-boss.md)。
    详见 [Corrupter 原生校准](../tests/fixtures/outer-boss-corrupter.md)。
    Fragile 已完成原生出生、8 次控制器操作、1152 次隔离转换，以及 4 个完整
    EndTurn 的移动光环/远程火种伤害败局校准，四项失败计数为零；这仍是跳图

@@ -144,6 +144,16 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (TrueFinalBossBirthProbe.Enabled && (TrueFinalBossBirthProbe.Completed || TrueFinalBossBirthProbe.Error != null))
+            {
+                if (TrueFinalBossBirthProbe.Error != null) Finish(false, TrueFinalBossBirthProbe.Error);
+                else
+                {
+                    log.LogInfo("TRUE-FINAL-BOSS-BIRTH-NATIVE PASS five original actors; read-only capture; model acceptance pending.");
+                    Finish(true, "True-final-boss birth component captured; full battle remains guarded.");
+                }
+                return;
+            }
             if (fullBattle && FullBattleTrace.Active?.NativeWon != null)
             {
                 FullBattleTrace trace = FullBattleTrace.Active;
@@ -321,7 +331,10 @@ namespace MonsterTrain2Poju.Probe
             }
             if (stage == Stage.NaturalMap)
             {
-                if (save.GetGameSequence() == SaveData.GameSequence.BattleIntro)
+                // The native TFB map sequence loads its intro directly while
+                // retaining DestinationReached until the fight button is used.
+                if (save.GetGameSequence() == SaveData.GameSequence.BattleIntro ||
+                    TrueFinalBossBirthProbe.Enabled && screen.GetScreenActive(ScreenName.BattleIntro))
                 {
                     Enter(Stage.NaturalIntro, 120f);
                     return;
@@ -350,6 +363,12 @@ namespace MonsterTrain2Poju.Probe
                         .Select(index => index + ":" + save.GetScenarioData(index)?.name)));
                     if (targetDistance > 0)
                     {
+                        if (TrueFinalBossBirthProbe.Enabled)
+                        {
+                            TrueFinalBossBirthProbe.Navigate(save, map, log);
+                            map.ChooseBranch(MapScreen.BranchSelection.LeftBranch);
+                            return;
+                        }
                         OriginalOuterBossRoute.Select(save, targetDistance, log);
                         // Use the native map's navigation; scenario assets, boss
                         // stats, starting deck and relics remain unmodified.
