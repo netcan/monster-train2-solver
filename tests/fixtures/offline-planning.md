@@ -101,3 +101,19 @@ terminal loss were preserved; all four native failure counters were zero and
 protected game files unchanged. This validates the workflow, not a victory.
 Longer horizons alone did not win the tested input. Native victory candidates
 are validated separately.
+
+The tactical seed now considers a champion's shift ability immediately before
+a front-rearrangement card when both actions are legal and the card restores
+the original tank. Missing or unaffordable restoration retains the champion
+protection guard. This uses captured effects and unit roles, without card or
+encounter names. The natural Fragile deployment root produces a 54-input,
+eight-EndTurn model victory with Pyre2; model-only reproduction is:
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll policy-battle tests/fixtures/full-battle-player-boss-fragile-bounded-search.mt2f .probe-runs/fragile-shift-candidate.mt2f 0
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-shift-only .probe-runs/fragile-shift-candidate.mt2f
+```
+
+The focused checker covers both restoration counterexamples, independent
+winning full-state/RNG replay, and immutable roots. Native victory acceptance
+remains separate from this model regression.

@@ -26,6 +26,26 @@ namespace MonsterTrain2Poju.Model
             foreach (var choice in choices)
             {
                 CardPlayRule rule = choice.rule!;
+                if (rule.Effects.Any(effect => effect.Type == "FloorRearrange" &&
+                    effect.Target == "DropTargetCharacter" && effect.Value == 0))
+                {
+                    // A shift ability can temporarily expose its champion. Use
+                    // it before a legal tank-restoring card instead of wasting
+                    // that card on the tank already standing in front.
+                    BattleActionEnumeration shifts = UnitAbilityModel.EnumerateActivations(source);
+                    omitted.AddRange(shifts.UnsupportedAttempts);
+                    foreach (SupportedActionCandidate ability in shifts.SupportedCandidates.Where(ExposesChampion))
+                    {
+                        RoomCombatState room = source.Spawn.Train.Rooms.Single(item =>
+                            item.Units.Any(unit => unit.Id == ability.Action.ActivatorUnitId));
+                        CombatUnit tank = room.Units.First(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0);
+                        BattleActionResult restored = BattleActionModel.PlayCard(ability.Result.State!,
+                            new PlayCardAction(choice.token.InstanceId, room.RoomIndex, targetUnitId: tank.Id));
+                        if (restored.Supported && restored.State!.Spawn.Train.Rooms.Single(item => item.RoomIndex == room.RoomIndex)
+                            .Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0)?.Id == tank.Id)
+                            return ability;
+                    }
+                }
                 if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Recursion != null || effect.SpikeRecipe != null ||
                     effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" or "MergeEquipment" or "Mix"))
                 {

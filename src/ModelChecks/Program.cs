@@ -2477,6 +2477,12 @@ if (args.Length == 4 && args[0] == "--rolling-advice-victory-pair-only")
     RollingAdviceChecks.VictoryPair(source.RootElement, replay.RootElement, baseline.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--tactical-shift-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TacticalShiftChecks.Run(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--planner-deployment-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
