@@ -16,6 +16,11 @@ namespace MonsterTrain2Poju.Probe
     internal static class ConduitMovementCalibration
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_CONDUIT_MOVEMENT") == "1";
+        internal static bool Enemy => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_CONDUIT_ENEMY_MOVEMENT") == "1";
+        private static CombatTeam Team => Enemy ? CombatTeam.Enemy : CombatTeam.Player;
+        private static SpawnPoint NativePoint(int room, int point) => Enemy
+            ? Managers.GetRoomManager().GetRoom(room).GetHeroPoint(point)
+            : Managers.GetRoomManager().GetRoom(room).GetMonsterPoint(point);
         internal static bool Started, Completed;
         internal static string? Error;
         private static readonly List<object> rows = new List<object>();
@@ -34,10 +39,10 @@ namespace MonsterTrain2Poju.Probe
             RoomManager rooms = Managers.GetRoomManager();
             for (int room = 0; room < rooms.GetNumRooms(); room++)
             {
-                var group = (SpawnPointGroup)AccessTools.Field(typeof(RoomState), "monsterSpawnPointGroup").GetValue(rooms.GetRoom(room));
+                var group = (SpawnPointGroup)AccessTools.Field(typeof(RoomState), Enemy ? "heroSpawnPointGroup" : "monsterSpawnPointGroup").GetValue(rooms.GetRoom(room));
                 group.GetAll(out List<SpawnPoint> points, out _);
                 int index = points.IndexOf(point);
-                if (index >= 0) return new SpawnPointReference(room, CombatTeam.Player, index);
+                if (index >= 0) return new SpawnPointReference(room, Team, index);
             }
             throw new InvalidOperationException("Unknown Conduit movement point.");
         }
@@ -64,7 +69,7 @@ namespace MonsterTrain2Poju.Probe
             var temporary = AccessTools.Method(typeof(CombatManager), "SetTemporaryStateEnabled");
             temporary.Invoke(Managers.GetCombatManager(), new object[] { true, new List<CharacterState> { actor }, false });
             object entered = ConduitProbe.CaptureUnit(actor, Trace)!;
-            SpawnPoint? destination = room.HasValue ? Managers.GetRoomManager().GetRoom(room.Value).GetMonsterPoint(point) : null;
+            SpawnPoint? destination = room.HasValue ? NativePoint(room.Value, point) : null;
             SpawnPointReference? target = BattleSpawnPointProbe.Reference(destination);
             actor.SetSpawnPoint(destination, false, false);
             object inside = new { Contributor = ConduitProbe.CaptureUnit(actor, Trace), Upgrades = HandUpgrades(), Rng = Rng() };
@@ -81,8 +86,14 @@ namespace MonsterTrain2Poju.Probe
             var rooms = Managers.GetRoomManager();
             CardData carrier = cards.GetAllCards(new List<CardState>()).Select(card => data.FindCardData(card.GetCardDataID())!).First(card =>
                 card.GetSpawnCharacterData()?.name.StartsWith("TrainSteward", StringComparison.Ordinal) == true);
-            yield return Managers.GetMonsterManager().CreateMonsterState(carrier.GetSpawnCharacterData(), null!, 1,
-                unit => actor = unit, SpawnMode.SelectedSlot, rooms.GetRoom(1).GetMonsterPoint(0), isCardless: true);
+            if (Enemy)
+            {
+                HeroManager heroes = Managers.GetHeroManager()!;
+                yield return heroes.SpawnHeroInRoom(carrier.GetSpawnCharacterData(), 1, null!);
+                actor = heroes.GetCharactersReadOnly().Single();
+            }
+            else yield return Managers.GetMonsterManager().CreateMonsterState(carrier.GetSpawnCharacterData(), null!, 1,
+                unit => actor = unit, SpawnMode.SelectedSlot, NativePoint(1, 0), isCardless: true);
             try
             {
                 CardData spell = data.GetAllCardData().First(card => card.GetCardType() == CardType.Spell &&
@@ -103,25 +114,25 @@ namespace MonsterTrain2Poju.Probe
                 for (int from = 0; from < 3; from++)
                 for (int to = 0; to < 3; to++)
                 {
-                    actor.SetSpawnPoint(rooms.GetRoom(from).GetMonsterPoint(0), false, false);
+                    actor.SetSpawnPoint(NativePoint(from, 0), false, false);
                     Select(selected);
-                    Move($"selected-{selected}-from-{from}-to-{to}", rooms.GetRoom(to).GetMonsterPoint(1));
+                    Move($"selected-{selected}-from-{from}-to-{to}", NativePoint(to, 1));
                 }
                 for (int selected = 0; selected < 2; selected++)
                 {
-                    actor.SetSpawnPoint(rooms.GetRoom(0).GetMonsterPoint(0), false, false);
+                    actor.SetSpawnPoint(NativePoint(0, 0), false, false);
                     Select(selected);
                     Move("detach-selected-" + selected, null);
-                    Move("reattach-selected-" + selected, rooms.GetRoom(0).GetMonsterPoint(1));
+                    Move("reattach-selected-" + selected, NativePoint(0, 1));
                 }
                 int hp = actor.GetHP(), maximum = actor.GetMaxHP();
-                actor.SetSpawnPoint(rooms.GetRoom(0).GetMonsterPoint(0), false, false);
+                actor.SetSpawnPoint(NativePoint(0, 0), false, false);
                 Select(0); actor.SetHealth(0, maximum);
-                Move("dead-leaves-selected", rooms.GetRoom(1).GetMonsterPoint(0));
-                Move("dead-enters-selected", rooms.GetRoom(0).GetMonsterPoint(1));
+                Move("dead-leaves-selected", NativePoint(1, 0));
+                Move("dead-enters-selected", NativePoint(0, 1));
                 Move("dead-detaches", null);
                 actor.SetHealth(hp, maximum);
-                actor.SetSpawnPoint(rooms.GetRoom(0).GetMonsterPoint(0), false, false); Select(0);
+                actor.SetSpawnPoint(NativePoint(0, 0), false, false); Select(0);
                 Move("same-point-tracked", actor.GetSpawnPoint());
                 actor.GetRoomStateModifiers<RoomStateConduitModifier>().Single().ClearTracking(Managers.GetCoreManagers());
                 Move("same-point-empty-selected", actor.GetSpawnPoint());
@@ -129,7 +140,7 @@ namespace MonsterTrain2Poju.Probe
                 Move("dead-same-point-empty-selected", actor.GetSpawnPoint());
                 actor.SetHealth(hp, maximum); actor.SetSpawnPoint(null, false, false);
                 Move("detached-same-null", null);
-                actor.SetSpawnPoint(rooms.GetRoom(0).GetMonsterPoint(0), false, false); Select(0);
+                actor.SetSpawnPoint(NativePoint(0, 0), false, false); Select(0);
                 Preview("preview-leaves-selected", 1, 0);
                 Preview("preview-within-selected", 0, 1);
                 Preview("preview-detaches", null, 0);
@@ -139,8 +150,9 @@ namespace MonsterTrain2Poju.Probe
                 using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
                     GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                     Boundary = "AfterNativeSetSpawnPointReturn", NativeCompleted = true, RngUnchanged = rngUnchanged,
-                    PlainCardId = Trace.CardId(plain), StrongerCardId = Trace.CardId(stronger), Rows = rows, Previews = previews }))
-                using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "conduit-movement-calibration.mt2f"))) document.Write(output);
+                    EnemyCarrier = Enemy, PlainCardId = Trace.CardId(plain), StrongerCardId = Trace.CardId(stronger), Rows = rows, Previews = previews }))
+                using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                    Enemy ? "conduit-enemy-movement-calibration.mt2f" : "conduit-movement-calibration.mt2f"))) document.Write(output);
                 Completed = true;
                 log.LogInfo("CONDUIT-MOVEMENT-NATIVE PASS rows=" + rows.Count + " previews=" + previews.Count + " gameplayRngUnchanged=true");
             }

@@ -44,9 +44,6 @@ namespace MonsterTrain2Poju.Model
                 return "Conduit requires captured room selection and card instances.";
             if (context.SpawnPoints != null && context.ConduitRetained == null)
                 return "Conduit physical movement requires complete retained tracker capture.";
-            if (context.SpawnPoints != null && (context.MagicPower!.Any(row => row.Team != CombatTeam.Player &&
-                    row.Conduit?.Units.Count > 0) || context.ConduitRetained?.Any(value => value.Team != CombatTeam.Player) == true))
-                return "Enemy Conduit physical movement requires independent native calibration.";
             foreach (var room in context.MagicPower!)
             {
                 if (room.Conduit == null) return "Conduit requires complete room/team contributor state.";
@@ -143,8 +140,8 @@ namespace MonsterTrain2Poju.Model
             CombatContext context, ConduitUnitState contributor, CombatTeam team,
             SpawnPointReference? from, SpawnPointReference? to, bool dead, bool preview)
         {
-            if (!Captured(context) || team != CombatTeam.Player)
-                throw new InvalidOperationException("Conduit movement requires captured player trackers.");
+            if (!Captured(context))
+                throw new InvalidOperationException("Conduit movement requires captured trackers.");
             string? error = Validate(context);
             if (error != null) throw new InvalidOperationException(error);
             foreach (RoomMagicPower row in context.MagicPower!.ToArray())

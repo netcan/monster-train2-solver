@@ -20,6 +20,7 @@ param(
     [switch] $TitaniteCalibration,
     [switch] $TitaniteCombinations,
     [switch] $ConduitMovement,
+    [switch] $ConduitEnemyMovement,
     [switch] $RoomMoonCallbacks,
     [switch] $RoomMoonCallbacksShade,
     [switch] $RoomMoonMovement,
@@ -618,8 +619,9 @@ if ($RoomMoonCallbacks) {
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'RoomMoonCallbacks is an isolated component calibration.' }
     $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
+if ($ConduitEnemyMovement) { $ConduitMovement = $true }
 if ($ConduitMovement) {
-    $allowed = @('ConduitMovement', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('ConduitMovement', 'ConduitEnemyMovement', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'ConduitMovement is an isolated component calibration; do not combine battle scenarios.' }
     $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1233,6 +1235,7 @@ $environment = @{
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
     MT2_PROBE_SECONDARY_CLAN = $SecondaryClan
     MT2_PROBE_CONDUIT_MOVEMENT = $(if ($ConduitMovement) { '1' } else { '0' })
+    MT2_PROBE_CONDUIT_ENEMY_MOVEMENT = $(if ($ConduitEnemyMovement) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_CALLBACKS = $(if ($RoomMoonCallbacks) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SHADE = $(if ($RoomMoonCallbacksShade) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_MOVEMENT = $(if ($RoomMoonMovement) { '1' } else { '0' })
@@ -1840,7 +1843,7 @@ if ($RoomMoonCallbacks) {
     return
 }
 if ($ConduitMovement) {
-    $componentPath = Join-Path $profile 'conduit-movement-calibration.mt2f'
+    $componentPath = Join-Path $profile $(if ($ConduitEnemyMovement) { 'conduit-enemy-movement-calibration.mt2f' } else { 'conduit-movement-calibration.mt2f' })
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'CONDUIT-MOVEMENT-NATIVE PASS' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Conduit native calibration failed; inspect $unityLog" }
@@ -1848,7 +1851,8 @@ if ($ConduitMovement) {
     $component = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
     try {
         $captured = $component.RootElement.ToObjectGraph()
-        if (-not $captured.NativeCompleted -or -not $captured.RngUnchanged -or @($captured.Rows).Count -ne 38 -or @($captured.Previews).Count -ne 3) { throw 'Incomplete Conduit movement calibration.' }
+        if (-not $captured.NativeCompleted -or -not $captured.RngUnchanged -or @($captured.Rows).Count -ne 38 -or
+            @($captured.Previews).Count -ne 3 -or [bool]$captured.EnemyCarrier -ne [bool]$ConduitEnemyMovement) { throw 'Incomplete Conduit movement calibration.' }
     } finally { $component.Dispose() }
     [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; Rows = 38; Previews = 3; OriginalFilesUnchanged = $true; ModelAcceptance = 'Pending independent focused checker'; Trace = $componentPath } | ConvertTo-Json
     return

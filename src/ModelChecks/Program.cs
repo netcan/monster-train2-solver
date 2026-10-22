@@ -3725,7 +3725,8 @@ foreach (string path in args.Where(path => path.Contains("card-modifier-overflow
     CardModifierOverflowChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("card-trait-composition-calibration", StringComparison.OrdinalIgnoreCase)))
     CardTraitCompositionChecks.Native(path);
-foreach (string path in args.Where(path => path.Contains("conduit-movement-calibration", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => path.Contains("conduit-movement-calibration", StringComparison.OrdinalIgnoreCase) ||
+    path.Contains("conduit-enemy-movement-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);
     ConduitMovementChecks.Native(document.RootElement);

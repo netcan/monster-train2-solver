@@ -6,6 +6,8 @@ internal static class ConduitMovementChecks
 {
     internal static void Native(FixtureValue root)
     {
+        bool enemy = root.TryGetProperty("EnemyCarrier", out FixtureValue flag) && flag.GetBoolean();
+        CombatTeam team = enemy ? CombatTeam.Enemy : CombatTeam.Player;
         Require(root.GetProperty("NativeCompleted").GetBoolean() && root.GetProperty("RngUnchanged").GetBoolean() &&
             root.GetProperty("Boundary").GetString() == "AfterNativeSetSpawnPointReturn" &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
@@ -19,6 +21,7 @@ internal static class ConduitMovementChecks
             ConduitUnitState afterContributor = row.GetProperty("Actual").GetProperty("Contributor").Deserialize<ConduitUnitState>()!;
             SpawnPointReference? from = row.GetProperty("From").Deserialize<SpawnPointReference>();
             SpawnPointReference? to = row.GetProperty("To").Deserialize<SpawnPointReference>();
+            Require((from == null || from.Team == team) && (to == null || to.Team == team), "Conduit point belongs to the wrong team.");
             bool isDead = row.GetProperty("Dead").GetBoolean();
             string label = row.GetProperty("Label").GetString()!;
             string parent = JsonSerializer.Serialize(before);
@@ -27,13 +30,20 @@ internal static class ConduitMovementChecks
                 "Conduit contributor/selection controls changed.");
             var scope = new RoomCombatState(from?.RoomIndex ?? to?.RoomIndex ?? 0, false,
                 before.Rooms.SelectMany(room => room.Units).ToArray(), [], before.Context);
-            BattleSpawnPointResult points = BattleSpawnPointModel.Apply(before.Context.SpawnPoints!, scope, "Set", CombatTeam.Player,
+            BattleSpawnPointResult points = BattleSpawnPointModel.Apply(before.Context.SpawnPoints!, scope, "Set", team,
                 contributor.UnitId, target: to);
             Require(points.Supported, points.Error ?? "Physical move failed.");
             Require(before.Context.ConduitRetained != null && actual.Context!.ConduitRetained != null,
                 "Missing detached/dead tracker capture.");
             CombatContext predicted = before.Context.WithSpawnPoints(points.State!);
             Equal(predicted, actual.Context, label + " complete context/physical points/retained trackers");
+            Parallel.For(0, 8, _ =>
+            {
+                BattleSpawnPointResult branch = BattleSpawnPointModel.Apply(before.Context.SpawnPoints!, scope, "Set", team,
+                    contributor.UnitId, target: to);
+                Require(branch.Supported, branch.Error ?? "Independent physical move failed.");
+                Equal(before.Context.WithSpawnPoints(branch.State!), actual.Context, label + " independent complete branch");
+            });
             ConduitUnitState captured = predicted.MagicPower!.SelectMany(room => room.Conduit!.Units)
                 .Concat(predicted.ConduitRetained!.Select(value => value.Contributor))
                 .Single(value => value.UnitId == contributor.UnitId);
@@ -69,11 +79,11 @@ internal static class ConduitMovementChecks
             BattleSpawnPoints original = before.Context!.SpawnPoints!, selected = original.BeginPreview();
             SpawnPointReference? nativeTarget = row.GetProperty("Target").Deserialize<SpawnPointReference>();
             SpawnPointReference? target = nativeTarget == null ? null : new SpawnPointReference(nativeTarget.RoomIndex,
-                CombatTeam.Player, nativeTarget.Index, selected.SelectedGroup(nativeTarget.RoomIndex, CombatTeam.Player)!.PreviewCopyId);
+                team, nativeTarget.Index, selected.SelectedGroup(nativeTarget.RoomIndex, team)!.PreviewCopyId);
             Equal(target, nativeTarget, label + " independent preview point identity");
             var scope = new RoomCombatState(0, false, before.Rooms.SelectMany(room => room.Units).ToArray(), [],
                 before.Context.WithSpawnPoints(selected), preview: true);
-            BattleSpawnPointResult moved = BattleSpawnPointModel.Apply(selected, scope, "Set", CombatTeam.Player,
+            BattleSpawnPointResult moved = BattleSpawnPointModel.Apply(selected, scope, "Set", team,
                 row.GetProperty("UnitId").GetInt32(), target: target);
             Require(moved.Supported, moved.Error ?? "Preview move failed.");
             CombatContext predicted = before.Context.WithSpawnPoints(BattleSpawnPoints.EndPreview(original, moved.State!, clearBirths: true));
@@ -97,7 +107,7 @@ internal static class ConduitMovementChecks
             previews++;
         }
         Require(previews == 3, "Missing native preview movement controls.");
-        Console.WriteLine($"CONDUIT-MOVEMENT PASS rows={rows} entered={entered} cleared={cleared} unchanged={unchanged} detached={detached} dead={dead} retained={retained} previews={previews}: integrated physical callbacks, exact context, private trackers, points, RNG and immutable parents; incomplete captures guarded.");
+        Console.WriteLine($"CONDUIT-MOVEMENT PASS team={team} rows={rows} entered={entered} cleared={cleared} unchanged={unchanged} detached={detached} dead={dead} retained={retained} previews={previews}: integrated physical callbacks, exact context, private trackers, points, RNG and immutable parents; incomplete captures guarded.");
     }
     private static void Equal<T>(T predicted, T actual, string label)
     {

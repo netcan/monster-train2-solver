@@ -46,8 +46,8 @@ collection. A null collection identifies older captures; an empty collection
 means the complete capture contains no retained modifier. Physical capture now
 emits it whenever Conduit is enabled. `WithSpawnPoints` dispatches the calibrated
 callback automatically, skips preview card changes and same-point no-ops, and
-retains private state across detach/reattach. Incomplete captures and enemy
-Conduit physical movement remain guarded. Player Conduit capture is enabled in 0.2.3.
+retains private state across detach/reattach. Incomplete captures remain guarded.
+Opposing physical movement is calibrated below. Player Conduit capture is enabled in 0.2.3.
 
 ## Integrated physical battle
 
@@ -92,4 +92,34 @@ authored. This is functional player calibration, not a natural-deck encounter.
 
 ```powershell
 scripts/Check-PlayerAdvisor.ps1 -Case Conduit -SkipBuild
+```
+
+## Opposing physical contributor
+
+`conduit-enemy-movement-calibration.mt2f` comes from profile
+`full-battle-no-cards-20261022-132351-2ff06300` (34.64 seconds, normal exit,
+unchanged protected originals and gameplay RNG). Native HeroManager creates
+an opposing carrier from unchanged Steward data; adding four Conduit stacks
+is an authored control. The original Conduit status and room modifier run
+without interception, including the private tracker and preview-copy lifecycle.
+
+All 38 position boundaries and three preview controls match complete contexts,
+physical points and private tracked/multiplied-card collections. As for the
+friendly carrier, entering a selected floor upgrades eligible player hand cards
+by four damage/heal (twenty for the original stronger-magic trait). Team ownership
+does not suppress the native modifier's hand tracking. There are eight additions,
+nine clears, twenty-one unchanged controls, six detach operations, four dead
+controls and seven retained contributor witnesses. Eight parallel immutable
+model branches per position also match. Primary hand upgrades/RNG remain intact
+through preview entry, movement and cancellation.
+
+The blanket enemy physical-capture rejection and player-only movement check are
+removed; complete capture, original upgrade definition and card-eligibility
+checks remain. The original friendly 38/3 control still passes. This establishes
+the isolated physical mechanism, not a complete opposing paid battle or real
+player composition. No full regression or Mac package is built.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -ConduitEnemyMovement -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --conduit-movement-only tests/fixtures/conduit-enemy-movement-calibration.mt2f
 ```
