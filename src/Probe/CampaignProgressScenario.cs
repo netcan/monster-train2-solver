@@ -26,6 +26,8 @@ namespace MonsterTrain2Poju.Probe
         private float nextAction, lastProgress, heartbeat, quitAt;
         private bool started, setup, menuRequested, checkpointSaving;
         private int? selectingRoom;
+        private float roomSelectionRequestedAt;
+        private int roomSelectionRetries;
         private string lastScreen = "";
         private int lastTurn = -1, battleDistance = -1;
         private int eventIndex;
@@ -90,6 +92,12 @@ namespace MonsterTrain2Poju.Probe
                 log.LogInfo("CAMPAIGN-HEARTBEAT sequence=" + save.GetGameSequence() + " distance=" + save.GetCurrentDistance() +
                     " screen=" + screens.GetTopScreen() + " loading=" + LoadingScreen.IsWorking() +
                     " started=" + started + " user=" + save.UserState + " preview=" + save.PreviewMode);
+                if (save.GetGameSequence() == SaveData.GameSequence.InBattle && m!.GetCombatManager() is CombatManager combat)
+                    log.LogInfo("CAMPAIGN-BATTLE-WAIT room=" + m.GetRoomManager().GetSelectedRoom() + " selecting=" + selectingRoom +
+                        " endTurn=" + combat.ShouldShowEndTurnButton() + " drawn=" + combat.HaveCardsBeenDrawnForCurrentTurn() +
+                        " triggers=" + combat.IsRunningTriggerQueue + " playing=" + m.GetReplayManager().IsCardPlaying() +
+                        " animations=" + CardAnimationSettlement.Ready() + " hand=" + (m.GetHandUI()?.AreAnyCardsAnimating() ?? false) +
+                        " dirty=" + AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat));
             }
             if (Time.realtimeSinceStartup - lastProgress > 150f) throw new TimeoutException("Campaign made no progress for 150 seconds.");
             if (!started)
@@ -275,7 +283,15 @@ namespace MonsterTrain2Poju.Probe
             RoomManager rooms = m.GetRoomManager();
             if (selectingRoom.HasValue)
             {
-                if (rooms.GetSelectedRoom() != selectingRoom.Value) return;
+                if (rooms.GetSelectedRoom() != selectingRoom.Value)
+                {
+                    // A tutorial/dialog can select another room after the
+                    // original coroutine completed. Retry the same native UI
+                    // request, with a bound rather than waiting indefinitely.
+                    if (Time.realtimeSinceStartup - roomSelectionRequestedAt >= 2f)
+                        SelectRoom(rooms, save, selectingRoom.Value, retry: true);
+                    return;
+                }
                 selectingRoom = null;
             }
             if (battleDistance != save.GetCurrentDistance() || lastTurn != combat.GetTurnCount())
@@ -358,7 +374,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (rooms.GetSelectedRoom() != best.room)
                 {
-                    selectingRoom = best.room; save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(best.room)); return;
+                    SelectRoom(rooms, save, best.room); return;
                 }
                 var error = default(CommonSelectionBehavior.SelectionError);
                 int index = cards.GetHand().IndexOf(best.card);
@@ -393,7 +409,7 @@ namespace MonsterTrain2Poju.Probe
                     if (!combat.TestEffects(ability.GetEffectStates(), room.GetRoomIndex(), ability, actor, drop, actor, null, out _)) continue;
                     RoomManager rooms = m.GetRoomManager();
                     if (rooms.GetSelectedRoom() != room.GetRoomIndex())
-                    { selectingRoom = room.GetRoomIndex(); save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(selectingRoom.Value)); return true; }
+                    { SelectRoom(rooms, save, room.GetRoomIndex()); return true; }
                     if (!cards.PlayAnyCard(ability, out _, actor, drop, ignoreCost: false, discardCard: false,
                         fromDirectPlay: true, characterThatActivatedAbility: actor)) throw new InvalidOperationException("Native ability play rejected.");
                     Record("ability", new { unit = actor.GetSourceCharacterData().name, ability = ability.GetAssetName(), room = room.GetRoomIndex() });
@@ -401,6 +417,16 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             return false;
+        }
+
+        private void SelectRoom(RoomManager rooms, SaveManager save, int room, bool retry = false)
+        {
+            roomSelectionRetries = retry ? roomSelectionRetries + 1 : 0;
+            if (roomSelectionRetries > 3)
+                throw new InvalidOperationException("Native room selection did not settle: expected=" + room + " actual=" + rooms.GetSelectedRoom());
+            if (retry) Record("room-selection-retry", new { from = rooms.GetSelectedRoom(), to = room, attempt = roomSelectionRetries });
+            selectingRoom = room; roomSelectionRequestedAt = Time.realtimeSinceStartup;
+            save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(room));
         }
 
         private bool Click(GameUISelectableButton? button, string kind, object? data = null)

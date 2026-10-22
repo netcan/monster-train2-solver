@@ -248,3 +248,18 @@ Profiles under `.probe-runs`:
 Checkpoint packaging and restore verified all nine retained members. Focused
 validation also checked 840 native campaign draft selections and exact Rewards
 RNG. No full regression was run for campaign preparation.
+
+The seed42 natural Corrupter preparation exposed a separate driver wait:
+after a first-battle tutorial dialog, the pending room was 1 but the native
+selected room was 2. EndTurn/draw/animation gates were ready, with no card or
+trigger running. Both fresh and resumed campaigns reproduced the wait.
+The driver now retries that same native room selection after two seconds,
+at most three times, with explicit failure if it still cannot settle. It
+does not change the chosen action or bypass the dialog. Read-only heartbeat
+fields identify the outstanding gate without changing the progress timeout.
+Two isolated deployment variants each needed one retry, won the first battle
+and reached their unchanged Ring2 checkpoints in
+`campaign-ring8-20261023-050917-7675a759` and
+`campaign-ring8-20261023-050917-6816b483`. Later battles and natural Corrupter
+victory remain separate acceptance; these preparation logs are not full
+battle/model equivalence fixtures.
