@@ -533,8 +533,13 @@ namespace MonsterTrain2Poju.Model
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             bool ignoreAttackPrevention = false, CombatUnit? externalActor = null, IReadOnlyList<int>? overrideTargets = null)
         {
-            string? error = Validate(state);
+            // A single attack turn does not dispatch the deferred PostCombat
+            // boss effects; health and attack statuses still run normally.
+            string? error = Validate(state, linkedHealthOnly: true);
             bool localActor = state.Units.Any(unit => unit.Id == unitId);
+            if (state.Units.Any(unit => unit.AssetKey == "Boss_Level9_Savagery_V2" && unit.Health == 1 &&
+                unit.Status("lifelink") != null && unit.Status("pyrebane") != null))
+                error = "Dormant Savagery attack turns require dedicated native combat-target calibration.";
             if (error != null || localActor == (externalActor != null) || externalActor != null && externalActor.Id != unitId)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Unit turn requires exactly one captured local or external actor.");

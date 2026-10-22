@@ -13,6 +13,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'true-final-boss-scheduled-spawn-calibration.mt2f',
     'true-final-boss-continuation-calibration.mt2f',
     'true-final-boss-passive-calibration.mt2f',
+    'true-final-boss-unit-turn-calibration.mt2f',
     'true-final-boss-linked-health-calibration.mt2f',
     'true-final-boss-life-link-calibration.mt2f',
     'true-final-boss-health-updates-calibration.mt2f',

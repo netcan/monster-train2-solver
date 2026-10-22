@@ -317,6 +317,24 @@ untouchable 和持续战开关，直接调用原生续战判定，共 288 次。
 ./scripts/Check-TrueFinalBoss.ps1 -Case Continuation,Passive -SkipBuild
 ```
 
+## 原生单位攻击回合
+
+`true-final-boss-unit-turn-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-204947-fc7fd2f1`，57.59 秒，原生正常退出，受保护文件未变。
+原始五实体、牌组和火炉保持原值。29 个实际单位回合包括部署期的空火炉回合，以及
+出生后的 28 个回合；五个真终局实体均实际进入该原生调度边界。
+
+六次火炉攻击、六次 Dominion 攻击、六次生命链接写入的完整房间、共享上下文、
+远端生命快照、RNG 和实际目标序列均匹配；64 条并发分支保持输入不变。
+只在单个单位攻击边界接纳已捕获的生命链接状态，回合后效果保持独立保护。
+一血 Savagery 的攻击选目标/践踏还需实际攻击校准，仍拒绝该场面。
+
+来源整场原生败北，采集失败/模型差异/待完成项为零，unsupported 为 49，
+封装器 `DEPTH-FAIL`。单位攻击组件通过不代表完整房间、预览、任意攻击者来源
+伤害 API 或玩家真终局入口已开放。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case UnitTurns -SkipBuild`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件
