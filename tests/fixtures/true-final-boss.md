@@ -142,6 +142,27 @@ Entropy 目标上执行；普通房间战斗、预览、带攻击者或来源卡
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Damage -SkipBuild`。
 
+## 五实体实际伤害与治疗
+
+`true-final-boss-all-target-damage-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-195102-3e6bff64`，28.10 秒，原生正常退出，原始
+资源/牌组/出生属性均未改。沿原先 12 次 Entropy 中/顶层调用继续，对 Dominion、
+Savagery 及 Entropy 底部追加 12 次实际伤害/治疗，总计 14 次伤害、10 次治疗。
+
+24 次协程从同一个冻结列车根状态逐步匹配完整房间/整车/光环世界/生命链接和
+随机状态，64 条并发分支不改父状态。覆盖 Dominion 与火炉同层、Savagery 与
+Entropy 底部同层、保护到 1 血、保护后的无损伤害及恢复至上限。原生 16 条随机
+流逐行审计，只有声音/UI 使用的 Chatter 和 NonDeterministic 允许推进。
+
+`pyrebound`/`pyrebane` 仅在带完整原生共享生命上下文的纯伤害/治疗调用中接纳；
+Dominion 的回合后跨层腐化定义在该范围内保持不执行。普通战斗验证、选目标、
+有来源卡牌/攻击者的伤害、终态死亡和完整回合仍保留 guard。
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -TrueFinalBossDamageAllTargets -SkipBuild
+./scripts/Check-TrueFinalBoss.ps1 -Case Damage,AllTargetDamage -SkipBuild
+```
+
 ## 五实体完整出生状态转换
 
 `true-final-boss-spawn-calibration.mt2f` 来自

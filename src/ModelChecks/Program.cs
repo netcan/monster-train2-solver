@@ -3881,7 +3881,8 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-live-w
     using var fixture = ModelJson.ReadFixture(path);
     LinkedBossHealthChecks.Capture(fixture.RootElement);
 }
-foreach (string path in args.Where(path => path.Contains("true-final-boss-damage-calibration", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => path.Contains("true-final-boss-damage-calibration", StringComparison.OrdinalIgnoreCase) ||
+    path.Contains("true-final-boss-all-target-damage-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossDamageChecks.Native(fixture.RootElement);

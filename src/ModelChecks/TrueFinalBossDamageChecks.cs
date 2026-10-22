@@ -8,16 +8,18 @@ internal static class TrueFinalBossDamageChecks
     {
         void Require(bool condition, string reason) => TrueFinalBossChecks.Require(condition, reason);
         string Json(object value) => JsonSerializer.Serialize(value, ModelJson.Options);
+        bool allTargets = root.GetProperty("Boundary").GetString() == "OriginalLiveAllTrueFinalBossDamageAndHealCoroutines";
         Require(root.GetProperty("Schema").GetInt32() == 1 &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
-            root.GetProperty("Boundary").GetString() == "OriginalLiveEntropyDamageAndHealCoroutines" &&
+            (allTargets || root.GetProperty("Boundary").GetString() == "OriginalLiveEntropyDamageAndHealCoroutines") &&
             root.GetProperty("OriginalActorsAndStartingStats").GetBoolean() && root.GetProperty("NativeCompleted").GetBoolean() &&
             root.GetProperty("ControllerExcluded").GetBoolean() && root.GetProperty("SourceCard").GetInt32() == 0 &&
             root.GetProperty("Attacker").GetInt32() == 0 && root.GetProperty("DamageType").GetString() == "Default",
             "Missing original paid non-preview damage/healing controls.");
         FixtureValue[] rows = root.GetProperty("Rows").EnumerateArray().ToArray();
-        Require(rows.Length == 12 && rows.Select(row => row.GetProperty("Value").GetInt32()).SequenceEqual(
-            new[] { 19, 4000, 9, 100, int.MaxValue, 0, 3500, 0, 100, 1, 4000, int.MaxValue }) &&
+        int[] values = new[] { 19, 4000, 9, 100, int.MaxValue, 0, 3500, 0, 100, 1, 4000, int.MaxValue };
+        if (allTargets) values = values.Concat(new[] { 19, 4000, 9, 100, int.MaxValue, 19, 4000, 9, 100, int.MaxValue, 4000, int.MaxValue }).ToArray();
+        Require(rows.Length == values.Length && rows.Select(row => row.GetProperty("Value").GetInt32()).SequenceEqual(values) &&
             rows[0].GetProperty("Before").Deserialize<RoomCombatState>()!.Context!.LifeLinks!.Actors.Select(actor => actor.Health)
                 .SequenceEqual(new[] { 1555, 2750, 3500, 3500, 3500 }), "Incomplete native damage/heal chain or original starting health.");
         var sharedRoots = new List<RoomCombatState>();
@@ -33,16 +35,18 @@ internal static class TrueFinalBossDamageChecks
             int target = row.GetProperty("TargetId").GetInt32(), value = row.GetProperty("Value").GetInt32();
             string operation = row.GetProperty("Operation").GetString()!;
             CombatUnit original = before.Units.Single(unit => unit.Id == target);
-            Require(!before.Preview && before.RoomIndex is 1 or 2 && before.ExternalInteractions.All(item => item == "Outer train boss") &&
+            int assetIndex = Array.IndexOf(TrueFinalBossChecks.Assets, original.AssetKey);
+            Require(!before.Preview && assetIndex >= 0 && before.RoomIndex == new[] { 3, 0, 0, 1, 2 }[assetIndex] &&
+                (allTargets || assetIndex is 3 or 4) && before.ExternalInteractions.All(item => item == "Outer train boss") &&
                 (before.RoomIndex != 2 || before.ExternalInteractions.Contains("Outer train boss")) &&
-                original.AssetKey == TrueFinalBossChecks.Assets[before.RoomIndex + 2] && row.GetProperty("AllBossesAlive").GetBoolean(),
-                "Native target was not an original middle/top Entropy or unmodeled controller interactions were present.");
+                row.GetProperty("AllBossesAlive").GetBoolean(),
+                "Native target was not an original true-final-boss actor or unmodeled controller interactions were present.");
             string immutable = Json(before);
             RoomCombatResult result = operation == "Damage" ? RoomCombatModel.ApplyCardDamage(before, target, value) :
                 RoomCombatModel.ApplyCardHeal(before, target, value);
             string? difference = result.Supported ? ModelJson.Difference(Json(result.State!), Json(actual)) : result.UnsupportedReason;
             Require(result.Supported && difference == null && immutable == Json(before),
-                $"Native Entropy {operation}/{value} differs at {row.GetProperty("Index").GetInt32()}: {difference}");
+                $"Native {original.AssetKey} {operation}/{value} differs at {row.GetProperty("Index").GetInt32()}: {difference}");
             TrainCombatState Train(RoomCombatState room)
             {
                 EnchantmentWorld captured = room.Context!.Enchantments!;
@@ -85,7 +89,8 @@ internal static class TrueFinalBossDamageChecks
             }
             sharedRoots.Add(before); immutableRoots.Add(immutable);
         }
-        Require(damageCount == 7 && healCount == 5 && protectedLethal >= 2 && recovered >= 2,
+        Require(damageCount == (allTargets ? 14 : 7) && healCount == (allTargets ? 10 : 5) && protectedLethal >= (allTargets ? 5 : 2) && recovered >= (allTargets ? 5 : 2) &&
+            (!allTargets || rows.Select(row => row.GetProperty("TargetId").GetInt32()).Distinct().Count() == 5),
             "Native chain lacks protected lethal hits, actual healing or alternating physical floors.");
         RoomCombatState seed = rows[0].GetProperty("Before").Deserialize<RoomCombatState>()!;
         Parallel.For(0, 64, index =>
@@ -103,6 +108,6 @@ internal static class TrueFinalBossDamageChecks
             Json(originalParent!) == frozenParent &&
             TrueFinalBossChecks.Assets.All(asset => !OuterBossDefinitions.Supports(asset)),
             "Paid damage/healing must not admit uncalibrated TFB attack scheduling or the Level8 controller.");
-        Console.WriteLine("TRUE-FINAL-BOSS-DAMAGE PASS: 12 paid original live coroutine calls; full room/train/global context/status/RNG match, linked floor health, lethal protection, actual healing and 64 immutable concurrent branches. Attack scheduling, terminal death and full battle remain guarded.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-DAMAGE PASS: {rows.Length} paid original live coroutine calls, {(allTargets ? 5 : 2)} targets; full room/train/global context/status/RNG match, linked floor health, lethal protection, actual healing and 64 immutable concurrent branches. Attack scheduling, terminal death and full battle remain guarded.");
     }
 }

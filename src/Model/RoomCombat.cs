@@ -1060,7 +1060,9 @@ namespace MonsterTrain2Poju.Model
                     unit.StatusRegistry.Any(status => status.Stacks < 0 || status.Stacks > 9999)))
                     return "Invalid retained status dictionary on unit " + unit.Id;
                 foreach (CombatStatus status in unit.Statuses)
-                    if (!KnownStatuses.Contains(status.Id) && !(linkedHealthOnly && status.Id == "lifelink" &&
+                    if (!KnownStatuses.Contains(status.Id) && !(linkedHealthOnly &&
+                        (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
+                            status.Id == "pyrebane" && unit.AssetKey == "Boss_Level9_Savagery_V2") &&
                         !state.Preview && state.Context?.LifeLinks is LifeLinkContext world && !world.CalculatingPreview &&
                         world.SharedPreviewHpChange == 0 && LifeLinkModel.Validate(world) == null &&
                         world.Actors.Any(actor => actor.Id == unit.Id && actor.TrueFinalBoss && actor.Initialized && actor.HasLifeLink && actor.Health == unit.Health)))
@@ -1397,7 +1399,15 @@ namespace MonsterTrain2Poju.Model
                             }
                             if (action.Type == "Heal" && state.Units.Any(target => target.Modifiers == null))
                                 return "Triggered healing requires unit healability state.";
-                            if (!new[] { "Self", "Room", "Tower", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter", "LastAttackerCharacter", "LastSpawnedCharacter", "LastFeederCharacter", "Pyre" }.Contains(action.Target))
+                            // A direct HP operation never runs PostCombat. Keep
+                            // Dominion's original dormant all-floor corruption
+                            // rule without admitting it to combat scheduling.
+                            bool deferredDominionPostCombat = linkedHealthOnly && trigger.Kind == "PostCombat" &&
+                                unit.AssetKey == "Boss_Level9_Dominion_V2" && unit.Status("lifelink") != null &&
+                                effect.Type == "CardEffectAddStatusEffect" && action.Target == "FrontInAllRooms" &&
+                                action.Range == null && action.Statuses.Count == 1 &&
+                                action.Statuses[0].Id == "corruption" && action.Statuses[0].Stacks == 5;
+                            if (!deferredDominionPostCombat && !new[] { "Self", "Room", "Tower", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter", "LastAttackerCharacter", "LastSpawnedCharacter", "LastFeederCharacter", "Pyre" }.Contains(action.Target))
                                 return "Unmodeled triggered action target " + action.Target;
                             if ((action.Range != null || action.Target == "RandomInRoom") && state.Context == null)
                                 return "Triggered action randomness requires shared battle context.";

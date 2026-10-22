@@ -11,6 +11,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class TrueFinalBossDamageCalibration
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_DAMAGE") == "1";
+        internal static bool AllTargets => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_DAMAGE_ALL_TARGETS") == "1";
         internal static IEnumerator Capture(IReadOnlyList<CharacterState> actors)
         {
             AllGameManagers managers = AllGameManagers.Instance;
@@ -23,6 +24,9 @@ namespace MonsterTrain2Poju.Probe
             var inputs = new[] { (3, false, 19), (4, false, 4000), (3, false, 9), (4, true, 100),
                 (3, true, int.MaxValue), (4, false, 0), (3, false, 3500), (4, true, 0), (3, true, 100),
                 (4, false, 1), (3, false, 4000), (4, true, int.MaxValue) };
+            if (AllTargets) inputs = inputs.Concat(new[] { (0, false, 19), (0, false, 4000), (0, false, 9),
+                (0, true, 100), (0, true, int.MaxValue), (1, false, 19), (1, false, 4000), (1, false, 9),
+                (1, true, 100), (1, true, int.MaxValue), (2, false, 4000), (2, true, int.MaxValue) }).ToArray();
             foreach (var input in inputs)
             {
                 CharacterState target = actors[input.Item1];
@@ -42,11 +46,13 @@ namespace MonsterTrain2Poju.Probe
             using (var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId,
-                Boundary = "OriginalLiveEntropyDamageAndHealCoroutines", OriginalActorsAndStartingStats = true,
-                DamageType = "Default", SourceCard = 0, Attacker = 0, TargetRooms = new[] { 1, 2 },
+                Boundary = AllTargets ? "OriginalLiveAllTrueFinalBossDamageAndHealCoroutines" : "OriginalLiveEntropyDamageAndHealCoroutines", OriginalActorsAndStartingStats = true,
+                DamageType = "Default", SourceCard = 0, Attacker = 0,
+                TargetRooms = inputs.Select(input => actors[input.Item1].GetCurrentRoomIndex()).Distinct().OrderBy(room => room).ToArray(),
                 ControllerExcluded = true, NativeCompleted = true, Rows = rows
             }))
-            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "true-final-boss-damage-calibration.mt2f"))) document.Write(output);
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                AllTargets ? "true-final-boss-all-target-damage-calibration.mt2f" : "true-final-boss-damage-calibration.mt2f"))) document.Write(output);
         }
     }
 }

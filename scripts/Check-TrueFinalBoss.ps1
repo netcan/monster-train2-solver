@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Birth', 'Spawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'Death')][string[]] $Case = @('Birth', 'Spawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'Death'),
+    [ValidateSet('Birth', 'Spawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'Death')][string[]] $Case = @('Birth', 'Spawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'Death'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -33,6 +33,7 @@ foreach ($item in $Case) {
     } elseif ($item -eq 'LifeLink') { 'true-final-boss-life-link-calibration.mt2f' }
     elseif ($item -eq 'HealthUpdates') { 'true-final-boss-health-updates-calibration.mt2f' }
     elseif ($item -eq 'World') { 'true-final-boss-live-world-observation.mt2f' }
+    elseif ($item -eq 'AllTargetDamage') { 'true-final-boss-all-target-damage-calibration.mt2f' }
     else { 'true-final-boss-damage-calibration.mt2f' }
     $mode = if ($item -eq 'Birth') { '--true-final-boss-birth-only' }
     elseif ($item -eq 'Spawn') { '--true-final-boss-spawn-only' } elseif ($item -eq 'Health') {
