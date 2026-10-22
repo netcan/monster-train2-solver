@@ -176,3 +176,37 @@ scripts/Run-FullBattleProbe.ps1 -OriginalMoonCardUpgradesLunacy -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-spell-upgrades-only tests/fixtures/room-moon-spell-advance-calibration.mt2f
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-lunacy.mt2f
 ```
+
+## Actual player Lunacy/Conduit/Eclipse composition
+
+`full-battle-player-moon-room-lunacy-{search,replay}.mt2f` retains actual player
+source `full-battle-units-spells-and-junk-20261022-152609-d3fc9e2a` (596.44 seconds)
+and independent process `full-battle-units-spells-and-junk-20261022-153642-d0c04c1b`
+(179.99 seconds). Both win at Pyre80 after forty-one plays/seven EndTurns,
+settle, exit normally, preserve protected originals and have four zero failure
+counters. Every one of the forty-eight inputs, roots, successors, forecasts
+and gameplay RNG matches; the replay searches no nodes. Each process casts
+eight original Lunacy cards for actual paid costs 4/3/20/3/3/3/3/3, with exact
+phase parity and Conduit increments, alongside all five original moon spells
+and Eclipse. The player variant uses its own choices rather than the fixed
+2/3/0 paid-chain script above.
+
+The real player assembly publishes fifty times, takes 568 pure captures, renders
+the panel, and passes pause/resume, hide/cancel/show, refresh, pointer routing
+and drag controls. The first ten deployment forecasts are legal bounded plans
+without a terminal victory; the first full winning search occurs at turn one
+(4.48 seconds search, 9.34 seconds including capture and verification).
+Thirty-seven later inputs retain the complete winning continuation, with median/
+P95 response of 1.73/2.54 seconds. All settled hand-trait snapshots and sixteen
+immutable complete chains are checked by the same focused pair gate as the
+earlier five-spell player scene, adding paid Lunacy witnesses.
+
+This is the controlled durable-unit/energy scene with a six-turn/ten-second
+tactical configuration. The deployment forecast boundary and the initial
+search/verification time remain explicit; this does not establish default
+three-second performance or natural late-game acceptance. No Mac build or full
+regression is performed.
+
+```powershell
+scripts/Check-PlayerAdvisor.ps1 -Case MoonRoomLunacy -SkipBuild
+```

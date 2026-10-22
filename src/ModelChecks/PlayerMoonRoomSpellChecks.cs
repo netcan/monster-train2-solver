@@ -8,12 +8,15 @@ internal static class PlayerMoonRoomSpellChecks
     {
         RollingAdviceChecks.FrozenPair(source, replay, calibration: "original-moon-card-upgrades");
         BattleAdviceChecks.Native(source, requireBoss: false, calibration: "original-moon-card-upgrades");
-        int traits = 0, exclusive = 0, additive = 0, maskedCasts = 0, eclipseCasts = 0, waits = 0;
+        bool lunacy = source.TryGetProperty("OriginalMoonCardUpgradesLunacy", out FixtureValue advance) && advance.GetBoolean();
+        int traits = 0, exclusive = 0, additive = 0, maskedCasts = 0, eclipseCasts = 0, waits = 0, lunacyCasts = 0, paidAdvances = 0;
         var spells = new HashSet<string>();
         foreach (FixtureValue fixture in new[] { source, replay })
         {
             Require(fixture.GetProperty("OriginalMoonCardUpgradesRoomMask").GetBoolean() &&
                 fixture.GetProperty("NativeWon").GetBoolean(), "Missing winning original moon spell/room player scene.");
+            Require((fixture.TryGetProperty("OriginalMoonCardUpgradesLunacy", out FixtureValue flag) && flag.GetBoolean()) == lunacy,
+                "Lunacy player scene flags differ between processes.");
             EnemySpawningChecks.Native(fixture);
             waits += fixture.GetProperty("NativeEffectSettlement").GetProperty("PendingEffectWaits").GetInt32();
             foreach (FixtureValue row in fixture.GetProperty("RollingDecisions").EnumerateArray())
@@ -46,6 +49,19 @@ internal static class PlayerMoonRoomSpellChecks
                 PlayCardAction action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
                 CardInstanceState played = before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!;
                 CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == played.DataId);
+                if (played.DataId == "e9fa09e5-13bd-4826-a8e5-969332cbfbbf")
+                {
+                    Require(lunacy, "Unexpected Lunacy in the original five-spell player scene.");
+                    BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                    int paid = before.Energy, targetId = action.TargetUnitId;
+                    CombatUnit prior = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == targetId);
+                    CombatUnit next = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == targetId);
+                    Require(paid > 0 && after.Energy == 0 &&
+                        after.MoonPhase == (paid % 2 == 0 ? before.MoonPhase : before.MoonPhase == "New" ? "Full" : "New") &&
+                        (next.Status("conduit")?.Stacks ?? 0) - (prior.Status("conduit")?.Stacks ?? 0) == paid,
+                        "Player Lunacy differs in actual paid X cost, phase advancement or Conduit grant.");
+                    lunacyCasts++; paidAdvances += paid;
+                }
                 if (rule.AssetKey == "EclipseChamber") eclipseCasts++;
                 if (played.MaskDescriptor?.SourceTraits?.Any(trait => trait.Type == CardMoonUpgradeModel.Trait) != true) continue;
                 spells.Add(played.DataId);
@@ -54,6 +70,7 @@ internal static class PlayerMoonRoomSpellChecks
         }
         Require(spells.Count == 5 && eclipseCasts > 0 && maskedCasts > 0 && exclusive > 0 && additive > 0 && waits > 0,
             "Missing original spell casts, both mask modes or pending native effects settlement witnesses.");
+        Require(!lunacy || lunacyCasts >= 2 && paidAdvances > 0, "Missing paid original Lunacy casts in the player pair.");
         var records = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         BattleTurnState initial = records[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
         string parent = JsonSerializer.Serialize(initial, ModelJson.Options);
@@ -72,7 +89,7 @@ internal static class PlayerMoonRoomSpellChecks
             }
         });
         Require(JsonSerializer.Serialize(initial, ModelJson.Options) == parent, "Player spell/room branch mutated its parent.");
-        Console.WriteLine($"PLAYER-MOON-ROOM-SPELLS PASS originalSpells={spells.Count} eclipseCasts={eclipseCasts} maskedSpellCasts={maskedCasts} settledTraitSnapshots={traits} exclusiveWitnesses={exclusive} additiveWitnesses={additive} pendingEffectWaits={waits} immutableBattleBranches=16 exactFrozenReplay=true");
+        Console.WriteLine($"PLAYER-MOON-ROOM-SPELLS PASS originalSpells={spells.Count} eclipseCasts={eclipseCasts} maskedSpellCasts={maskedCasts} settledTraitSnapshots={traits} exclusiveWitnesses={exclusive} additiveWitnesses={additive} pendingEffectWaits={waits} lunacyCasts={lunacyCasts} paidAdvances={paidAdvances} immutableBattleBranches=16 exactFrozenReplay=true");
     }
     private static int Mask(CombatContext context, int roomIndex) => context.RoomCapacities!
         .Single(room => room.RoomIndex == roomIndex).Attachments?
