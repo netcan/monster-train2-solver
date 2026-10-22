@@ -19,7 +19,8 @@ namespace MonsterTrain2Poju.Model
                 SupportsUpgradedSteward(unit, context) || ordinary) &&
             unit.CanAttack && !unit.EndsBattleOnDeath && unit.Ability == null &&
             (unit.Triggers.Count == 0 || ordinary &&
-                (unit.Status("valor") == null || context?.LifeLinks is { Actors.Count: 5 } links && links.Actors.All(actor => actor.Health == 1)) &&
+                (unit.Status("valor") == null || context?.FindCard(unit.SpawnerCardId)?.Permanent.Upgrades.Count == 0 &&
+                    context.LifeLinks is { Actors.Count: 5 } links && links.Actors.All(actor => actor.Health == 1)) &&
                 SupportsOnHitMeleeWeakness(unit, context)) && unit.EquipmentCards.Count == 0 &&
             unit.Modifiers?.Upgrades.Count == 0 && unit.Statuses.All(status => status.Id == "corruption" ||
                 ordinary && status.Id == "valor" && status.Stacks == 5 && status.ParamInt == 1 ||
@@ -30,7 +31,7 @@ namespace MonsterTrain2Poju.Model
         private static bool SupportsOnHitMeleeWeakness(CombatUnit unit, CombatContext? context)
         {
             CardInstanceState? card = context?.FindCard(unit.SpawnerCardId);
-            if (card?.Permanent.Upgrades.Count != 0 || card.Temporary.Upgrades.Count != 0 || unit.Triggers.Count != 1) return false;
+            if (card == null || !OrdinaryPermanent(card.Permanent) || card.Temporary.Upgrades.Count != 0 || unit.Triggers.Count != 1) return false;
             CombatTrigger trigger = unit.Triggers[0];
             if (trigger.Kind != "OnHit" || trigger.Once || trigger.IgnoreSilence || trigger.FireCount != 1 ||
                 trigger.SkipDuringDeployment != false || trigger.TriggerAtThreshold != 0 || trigger.StateId == null ||

@@ -17,7 +17,8 @@
 签名反例检查 Once、触发类型、次数、无视沉默、次数修正、装备来源、目标、
 状态数量、法强缩放及额外效果；五层勇气与该触发器的组合仍拒绝。把五主体
 改为一血的反例仍满足普通战斗结构，但默认单位来源终局组死亡保护明确拒绝带回调友军。
-尚未校准的升级、技能、装备和其他回调继续受保护。
+纯永久数值强化随后另完成校准，见 [受击友军强化](true-final-boss-avenger-upgraded.md)。
+临时强化、技能、装备和其他回调继续受保护。
 
 入口：`./scripts/Check-TrueFinalBoss.ps1 -Case OrdinaryAlly -SkipBuild`。
 原生采集使用 `-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossOrdinaryAlly Avenger`，
@@ -27,6 +28,7 @@
 [玩家配对证据](player-true-final-boss-avenger.md)。任意回调致死签名和自然
 真终局胜利仍未验收。具有完整来源的付费普通法术随后另完成五主体临界胜局
 校准，详见 [存活 Avenger 的终局法术](true-final-boss-avenger-terminal.md)；该结果
-不开放普通房间战斗的终局攻击。临界状态下的两张原始受命攻击随后另经
+不普遍开放普通房间战斗的终局攻击。存活回调友军下的物理火炉反击随后另经
+[独立普通火炉校准](true-final-boss-avenger-ordinary-pyre.md)。临界状态下的两张原始受命攻击随后另经
 [独立命令校准](true-final-boss-avenger-commands.md)；健康状态下的勇气组合仍
 保留保护。未运行全量回归或构建 Mac 包。

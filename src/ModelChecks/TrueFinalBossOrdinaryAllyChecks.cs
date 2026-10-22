@@ -19,7 +19,6 @@ internal static class TrueFinalBossOrdinaryAllyChecks
         string kind = control.GetProperty("Kind").GetString()!;
         string upgradeKind = control.TryGetProperty("UpgradeKind", out FixtureValue upgradeValue) ? upgradeValue.GetString()! : "";
         Require(kind is "Steward" or "Warrior" or "Animus" or "Avenger", "Unknown ordinary allied signature.");
-        Require(kind != "Avenger" || upgradeKind.Length == 0, "Triggered ally upgrades require separate calibration.");
         Require(upgradeKind is "" or "Health" or "Damage" or "Both", "Unknown ordinary numeric upgrade combination.");
         int cardId = control.GetProperty("CardId").GetInt32();
         int anchorId = control.GetProperty("AnchorCardId").GetInt32();
@@ -146,6 +145,9 @@ internal static class TrueFinalBossOrdinaryAllyChecks
                 Require(TrueFinalBossCombatModel.Supports(lethal) &&
                     !TrueFinalBossTerminalCombatModel.SupportsRoot(lethal, actorId),
                     "Calibrated nonterminal OnHit must not bypass the uncalibrated terminal group-death guard.");
+                if (context.FindCard(ally.SpawnerCardId)!.Permanent.Upgrades.Count > 0)
+                    Require(!TrueFinalBossTerminalCombatModel.SupportsRoot(lethal, actorId, plainSpellDamage: true, triggeredCommand: true),
+                        "Numeric OnHit upgrades require separate terminal-source calibration.");
             }
             witnesses++;
         }

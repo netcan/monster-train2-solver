@@ -21,7 +21,8 @@ namespace MonsterTrain2Poju.Model
             return world.Rooms.SelectMany(room => room.Units).All(unit => unit.IsPyre ||
                 unit.Team == CombatTeam.Player && (unit.Triggers.Count == 0 || plainSpellDamage && !source.Preview || triggeredCommand ||
                     ordinaryPyreAttack && source.RoomIndex == 3 && source.Units.Any(pyre => pyre.IsPyre)) &&
-                    TrueFinalBossCombatModel.SupportsAlly(unit, source.Context) ||
+                    TrueFinalBossCombatModel.SupportsAlly(unit, source.Context) &&
+                    (unit.Triggers.Count == 0 || source.Context!.FindCard(unit.SpawnerCardId)?.Permanent.Upgrades.Count == 0) ||
                 unit.Team == CombatTeam.Enemy && unit.EquipmentCards.Count == 0 && unit.Modifiers?.Upgrades.Count == 0 &&
                 links.Actors.Any(actor => actor.Id == unit.Id) &&
                 unit.Triggers.All(trigger => trigger.Kind is "OnSpawn" or "PostCombat" or "OnTrainRoomLoop") &&
