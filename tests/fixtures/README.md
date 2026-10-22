@@ -1,8 +1,13 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 870 archives (797 full battles and
+Current manifest inventory (2026-10-22): 872 archives (799 full battles and
 73 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+The natural event-graft player pair validates 47 inputs through victory with
+Pyre15 in two independent native processes. All forecasts, full states and RNG
+match; 46 later publications retain the verified winning continuation. See
+[event graft acceptance](event-grafted-equipment.md).
 
 `full-battle-retired-aura-card-kill.mt2f` retains a killed enchanter's binding
 through card actions, then observes native turn-end destruction with animation

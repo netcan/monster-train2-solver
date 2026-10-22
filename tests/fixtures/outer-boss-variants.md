@@ -42,7 +42,7 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --outer-boss-fragile-o
 
 ## Controlled Fragile Relentless and Pyre route
 
-Profile `full-battle-no-cards-20261022-074843-cd0f066b` explicitly empties the
+Profile `full-battle-no-cards-20261022-083835-c99210be` explicitly empties the
 spawn queue before turn-two pre-combat and sets live/saved Pyre HP and max HP to
 10000. Both mutations are recorded in `QueueControls`. This isolated native
 victory (Pyre7866) is not a natural encounter. The full harness requires exactly
@@ -51,6 +51,11 @@ failures. The eight settled phase boundaries, one original Pyre-entry combat
 and three complete post-control EndTurns match all state, physical positions,
 controller progress and RNG. Four concurrent chains replay from the same
 immutable post-control root without native reinjection.
+This repeat enables physical spawn points, branch card masks, death dissolves
+and card-animation settlement together. It verifies the deferred source-removal
+fix across the full Fragile floor-destruction/Pyre route. The expected control
+mismatch still makes the generic harness report `DEPTH-FAIL`; the dedicated
+gate validates exactly that one mutation and every subsequent transition.
 
 This exposed an over-broad preview cleanup: ordinary Boss pending aura actions
 were also being cleared for the separately managed outer-train boss. Its aura
@@ -65,9 +70,10 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --outer-boss-fragile-r
 ```
 
 The player entry remains limited to AllyBuffer until Fragile has a natural
-progressed encounter and independent native replay. The seed's first natural
-route exposes unsupported event grafting; the explicit native "leave" choice
-avoids the graft but the simple driver loses at ring six on all three preferred
-deployment floors. Those failures remain diagnostics. The driver now exposes
-story-choice order and deployment preference, with its defaults unchanged.
+progressed encounter and independent native replay. Natural event grafting now
+passes Ring5 real-player advice and independent winning replay. A weaker
+natural Ring7 deck still loses; the stronger merchant-upgraded deck additionally
+requires the guarded `CardTraitCopyOnPlay`. These remain separate prerequisites
+for reaching the natural Fragile encounter. The explicit native "leave" route
+loses at ring six on all three preferred deployment floors and remains diagnostic.
 No full regression or Mac build was run for this increment.

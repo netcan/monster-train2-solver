@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--player-event-graft-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerEventGraftChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--retired-aura-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

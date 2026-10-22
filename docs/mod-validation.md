@@ -576,3 +576,36 @@ temporary Freeze, and uses a six-turn/10,000-ms tactical budget. It does not
 establish a natural late-game deck, mixed-mask enemy births in this case or
 default-budget performance. The earlier RoomMoon birth gate remains intact.
 No full regression or Mac package build is performed.
+
+### Natural event-graft player victory
+
+On 2026-10-22, actual player search on the natural seed424244 before-Ring5
+checkpoint wins with Pyre15: 38 plays, nine EndTurns, 47 consumed inputs and
+49 publications. Source `full-battle-units-spells-and-junk-20261022-082738-90f25d85`
+takes 472.33 seconds; independent frozen replay
+`full-battle-units-spells-and-junk-20261022-083546-9b98f087` takes 214.89 seconds.
+The dedicated pair check passes every input, root, successor, forecast and RNG;
+both native runs have zero failure counters and settled terminal effects.
+Actual temporary event graft attachment and reversed enemy physical/identity
+orders are required. Enemy IDs are now observed at original creation, before
+physical front/back arrangement, using a readonly callback wrapper.
+
+The first search takes 10.71 seconds. All 46 later inputs retain the winning
+continuation with zero search nodes; median/P95 response is 1.57/2.07 seconds.
+The original pure-capture, pause/resume, hide/cancel, show/refresh, raycast and
+drag checks also pass. The panel visibly reports victory with Pyre15.
+
+Both native processes load these exact player payloads:
+
+| DLL | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | `bac9886556735f4c6aec68a49aabb23acb98fdaac5c678fd50f5a18f26c37a79` |
+| Model.dll | `5ffd517565621b635dabec5f534799148f97e95d5f7f893ae84dcd514cb6bc50` |
+| FixtureArchive.dll | `de42e87278baaf2129fae646fae58b3105b4b19eff92d561c74c9725c23d919e` |
+
+Run `scripts/Check-PlayerAdvisor.ps1 -Case EventGraft -SkipBuild`.
+This uses horizon12/30,000-ms tactical search and floor2. It establishes natural
+Ring5 acceptance for the exact Firebrand/MeatShield event pair, not default
+budget performance, Ring7 victory or Fragile player acceptance. The weaker
+Ring7 scout only published losing plans and was stopped; it is not curated
+as a complete acceptance trace. No full regression or Mac build was run.

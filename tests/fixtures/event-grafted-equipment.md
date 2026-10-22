@@ -47,8 +47,30 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --titanite-only `
   tests/fixtures/titanite-calibration.mt2f
 ```
 
+## Actual player advice and independent replay
+
+Search profile `full-battle-units-spells-and-junk-20261022-082738-90f25d85`
+loads the real player assembly on the same natural before-Ring5 checkpoint.
+It wins with Pyre15 after 38 plays and nine EndTurns (47 inputs). The panel
+publishes 49 times; pause/resume, hide/cancel, show/refresh and actual pointer
+drag/raycast controls pass. The first search takes 10.71 seconds; all 46 later
+inputs retain the verified winning suffix with zero search nodes, median/P95
+response 1.57/2.07 seconds. This uses horizon12, 30,000-ms tactical search and
+deployment floor2, not default-budget performance.
+
+Independent frozen replay `full-battle-units-spells-and-junk-20261022-083546-9b98f087`
+loads identical player/model/archive DLLs and wins with the same Pyre15.
+All 47 inputs, roots, successors, forecasts and RNG match. Both runs have
+zero capture/mismatch/unsupported/pending counts and settle terminal effects.
+The focused pair check also requires real temporary graft attachment and
+enemy physical orders that differ from their native creation/identity order.
+
+```powershell
+./scripts/Check-PlayerAdvisor.ps1 -Case EventGraft -SkipBuild
+```
+
 Scope: this exact original Firebrand/MeatShield pair and original five built-in
-grafts. Other event host/equipment pairs, graft-copy interactions, combined
-Titanite shields and actual player-advisor natural late-game victories require
-their own native evidence. This fixed-policy victory is not player-advisor
-acceptance or a Fragile terminal-boss victory.
+grafts. Other event host/equipment pairs, graft-copy interactions and combined
+Titanite shields need their own evidence. The natural Ring7 fixed-policy
+replay matches but loses; its actual-player scout also only found losing
+plans. Neither is a Ring7 or Fragile terminal-boss player victory.
