@@ -508,9 +508,22 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult ApplyUnitPostCombat(RoomCombatState state, IReadOnlyList<int> cannotAttackOrHeal,
             IReadOnlyList<int> cannotFireTriggers, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
-            string? error = Validate(state);
+            string? error = Validate(state, linkedHealthOnly: true);
             if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
-            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).UnitPostCombat(cannotAttackOrHeal, cannotFireTriggers);
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? targets = null;
+            if (state.Context?.LifeLinks != null)
+            {
+                if (state.Context.Enchantments?.AutomaticLifecycle != true || state.Preview)
+                    return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                        "True-final-boss post-combat effects require the captured non-preview whole train.");
+                if (state.Context.Enchantments.Rooms.SelectMany(room => room.Units).Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre))
+                    return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                        "True-final-boss post-combat with allied units requires native cross-floor callback calibration.");
+                targets = state.Context.Enchantments.Rooms.Where(room => room.RoomIndex != state.RoomIndex)
+                    .SelectMany(room => room.Units.Select(unit => (room.RoomIndex, unit))).ToArray();
+            }
+            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre, externalTargets: targets)
+                .UnitPostCombat(cannotAttackOrHeal, cannotFireTriggers);
         }
 
         public static RoomCombatResult ApplyFeeding(RoomCombatState state, CombatTeam team,
@@ -4255,7 +4268,7 @@ namespace MonsterTrain2Poju.Model
                 if (action.Target == "Pyre")
                     return new CardTargets(units.Where(unit => unit.Source.IsPyre).Take(1)
                         .Select(unit => unit.Source.Id).ToArray());
-                if (action.Target == "Tower")
+                if (action.Target is "Tower" or "FrontInAllRooms")
                 {
                     if (!hasExternalTargetRoster)
                         return new CardTargets(Array.Empty<int>(), "Tower trigger targeting requires complete-train unit snapshots.");

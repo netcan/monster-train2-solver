@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--post-combat-only")
+{
+    PostCombatHealingChecks.Run();
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PostCombatHealingChecks.Native(fixture.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--true-final-boss-post-combat-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossPostCombatChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--unit-turns-only")
 {
     UnitTurnBeginChecks.Run();
@@ -3935,6 +3950,11 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-unit-t
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossUnitTurnChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-post-combat-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossPostCombatChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-birth-calibration", StringComparison.OrdinalIgnoreCase)))
 {

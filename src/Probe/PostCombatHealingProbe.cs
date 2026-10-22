@@ -55,7 +55,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CombatManager __instance, RoomState room, ref IEnumerator __result)
             {
-                if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "post-combat-healing" && PostCombatHealingScenario.Prepared &&
+                if ((TrueFinalBossTurnProbe.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "post-combat-healing" && PostCombatHealingScenario.Prepared) &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode) __result = Wrap(__result, __instance, room);
             }
         }

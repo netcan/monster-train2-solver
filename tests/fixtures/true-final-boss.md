@@ -335,6 +335,23 @@ untouchable 和持续战开关，直接调用原生续战判定，共 288 次。
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case UnitTurns -SkipBuild`。
 
+## 没有友军单位时的回合后效果
+
+`true-final-boss-post-combat-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-205650-20ee072e`，57.89 秒，原生正常退出，受保护文件未变。
+原始五实体、牌组和火炉保持原值。18 个原生阶段包含出生后的 17 个阶段，
+完整房间、上下文、卡牌实例/牌堆和 RNG 与模型一致，64 条并发分支不改输入。
+
+该来源全程没有友军单位，只有火炉。实际生成 12 张天灾牌，Savagery 累计增加
+八层强化并造成 20 点远端火炉伤害。回合后入口从捕获的整个列车取得外部目标，
+Dominion 的跨层前排查询正确排除火炉并得到空目标。不能据此推断有友军单位时
+的腐化状态写入与回调已校准；该场面仍拒绝，预览也继续拒绝。
+
+来源整场原生败北，采集失败/模型差异/待完成项为零，unsupported 为 49，
+封装器 `DEPTH-FAIL`。该组件不表示完整房间战斗或玩家入口已接入。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case PostCombat -SkipBuild`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件
