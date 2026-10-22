@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 884 archives (809 full battles and
+Current manifest inventory (2026-10-22): 886 archives (811 full battles and
 75 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -111,6 +111,13 @@ and an ordinary first-wave enemy. Thirteen enemy moves include ten mask changes;
 Eight immutable branches per row and unknown-payload/room-rule/preview/mask
 guards pass. This authored component does not establish a paid enemy action
 chain or natural late-game player acceptance.
+
+`full-battle-eclipse-chamber-enemy-movement{,-replay}.mt2f` verifies the complete
+ordinary enemy paid chain in independent native processes: thirteen plays,
+five EndTurns, four actual moon-mask moves by two original up/down pairs and
+Pyre80 victories. All eighteen frozen inputs, complete state/RNG and sixteen
+immutable model chains match. This retains the separate paid enemy callback
+and real player entry gates. See [details](room-moon-callbacks.md).
 
 `full-battle-eclipse-chamber-movement.mt2f` extends that mechanism to twelve
 paid plays and five EndTurns, winning with Pyre80. Two original Hidden Passage

@@ -4,12 +4,21 @@ using MonsterTrain2Poju.Model;
 
 internal static class EclipseChamberChecks
 {
-    internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
+    internal static PlayCardAction? Choose(BattleTurnState source, int[] ids, bool enemyMovement = false)
     {
         CombatContext context = source.Spawn.Train.Context!;
         for (int index = 0; index < ids.Length; index++)
             if (context.Statistics!.Value(ids[index], "TimesPlayed", "ThisBattle") == 0)
             {
+                if (enemyMovement && index >= 8)
+                {
+                    if (source.Spawn.Turn == 0) return null;
+                    if (index == 8) return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play => play.CardInstanceId == ids[index]);
+                    CombatUnit enemy = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0).OrderBy(unit => unit.Id).First();
+                    return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play =>
+                        play.CardInstanceId == ids[index] && play.TargetUnitId == enemy.Id);
+                }
                 if (index >= 8)
                 {
                     int spawner = ids[index < 10 ? 0 : 5];
@@ -94,7 +103,8 @@ internal static class EclipseChamberChecks
         int[] ids = root.GetProperty("EclipseChamberCardIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
         bool movement = root.TryGetProperty("EclipseChamberMovement", out FixtureValue movementFlag) && movementFlag.GetBoolean();
-        Require(ids.Length == (movement ? 12 : 8) && actions.Length == ids.Length,
+        bool enemyMovement = root.TryGetProperty("EclipseChamberEnemyMovement", out FixtureValue enemyMovementFlag) && enemyMovementFlag.GetBoolean();
+        Require(ids.Length == (enemyMovement ? 13 : movement ? 12 : 8) && actions.Length == ids.Length,
             "Missing deployment, original Moonrise, two Eclipses, replacement, later birth or calibrated movement.");
         BattleTurnState After(int index) => actions[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         foreach (int index in new[] { 4, 5, 7 })
@@ -182,7 +192,38 @@ internal static class EclipseChamberChecks
         Require(moved == 4 && callbacks > 0, "Missing paid movement with actual callback changes.");
         Console.WriteLine($"ECLIPSE-MOVEMENT-CHAIN PASS originalMovementCards=4 movedCallbackActors=2 changedCallbacks={callbacks} mixedMasks=true exactCompleteChain=true");
     }
-    internal static bool MovementWitness(BattleTurnState before, BattleTurnState after, PlayCardAction action, bool requireCallbacks = true)
+    internal static void EnemyMovement(FixtureValue root)
+    {
+        Require(root.GetProperty("EclipseChamberEnemyMovement").GetBoolean(), "Missing paid enemy movement scenario.");
+        Callbacks(root);
+        FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
+        BattleTurnState phaseBefore = actions[8].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState phaseAfter = actions[8].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        PlayCardAction phaseAction = actions[8].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        Require(phaseBefore.Spawn.Turn == 1 && phaseBefore.MoonPhase == "New" && phaseAfter.MoonPhase == "Full" &&
+            phaseBefore.Spawn.Train.Context!.FindCard(phaseAction.CardInstanceId)!.DataId == "fe6dfafa-9712-484c-9bb4-145c0989e667" &&
+            phaseAfter.Energy - phaseBefore.Energy == 1, "Missing retained original Moonrise and its actual phase/energy transition.");
+        var targets = new HashSet<int>(); int moves = 0;
+        foreach (FixtureValue row in actions.Skip(9))
+        {
+            BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            PlayCardAction action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            string expected = moves % 2 == 0 ? "b67ca7bf-bd65-4d98-ae53-26397de1e355" : "01f1fe24-f72b-4749-833b-46796463cdd7";
+            CombatUnit prior = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId);
+            Require(before.Spawn.Turn == 1 && before.MoonPhase == "Full" && before.Energy - after.Energy == 1 &&
+                before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId == expected && prior.Team == CombatTeam.Enemy &&
+                prior.AssetKey == "ShieldGuardT1_BasicNonAttack" && prior.Triggers.All(trigger => !trigger.Kind.Contains("Moon")),
+                "Missing ordinary first-wave enemy, original spell, phase or actual payment.");
+            Require(MovementWitness(before, after, action, requireCallbacks: false, team: CombatTeam.Enemy),
+                "Paid ordinary enemy did not change its moon understanding.");
+            targets.Add(prior.Id); moves++;
+        }
+        Require(moves == 4 && targets.Count == 1, "Missing complete repeated up/down pairs on one original enemy.");
+        Console.WriteLine("ECLIPSE-ENEMY-MOVEMENT-CHAIN PASS originalMovementCards=4 paidEnergy=4 sameEnemy=true maskChanges=4 immutableFullChains=16");
+    }
+    internal static bool MovementWitness(BattleTurnState before, BattleTurnState after, PlayCardAction action, bool requireCallbacks = true,
+        CombatTeam team = CombatTeam.Player)
     {
         string dataId = before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId;
         int direction = dataId == "b67ca7bf-bd65-4d98-ae53-26397de1e355" ? 1 :
@@ -192,7 +233,7 @@ internal static class EclipseChamberChecks
         RoomCombatState destination = after.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == action.TargetUnitId));
         CombatUnit old = origin.Units.Single(unit => unit.Id == action.TargetUnitId);
         CombatUnit current = destination.Units.Single(unit => unit.Id == action.TargetUnitId);
-        if (old.Team != CombatTeam.Player || old.Triggers.Any(trigger => trigger.Kind == "OnMoonShade") != requireCallbacks ||
+        if (old.Team != team || old.Triggers.Any(trigger => trigger.Kind == "OnMoonShade") != requireCallbacks ||
             origin.RoomIndex == destination.RoomIndex || (old.MoonPhaseMask & 1) == (current.MoonPhaseMask & 1)) return false;
         Require(destination.RoomIndex - origin.RoomIndex == direction &&
             current.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade") == (requireCallbacks && (current.MoonPhaseMask & 1) != 0) &&

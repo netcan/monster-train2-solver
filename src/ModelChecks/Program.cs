@@ -1921,6 +1921,12 @@ if (args.Length == 2 && args[0] == "--rolling-advice-only")
     RollingAdviceChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--eclipse-enemy-movement-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EclipseChamberChecks.EnemyMovement(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--room-moon-callback-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3720,6 +3726,12 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-ch
 {
     using var document = ModelJson.ReadFixture(path);
     EclipseChamberChecks.Movement(document.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-chamber-enemy-movement.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-eclipse-chamber-enemy-movement-replay.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    EclipseChamberChecks.EnemyMovement(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("holdover-variants-calibration", StringComparison.OrdinalIgnoreCase)))
 {

@@ -276,7 +276,8 @@ enemy before deployment had created any; it is not curated. The accepted run
 explicitly spawns the original first-wave definition without changing it.
 
 This opens the existing modeled upgrade callbacks and actual enemy Bump phase
-refresh. Paid enemy card chains, real player entry with this composition,
+refresh. The ordinary paid enemy chain is validated below; paid enemy callback
+chains, real player entry with this composition,
 previews, other callback payloads, enemy Conduit and unit-owned moon resource
 traits retain their separate acceptance boundaries. No full regression or Mac
 package build is performed.
@@ -284,4 +285,43 @@ package build is performed.
 ```powershell
 scripts/Run-FullBattleProbe.ps1 -RoomMoonEnemyMovement -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-callback-only tests/fixtures/room-moon-enemy-movement-calibration.mt2f
+```
+
+## Paid original spells on a first-wave enemy
+
+`full-battle-eclipse-chamber-enemy-movement.mt2f` records profile
+`full-battle-units-spells-and-junk-20261022-130305-ac7ca978` (93.49 seconds).
+Thirteen paid/setup plays and five EndTurns win with Pyre80, normal exit,
+settled terminal effects, unchanged originals and all four failure counters zero.
+The original friendly callback carriers remain authored as in the prior fixture;
+the targeted `ShieldGuardT1_BasicNonAttack` is spawned by the original wave.
+
+An extra unchanged Moonrise is held with the same instance-only Freeze shim as
+the four movement cards. The fixed policy waits for turn one, uses its actual
+New-to-Full transition and one-energy gain, then pays one each for two original
+Hidden Passage/Dripfall pairs on the same enemy. All four moves change cached
+understanding across the Eclipse boundary; other units keep their masks. The
+enemy has no moon callback payload, keeping its control separate from the six
+authored opposing carriers in the isolated component above.
+
+All thirteen actions, five EndTurns, two character/twelve support refreshes and
+six friendly Silent growth/six floor-subtype controls match complete native
+state/RNG. Sixteen independently replayed full chains remain immutable.
+
+Fresh profile `full-battle-units-spells-and-junk-20261022-130622-06033c87`
+repeats all eighteen frozen inputs with zero search nodes in 65.54 seconds.
+It also wins with Pyre80, normal exit, settled effects, unchanged originals
+and four zero failure counters. Every root, successor, terminal outcome and
+gameplay RNG matches the frozen independent model chain. It is retained as
+`full-battle-eclipse-chamber-enemy-movement-replay.mt2f`. Both native captures
+pass the focused thirteen-play/five-EndTurn checker. This fresh native run
+also exercises the extracted production process waiter on its ordinary exit
+path; its grace/failure paths have separate real child-process controls.
+
+This does not establish a paid enemy callback composition or real player
+advice for this route. No full regression or Mac package build is performed.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberEnemyMovement -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-enemy-movement-only tests/fixtures/full-battle-eclipse-chamber-enemy-movement.mt2f
 ```

@@ -607,7 +607,8 @@ internal static class BattleActionChecks
             chooser = source => EquipmentMergeChecks.Choose(source, fixture.GetProperty("EquipmentMergeCardIds").Deserialize<int[]>()!,
                 fixture.GetProperty("EquipmentMergeSourceIds").Deserialize<int[]>()!, fixture.GetProperty("EquipmentMergeUnitIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("EclipseChamberPrepared", out var eclipseChamberPrepared) && eclipseChamberPrepared.GetBoolean())
-            chooser = source => EclipseChamberChecks.Choose(source, fixture.GetProperty("EclipseChamberCardIds").Deserialize<int[]>()!);
+            chooser = source => EclipseChamberChecks.Choose(source, fixture.GetProperty("EclipseChamberCardIds").Deserialize<int[]>()!,
+                fixture.TryGetProperty("EclipseChamberEnemyMovement", out var enemyMovementFlag) && enemyMovementFlag.GetBoolean());
         if (fixture.TryGetProperty("OriginalRoomCardsPrepared", out var originalRoomCardsPrepared) && originalRoomCardsPrepared.GetBoolean())
             chooser = source => OriginalRoomCardsChecks.Choose(source, fixture.GetProperty("OriginalRoomCardsIds").Deserialize<int[]>()!);
         if (fixture.TryGetProperty("OriginalForgeCardsPrepared", out var originalForgeCardsPrepared) && originalForgeCardsPrepared.GetBoolean())

@@ -97,8 +97,17 @@ hits its 900-second deadline during game exit. Its normal exit and final
 protected-file comparison are therefore **not verified**. This does not erase
 the captured native victory, but is not a clean runner pass. The runner now
 allows one additional sixty-second exit period after a captured terminal
-result, retaining all normal exit and failure checks. That grace path has
-passed syntax validation and still needs a runtime exercise.
+result, retaining all normal exit and failure checks. Its shared process waiter
+now passes seven runtime child-process controls: ordinary exit, win/loss grace,
+nonzero terminal exit, an unterminated run, a stuck terminal run and immediate
+isolated-card rejection. The stuck case receives exactly one bounded extension
+before it is killed; a nonzero exit remains nonzero. These controls exercise
+the production wait function, without reclassifying this earlier source as a
+clean Unity exit or reproducing a long Unity export/teardown stall.
+
+```powershell
+./scripts/Check-NativeBattleProcess.ps1
+```
 
 The exact before-battle input is retained in
 `campaign-progressed-ring7-tactical.zip`: six preceding native wins, six

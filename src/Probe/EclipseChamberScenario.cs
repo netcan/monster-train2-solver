@@ -16,6 +16,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Callbacks => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_CALLBACKS") == "1";
         internal static bool ShadeCallbacks => Callbacks && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_SHADE_CALLBACKS") == "1";
         internal static bool Movement => ShadeCallbacks && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_MOVEMENT") == "1";
+        internal static bool EnemyMovement => Movement && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_ENEMY_MOVEMENT") == "1";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static readonly List<Record> Records = new List<Record>();
@@ -79,14 +80,15 @@ namespace MonsterTrain2Poju.Probe
                     Add("01f1fe24-f72b-4749-833b-46796463cdd7") };
                 // Retain the paid originals across ordinary draws while the
                 // fixed policy reaches each movement. Definitions stay intact.
-                foreach (CardState card in movementCards)
+                CardState[] retained = EnemyMovement ? new[] { Add(MoonPhaseCardScenario.MoonriseId) }.Concat(movementCards).ToArray() : movementCards;
+                foreach (CardState card in retained)
                 {
                     var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze");
                     card.AddTemporaryTrait(freeze, managers.GetCoreManagers());
                 }
-                CardIds = CardIds.Concat(movementCards.Select(FullBattleTrace.Active!.CardId)).ToArray();
+                CardIds = CardIds.Concat(retained.Select(FullBattleTrace.Active!.CardId)).ToArray();
 #if DEVELOPMENT_PROBE
-                if (PlayerAdvisorProbe.Enabled)
+                if (PlayerAdvisorProbe.Enabled && !EnemyMovement)
                 {
                     // Keep a deterministic authored hand order so the generic
                     // tactical seed reaches Eclipse before the movement cards.
@@ -118,6 +120,15 @@ namespace MonsterTrain2Poju.Probe
             for (int index = 0; index < ids.Length; index++)
                 if (context.Statistics!.Value(ids[index], "TimesPlayed", "ThisBattle") == 0)
                 {
+                    if (EnemyMovement && index >= 8)
+                    {
+                        if (source.Spawn.Turn == 0) return null;
+                        if (index == 8) return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play => play.CardInstanceId == ids[index]);
+                        CombatUnit enemy = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                            .Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0).OrderBy(unit => unit.Id).First();
+                        return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play =>
+                            play.CardInstanceId == ids[index] && play.TargetUnitId == enemy.Id);
+                    }
                     if (Movement && index >= 8)
                     {
                         int spawner = ids[index < 10 ? 0 : 5];
