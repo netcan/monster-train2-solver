@@ -11,12 +11,16 @@ param(
     [ValidateRange(0, 2)] [int] $DeploymentRoom = 2,
     [switch] $OuterBossTurns,
     [switch] $OuterBossBirth,
+    [switch] $StoryProgressionOnly,
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
     [ValidateRange(60, 7200)] [int] $TimeoutSeconds = 1800,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
+if ($StoryProgressionOnly -and (-not $InputProfile -or $BattleReplay)) {
+    throw '-StoryProgressionOnly requires an InputProfile and cannot execute BattleReplay.'
+}
 $workspace = Split-Path $PSScriptRoot -Parent
 $profilesRoot = [IO.Path]::GetFullPath((Join-Path $workspace '.probe-runs')).TrimEnd('\')
 $gameRoot = Join-Path $workspace $(if ($NativeWorker -eq 1) { '.sandbox-game' } else { '.sandbox-game-worker2' })
@@ -81,7 +85,8 @@ function Get-OriginalHashes {
     } | Sort-Object FullName | ForEach-Object { $_.FullName + '=' + (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash })
 }
 $originalBefore = Get-OriginalHashes
-$profile = Join-Path $profilesRoot ('campaign-ring' + $StopBeforeRing + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+$profilePrefix = if ($StoryProgressionOnly) { 'campaign-story' } else { 'campaign-ring' + $StopBeforeRing }
+$profile = Join-Path $profilesRoot ($profilePrefix + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
 $null = New-Item -ItemType Directory -Path $profile
 foreach ($item in Get-ChildItem -LiteralPath $source) {
     if (-not $InputProfile) { Copy-Item -LiteralPath $item.FullName -Destination $profile -Recurse; continue }
@@ -101,6 +106,7 @@ $savePath = Join-Path $profile 'saves/save-singlePlayer.json'
     StoryChoiceOrder = $StoryChoiceOrder;
     DeploymentRoom = $DeploymentRoom;
     OuterBossTurns = [bool]$OuterBossTurns; OuterBossBirth = [bool]$OuterBossBirth;
+    StoryProgressionOnly = [bool]$StoryProgressionOnly;
     BattleReplay = $BattleReplay; PlayerReplay = $playerReplay;
     BattleReplaySHA256 = $(if ($BattleReplay) { (Get-FileHash -LiteralPath $BattleReplay -Algorithm SHA256).Hash } else { $null }) } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-input.json')
@@ -145,6 +151,7 @@ foreach ($name in @($start.Environment.Keys)) {
 $settings = @{
     MT2_PROBE_DATA_DIR = $profile; MT2_PROBE_SCENARIO = 'campaign'; MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_CAMPAIGN_STOP_RING = "$StopBeforeRing"; MT2_PROBE_SETTLE_CARD_ANIMATIONS = '1'
+    MT2_PROBE_CAMPAIGN_STORY_ONLY = $(if ($StoryProgressionOnly) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
     MT2_PROBE_CAMPAIGN_SKIP_MERCHANT_PURCHASES = $(if ($SkipMerchantPurchases) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER = $StoryChoiceOrder
@@ -200,6 +207,7 @@ if ($BattleReplay -and (Test-Path -LiteralPath (Join-Path $profile 'full-battle.
 $passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $replayPassed
 $runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
 $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCode = $process.ExitCode;
+    StoryProgressionOnly = [bool]$StoryProgressionOnly;
     BattleReplayPassed = $replayPassed; PlayerReplay = $playerReplay;
     NativeCampaignWon = $runOutcome.Count -eq 1 -and $runOutcome[0].data.won -eq $true;
     NativeVictoryType = $(if ($runOutcome.Count -eq 1) { $runOutcome[0].data.victoryType } else { $null });

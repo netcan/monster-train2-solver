@@ -82,9 +82,18 @@ namespace MonsterTrain2Poju.Probe
             SaveManager? save = m?.GetSaveManager();
             ScreenManager? screens = m?.GetScreenManager();
             if (save == null || screens == null) return;
+            if (Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STORY_ONLY") == "1")
+            {
+                if (save.UserState != SaveManager.SaveManagerUserState.UserLoaded || LoadingScreen.IsWorking()) return;
+                ObserveStoryProgression(save, afterEndGame: false);
+                Finish(true, "Native story progression observed without starting or resuming a run."); return;
+            }
             if (runReturned && runWon.HasValue && !LoadingScreen.IsWorking() &&
                 screens.GetTopScreen() is ScreenName.GameOver or ScreenName.Unlock)
-            { Finish(runWon.Value, "Native campaign completed: " + (runWon.Value ? "victory" : "defeat")); return; }
+            {
+                ObserveStoryProgression(save, afterEndGame: true);
+                Finish(runWon.Value, "Native campaign completed: " + (runWon.Value ? "victory" : "defeat")); return;
+            }
             if (nativeLost) { Finish(false, "Native campaign battle lost; retained pre-battle checkpoint is unchanged."); return; }
             if (Time.realtimeSinceStartup > heartbeat)
             {
@@ -513,6 +522,37 @@ namespace MonsterTrain2Poju.Probe
             quitCode = success ? 0 : 1;
             quitAt = Time.realtimeSinceStartup + 5f; Application.Quit(quitCode);
         }
+        private static void ObserveStoryProgression(SaveManager save, bool afterEndGame)
+        {
+            var stories = AllGameManagers.Instance.GetAllGameData().GetDialogueCollectionData().GetStoryProgressionDatas(DLC.None);
+            var rows = new List<object>();
+            for (int index = 0; index < stories.Count; index++)
+            {
+                StoryProgressionData story = stories[index];
+                UnlockCriteria condition = story.GetProgressionCondition();
+                bool hasProgress = save.TryGetUnlockCriteriaProgress(condition, out int current, out int required);
+                rows.Add(new { index, asset = story.name, reward = story.GetReward().GetRewardType().ToString(),
+                    condition = condition.GetUnlockCondition().ToString(), hasProgress, current, required,
+                    met = save.IsUnlockCriteriaMet(condition) });
+            }
+            var hearts = new List<object>();
+            foreach (CharacterData character in save.GetBalanceData().GetPyreHeartCharacterDatas())
+            {
+                UnlockCriteria condition = character.GetPyreHeartData().GetUnlockData();
+                bool hasProgress = save.TryGetUnlockCriteriaProgress(condition, out int current, out int required);
+                hearts.Add(new { asset = character.name, condition = condition.GetUnlockCondition().ToString(),
+                    hasProgress, current, required, met = save.IsUnlockCriteriaMet(condition, noneValue: false),
+                    unlocked = save.GetMetagameSave().HasUnlockedPyreHeart(character.GetID()) });
+            }
+            string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "native-story-progression.json");
+            using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write))
+            using (var writer = new StreamWriter(stream))
+                writer.Write(JsonConvert.SerializeObject(new { Schema = 1, EvidenceKind = "NativeMetagameObservation",
+                    AfterEndGame = afterEndGame, StoryProgression = save.GetStoryProgression(DLC.None),
+                    TrueFinalBossFeatureUnlocked = save.IsTrueFinalBossFeatureUnlocked(), Stories = rows,
+                    PyreHearts = hearts }, Formatting.Indented));
+        }
+
         private void ObserveRunOutcome(SaveManager save, bool nativeVictory)
         {
             if (runWon.HasValue) return;
