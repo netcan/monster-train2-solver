@@ -57,6 +57,7 @@ Run the focused suite without a full fixture regression:
 scripts/Check-OuterBossCorrupter.ps1 -SkipBuild
 ```
 
-The player gate remains AllyBuffer/Fragile while Corrupter's real player
-publication/UI and independent player replay remain pending. Titan Trial and
-Entropy definitions retain their guards. No Mac package is built.
+The real player publication/UI and independent 24-input replay now also pass;
+see [bounded player evidence](player-corrupter-bounded.md). The player gate
+admits all three ordinary Level8 definitions. Titan Trial and Entropy
+definitions retain their guards. No Mac package is built.

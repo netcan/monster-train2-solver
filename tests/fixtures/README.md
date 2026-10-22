@@ -85,8 +85,11 @@ natural winning acceptance remains open. See [Fragile player evidence](player-fr
 The ordinary Corrupter now has original birth, casting, corruption multiplication,
 24-input fresh replay and separate controlled Relentless/floor/Pyre evidence.
 Its casting pair loses with four zero counters. The controlled route retains its
-explicit queue/Pyre mutation and expected one mismatch; it is not a natural win
-or player acceptance. See [Corrupter calibration](outer-boss-corrupter.md).
+explicit queue/Pyre mutation and expected one mismatch; it is not a natural win.
+The actual player entry separately passes 24 bounded publications/inputs and
+independent fresh replay of its complete native loss, with UI checks and four
+zero counters. See [Corrupter calibration](outer-boss-corrupter.md) and
+[player evidence](player-corrupter-bounded.md).
 See [outer-boss validation](outer-boss-variants.md).
 
 `full-battle-natural-ring7-tactical-win.mt2f` verifies a natural Rax victory:

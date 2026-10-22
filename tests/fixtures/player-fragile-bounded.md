@@ -37,9 +37,9 @@ separately in [budget-window controls](player-budget-windows.md). An unfinished
 ten-second diagnostic was stopped when the bounded-window fix became available;
 neither diagnostic is curated as a full battle.
 
-The player gate admits only the two calibrated exact definitions, AllyBuffer
-and Fragile, with existing action/controller payload validation. Other Level8
-definitions, Entropy Level9 and Titan Trials retain their unsupported guards.
+The player gate admits the three calibrated ordinary definitions, AllyBuffer,
+Fragile and Corrupter, with existing action/controller payload validation.
+Entropy Level9 and Titan Trials retain their unsupported guards.
 The bounded pair checker requires the actual loss and never grants winning
 acceptance; the existing winning-pair checker still requires native victories.
 Native player availability is now accepted for this Fragile route. A natural

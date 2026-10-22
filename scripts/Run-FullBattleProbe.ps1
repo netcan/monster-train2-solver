@@ -659,8 +659,8 @@ if ($OuterBossRelentless -and -not $OuterBossPhases) { throw '-OuterBossRelentle
 if ($OuterBossRelentlessHealth -and -not $OuterBossRelentless) { throw '-OuterBossRelentlessHealth requires -OuterBossRelentless.' }
 if ($OuterBossRelentlessPyreHealth -and -not $OuterBossRelentless) { throw '-OuterBossRelentlessPyreHealth requires -OuterBossRelentless.' }
 if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns requires -PhysicalSpawnPoints.' }
-if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or -not $OuterBossTurns -or $PlayerAdvisor)) {
-    throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns and cannot use PlayerAdvisor.'
+if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or -not $OuterBossTurns)) {
+    throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns.'
 }
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }

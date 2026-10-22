@@ -1,8 +1,8 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'FragileBounded', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
-    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'FragileBounded', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
+    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'FragileBounded', 'CorrupterBounded', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
+    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'FragileBounded', 'CorrupterBounded', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -19,6 +19,7 @@ foreach ($name in $Case) {
         'OuterBoss' { 'player-boss' }
         'OuterBossRolling' { 'player-boss-rolling' }
         'FragileBounded' { 'player-boss-fragile-bounded' }
+        'CorrupterBounded' { 'player-boss-corrupter-bounded' }
         'Conduit' { 'player-conduit' }
         'RoomMoon' { 'player-room-moon' }
         'RoomMoonMovement' { 'player-room-moon-movement' }

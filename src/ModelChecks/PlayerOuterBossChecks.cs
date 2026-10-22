@@ -82,7 +82,33 @@ internal static class PlayerOuterBossChecks
         Console.WriteLine($"PLAYER-FRAGILE-BOUNDED PASS decisions={records.Length}: legal forecasts, complete native loss and independent replay; no winning acceptance claimed.");
     }
 
-    private static void CheckPair(FixtureValue source, FixtureValue replay, string expectedBoss, bool requireVictory)
+    internal static void CorrupterBoundedPair(FixtureValue source, FixtureValue replay)
+    {
+        CheckPair(source, replay, "Boss_Level8_Corrupter", requireVictory: false, requireRelentless: false);
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            FixtureValue control = fixture.GetProperty("OriginalOuterBossRoute");
+            FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
+            Require(control.GetProperty("Kind").GetString() == "SelectOriginalOuterBossScenario" &&
+                control.GetProperty("Boss").GetString() == "Boss_Level8_Corrupter" && control.GetProperty("Distance").GetInt32() == 7 &&
+                control.GetProperty("ScenarioAssetsUnchanged").GetBoolean() &&
+                control.GetProperty("RngBefore").ContentEquals(control.GetProperty("RngAfter")) &&
+                overlay.GetProperty("Horizon").GetInt32() == 3 && overlay.GetProperty("TimeLimitMs").GetInt32() == 3000 &&
+                overlay.GetProperty("TacticalSeed").GetBoolean(), "Missing explicit original scene control or bounded player configuration.");
+        }
+        FixtureValue[] records = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        BattleTurnState deployment = records[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        CombatUnit original = deployment.Spawn.QueuedOuterBoss!.Actor.Unit;
+        Require(original.BaseAttack == 20 && original.MaxHealth == 2800 && original.Triggers.Count == 2 &&
+            original.Triggers[0].Kind == "OnAttacking" && original.Triggers[0].Effects.Single().Type == "CardEffectMultiplyStatusEffect" &&
+            original.Triggers[1].Kind == "OnTurnBegin" && deployment.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 80,
+            "Original Corrupter definition or starting Pyre changed.");
+        Require(records.Any(record => record.GetProperty("Nodes").GetInt32() > 0 &&
+            record.GetProperty("Timing").GetProperty("SearchMs").GetDouble() > 0), "Player source must perform real search.");
+        Console.WriteLine($"PLAYER-CORRUPTER-BOUNDED PASS decisions={records.Length}: original scene selection, bounded player publication/UI and independent complete native replay; natural progression/winning acceptance remains separate.");
+    }
+
+    private static void CheckPair(FixtureValue source, FixtureValue replay, string expectedBoss, bool requireVictory, bool requireRelentless = true)
     {
         foreach (FixtureValue fixture in new[] { source, replay })
             Require(fixture.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor",
@@ -140,7 +166,8 @@ internal static class PlayerOuterBossChecks
         int activations = source.GetProperty("Actions").EnumerateArray()
             .Count(action => action.GetProperty("Action").GetProperty("ActivatorUnitId").GetInt32() > 0);
         Require(queued, "Missing native queued boss at deployment.");
-        Require(live > 0 && phases.SetEquals(new[] { "Casting", "Relentless" }), "Missing native boss phases.");
+        Require(live > 0 && (requireRelentless ? phases.SetEquals(new[] { "Casting", "Relentless" }) :
+            phases.Contains("Casting") && phases.IsSubsetOf(new[] { "Casting", "Relentless" })), "Missing native boss phases.");
         if (expectedBoss == "Boss_Level8_AllyBuffer")
         {
             Require(generatedSourceTraits, "Missing new native Entropy Scourge source traits.");
@@ -152,8 +179,14 @@ internal static class PlayerOuterBossChecks
                 .Any(unit => unit.Team == CombatTeam.Enemy && unit.Status("buff")?.Stacks == 3)),
                 "Missing the original Fragile aura in the live player encounter.");
         }
+        else if (expectedBoss == "Boss_Level8_Corrupter")
+        {
+            Require(states.Any(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Any(unit => unit.Team == CombatTeam.Player && unit.Status("corruption")?.Stacks > 0)),
+                "Missing original Corrupter corruption on a live player unit.");
+        }
         else throw new InvalidOperationException("Uncalibrated player boss acceptance definition.");
-        Console.WriteLine($"PLAYER-OUTER-BOSS PASS boss={expectedBoss} mode={(rolling ? "rolling" : "complete-window")} requireVictory={requireVictory} queuedBirth=true phases=2 liveSnapshots={live} generatedScourgeSourceTraits={generatedSourceTraits} abilityActivations={activations}");
+        Console.WriteLine($"PLAYER-OUTER-BOSS PASS boss={expectedBoss} mode={(rolling ? "rolling" : "complete-window")} requireVictory={requireVictory} queuedBirth=true phases={phases.Count} liveSnapshots={live} generatedScourgeSourceTraits={generatedSourceTraits} abilityActivations={activations}");
     }
 
     private static void Require(bool value, string message)
