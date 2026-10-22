@@ -1,8 +1,15 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1070 archives,
+Current manifest inventory (2026-10-23): 1072 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+The original trial-gold campaign relic now also works in actual player battle
+inputs. A natural seed42 Ring7 checkpoint, previously rejected before any
+advice, wins with fifty real player inputs and Pyre84; an independent fresh
+player replay wins with identical full state/RNG and four zero failure counters.
+The read-only native campaign input retains the actual seed and six preceding
+victory records. See [trial-gold player evidence](player-campaign-trial-gold.md).
 
 `titanite-weakness-calibration.mt2f` adds 144 isolated native damage-stage
 controls. Titanite rounds damage before melee/spell weakness, followed by

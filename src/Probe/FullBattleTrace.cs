@@ -31,6 +31,9 @@ namespace MonsterTrain2Poju.Probe
         private readonly HashSet<string> checkedCopyCardIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<StageRecord> stages = new List<StageRecord>();
         private readonly List<object> checkpoints = new List<object>();
+#if DEVELOPMENT_PROBE
+        private object? nativeRunInput;
+#endif
         private int nextId = 1;
         private int phaseSequence;
         private bool copyCardlessStatusRequired;
@@ -159,6 +162,24 @@ namespace MonsterTrain2Poju.Probe
             CombatManager? combat = managers.GetCombatManager();
             CardManager? cards = managers.GetCardManager();
             if (save == null || combat == null || cards == null || save.PreviewMode) return;
+#if DEVELOPMENT_PROBE
+            if (nativeRunInput == null)
+            {
+                var data = (SaveData)AccessTools.Property(typeof(SaveManager), "ActiveSaveData").GetValue(save);
+                nativeRunInput = new
+                {
+                    Schema = 1, Seed = data.GetSeed(), Distance = save.GetCurrentDistance(),
+                    Scenario = save.GetScenarioData(save.GetCurrentDistance()).name,
+                    WasDevCheatUsed = SaveManager.WasDevCheatUsed, BattlesWon = save.GetNumBattlesWon(),
+                    Gold = save.GetGold(), PyreHealth = save.GetTowerHP(),
+                    CompletedBattles = save.GetBattleRecords().Select(battle => new
+                    {
+                        battle.battleIndex, battle.loopIndex, Won = battle.WonBattle(),
+                        battle.bossHPRemaining, battle.turnsLasted
+                    }).ToArray()
+                };
+            }
+#endif
             if (!calibrated)
             {
                 CardCatalogProbe.Capture(this, managers);
@@ -1500,6 +1521,9 @@ namespace MonsterTrain2Poju.Probe
                 PlannerRuns = PlannerReplayScenario.Records,
                 RollingDecisions = RollingAdviceScenario.Records,
                 BattleDistance = AllGameManagers.Instance!.GetSaveManager().GetCurrentDistance(),
+#if DEVELOPMENT_PROBE
+                NativeRunInput = nativeRunInput,
+#endif
                 Advisor = BattleAdvisorOverlay.Active?.Evidence,
 #if DEVELOPMENT_PROBE
                 PlayerAdvisor = PlayerAdvisorProbe.Evidence,

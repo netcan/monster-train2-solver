@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--player-campaign-trial-gold-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    CampaignTrialGoldBattleChecks.PlayerPair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-allied-lethal-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4535,6 +4543,16 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         using var source = ModelJson.ReadFixture(sourcePath);
         using var replay = ModelJson.ReadFixture(replayPath);
         NaturalRing7TacticsChecks.PlayerPair(source.RootElement, replay.RootElement);
+    }
+}
+{
+    string? sourcePath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-campaign-trial-gold-search.mt2f", StringComparison.OrdinalIgnoreCase));
+    string? replayPath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-campaign-trial-gold-replay.mt2f", StringComparison.OrdinalIgnoreCase));
+    if (sourcePath != null && replayPath != null)
+    {
+        using var source = ModelJson.ReadFixture(sourcePath);
+        using var replay = ModelJson.ReadFixture(replayPath);
+        CampaignTrialGoldBattleChecks.PlayerPair(source.RootElement, replay.RootElement);
     }
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-fragile-no-cards.mt2f", StringComparison.OrdinalIgnoreCase) ||
