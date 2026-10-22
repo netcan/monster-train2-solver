@@ -4,8 +4,16 @@ using MonsterTrain2Poju.Model;
 if (args.Length == 2 && args[0] == "--observed-successors-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    TrainCombatChecks.Native(fixture.RootElement);
     RollingAdviceChecks.ObservedSuccessors(fixture.RootElement);
+    TrainCombatChecks.Native(fixture.RootElement);
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--player-boss-corrupter-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerOuterBossChecks.CorrupterWinningPair(source.RootElement, replay.RootElement);
     return;
 }
 
@@ -4561,6 +4569,16 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         using var source = ModelJson.ReadFixture(sourcePath);
         using var replay = ModelJson.ReadFixture(replayPath);
         CampaignTrialGoldBattleChecks.PlayerPair(source.RootElement, replay.RootElement);
+    }
+}
+{
+    string? sourcePath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-boss-corrupter-search.mt2f", StringComparison.OrdinalIgnoreCase));
+    string? replayPath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-boss-corrupter-replay.mt2f", StringComparison.OrdinalIgnoreCase));
+    if (sourcePath != null && replayPath != null)
+    {
+        using var source = ModelJson.ReadFixture(sourcePath);
+        using var replay = ModelJson.ReadFixture(replayPath);
+        PlayerOuterBossChecks.CorrupterWinningPair(source.RootElement, replay.RootElement);
     }
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-fragile-no-cards.mt2f", StringComparison.OrdinalIgnoreCase) ||

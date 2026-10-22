@@ -66,6 +66,40 @@ internal static class PlayerOuterBossChecks
         }
     }
 
+    internal static void CorrupterWinningPair(FixtureValue source, FixtureValue replay)
+    {
+        CheckPair(source, replay, "Boss_Level8_Corrupter", requireVictory: true, requireRelentless: false);
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            NativeCampaignInputChecks.Native(fixture, 7, 42, 84, "Level8FinalBossCorrupter");
+            TrainCombatChecks.Native(fixture);
+            Require(fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null,
+                "A selected outer-boss scenario is not the natural Corrupter checkpoint.");
+            FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
+            Require(overlay.GetProperty("Horizon").GetInt32() == 12 && overlay.GetProperty("TimeLimitMs").GetInt32() == 30000 &&
+                overlay.GetProperty("PreferredDeploymentRoom").GetInt32() == 1 && overlay.GetProperty("TacticalSeed").GetBoolean(),
+                "Unexpected natural Corrupter search configuration.");
+        }
+        Require(source.GetProperty("NativeRunInput").ContentEquals(replay.GetProperty("NativeRunInput")),
+            "Fresh Corrupter replay changed the original native seven-win campaign input.");
+        FixtureValue[] records = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(records[0].GetProperty("Root").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Relics!
+            .Any(relic => relic.AssetKey == "DamageOnFloorTransition" && relic.FloorTransitionDamageRules?.Count == 2),
+            "Natural Corrupter regression must retain its acquired floor-transition damage relic.");
+        Require(records.Any(record => record.GetProperty("Root").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms
+            .SelectMany(room => room.Units).Any(unit => unit.AssetKey == "MonsterFirebrand" && unit.Status("duality")?.Stacks > 0)),
+            "Natural Corrupter regression must exercise the original Firebrand with Duality.");
+        CombatUnit original = records[0].GetProperty("Root").Deserialize<BattleTurnState>()!.Spawn.QueuedOuterBoss!.Actor.Unit;
+        Require(original.BaseAttack == 20 && original.Health == 2800 && original.MaxHealth == 2800 && original.Triggers.Count == 2 &&
+            original.Triggers[0].Kind == "OnAttacking" && original.Triggers[0].Effects.Single().Type == "CardEffectMultiplyStatusEffect" &&
+            original.Triggers[1].Kind == "OnTurnBegin",
+            "Natural Corrupter must retain its original full-health definition and corruption callbacks.");
+        Require(records.Any(record => record.GetProperty("Nodes").GetInt32() > 0 &&
+            record.GetProperty("Timing").GetProperty("SearchMs").GetDouble() > 0),
+            "Natural Corrupter source did not perform actual player search.");
+        Console.WriteLine($"PLAYER-CORRUPTER-WINNING PASS decisions={records.Length}: original full-health natural Boss, seven native prior wins, actual player UI and independent winning full-state/RNG replay.");
+    }
+
     internal static void Pair(FixtureValue source, FixtureValue replay, string expectedBoss = "Boss_Level8_AllyBuffer")
         => CheckPair(source, replay, expectedBoss, requireVictory: true);
 

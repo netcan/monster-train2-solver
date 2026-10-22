@@ -65,3 +65,16 @@ exemptions, excludes the Corrupter multiplier's null character source, and
 requires captured display categories. The partial archive matches all 23
 actual inputs and six train phases after this correction. Its failed original
 plan remains a diagnostic, not a native victory.
+
+The next actual-player run `20261023-062904-1ed73f91` executes all 67 inputs
+and wins at Pyre84. Its input successors and complete forecasts match, but
+three intermediate component captures still differ, so it remains rejected
+with its original nonzero mismatch count. During Turn5, a status callback
+borrows a room scope that retains a living revived enemy outside the room
+list. Aura synchronization previously discarded that enemy's movement rule
+and then its retained body. It now preserves both until the physical room
+contains the enemy again, while final death still removes movement. All 67
+actual successors, 19 train phases and 73 room stages in this diagnostic
+match after correction. The 32-case native aura calibration and two existing
+revival battles (28 train phases) also pass. Clean source and fresh native
+replay runs must still pass the original four-zero acceptance gates.

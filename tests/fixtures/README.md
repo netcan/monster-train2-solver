@@ -1,8 +1,14 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1072 archives,
+Current manifest inventory (2026-10-23): 1074 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+Natural Corrupter now has an actual-player winning source and independent
+fresh native replay: 57 plays/ten EndTurns, Pyre84, all four failure counters
+zero in both processes. The seed42 seven-win input, original full-health boss,
+acquired relics, every forecast and complete state/RNG remain checked. See
+[natural Corrupter player evidence](player-corrupter-winning.md).
 
 The original trial-gold campaign relic now also works in actual player battle
 inputs. A natural seed42 Ring7 checkpoint, previously rejected before any
