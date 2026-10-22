@@ -1,8 +1,16 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 875 archives (802 full battles and
+Current manifest inventory (2026-10-22): 877 archives (804 full battles and
 73 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+The natural Fragile checkpoint is retained in `campaign-progressed-ring8-fragile.zip`
+with seven preceding native wins and thirteen hash-verified restore members.
+`full-battle-natural-fragile-no-cards.mt2f` matches five native EndTurns;
+`full-battle-natural-fragile-status.mt2f` matches 39 plays/seven EndTurns and
+fixes unrelated remote Pyre actors entering local triggered-status scopes.
+Both are losses and do not establish Fragile winning-player acceptance.
+See [outer-boss validation](outer-boss-variants.md).
 
 `full-battle-natural-ring7-tactical-win.mt2f` verifies a natural Rax victory:
 57 plays/ten EndTurns and Pyre46, with all frozen inputs and full state/RNG

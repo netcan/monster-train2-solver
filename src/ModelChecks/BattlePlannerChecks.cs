@@ -35,6 +35,26 @@ internal static class BattlePlannerChecks
             new BattlePlannerOptions(1, 12, 8, timeLimit: TimeSpan.FromSeconds(30), useTacticalSeed: true));
         Require(limited.ReachedNodeLimit && limited.ExpandedNodes == 1 && limited.Steps.Count == 1,
             "Tactical seed escaped the planner's shared node budget.");
+        Require(!limited.Steps[0].IsEndTurn && limited.Steps[0].Action != null && Key(root) == original,
+            "A tactical deployment cut short by its budget must retain its legal deployment prefix without changing the root.");
+        if (naturalRing7)
+        {
+            BattlePlanResult partial = BattlePlanner.Plan(root, keys.Key,
+                new BattlePlannerOptions(60, 12, 8, timeLimit: TimeSpan.FromSeconds(30), useTacticalSeed: true));
+            BattleTurnState partialReplay = Replay(root, partial.Steps, out RoomOutcome partialOutcome);
+            Require(partial.ReachedNodeLimit && partial.ExpandedNodes == 60 && partial.CompletedHorizon &&
+                partial.Steps.Count > 1 && !partial.Steps[0].IsEndTurn && partialOutcome == RoomOutcome.PlayerDefeated &&
+                Key(partialReplay) == Key(partial.State) && Key(root) == original,
+                "A truncated tactical route must retain a complete verified deployment forecast instead of an empty-tower defeat.");
+            var later = fixture.GetProperty("Turns")[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            string laterKey = Key(later);
+            BattlePlanResult laterLimited = BattlePlanner.Plan(later, keys.Key,
+                new BattlePlannerOptions(16, 12, 8, timeLimit: TimeSpan.FromSeconds(30), useTacticalSeed: true));
+            BattleTurnState laterReplay = Replay(later, laterLimited.Steps, out RoomOutcome laterOutcome);
+            Require(laterLimited.CompletedHorizon && laterLimited.Steps.Count > 0 &&
+                laterOutcome == laterLimited.Outcome && Key(laterReplay) == Key(laterLimited.State) && Key(later) == laterKey,
+                "Tactical advice must preserve a complete verified fallback after deployment too.");
+        }
         Require(!new BattlePlannerOptions().UseTacticalSeed, "Existing planner defaults must remain opt-in.");
         Console.WriteLine($"TACTICAL-PLANNER PASS battle={(naturalRing7 ? "Ring7" : "AllyBuffer")} steps={plan.Steps.Count} turns={plan.TurnsCompleted} nodes={plan.ExpandedNodes} " +
             $"elapsedMs={plan.Elapsed.TotalMilliseconds:F1}: complete model victory, independent replay, immutable native root and shared cancellation/node budgets; native winning acceptance remains separate.");

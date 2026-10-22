@@ -36,6 +36,8 @@ namespace MonsterTrain2Poju.Probe
         private bool runReturned;
         private readonly HashSet<string> declinedUpgrades = new HashSet<string>();
         private readonly HashSet<string> auditedMerchantOffers = new HashSet<string>();
+        private readonly HashSet<string> unselectableMerchantOffers = new HashSet<string>();
+        private string? pendingMerchantOffer;
 
         internal CampaignProgressScenario(ManualLogSource log, bool afterBattle = false)
         {
@@ -169,17 +171,25 @@ namespace MonsterTrain2Poju.Probe
                         x.Affordable, x.Purchasable, x.Claimed, x.GoodState.Unlocked }).ToList() });
                 MerchantGoodUIBase? buy = skipPurchases ? null : goods.Where(x => x.gameObject.activeInHierarchy && x.GoodState != null &&
                     x.Affordable && x.Purchasable && !x.Claimed && x.GoodState.Unlocked &&
+                    !unselectableMerchantOffers.Contains(save.GetCurrentDistance() + ":" + x.GoodState.RewardData.GetReplayDataID()) &&
                     x is MerchantGoodDetailsUI && AcceptUpgrade(x)).FirstOrDefault();
-                if (buy != null) Click(buy.SelectableUI as GameUISelectableButton, "buy", new {
-                    gold = save.GetGold(), reward = buy.GoodState.RewardData.GetReplayDataID(),
-                    rewardType = buy.GoodState.RewardData.GetType().Name });
+                if (buy != null)
+                {
+                    if (Click(buy.SelectableUI as GameUISelectableButton, "buy", new {
+                        gold = save.GetGold(), reward = buy.GoodState.RewardData.GetReplayDataID(),
+                        rewardType = buy.GoodState.RewardData.GetType().Name }))
+                        pendingMerchantOffer = save.GetCurrentDistance() + ":" + buy.GoodState.RewardData.GetReplayDataID();
+                }
                 else Click(merchant.GetCloseButton(), "leave-merchant");
                 return;
             }
             if (screen is DeckScreen deck)
             {
                 if (deck.GetSelectedCardIndex() >= 0)
-                { Click(deck.GetConfirmButton(), "confirm-deck-choice"); return; }
+                {
+                    if (Click(deck.GetConfirmButton(), "confirm-deck-choice")) pendingMerchantOffer = null;
+                    return;
+                }
                 var infos = Field<IEnumerable>(deck, "cardInfos").Cast<object>();
                 bool purge = Field<DeckScreen.Mode>(deck, "mode") == DeckScreen.Mode.Purge;
                 var candidates = infos.Select(x => Field<CardUI>(x, "cardUI"))
@@ -187,7 +197,13 @@ namespace MonsterTrain2Poju.Probe
                     .OrderByDescending(x => (purge ? -1 : 1) * CardValue(x.GetCardState()));
                 foreach (CardUI card in candidates)
                     if (Click(card.SelectableUI as GameUISelectableButton, "deck-choice", CardDescription(card.GetCardState()))) return;
-                Click(deck.GetCloseButton(), "close-deck"); return;
+                if (Click(deck.GetCloseButton(), "close-deck") && pendingMerchantOffer != null)
+                {
+                    unselectableMerchantOffers.Add(pendingMerchantOffer);
+                    Record("decline-unselectable-upgrade", new { offer = pendingMerchantOffer });
+                    pendingMerchantOffer = null;
+                }
+                return;
             }
             if (screen is StoryEventScreen story)
             {

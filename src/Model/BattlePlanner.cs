@@ -135,8 +135,10 @@ namespace MonsterTrain2Poju.Model
                     step.IsEndTurn ? 0 : parent.Actions + 1, Score(state, outcome));
             }
 
-            // Establish an executable horizon fallback before spending the budget
-            // on alternatives. This is charged to the same node/time budget.
+            // Every rollout shares the node/time budget. With the optional
+            // tactical seed, spend it on deployment first: completing an empty
+            // tower's defeat can otherwise displace a useful partial deployment
+            // when the game runtime reaches its time limit.
             void Rollout(Node baseline)
             {
                 while (!Stop() && baseline.Turns < options.MaxTurns && !Terminal(baseline))
@@ -148,8 +150,6 @@ namespace MonsterTrain2Poju.Model
                     Consider(baseline);
                 }
             }
-            Rollout(root);
-
             if (options.UseTacticalSeed)
             {
                 Node tactical = root;
@@ -173,6 +173,11 @@ namespace MonsterTrain2Poju.Model
                         tactical = Child(tactical, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
                     }
                     Consider(tactical);
+                    // Keep a complete forecast whose first action deploys the
+                    // chosen unit. A truncated seed alone cannot be published
+                    // by the advice verifier, and an empty-tower loss would
+                    // discard that useful deployment under the same budget.
+                    if (tactical.Steps.Count == 1) Rollout(tactical);
                 }
                 // This opt-in mode accepts the first complete winning seed. It
                 // remains bounded and replayable, without an optimality claim.
@@ -183,6 +188,8 @@ namespace MonsterTrain2Poju.Model
                         nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, true, unsupported, null);
                 }
             }
+
+            Rollout(root);
 
             // A visible-strength seed supplies deployment, tank placement and
             // available unit abilities before the fixed verification policy

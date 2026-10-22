@@ -4930,7 +4930,11 @@ namespace MonsterTrain2Poju.Model
 
             private RoomCombatState RetainedStatusRoom(WorkingUnit actor, IReadOnlyList<int> targets) =>
                 new RoomCombatState(source.RoomIndex, source.Deployment,
-                    units.Where(unit => unit.Alive || unit == actor || targets.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(),
+                    // Unrelated remote actors are auxiliary combat targets, not
+                    // occupants of this room. Status synchronization must not
+                    // move the live Pyre into the local aura snapshot.
+                    units.Where(unit => unit.Alive && !externalTurnActorIds.Contains(unit.Source.Id) ||
+                        unit == actor || targets.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(),
                     source.ExternalInteractions, context, source.Preview, CompanionBossSnapshot());
 
             private bool StatusTest(WorkingUnit actor, CombatEffect effect, CardTargets targets)

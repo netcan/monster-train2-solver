@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--natural-fragile-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    NaturalFragileChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--natural-ring7-tactics-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3713,6 +3720,12 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
 {
     using var document = ModelJson.ReadFixture(path);
     NaturalRing7TacticsChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-fragile-no-cards.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-natural-fragile-status.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    NaturalFragileChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-event-grafted-equipment", StringComparison.OrdinalIgnoreCase)))
 {

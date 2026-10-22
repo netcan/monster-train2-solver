@@ -46,7 +46,16 @@ namespace MonsterTrain2Poju.Model
             }
             BattleActionEnumeration abilities = UnitAbilityModel.EnumerateActivations(source);
             omitted.AddRange(abilities.UnsupportedAttempts);
-            return abilities.SupportedCandidates.FirstOrDefault(candidate => !ExposesChampion(candidate));
+            return abilities.SupportedCandidates.FirstOrDefault(candidate => !ExposesChampion(candidate) && !EmptyGoldReward(candidate));
+
+            bool EmptyGoldReward(SupportedActionCandidate candidate)
+            {
+                CombatContext? after = candidate.Result.State?.Spawn.Train.Context;
+                CardInstanceState? card = after?.FindCard(candidate.Action.CardInstanceId);
+                CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card?.DataId);
+                return after?.Gold == context.Gold && rule != null && rule.Effects.Count > 0 &&
+                    rule.Effects.Concat(rule.OnCastEffects).All(effect => effect.Type == "RewardGoldPerDragonHoard");
+            }
 
             bool ExposesChampion(SupportedActionCandidate candidate)
             {

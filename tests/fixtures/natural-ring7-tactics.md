@@ -45,3 +45,32 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-ring7-tactic
 The actual player run and natural progression to Ring8 are being checked
 separately. Fragile player capture remains guarded pending that acceptance.
 No full regression or Mac build is used for this batch.
+
+## Game-runtime budgets and natural continuation
+
+The first real-player trial exhausted its 30-second budget before finishing
+the tactical route. Its empty-tower fallback chose EndTurn during deployment.
+The optional tactical seed now starts first and caches a complete forecast
+after its first input on every planning turn. This retains a legal deployment
+when the full seed times out, while the advice verifier still rejects incomplete
+forecasts. One-node, sixty-node and post-deployment controls independently
+replay the bounded fallbacks without changing their parents.
+
+The seed also skips pure Dragon Hoard gold abilities that award zero gold.
+This reduces the natural Ring7 winning route from 67 to 60 inputs, with Pyre62
+preserved. The latest bounded model gate uses 66 nodes; the actual player
+runtime has produced that full route in 27.6 seconds. Whole-battle player and
+independent replay acceptance remain separate until both runs finish.
+
+The 67-input production route has meanwhile passed a fresh native frozen
+replay with Pyre62, every unchanged input/forecast and complete state/RNG.
+Native campaign continuation then reached the natural Fragile encounter.
+`campaign-progressed-ring8-fragile.zip` retains seven preceding native wins,
+the save/choice history and that actual seventh-battle replay. All thirteen
+manifest members pass restore/hash validation. Its SHA256 is
+`6fb9f47594a138cbac6f759a41e62dbf5d7ff8354a93bc5d95690a4997494961`.
+
+The campaign driver previously reopened an enhancer offer after its deck
+picker had no selectable cards. It now records that declined offer for the
+current distance and continues through native UI. A resumed native run declined
+four such offers, reached Ring8 and preserved protected original files.

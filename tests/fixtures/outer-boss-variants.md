@@ -69,14 +69,32 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --outer-boss-fragile-r
   tests/fixtures/outer-boss-fragile-pyre-turn-calibration.mt2f
 ```
 
-The player entry remains limited to AllyBuffer until Fragile has a natural
-progressed encounter and independent native replay. Natural event grafting now
-passes Ring5 real-player advice and independent winning replay. A weaker
-natural Ring7 deck still loses; the stronger merchant-upgraded deck's original
-plain/Consume `CardTraitCopyOnPlay` now passes controlled calibration and its
-complete natural Ring7 action chain matches after synchronizing Pyre heals
-into the shared aura world. That fixed policy still loses; a winning natural
-route remains a prerequisite
-for reaching the natural Fragile encounter. The explicit native "leave" route
-loses at ring six on all three preferred deployment floors and remains diagnostic.
-No full regression or Mac build was run for this increment.
+The player entry remains limited to AllyBuffer pending Fragile winning-player
+and independent native replay acceptance. Natural progression is now available:
+the unchanged strong Ring7 deck wins in native frozen replay with Pyre62 and
+continues through native campaign UI into Ring8. The checkpoint, choice history,
+seventh-battle replay and all thirteen verified restore members are retained in
+`campaign-progressed-ring8-fragile.zip`. See [Ring7 tactics](natural-ring7-tactics.md).
+
+The natural Fragile no-card baseline preserves Pyre62 and seven preceding wins.
+Five EndTurns reach a real loss with zero capture/mismatch/unsupported/pending
+failures. A card-playing route exposed a separate synchronization bug: temporary
+local status scopes included an unrelated remote Pyre. The aura world could
+then relocate and lose it while retaining its physical spawn-point occupant.
+Those scopes now exclude unrelated external actors, retaining the actual actor
+and selected targets. `full-battle-natural-fragile-status.mt2f` matches all 46
+frozen inputs: 39 plays and seven EndTurns, with zero failure counters and
+settled terminal effects. The affected turn-three boundary retains its live
+Pyre in physical room three and passes two independent immutable replays.
+Both natural archives are losses; they do not establish a Fragile victory.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-fragile-only `
+  tests/fixtures/full-battle-natural-fragile-no-cards.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-fragile-only `
+  tests/fixtures/full-battle-natural-fragile-status.mt2f
+```
+
+The explicit native "leave" route still loses at ring six on all three preferred
+deployment floors and remains diagnostic. No full regression or Mac build is
+used for these focused increments.
