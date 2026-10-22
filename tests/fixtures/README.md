@@ -9,6 +9,9 @@ fresh native replay: 57 plays/ten EndTurns, Pyre84, all four failure counters
 zero in both processes. The seed42 seven-win input, original full-health boss,
 acquired relics, every forecast and complete state/RNG remain checked. See
 [natural Corrupter player evidence](player-corrupter-winning.md).
+`campaign-completed-corrupter.zip` additionally retains the native eight-win
+Standard completion, hash-verified inherited winning replay and post-EndGame
+story observation; restore verifies all 33 payload files.
 
 The original trial-gold campaign relic now also works in actual player battle
 inputs. A natural seed42 Ring7 checkpoint, previously rejected before any

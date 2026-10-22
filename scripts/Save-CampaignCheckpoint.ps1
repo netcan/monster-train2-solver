@@ -72,13 +72,54 @@ foreach ($name in @('saves/save-singlePlayer.json', 'metagameSave.json', 'prefer
 if ($CompletedRun) {
     $members['completed-save-singlePlayer.json'] = [IO.File]::ReadAllBytes($savePath)
     $members['campaign-summary.json'] = [IO.File]::ReadAllBytes((Join-Path $Profile 'campaign-summary.json'))
-    $members['campaign-battle-replay.mt2f'] = [IO.File]::ReadAllBytes((Join-Path $Profile 'full-battle.mt2f'))
+    $replayProfile = $Profile
+    $replayPath = Join-Path $replayProfile 'full-battle.mt2f'
+    $inheritedReplay = -not (Test-Path -LiteralPath $replayPath)
+    if ($inheritedReplay) {
+        # A native post-battle resume can finish rewards without replaying combat.
+        # Resolve only its immediate, hash-verified input; retain that process's
+        # actual summary, including any failed overall campaign continuation.
+        $input = Get-Content -LiteralPath (Join-Path $Profile 'campaign-input.json') -Raw | ConvertFrom-Json
+        $replayProfile = [IO.Path]::GetFullPath($input.InputProfile).TrimEnd('\')
+        if ((Split-Path $replayProfile -Parent) -ine $profilesRoot -or $replayProfile -ieq $Profile) {
+            throw 'Inherited final-battle replay must come from the immediate isolated input.'
+        }
+        $parentSave = Join-Path $replayProfile 'saves/save-singlePlayer.json'
+        $parentSummary = Get-Content -LiteralPath (Join-Path $replayProfile 'campaign-summary.json') -Raw | ConvertFrom-Json
+        $parentState = Get-Content -LiteralPath $parentSave -Raw | ConvertFrom-Json
+        if ((Get-FileHash -LiteralPath $parentSave -Algorithm SHA256).Hash -ine $input.InputSaveSHA256 -or
+            -not $parentSummary.OriginalFilesUnchanged -or -not $parentSummary.BattleReplayPassed -or
+            $parentState.gameSequence -ne 2 -or $parentState.runState.distance -ne 8 -or $parentState.wasDevCheatUsed -or
+            $parentState.completedBattles.Count -ne 8 -or @($parentState.completedBattles | Where-Object bossHPRemaining -GT 0).Count) {
+            throw 'Inherited replay input is not an unchanged native eight-win post-battle checkpoint.'
+        }
+        $replayPath = Join-Path $replayProfile 'full-battle.mt2f'
+    }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $replayDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($replayPath)
+    try { $replay = $replayDocument.RootElement.ToObjectGraph() } finally { $replayDocument.Dispose() }
+    if ($replay.NativeWon -ne $true -or $replay.TerminalEffectsSettled -ne $true -or
+        $null -eq $replay.CaptureFailures -or $replay.CaptureFailures -ne 0 -or $replay.Mismatches -ne 0 -or
+        $replay.Unsupported -ne 0 -or $replay.Pending -ne 0) {
+        throw 'Completed campaign requires a settled native winning final-battle replay with zero failure counters.'
+    }
+    if ($inheritedReplay -and ($replay.NativeRunInput.Distance -ne 7 -or $replay.NativeRunInput.WasDevCheatUsed -ne $false -or
+        $replay.RollingDecisions.Count -eq 0 -or @($replay.RollingDecisions | Where-Object {
+            $_.Mode -ne 'replay' -or $_.Nodes -ne 0 -or $_.Difference -or $null -eq $_.Actual }).Count)) {
+        throw 'Inherited final-battle replay lacks the complete original Ring8 native input chain.'
+    }
+    $members['campaign-battle-replay.mt2f'] = [IO.File]::ReadAllBytes($replayPath)
+    $members['completed-battle-replay-source.json'] = [Text.Encoding]::UTF8.GetBytes(([pscustomobject]@{
+        Inherited = $inheritedReplay; SourceProfile = Split-Path $replayProfile -Leaf;
+        ArchiveSHA256 = Get-SHA256 $members['campaign-battle-replay.mt2f'];
+        SourceInputSaveSHA256 = $(if ($inheritedReplay) { $input.InputSaveSHA256 } else { $null })
+    } | ConvertTo-Json))
 }
 # Bundle the retained native choice history and each predecessor's input hash.
 $cursor = $Profile; $visited = @{}; $depth = 0
 while ((Split-Path $cursor -Parent) -ieq $profilesRoot -and (Test-Path -LiteralPath $cursor) -and -not $visited.ContainsKey($cursor)) {
     $visited[$cursor] = $true
-    foreach ($name in @('campaign-audit.jsonl', 'campaign-parent-audit.jsonl', 'campaign-input.json', 'native-checkpoint-input.json', 'campaign-battle-replay.mt2f')) {
+    foreach ($name in @('campaign-audit.jsonl', 'campaign-parent-audit.jsonl', 'campaign-input.json', 'native-checkpoint-input.json', 'campaign-battle-replay.mt2f', 'native-story-progression.json')) {
         $path = Join-Path $cursor $name
         $memberName = if ($depth -eq 0) { $name } else { "history-$depth-$name" }
         if (Test-Path -LiteralPath $path) { $members[$memberName] = [IO.File]::ReadAllBytes($path) }

@@ -19,7 +19,7 @@
 | Time | CardsFrozen | 0 | 25 |
 | Herzal | DamageDoneByTrainStewards | 719 | 10000 |
 
-挑战模式剧情奖励另要求额外解锁两个薪火之心；六个对应旧氏族奖励。
+挑战模式剧情奖励另要求额外解锁两个薪火之心；六个对应 `UnlockCrew` 奖励。
 表中是这个已完成档案的实际进度，不代表用户实机存档或其他隔离分支。
 三个击败真终局后解锁的薪火之心不计入这九个前置目标。
 
@@ -35,3 +35,8 @@ pwsh -NoProfile -File scripts/Run-CampaignProgress.ps1 -InputProfile <restored-p
 
 该模式在档案加载完成后立即读取原生条件，不点击解锁、不调用作弊命令。
 后续自然战役完成时也会自动写出同样的快照；检查点打包可保留该文件。
+
+seed42 的自然腐化者路线现也完成原生八战 Standard 结算。其
+`campaign-completed-corrupter.zip` 已包含 `AfterEndGame=true` 的快照，
+结果同样为额外薪火之心 0/9、真终局未解锁。该档案的全部 33 个载荷恢复校验
+通过；它与表中 seed424242 分支分别保留，不合并两个隔离分支的进度。

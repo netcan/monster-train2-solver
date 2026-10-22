@@ -146,6 +146,8 @@ namespace MonsterTrain2Poju.Probe
             }
             IScreen screen = screens.GetScreen(screens.GetTopScreen());
             if (screen is DialogScreen dialog) { Click(dialog.GetButton1(), "dialog"); return; }
+            if (screen is UnlockScreen unlock)
+            { Click(unlock.GetDefaultGameUISelectable() as GameUISelectableButton, "collect-unlock"); return; }
             if (screen is RunOpeningScreen opening) { Click(opening.GetConfirmButton(), "opening"); return; }
             if (screen is RunSetupScreen runSetup)
             {
