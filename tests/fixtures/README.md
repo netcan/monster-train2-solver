@@ -1,8 +1,16 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 866 archives (794 full battles and
-72 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-22): 868 archives (795 full battles and
+73 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-event-grafted-equipment.mt2f` covers naturally acquired
+Firebrand/MeatShield grafting, its temporary equipment trait, severing and
+subsequent host rebirth. The unchanged native battle wins with 27 Pyre HP;
+33 plays, nine EndTurns, full state/RNG and sixteen immutable branches match.
+`titanite-calibration.mt2f` adds 24 isolated native damage/piercing controls.
+Other event graft pairs and combined Titanite shields remain closed; see
+[event graft scope](event-grafted-equipment.md).
 
 `full-battle-outer-boss-fragile-no-cards.mt2f` and its three component archives
 calibrate original Fragile creation, initial placement, casting movement, enemy

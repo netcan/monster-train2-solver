@@ -468,7 +468,7 @@ namespace MonsterTrain2Poju.Model
             "spikes", "lifesteal", "fragile", "piercing", "immune", "immobile",
             "relentless", "sweep", "sniper", "rooted", "haste", "untouchable", "endless",
             "buff", "debuff", "regen", "poison", "decay", "corruption", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
-            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "duality", "conduit",
+            "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "titanite", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
             "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment"
         };
@@ -1046,6 +1046,8 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatStatus status in unit.Statuses)
                     if (!KnownStatuses.Contains(status.Id))
                         return "Unmodeled status " + status.Id + " on " + unit.AssetKey;
+                if (unit.Status("titanite") != null && (unit.Status("titanskin") != null || unit.Status("damage shield") != null))
+                    return "Titanite with Titanskin or Damage Shield requires a native damage-order calibration.";
                 if (!state.Deployment && unit.Status("valor") != null &&
                     state.Context?.StatusRules.FirstOrDefault(rule => rule.Id == "armor") == null)
                     return "Valor requires the armor status definition.";
@@ -2543,7 +2545,7 @@ namespace MonsterTrain2Poju.Model
                 bool cardPiercing = context?.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AllDamageIsPiercing)) == true;
                 if (damage > 0 && !cardPiercing &&
                     (target.Has("damage shield") || target.Has("spell shield") ||
-                     target.Has("armor") || target.Has("titanskin")))
+                     target.Has("armor") || target.Has("titanskin") || target.Has("titanite")))
                 {
                     int piercingCardId = sourceCardId > 0 ? sourceCardId : actor?.Source.SpawnerCardId ?? 0;
                     CardInstanceState? piercingCard = piercingCardId > 0 ? context?.FindCard(piercingCardId) : null;
@@ -2611,6 +2613,7 @@ namespace MonsterTrain2Poju.Model
                     Trigger(target, "damage shield", 1);
                     damage = 0;
                 }
+                if (target.Has("titanite")) damage = TitaniteModel.Adjust(damage, cardPiercing);
                 if (damage > 0 && target.Has("titanskin") && !cardPiercing && !unitPiercing)
                 {
                     CombatStatus titanSkin = target.Statuses["titanskin"];

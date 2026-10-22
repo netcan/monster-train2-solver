@@ -65,6 +65,8 @@ namespace MonsterTrain2Poju.Probe
                     .SelectMany(effect => effect.CardPool)).Distinct().ToArray();
             definitions = definitions.Concat(nativeCards.Select(card => card.GetSpawnCharacterData()?.GetGraftedEquipment())
                 .Where(card => card != null).Select(card => card!.GetID())).Distinct().ToArray();
+            definitions = definitions.Concat(nativeCards.Select(card => card.GetCardStateModifiers().GraftedEquipmentCardState)
+                .Where(card => card != null).Select(card => card!.GetCardDataID())).Distinct().ToArray();
             definitions = definitions.Concat(nativeCards.SelectMany(card => card.GetCardStateModifiers().BoxedCardStates)
                 .Select(card => card.GetCardDataID())).Distinct().ToArray();
             definitions = definitions.Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)

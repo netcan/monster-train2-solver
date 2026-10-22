@@ -34,9 +34,16 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithCard(spawner.WithGraftedEquipment(id));
             }
             CardInstanceState? card = context.FindCard(id);
+            if (card != null && !CardGraftedEquipmentModel.Present(card) && spawner.DataId == CardGraftedEquipmentModel.EventHostId &&
+                rule.Card.DataId == CardGraftedEquipmentModel.EventEquipmentId && card.DataId == rule.Card.DataId)
+            {
+                try { card = CardGraftedEquipmentModel.AttachEventTrait(card); }
+                catch (InvalidOperationException error) { return Fail(error.Message); }
+                context = context.WithCard(card);
+            }
             if (card == null || !CardGraftedEquipmentModel.Present(card))
                 return Fail("Grafted birth requires a calibrated equipment trait and source reference.");
-            if (card.MaskDescriptor!.BaseTraits.Any(trait => trait.GraftSevered == true))
+            if (card.MaskDescriptor!.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait => trait.GraftSevered == true))
                 return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
             if (card.EquippedUnitId > 0) return Fail("Duplicated graft equipment requires independent native calibration.");
             if (context.CardInstances!.All(value => value.InstanceId != id))

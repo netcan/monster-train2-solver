@@ -34,15 +34,16 @@ namespace MonsterTrain2Poju.Probe
                 if (card.IsConsumeRemainingEnergyCostType() != (data.GetCostType() == CardData.CostType.ConsumeRemainingEnergy) ||
                     card.IsNonPlayableEnergyCostType() != (data.GetCostType() == CardData.CostType.NonPlayable)) interactions.Add("Changed card cost type");
                 int rawCost = (int)AccessTools.Field(typeof(CardState), "cost").GetValue(card);
+                bool captureGraft = UnitGraftProbe.Known(card);
                 var state = new CardInstanceState(cardId(card), card.GetCardDataID(),
                     Modifiers(card.GetCardStateModifiers(), CardBranchMaskProbe.Enabled && (data.GetID() == JackInTheBoxProbe.CardId || data.GetEffects().Any(effect =>
-                        effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")), captureGraft: UnitGraftProbe.Known(data.GetID())), Modifiers(card.GetTemporaryCardStateModifiers()),
+                        effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")), captureGraft: captureGraft), Modifiers(card.GetTemporaryCardStateModifiers()),
                     card.GetLastPlayedCost(), card.GetLastForgedAmount(), card.GetCurrentScenarioPlayCount(), interactions,
                     Counters(card), DamageScalingProbe.Capture(card), StatusScalingProbe.Capture(card), UnitUpgradeScalingProbe.Capture(card), RoomCapacityProbe.Traits(card),
                     FullBattleTrace.Active?.EquippedUnitId(card) ?? 0, PlayedRoomUnits(card), RawPlayedRoomUnits(card),
                     forgeCountScalingTraits: ForgeCountScalingTraits(card),
                     rawCostOverride: rawCost == data.GetCost() ? null : rawCost, canBeCopied: card.CanBeCopied(),
-                    trainHealScalingTraits: TrainHealScalingTraits(card), graftedEquipmentCardId: UnitGraftProbe.Known(data.GetID()) &&
+                    trainHealScalingTraits: TrainHealScalingTraits(card), graftedEquipmentCardId: captureGraft &&
                         card.GetCardStateModifiers().GraftedEquipmentCardState is CardState graft ? cardId(graft) : (int?)null);
                 CardPlayRule definition = BattleActionProbe.Definition(data);
                 CardPlayRule rule = CardModifierModel.Resolve(definition, state);
@@ -75,7 +76,7 @@ namespace MonsterTrain2Poju.Probe
                 int cardHealth = rule.SpawnUnit?.Health ?? 0;
                 if (definition.SpawnUnit != null && state.Permanent.Upgrades.Concat(state.Temporary.Upgrades).Any(upgrade => upgrade.DamageBuff != 0))
                     cardAttack = CardModifierModel.UpgradedStat(definition.SpawnUnit.BaseAttack, "Damage", true, state.Permanent, state.Temporary);
-                if (definition.SpawnUnit?.Modifiers?.Graft != null && !card.IsGraftSevered() &&
+                if (captureGraft && !card.IsGraftSevered() &&
                     card.TryGetGraftedEquipment(out CardState grafted, managers.GetSaveManager()))
                 {
                     EquipmentDefinition gear = BattleActionProbe.Definition(managers.GetSaveManager().GetAllGameData().FindCardData(grafted.GetCardDataID())!).Equipment!;
@@ -189,7 +190,7 @@ namespace MonsterTrain2Poju.Probe
                         Modifiers(card.GetTemporaryCardStateModifiers(), boxDepth: boxDepth + 1))).ToArray();
                 }
             }
-            if (modifiers.GetTemporaryTraits().Any(trait => !CardBranchMaskProbe.Enabled || trait is not (CardTraitFreeze or CardTraitSelfPurge or CardTraitRetain)) ||
+            if (modifiers.GetTemporaryTraits().Any(trait => !CardBranchMaskProbe.Enabled || trait is not (CardTraitFreeze or CardTraitSelfPurge or CardTraitRetain or CardTraitGraftedEquipment)) ||
                 modifiers.GetTraitReplacements().Count > 0 && !CardBranchMaskProbe.Enabled)
                 interactions.Add("Temporary/replaced card traits");
             return new CardModifiers(new CardStatModifier(Field("additionalDamage"), Field("additionalMaxHP"), Field("additionalCost"),

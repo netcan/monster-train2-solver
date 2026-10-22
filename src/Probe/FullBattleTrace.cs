@@ -179,6 +179,7 @@ namespace MonsterTrain2Poju.Probe
                 CardUpgradeLifecycleCalibration.Capture(this);
                 HoldoverVariantCalibration.Capture(this);
                 PermanentTraitCalibration.Capture(this);
+                TitaniteCalibration.Capture(this);
                 RelicCardUpgradeCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_QUERIES") == "1") StatisticQueryCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_OVERFLOW") == "1") StatisticOverflowCalibration.Capture(this);
@@ -418,7 +419,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalDiscardDrawScenario.Enabled ? cards.GetDrawingDeckCardsDisabledThisTurn() : (bool?)null),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde", "duality" }.Concat(OriginalOpeningMorselsScenario.Enabled || TriggeredSummonProbe.Enabled || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled || HasCopyUnitsCard(managers) ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying", "endless" })
-                    .Concat(registry.Any(card => UnitGraftProbe.Known(card.DataId)) ? new[] { "unit_grafted_equipment" } : Array.Empty<string>())
+                    .Concat(registry.Any(card => UnitGraftProbe.Known(card.DataId) || card.MaskDescriptor?.GraftedEquipment != null) ? new[] { "unit_grafted_equipment" } : Array.Empty<string>())
                     .Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
                 ((IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards))

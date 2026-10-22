@@ -32,7 +32,7 @@ namespace MonsterTrain2Poju.Model
             if (descriptor?.TemporaryTraits.Any(trait => trait.RuntimeType == "CardTraitFreeze") != true) return card;
             return card.WithMaskDescriptor(new CardMaskDescriptor(descriptor.Definition, descriptor.BaseCost,
                 descriptor.BaseTraits, descriptor.AuthoredCastEffects, descriptor.Purified, descriptor.PermanentGraft,
-                descriptor.TemporaryTraits.Where(trait => trait.RuntimeType != "CardTraitFreeze").ToArray(), descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers, descriptor.HoldoverUpgradePending));
+                descriptor.TemporaryTraits.Where(trait => trait.RuntimeType != "CardTraitFreeze").ToArray(), descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers, descriptor.HoldoverUpgradePending, descriptor.GraftedEquipment));
         }
 
         internal static TrainCombatResult ApplySelected(TrainCombatState source, int roomIndex, bool preview)

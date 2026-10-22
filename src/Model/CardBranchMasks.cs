@@ -32,28 +32,29 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CardSourceTrait>? SourceTraits { get; }
         public IReadOnlyList<CardLifecycleTrigger>? KillTriggers { get; }
         public bool? HoldoverUpgradePending { get; }
+        public UnitGraftRule? GraftedEquipment { get; }
         public bool ShouldSerializeHoldoverUpgradePending() => HoldoverUpgradePending.HasValue;
         public CardMaskDescriptor(CardMaskDefinition definition, int baseCost, IReadOnlyList<CardTraitValue> baseTraits,
             IReadOnlyList<string> authoredCastEffects, bool purified = false, bool permanentGraft = false,
             IReadOnlyList<CardTraitValue>? temporaryTraits = null, IReadOnlyList<CardTraitReplacement>? permanentReplacements = null,
             IReadOnlyList<CardSourceTrait>? sourceTraits = null, IReadOnlyList<CardLifecycleTrigger>? killTriggers = null,
-            bool? holdoverUpgradePending = null)
+            bool? holdoverUpgradePending = null, UnitGraftRule? graftedEquipment = null)
         { Definition = definition; BaseCost = baseCost; BaseTraits = Array.AsReadOnly(baseTraits.ToArray());
             TemporaryTraits = Array.AsReadOnly((temporaryTraits ?? Array.Empty<CardTraitValue>()).ToArray());
             PermanentReplacements = Array.AsReadOnly((permanentReplacements ?? Array.Empty<CardTraitReplacement>()).ToArray());
             AuthoredCastEffects = Array.AsReadOnly(authoredCastEffects.ToArray()); Purified = purified; PermanentGraft = permanentGraft;
             SourceTraits = sourceTraits == null ? null : Array.AsReadOnly(sourceTraits.ToArray());
             KillTriggers = killTriggers == null ? null : Array.AsReadOnly(killTriggers.ToArray());
-            HoldoverUpgradePending = holdoverUpgradePending; }
+            HoldoverUpgradePending = holdoverUpgradePending; GraftedEquipment = graftedEquipment; }
         internal CardMaskDescriptor WithBaseTraits(IReadOnlyList<CardTraitValue> traits) => new CardMaskDescriptor(
-            Definition, BaseCost, traits, AuthoredCastEffects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements, SourceTraits, KillTriggers, HoldoverUpgradePending);
+            Definition, BaseCost, traits, AuthoredCastEffects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements, SourceTraits, KillTriggers, HoldoverUpgradePending, GraftedEquipment);
         internal CardMaskDescriptor WithGraft(bool graft) => new CardMaskDescriptor(
-            Definition, BaseCost, BaseTraits, AuthoredCastEffects, Purified, graft, TemporaryTraits, PermanentReplacements, SourceTraits, KillTriggers, HoldoverUpgradePending);
+            Definition, BaseCost, BaseTraits, AuthoredCastEffects, Purified, graft, TemporaryTraits, PermanentReplacements, SourceTraits, KillTriggers, HoldoverUpgradePending, GraftedEquipment);
         internal CardMaskDescriptor WithAuthoredCastEffects(IReadOnlyList<string> effects) => new CardMaskDescriptor(
-            Definition, BaseCost, BaseTraits, effects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements, SourceTraits, KillTriggers, HoldoverUpgradePending);
+            Definition, BaseCost, BaseTraits, effects, Purified, PermanentGraft, TemporaryTraits, PermanentReplacements, SourceTraits, KillTriggers, HoldoverUpgradePending, GraftedEquipment);
         internal CardMaskDescriptor WithHoldover(IReadOnlyList<CardTraitValue> bases, IReadOnlyList<CardTraitValue> temporary, bool? upgradePending) =>
             new CardMaskDescriptor(Definition, BaseCost, bases, AuthoredCastEffects, Purified, PermanentGraft,
-                temporary, PermanentReplacements, SourceTraits, KillTriggers, upgradePending);
+                temporary, PermanentReplacements, SourceTraits, KillTriggers, upgradePending, GraftedEquipment);
     }
 
     public static class CardBranchMaskModel

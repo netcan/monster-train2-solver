@@ -451,7 +451,7 @@ namespace MonsterTrain2Poju.Model
                 destination = destination.WithMaskDescriptor(new CardMaskDescriptor(d.Definition, d.BaseCost, d.BaseTraits,
                     d.AuthoredCastEffects, d.Purified, d.PermanentGraft, d.TemporaryTraits,
                     d.PermanentReplacements.Concat(source.MaskDescriptor.PermanentReplacements).ToArray(),
-                    d.SourceTraits, d.KillTriggers, d.HoldoverUpgradePending));
+                    d.SourceTraits, d.KillTriggers, d.HoldoverUpgradePending, d.GraftedEquipment));
             return destination;
         }
         private static CardModifiers Copy(CardModifiers destination, CardModifiers source, HashSet<string> ignored,

@@ -7,7 +7,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$fixtureNames = @('full-battle-player-boss-rolling-search.mt2f', 'full-battle-player-boss-rolling-replay.mt2f',
+$fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'full-battle-player-boss-rolling-search.mt2f', 'full-battle-player-boss-rolling-replay.mt2f',
     'full-battle-outer-boss-fragile-no-cards.mt2f', 'outer-boss-fragile-birth-calibration.mt2f',
     'outer-boss-fragile-phase-calibration.mt2f', 'boss-action-fragile-controller-calibration.mt2f',
     'outer-boss-fragile-relentless-phase-calibration.mt2f', 'outer-boss-fragile-pyre-calibration.mt2f',

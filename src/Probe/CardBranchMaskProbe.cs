@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Probe
                 holdoverUpgradePending: !CardTraitCompositionProbe.Bases(card).Concat(card.GetTemporaryCardStateModifiers().GetTemporaryTraits())
                     .Any(trait => trait is CardTraitRetain)
                     ? card.GetTraitStates().OfType<CardTraitRetain>().Select(trait => CardTraitCompositionProbe.Value(trait).HoldoverPending).FirstOrDefault()
-                    : null);
+                    : null, graftedEquipment: UnitGraftProbe.EventRule(card));
         }
         internal static CardUpgradeMaskMetadata? Upgrade(CardUpgradeState upgrade) => !Enabled ? null :
             new CardUpgradeMaskMetadata(upgrade.GetStatusEffectUpgrades().Select(status =>

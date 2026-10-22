@@ -101,7 +101,8 @@ namespace MonsterTrain2Poju.Model
             CardCycleState cards = context.Cards;
             CardPileState[] piles = context.OtherPiles!.Select(pile => pile == standby ? CardPileModel.Remove(pile, card.InstanceId) : pile.Name == "Exhausted" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
             CardInstanceState? instance = context.FindCard(card.InstanceId);
-            bool intactGraft = instance?.MaskDescriptor?.BaseTraits.Any(trait => trait.RuntimeType == CardGraftedEquipmentModel.Trait && trait.GraftSevered == false) == true;
+            bool intactGraft = instance?.MaskDescriptor?.BaseTraits.Concat(instance.MaskDescriptor.TemporaryTraits)
+                .Any(trait => trait.RuntimeType == CardGraftedEquipmentModel.Trait && trait.GraftSevered == false) == true;
             if (instance != null && CardGraftedEquipmentModel.Present(instance))
                 context = context.WithCard(CardGraftedEquipmentModel.SetSevered(instance, true));
             if (condition.ReturnToHand || intactGraft)

@@ -50,7 +50,7 @@ namespace MonsterTrain2Poju.Probe
                     .Where(modifier => modifier.GetType().Name == UnitRoomTriggerCountModel.Type)
                     .Cast<RoomStateModifierBase>().Select(modifier => modifier.GetRoomModifierData())),
                 spawnCopySubtype: RoomSpawnCopyProbe.UnitRule(unit.GetRoomStateModifiers().OfType<RoomStateModifierBase>()
-                    .Select(modifier => modifier.GetRoomModifierData())), graft: UnitGraftProbe.Rule(unit.GetSourceCharacterData()),
+                    .Select(modifier => modifier.GetRoomModifierData())), graft: UnitGraftProbe.EventRule(spawner) ?? UnitGraftProbe.Rule(unit.GetSourceCharacterData()),
                 synergizeStatuses: unit.GetTriggers().Any(trigger => trigger.GetEffectStates().Any(effect => effect.GetCardEffect() is CardEffectSynergizeStatusEffects))
                     ? ((Dictionary<string, int>)AccessTools.Field(state.GetType(), "synergizeStatusEffects").GetValue(state))
                         .Select(pair => new StatisticCount(pair.Key, pair.Value)).ToArray() : null, sentry: SentryAttackProbe.Capture(unit), troopAura: TroopAuraProbe.Capture(unit));

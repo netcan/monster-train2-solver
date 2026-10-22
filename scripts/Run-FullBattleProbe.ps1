@@ -17,6 +17,7 @@ param(
     [switch] $HoldoverCalibration,
     [switch] $HoldoverVariants,
     [switch] $PermanentTraits,
+    [switch] $TitaniteCalibration,
     [switch] $ConduitMovement,
     [switch] $RoomMoonCallbacks,
     [switch] $RoomMoonCallbacksShade,
@@ -1434,6 +1435,7 @@ if ($OriginalPermafrostCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($HoldoverCalibration) { $environment['MT2_PROBE_HOLDOVER_CALIBRATION'] = '1' }
 if ($HoldoverVariants) { $environment['MT2_PROBE_HOLDOVER_VARIANTS'] = '1' }
 if ($PermanentTraits) { $environment['MT2_PROBE_PERMANENT_TRAITS'] = '1' }
+if ($TitaniteCalibration) { $environment['MT2_PROBE_TITANITE'] = '1' }
 if ($OriginalOverflowCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-overflow-cards' }
 if ($OriginalCorruptRestricted) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupt-restricted' }
 if ($OriginalStatusStackDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-stack-damage' }
