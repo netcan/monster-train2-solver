@@ -146,6 +146,7 @@ namespace MonsterTrain2Poju.Probe
         {
             harmony.CreateClassProcessor(typeof(CardIdentityPatch)).Patch();
             harmony.CreateClassProcessor(typeof(MonsterIdentityPatch)).Patch();
+            harmony.CreateClassProcessor(typeof(HeroIdentityPatch)).Patch();
         }
 
         internal void Checkpoint(string label)
@@ -1721,6 +1722,19 @@ namespace MonsterTrain2Poju.Probe
                 if (Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 Action<CharacterState> callback = onCharacterStateCreated;
                 onCharacterStateCreated = unit => { Active?.UnitId(unit); callback?.Invoke(unit); };
+            }
+        }
+
+        // Wave groups create enemies before arranging their physical front/back
+        // order. Allocate identities at creation in both observer assemblies.
+        [HarmonyPatch(typeof(HeroManager), "CreateHeroState")]
+        private static class HeroIdentityPatch
+        {
+            private static void Prefix(ref Action<CharacterState, CharacterData> afterCharacterCreated)
+            {
+                if (Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                Action<CharacterState, CharacterData> callback = afterCharacterCreated;
+                afterCharacterCreated = (unit, data) => { Active?.UnitId(unit); callback?.Invoke(unit, data); };
             }
         }
 
