@@ -43,9 +43,11 @@ action/controller payload validation. Level9 and uncalibrated Covenant birth
 effects retain their guards.
 The bounded pair checker requires the actual loss and never grants winning
 acceptance; the existing winning-pair checker still requires native victories.
-Native player availability is now accepted for this Fragile route. A natural
-Fragile victory and general strategy quality remain open. No full fixture
-regression or Mac build is performed.
+Native player availability is accepted for this bounded Fragile route. A
+separate twelve-turn/30-second pair now proves a natural victory; see
+[winning Fragile evidence](player-fragile-winning.md). This bounded pair still
+requires losses and does not inherit that result. General strategy quality
+remains open. No full fixture regression or Mac build is performed.
 
 ```powershell
 scripts/Check-PlayerAdvisor.ps1 -Case FragileBounded -SkipBuild

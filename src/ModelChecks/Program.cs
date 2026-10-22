@@ -2035,7 +2035,7 @@ if (args.Length == 3 && args[0] == "--player-boss-fragile-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
-    PlayerOuterBossChecks.WinningPair(source.RootElement, replay.RootElement, "Boss_Level8_Fragile");
+    PlayerOuterBossChecks.FragileWinningPair(source.RootElement, replay.RootElement);
     return;
 }
 

@@ -30,6 +30,9 @@ card asset names enter this policy. The seed shares all node/time/action and
 cancellation limits. The first complete winning seed may return immediately;
 this is a bounded recommendation without an optimality claim. A seed that does
 not win continues through the existing planner within the remaining budget.
+When player advice permits shorter windows, the initial deployment fallback
+ends after one complete turn. This reserves the rest of the shared budget for
+the tactical card sequence. Strict callers keep their full-horizon fallback.
 
 ```powershell
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-battle tests/fixtures/full-battle-progressed-ring8-gold-no-cards.mt2f .probe-runs/tactical-candidate.mt2f 12 10000 2 --tactical
@@ -44,6 +47,9 @@ All three whole-battle commands use the first `RollingDecisions.Root` when
 present. Player capture and development capture have separate instance-ID
 namespaces; taking `Actions[0].Before` from a player trace cannot be replayed by
 the player driver. Non-rolling traces retain the action/turn-root fallback.
+Replay player-root candidates with `-PlayerAdvisor`. A fresh capture is needed
+when older snapshots omit newly captured definition metadata; replay comparisons
+remain strict rather than filling those fields from assumptions.
 The planner's rolling 12-turn/10,000-ms candidate completed
 50 decisions with zero unsupported reasons and model Pyre21 in 163.84 seconds,
 including independent replay of all forecasts. The subsequent live rolling
@@ -107,13 +113,15 @@ a front-rearrangement card when both actions are legal and the card restores
 the original tank. Missing or unaffordable restoration retains the champion
 protection guard. This uses captured effects and unit roles, without card or
 encounter names. The natural Fragile deployment root produces a 54-input,
-eight-EndTurn model victory with Pyre2; model-only reproduction is:
+nine-EndTurn model victory with Pyre2; model-only reproduction is:
 
 ```powershell
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll policy-battle tests/fixtures/full-battle-player-boss-fragile-bounded-search.mt2f .probe-runs/fragile-shift-candidate.mt2f 0
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-shift-only .probe-runs/fragile-shift-candidate.mt2f
 ```
 
-The focused checker covers both restoration counterexamples, independent
-winning full-state/RNG replay, and immutable roots. Native victory acceptance
-remains separate from this model regression.
+The focused checker covers both legal restoration counterexamples, independent
+winning full-state/RNG replay, and immutable roots. The full battle now wins in
+55 of 56 allowed nodes; a two-node control retains an explicitly shorter complete
+deployment turn. A separate actual player source and fresh native replay now
+both win at Pyre2 with all four counters zero; see [native winning evidence](player-fragile-winning.md).

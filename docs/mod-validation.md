@@ -682,3 +682,19 @@ three-turn/3,000-ms tactical configuration.
 This extends controlled deck acceptance, with original enemy HP/phases and
 Pyre80. Natural victory remains open. The unmodified ordinary ally pair still
 passes. See [numeric ally player evidence](../tests/fixtures/player-true-final-boss-ordinary-upgraded.md).
+
+## Natural Fragile winning player pair · 2026-10-23
+
+The actual player entry now wins from the unchanged natural Ring8 checkpoint:
+45 plays/nine EndTurns, 54 inputs, Pyre2. A freshly restored checkpoint in a
+new game process repeats all inputs and wins at Pyre2. Complete roots,
+published forecasts, successors and RNG match; both settle, exit normally,
+leave protected files unchanged and retain four zero native failure counters.
+
+The first consumed publication searches the complete victory; all 53 later
+decisions retain the exact winning suffix with zero search work. Native panel
+and pointer/pause/hide/refresh interactions pass; 603 source and 125 replay
+captures are pure. At twelve turns/30,000 ms with tactical candidates and
+bottom deployment, the first consumed total response is 51.09 seconds.
+Retained response median/P95 is 2.38/3.96 seconds. The default bounded-loss
+pair remains separate. See [complete winning evidence](../tests/fixtures/player-fragile-winning.md).

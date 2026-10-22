@@ -44,6 +44,28 @@ internal static class PlayerOuterBossChecks
         Console.WriteLine($"PLAYER-BOSS-WINNING-CONTINUATION PASS decisions={records.Length} retained={records.Length - 1}: every publication wins; full roots/RNG, exact suffixes and fresh native replay verified.");
     }
 
+    internal static void FragileWinningPair(FixtureValue source, FixtureValue replay)
+    {
+        Require(source.GetProperty("NativeWon").GetBoolean() && replay.GetProperty("NativeWon").GetBoolean(),
+            "Natural Fragile winning acceptance requires two native victories.");
+        WinningPair(source, replay, "Boss_Level8_Fragile");
+        var root = source.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        Require(source.GetProperty("BattleDistance").GetInt32() == 7 && replay.GetProperty("BattleDistance").GetInt32() == 7 &&
+            root.Spawn.Turn == 0 && root.Spawn.QueuedOuterBoss?.Actor.Unit.MaxHealth == 3000 &&
+            root.Spawn.QueuedOuterBoss.Actor.Unit.Attack == 30 &&
+            root.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 62,
+            "Winning Fragile route must retain the original natural Ring8 deployment.");
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            Require(fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null,
+                "A selected outer-boss scenario is not the natural checkpoint.");
+            FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
+            Require(overlay.GetProperty("Horizon").GetInt32() == 12 && overlay.GetProperty("TimeLimitMs").GetInt32() == 30000 &&
+                overlay.GetProperty("PreferredDeploymentRoom").GetInt32() == 0 &&
+                overlay.GetProperty("TacticalSeed").GetBoolean(), "Unexpected winning Fragile search configuration.");
+        }
+    }
+
     internal static void Pair(FixtureValue source, FixtureValue replay, string expectedBoss = "Boss_Level8_AllyBuffer")
         => CheckPair(source, replay, expectedBoss, requireVictory: true);
 

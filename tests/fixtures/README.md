@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1053 archives,
+Current manifest inventory (2026-10-23): 1055 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -103,7 +103,7 @@ The pair verifies all five original spells, 32 masked casts and both room modes;
 the live observer/driver waits for pending native effects after selection.
 
 The natural Fragile checkpoint is retained in `campaign-progressed-ring8-fragile.zip`
-with seven preceding native wins and thirteen hash-verified restore members.
+with seven preceding native wins, twelve verified payload files and their manifest.
 `full-battle-natural-fragile-no-cards.mt2f` matches five native EndTurns;
 `full-battle-natural-fragile-status.mt2f` matches 39 plays/seven EndTurns and
 fixes unrelated remote Pyre actors entering local triggered-status scopes.
@@ -117,7 +117,15 @@ All three are losses and do not establish Fragile winning-player acceptance.
 the real player entry on the same natural checkpoint: 44 plays/nine EndTurns,
 53 exact inputs and full forecasts/RNG, both boss phases and six shorter verified
 windows under a three-turn/three-second tactical budget. Both processes lose;
-natural winning acceptance remains open. See [Fragile player evidence](player-fragile-bounded.md).
+see [bounded Fragile evidence](player-fragile-bounded.md).
+
+`full-battle-player-boss-fragile-{search,replay}.mt2f` now establishes the natural
+winning player pair: 45 plays/nine EndTurns, all 54 inputs and complete forecasts,
+state and RNG match, both win at Pyre2 with all four native failure counters zero.
+The actual player searches once, then retains 53 verified winning suffixes.
+This uses twelve-turn/30-second tactical advice; the first consumed response is
+51.09 seconds and retained response median/P95 is 2.38/3.96 seconds. Both
+processes exit normally with protected files unchanged. See [winning evidence](player-fragile-winning.md).
 
 The ordinary Corrupter now has original birth, casting, corruption multiplication,
 24-input fresh replay and separate controlled Relentless/floor/Pyre evidence.

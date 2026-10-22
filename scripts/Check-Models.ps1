@@ -115,6 +115,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-natural-fragile-no-cards.mt2f', 'full-battle-natural-fragile-status.mt2f',
     'full-battle-natural-fragile-titanite.mt2f',
     'full-battle-player-boss-fragile-bounded-search.mt2f', 'full-battle-player-boss-fragile-bounded-replay.mt2f',
+    'full-battle-player-boss-fragile-search.mt2f', 'full-battle-player-boss-fragile-replay.mt2f',
     'full-battle-player-boss-corrupter-bounded-search.mt2f', 'full-battle-player-boss-corrupter-bounded-replay.mt2f',
     'full-battle-player-true-final-boss-bounded-search.mt2f', 'full-battle-player-true-final-boss-bounded-replay.mt2f',
     'full-battle-player-boss-trial-allybuffer-bounded-search.mt2f', 'full-battle-player-boss-trial-allybuffer-bounded-replay.mt2f',
