@@ -276,8 +276,8 @@ enemy before deployment had created any; it is not curated. The accepted run
 explicitly spawns the original first-wave definition without changing it.
 
 This opens the existing modeled upgrade callbacks and actual enemy Bump phase
-refresh. Ordinary and callback-bearing paid enemy chains are validated below;
-real player entry with this composition,
+refresh. Ordinary and callback-bearing paid enemy chains and real player entry
+with this composition are validated below. Enemy movement published by the player,
 previews, other callback payloads, enemy Conduit and unit-owned moon resource
 traits retain their separate acceptance boundaries. No full regression or Mac
 package build is performed.
@@ -360,4 +360,32 @@ No full regression or Mac package build is performed.
 ```powershell
 scripts/Run-FullBattleProbe.ps1 -EclipseChamberEnemyCallbacks -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-enemy-callbacks-only tests/fixtures/full-battle-eclipse-chamber-enemy-callbacks.mt2f
+```
+
+## Actual player entry with opposing callbacks
+
+`full-battle-player-room-moon-enemy-{search,replay}.mt2f` retains source profile
+`full-battle-units-spells-and-junk-20261022-131707-b89cab82` (245.30 seconds)
+and independent replay `full-battle-units-spells-and-junk-20261022-132130-ec152fca`
+(102.65 seconds). Both load the real player assembly and win with Pyre80:
+25 plays, five EndTurns and thirty decisions. Both settle, exit normally,
+preserve protected originals and have four zero failure counters. All inputs,
+complete native roots/successors, frozen forecasts and gameplay RNG match.
+
+The real overlay publishes 32 times, passes UI/pure-capture controls and retains
+the verified winning continuation for the 29 later decisions. The first used
+search takes 3.41 seconds; later end-to-end response median/P95 is 1.01/1.34
+seconds. The configured budget remains six turns/10,000 ms with tactical seed.
+The opposing actor's off-train birth callback and eight live upgrade witnesses
+match its cached understanding; both original friendly callbacks, two global
+phases and two Eclipse casts are also exercised.
+
+The player route does not Bump the opposing callback carrier. Its acceptance
+therefore covers opposing birth/global phase callbacks and real advice in that
+composition; the separate fixed paid chain above covers repeated enemy Bumps.
+Natural late-game combinations and player-published opposing Bumps remain
+separate boundaries. No full regression or Mac package is built.
+
+```powershell
+scripts/Check-PlayerAdvisor.ps1 -Case RoomMoonEnemy -SkipBuild
 ```

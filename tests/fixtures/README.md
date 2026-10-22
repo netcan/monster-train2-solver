@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 888 archives (813 full battles and
+Current manifest inventory (2026-10-22): 890 archives (815 full battles and
 75 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,6 +9,10 @@ verifies 13 plays/five EndTurns and Pyre80 in two fresh native processes.
 It fixes missing off-train enemy birth callbacks and covers four paid original
 up/down movements with New upgrade removal/reapplication, complete state/RNG
 and sixteen immutable full chains. See [room moon callbacks](room-moon-callbacks.md).
+The actual player pair `full-battle-player-room-moon-enemy-{search,replay}.mt2f`
+also wins with Pyre80 in 30 decisions and validates opposing birth/global phase
+callbacks, all live publications and complete frozen forecasts/state/RNG.
+It does not exercise player-published Bumps on the opposing callback carrier.
 
 The natural Fragile checkpoint is retained in `campaign-progressed-ring8-fragile.zip`
 with seven preceding native wins and thirteen hash-verified restore members.
