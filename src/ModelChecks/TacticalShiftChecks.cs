@@ -35,20 +35,32 @@ internal static class TacticalShiftChecks
             "The next legal card must restore the original tank.");
         var noEnergyJson = JsonNode.Parse(JsonSerializer.Serialize(root, ModelJson.Options))!;
         noEnergyJson["Energy"] = 0;
+        noEnergyJson["Spawn"]!["Train"]!["Context"]!["QueryFrame"]!["Energy"] = 0;
         var noEnergy = noEnergyJson.Deserialize<BattleTurnState>(ModelJson.Options)!;
         string noEnergyParent = keys.Key(noEnergy);
-        var unavailable = BattleTacticalPolicy.Choose(noEnergy, out _, 0);
-        Require(unavailable?.Action.ActivatorUnitId != expected.ActivatorUnitId && keys.Key(noEnergy) == noEnergyParent,
+        var freeAbility = UnitAbilityModel.Activate(noEnergy, expected);
+        Require(freeAbility.Supported, "The no-energy control must keep the free ability legal: " + freeAbility.Reason);
+        var unavailable = BattleTacticalPolicy.Choose(noEnergy, out omitted, 0);
+        Require(unavailable?.Action.ActivatorUnitId != expected.ActivatorUnitId && omitted.Count == 0 && keys.Key(noEnergy) == noEnergyParent,
             "An unaffordable restoration must not bypass champion protection.");
         var noRestoreJson = JsonNode.Parse(JsonSerializer.Serialize(root, ModelJson.Options))!;
-        var rules = noRestoreJson["PlayRules"]!["Cards"]!.AsArray();
-        for (int index = rules.Count - 1; index >= 0; index--)
-            if (rules[index]!["Effects"]!.AsArray().Any(effect => effect!["Type"]!.GetValue<string>() == "FloorRearrange"))
-                rules.RemoveAt(index);
+        var restoreDataIds = root.PlayRules!.Cards.Where(rule => rule.Effects.Any(effect => effect.Type == "FloorRearrange"))
+            .Select(rule => rule.DataId).ToHashSet();
+        var cards = noRestoreJson["Spawn"]!["Train"]!["Context"]!["Cards"]!;
+        var hand = cards["Hand"]!.AsArray();
+        for (int index = hand.Count - 1; index >= 0; index--)
+            if (restoreDataIds.Contains(hand[index]!["DataId"]!.GetValue<string>()))
+            {
+                JsonNode card = hand[index]!;
+                hand.RemoveAt(index);
+                cards["Discard"]!.AsArray().Add(card);
+            }
         var noRestore = noRestoreJson.Deserialize<BattleTurnState>(ModelJson.Options)!;
         string noRestoreParent = keys.Key(noRestore);
-        unavailable = BattleTacticalPolicy.Choose(noRestore, out _, 0);
-        Require(unavailable?.Action.ActivatorUnitId != expected.ActivatorUnitId && keys.Key(noRestore) == noRestoreParent,
+        freeAbility = UnitAbilityModel.Activate(noRestore, expected);
+        Require(freeAbility.Supported, "The missing-card control must keep the free ability legal: " + freeAbility.Reason);
+        unavailable = BattleTacticalPolicy.Choose(noRestore, out omitted, 0);
+        Require(unavailable?.Action.ActivatorUnitId != expected.ActivatorUnitId && omitted.Count == 0 && keys.Key(noRestore) == noRestoreParent,
             "Missing restoration must retain champion protection.");
         var plan = BattlePlanner.Plan(root, keys.Key,
             new BattlePlannerOptions(16, 1, 8, 12, TimeSpan.FromSeconds(30), 0, useTacticalSeed: true));
