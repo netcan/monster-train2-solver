@@ -20,15 +20,19 @@ internal static class TrueFinalBossPaidSpellChecks
         return TrueFinalBossLethalChecks.WithTrain(prepared, CardSpellModel.WithContext(new TrainCombatState(
             context.Enchantments!.Rooms, train.Movement, train.EnemySlotsPerRoom, context), context));
     }
-    internal static void Native(FixtureValue root)
+    internal static void Native(FixtureValue root, bool allied = false)
     {
         FixtureValue route = root.GetProperty("OriginalTrueFinalBossRoute");
         Require(route.GetProperty("Scenario").GetString() == "Level9TrueFinalBoss_V2" &&
             route.GetProperty("ScenarioAssetsUnchanged").GetBoolean() && route.GetProperty("CharacterAssetsUnchanged").GetBoolean() &&
-            route.GetProperty("StartingDeckUnchanged").GetBoolean() && route.GetProperty("PyreHealth").GetInt32() == 80 &&
+            route.GetProperty("StartingDeckUnchanged").GetBoolean() == !allied && route.GetProperty("PyreHealth").GetInt32() == 80 &&
             root.GetProperty("Policy").GetString() == "units-spells-and-junk" && root.GetProperty("BattleDistance").GetInt32() == 8 &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean() && root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop",
             "Missing unchanged original route or settled terminal capture.");
+        bool added = root.TryGetProperty("TrueFinalBossOrdinaryAllyControl", out FixtureValue addition) && addition.ValueKind != FixtureKind.Null;
+        Require(added == allied && (!added || addition.GetProperty("Kind").GetString() == "Steward" &&
+            addition.GetProperty("CardDataId").GetString() == "38e70e6a-20f3-4e36-8d31-c5110be07f87"),
+            "Allied paid acceptance requires only its explicitly added original small Steward.");
         FixtureValue control = root.GetProperty("TrueFinalBossLethalControl");
         string target = control.GetProperty("PaidSpellTarget").GetString()!;
         Require(!control.TryGetProperty("TargetOwnerOnly", out FixtureValue selectedOwner) || !selectedOwner.GetBoolean(),
@@ -46,9 +50,9 @@ internal static class TrueFinalBossPaidSpellChecks
             "Recorded HP owners differ from the unchanged original three-owner roster.");
         FixtureValue turns = root.GetProperty("Turns");
         FixtureValue actions = root.GetProperty("Actions");
-        Require(turns.GetArrayLength() == 1 && actions.GetArrayLength() == 1 && root.GetProperty("NativeWon").GetBoolean(),
+        Require(turns.GetArrayLength() == 1 && actions.GetArrayLength() == (allied ? 2 : 1) && root.GetProperty("NativeWon").GetBoolean(),
             "Expected one deployment EndTurn, one paid spell and victory.");
-        FixtureValue entry = actions[0];
+        FixtureValue entry = actions[allied ? 1 : 0];
         BattleTurnState actionBefore = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         PlayCardAction action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
@@ -57,18 +61,52 @@ internal static class TrueFinalBossPaidSpellChecks
         Require(BattleTurnChecks.Comparable(controlled) == BattleTurnChecks.Comparable(actionBefore) &&
             actionBefore.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId).AssetKey == asset &&
             actionBefore.Energy == 3 && actual.Energy == 2 && actual.Spawn.OuterBoss == null && actual.Spawn.Train.Context!.LifeLinks == null &&
-            actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Single() is { IsPyre: true, Health: 80 },
+            actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Count() == (allied ? 2 : 1) &&
+            actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 80 &&
+            (!allied || actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => !unit.IsPyre) is
+                { AssetKey: "TrainStewardSmall", BaseAttack: 14, Health: 5, MaxHealth: 5, Size: 2 }),
             "Paid target, one-energy payment or complete five-body cleanup differs.");
         BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(controlled, action.CardInstanceId, includeAbilities: false);
         Require(frontier.SupportedCandidates.Any(candidate => candidate.Action.TargetUnitId == action.TargetUnitId &&
             candidate.Action.RoomIndex == action.RoomIndex && candidate.Result.Outcome == RoomOutcome.BattleWon),
             "The original paid winning spell is missing from the search frontier.");
         BattleTurnState deployment = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
-        string parent = Json(deployment);
+        BattleTurnState prepared = allied ? addition.GetProperty("Actual").Deserialize<BattleTurnState>()! : deployment;
+        if (allied)
+        {
+            int allyCardId = addition.GetProperty("CardId").GetInt32();
+            Require(prepared.Spawn.Train.Rooms.SelectMany(room => room.Units).Single().IsPyre && prepared.Energy == 4 &&
+                actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => !unit.IsPyre).SpawnerCardId == allyCardId &&
+                prepared.Spawn.Train.Context!.FindCard(allyCardId)!.Permanent.Upgrades.Count == 0,
+                "Missing the explicit original added-card boundary and surviving spawner identity.");
+            CombatUnit survivor = controlled.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => !unit.IsPyre && unit.Team == CombatTeam.Player);
+            var extra = new CardUpgradeModifier("uncalibrated", "uncalibrated", new CardStatModifier(), [], false, false, false, 0, 0, []);
+            CombatContext changed = controlled.Spawn.Train.Context!.WithCard(controlled.Spawn.Train.Context.FindCard(allyCardId)!.WithPermanentUpgrade(extra, false));
+            RoomCombatState hitRoom = controlled.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == action.TargetUnitId));
+            Require(TrueFinalBossCombatModel.SupportsAlly(survivor, controlled.Spawn.Train.Context) &&
+                !TrueFinalBossTerminalCombatModel.SupportsRoot(new RoomCombatState(hitRoom.RoomIndex, hitRoom.Deployment,
+                    hitRoom.Units, hitRoom.ExternalInteractions, changed, hitRoom.Preview, hitRoom.ActiveCompanionBossIds), action.TargetUnitId),
+                "Uncalibrated ally upgrades must retain the terminal guard.");
+        }
+        string parent = Json(prepared);
         string expected = BattleTurnChecks.Comparable(actual, true, true);
         string Replay()
         {
-            BattleTurnResult born = BattleTurnModel.EndTurn(deployment);
+            BattleTurnState deployed = prepared;
+            if (allied)
+            {
+                PlayCardAction summon = actions[0].GetProperty("Action").Deserialize<PlayCardAction>()!;
+                Require(summon.CardInstanceId == addition.GetProperty("CardId").GetInt32() && summon.RoomIndex == 0 && summon.PlayerPosition == 0 &&
+                    BattleTurnChecks.Comparable(prepared) == BattleTurnChecks.Comparable(actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!),
+                    "Allied paid chain must begin with the original small Steward summon.");
+                BattleActionResult summoned = BattleActionModel.PlayCard(prepared, summon);
+                Require(summoned.Supported && BattleTurnChecks.Comparable(summoned.State!) ==
+                    BattleTurnChecks.Comparable(actions[0].GetProperty("Actual").Deserialize<BattleTurnState>()!) &&
+                    BattleTurnChecks.Comparable(summoned.State!) == BattleTurnChecks.Comparable(deployment),
+                    "Independent paid allied summon differs: " + summoned.Reason);
+                deployed = summoned.State!;
+            }
+            BattleTurnResult born = BattleTurnModel.EndTurn(deployed);
             Require(born.Supported && BattleTurnChecks.Comparable(born.State!) == BattleTurnChecks.Comparable(before),
                 "Independent unchanged native birth differs: " + born.UnsupportedReason);
             BattleActionResult played = BattleActionModel.PlayCard(Prepare(born.State!, target), action);
@@ -80,9 +118,9 @@ internal static class TrueFinalBossPaidSpellChecks
         }
         Replay();
         Parallel.For(0, 16, _ => Require(Replay() == expected, "Concurrent paid chain differs."));
-        Require(Json(deployment) == parent, "Paid chain mutated its deployment root.");
+        Require(Json(prepared) == parent, "Paid chain mutated its prepared root.");
         Require(new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(key => root.GetProperty(key).GetInt32() == 0),
             "Native paid spell acceptance requires all four failure counters zero.");
-        Console.WriteLine("TRUE-FINAL-BOSS-PAID-SPELL PASS target=" + target + "; original spell, one-energy payment, full terminal state/RNG and 16 independent immutable deployment-to-victory chains.");
+        Console.WriteLine("TRUE-FINAL-BOSS-PAID-SPELL PASS target=" + target + "; survivingAlly=" + allied + "; original spell, one-energy payment, full terminal state/RNG and 16 independent immutable deployment-to-victory chains.");
     }
 }

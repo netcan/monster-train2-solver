@@ -15,9 +15,10 @@ namespace MonsterTrain2Poju.Model
                 return false;
             string[] assets = { "Boss_Level9_Dominion_V2", "Boss_Level9_Savagery_V2", "Boss_Level9_Entropy_Bot_V2",
                 "Boss_Level9_Entropy_Mid_V2", "Boss_Level9_Entropy_Top_V2" };
-            CombatUnit[] bodies = world.Rooms.SelectMany(room => room.Units).Where(unit => !unit.IsPyre).ToArray();
+            CombatUnit[] bodies = world.Rooms.SelectMany(room => room.Units).Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
             if (bodies.Length != 5 || assets.Any(asset => bodies.Count(unit => unit.AssetKey == asset) != 1)) return false;
             return world.Rooms.SelectMany(room => room.Units).All(unit => unit.IsPyre ||
+                unit.Team == CombatTeam.Player && TrueFinalBossCombatModel.SupportsAlly(unit, source.Context) ||
                 unit.Team == CombatTeam.Enemy && unit.EquipmentCards.Count == 0 && unit.Modifiers?.Upgrades.Count == 0 &&
                 links.Actors.Any(actor => actor.Id == unit.Id) &&
                 unit.Triggers.All(trigger => trigger.Kind is "OnSpawn" or "PostCombat" or "OnTrainRoomLoop") &&

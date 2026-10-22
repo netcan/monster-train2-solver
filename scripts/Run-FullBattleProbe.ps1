@@ -48,6 +48,7 @@ param(
     [switch] $TrueFinalBossLethalPreview,
     [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')][string] $TrueFinalBossLethalSpellTarget = '',
     [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')][string] $TrueFinalBossProtectedSpellTarget = '',
+    [switch] $TrueFinalBossLethalAlly,
     [ValidateRange(0, 25)][int] $TrueFinalBossFrontHealth = 0,
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossSpawn,
@@ -691,11 +692,17 @@ if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $Or
     $TrueFinalBossBirth -or $TrueFinalBossSpawn -or $TrueFinalBossScheduledSpawn -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossPyreBaneTargets -or $TrueFinalBossDeath)) {
     throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
 }
+if ($TrueFinalBossLethalAlly) {
+    if (-not $TrueFinalBossLethalSpellTarget -or $TrueFinalBossProtectedSpellTarget -or $TrueFinalBossOrdinaryAlly -or $TrueFinalBossAllyUpgrade) {
+        throw 'Allied paid victory requires its original spell target and separate ally preparation.'
+    }
+    $TrueFinalBossOrdinaryAlly = 'Steward'; $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+}
 if ($TrueFinalBossOrdinaryAlly -and $TrueFinalBossAllyUpgrade) { throw 'Ordinary ally and upgraded ally require separate captures.' }
 if ($TrueFinalBossOrdinaryAllyUpgrade -and -not $TrueFinalBossOrdinaryAlly) { throw 'Ordinary ally upgrades require an explicit ordinary ally.' }
 if ($TrueFinalBossOrdinaryAllyUpgrade) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true }
 if ($TrueFinalBossAllyUpgrade -or $TrueFinalBossOrdinaryAlly) {
-    if (-not $OriginalTrueFinalBoss -or $TrueFinalBossLethal -or $TrueFinalBossLethalSpellTarget -or $TrueFinalBossDormantSavagery -or $TrueFinalBossRelentless -or $OuterBossRelentless) {
+    if (-not $OriginalTrueFinalBoss -or $TrueFinalBossLethal -or ($TrueFinalBossLethalSpellTarget -and -not $TrueFinalBossLethalAlly) -or $TrueFinalBossDormantSavagery -or $TrueFinalBossRelentless -or $OuterBossRelentless) {
         throw 'Ally upgrade requires the original TFB route without health/phase controls.'
     }
     $Policy = 'units-and-junk'

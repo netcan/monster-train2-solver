@@ -51,10 +51,11 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
-            foreach (int id in new[] { Evidence!.AnchorCardId, Evidence.CardId })
+            bool terminal = TrueFinalBossLethalScenario.PaidSpell;
+            foreach (int id in terminal ? new[] { Evidence!.CardId } : new[] { Evidence!.AnchorCardId, Evidence.CardId })
                 if (state.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0)
                     return BattleActionModel.EnumerateActions(state, id, includeAbilities: false).SupportedActions
-                        .First(action => action.RoomIndex == 0 && action.PlayerPosition == (id == Evidence.CardId ? 1 : 0));
+                        .First(action => action.RoomIndex == 0 && action.PlayerPosition == (!terminal && id == Evidence.CardId ? 1 : 0));
             return null;
         }
     }

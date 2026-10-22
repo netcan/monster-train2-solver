@@ -34,9 +34,11 @@ foreach ($item in $Case) {
         continue
     }
     if ($item -in @('PaidSpell', 'ProtectedSpell')) {
-        $prefix = if ($item -eq 'ProtectedSpell') { 'protected-spell' } else { 'paid-spell' }
-        foreach ($target in @('dominion', 'savagery', 'entropybot', 'entropymid', 'entropytop')) {
-            Invoke-TrueFinalBossArchive "true-final-boss-$prefix-$target.mt2f" "--true-final-boss-$prefix-only"
+        $prefixes = if ($item -eq 'ProtectedSpell') { @('protected-spell') } else { @('paid-spell', 'allied-paid-spell') }
+        foreach ($prefix in $prefixes) {
+            foreach ($target in @('dominion', 'savagery', 'entropybot', 'entropymid', 'entropytop')) {
+                Invoke-TrueFinalBossArchive "true-final-boss-$prefix-$target.mt2f" "--true-final-boss-$prefix-only"
+            }
         }
         continue
     }

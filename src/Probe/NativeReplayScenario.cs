@@ -2796,7 +2796,11 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
                 RelicStatusDecayProbe.Matrix();
-                if (TrueFinalBossOrdinaryAllyScenario.Enabled)
+                if (TrueFinalBossLethalScenario.PaidSpell && decision.Spawn.Turn > 0)
+                {
+                    pendingPlay = TrueFinalBossLethalScenario.Choose(decision);
+                }
+                else if (TrueFinalBossOrdinaryAllyScenario.Enabled)
                 {
                     pendingPlay = TrueFinalBossOrdinaryAllyScenario.Choose(decision);
                 }

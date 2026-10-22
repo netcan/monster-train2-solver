@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--true-final-boss-allied-paid-spell-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossPaidSpellChecks.Native(fixture.RootElement, allied: true);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-protected-spell-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4093,6 +4100,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("tr
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossPaidSpellChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("true-final-boss-allied-paid-spell-", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossPaidSpellChecks.Native(fixture.RootElement, allied: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("true-final-boss-protected-spell-", StringComparison.OrdinalIgnoreCase)))
 {

@@ -564,8 +564,9 @@ Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 
 组移除返回时战斗仍运行；随后外层停止循环才推进月相并进入 EndOfCombat。
 两种快照分别保留，完整伤害模型对照组移除边界，不将后续循环效果混入伤害。
 原生组件最终均获胜；仍不代表自然整场胜局、带来源法术/攻击者的所有致死路径，
-或其他主体的 UI 致死预览。仅放开原始五实体、一血、无额外友军/装备/升级/
-活动遗物效果的实战致死；独立 UI 预览仍只开放已校准的 Dominion 范围。
+或其他主体的 UI 致死预览。该批证据为原始五实体、一血、无额外友军/装备/
+升级/活动遗物效果的实战致死；后续付费施法补齐了普通友军存活的终局清理。
+独立 UI 预览仍只开放已校准的 Dominion 范围。
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case TerminalDamage -SkipBuild`。
 原生采集仍用 `-TrueFinalBossDeath <主体>`，现在包含完整状态证据。
@@ -735,6 +736,38 @@ Dominion 另明确移除四层法术护盾，以检验生命链接的伤害拦�
 入口：`./scripts/Check-TrueFinalBoss.ps1 -Case ProtectedSpell -SkipBuild`。
 原生采集：`-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossProtectedSpellTarget Dominion|Savagery|EntropyBot|EntropyMid|EntropyTop`。
 这是明确控制生命的机制验收，不计自然受伤或自然胜局；未运行全量回归或构建 Mac 包。
+
+## 存活普通友军下的付费终局清理
+
+`true-final-boss-allied-paid-spell-{dominion,savagery,entropybot,entropymid,entropytop}.mt2f`
+先明确添加一张原始小乘务员，实际花费一能量在底层召唤 14/5、二容量单位。
+正常结束部署回合出生五主体，再按已声明的三个生命所有者减血控制准备临界
+状态；Dominion 另移除四层护盾。随后原始 `StarterFireStarter` 实际付费命中
+选定主体，移除全部五个 Boss，同时保留小乘务员 14/5 与火炉 80 血。
+
+五个原生来源（`.probe-runs/` 下）依次为：
+
+- Dominion：`full-battle-units-spells-and-junk-20261023-014457-35fb65ff`。
+- Savagery：`full-battle-units-spells-and-junk-20261023-014457-e974c0e7`。
+- 底层外壳：`full-battle-units-spells-and-junk-20261023-014628-afd22c12`。
+- 中层外壳：`full-battle-units-spells-and-junk-20261023-014628-ff143ddc`。
+- 顶层外壳：`full-battle-units-spells-and-junk-20261023-014740-594d92b6`。
+
+五个进程均正常退出、原文件未变、四项失败计数全零。各两次实际付费出牌、
+一次部署 EndTurn，16 条从添加卡牌后的准备根出发的独立不可变链通过。
+召唤、出生、明确 HP/护盾控制、施法、全组移除和完整胜利状态/RNG 连续匹配，
+不注入后续原生 Before；比对包含存活友军及原始召唤卡身份、牌堆、统计和锚点。
+搜索前沿也包含实际付费胜局。
+
+生产终局保护现在识别已校准的普通友军签名，保持五主体均一血、原始 Boss
+布局和无活动遗物等约束；给友军添加未知空升级仍明确拒绝。独立主体健康时的
+生命链接保护继续保留，其他主体致死 UI、额外回调/装备和自然胜局另行验收。
+本批明确添加单位并调整所有者生命，不能作为自然对局胜利。
+
+入口：`./scripts/Check-TrueFinalBoss.ps1 -Case PaidSpell -SkipBuild`，同时验证
+旧五个无友军基线及新增五个有友军场景。
+原生采集增加 `-TrueFinalBossLethalAlly`，与原始致死法术目标一起使用。
+未运行全量回归或构建 Mac 包。
 
 ## 原始整场诊断入口
 
