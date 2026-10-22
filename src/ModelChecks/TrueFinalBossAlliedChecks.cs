@@ -4,18 +4,20 @@ using System.Text.Json;
 
 internal static class TrueFinalBossAlliedChecks
 {
-    internal static void Native(FixtureValue root)
+    internal static void Native(FixtureValue root, bool multi = false)
     {
         void Require(bool value, string message) => TrueFinalBossChecks.Require(value, message);
         FixtureValue route = root.GetProperty("OriginalTrueFinalBossRoute");
         Require(new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(key => root.GetProperty(key).GetInt32() == 0),
-            "Single-Steward native acceptance requires all four failure counters to be zero.");
+            "Allied native acceptance requires all four failure counters to be zero.");
         Require(route.GetProperty("ScenarioAssetsUnchanged").GetBoolean() && route.GetProperty("CharacterAssetsUnchanged").GetBoolean() &&
-            route.GetProperty("StartingDeckUnchanged").GetBoolean() && root.GetProperty("Policy").GetString() == "steward-once" &&
-            root.GetProperty("Actions").GetArrayLength() == 1 && root.GetProperty("Turns").GetArrayLength() == 6 &&
-            !root.GetProperty("NativeWon").GetBoolean(), "Missing original single-Steward native route.");
+            route.GetProperty("StartingDeckUnchanged").GetBoolean() && root.GetProperty("Policy").GetString() == (multi ? "units-and-junk" : "steward-once") &&
+            root.GetProperty("Actions").GetArrayLength() == (multi ? 3 : 1) && root.GetProperty("Turns").GetArrayLength() == 6 &&
+            !root.GetProperty("NativeWon").GetBoolean(), "Missing original allied native route.");
         BattleTurnState deployment = root.GetProperty("Turns")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
-        CombatUnit ally = deployment.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => !unit.IsPyre);
+        CombatUnit[] allies = deployment.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => !unit.IsPyre).ToArray();
+        CombatUnit ally = allies.First(unit => unit.AssetKey == "TrainStewardBig");
+        Require(allies.Length == (multi ? 3 : 1) && allies.All(TrueFinalBossCombatModel.SupportsAlly), "Missing calibrated original allies.");
         Require(TrueFinalBossCombatModel.SupportsAlly(ally) && ally.Health == 25 && ally.Statuses.Count == 0 &&
             deployment.Spawn.QueuedTrueFinalBoss != null, "Missing unchanged Steward before five-actor birth.");
         FixtureValue corruption = root.GetProperty("UnitPostCombats").EnumerateArray().First(row =>
@@ -25,6 +27,19 @@ internal static class TrueFinalBossAlliedChecks
         Require(changed.Context!.Enchantments!.Rooms.Single(room => room.RoomIndex == 0).Units
             .Single(unit => unit.Id == ally.Id).Status("corruption")?.Stacks == 5,
             "Dominion must corrupt the remote Steward without moving it out of floor zero.");
+        if (multi)
+        {
+            LifeLinkContext preview = root.GetProperty("TrueFinalBossPreviewRooms").EnumerateArray().First(row =>
+                row.GetProperty("Turn").GetInt32() == 1 && row.GetProperty("Before").GetProperty("RoomIndex").GetInt32() == 1)
+                .GetProperty("Actual").GetProperty("Context").GetProperty("LifeLinks").Deserialize<LifeLinkContext>()!;
+            int[] outerHealth = preview.Actors.Where(actor => actor.OuterBoss).Select(actor => actor.Health).ToArray();
+            Require(preview.CalculatingPreview && preview.SharedPreviewHpChange == 8 && outerHealth.SequenceEqual(new[] { 3500, 3492, 3500 }),
+                "Native outer preview must reduce only the middle body and accumulate eight damage.");
+            TrainCombatState live = root.GetProperty("TrainPhases").EnumerateArray().First(row => row.GetProperty("Kind").GetString() == "Combat" &&
+                !row.GetProperty("Before").GetProperty("Rooms")[0].GetProperty("Deployment").GetBoolean()).GetProperty("Actual").Deserialize<TrainCombatState>()!;
+            Require(live.Context!.LifeLinks!.Actors.Where(actor => actor.OuterBoss).All(actor => actor.Health == 3492),
+                "Actual outer damage must synchronize all three linked bodies.");
+        }
         BattleActionChecks.Native(root);
         foreach (FixtureValue stage in root.GetProperty("Stages").EnumerateArray().Where(row => row.GetProperty("Kind").GetString() == "Room"))
         {
@@ -44,15 +59,21 @@ internal static class TrueFinalBossAlliedChecks
         BattleTurnChecks.Native(root);
         FixtureValue play = root.GetProperty("Actions")[0];
         BattleTurnState start = play.GetProperty("Before").Deserialize<BattleTurnState>()!;
-        PlayCardAction action = play.GetProperty("Action").Deserialize<PlayCardAction>()!;
         string parent = JsonSerializer.Serialize(start, ModelJson.Options);
         Parallel.For(0, 16, _ =>
         {
-            BattleActionResult played = BattleActionModel.PlayCard(start, action);
-            Require(played.Supported, "Independent paid Steward play failed: " + played.Reason);
-            BattleTurnChecks.RunIndependentChain(played.State!, root.GetProperty("Turns"), compareRoomEnabled: true);
+            BattleTurnState current = start;
+            foreach (FixtureValue entry in root.GetProperty("Actions").EnumerateArray())
+            {
+                Require(entry.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() == 0,
+                    "This independent route requires all paid plays before the first EndTurn.");
+                BattleActionResult played = BattleActionModel.PlayCard(current, entry.GetProperty("Action").Deserialize<PlayCardAction>()!);
+                Require(played.Supported, "Independent paid allied play failed: " + played.Reason);
+                current = played.State!;
+            }
+            BattleTurnChecks.RunIndependentChain(current, root.GetProperty("Turns"), compareRoomEnabled: true);
             Require(JsonSerializer.Serialize(start, ModelJson.Options) == parent, "Paid full chain mutated its original decision.");
         });
-        Console.WriteLine("TRUE-FINAL-BOSS-ALLIED PASS: one original Steward play, five-actor birth with ally, native train/preview phases, six EndTurns and sixteen immutable paid full chains. Other allies, outer preview damage, relentless and victory remain guarded.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-ALLIED PASS: {(multi ? "three" : "one")} original allied plays, five-actor birth, native train/preview phases, six EndTurns and sixteen immutable paid full chains; relentless and victory remain guarded.");
     }
 }

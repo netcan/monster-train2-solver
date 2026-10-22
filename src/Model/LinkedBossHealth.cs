@@ -26,18 +26,19 @@ namespace MonsterTrain2Poju.Model
             error = world == null ? "Missing global linked-boss health." : LifeLinkModel.Validate(world);
             if (error != null) return null;
             LifeLinkActor? target = world!.Actors.SingleOrDefault(actor => actor.Id == targetId);
-            if (target == null || health <= 0 || world.SharedPreviewHpChange != 0)
+            if (target == null || health <= 0 || !world.CalculatingPreview && world.SharedPreviewHpChange != 0)
             { error = "Linked boss health requires a captured live target; preview and terminal updates remain guarded."; return null; }
             if (world.CalculatingPreview)
             {
-                // Preview copies have independent HP. This bounded no-allied-unit
-                // route damages Dominion only; outer-body preview damage needs
-                // its shared damage accumulator and separate native evidence.
-                if (target.OuterBoss || source.Enchantments?.Preview != true)
-                { error = "Outer linked-body preview damage remains uncalibrated."; return null; }
+                // Native preview writes only the selected body's HP and records
+                // outer-body HP loss in the shared preview damage accumulator.
+                if (source.Enchantments?.Preview != true)
+                { error = "Linked-body preview damage requires the captured preview world."; return null; }
+                int hp = Math.Min(health, 99999);
+                int change = unchecked(world.SharedPreviewHpChange + (target.OuterBoss ? target.Health - hp : 0));
                 return RebaseContext(source, new LifeLinkContext(world.Actors.Select(actor => actor.Id == targetId
-                    ? new LifeLinkActor(actor.Id, actor.LinkedId, Math.Min(health, 99999), Math.Min(health, 99999),
-                        actor.Initialized, actor.HasLifeLink, actor.TrueFinalBoss, actor.OuterBoss) : actor).ToArray(), true, 0));
+                    ? new LifeLinkActor(actor.Id, actor.LinkedId, hp, hp,
+                        actor.Initialized, actor.HasLifeLink, actor.TrueFinalBoss, actor.OuterBoss) : actor).ToArray(), true, change));
             }
             int owner = target.LinkedId == 0 ? target.Id : target.LinkedId;
             return RebaseContext(source, new LifeLinkContext(world.Actors.Select(actor =>

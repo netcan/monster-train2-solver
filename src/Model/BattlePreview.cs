@@ -141,8 +141,9 @@ namespace MonsterTrain2Poju.Model
                     externalPyreRoomIndex: targetsPyre && previewPyre != null ? pyreRoomIndex : -1,
                     externalTargets: previewContext.LifeLinks == null || targetsPyre ? null : previewContext.Enchantments!.Rooms
                         .Where(other => other.RoomIndex != room.RoomIndex).SelectMany(other => other.Units.Select(unit => (other.RoomIndex, unit))).ToArray());
-                if (!preview.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
-                    Array.Empty<RoomCombatResult>(), "Battle preview: " + preview.UnsupportedReason);
+                if (!preview.Supported)
+                    return new TrainCombatResult(null, RoomOutcome.Unsupported,
+                        Array.Empty<RoomCombatResult>(), "Battle preview floor " + room.RoomIndex + ": " + preview.UnsupportedReason);
                 if (targetsPyre && previewPyre != null)
                     previewPyre = preview.RetainedUnits.Single(unit => unit.Id == previewPyre.Id);
                 ObserveSummons(preview.State!.Units.Concat(preview.RetainedUnits), preview.State.Context);

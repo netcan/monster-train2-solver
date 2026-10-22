@@ -1091,7 +1091,7 @@ namespace MonsterTrain2Poju.Model
                         (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
                             status.Id == "pyrebane" && unit.AssetKey == "Boss_Level9_Savagery_V2") &&
                         state.Context?.LifeLinks is LifeLinkContext world && (linkedCombat || !state.Preview && !world.CalculatingPreview) &&
-                        world.SharedPreviewHpChange == 0 && LifeLinkModel.Validate(world) == null &&
+                        (linkedCombat || world.SharedPreviewHpChange == 0) && LifeLinkModel.Validate(world) == null &&
                         world.Actors.Any(actor => actor.Id == unit.Id && actor.TrueFinalBoss && actor.Initialized && actor.HasLifeLink && actor.Health == unit.Health)))
                         return "Unmodeled status " + status.Id + " on " + unit.AssetKey;
                 if (unit.Status("titanite") != null && unit.Status("damage shield") != null &&
@@ -4959,10 +4959,16 @@ namespace MonsterTrain2Poju.Model
                     if (remote.Length > 0 && physicalWorld != null && context?.Enchantments is EnchantmentWorld world)
                     {
                         var changed = units.Where(unit => remote.Contains(unit.Source.Id)).ToDictionary(unit => unit.Source.Id, unit => unit.Freeze());
-                        var rooms = world.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                            room.Units.Where(unit => !changed.ContainsKey(unit.Id)).Concat(physicalWorld.Rooms.Single(original =>
-                                original.RoomIndex == room.RoomIndex).Units.Where(unit => changed.ContainsKey(unit.Id))
-                                .Select(unit => changed[unit.Id])).ToArray(), room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray();
+                        var rooms = world.Rooms.Select(room =>
+                        {
+                            RoomCombatState original = physicalWorld.Rooms.Single(floor => floor.RoomIndex == room.RoomIndex);
+                            var order = original.Units.Select((unit, index) => (unit.Id, Index: index)).ToDictionary(item => item.Id, item => item.Index);
+                            CombatUnit[] members = room.Units.Where(unit => !changed.ContainsKey(unit.Id)).Concat(original.Units
+                                .Where(unit => changed.ContainsKey(unit.Id)).Select(unit => changed[unit.Id]))
+                                .OrderBy(unit => order.TryGetValue(unit.Id, out int index) ? index : int.MaxValue).ToArray();
+                            return new RoomCombatState(room.RoomIndex, room.Deployment, members, room.ExternalInteractions,
+                                null, room.Preview, room.ActiveCompanionBossIds);
+                        }).ToArray();
                         context = context.WithEnchantments(new EnchantmentWorld(rooms, world.Movement, world.EnemySlotsPerRoom,
                             world.RetainedUnits.Where(unit => !changed.ContainsKey(unit.Unit.Id)).ToArray(), world.EnchanterIds,
                             world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle));

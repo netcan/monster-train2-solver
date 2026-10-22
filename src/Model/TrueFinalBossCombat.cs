@@ -9,17 +9,19 @@ namespace MonsterTrain2Poju.Model
         // not opt into full combat. Other allied definitions, dormant Savagery and
         // Hellforged relentless/destruction require their own calibration.
         internal static bool SupportsAlly(CombatUnit unit) => unit.Team == CombatTeam.Player && !unit.IsPyre &&
-            unit.AssetKey == "TrainStewardBig" && unit.BaseAttack == 8 && unit.MaxHealth == 25 &&
-            unit.Size == 3 && unit.CanAttack && !unit.EndsBattleOnDeath && unit.Ability == null &&
+            (unit.AssetKey == "TrainStewardBig" && unit.BaseAttack == 8 && unit.MaxHealth == 25 && unit.Size == 3 ||
+                unit.AssetKey == "MonsterBanishedChampion1" && unit.BaseAttack == 1 && unit.MaxHealth == 10 && unit.Size == 2) &&
+            unit.CanAttack && !unit.EndsBattleOnDeath && unit.Ability == null &&
             unit.Triggers.Count == 0 && unit.EquipmentCards.Count == 0 &&
-            unit.Modifiers?.Upgrades.Count == 0 && unit.Statuses.All(status => status.Id == "corruption");
+            unit.Modifiers?.Upgrades.Count == 0 && unit.Statuses.All(status => status.Id == "corruption" ||
+                unit.AssetKey == "MonsterBanishedChampion1" && status.Id == "multistrike" && status.Stacks == 1 && status.ParamInt == 2);
 
         internal static bool Supports(RoomCombatState room)
         {
             LifeLinkContext? links = room.Context?.LifeLinks;
             EnchantmentWorld? world = room.Context?.Enchantments;
             if (links == null || LifeLinkModel.Validate(links) != null || room.Preview != links.CalculatingPreview ||
-                links.SharedPreviewHpChange != 0 || links.Actors.Count != 5 ||
+                !room.Preview && links.SharedPreviewHpChange != 0 || links.Actors.Count != 5 ||
                 links.Actors.Any(actor => !actor.Initialized || !actor.TrueFinalBoss || !actor.HasLifeLink || actor.Health <= 0 || actor.Health != actor.PreviewHealth) ||
                 world?.AutomaticLifecycle != true || world.Preview != room.Preview || world.Rooms.Count != 4 ||
                 world.Rooms.Where((floor, index) => floor.RoomIndex != index || floor.Preview != room.Preview || floor.ExternalInteractions.Count > 0).Any()) return false;

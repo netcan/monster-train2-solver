@@ -7,6 +7,7 @@ internal static class TrueFinalBossPreviewChecks
     internal static void Native(FixtureValue root, bool roomsOnly = false)
     {
         void Require(bool value, string message) => TrueFinalBossChecks.Require(value, message);
+        bool multi = root.GetProperty("Policy").GetString() == "units-and-junk";
         FixtureValue[] rows = root.GetProperty("TrueFinalBossPreviews").EnumerateArray().ToArray();
         Require(rows.Length == 5 && rows.All(row => row.GetProperty("Actual").ValueKind != FixtureKind.Null), "Missing original UI preview completion.");
         var inputs = new List<TrainCombatState>(); var rules = new List<BattlePlayRules>(); var parents = new List<string>(); var expected = new List<string>();
@@ -25,7 +26,7 @@ internal static class TrueFinalBossPreviewChecks
             expected.Add(TrueFinalBossTrainChecks.Comparable(actual, "Preview"));
         }
         FixtureValue[] rooms = root.GetProperty("TrueFinalBossPreviewRooms").EnumerateArray().ToArray();
-        Require(rooms.Length == 17, "Missing native preview rooms, including the final Pyre-death stop.");
+        Require(rooms.Length == (multi ? 19 : 17), "Missing native preview rooms, including the final Pyre-death stop.");
         foreach (FixtureValue row in rooms)
         {
             RoomCombatState before = row.GetProperty("Before").Deserialize<RoomCombatState>()!;
@@ -69,6 +70,6 @@ internal static class TrueFinalBossPreviewChecks
             }
             Require(JsonSerializer.Serialize(original, ModelJson.Options) == parent, "The five-turn preview prefix must preserve its root.");
         }
-        Console.WriteLine("TRUE-FINAL-BOSS-PREVIEW PASS: five original UI previews, sixteen executed rooms and one cancelled room, full state/context/cards/RNG equality; 64 immutable previews and independent five-EndTurn prefix.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-PREVIEW PASS: five original UI previews, {rooms.Length} captured room boundaries including terminal cancellation, full state/context/cards/RNG equality; 64 immutable previews and independent five-EndTurn prefix.");
     }
 }

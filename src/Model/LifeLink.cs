@@ -47,7 +47,9 @@ namespace MonsterTrain2Poju.Model
             foreach (LifeLinkActor actor in context.Actors.Where(actor => actor.LinkedId != 0))
             {
                 LifeLinkActor? owner = context.Actors.SingleOrDefault(other => other.Id == actor.LinkedId);
-                if (owner == null || owner.Id == actor.Id || owner.LinkedId != 0 || owner.Health != actor.Health)
+                bool independentPreview = context.CalculatingPreview && actor.TrueFinalBoss && actor.OuterBoss &&
+                    owner?.TrueFinalBoss == true && owner.OuterBoss;
+                if (owner == null || owner.Id == actor.Id || owner.LinkedId != 0 || !independentPreview && owner.Health != actor.Health)
                     return "Life-link queries require a captured independent owner and matching shared health.";
             }
             return null;

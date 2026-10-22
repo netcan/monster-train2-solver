@@ -439,6 +439,25 @@ KillCamActivated 仍为 false。模型只在该已校准的真终局 HeroTurn �
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Allied -SkipBuild`。
 
+## 多友军与外层预览伤害整场校准
+
+`true-final-boss-multi-allied-calibration.mt2f` 来自
+`full-battle-units-and-junk-20261022-221718-b0754306`。只使用未改的起始牌组：
+部署两个大乘务员与 `MonsterBanishedChampion1`，其余空过。原生正常退出、
+败北、受保护文件未变，采集失败/差异/unsupported/待完成全零。
+
+两层前排获得支配者腐化，远程状态更新保留原前后排顺序。中层外壳预览受伤
+八点后，三个外壳生命分别为 3500/3492/3500，共享预览伤害为八；预览结束
+恢复主生命。实际战斗则同步三个身体至 3492 血。Life Link 只在已捕获的真终局
+外壳预览中允许这类独立生命；普通实战的主从生命不一致仍被拒绝。
+
+三次原生出牌、六次 EndTurn、五轮预览、19 个房间边界、六次列车战斗和五次
+升层全部匹配。64 条阶段/预览分支与 16 条从出牌前根状态推进的完整付费链
+不改父状态，逐步完整状态/牌堆/RNG 一致。该路线最终由战斗伤害致死火炉，
+与单乘务员路线的未使用灾厄停止边界分别校验；未进入无情期或真终局胜局。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case MultiAllied -SkipBuild`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

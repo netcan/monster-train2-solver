@@ -9,7 +9,8 @@ internal static class TrueFinalBossTrainChecks
     {
         void Require(bool value, string message) => TrueFinalBossChecks.Require(value, message);
         FixtureValue[] rows = root.GetProperty("TrainPhases").EnumerateArray().ToArray();
-        Require(rows.Length == 10, "Missing native true-final-boss train phases.");
+        bool multi = root.GetProperty("Policy").GetString() == "units-and-junk";
+        Require(rows.Length == (multi ? 11 : 10), "Missing native true-final-boss train phases.");
         int combat = 0, ascend = 0;
         var inputs = new List<TrainCombatState>(); var parents = new List<string>(); var expected = new List<string>();
         foreach (FixtureValue row in rows)
@@ -26,7 +27,7 @@ internal static class TrueFinalBossTrainChecks
             if (kind == "Combat") combat++; else ascend++;
             inputs.Add(before); parents.Add(parent); expected.Add(Comparable(actual, kind));
         }
-        Require(combat == 5 && ascend == 5 && inputs.Count(state => state.Context?.LifeLinks != null) == 8,
+        Require(combat == (multi ? 6 : 5) && ascend == 5 && inputs.Count(state => state.Context?.LifeLinks != null) == (multi ? 9 : 8),
             "Missing deployment, all-five-actor combat or ordinary-wave ascension witnesses.");
         Parallel.For(0, 64, index =>
         {
