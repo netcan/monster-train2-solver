@@ -56,9 +56,13 @@ internal static class CampaignRelicChecks
                 "Original campaign effect payload changed.");
         }
         var slots = root.GetProperty("Slots").EnumerateArray().ToArray();
-        foreach (var owner in Owners.Take(2))
+        foreach (var owner in new[] { Owners[0], Owners[1], Owners[3] })
             Require(RelicModel.Validate(new[] { new CombatRelicState(owner.Id, owner.Key, new[] { owner.Type }) }) == null,
-                "A native campaign-only upgrade-slot owner blocks an otherwise captured battle context.");
+                "A native campaign-only slot/trial-reward owner blocks an otherwise captured battle context.");
+        var trialOwner = Owners[3];
+        Require(RelicModel.Validate(new[] { new CombatRelicState(trialOwner.Id, trialOwner.Key,
+                new[] { trialOwner.Type, "UncalibratedTrialCombatCallback" }) }) != null,
+            "Accepting the calibrated trial-reward effect must not hide an unknown combat callback.");
         Require(slots.Length == 80, "Missing slot matrix observations.");
         foreach (var row in slots)
         {

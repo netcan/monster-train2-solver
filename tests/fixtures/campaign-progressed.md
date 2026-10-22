@@ -263,3 +263,20 @@ and reached their unchanged Ring2 checkpoints in
 `campaign-ring8-20261023-050917-6816b483`. Later battles and natural Corrupter
 victory remain separate acceptance; these preparation logs are not full
 battle/model equivalence fixtures.
+
+Both seed42 preparation variants subsequently won six battles and lost Ring7;
+their `-before-ring7` inputs remain unchanged. The higher-health input retains
+Pyre120 and six native victory records. Continuing that checkpoint through the
+actual player advisor exposed a battle integration gap: `ApplyUnitUpgradeWhenRich`
+was rejected for `RelicEffectModifyTrialGoldRewards` before any recommendation.
+The failed diagnostic is `full-battle-units-spells-and-junk-20261023-051907-71f9304c`.
+
+The original effect only implements `IRelicEffectModifyTrialGoldRewards`, read
+by `SaveManager.GetAdjustedGoldAmount` for trial rewards. Its existing native
+campaign calibration already checks the original +50% payload, 66 reward
+display/grant observations, removal controls and complete recorded state/RNG
+restoration. Battle validation now accepts that effect while retaining the
+unknown additional callback guard; acquired gold and card upgrades remain part
+of the captured battle input. The focused campaign calibration passes again.
+This closes the rejected-input cause, not the still-pending natural Corrupter
+victory or the quality of a bounded search.
