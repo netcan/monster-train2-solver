@@ -29,8 +29,7 @@ internal static class TrueFinalBossScheduledChecks
             Require(branch.Supported && JsonSerializer.Serialize(branch.State, ModelJson.Options) == expected &&
                 JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Scheduled birth branch changed its parent or result.");
         });
-        Require(!TrainCombatModel.ResolveCombat(actual.Spawn.Train).Supported,
-            "Scheduled birth must not open uncalibrated full true-final-boss combat.");
-        Console.WriteLine("TRUE-FINAL-BOSS-SCHEDULED PASS: original five-actor scheduled birth, queue consumption, global controller/Hellforged flags, full battle/RNG equality and 64 immutable concurrent branches; later combat remains guarded.");
+        TrueFinalBossTrainChecks.RequirePreviewGuarded(actual.Spawn.Train);
+        Console.WriteLine("TRUE-FINAL-BOSS-SCHEDULED PASS: original five-actor scheduled birth, queue consumption, global controller/Hellforged flags, full battle/RNG equality and 64 immutable concurrent branches; preview remains guarded.");
     }
 }

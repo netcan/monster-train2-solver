@@ -46,8 +46,7 @@ internal static class TrueFinalBossPostCombatChecks
             Require(branch.Supported && JsonSerializer.Serialize(branch.State, ModelJson.Options) == expected[selected] &&
                 JsonSerializer.Serialize(inputs[selected], ModelJson.Options) == parents[selected], "Concurrent post-combat phase changed its parent or result.");
         });
-        Require(!TrainCombatModel.ResolveCombat(root.GetProperty("PreCombats")[2].GetProperty("Before").Deserialize<TrainCombatState>()!).Supported,
-            "Post-combat calibration must not open uncalibrated full room combat and preview.");
+        TrueFinalBossTrainChecks.RequirePreviewGuarded(root.GetProperty("PreCombats")[2].GetProperty("Before").Deserialize<TrainCombatState>()!);
         Console.WriteLine($"TRUE-FINAL-BOSS-POST-COMBAT PASS: {rows.Length} actual phases ({born} born), generated scourges={generated}, Savagery buff stacks={savageryBuffs}, remote Pyre damage={pyreDamage}; full room/context/RNG and 64 immutable concurrent branches; allied-unit callbacks/full battle remain guarded.");
     }
 }

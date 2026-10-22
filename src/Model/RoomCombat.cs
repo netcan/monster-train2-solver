@@ -999,7 +999,7 @@ namespace MonsterTrain2Poju.Model
             string? error = Validate(state);
             if (error != null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, error);
-            if (state.Units.Any(unit => unit.Status("lifelink") != null))
+            if (state.Units.Any(unit => unit.Status("lifelink") != null) && !TrueFinalBossCombatModel.Supports(state))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events,
                     "True-final-boss room attack scheduling remains uncalibrated; linked damage/heal APIs are separate.");
             var engine = new Engine(state, events, refreshPyre: refreshPyre,
@@ -1009,6 +1009,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, bool linkedHealthOnly = false)
         {
+            linkedHealthOnly |= TrueFinalBossCombatModel.Supports(state);
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) return relicError;
             if (state.Context?.Enchantments?.AutomaticLifecycle == false && state.Context.Enchantments.Rooms.SelectMany(room => room.Units).Any(unit =>

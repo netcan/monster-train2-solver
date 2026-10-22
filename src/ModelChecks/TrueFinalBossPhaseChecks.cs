@@ -75,9 +75,8 @@ internal static class TrueFinalBossPhaseChecks
                 JsonSerializer.Serialize(parents[selected], ModelJson.Options) == serialized[selected], "Concurrent Hellforged casting phase changed its parent or result.");
         });
         var missing = new OuterBossPhaseState(parents[0].Battle, parents[0].Boss);
-        Require(!OuterBossPhaseModel.Apply(missing, true).Supported &&
-            !TrainCombatModel.ResolveCombat(parents[0].Battle.Spawn.Train).Supported,
-            "Missing Hellforged flags and uncalibrated full true-final-boss combat must remain guarded.");
+        Require(!OuterBossPhaseModel.Apply(missing, true).Supported, "Missing Hellforged flags must remain guarded.");
+        TrueFinalBossTrainChecks.RequirePreviewGuarded(parents[0].Battle.Spawn.Train);
         Console.WriteLine($"TRUE-FINAL-BOSS-PHASES PASS: {rows.Length} original pre/post action boundaries, exhaustedQueueControl={controlled}, Hellforged casting flags, ordinary waves and full battle/controller/RNG equality; 64 immutable concurrent phases; full battle remains guarded.");
     }
 }

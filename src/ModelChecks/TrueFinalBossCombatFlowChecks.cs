@@ -68,7 +68,7 @@ internal static class TrueFinalBossCombatFlowChecks
             TrainCombatResult branch = TrainCombatModel.PreCombat(inputs[selected], (CombatTeam)rows[selected].GetProperty("Team").GetInt32());
             Require(branch.Supported && JsonSerializer.Serialize(branch.State, ModelJson.Options) == expected[selected], "Concurrent passive phase diverged.");
         });
-        Require(!TrainCombatModel.ResolveCombat(inputs[2]).Supported, "Passive calibration must not open uncalibrated full combat.");
-        Console.WriteLine("TRUE-FINAL-BOSS-PASSIVE PASS: 12 actual pre-combat team phases, all five bodies and ordinary waves, full train/context/RNG equality; 64 immutable concurrent branches; attacks/preview remain guarded.");
+        TrueFinalBossTrainChecks.RequirePreviewGuarded(inputs[2]);
+        Console.WriteLine("TRUE-FINAL-BOSS-PASSIVE PASS: 12 actual pre-combat team phases, all five bodies and ordinary waves, full train/context/RNG equality; 64 immutable concurrent branches; preview remains guarded.");
     }
 }

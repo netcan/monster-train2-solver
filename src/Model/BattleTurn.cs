@@ -677,6 +677,8 @@ namespace MonsterTrain2Poju.Model
 
             BattleTurnResult Finish(RoomOutcome outcome, int energy, string phase)
             {
+                if (Terminal(outcome) && spawn.Train.Context?.LifeLinks != null)
+                    return Unsupported("True-final-boss terminal EndTurn cleanup requires native card-pile/death integration.");
                 CombatContext settled = spawn.Train.Context!;
                 if (settled.EnergyState != null)
                     energy = settled.QueryFrame!.Energy!.Value;

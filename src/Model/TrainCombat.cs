@@ -422,6 +422,20 @@ namespace MonsterTrain2Poju.Model
                 room.Deployment, BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions,
                 movementContext, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             TrainCombatState moving = EnchantmentWorldModel.Rebase(new TrainCombatState(next, source.Movement, source.EnemySlotsPerRoom, movementContext));
+            // DoAscension reserves all destinations first, then compacts physical
+            // enemy points. A looping enemy can reserve a slot behind units that
+            // subsequently leave its destination; that reservation is not final.
+            if (moving.Context?.SpawnPoints != null && !source.Rooms.Any(room => room.Preview))
+            {
+                CombatContext compactContext = moving.Context;
+                foreach (RoomCombatState room in moving.Rooms.Reverse())
+                {
+                    var compact = BattleSpawnPointModel.Apply(compactContext.SpawnPoints!, WithContext(room, compactContext), "Compact", CombatTeam.Enemy);
+                    if (!compact.Supported) return Unsupported(compact.Error!);
+                    compactContext = compactContext.WithSpawnPoints(compact.State!);
+                }
+                moving = Freeze(moving, moving.Rooms.ToArray(), compactContext);
+            }
             moving = Freeze(moving, moving.Rooms.ToArray(), moving.Context);
             RoomAttachmentUnitSyncResult attachmentSync = RoomAttachmentUnitModel.SynchronizeMovement(source, moving);
             if (!attachmentSync.Supported) return Unsupported(attachmentSync.UnsupportedReason!);
@@ -449,7 +463,10 @@ namespace MonsterTrain2Poju.Model
             }
             next = moving.Rooms.ToArray();
             // Enemies that reach the Pyre fight immediately during ascension, within this same turn.
-            if (enteredPyre)
+            // CombatManager.IsCombatInRoomDisabledForFinalBoss suppresses the
+            // ascension tower pass when every living enemy has Life Link.
+            if (enteredPyre && next[pyre].Units.Any(unit => unit.Team == CombatTeam.Enemy &&
+                unit.Health > 0 && unit.Status("lifelink") == null))
             {
                 TrainCombatResult enabled = EnchantmentWorldModel.SetAllowUpdates(moving, true);
                 if (!enabled.Supported) return enabled;
@@ -755,7 +772,7 @@ namespace MonsterTrain2Poju.Model
 
         private static bool NeedsTowerTargets(RoomCombatState room) => room.Units
             .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects)
-            .Any(effect => effect.Action?.Target == "Tower" || effect.UnitUpgrade?.Target == "Tower");
+            .Any(effect => effect.Action?.Target is "Tower" or "FrontInAllRooms" || effect.UnitUpgrade?.Target == "Tower");
 
         private static void ApplyTowerUpdates(RoomCombatState[] rooms,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)> targets, IReadOnlyList<CombatUnit> retained)

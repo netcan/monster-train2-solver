@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--train-only")
+{
+    TrainCombatChecks.Run();
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrainCombatChecks.Native(fixture.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--true-final-boss-train-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossTrainChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--post-combat-only")
 {
     PostCombatHealingChecks.Run();

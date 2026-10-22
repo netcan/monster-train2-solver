@@ -41,8 +41,7 @@ internal static class TrueFinalBossUnitTurnChecks
             RoomCombatResult result = RoomCombatModel.ApplyUnitTurn(inputs[selected], rows[selected].GetProperty("ActorId").GetInt32());
             Require(result.Supported && JsonSerializer.Serialize(result.State, ModelJson.Options) == expected[selected], "Concurrent native boss attack diverged.");
         });
-        Require(!TrainCombatModel.ResolveCombat(root.GetProperty("PreCombats")[2].GetProperty("Before").Deserialize<TrainCombatState>()!).Supported,
-            "Unit attack coverage must not open uncalibrated room combat and previews.");
+        TrueFinalBossTrainChecks.RequirePreviewGuarded(root.GetProperty("PreCombats")[2].GetProperty("Before").Deserialize<TrainCombatState>()!);
         Console.WriteLine($"TRUE-FINAL-BOSS-UNIT-TURNS PASS: {rows.Length} actual native turns, Pyre attacks={pyreAttacks}, Dominion attacks={dominionAttacks}, linked health writes={linkedHealthWrites}; full room/context/RNG and target sequence equality; 64 immutable concurrent branches; full battle remains guarded.");
     }
 }
