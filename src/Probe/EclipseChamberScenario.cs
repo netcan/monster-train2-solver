@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Movement => ShadeCallbacks && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_MOVEMENT") == "1";
         internal static bool EnemyMovement => Movement && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_ENEMY_MOVEMENT") == "1";
         internal static bool EnemyCallbacks => EnemyMovement && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_ENEMY_CALLBACKS") == "1";
+        internal static bool EnemyConduit => EnemyCallbacks && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_ENEMY_CONDUIT") == "1";
         internal const string EnemyCallbackKey = "PojuEclipseEnemyCallbacks";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -126,7 +127,17 @@ namespace MonsterTrain2Poju.Probe
             CharacterData original = all.GetAllCharacterData().Single(unit => unit.GetAssetKey() == "ShieldGuardT1_BasicNonAttack");
             var carrier = UnityEngine.Object.Instantiate(original); carrier.name = EnemyCallbackKey;
             Set(carrier, "id", "ec110010-0000-4000-8000-000000000003");
-            Set(carrier, "triggers", original.GetTriggers().Concat(triggers).ToList());
+            var callbacks = original.GetTriggers().Concat(triggers).ToList();
+            if (EnemyConduit)
+            {
+                // Native Conduit requires a physical room in OnStacksAdded;
+                // hero Setup happens off-train, so grant it through OnSpawn.
+                var effect = new CardEffectData("CardEffectAddStatusEffect", null!, Team.Type.Heroes);
+                effect.Cheat_SetTargetMode(TargetMode.Self);
+                Set(effect, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "conduit", count = 4 } });
+                callbacks.Add(new CharacterTriggerData(CharacterTriggerData.Trigger.OnSpawn, effect));
+            }
+            Set(carrier, "triggers", callbacks);
             ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(all)).Add(carrier);
             int changed = 0;
             foreach (SpawnGroupData group in ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")

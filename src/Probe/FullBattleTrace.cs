@@ -866,6 +866,7 @@ namespace MonsterTrain2Poju.Probe
                 EclipseChamberMovement = EclipseChamberScenario.Movement,
                 EclipseChamberEnemyMovement = EclipseChamberScenario.EnemyMovement,
                 EclipseChamberEnemyCallbacks = EclipseChamberScenario.EnemyCallbacks,
+                EclipseChamberEnemyConduit = EclipseChamberScenario.EnemyConduit,
                 EclipseChamberCardIds = EclipseChamberScenario.CardIds,
                 EclipseChamberRecords = EclipseChamberScenario.Records,
                 OriginalRoomCardsPrepared = OriginalRoomCardsScenario.Prepared,

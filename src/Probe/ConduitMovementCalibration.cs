@@ -18,9 +18,12 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_CONDUIT_MOVEMENT") == "1";
         internal static bool Enemy => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_CONDUIT_ENEMY_MOVEMENT") == "1";
         private static CombatTeam Team => Enemy ? CombatTeam.Enemy : CombatTeam.Player;
-        private static SpawnPoint NativePoint(int room, int point) => Enemy
-            ? Managers.GetRoomManager().GetRoom(room).GetHeroPoint(point)
-            : Managers.GetRoomManager().GetRoom(room).GetMonsterPoint(point);
+        private static SpawnPoint NativePoint(int room, int point)
+        {
+            RoomState floor = Managers.GetRoomManager()!.GetRoom(room)!;
+            return (Enemy ? floor.GetHeroPoint(point) : floor.GetMonsterPoint(point))
+                ?? throw new InvalidOperationException("Missing native Conduit movement point.");
+        }
         internal static bool Started, Completed;
         internal static string? Error;
         private static readonly List<object> rows = new List<object>();

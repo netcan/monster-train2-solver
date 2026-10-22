@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 891 archives (815 full battles and
+Current manifest inventory (2026-10-22): 893 archives (817 full battles and
 76 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -17,6 +17,10 @@ It does not exercise player-published Bumps on the opposing callback carrier.
 boundaries and three native preview controls. Full contexts/private trackers,
 ordinary/stronger hand upgrades, points, RNG and eight immutable branches match.
 See [Conduit movement](conduit-movement.md).
+`full-battle-eclipse-chamber-enemy-conduit{,-replay}.mt2f` composes opposing
+Conduit, Full/New callbacks and four paid original Bumps through victory at
+Pyre80. Eighteen frozen inputs, sixteen full model branches and four actual
+hand-tracker clears match; native-invalid off-train starting Conduit is guarded.
 
 The natural Fragile checkpoint is retained in `campaign-progressed-ring8-fragile.zip`
 with seven preceding native wins and thirteen hash-verified restore members.

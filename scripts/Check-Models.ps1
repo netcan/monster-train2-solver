@@ -29,6 +29,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-eclipse-chamber-enemy-movement-replay.mt2f',
     'full-battle-eclipse-chamber-enemy-callbacks.mt2f',
     'full-battle-eclipse-chamber-enemy-callbacks-replay.mt2f',
+    'full-battle-eclipse-chamber-enemy-conduit.mt2f', 'full-battle-eclipse-chamber-enemy-conduit-replay.mt2f',
     'full-battle-player-room-moon-enemy-search.mt2f', 'full-battle-player-room-moon-enemy-replay.mt2f',
     'full-battle-player-room-moon-search.mt2f', 'full-battle-player-room-moon-replay.mt2f', 'full-battle-player-conduit-search.mt2f', 'full-battle-player-conduit-replay.mt2f',
     'conduit-movement-calibration.mt2f', 'conduit-enemy-movement-calibration.mt2f',

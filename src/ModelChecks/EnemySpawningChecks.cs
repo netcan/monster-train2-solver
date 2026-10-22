@@ -38,7 +38,23 @@ internal static class EnemySpawningChecks
         Parallel.For(0, 64, _ => Require(JsonSerializer.Serialize(EnemySpawningModel.Spawn(source, true).State) == expected,
             "Parallel spawning changed RNG or unit identities."));
         References();
+        StartingConduitGuard();
         Console.WriteLine("SPAWN-CHECKS PASS: wave order, cached choices, treasure timing/floors, slot overflow and isolation.");
+    }
+    internal static void StartingConduitGuard()
+    {
+        var rng = UnityRng.Seed(92);
+        var unit = new CombatUnit(0, "off-train-conduit", CombatTeam.Enemy, 0, 5, 5, false, false, false,
+            [new CombatStatus("conduit", 4)]);
+        var definition = new EnemyDefinition(unit, true, false, []);
+        var train = new TrainCombatState(Enumerable.Range(0, 4).Select(index => new RoomCombatState(index, false, [], [])).ToArray(), [], 7);
+        var root = new EnemySpawnState(train, [new EnemyWave([new EnemyGroup([definition])])], [-1], 0,
+            false, rng, 1, [], 0, false, 1, 1, 1, []);
+        string parent = JsonSerializer.Serialize(root);
+        EnemySpawnResult result = EnemySpawningModel.Spawn(root, false);
+        Require(!result.Supported && result.UnsupportedReason!.Contains("off-train") && JsonSerializer.Serialize(root) == parent,
+            "Native-invalid off-train starting Conduit must be rejected without changing the parent.");
+        Console.WriteLine("ENEMY-CONDUIT-BIRTH-GUARD PASS: native-invalid off-train starting stacks rejected; post-entry callbacks calibrated separately.");
     }
     private static void References()
     {

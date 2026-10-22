@@ -352,8 +352,14 @@ namespace MonsterTrain2Poju.Model
             int playerIndex = room.FindIndex(existing => existing.Team == CombatTeam.Player);
             room.Insert(playerIndex < 0 ? room.Count : playerIndex, unit);
         }
-        private static string? Validate(EnemyDefinition definition, CombatContext? context) =>
-            RoomCombatModel.Validate(new RoomCombatState(0, false, new[] { definition.Unit }, definition.ExternalInteractions, context));
+        private static string? Validate(EnemyDefinition definition, CombatContext? context)
+        {
+            // Hero Setup runs before EnterTower. Native Conduit's stacks-added
+            // callback dereferences the physical room even for a starting status.
+            if (definition.Unit.Status("conduit")?.Stacks > 0)
+                return "Enemy starting Conduit applies stacks off-train; a post-entry status callback is required.";
+            return RoomCombatModel.Validate(new RoomCombatState(0, false, new[] { definition.Unit }, definition.ExternalInteractions, context));
+        }
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
         private static EnemySpawnResult Unsupported(string reason) => new EnemySpawnResult(null, RoomOutcome.Unsupported, reason);

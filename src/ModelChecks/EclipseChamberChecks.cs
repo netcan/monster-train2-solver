@@ -235,6 +235,31 @@ internal static class EclipseChamberChecks
         Require(moves == 4 && targets.Count == 1, "Missing complete repeated up/down pairs on one original enemy.");
         Console.WriteLine($"ECLIPSE-ENEMY-MOVEMENT-CHAIN PASS originalMovementCards=4 paidEnergy=4 sameEnemy=true maskChanges=4 enemyCallbacks={callbacks} immutableFullChains=16");
     }
+    internal static void EnemyConduit(FixtureValue root)
+    {
+        Require(root.GetProperty("EclipseChamberEnemyConduit").GetBoolean(), "Missing opposing Conduit composition.");
+        EnemyMovement(root);
+        int moves = 0, cleared = 0, upgraded = 0;
+        foreach (FixtureValue row in root.GetProperty("Actions").EnumerateArray().Skip(9))
+        {
+            BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            int id = row.GetProperty("Action").GetProperty("TargetUnitId").GetInt32();
+            CombatUnit unit = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == id);
+            Require(unit.Status("conduit")?.Stacks == 4 && ConduitModel.Validate(before.Spawn.Train.Context) == null &&
+                ConduitModel.Validate(after.Spawn.Train.Context) == null, "Missing complete opposing Conduit capture.");
+            ConduitUnitState Tracker(BattleTurnState state) => state.Spawn.Train.Context!.MagicPower!
+                .Where(room => room.Team == CombatTeam.Enemy).SelectMany(room => room.Conduit!.Units)
+                .Single(contributor => contributor.UnitId == id);
+            ConduitUnitState prior = Tracker(before), current = Tracker(after);
+            if (prior.Cards.Count > current.Cards.Count) cleared++;
+            upgraded += prior.Cards.Count;
+            Require(current.Cards.Count == 0 && current.Power == 4, "Leaving the selected floor retained opposing hand upgrades.");
+            moves++;
+        }
+        Require(moves == 4 && cleared > 0 && upgraded > 0, "Missing actual opposing Conduit hand upgrade/clear witnesses.");
+        Console.WriteLine($"ECLIPSE-ENEMY-CONDUIT PASS paidMoves={moves} clearedTrackers={cleared} trackedCards={upgraded} completeMoonAndConduitChain=true");
+    }
     internal static bool MovementWitness(BattleTurnState before, BattleTurnState after, PlayCardAction action, bool requireCallbacks = true,
         CombatTeam team = CombatTeam.Player)
     {

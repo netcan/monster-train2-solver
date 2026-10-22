@@ -117,9 +117,44 @@ The blanket enemy physical-capture rejection and player-only movement check are
 removed; complete capture, original upgrade definition and card-eligibility
 checks remain. The original friendly 38/3 control still passes. This establishes
 the isolated physical mechanism, not a complete opposing paid battle or real
-player composition. No full regression or Mac package is built.
+player composition. The paid composition is validated below. No full regression or Mac package is built.
 
 ```powershell
 scripts/Run-FullBattleProbe.ps1 -ConduitEnemyMovement -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --conduit-movement-only tests/fixtures/conduit-enemy-movement-calibration.mt2f
+```
+
+## Paid opposing Conduit and moon callbacks
+
+`full-battle-eclipse-chamber-enemy-conduit{,-replay}.mt2f` retains profiles
+`full-battle-units-spells-and-junk-20261022-133030-30ce487a` (111.52 seconds)
+and `full-battle-units-spells-and-junk-20261022-133257-cc2211b1` (81.76 seconds).
+Both win at Pyre80 after thirteen plays/five EndTurns, settle, exit normally,
+preserve protected originals and have four zero failure counters. Eighteen
+independently frozen inputs, complete state/RNG and sixteen full immutable
+model chains match in the fresh zero-search process.
+
+The authored first-wave carrier clones a shield guard with unchanged original
+Selene/Nightingale callbacks, then gains four original Conduit stacks from an
+OnSpawn AddStatus callback. Four unchanged paid Hidden Passage/Dripfall moves
+change room understanding and remove/reapply New upgrades. Every move clears
+its hand tracker after leaving the selected floor, with 22 tracked-card records.
+Two character/thirteen support refreshes and all seven spawn boundaries match.
+
+The first attempted scene gave Conduit as a starting status. Native Hero Setup
+applies it off-train, and StatusEffectConduitState.OnStacksAdded dereferences
+the missing physical room. That diagnostic is not curated; its two isolated
+test processes were stopped after the native failure. The corrected scene
+grants Conduit through the native post-entry OnSpawn pipeline. Enemy spawn
+validation now explicitly rejects off-train starting Conduit rather than
+forecasting a continuation the game cannot execute. A focused immutable guard
+control passes alongside the accepted post-entry battle chain.
+
+Only offline checker outputs were rebuilt while these native processes ran;
+all four Probe/Advisor payload DLL hashes remained unchanged. This is an
+authored composition, not a natural late-game deck or actual player acceptance.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberEnemyConduit -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-enemy-conduit-only tests/fixtures/full-battle-eclipse-chamber-enemy-conduit.mt2f
 ```

@@ -3,6 +3,37 @@ using MonsterTrain2Poju.Model;
 
 internal static class PlayerRoomMoonChecks
 {
+    internal static void EnemyConduitPair(FixtureValue source, FixtureValue replay)
+    {
+        Require(source.GetProperty("EclipseChamberEnemyConduit").GetBoolean() && replay.GetProperty("EclipseChamberEnemyConduit").GetBoolean(),
+            "Missing real player opposing Conduit composition.");
+        EnemyCallbacksPair(source, replay);
+        int contributors = 0, upgraded = 0;
+        foreach (FixtureValue row in source.GetProperty("RollingDecisions").EnumerateArray())
+            foreach (string boundary in new[] { "Root", "Actual" })
+            {
+                var state = row.GetProperty(boundary).Deserialize<BattleTurnState>()!;
+                CombatContext context = state.Spawn.Train.Context!;
+                Require(ConduitModel.Validate(context) == null && context.ConduitRetained != null,
+                    "Player omitted complete opposing Conduit capture.");
+                foreach (RoomCombatState room in state.Spawn.Train.Rooms)
+                    foreach (CombatUnit unit in room.Units.Where(unit => unit.Health > 0 && unit.Team == CombatTeam.Enemy && unit.Status("conduit") != null))
+                    {
+                        ConduitUnitState tracker = context.MagicPower!.Single(power => power.RoomIndex == room.RoomIndex && power.Team == CombatTeam.Enemy)
+                            .Conduit!.Units.Single(item => item.UnitId == unit.Id);
+                        Require(tracker.Power == 4 && tracker.Active, "Player opposing contributor differs.");
+                        foreach (int id in tracker.Cards)
+                        {
+                            Require(context.FindCard(id)!.Temporary.Upgrades.Any(upgrade => upgrade.DataId == "conduit:" + unit.Id),
+                                "Opposing tracker lost its actual hand upgrade.");
+                            upgraded++;
+                        }
+                        contributors++;
+                    }
+            }
+        Require(contributors > 0 && upgraded > 0, "No live opposing contributor or actual player-hand upgrade.");
+        Console.WriteLine($"PLAYER-ROOM-MOON-ENEMY-CONDUIT PASS contributorSnapshots={contributors} trackedHandUpgrades={upgraded} exactFrozenReplay=true");
+    }
     internal static void EnemyCallbacksPair(FixtureValue source, FixtureValue replay)
     {
         Require(source.GetProperty("EclipseChamberEnemyCallbacks").GetBoolean() &&
@@ -17,12 +48,13 @@ internal static class PlayerRoomMoonChecks
                         unit.Triggers.Any(trigger => trigger.Kind == "OnMoonShade")))
                 {
                     actors.Add(unit.Id);
-                    Require(unit.AssetKey == "PojuEclipseEnemyCallbacks" && unit.MoonPhaseMask.HasValue &&
-                        (unit.MoonPhaseMask.Value & 4) == 4, "Player omitted the opposing carrier or its cached understanding.");
+                    int mask = unit.MoonPhaseMask ?? throw new InvalidOperationException("Player omitted opposing cached understanding.");
+                    Require(unit.AssetKey == "PojuEclipseEnemyCallbacks" && (mask & 4) == 4,
+                        "Player omitted the opposing carrier or its cached understanding.");
                     foreach ((int bit, string key) in new[] { (1, "Nightingale_Upgrade"), (2, "SeleneAcolyte_MagicPower_Upgrade") })
                     {
                         bool present = unit.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == key);
-                        Require(present == ((unit.MoonPhaseMask.Value & bit) != 0), "Enemy callback upgrade differs from cached understanding.");
+                        Require(present == ((mask & bit) != 0), "Enemy callback upgrade differs from cached understanding.");
                         if (present) upgraded++;
                     }
                 }
