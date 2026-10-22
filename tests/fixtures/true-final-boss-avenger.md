@@ -22,5 +22,7 @@
 入口：`./scripts/Check-TrueFinalBoss.ps1 -Case OrdinaryAlly -SkipBuild`。
 原生采集使用 `-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossOrdinaryAlly Avenger`，
 并启用分支卡牌掩码、物理站位和死亡/卡牌动画收敛。
-该受控路线败北，只证明上述完整战斗机制；不代表真实玩家建议对、任意
-回调致死签名或自然真终局胜利。未运行全量回归或构建 Mac 包。
+该受控路线败北，只证明上述完整战斗机制。真实玩家建议及新进程九输入重放
+随后也通过，实际召唤 Avenger 并有三次受击回调见证，见
+[玩家配对证据](player-true-final-boss-avenger.md)。任意回调致死签名和自然
+真终局胜利仍未验收。未运行全量回归或构建 Mac 包。

@@ -108,7 +108,7 @@ internal static class TrueFinalBossOrdinaryAllyChecks
             "; two paid allies, six EndTurns, five UI previews and 16 independent immutable full chains.");
     }
 
-    private static void VerifyOnHit(FixtureValue root, CombatUnit ally, CombatContext context)
+    internal static void VerifyOnHit(FixtureValue root, CombatUnit ally, CombatContext context)
     {
         int witnesses = 0;
         foreach (FixtureValue row in root.GetProperty("UnitTurns").EnumerateArray())

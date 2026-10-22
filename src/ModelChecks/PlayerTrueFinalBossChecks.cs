@@ -4,8 +4,9 @@ using MonsterTrain2Poju.Model;
 internal static class PlayerTrueFinalBossChecks
 {
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
-    internal static void Pair(FixtureValue source, FixtureValue replay, bool ordinaryAlly = false, bool upgradedAlly = false)
+    internal static void Pair(FixtureValue source, FixtureValue replay, bool ordinaryAlly = false, bool upgradedAlly = false, bool triggeredAlly = false)
     {
+        Require(!triggeredAlly || ordinaryAlly && !upgradedAlly, "Triggered player ally must use its separately calibrated unmodified profile.");
         RollingAdviceChecks.FrozenPair(source, replay);
         BattleAdviceChecks.Native(source);
         Require(source.GetProperty("PlayerAdvisor").GetProperty("InteractionsPassed").GetBoolean(),
@@ -27,9 +28,9 @@ internal static class PlayerTrueFinalBossChecks
                 route.GetProperty("StartingDeckUnchanged").GetBoolean() == !ordinaryAlly,
                 "Missing the explicit original route selection and unchanged assets/Pyre with the declared deck control.");
             bool added = fixture.TryGetProperty("TrueFinalBossOrdinaryAllyControl", out FixtureValue addition) && addition.ValueKind != FixtureKind.Null;
-            Require(added == ordinaryAlly && (!added || addition.GetProperty("Kind").GetString() == "Warrior" &&
-                addition.GetProperty("CardDataId").GetString() == "5de24977-6800-4015-a20e-9949e79e057c"),
-                "The ordinary player route must contain only its explicitly added original Warrior card.");
+            Require(added == ordinaryAlly && (!added || addition.GetProperty("Kind").GetString() == (triggeredAlly ? "Avenger" : "Warrior") &&
+                addition.GetProperty("CardDataId").GetString() == (triggeredAlly ? "69fcbe85-a5b7-4a83-bf6d-21888604d99e" : "5de24977-6800-4015-a20e-9949e79e057c")),
+                "The player route must contain only its explicitly declared original allied card.");
             if (added)
             {
                 string upgrades = addition.TryGetProperty("UpgradeKind", out FixtureValue kind) ? kind.GetString()! : "";
@@ -66,11 +67,21 @@ internal static class PlayerTrueFinalBossChecks
             source.GetProperty("Turns").GetArrayLength() > 1 && states.Any(state => state.Spawn.Train.Context!.CardInstances!.Any(card =>
                 card.MaskDescriptor?.SourceTraits != null && state.PlayRules!.Cards.Any(rule => rule.DataId == card.DataId && rule.AssetKey == "TFB_EntropyScourge"))),
             "Missing real search, card play, continued combat or original generated Scourge metadata.");
-        if (ordinaryAlly)
+        if (triggeredAlly)
+        {
+            int cardId = source.GetProperty("TrueFinalBossOrdinaryAllyControl").GetProperty("CardId").GetInt32();
+            BattleTurnState? deployed = states.FirstOrDefault(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                unit.SpawnerCardId == cardId && unit.AssetKey == "MonsterAvenger" && unit.BaseAttack == 20 && unit.MaxHealth == 40 &&
+                unit.Triggers.Count == 1 && TrueFinalBossCombatModel.SupportsAlly(unit, state.Spawn.Train.Context)));
+            Require(deployed != null, "Real player advice must actually summon the original OnHit ally with complete source metadata.");
+            CombatUnit ally = deployed!.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == cardId);
+            TrueFinalBossOrdinaryAllyChecks.VerifyOnHit(source, ally, deployed.Spawn.Train.Context!);
+        }
+        else if (ordinaryAlly)
             Require(states.Any(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
                 unit.AssetKey == "BasicDemon" && unit.BaseAttack == (upgradedAlly ? 25 : 15) && unit.MaxHealth == (upgradedAlly ? 28 : 8) && unit.Status("multistrike")?.Stacks == 1 &&
                 TrueFinalBossCombatModel.SupportsAlly(unit, state.Spawn.Train.Context))),
                 "Real player advice must actually summon the added ordinary Warrior with complete source metadata.");
-        Console.WriteLine($"PLAYER-TRUE-FINAL-BOSS PASS: {records.Length} real player inputs and fresh frozen replay; complete forecasts/state/RNG, original queued birth, five-body casting/link state and generated Scourges. Controlled route{(ordinaryAlly ? " and original ordinary Warrior" : "")}{(upgradedAlly ? " with two numeric upgrades" : "")}; nativeWon={source.GetProperty("NativeWon").GetBoolean()}.");
+        Console.WriteLine($"PLAYER-TRUE-FINAL-BOSS PASS: {records.Length} real player inputs and fresh frozen replay; complete forecasts/state/RNG, original queued birth, five-body casting/link state and generated Scourges. Controlled route{(triggeredAlly ? " and original OnHit Avenger" : ordinaryAlly ? " and original ordinary Warrior" : "")}{(upgradedAlly ? " with two numeric upgrades" : "")}; nativeWon={source.GetProperty("NativeWon").GetBoolean()}.");
     }
 }

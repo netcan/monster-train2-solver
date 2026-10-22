@@ -50,6 +50,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'true-final-boss-ordinary-ally-animus-damage.mt2f',
     'true-final-boss-ordinary-ally-warrior-both.mt2f',
     'true-final-boss-ordinary-ally-avenger.mt2f',
+    'full-battle-player-true-final-boss-avenger-search.mt2f', 'full-battle-player-true-final-boss-avenger-replay.mt2f',
     'full-battle-player-true-final-boss-ordinary-search.mt2f',
     'full-battle-player-true-final-boss-ordinary-replay.mt2f',
     'full-battle-player-true-final-boss-ordinary-upgraded-search.mt2f',

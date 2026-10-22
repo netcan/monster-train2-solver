@@ -698,3 +698,14 @@ captures are pure. At twelve turns/30,000 ms with tactical candidates and
 bottom deployment, the first consumed total response is 51.09 seconds.
 Retained response median/P95 is 2.38/3.96 seconds. The default bounded-loss
 pair remains separate. See [complete winning evidence](../tests/fixtures/player-fragile-winning.md).
+
+## Original Level9 OnHit ally · 2026-10-23
+
+Actual three-turn/3,000-ms player advice summons the original 20/40 Avenger
+and executes nine inputs (four plays/five EndTurns). A fresh native process
+repeats all inputs; roots, complete forecasts, successors and RNG match.
+Three linked attacker unit turns exercise the original OnHit melee-weakness
+callback. Both controlled losses settle, exit normally, leave protected files
+unchanged and retain four zero native failure counters. Panel interactions
+and 141 source/29 replay pure captures pass; source publishes eleven plans.
+Actual response median/P95 is 5.18/5.57 seconds. See [player evidence](../tests/fixtures/player-true-final-boss-avenger.md).
