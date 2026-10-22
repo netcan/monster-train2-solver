@@ -8,13 +8,25 @@ using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
 {
-    // Full-route diagnostics only. Player capture remains behind its existing guard.
+    // Pure capture is shared with the bounded player gate. Diagnostic writers
+    // stay exclusive to the development assembly.
     internal static class TrueFinalBossTurnProbe
     {
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_TRUE_FINAL_BOSS") == "1" ||
-            Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_SCHEDULED_SPAWN") == "1";
+        internal static bool Enabled
+        {
+            get
+            {
+#if DEVELOPMENT_PROBE
+                return Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_TRUE_FINAL_BOSS") == "1" ||
+                    Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_SCHEDULED_SPAWN") == "1";
+#else
+                return false;
+#endif
+            }
+        }
+        internal static bool CaptureEnabled => Enabled || PlayerTrueFinalBossProbe.Enabled;
         private static BattleTurnState? before;
-        internal static bool HasQueuedBoss => Enabled && AllGameManagers.Instance?.GetHeroManager() is HeroManager heroes &&
+        internal static bool HasQueuedBoss => CaptureEnabled && AllGameManagers.Instance?.GetHeroManager() is HeroManager heroes &&
             ((List<int>)AccessTools.Field(typeof(HeroManager), "queuedTrueFinalBosses").GetValue(heroes)).Count > 0;
         internal static TrueFinalBossSpawnDefinition? CaptureQueued(HeroManager heroes)
         {
@@ -29,7 +41,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static TrueFinalBossPhaseFlags? CaptureFlags(HeroManager heroes)
         {
-            if (!Enabled || heroes.GetOuterTrainBossCharacter()?.IsTrueFinalBoss() != true) return null;
+            if (!CaptureEnabled || heroes.GetOuterTrainBossCharacter()?.IsTrueFinalBoss() != true) return null;
             return new TrueFinalBossPhaseFlags((bool)AccessTools.Field(typeof(HeroManager), "hasHellforgedBoss").GetValue(heroes),
                 (bool)AccessTools.Field(typeof(HeroManager), "hasHellforgedBossWaitedOnRelentless").GetValue(heroes),
                 ((List<int>)AccessTools.Field(typeof(HeroManager), "queuedTrueFinalBosses").GetValue(heroes)).Count);

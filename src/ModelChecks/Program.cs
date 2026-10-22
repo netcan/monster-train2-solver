@@ -1875,6 +1875,14 @@ if (args.Length == 3 && args[0] == "--player-boss-fragile-bounded-pair-only")
     return;
 }
 
+if (args.Length == 3 && args[0] == "--player-true-final-boss-bounded-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerTrueFinalBossChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-boss-corrupter-bounded-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

@@ -637,3 +637,19 @@ See [complete evidence and limits](../tests/fixtures/natural-ring7-tactics.md).
 This case uses horizon12/30,000-ms tactical search, floor3 in the user config
 (zero-based room2). It does not establish default three-turn/3,000-ms performance
 or a Fragile victory. No full regression or Mac package build is performed.
+
+## Original Level9 bounded player advice
+
+The actual player assembly now admits the original no-Covenant Level9
+five-body encounter. A fresh native source and independent frozen replay
+complete all 17 inputs (12 card plays, five EndTurns), with every full
+forecast/state/RNG matched and all four failure counters zero. The source
+passes panel/pointer/state interactions, records 19 publications and 247 pure
+captures; replay records 43 pure captures and zero publications. Three-turn,
+3,000-ms tactical advice has actual median/P95 response 4.62/6.63 seconds.
+
+The native jump explicitly overrides the encounter unlock; assets, original
+HP, deck and Pyre80 are unchanged. Both runs lose. This establishes bounded
+advice and replay, while natural victory and higher Covenant remain open.
+Diagnostic writers stay disabled in the player build. See
+[the complete evidence and supported scope](../tests/fixtures/player-true-final-boss-bounded.md).
