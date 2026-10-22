@@ -596,6 +596,33 @@ Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case TerminalSpell -SkipBuild`。
 原生采集在 `-TrueFinalBossDeath <主体>` 上追加 `-TrueFinalBossDeathSpellSource`。
 
+## 五主体完整付费施法致死
+
+`true-final-boss-paid-spell-{dominion,savagery,entropybot,entropymid,entropytop}.mt2f`
+各自从原始部署状态开始，结束部署并生成原始五主体，再显式减少三个独立生命
+所有者的 HP 至一血。Dominion 另通过原生 API 明确移除四层法术护盾；没有把
+这个准备动作当作自然护盾消耗。原始场景、实体、牌组和火炉均未修改。
+
+五个新进程均实际支付 1 点能量，打出原始牌组中的伤害/附加状态法术，立即
+获胜且火炉保留 80 血。每局一张牌、一次部署 EndTurn，捕获、差异、未支持和
+待完成计数全部为零。完整卡牌去向、统计、跨层移除、终局状态和 RNG 一致。
+模型曾只替换受击房间，遗留其他楼层的 Boss，现按组移除后的完整世界同步。
+
+定向检查从部署根独立完成出生、显式准备和付费致死，不注入后续原生 Before；
+每主体 16 条并发不可变链通过，并确认获胜动作在合法搜索前沿。
+
+| 主体 | 原生来源（`.probe-runs/` 下） |
+| --- | --- |
+| Dominion | `full-battle-units-spells-and-junk-20261023-002250-c9c6fd6f` |
+| Savagery | `full-battle-units-spells-and-junk-20261023-002300-bed36983` |
+| EntropyBot | `full-battle-units-spells-and-junk-20261023-002423-24e1bf4a` |
+| EntropyMid | `full-battle-units-spells-and-junk-20261023-002423-19d998fb` |
+| EntropyTop | `full-battle-units-spells-and-junk-20261023-002523-a4c30fb1` |
+
+入口：`./scripts/Check-TrueFinalBoss.ps1 -Case PaidSpell -SkipBuild`。
+原生采集：`-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossLethalSpellTarget <主体>`。
+仍为显式临界状态验收；自然真终局胜局、其他友军及升级/特征组合保持原有边界。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

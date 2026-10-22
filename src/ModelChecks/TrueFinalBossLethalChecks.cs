@@ -6,7 +6,7 @@ internal static class TrueFinalBossLethalChecks
 {
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
     private static string Json(object value) => JsonSerializer.Serialize(value, ModelJson.Options);
-    private static BattleTurnState Prepare(BattleTurnState state)
+    internal static BattleTurnState Prepare(BattleTurnState state)
     {
         TrainCombatState train = state.Spawn.Train;
         string[] assets = { "Boss_Level9_Dominion_V2", "Boss_Level9_Savagery_V2", "Boss_Level9_Entropy_Bot_V2" };
@@ -19,7 +19,7 @@ internal static class TrueFinalBossLethalChecks
         }
         return WithTrain(state, train);
     }
-    private static BattleTurnState WithTrain(BattleTurnState state, TrainCombatState train)
+    internal static BattleTurnState WithTrain(BattleTurnState state, TrainCombatState train)
     {
         EnemySpawnState old = state.Spawn;
         var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng, old.NextUnitId,

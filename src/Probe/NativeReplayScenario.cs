@@ -2783,6 +2783,7 @@ namespace MonsterTrain2Poju.Probe
                 // Opt-in probes capture the supported outer boss and permit
                 // normal legal cards. Default capture guards remain in place;
                 // acceptance still requires the complete native failure counters.
+                if (TrueFinalBossLethalScenario.PaidSpell && TrueFinalBossLethalScenario.Prepare()) return;
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision(
                     includeOuterBossForBump: OuterBossPhaseProbe.Enabled || OuterBossBirthProbe.Enabled,
                     ignoreOuterBossSpawnInteraction: OuterBossPhaseProbe.Enabled || OuterBossBirthProbe.Enabled);
@@ -2793,7 +2794,11 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
                 RelicStatusDecayProbe.Matrix();
-                if (OriginalBalatroEventYorickScenario.Enabled)
+                if (TrueFinalBossLethalScenario.PaidSpell)
+                {
+                    pendingPlay = TrueFinalBossLethalScenario.Choose(decision);
+                }
+                else if (OriginalBalatroEventYorickScenario.Enabled)
                 {
                     pendingPlay = OriginalBalatroEventYorickScenario.Choose(decision);
                 }

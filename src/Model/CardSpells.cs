@@ -2063,7 +2063,13 @@ namespace MonsterTrain2Poju.Model
 
         private static TrainCombatState ReplaceRoom(TrainCombatState source, RoomCombatState changed)
         {
-            RoomCombatState[] rooms = source.Rooms.Select(room => room.RoomIndex == changed.RoomIndex ? changed : room).ToArray();
+            // Removing an original true-final-boss body removes its complete
+            // linked group, including actors on the other three floors.
+            bool removedLinkedGroup = source.Context?.LifeLinks is { Actors.Count: 5 } links &&
+                links.Actors.All(actor => actor.TrueFinalBoss) && changed.Context?.LifeLinks == null &&
+                changed.Context?.AllScenarioBossesDead == true && changed.Context.Enchantments != null;
+            RoomCombatState[] rooms = removedLinkedGroup ? changed.Context!.Enchantments!.Rooms.ToArray() :
+                source.Rooms.Select(room => room.RoomIndex == changed.RoomIndex ? changed : room).ToArray();
             var alive = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             return WithContext(new TrainCombatState(rooms, source.Movement.Where(move => alive.Contains(move.UnitId)).ToArray(),
                 source.EnemySlotsPerRoom, changed.Context), changed.Context!);

@@ -43,6 +43,7 @@ param(
     [switch] $TrueFinalBossRelentless,
     [switch] $TrueFinalBossLethal,
     [switch] $TrueFinalBossLethalPreview,
+    [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')][string] $TrueFinalBossLethalSpellTarget = '',
     [ValidateRange(0, 25)][int] $TrueFinalBossFrontHealth = 0,
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossSpawn,
@@ -697,6 +698,8 @@ if ($TrueFinalBossRelentless) {
     }
     $OuterBossPhases = $true
 }
+if ($TrueFinalBossLethalSpellTarget) { $TrueFinalBossLethal = $true; $Policy = 'units-spells-and-junk' }
+if ($TrueFinalBossLethalSpellTarget -and $TrueFinalBossLethalPreview) { throw 'Paid spell and lethal preview require separate native captures.' }
 if ($TrueFinalBossLethal -and (-not $OriginalTrueFinalBoss -or $TrueFinalBossDormantSavagery -or $TrueFinalBossRelentless -or $OuterBossRelentless)) {
     throw 'Lethal TFB control requires the original route without other health/phase controls.'
 }
@@ -1353,6 +1356,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_RELENTLESS = $(if ($TrueFinalBossRelentless) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_LETHAL = $(if ($TrueFinalBossLethal) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_PREVIEW = $(if ($TrueFinalBossLethalPreview) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_SPELL_TARGET = $TrueFinalBossLethalSpellTarget
     MT2_PROBE_TRUE_FINAL_BOSS_FRONT_HEALTH = [string]$TrueFinalBossFrontHealth
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SPAWN = $(if ($TrueFinalBossSpawn) { '1' } else { '0' })
