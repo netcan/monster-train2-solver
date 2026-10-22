@@ -6,6 +6,12 @@ namespace MonsterTrain2Poju.Probe
     // be added and removed between snapshots while its callbacks retain effects.
     internal static class TriggerIdentityProbe
     {
+        internal static void InstallAdvisorPatches(Harmony harmony)
+        {
+            harmony.CreateClassProcessor(typeof(UpgradePatch)).Patch();
+            harmony.CreateClassProcessor(typeof(AddPatch)).Patch();
+        }
+
         private static void Register(CharacterState unit)
         {
             if (FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)

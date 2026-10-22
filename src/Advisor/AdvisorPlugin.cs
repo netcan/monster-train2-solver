@@ -40,7 +40,7 @@ namespace MonsterTrain2Poju.Advisor
                 BattleSpawnPointProbe.InstallAdvisorPatches(harmony);
                 CardSourceTraitProbe.InstallAdvisorPatches(harmony);
                 TypedDrawProbe.InstallAdvisorPatches(harmony);
-                RelicSpawnStatusProbe.InstallAdvisorPatches(harmony);
+                TriggerIdentityProbe.InstallAdvisorPatches(harmony);
                 BattleAdvisorOverlay.InstallAdvisorPatches(harmony);
                 overlay = new BattleAdvisorOverlay(Logger, settings);
                 Logger.LogInfo("POJU-READY version=" + Version + " platform=" + Application.platform +
