@@ -574,8 +574,11 @@ namespace MonsterTrain2Poju.Model
                         int healed = Math.Min(amount, maximum.Value - pyre.Health);
                         if (healed > 0)
                         {
-                            state = ReplaceRoom(state, pyreRoom!.WithUnits(pyreRoom.Units.Select(unit => unit.Id == pyre.Id
-                                ? unit.WithHealth(unchecked(unit.Health + healed)) : unit).ToArray()));
+                            RoomCombatState healedRoom = pyreRoom!.WithUnits(pyreRoom.Units.Select(unit => unit.Id == pyre.Id
+                                ? unit.WithHealth(unchecked(unit.Health + healed)) : unit).ToArray());
+                            // Later callbacks can reconstruct the train from its shared aura
+                            // world. Publish the Pyre heal before that world is read again.
+                            state = ReplaceRoom(state, EnchantmentWorldModel.Sync(healedRoom));
                         }
                     }
                     continue;

@@ -39,6 +39,32 @@ before CopyOnPlay. Other callback combinations/orders, discard-removing
 temporary upgrades, multiple copies and terminal copy routing remain guarded.
 This controlled victory does not establish natural Ring7 or player acceptance.
 
+## Natural Ring7 combination
+
+`full-battle-natural-ring7-copy-on-play.mt2f` uses the unchanged natural
+`.probe-runs/campaign-ring8-20261022-072727-d98c7abf-before-ring7` checkpoint.
+Source `full-battle-units-spells-and-junk-20261022-090426-6c34f9d0` runs with
+physical positions, branch masks, death-dissolve and card-animation settlement.
+No deck, upgrade, health, boss or spawn-queue edits are applied. The fixed
+policy loses after 39 plays and eight EndTurns; all four failure counters are
+zero and terminal effects settle. Full serial and sixteen independent chains
+match state and RNG, including the original Consume/copy and played purge.
+
+Two original upgraded StarterFireStarter plays each heal the Pyre by one HP
+while a shared enchantment world exists. Previously the room actor healed,
+but later callbacks reconstructed it from stale world HP. The heal now updates
+that shared snapshot before subsequent callbacks. The focused gate requires
+both HP deltas and agreement between the live and shared-world Pyre actors.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-copy-on-play-only `
+  tests/fixtures/full-battle-natural-ring7-copy-on-play.mt2f
+```
+
+This closes the combined mechanism mismatch, not the Ring7 player-victory
+goal. The natural checkpoint still needs a winning route before Fragile
+player acceptance can proceed.
+
 Focused affected checks also pass: 2,134 native trait refresh states, pure
 composition controls, ten native clone/upgrade refresh generations and the
 original first-spell-copy relic. No full regression or Mac build is run.

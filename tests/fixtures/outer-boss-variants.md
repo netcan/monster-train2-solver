@@ -73,8 +73,10 @@ The player entry remains limited to AllyBuffer until Fragile has a natural
 progressed encounter and independent native replay. Natural event grafting now
 passes Ring5 real-player advice and independent winning replay. A weaker
 natural Ring7 deck still loses; the stronger merchant-upgraded deck's original
-plain/Consume `CardTraitCopyOnPlay` now passes controlled calibration, while
-another natural card action still differs. These remain separate prerequisites
+plain/Consume `CardTraitCopyOnPlay` now passes controlled calibration and its
+complete natural Ring7 action chain matches after synchronizing Pyre heals
+into the shared aura world. That fixed policy still loses; a winning natural
+route remains a prerequisite
 for reaching the natural Fragile encounter. The explicit native "leave" route
 loses at ring six on all three preferred deployment floors and remains diagnostic.
 No full regression or Mac build was run for this increment.

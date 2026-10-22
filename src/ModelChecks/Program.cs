@@ -3681,6 +3681,11 @@ foreach (string path in args.Where(path => path.Contains("full-battle-copy-on-pl
     using var document = ModelJson.ReadFixture(path);
     CopyOnPlayChecks.Native(document.RootElement);
 }
+foreach (string path in args.Where(path => path.Contains("full-battle-natural-ring7-copy-on-play", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    CopyOnPlayChecks.Native(document.RootElement, natural: true);
+}
 foreach (string path in args.Where(path => path.Contains("full-battle-event-grafted-equipment", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);

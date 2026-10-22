@@ -11,7 +11,7 @@ internal static class CopyOnPlayChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         var created = new HashSet<int>();
-        int purgedPlays = 0, plainCopies = 0, consumeCopies = 0;
+        int purgedPlays = 0, plainCopies = 0, consumeCopies = 0, auraHeals = 0;
         foreach (var row in root.GetProperty("Actions").EnumerateArray())
         {
             var before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -20,6 +20,15 @@ internal static class CopyOnPlayChecks
             var context = before.Spawn.Train.Context!;
             var actual = after.Spawn.Train.Context!;
             var card = context.FindCard(action.CardInstanceId)!;
+            if (natural && card.Permanent.Upgrades.Any(upgrade => upgrade.AssetKey == "TraitHealPyrePerEmber"))
+            {
+                var pyreBefore = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre);
+                var pyreAfter = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre);
+                Require(pyreAfter.Health == pyreBefore.Health + 1 && actual.Enchantments != null &&
+                    actual.Enchantments.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == pyreAfter.Health,
+                    "Natural Pyre heal was lost from the shared aura world.");
+                auraHeals++;
+            }
             if (CardCopyOnPlayModel.Present(card))
             {
                 Require(card.Permanent.Upgrades.Any(upgrade => upgrade.DataId == CardCopyOnPlayModel.UpgradeId) &&
@@ -46,8 +55,9 @@ internal static class CopyOnPlayChecks
         }
         Require(natural ? consumeCopies > 0 && purgedPlays > 0 : plainCopies > 0 && consumeCopies > 0 && purgedPlays >= 2,
             "Missing required plain/Consume copy creation or played-copy purge witnesses.");
+        if (natural) Require(auraHeals == 2, "Missing both natural spell/Pyre/aura healing witnesses.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine($"COPY-ON-PLAY PASS natural={natural} copies={created.Count} plain={plainCopies} consume={consumeCopies} purgedPlays={purgedPlays}: original upgrade exclusion, temporary purge, complete immutable battle/RNG chains.");
+        Console.WriteLine($"COPY-ON-PLAY PASS natural={natural} copies={created.Count} plain={plainCopies} consume={consumeCopies} purgedPlays={purgedPlays} auraHeals={auraHeals}: original upgrade exclusion, temporary purge, complete immutable battle/RNG chains.");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }
