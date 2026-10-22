@@ -5,13 +5,18 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattlePlannerChecks
 {
-    internal static void TacticalSeed(FixtureValue fixture)
+    internal static void TacticalSeed(FixtureValue fixture, bool naturalRing7 = false)
     {
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(fixture.GetProperty(counter).GetInt32() == 0, "Tactical seed requires accepted native input: " + counter);
-        BattleTurnState root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
-        Require(root.Spawn.Turn == 0 && root.Spawn.QueuedOuterBoss?.Boss.AssetKey == "Boss_Level8_AllyBuffer",
-            "Missing natural final-battle deployment input.");
+        BattleTurnState root = naturalRing7
+            ? fixture.GetProperty("Actions")[0].GetProperty("Before").Deserialize<BattleTurnState>()!
+            : fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        Require(root.Spawn.Turn == 0 && (naturalRing7
+            ? root.PlayRules!.Cards.Any(rule => rule.AssetKey == "BanishedChamp1" && rule.SpawnUnit != null) &&
+                fixture.GetProperty("Actions").GetArrayLength() == 40 && fixture.GetProperty("Turns").GetArrayLength() == 8
+            : root.Spawn.QueuedOuterBoss?.Boss.AssetKey == "Boss_Level8_AllyBuffer"),
+            "Missing accepted natural deployment input.");
         string original = Key(root);
         using var keys = new BattleStateKeys();
         var options = new BattlePlannerOptions(256, 12, 8, 12, TimeSpan.FromSeconds(30), 2, useTacticalSeed: true);
@@ -31,7 +36,7 @@ internal static class BattlePlannerChecks
         Require(limited.ReachedNodeLimit && limited.ExpandedNodes == 1 && limited.Steps.Count == 1,
             "Tactical seed escaped the planner's shared node budget.");
         Require(!new BattlePlannerOptions().UseTacticalSeed, "Existing planner defaults must remain opt-in.");
-        Console.WriteLine($"TACTICAL-PLANNER PASS steps={plan.Steps.Count} turns={plan.TurnsCompleted} nodes={plan.ExpandedNodes} " +
+        Console.WriteLine($"TACTICAL-PLANNER PASS battle={(naturalRing7 ? "Ring7" : "AllyBuffer")} steps={plan.Steps.Count} turns={plan.TurnsCompleted} nodes={plan.ExpandedNodes} " +
             $"elapsedMs={plan.Elapsed.TotalMilliseconds:F1}: complete model victory, independent replay, immutable native root and shared cancellation/node budgets; native winning acceptance remains separate.");
     }
 

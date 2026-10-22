@@ -46,7 +46,20 @@ namespace MonsterTrain2Poju.Model
             }
             BattleActionEnumeration abilities = UnitAbilityModel.EnumerateActivations(source);
             omitted.AddRange(abilities.UnsupportedAttempts);
-            return abilities.SupportedCandidates.FirstOrDefault();
+            return abilities.SupportedCandidates.FirstOrDefault(candidate => !ExposesChampion(candidate));
+
+            bool ExposesChampion(SupportedActionCandidate candidate)
+            {
+                RoomCombatState? room = source.Spawn.Train.Rooms.FirstOrDefault(item =>
+                    item.Units.Any(unit => unit.Id == candidate.Action.ActivatorUnitId));
+                CombatUnit? caster = room?.Units.FirstOrDefault(unit => unit.Id == candidate.Action.ActivatorUnitId);
+                if (caster?.Modifiers?.IsChampion != true || !room!.Units.Any(unit => unit.Team == CombatTeam.Enemy && unit.IsBoss == true))
+                    return false;
+                CombatUnit? front = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0);
+                return front != null && front.Id != caster.Id && candidate.Result.State!.Spawn.Train.Rooms
+                    .Single(item => item.RoomIndex == room.RoomIndex).Units
+                    .FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0)?.Id == caster.Id;
+            }
 
             IEnumerable<PlayCardAction> Inputs(CardToken token, CardPlayRule rule)
             {
@@ -74,12 +87,58 @@ namespace MonsterTrain2Poju.Model
                 }
                 CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
                 if (target == null) return -100 * Math.Abs(action.RoomIndex - preferredDeploymentRoom);
-                bool harmful = rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type is "Damage" or "Kill" ||
+                CardActionEffect[] effects = rule.Effects.Concat(rule.OnCastEffects).ToArray();
+                bool damaging = effects.Any(effect => effect.Type is "Damage" or "Kill");
+                bool harmful = damaging || effects.Any(effect =>
                     (effect.Target is "DropTargetCharacter" or "LastTargetedCharacters") &&
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
-                if (harmful) return target.Team == CombatTeam.Enemy ? 1000 - target.Health : -100000;
+                if (harmful) return target.Team != CombatTeam.Enemy ? -100000 : damaging ? 1000 - target.Health :
+                    (target.IsBoss == true ? 10000 : 0) + target.Health + target.Attack * 3;
+                if (target.Team != CombatTeam.Player || target.IsPyre) return -100000;
+                if (rule.Equipment != null)
+                {
+                    double value = EquipmentValue(room, target, action.CardInstanceId);
+                    IReadOnlyList<int> equipped = target.EquipmentCards ?? Array.Empty<int>();
+                    int replaced = Math.Max(0, equipped.Count - (target.Modifiers?.EquipmentLimit ?? 1) + 1);
+                    foreach (int cardId in equipped.Take(replaced)) value -= EquipmentValue(room, target, cardId);
+                    return value - Math.Abs(action.RoomIndex - preferredDeploymentRoom) * 2 +
+                        (target.Modifiers?.IsChampion == true ? 3 : 0);
+                }
+                if (effects.Any(effect => effect.Type == "FloorRearrange" && effect.Target == "DropTargetCharacter" && effect.Value == 0))
+                    return target.Health + Math.Max(0, target.Status("armor")?.Stacks ?? 0) +
+                        target.Triggers.Count(trigger => trigger.Kind == "OnHit") * 50;
                 return target.Team == CombatTeam.Player && !target.IsPyre
                     ? target.Attack + (target.Modifiers?.IsChampion == true ? 10000 : 0) : -100000;
+            }
+
+            double EquipmentValue(RoomCombatState room, CombatUnit unit, int cardId)
+            {
+                CardInstanceState? card = context.FindCard(cardId);
+                EquipmentDefinition? definition = EquipmentMergeModel.Definition(context, source.PlayRules, cardId);
+                if (card == null || definition == null) return 0;
+                bool front = room.Units.FirstOrDefault(item => item.Team == CombatTeam.Player && !item.IsPyre && item.Health > 0)?.Id == unit.Id;
+                double value = 0;
+                foreach (CardUpgradeModifier upgrade in definition.Upgrades.Concat(card.Permanent.Upgrades)
+                    .Concat(new[] { EquipmentModel.TemporaryAggregate(card) }))
+                {
+                    value += upgrade.Stats.Health * .5 + upgrade.Stats.Damage * unit.Attacks;
+                    value += Math.Min(unit.Size, Math.Max(0, -upgrade.Stats.Size)) * 8;
+                    if (upgrade.Statuses.Any(status => status.Id == "silenced" && status.Stacks > 0))
+                        value -= unit.Triggers.Count(trigger => !trigger.IgnoreSilence) * 50 +
+                            (unit.Ability?.HasAbility == true ? 100 : 0);
+                    foreach (CombatTrigger trigger in upgrade.TriggerUpgrades ?? Array.Empty<CombatTrigger>())
+                    foreach (CombatEffect effect in trigger.Effects)
+                    {
+                        CardActionEffect? action = effect.Action;
+                        if (action?.Type == "DamagePerHp" && action.DamagePerHpLastAttacker)
+                            value += unit.Health * (front ? 1.4 : .4);
+                        if (action?.Type == "RemoveStatus" && action.Statuses.Any(status => status.Id == "cooldown") && unit.Ability?.HasAbility == true)
+                            value += unit.Modifiers?.IsChampion == true ? 220 : 80;
+                        if (action?.Type == "Heal") value += front ? 25 : 6;
+                        if (action?.Type == "PlayUnitTrigger") value += unit.Triggers.Count(item => item.Kind == "OnShift") * 70;
+                    }
+                }
+                return value;
             }
         }
         private static bool TowerDebuff(CardPlayRule rule) => rule.Effects.Any(effect => effect.Target == "Tower" &&

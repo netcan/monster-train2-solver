@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--natural-ring7-tactics-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    NaturalRing7TacticsChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--tactical-target-only")
 {
     TacticalTargetChecks.Run();
@@ -2023,10 +2030,10 @@ if (args.Length == 4 && args[0] == "--battle-planner-only")
     BattlePlannerChecks.Native(fixture.RootElement, int.Parse(args[2]), int.Parse(args[3]));
     return;
 }
-if (args.Length == 2 && args[0] == "--tactical-planner-only")
+if (args.Length == 2 && args[0] is "--tactical-planner-only" or "--natural-ring7-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    BattlePlannerChecks.TacticalSeed(fixture.RootElement);
+    BattlePlannerChecks.TacticalSeed(fixture.RootElement, naturalRing7: args[0] == "--natural-ring7-planner-only");
     return;
 }
 if (args.Length == 2 && args[0] == "--battle-search-only")
@@ -3700,6 +3707,12 @@ foreach (string path in args.Where(path => path.Contains("full-battle-natural-ri
     using var document = ModelJson.ReadFixture(path);
     CopyOnPlayChecks.Native(document.RootElement, natural: true);
     NaturalMovementCaptureChecks.Native(document.RootElement);
+    BattlePlannerChecks.TacticalSeed(document.RootElement, naturalRing7: true);
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ring7-tactical-win.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    NaturalRing7TacticsChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-event-grafted-equipment", StringComparison.OrdinalIgnoreCase)))
 {
