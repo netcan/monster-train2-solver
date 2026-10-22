@@ -667,3 +667,18 @@ Actual median/P95 response is 4.55/6.09 seconds.
 This uses explicit native jump/unlock and added-card controls; enemy assets,
 original HP/phases and Pyre80 are unchanged. Both runs lose. The original
 17-input player pair remains passing. See [ordinary ally player evidence](../tests/fixtures/player-true-final-boss-ordinary.md).
+
+## Original Level9 numeric ordinary ally · 2026-10-23
+
+The actual player entry also summons an original HornedWarrior with two
+explicit original permanent numeric upgrades: 25/28 and Multistrike 1.
+All 20 inputs (15 plays/five EndTurns), complete forecasts, successors and RNG
+match a fresh native frozen replay. Both exit normally, settle their losses
+and retain zero native failure counters. Source overlay interactions and
+283/49 source/replay pure captures pass; source publishes 22 plans.
+Actual median/P95 total response is 4.54/6.35 seconds at the same bounded
+three-turn/3,000-ms tactical configuration.
+
+This extends controlled deck acceptance, with original enemy HP/phases and
+Pyre80. Natural victory remains open. The unmodified ordinary ally pair still
+passes. See [numeric ally player evidence](../tests/fixtures/player-true-final-boss-ordinary-upgraded.md).

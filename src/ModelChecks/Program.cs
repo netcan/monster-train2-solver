@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--player-true-final-boss-ordinary-upgraded-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerTrueFinalBossChecks.Pair(source.RootElement, replay.RootElement, ordinaryAlly: true, upgradedAlly: true);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-true-final-boss-ordinary-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

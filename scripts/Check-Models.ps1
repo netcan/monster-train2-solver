@@ -39,6 +39,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'true-final-boss-ordinary-ally-warrior-both.mt2f',
     'full-battle-player-true-final-boss-ordinary-search.mt2f',
     'full-battle-player-true-final-boss-ordinary-replay.mt2f',
+    'full-battle-player-true-final-boss-ordinary-upgraded-search.mt2f',
+    'full-battle-player-true-final-boss-ordinary-upgraded-replay.mt2f',
     'true-final-boss-linked-health-calibration.mt2f',
     'true-final-boss-life-link-calibration.mt2f',
     'true-final-boss-health-updates-calibration.mt2f',
