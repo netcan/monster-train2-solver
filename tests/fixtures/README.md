@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1062 archives,
+Current manifest inventory (2026-10-23): 1064 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -15,7 +15,7 @@ See [Titanite combinations](titanite-combinations.md).
 Avenger OnHit callback against the original five linked bosses. Paid summons,
 six EndTurns, five native previews and sixteen immutable full chains match;
 all native failure counters are zero. Ten altered callback signatures,
-commanded Valor and unit-sourced terminal group death retain their guards. The added card
+noncritical Valor and ordinary-combat terminal group death retain their guards. The added card
 is explicit and the route loses. See [Avenger evidence](true-final-boss-avenger.md).
 The separate actual player pair now executes nine inputs including the Avenger
 summon and three OnHit witnesses, with complete forecasts/state/RNG matching a
@@ -26,8 +26,14 @@ Five `true-final-boss-triggered-paid-spell-*.mt2f` captures now separately
 calibrate paid plain-spell terminal cleanup with the original Avenger alive.
 All five original targets win with Avenger20/40 and Pyre80, zero native counters,
 and sixteen immutable summon/birth/HP-control/paid-victory chains per target.
-The explicit one-HP controls are retained; anonymous and unit-sourced damage
+The explicit one-HP controls are retained; anonymous damage and ordinary combat
 remain guarded for this ally. See [terminal spell evidence](true-final-boss-avenger-terminal.md).
+`true-final-boss-triggered-{command,pyre-command}.mt2f` separately calibrates
+paid Eagleheart and Pyreshot with Avenger alive at the same explicit one-HP
+boundary. Native full unit turns, internal kill previews, actor/victim, terminal
+state/RNG and sixteen immutable full chains per command match. Both wins have
+four zero counters and normal exits. Healthy Valor, six Valor and ordinary
+combat counterexamples stay guarded. See [command evidence](true-final-boss-avenger-commands.md).
 
 `boss-preview-sweep-calibration.mt2f` retains a native Fragile diagnostic win
 with three historical intermediate mismatches. Its focused checker recomputes

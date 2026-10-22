@@ -705,8 +705,7 @@ if ($TrueFinalBossCommandedAttack -or $TrueFinalBossPyreCommand) {
 }
 if ($TrueFinalBossLethalAlly) {
     if (-not $TrueFinalBossLethalSpellTarget -or $TrueFinalBossProtectedSpellTarget -or $TrueFinalBossAllyUpgrade -or
-        $TrueFinalBossOrdinaryAllyUpgrade -or ($TrueFinalBossOrdinaryAlly -and $TrueFinalBossOrdinaryAlly -notin @('Steward', 'Avenger')) -or
-        (($TrueFinalBossCommandedAttack -or $TrueFinalBossPyreCommand) -and $TrueFinalBossOrdinaryAlly -eq 'Avenger')) {
+        $TrueFinalBossOrdinaryAllyUpgrade -or ($TrueFinalBossOrdinaryAlly -and $TrueFinalBossOrdinaryAlly -notin @('Steward', 'Avenger'))) {
         throw 'Allied paid victory requires its original spell target and separate ally preparation.'
     }
     if (-not $TrueFinalBossOrdinaryAlly) { $TrueFinalBossOrdinaryAlly = 'Steward' }

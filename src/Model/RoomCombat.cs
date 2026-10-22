@@ -1684,6 +1684,7 @@ namespace MonsterTrain2Poju.Model
             private readonly bool deferAbilityCallbacks;
             private readonly bool nativeCardDamage;
             private bool plainSpellDamage;
+            private bool triggeredCommand;
             private readonly Func<RoomCombatState, RoomCombatResult>? finishDamageQueue;
             private readonly Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre;
             private readonly Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase;
@@ -2197,6 +2198,10 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult UnitTurn(int unitId, bool ignoreAttackPrevention = false, IReadOnlyList<int>? overrideTargets = null)
             {
+                WorkingUnit actor = units.Single(unit => unit.Source.Id == unitId);
+                triggeredCommand = actor.Source.IsPyre && externalTurnActorIds.Contains(unitId) ||
+                    actor.Source.Triggers.Count == 1 && actor.Source.Status("valor") is { Stacks: 5, ParamInt: 1 } &&
+                    TrueFinalBossCombatModel.SupportsAlly(actor.Source, context);
                 stopAfterBossRemoval = true;
                 round = 1;
                 Turn(units.Single(unit => unit.Source.Id == unitId), ignoreAttackPrevention, overrideTargets);
@@ -2515,6 +2520,7 @@ namespace MonsterTrain2Poju.Model
                 // stay queued rather than healing or damaging between individual targets.
                 preview.runningTriggerQueue = runningTriggerQueue;
                 preview.holdPreviewTriggerQueue = runningTriggerQueue;
+                preview.triggeredCommand = triggeredCommand;
                 preview.Damage(preview.units.Single(unit => unit.Source.Id == actor.Source.Id),
                     preview.units.Single(unit => unit.Source.Id == target.Source.Id), actor.Attack, "Attack");
                 if (originalWorld?.AutomaticLifecycle == true) preview.DrainLocalTriggerQueue();
@@ -2990,7 +2996,7 @@ namespace MonsterTrain2Poju.Model
             {
                 if (target.DeathFinished) return;
                 if (!source.Preview && target.Health == 0 && TrueFinalBossTerminalCombatModel.SupportsRoot(source, target.Source.Id,
-                    plainSpellDamage: plainSpellDamage && actor == null && sourceCardId > 0))
+                    plainSpellDamage: plainSpellDamage && actor == null && sourceCardId > 0, triggeredCommand: triggeredCommand))
                 {
                     RemoveTrueFinalBossGroup(actor, target, sourceCardId);
                     return;
@@ -3457,7 +3463,7 @@ namespace MonsterTrain2Poju.Model
                     CombatContext? updated = LinkedBossHealthModel.WithHealth(context, target.Source.Id, health, out string? error,
                         allowTerminal: health == 0 && TrueFinalBossTerminalCombatModel.SupportsRoot(source, target.Source.Id,
                             externalPyreAttack: units.Any(unit => unit.Source.IsPyre && externalTurnActorIds.Contains(unit.Source.Id)),
-                            plainSpellDamage: plainSpellDamage));
+                            plainSpellDamage: plainSpellDamage, triggeredCommand: triggeredCommand));
                     if (updated == null) { unsupportedReason = error; return false; }
                     context = updated;
                     foreach (WorkingUnit unit in units)

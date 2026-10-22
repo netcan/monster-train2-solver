@@ -7,7 +7,7 @@ internal static class TrueFinalBossCommandedAttackChecks
 {
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
     private static string Json(object value) => JsonSerializer.Serialize(value, ModelJson.Options);
-    internal static void Native(FixtureValue root, bool pyreCommand = false)
+    internal static void Native(FixtureValue root, bool pyreCommand = false, bool triggeredAlly = false)
     {
         FixtureValue route = root.GetProperty("OriginalTrueFinalBossRoute");
         Require(route.GetProperty("Scenario").GetString() == "Level9TrueFinalBoss_V2" &&
@@ -18,12 +18,12 @@ internal static class TrueFinalBossCommandedAttackChecks
         FixtureValue addition = root.GetProperty("TrueFinalBossOrdinaryAllyControl");
         int allyCardId = addition.GetProperty("CardId").GetInt32(), commandId = addition.GetProperty("CommandCardId").GetInt32();
         CardPlayRule command = addition.GetProperty("CommandDefinition").Deserialize<CardPlayRule>()!;
-        Require(addition.GetProperty("Kind").GetString() == "Steward" && addition.GetProperty("UpgradeKind").GetString() == "" &&
-            addition.GetProperty("CardDataId").GetString() == "38e70e6a-20f3-4e36-8d31-c5110be07f87" &&
+        Require(addition.GetProperty("Kind").GetString() == (triggeredAlly ? "Avenger" : "Steward") && addition.GetProperty("UpgradeKind").GetString() == "" &&
+            addition.GetProperty("CardDataId").GetString() == (triggeredAlly ? "69fcbe85-a5b7-4a83-bf6d-21888604d99e" : "38e70e6a-20f3-4e36-8d31-c5110be07f87") &&
             command.DataId == (pyreCommand ? "c30c479c-e7aa-4628-9091-dd5d2fb8e5a6" : "1737fa0b-7f37-41e8-9183-ed9e6a391556") &&
             command.AssetKey == (pyreCommand ? "Pyreshot" : "Eagleheart") && command.Cost == (pyreCommand ? 3 : 2) &&
             command.Effects.Select(effect => effect.Type).SequenceEqual(pyreCommand ? new[] { "AttackWithUnit" } : new[] { "FloorRearrange", "AddStatus", "AttackWithUnit" }),
-            "Missing original small Steward and complete original command definition.");
+            "Missing the declared original ally and complete original command definition.");
         if (pyreCommand)
             Require(command.Effects.Single() is { Target: "Pyre", UseSelectedRoom: true, SuppressPyreRoomFocus: true, RequireEquipment: false },
                 "Pyreshot must retain its original cross-floor Pyre attack flags.");
@@ -54,7 +54,9 @@ internal static class TrueFinalBossCommandedAttackChecks
             controlled.Energy == 3 && actual.Energy == (pyreCommand ? 0 : 1) && actual.Spawn.OuterBoss == null && actual.Spawn.Train.Context!.LifeLinks == null &&
             actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Count() == 2 &&
             actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 80 &&
-            actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => !unit.IsPyre) is { Health: 5, MaxHealth: 5, BaseAttack: 14 } survivor &&
+            actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => !unit.IsPyre) is CombatUnit survivor &&
+            survivor.Health == (triggeredAlly ? 40 : 5) && survivor.MaxHealth == survivor.Health &&
+            survivor.BaseAttack == (triggeredAlly ? 20 : 14) && survivor.Triggers.Count == (triggeredAlly ? 1 : 0) &&
             (pyreCommand ? survivor.Statuses.Count == 0 : survivor.Status("valor") is { Stacks: 5, ParamInt: 1 }),
             "Paid command must preserve its original surviving ally and win through the linked group.");
         FixtureValue turn = root.GetProperty("UnitTurns").EnumerateArray().Single(row => row.GetProperty("ActorId").GetInt32() == actor.Id &&
@@ -72,11 +74,27 @@ internal static class TrueFinalBossCommandedAttackChecks
             uncalibrated["Statuses"]![0]!["Stacks"] = 6;
             Require(!TrueFinalBossCombatModel.SupportsAlly(uncalibrated.Deserialize<CombatUnit>(ModelJson.Options)!, attackBefore.Context),
                 "Other Valor magnitudes require native calibration.");
+            if (triggeredAlly)
+            {
+                LifeLinkContext links = attackBefore.Context!.LifeLinks!;
+                CombatContext healthy = attackBefore.Context.WithLifeLinks(new LifeLinkContext(links.Actors.Select(link =>
+                    new LifeLinkActor(link.Id, link.LinkedId, 2, 2, link.Initialized, link.HasLifeLink, link.TrueFinalBoss, link.OuterBoss)).ToArray(), false, 0));
+                CombatUnit commanded = attackBefore.Units.Single(unit => unit.Id == actor.Id);
+                Require(TrueFinalBossCombatModel.SupportsAlly(commanded, attackBefore.Context) &&
+                    !TrueFinalBossCombatModel.SupportsAlly(commanded, healthy),
+                    "Triggered Valor signature must remain restricted to the calibrated one-HP terminal state.");
+            }
         }
         else
             Require(Json(turn.GetProperty("ExternalActor").Deserialize<CombatUnit>()!) == Json(actor) && attackBefore.RoomIndex == 0 &&
                 attackBefore.Units.All(unit => !unit.IsPyre) && actual.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.IsPyre)).RoomIndex == 3,
                 "Cross-floor command must retain the original external Pyre on its physical floor.");
+        if (triggeredAlly)
+        {
+            RoomCombatResult ordinary = RoomCombatModel.Resolve(attackBefore);
+            Require(!ordinary.Supported && ordinary.UnsupportedReason?.Contains("terminal updates remain guarded", StringComparison.Ordinal) == true,
+                "Ordinary combat must not inherit the calibrated commanded terminal attack: " + ordinary.UnsupportedReason);
+        }
         BattleActionResult paid = BattleActionModel.PlayCard(controlled, cast);
         Require(paid.Supported && paid.Outcome == RoomOutcome.BattleWon &&
             BattleTurnChecks.Comparable(paid.State!, true, true) == BattleTurnChecks.Comparable(actual, true, true),
@@ -104,6 +122,6 @@ internal static class TrueFinalBossCommandedAttackChecks
         Require(Json(prepared) == parent, "Commanded attack chains mutated the prepared deck root.");
         Require(new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(key => root.GetProperty(key).GetInt32() == 0),
             "Commanded attack acceptance requires all four native failure counters zero.");
-        Console.WriteLine("TRUE-FINAL-BOSS-COMMANDED-ATTACK PASS card=" + command.AssetKey + "; original paid command, native actor/victim, complete unit turn and 16 immutable summon-to-victory chains.");
+        Console.WriteLine("TRUE-FINAL-BOSS-COMMANDED-ATTACK PASS card=" + command.AssetKey + "; triggeredAlly=" + triggeredAlly + "; original paid command, native actor/victim, complete unit turn and 16 immutable summon-to-victory chains.");
     }
 }

@@ -25,11 +25,12 @@ Dominion 场景另明确移除四层法术护盾。随后实际支付一能量�
 
 本次只开放具有捕获来源、无单位攻击者、无永久/临时升级和额外特征的普通法术
 实际终局伤害，带回调友军的终局临时预览仍需独立校准。相同房间、目标和伤害下，具有合法来源的法术可获胜，匿名伤害仍被
-拒绝；带回调友军的普通/命令攻击、勇气组合和未校准的友军升级继续保护。
+拒绝；带回调友军的普通战斗、非临界勇气组合和未校准的友军升级继续保护。
 旧受击回调检查中的一血反例仍要求单位来源终局被拒绝；没有放宽该保护。
 
 入口 `scripts/Check-TrueFinalBoss.ps1 -Case PaidSpell -SkipBuild` 现包含十个既有
-伤害法术场景、两张命令牌与这五个新场景。单独检查新目标可使用
+伤害法术场景、原有两张命令牌与这五个新场景；随后另加入
+[两项带回调友军的命令校准](true-final-boss-avenger-commands.md)。单独检查新目标可使用
 `--true-final-boss-triggered-paid-spell-only`。原生采集增加
 `-TrueFinalBossLethalAlly -TrueFinalBossOrdinaryAlly Avenger`，并指定原始付费目标。
 这些是一血受控胜局，不计自然真终局胜利；玩家受击建议配对仍见

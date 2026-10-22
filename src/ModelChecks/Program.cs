@@ -29,6 +29,14 @@ if (args.Length == 2 && args[0] == "--true-final-boss-protected-spell-only")
     return;
 }
 
+if (args.Length == 2 && args[0] is "--true-final-boss-triggered-command-only" or "--true-final-boss-triggered-pyre-command-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossCommandedAttackChecks.Native(fixture.RootElement,
+        pyreCommand: args[0] == "--true-final-boss-triggered-pyre-command-only", triggeredAlly: true);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-triggered-paid-spell-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4156,6 +4164,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("tr
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossPaidSpellChecks.Native(fixture.RootElement, allied: true, triggeredAlly: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("true-final-boss-triggered-command.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    Path.GetFileName(path).Equals("true-final-boss-triggered-pyre-command.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossCommandedAttackChecks.Native(fixture.RootElement,
+        pyreCommand: Path.GetFileName(path).Contains("pyre", StringComparison.OrdinalIgnoreCase), triggeredAlly: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).Equals("true-final-boss-pyre-command.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

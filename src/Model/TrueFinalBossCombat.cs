@@ -18,7 +18,9 @@ namespace MonsterTrain2Poju.Model
                 unit.AssetKey == "MonsterBanishedChampion1" && unit.BaseAttack == 1 && unit.MaxHealth == 10 && unit.Size == 2 ||
                 SupportsUpgradedSteward(unit, context) || ordinary) &&
             unit.CanAttack && !unit.EndsBattleOnDeath && unit.Ability == null &&
-            (unit.Triggers.Count == 0 || ordinary && unit.Status("valor") == null && SupportsOnHitMeleeWeakness(unit, context)) && unit.EquipmentCards.Count == 0 &&
+            (unit.Triggers.Count == 0 || ordinary &&
+                (unit.Status("valor") == null || context?.LifeLinks is { Actors.Count: 5 } links && links.Actors.All(actor => actor.Health == 1)) &&
+                SupportsOnHitMeleeWeakness(unit, context)) && unit.EquipmentCards.Count == 0 &&
             unit.Modifiers?.Upgrades.Count == 0 && unit.Statuses.All(status => status.Id == "corruption" ||
                 ordinary && status.Id == "valor" && status.Stacks == 5 && status.ParamInt == 1 ||
                 status.Id == "multistrike" && status.ParamInt == 2 &&
