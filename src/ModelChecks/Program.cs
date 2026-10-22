@@ -1681,6 +1681,14 @@ if (args.Length == 4 && args[0] == "--outer-boss-fragile-relentless-only")
     return;
 }
 
+if (args.Length == 3 && args[0] == "--player-boss-fragile-bounded-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerOuterBossChecks.FragileBoundedPair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-boss-fragile-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

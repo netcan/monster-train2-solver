@@ -4,9 +4,8 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class PlayerOuterBossProbe
     {
-        // AllyBuffer has natural player and independent replay acceptance.
-        // Other definitions keep the
-        // existing unsupported marker; model validators inspect its payloads.
+        // Only calibrated definitions enter player capture. Exact payload
+        // validation still applies; bounded advice need not predict a victory.
         internal static bool Enabled
         {
             get
@@ -24,7 +23,8 @@ namespace MonsterTrain2Poju.Probe
                 if (pattern == null || pattern.GetBossType() == SpawnPatternData.BossType.None) return false;
                 var harder = (bool)AccessTools.Field(typeof(HeroManager), "harderOuterTrainBossEnabled").GetValue(heroes);
                 CharacterData? data = pattern.GetOuterTrainBossCharacter(harder);
-                return data?.GetAssetKey() == "Boss_Level8_AllyBuffer" && OuterBossPhaseProbe.Supports(data);
+                return data?.GetAssetKey() is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" &&
+                    OuterBossPhaseProbe.Supports(data);
             }
         }
     }

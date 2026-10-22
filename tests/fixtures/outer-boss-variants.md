@@ -69,8 +69,10 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --outer-boss-fragile-r
   tests/fixtures/outer-boss-fragile-pyre-turn-calibration.mt2f
 ```
 
-The player entry remains limited to AllyBuffer pending Fragile winning-player
-and independent native replay acceptance. Natural progression is now available:
+The player entry now includes AllyBuffer and Fragile after separate native player
+acceptance. Fragile has a complete bounded losing route and independent replay;
+its natural victory remains unproven. See [Fragile player acceptance](player-fragile-bounded.md).
+Natural progression is available:
 the unchanged strong Ring7 deck wins in native frozen replay with Pyre62 and
 continues through native campaign UI into Ring8. The checkpoint, choice history,
 seventh-battle replay and all thirteen verified restore members are retained in

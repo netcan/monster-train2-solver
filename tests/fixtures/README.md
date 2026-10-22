@@ -75,6 +75,12 @@ including natural Titanite/shield/grafted Firebrand deployment and the remote
 lethal Pyre boundary before killcam. Its 53 frozen inputs, 83 room stages and
 full state/RNG match a fresh native process with four zero failure counters.
 All three are losses and do not establish Fragile winning-player acceptance.
+
+`full-battle-player-boss-fragile-bounded-{search,replay}.mt2f` separately verifies
+the real player entry on the same natural checkpoint: 44 plays/nine EndTurns,
+53 exact inputs and full forecasts/RNG, both boss phases and six shorter verified
+windows under a three-turn/three-second tactical budget. Both processes lose;
+natural winning acceptance remains open. See [Fragile player evidence](player-fragile-bounded.md).
 See [outer-boss validation](outer-boss-variants.md).
 
 `full-battle-natural-ring7-tactical-win.mt2f` verifies a natural Rax victory:

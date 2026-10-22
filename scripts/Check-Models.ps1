@@ -40,6 +40,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-player-natural-ring7-search.mt2f', 'full-battle-player-natural-ring7-replay.mt2f',
     'full-battle-natural-fragile-no-cards.mt2f', 'full-battle-natural-fragile-status.mt2f',
     'full-battle-natural-fragile-titanite.mt2f',
+    'full-battle-player-boss-fragile-bounded-search.mt2f', 'full-battle-player-boss-fragile-bounded-replay.mt2f',
     'full-battle-retired-aura-card-kill.mt2f', 'full-battle-train-heal-per-ember.mt2f',
     'full-battle-train-heal-per-ember-x.mt2f',
     'full-battle-player-boss-rolling-search.mt2f', 'full-battle-player-boss-rolling-replay.mt2f',

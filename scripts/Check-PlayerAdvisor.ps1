@@ -1,8 +1,8 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
-    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
+    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'FragileBounded', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
+    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'FragileBounded', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -18,6 +18,7 @@ foreach ($name in $Case) {
         'Moon' { 'player-moon' }
         'OuterBoss' { 'player-boss' }
         'OuterBossRolling' { 'player-boss-rolling' }
+        'FragileBounded' { 'player-boss-fragile-bounded' }
         'Conduit' { 'player-conduit' }
         'RoomMoon' { 'player-room-moon' }
         'RoomMoonMovement' { 'player-room-moon-movement' }
@@ -27,6 +28,7 @@ foreach ($name in $Case) {
         'MoonRoomSpells' { 'player-moon-room-spells' }
         'MoonRoomLunacy' { 'player-moon-room-lunacy' }
         'MoonRoomCostRelic' { 'player-moon-room-cost-relic' }
+        'MoonRoomAttackRelic' { 'player-moon-room-attack-relic' }
         'EventGraft' { 'player-event-graft' }
         'NaturalRing7' { 'player-natural-ring7' }
         'TerminalCopyConsume' { 'player-terminal-copy-consume' }
@@ -45,7 +47,7 @@ foreach ($name in $Case) {
         }
     }
     $mode = if ($name -eq 'OuterBossRolling') { '--player-boss-winning-pair-only' }
-        elseif ($name -in @('MoonRoomLunacy', 'MoonRoomCostRelic')) { '--player-moon-room-spells-pair-only' }
+        elseif ($name -in @('MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic')) { '--player-moon-room-spells-pair-only' }
         elseif ($name -in @('TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')) { '--player-terminal-copy-pair-only' }
         else { "--$prefix-pair-only" }
     dotnet $checker $mode $search $replay
