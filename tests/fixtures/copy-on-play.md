@@ -160,17 +160,17 @@ forecast windows, not rolling recommendations from deployment.
 profiles `full-battle-units-spells-and-junk-20261022-145908-746836e1` (59.16 seconds)
 and `full-battle-units-spells-and-junk-20261022-150033-259257a3` (49.66 seconds).
 Both win at Pyre79 with six plays/four EndTurns. Four frozen forecast steps
-end in the original Flicker killing the125HP boss and creating its new hand
+end in the original Flicker killing the 125 HP boss and creating its new hand
 copy. This uses the existing opt-in tactical seed, horizon3 and configured
-3000ms budget; the consumed winning search takes295.2ms.
+3000ms budget; the consumed winning search takes 295.2ms.
 
 `full-battle-player-terminal-purge-copy-consume-{search,replay}.mt2f` comes from
 profiles `full-battle-units-spells-and-junk-20261022-145600-a36e9661` (69.51 seconds)
 and `full-battle-units-spells-and-junk-20261022-145908-c50c7a70` (53.06 seconds).
 Both win at Pyre79 with seven plays/four EndTurns. Five frozen forecast steps
-include both casts against the2000HP boss, ending in the temporary copy's two
-purge callbacks. This uses the default seed/horizon3 and configured3000ms
-budget; the search actually takes3582.8ms because an atomic expansion can
+include both casts against the 2000 HP boss, ending in the temporary copy's two
+purge callbacks. This uses the default seed/horizon3 and configured 3000ms
+budget; the search actually takes 3582.8ms because an atomic expansion can
 overrun the soft deadline. Fresh processes replay the same canonical root,
 actions, final state and RNG with zero search nodes.
 
@@ -180,7 +180,7 @@ and drag checks pass; four publications and zero capture purity failures
 prove real player observations. Complete raw action/turn chains, seven enemy
 birth boundaries and sixteen immutable branches also match.
 
-The first default search on the2000HP control lost after casting the original
+The first default search on the 2000 HP control lost after casting the original
 at a low-HP crowd on another floor. Its settled, zero-mismatch defeat remains
 `player-terminal-copy-target-calibration.mt2f`, not an accepted victory. It
 checks the full losing native chain and the repaired model continuation.
@@ -197,9 +197,32 @@ scripts/Check-PlayerAdvisor.ps1 -Case TerminalCopyConsume,TerminalPurgeCopyConsu
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --terminal-copy-target-only tests/fixtures/player-terminal-copy-target-calibration.mt2f
 ```
 
-Non-Consume player terminal paths, other callback orders/counts and natural
-final-boss combinations remain separate acceptance targets. No full regression
-or Mac package is built.
+## Actual player terminal paths without Consume
+
+The same pair gate now also accepts the non-Consume controls:
+
+| Pair | Source profile suffix | Fresh profile suffix | Native plays / EndTurns | Search ms |
+| --- | --- | --- | --- | ---: |
+| `full-battle-player-terminal-copy-{search,replay}.mt2f` | `150303-6d2965f5` | `150436-9138aa8e` | 6 / 4 | 156.3 |
+| `full-battle-player-terminal-purge-copy-{search,replay}.mt2f` | `150053-7aa21779` | `150330-bf75c96e` | 7 / 4 | 3258.5 |
+
+All profile suffixes follow `full-battle-units-spells-and-junk-20261022-`.
+Source/fresh durations are 58.35/42.03 seconds for the original terminal cast,
+and 63.15/46.58 seconds for the temporary terminal cast. Both pairs win at
+Pyre79, settle, exit normally, preserve originals and retain four zero failure
+counters. Both load the real player assembly; native UI checks, four actual
+publications, complete raw chains/RNG, seven birth boundaries and sixteen
+immutable branches match. Four/five frozen forecast actions reproduce the
+same canonical turn4 root and terminal state in fresh processes without search.
+The original path uses tactical seed; the temporary path uses the default seed.
+Both configure horizon3/3000ms, retaining the soft-deadline caveat above.
+
+```powershell
+scripts/Check-PlayerAdvisor.ps1 -Case TerminalCopy,TerminalPurgeCopy -SkipBuild
+```
+
+Other callback orders/counts and natural final-boss combinations remain
+separate acceptance targets. No full regression or Mac package is built.
 
 ## Ordinary movement capture and tactical targets
 

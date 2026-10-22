@@ -1,8 +1,8 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume')]
-    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume'),
+    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
+    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -14,7 +14,7 @@ if (-not $SkipBuild) {
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
 $manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests/fixtures/manifest.tsv') -Delimiter "`t"
 foreach ($name in $Case) {
-    $prefix = switch ($name) { 'Moon' { 'player-moon' }; 'OuterBoss' { 'player-boss' }; 'OuterBossRolling' { 'player-boss-rolling' }; 'Conduit' { 'player-conduit' }; 'RoomMoon' { 'player-room-moon' }; 'RoomMoonMovement' { 'player-room-moon-movement' }; 'RoomMoonEnemy' { 'player-room-moon-enemy' }; 'RoomMoonEnemyConduit' { 'player-room-moon-enemy-conduit' }; 'MixedConduit' { 'player-mixed-conduit' }; 'MoonRoomSpells' { 'player-moon-room-spells' }; 'EventGraft' { 'player-event-graft' }; 'NaturalRing7' { 'player-natural-ring7' }; 'TerminalCopyConsume' { 'player-terminal-copy-consume' }; 'TerminalPurgeCopyConsume' { 'player-terminal-purge-copy-consume' } }
+    $prefix = switch ($name) { 'Moon' { 'player-moon' }; 'OuterBoss' { 'player-boss' }; 'OuterBossRolling' { 'player-boss-rolling' }; 'Conduit' { 'player-conduit' }; 'RoomMoon' { 'player-room-moon' }; 'RoomMoonMovement' { 'player-room-moon-movement' }; 'RoomMoonEnemy' { 'player-room-moon-enemy' }; 'RoomMoonEnemyConduit' { 'player-room-moon-enemy-conduit' }; 'MixedConduit' { 'player-mixed-conduit' }; 'MoonRoomSpells' { 'player-moon-room-spells' }; 'EventGraft' { 'player-event-graft' }; 'NaturalRing7' { 'player-natural-ring7' }; 'TerminalCopyConsume' { 'player-terminal-copy-consume' }; 'TerminalPurgeCopyConsume' { 'player-terminal-purge-copy-consume' }; 'TerminalCopy' { 'player-terminal-copy' }; 'TerminalPurgeCopy' { 'player-terminal-purge-copy' } }
     $search = Join-Path $workspace "tests/fixtures/full-battle-$prefix-search.mt2f"
     $replay = Join-Path $workspace "tests/fixtures/full-battle-$prefix-replay.mt2f"
     foreach ($path in @($search, $replay)) {
@@ -26,7 +26,7 @@ foreach ($name in $Case) {
         }
     }
     $mode = if ($name -eq 'OuterBossRolling') { '--player-boss-winning-pair-only' }
-        elseif ($name -in @('TerminalCopyConsume', 'TerminalPurgeCopyConsume')) { '--player-terminal-copy-pair-only' }
+        elseif ($name -in @('TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')) { '--player-terminal-copy-pair-only' }
         else { "--$prefix-pair-only" }
     dotnet $checker $mode $search $replay
     if ($LASTEXITCODE -ne 0) { throw "Player $name acceptance failed." }
