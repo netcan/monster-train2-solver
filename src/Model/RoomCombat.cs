@@ -1690,6 +1690,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect;
             private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId, int? ExclusiveTriggerStateId)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int, int?)>();
             private bool runningTriggerQueue;
+            private bool holdPreviewTriggerQueue;
             private bool stoppedByRemotePyreDamage;
             private bool localFeedingQueue;
             private bool stopAfterBossRemoval;
@@ -2508,6 +2509,7 @@ namespace MonsterTrain2Poju.Model
                 // A sweep preview shares the running-queue gate: its temporary callbacks
                 // stay queued rather than healing or damaging between individual targets.
                 preview.runningTriggerQueue = runningTriggerQueue;
+                preview.holdPreviewTriggerQueue = runningTriggerQueue;
                 preview.Damage(preview.units.Single(unit => unit.Source.Id == actor.Source.Id),
                     preview.units.Single(unit => unit.Source.Id == target.Source.Id), actor.Attack, "Attack");
                 if (originalWorld?.AutomaticLifecycle == true) preview.DrainLocalTriggerQueue();
@@ -3496,7 +3498,7 @@ namespace MonsterTrain2Poju.Model
             private void DrainLocalTriggerQueue()
             {
                 runningTriggerQueue = true;
-                while (triggerQueue.Count > 0 && unsupportedReason == null && !stoppedByRemotePyreDamage)
+                while (!holdPreviewTriggerQueue && triggerQueue.Count > 0 && unsupportedReason == null && !stoppedByRemotePyreDamage)
                 {
                     var queued = triggerQueue.Dequeue();
                     if (queued.RoomIndex != source.RoomIndex)
@@ -3543,10 +3545,12 @@ namespace MonsterTrain2Poju.Model
                         battleWon |= relicEffect.Outcome == RoomOutcome.BattleWon;
                     }
                 }
-                if (stoppedByRemotePyreDamage) { runningTriggerQueue = false; return; }
+                if (stoppedByRemotePyreDamage) { runningTriggerQueue = holdPreviewTriggerQueue; return; }
                 var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
                 deferredDamageDeaths.Clear();
-                runningTriggerQueue = false;
+                // Native still removes temporary dead characters while its
+                // trigger queue is held; their callbacks stay in the preview queue.
+                runningTriggerQueue = holdPreviewTriggerQueue;
                 foreach (var dead in removing)
                     dead.Unit.Apply(MarkBeingRemoved(dead.Unit.Freeze()));
                 foreach (var dead in removing)
@@ -3572,7 +3576,7 @@ namespace MonsterTrain2Poju.Model
                     if (stopAfterBossRemoval && !source.Preview && battleWon) break;
                 }
                 if (removing.Length > 0 && !(stopAfterBossRemoval && battleWon) && UpdateEnchantments() &&
-                    triggerQueue.Count > 0 && enqueueCharacterTrigger == null)
+                    triggerQueue.Count > 0 && enqueueCharacterTrigger == null && !holdPreviewTriggerQueue)
                     DrainLocalTriggerQueue();
             }
 

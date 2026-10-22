@@ -375,6 +375,11 @@ if (args.Length == 2 && args[0] == "--titanite-weakness-only")
     TitaniteWeaknessChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--boss-preview-sweep-only")
+{
+    BossPreviewSweepChecks.Native(args[1]);
+    return;
+}
 
 if (args.Length == 2 && args[0] == "--event-graft-only")
 {
@@ -4509,6 +4514,8 @@ foreach (string path in args.Where(path => path.Contains("titanite-weakness-cali
     using var document = ModelJson.ReadFixture(path);
     TitaniteWeaknessChecks.Native(document.RootElement);
 }
+foreach (string path in args.Where(path => path.Contains("boss-preview-sweep-calibration", StringComparison.OrdinalIgnoreCase)))
+    BossPreviewSweepChecks.Native(path);
 foreach (string path in args.Where(path => path.Contains("permanent-trait-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);

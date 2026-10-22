@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1051 archives,
+Current manifest inventory (2026-10-23): 1052 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -10,6 +10,12 @@ Titanskin and armor: a five-point non-piercing attack becomes six with one
 Titanite and one melee weakness. Shield, card/unit piercing, zero/even damage,
 immediate/deferred weakness consumption and immutable roots are checked.
 See [Titanite combinations](titanite-combinations.md).
+
+`boss-preview-sweep-calibration.mt2f` retains a native Fragile diagnostic win
+with three historical intermediate mismatches. Its focused checker recomputes
+all 86 room stages and 17 train phases after correcting held temporary sweep
+callbacks and physical death removal. The preserved failed capture does not
+grant winning-player acceptance. See [preview queue evidence](boss-preview-sweep.md).
 
 `true-final-boss-commanded-attack.mt2f` adds the original paid Eagleheart
 command: move the original small Steward to the front, apply five Valor,
