@@ -85,6 +85,7 @@ param(
     [switch] $EclipseChamberEnemyMovement,
     [switch] $EclipseChamberEnemyCallbacks,
     [switch] $EclipseChamberEnemyConduit,
+    [switch] $EclipseChamberMixedConduit,
     [switch] $OriginalRoomCards,
     [switch] $OriginalForgeCards,
     [switch] $OriginalStatusCards,
@@ -685,6 +686,7 @@ if ($SmallBox) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($MagneticRelay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TranscendImp) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($FusedWeaponry) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($EclipseChamberMixedConduit) { $EclipseChamberEnemyConduit = $true }
 if ($EclipseChamberEnemyConduit) { $EclipseChamberEnemyCallbacks = $true }
 if ($EclipseChamberEnemyCallbacks) { $EclipseChamberEnemyMovement = $true }
 if ($EclipseChamberEnemyMovement) { $EclipseChamberMovement = $true }
@@ -1416,6 +1418,7 @@ if ($EclipseChamberMovement) { $environment['MT2_PROBE_ECLIPSE_MOVEMENT'] = '1' 
 if ($EclipseChamberEnemyMovement) { $environment['MT2_PROBE_ECLIPSE_ENEMY_MOVEMENT'] = '1' }
 if ($EclipseChamberEnemyCallbacks) { $environment['MT2_PROBE_ECLIPSE_ENEMY_CALLBACKS'] = '1' }
 if ($EclipseChamberEnemyConduit) { $environment['MT2_PROBE_ECLIPSE_ENEMY_CONDUIT'] = '1' }
+if ($EclipseChamberMixedConduit) { $environment['MT2_PROBE_ECLIPSE_MIXED_CONDUIT'] = '1' }
 if ($OriginalRoomCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-cards' }
 if ($OriginalForgeCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-forge-cards' }
 if ($OriginalStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-cards' }
@@ -2858,7 +2861,8 @@ if ($EclipseChamberMovement -and (-not $trace.EclipseChamberMovement -or
     (-not $RollingAdvice -and @($trace.Actions).Count -ne $(if ($EclipseChamberEnemyMovement) { 13 } else { 12 })) -or
     [bool]$trace.EclipseChamberEnemyMovement -ne [bool]$EclipseChamberEnemyMovement -or
     [bool]$trace.EclipseChamberEnemyCallbacks -ne [bool]$EclipseChamberEnemyCallbacks -or
-    [bool]$trace.EclipseChamberEnemyConduit -ne [bool]$EclipseChamberEnemyConduit)) {
+    [bool]$trace.EclipseChamberEnemyConduit -ne [bool]$EclipseChamberEnemyConduit -or
+    [bool]$trace.EclipseChamberMixedConduit -ne [bool]$EclipseChamberMixedConduit)) {
     throw 'Eclipse movement capture lacks the complete paid original movement chain.'
 }
 if ($OriginalMonsterHandCosts -and (-not $trace.OriginalMonsterHandCostsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or

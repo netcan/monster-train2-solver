@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 895 archives (819 full battles and
+Current manifest inventory (2026-10-22): 897 archives (821 full battles and
 76 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -25,6 +25,12 @@ The actual player pair `full-battle-player-room-moon-enemy-conduit-{search,repla
 also wins at Pyre80 through thirty decisions, with eight live opposing contributor
 snapshots and sixteen tracked hand-upgrade witnesses. All publications/frozen
 forecasts and complete state/RNG match in independent native processes.
+
+`full-battle-eclipse-chamber-mixed-conduit{,-replay}.mt2f` validates friendly
+and opposing Conduit simultaneously upgrading the same hand cards, then four
+paid opposing Bumps clearing only their own tracking. Both independent native
+processes win at Pyre80; eighteen frozen inputs and sixteen immutable model
+chains match. See [Conduit movement](conduit-movement.md).
 
 The natural Fragile checkpoint is retained in `campaign-progressed-ring8-fragile.zip`
 with seven preceding native wins and thirteen hash-verified restore members.

@@ -19,6 +19,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool EnemyMovement => Movement && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_ENEMY_MOVEMENT") == "1";
         internal static bool EnemyCallbacks => EnemyMovement && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_ENEMY_CALLBACKS") == "1";
         internal static bool EnemyConduit => EnemyCallbacks && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_ENEMY_CONDUIT") == "1";
+        internal static bool MixedConduit => EnemyConduit && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_MIXED_CONDUIT") == "1";
         internal const string EnemyCallbackKey = "PojuEclipseEnemyCallbacks";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -68,6 +69,16 @@ namespace MonsterTrain2Poju.Probe
             }
             Set(steward.GetSpawnCharacterData(), "subtypeKeys", new List<string> { "SubtypesData_Silent" });
             if (EnemyCallbacks) PrepareEnemyCallbacks(managers, all, steward.GetSpawnCharacterData().GetTriggers().ToList(), log);
+            if (MixedConduit)
+            {
+                // Append after cloning the enemy callbacks: different powers
+                // distinguish both native modifiers on the same hand card.
+                var effect = new CardEffectData("CardEffectAddStatusEffect", null!, Team.Type.Monsters);
+                effect.Cheat_SetTargetMode(TargetMode.Self);
+                Set(effect, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "conduit", count = 3 } });
+                Set(steward.GetSpawnCharacterData(), "triggers", steward.GetSpawnCharacterData().GetTriggers()
+                    .Concat(new[] { new CharacterTriggerData(CharacterTriggerData.Trigger.OnSpawn, effect) }).ToList());
+            }
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);

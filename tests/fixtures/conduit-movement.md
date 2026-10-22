@@ -186,3 +186,28 @@ separate acceptance boundaries. No full regression or Mac package is built.
 ```powershell
 scripts/Check-PlayerAdvisor.ps1 -Case RoomMoonEnemyConduit -SkipBuild
 ```
+
+## Mixed friendly and opposing contributors
+
+`full-battle-eclipse-chamber-mixed-conduit{,-replay}.mt2f` retains source
+`full-battle-units-spells-and-junk-20261022-134708-d033cbaf` (133.85 seconds)
+and fresh replay `full-battle-units-spells-and-junk-20261022-135006-249c8e1e`
+(82.40 seconds). Both win at Pyre80 after thirteen plays/five EndTurns, settle,
+exit normally, preserve protected originals and retain four zero failure counters.
+Eighteen independently frozen inputs, full state/RNG and sixteen immutable
+model chains match. No production heuristic or Conduit semantics change.
+
+The same authored moon carriers now gain three friendly Conduit stacks through
+their OnSpawn callbacks; the opposing carrier still gains four. Thirty-seven
+hand-card snapshot witnesses contain both teams' independent native upgrades on
+the same card. Four original paid opposing Bumps clear their own trackers while
+28 friendly upgrade records remain intact. The focused checker verifies each
+contributor's distinct identity, power, damage/heal amount and preserved upgrade.
+Two character/fourteen support refreshes and all seven spawn boundaries match.
+This is a controlled composition; actual player and natural deck acceptance
+remain separate. No full regression or Mac package is built.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberMixedConduit -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-mixed-conduit-only tests/fixtures/full-battle-eclipse-chamber-mixed-conduit.mt2f
+```

@@ -1942,6 +1942,19 @@ if (args.Length == 2 && args[0] == "--eclipse-enemy-conduit-only")
     EnemySpawningChecks.StartingConduitGuard();
     return;
 }
+if (args.Length == 2 && args[0] == "--eclipse-mixed-conduit-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    MixedConduitChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--player-mixed-conduit-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    MixedConduitChecks.PlayerPair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--room-moon-callback-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3770,6 +3783,12 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-ch
 {
     using var document = ModelJson.ReadFixture(path);
     EclipseChamberChecks.EnemyConduit(document.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-chamber-mixed-conduit.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-eclipse-chamber-mixed-conduit-replay.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    MixedConduitChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("holdover-variants-calibration", StringComparison.OrdinalIgnoreCase)))
 {
