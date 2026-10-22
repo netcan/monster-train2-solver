@@ -622,7 +622,7 @@ namespace MonsterTrain2Poju.Probe
                 if (stage.ExternalPyre != null)
                     stage.ActualExternalPyre = Capture(AllGameManagers.Instance!.GetRoomManager()!
                         .GetRoom(stage.ExternalPyreRoomIndex), captureContext: false).Units
-                        .FirstOrDefault(unit => unit.IsPyre);
+                        .FirstOrDefault(unit => unit.IsPyre) ?? CaptureRetained(stage.ExternalPyre.Id);
                 if (stage.ExternalTargets.Length > 0)
                 {
                     TrainCombatState actualTrain = CaptureTrain();
@@ -664,6 +664,13 @@ namespace MonsterTrain2Poju.Probe
         {
             captureFailures++;
             log.LogError("BATTLE-CAPTURE-FAIL " + error);
+        }
+
+        private CombatUnit CaptureRetained(int id)
+        {
+            CharacterState actor = identities.Single(pair => pair.Value == id).Key;
+            using (new CharacterState.SetAllowDestroyedAccessHelper(actor, onlyIfDestroyed: true))
+                return CaptureUnit(actor);
         }
 
         private void Stop(bool won)

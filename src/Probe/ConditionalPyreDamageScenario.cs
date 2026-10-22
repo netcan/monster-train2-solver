@@ -12,11 +12,13 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "conditional-pyre-damage";
         internal const string EnemyKey = "HeavyT3_PyreDamageIfUnblocked";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Lethal => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name + "-lethal";
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name || Lethal;
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             SaveManager save = managers.GetSaveManager();
+            if (Lethal) save.Cheat_SetTowerHP(5);
             CharacterData enemy = save.GetAllGameData().GetAllCharacterData()
                 .Single(unit => unit.GetAssetKey() == EnemyKey);
             CharacterTriggerData trigger = enemy.GetTriggers().Single(item =>

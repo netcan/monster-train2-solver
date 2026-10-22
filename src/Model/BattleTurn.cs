@@ -677,7 +677,8 @@ namespace MonsterTrain2Poju.Model
                 BattleRngStream[] streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? finalContext.BattleRng : stream.Name == "CardDraw" ? finalContext.Cards.Rng :
                     stream.Name == "Spawning" ? spawn.Rng : stream.Name == "BossActions" && outerBossRng.HasValue ? outerBossRng.Value : stream.State)).ToArray();
-                CardPileState[] piles = Terminal(outcome) && outcome != RoomOutcome.Stalemate
+                CardPileState[] piles = Terminal(outcome) && outcome != RoomOutcome.Stalemate &&
+                    finalContext.KillCamActivated != false
                     ? otherPiles.Select(CardPileModel.Clear).ToArray()
                     : otherPiles;
                 spawn = WithTrain(spawn, CardSpellModel.WithContext(spawn.Train, finalContext.WithOtherPiles(piles)),

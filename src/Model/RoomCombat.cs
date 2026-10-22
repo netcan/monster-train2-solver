@@ -1632,6 +1632,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect;
             private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId, int? ExclusiveTriggerStateId)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int, int?)>();
             private bool runningTriggerQueue;
+            private bool stoppedByRemotePyreDamage;
             private bool localFeedingQueue;
             private bool stopAfterBossRemoval;
             private bool killCamActivated;
@@ -2679,6 +2680,19 @@ namespace MonsterTrain2Poju.Model
                 if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: target.Alive));
+                // Tower HP changes stop the native combat coroutine immediately. A
+                // remote character-effect hit therefore never reaches CheckForDeath,
+                // its hit callbacks, or the kill camera's card clearing. Played-card
+                // resolution uses a separate queue which StopCombatLoop waits for.
+                if (!source.Preview && target.Source.IsPyre && !target.Alive &&
+                    !target.InRoom && runningTriggerQueue && !nativeCardDamage)
+                {
+                    stoppedByRemotePyreDamage = true;
+                    if (context?.QueryFrame?.SelectedRoomIndex != null)
+                        context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: target.RoomIndex));
+                    Emit(kind, actor, target, damage);
+                    return;
+                }
                 if (!source.Preview && !target.Alive && target.Count("undying") <= 0 && IsTerminalBossDeath(target))
                 { battleWon = true; context = context?.WithBossesDead(); }
                 Emit(kind, actor, target, damage);
@@ -3309,6 +3323,7 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit? overrideTarget = null, WorkingUnit? dyingCharacter = null, int triggerCount = 1, int lastSpawnedOverrideUnitId = 0,
                 int? exclusiveTriggerStateId = null, int paramInt2 = 0, string? paramStringOverride = null)
             {
+                if (stoppedByRemotePyreDamage) return;
                 string? paramString = paramStringOverride ?? (kind == "OnHeal" || kind == "OnHit" ? "" : null);
                 // CombatManager checks purification when adding to its queue, not
                 // when dispatching an already accepted callback.
@@ -3339,7 +3354,7 @@ namespace MonsterTrain2Poju.Model
             private void DrainLocalTriggerQueue()
             {
                 runningTriggerQueue = true;
-                while (triggerQueue.Count > 0 && unsupportedReason == null)
+                while (triggerQueue.Count > 0 && unsupportedReason == null && !stoppedByRemotePyreDamage)
                 {
                     var queued = triggerQueue.Dequeue();
                     if (queued.RoomIndex != source.RoomIndex)
@@ -3386,6 +3401,7 @@ namespace MonsterTrain2Poju.Model
                         battleWon |= relicEffect.Outcome == RoomOutcome.BattleWon;
                     }
                 }
+                if (stoppedByRemotePyreDamage) { runningTriggerQueue = false; return; }
                 var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
                 deferredDamageDeaths.Clear();
                 runningTriggerQueue = false;
@@ -3524,6 +3540,7 @@ namespace MonsterTrain2Poju.Model
 
                         for (int effectIndex = 0; effectIndex < effects.Length; effectIndex++)
                         {
+                            if (stoppedByRemotePyreDamage) return;
                             int live = LiveIndex();
                             if (live >= 0) retained = unit.Triggers[live];
                             effects = retained.Effects.ToArray();
@@ -3622,6 +3639,7 @@ namespace MonsterTrain2Poju.Model
                                 (effect.Type == "CardEffectAddRunCard" || !battleWon && context.AllScenarioBossesDead != true) &&
                                 (effect.Generation?.RequireHandSpace != true || context.Cards.Hand.Count < context.MaxHandSize)) AddCards(unit, effect);
                         }
+                        if (stoppedByRemotePyreDamage) return;
                         if (effects.Length > 0 && context?.TriggerCounts?.ReplayHistory is BattleTriggerHistory history && history.CapturedKinds.Contains(kind))
                             context = context.WithTriggerCounts(context.TriggerCounts.WithReplayHistory(history.Append(
                                 new BattleTriggerBatch(unit.Source.Team, kind, unit.Source.SpawnerCardId, effects))));

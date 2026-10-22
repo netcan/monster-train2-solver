@@ -529,7 +529,7 @@ internal static class BattleActionChecks
             noPlayerUnitPolicy.GetString() == "conditional-no-player-status")
             chooser = ConditionalNoPlayerUnitChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var conditionalPyrePolicy) &&
-            conditionalPyrePolicy.GetString() == "conditional-pyre-damage")
+            conditionalPyrePolicy.GetString() is "conditional-pyre-damage" or "conditional-pyre-damage-lethal")
             chooser = ConditionalPyreDamageChecks.Choose;
         if (fixture.TryGetProperty("ModifierScenario", out var selfAttackStatusPolicy) &&
             selfAttackStatusPolicy.GetString() == "self-attack-status")

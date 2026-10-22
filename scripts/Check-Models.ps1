@@ -57,6 +57,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-moon-phase-callbacks.mt2f',
     'full-battle-conditional-no-player-status.mt2f',
     'full-battle-conditional-pyre-damage.mt2f',
+    'full-battle-conditional-pyre-lethal.mt2f',
     'full-battle-self-attack-status.mt2f',
     'full-battle-units-spells-and-junk.mt2f', 'full-battle-relic-card-modifiers.mt2f', 'full-battle-original-relic-batch.mt2f',
     'full-battle-covenant-character-filter.mt2f',
@@ -1153,6 +1154,11 @@ $conditionalPyreDamageFixtures = @($fixtures | Where-Object {
 foreach ($fixturePath in $conditionalPyreDamageFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --conditional-pyre-damage-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Conditional Pyre damage checks failed: $fixturePath" }
+}
+
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-conditional-pyre-lethal.mt2f' })) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --conditional-pyre-lethal-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Conditional Pyre lethal checks failed: $fixturePath" }
 }
 
 $selfAttackStatusFixtures = @($fixtures | Where-Object {

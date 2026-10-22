@@ -246,7 +246,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     CombatUnit changedPyre = result.RetainedUnits.Single(unit => unit.Id == externalPyre.Id);
                     rooms[pyreRoomIndex] = rooms[pyreRoomIndex].WithUnits(rooms[pyreRoomIndex].Units.Select(unit =>
-                        unit.Id == changedPyre.Id ? changedPyre : unit).ToArray());
+                        unit.Id == changedPyre.Id ? changedPyre : unit).Where(unit => unit.Health > 0).ToArray());
                 }
                 if (requiresTowerTargets) ApplyTowerUpdates(rooms, externalTargets, result.RetainedUnits);
                 SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);

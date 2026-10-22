@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 880 archives (806 full battles and
+Current manifest inventory (2026-10-22): 881 archives (807 full battles and
 74 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -3362,6 +3362,13 @@ The 30,123-byte archive has 4,792 unique nodes and SHA-256
 `40416639a3ef18295a7de007e8c6c784c66cc69465c984c249967c2976635e46`.
 Run `scripts/Check-Models.ps1 -Fixture full-battle-conditional-pyre-damage.mt2f`
 for the focused regression.
+
+`full-battle-conditional-pyre-lethal.mt2f` isolates the same original enemy
+against an explicitly configured five-HP Pyre. Its remote PostCombat hit
+stops combat before death callbacks or killcam card clearing. One play, two
+EndTurns, thirteen room stages, three train phases and full state/RNG match
+with zero failure counters. See [remote lethal boundary](conditional-pyre-lethal.md)
+for native provenance and the eight immutable branch checks.
 
 `full-battle-self-attack-status.mt2f` records unchanged Weldling applying
 three Armor to a player Train Steward after combat: its attack is six and the
