@@ -37,8 +37,10 @@ decisions, full state and RNG match. Rebirth does not reattach severed gear.
 float-rounding boundaries through `int.MaxValue`, and piercing-card controls.
 Native stage is `OnPreAttackedDamageShield`. Live decision, RNG and frame are
 unchanged. The full battle supplies the subsequent real-combat witness.
-Titanite combined with Damage Shield or Titanskin remains explicitly rejected
-pending an ordering calibration.
+Titanite combined with Damage Shield/Titanskin now has 1,536 original native
+stage controls. Shield insertion order and the distinct card/unit piercing
+rules are modeled; Damage Shield combinations require captured order and at
+most sixteen active statuses. See [combination calibration](titanite-combinations.md).
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --event-graft-only `
@@ -70,7 +72,7 @@ enemy physical orders that differ from their native creation/identity order.
 ```
 
 Scope: this exact original Firebrand/MeatShield pair and original five built-in
-grafts. Other event host/equipment pairs, graft-copy interactions and combined
-Titanite shields need their own evidence. The natural Ring7 fixed-policy
+grafts. Other event host/equipment pairs and graft-copy interactions need
+their own evidence. The natural Ring7 fixed-policy
 replay matches but loses; its actual-player scout also only found losing
 plans. Neither is a Ring7 or Fragile terminal-boss player victory.

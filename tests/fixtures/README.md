@@ -1,7 +1,7 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 879 archives (806 full battles and
-73 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-22): 880 archives (806 full battles and
+74 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 The natural Fragile checkpoint is retained in `campaign-progressed-ring8-fragile.zip`
@@ -55,7 +55,11 @@ Firebrand/MeatShield grafting, its temporary equipment trait, severing and
 subsequent host rebirth. The unchanged native battle wins with 27 Pyre HP;
 33 plays, nine EndTurns, full state/RNG and sixteen immutable branches match.
 `titanite-calibration.mt2f` adds 24 isolated native damage/piercing controls.
-Other event graft pairs and combined Titanite shields remain closed; see
+`titanite-combinations-calibration.mt2f` adds 1,536 native shield/Titanskin/armor
+and piercing comparisons, including both shield insertion orders. Combined
+Titanite/Damage Shield requires captured order and at most sixteen active statuses.
+See [Titanite combinations](titanite-combinations.md).
+Other event graft pairs remain unverified; see
 [event graft scope](event-grafted-equipment.md).
 
 `full-battle-outer-boss-fragile-no-cards.mt2f` and its three component archives

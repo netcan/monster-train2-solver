@@ -40,9 +40,9 @@ internal static class TitanSkinChecks
             Unit(1, CombatTeam.Enemy, 0, 20, false, titanSkin, new CombatStatus("armor", 4, 1, removeWhenTriggered: true)),
             Unit(2, CombatTeam.Player, 5, 20, true, new CombatStatus("piercing", 1))));
         CombatUnit unitPiercedTarget = unitPiercing.State!.Units.Single(unit => unit.Id == 1);
-        Require(unitPiercing.Supported && unitPiercedTarget.Health == 15 && unitPiercedTarget.Status("armor")?.Stacks == 4 &&
+        Require(unitPiercing.Supported && unitPiercedTarget.Health == 17 && unitPiercedTarget.Status("armor")?.Stacks == 4 &&
             unitPiercedTarget.Status("titanskin")?.Stacks == 2,
-            "Unit Piercing did not bypass Titan Skin and Armor without consuming their stacks.");
+            "Unit Piercing must retain Titan Skin reduction while bypassing Armor without consuming its stacks.");
 
         var piercingRelic = new CombatRelicState("piercing", "piercing", [RelicModel.AllDamageIsPiercing]);
         RoomCombatResult relicPiercing = RoomCombatModel.Exchange(Room(

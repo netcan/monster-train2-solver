@@ -70,6 +70,12 @@ if (args.Length == 2 && args[0] == "--titanite-only")
     TitaniteChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--titanite-combinations-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TitaniteCombinationChecks.Native(fixture.RootElement);
+    return;
+}
 
 if (args.Length == 2 && args[0] == "--event-graft-only")
 {
@@ -3754,6 +3760,11 @@ foreach (string path in args.Where(path => path.Contains("titanite-calibration",
 {
     using var document = ModelJson.ReadFixture(path);
     TitaniteChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("titanite-combinations-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    TitaniteCombinationChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("permanent-trait-calibration", StringComparison.OrdinalIgnoreCase)))
 {
