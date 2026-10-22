@@ -13,6 +13,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'true-final-boss-life-link-calibration.mt2f',
     'true-final-boss-health-updates-calibration.mt2f',
     'true-final-boss-live-world-observation.mt2f',
+    'true-final-boss-damage-calibration.mt2f',
     'full-battle-terminal-copy-on-play.mt2f', 'full-battle-terminal-copy-on-play-replay.mt2f',
     'full-battle-terminal-copy-on-play-consume.mt2f', 'full-battle-terminal-copy-on-play-consume-replay.mt2f',
     'full-battle-terminal-purge-copy.mt2f', 'full-battle-terminal-purge-copy-replay.mt2f',

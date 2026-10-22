@@ -95,6 +95,6 @@ internal static class TrueFinalBossHealthChecks
             !TrueFinalBossHealthModel.Mutate(seed, 1, "UpdateHp", 0).Supported &&
             TrueFinalBossChecks.Assets.All(asset => !OuterBossDefinitions.Supports(asset)),
             "Missing immutable parent, malformed-operation/terminal rejection or Level9 full-battle guard.");
-        Console.WriteLine("TRUE-FINAL-BOSS-HEALTH-UPDATES PASS: 180 native controls + 20 dependent updates; cross-room linked HP, life-link + DebuffHP, target-only HP signals, preview delta, recovery, integer caps, 256 concurrent branches and unchanged original state/frame/RNG. Full damage/heal/death remains guarded.");
+        Console.WriteLine("TRUE-FINAL-BOSS-HEALTH-UPDATES PASS: 180 native controls + 20 dependent updates; cross-room linked HP, life-link + DebuffHP, target-only HP signals, preview delta, recovery, integer caps, 256 concurrent branches and unchanged original state/frame/RNG. Full turn/death remains guarded.");
     }
 }

@@ -109,9 +109,22 @@ namespace MonsterTrain2Poju.Probe
                     LinkedHealthCalibration.Capture(created, () => Snapshot(heroes));
                     LifeLinkCalibration.Capture(created, () => Snapshot(heroes));
                     TrueFinalBossHealthCalibration.Capture(created, () => Snapshot(heroes));
-                    Completed = true;
+                    Completed = !TrueFinalBossDamageCalibration.Enabled;
                 }
                 catch (Exception error) { Error = error.ToString(); }
+            }
+            if (Error == null && TrueFinalBossDamageCalibration.Enabled)
+            {
+                IEnumerator paid = TrueFinalBossDamageCalibration.Capture(created);
+                while (true)
+                {
+                    bool moved;
+                    try { moved = paid.MoveNext(); }
+                    catch (Exception error) { Error = error.ToString(); break; }
+                    if (!moved) { Completed = true; break; }
+                    yield return paid.Current;
+                }
+                (paid as IDisposable)?.Dispose();
             }
         }
 

@@ -120,6 +120,28 @@ Level8 模型签名保护；上述组件不计作整场可求解或胜局。
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case HealthUpdates,World -SkipBuild`。
 
+## 原始实体实际伤害与治疗协程
+
+`true-final-boss-damage-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-192108-974989fe`，原生正常退出、`DEPTH-PASS`，
+28.80 秒，受保护文件未变。五个角色保持原始出生属性，不替换状态对象、不改
+生命控制点；交替对中层/顶层 Entropy 执行 7 次原生伤害和 5 次原生治疗协程。
+此处明确排除攻击者、来源卡牌、控制器调度与死亡；伤害类型为 Default。
+
+从一个冻结整车根状态连续执行 12 步，以及逐步重放、64 条共享输入并发分支，
+房间/整车/全局光环快照/卡牌与状态/战斗 RNG 全部匹配，父状态不变。覆盖
+3500→3481→1、保护时 1 血不再下降、真实治疗 1→101→3500、零伤害/零治疗、
+最大整数治疗的缺失生命截断及三层持续同步。修复了共享生命更新没有同步其他
+楼层光环快照的问题。16 条原生随机流中仅 NonDeterministic 与 Chatter 有变化；
+后者由原生伤害/治疗触发中的台词选择消耗，其余 14 条均未变。
+
+`LinkedBossHealthModel.ApplyDamage/ApplyHeal` 现通过房间伤害/治疗引擎同步整车。
+顶层保留原有外层 Boss 未支持标记，仅纯伤害/治疗入口允许在明确捕获的原始
+Entropy 目标上执行；普通房间战斗、预览、带攻击者或来源卡牌的链接伤害，
+以及终结更新仍拒绝。此组件不是整场 Level9 或玩家入口验收。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Damage -SkipBuild`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

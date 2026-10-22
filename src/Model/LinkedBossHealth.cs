@@ -19,6 +19,63 @@ namespace MonsterTrain2Poju.Model
     // interface does not admit the TFB controller or full damage/heal callbacks.
     public static class LinkedBossHealthModel
     {
+        internal static CombatContext? WithHealth(CombatContext source, int targetId, int health, out string? error)
+        {
+            LifeLinkContext? world = source.LifeLinks;
+            error = world == null ? "Missing global linked-boss health." : LifeLinkModel.Validate(world);
+            if (error != null) return null;
+            LifeLinkActor? target = world!.Actors.SingleOrDefault(actor => actor.Id == targetId);
+            if (target == null || health <= 0 || world.CalculatingPreview || world.SharedPreviewHpChange != 0)
+            { error = "Linked boss health requires a captured live target; preview and terminal updates remain guarded."; return null; }
+            int owner = target.LinkedId == 0 ? target.Id : target.LinkedId;
+            return RebaseContext(source, new LifeLinkContext(world.Actors.Select(actor =>
+            {
+                bool shared = (actor.LinkedId == 0 ? actor.Id : actor.LinkedId) == owner;
+                int hp = shared ? Math.Min(health, 99999) : actor.Health;
+                return new LifeLinkActor(actor.Id, actor.LinkedId, hp, hp, actor.Initialized, actor.HasLifeLink, actor.TrueFinalBoss, actor.OuterBoss);
+            }).ToArray(), false, 0));
+        }
+
+        private static CombatContext RebaseContext(CombatContext source, LifeLinkContext world)
+        {
+            CombatContext context = source.WithLifeLinks(world);
+            EnchantmentWorld? enchantments = context.Enchantments;
+            if (enchantments == null) return context;
+            var health = world.Actors.ToDictionary(actor => actor.Id, actor => actor.Health);
+            CombatUnit Sync(CombatUnit unit) => health.TryGetValue(unit.Id, out int hp) ? unit.WithHealth(hp) : unit;
+            return context.WithEnchantments(new EnchantmentWorld(enchantments.Rooms.Select(room =>
+                new RoomCombatState(room.RoomIndex, room.Deployment, room.Preview ? room.Units : room.Units.Select(Sync).ToArray(),
+                    room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
+                enchantments.Movement, enchantments.EnemySlotsPerRoom, enchantments.RetainedUnits.Select(actor =>
+                    new EnchantmentRetainedUnit(actor.Preview ? actor.Unit : Sync(actor.Unit), actor.RoomIndex, actor.Preview)).ToArray(),
+                enchantments.EnchanterIds, enchantments.AllowUpdates, enchantments.Updating, enchantments.Preview,
+                enchantments.TestRng, enchantments.AutomaticLifecycle));
+        }
+
+        public static LinkedBossHealthResult ApplyDamage(TrainCombatState source, int targetId, int damage) => Combat(source, targetId, damage, false);
+        public static LinkedBossHealthResult ApplyHeal(TrainCombatState source, int targetId, int amount) => Combat(source, targetId, amount, true);
+        private static LinkedBossHealthResult Combat(TrainCombatState source, int targetId, int amount, bool healing)
+        {
+            RoomCombatState? room = source.Rooms.SingleOrDefault(item => item.Units.Any(unit => unit.Id == targetId));
+            if (room == null || source.Context?.LifeLinks?.Actors.Any(actor => actor.Id == targetId) != true)
+                return new LinkedBossHealthResult(null, Array.Empty<HealthChangedEvent>(), null, "Missing physical linked-boss target.");
+            RoomCombatResult applied = healing ? RoomCombatModel.ApplyCardHeal(room, targetId, amount) : RoomCombatModel.ApplyCardDamage(room, targetId, amount);
+            if (!applied.Supported) return new LinkedBossHealthResult(null, Array.Empty<HealthChangedEvent>(), null, applied.UnsupportedReason);
+            CombatContext context = applied.State!.Context!;
+            var byId = context.LifeLinks!.Actors.ToDictionary(actor => actor.Id);
+            var rooms = source.Rooms.Select(original =>
+            {
+                RoomCombatState changed = original.RoomIndex == room.RoomIndex ? applied.State : original;
+                return new RoomCombatState(changed.RoomIndex, changed.Deployment, changed.Units.Select(unit =>
+                    byId.TryGetValue(unit.Id, out LifeLinkActor? linked) ? unit.WithHealth(linked.Health) : unit).ToArray(),
+                    changed.ExternalInteractions, context, changed.Preview, changed.ActiveCompanionBossIds);
+            }).ToArray();
+            int beforeHealth = room.Units.Single(unit => unit.Id == targetId).Health;
+            int afterHealth = byId[targetId].Health;
+            return new LinkedBossHealthResult(new TrainCombatState(rooms, source.Movement, source.EnemySlotsPerRoom, context),
+                beforeHealth == afterHealth ? Array.Empty<HealthChangedEvent>() : new[] { new HealthChangedEvent(targetId, afterHealth) }, null);
+        }
+
         public static LinkedBossHealthResult Apply(TrainCombatState source, int targetId, string operation, int value)
         {
             LinkedBossHealthResult Reject(string reason) => new LinkedBossHealthResult(null, Array.Empty<HealthChangedEvent>(), null, reason);
@@ -38,7 +95,7 @@ namespace MonsterTrain2Poju.Model
             if (!mutation.Supported) return Reject(mutation.UnsupportedReason!);
             var nextWorld = new LifeLinkContext(mutation.State!.LifeLink.Actors.Select(actor => new LifeLinkActor(actor.Id,
                 actor.LinkedId, actor.Health, actor.Health, actor.Initialized, actor.HasLifeLink, actor.TrueFinalBoss, actor.OuterBoss)).ToArray(), false, 0);
-            CombatContext context = source.Context!.WithLifeLinks(nextWorld);
+            CombatContext context = RebaseContext(source.Context!, nextWorld);
             var byId = nextWorld.Actors.ToDictionary(actor => actor.Id);
             var rooms = source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                 room.Units.Select(unit => byId.TryGetValue(unit.Id, out LifeLinkActor? linked) ? unit.WithHealth(linked.Health) : unit).ToArray(),

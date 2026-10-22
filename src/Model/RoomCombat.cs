@@ -864,7 +864,9 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
             Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false)
         {
-            string? error = Validate(state);
+            string? error = Validate(state, linkedHealthOnly: true);
+            if (state.Units.Any(unit => unit.Status("lifelink") != null) && (sourceCardId != 0 || attackerUnitId != 0))
+                error = "Linked boss damage with an attacker or source card requires separate native calibration.";
             if (error != null || damage < 0 || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid card damage target or amount.");
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
@@ -950,7 +952,7 @@ namespace MonsterTrain2Poju.Model
 
         public static RoomCombatResult ApplyCardHeal(RoomCombatState state, int targetId, int amount, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
-            string? error = Validate(state);
+            string? error = Validate(state, linkedHealthOnly: true);
             CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (error != null || amount < 0 || target?.Modifiers == null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
@@ -967,12 +969,15 @@ namespace MonsterTrain2Poju.Model
             string? error = Validate(state);
             if (error != null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events, error);
+            if (state.Units.Any(unit => unit.Status("lifelink") != null))
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events,
+                    "True-final-boss room attack scheduling remains uncalibrated; linked damage/heal APIs are separate.");
             var engine = new Engine(state, events, refreshPyre: refreshPyre,
                 externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
             return engine.Run(entireRoom, updateSelectedRoom);
         }
 
-        internal static string? Validate(RoomCombatState state, int? dyingTargetId = null)
+        internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, bool linkedHealthOnly = false)
         {
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) return relicError;
@@ -982,8 +987,13 @@ namespace MonsterTrain2Poju.Model
             string? identityError = UnitIdentityModel.Validate(state.Context, state.Units);
             if (identityError != null) return identityError;
             if (state.Context != null && AbilityCardModel.Validate(state.Context) is string cacheError) return cacheError;
-            if (state.ExternalInteractions.Count > 0)
-                return string.Join("; ", state.ExternalInteractions);
+            bool linkedTargetOnly = linkedHealthOnly && !state.Preview && state.Context?.LifeLinks is LifeLinkContext linked &&
+                !linked.CalculatingPreview && linked.SharedPreviewHpChange == 0 && LifeLinkModel.Validate(linked) == null &&
+                state.Units.Count > 0 && state.Units.All(unit => unit.Status("lifelink") != null &&
+                    linked.Actors.Any(actor => actor.Id == unit.Id && actor.TrueFinalBoss && actor.OuterBoss && actor.Health == unit.Health));
+            string[] interactions = state.ExternalInteractions.Where(item => !(linkedTargetOnly && item == "Outer train boss")).ToArray();
+            if (interactions.Length > 0)
+                return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
             {
                 string? unsupported = CardModifierModel.UnsupportedReason(instance);
@@ -1044,7 +1054,10 @@ namespace MonsterTrain2Poju.Model
                     unit.StatusRegistry.Any(status => status.Stacks < 0 || status.Stacks > 9999)))
                     return "Invalid retained status dictionary on unit " + unit.Id;
                 foreach (CombatStatus status in unit.Statuses)
-                    if (!KnownStatuses.Contains(status.Id))
+                    if (!KnownStatuses.Contains(status.Id) && !(linkedHealthOnly && status.Id == "lifelink" &&
+                        !state.Preview && state.Context?.LifeLinks is LifeLinkContext world && !world.CalculatingPreview &&
+                        world.SharedPreviewHpChange == 0 && LifeLinkModel.Validate(world) == null &&
+                        world.Actors.Any(actor => actor.Id == unit.Id && actor.TrueFinalBoss && actor.Initialized && actor.HasLifeLink && actor.Health == unit.Health)))
                         return "Unmodeled status " + status.Id + " on " + unit.AssetKey;
                 if (unit.Status("titanite") != null && unit.Status("damage shield") != null &&
                     (unit.StatusRegistry == null || unit.Statuses.Count > 16))
@@ -2652,6 +2665,11 @@ namespace MonsterTrain2Poju.Model
                     Trigger(target, "armor", spent);
                 }
                 if (damage > 0 && target.Has("fragile")) damage = target.Health + damage - 1;
+                if (target.Has("lifelink"))
+                {
+                    if (context?.LifeLinks == null) { unsupportedReason = "Life-link damage requires the global live roster."; return; }
+                    damage = LifeLinkModel.Test(context.LifeLinks, target.Source.Id, damage).Damage;
+                }
                 if (target.Has("untouchable")) damage = 0;
                 int hpAfterPyreResurrection = 0;
                 if (target.Source.IsPyre && target.Health - damage <= 0 && context != null)
@@ -2676,7 +2694,7 @@ namespace MonsterTrain2Poju.Model
                 if (attackingTrigger && actor != null && actor != target)
                     FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
                 if (unsupportedReason != null) return;
-                target.Health = resultingHealth;
+                if (!SetHealth(target, resultingHealth)) return;
                 if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: target.Alive));
@@ -3313,10 +3331,27 @@ namespace MonsterTrain2Poju.Model
                 int modified = HealingModel.ModifiedAmount(amount, unit.Statuses.Values.ToArray());
                 if (modified < 0) return;
                 int old = unit.Health;
-                unit.Health += Math.Min(modified, unit.Source.MaxHealth - unit.Health);
+                if (!SetHealth(unit, unit.Health + Math.Min(modified, unit.Source.MaxHealth - unit.Health))) return;
                 Emit(kind, unit, unit, unit.Health - old);
                 // Native ApplyHeal runs these even when clipping or immunity produces zero restoration.
                 FireTriggers(unit, "OnHeal", paramInt: unit.Health - old);
+            }
+
+            private bool SetHealth(WorkingUnit target, int health)
+            {
+                if (context?.LifeLinks?.Actors.Any(actor => actor.Id == target.Source.Id) == true)
+                {
+                    CombatContext? updated = LinkedBossHealthModel.WithHealth(context, target.Source.Id, health, out string? error);
+                    if (updated == null) { unsupportedReason = error; return false; }
+                    context = updated;
+                    foreach (WorkingUnit unit in units)
+                    {
+                        LifeLinkActor? shared = context.LifeLinks!.Actors.SingleOrDefault(actor => actor.Id == unit.Source.Id);
+                        if (shared != null) unit.Health = shared.Health;
+                    }
+                }
+                target.Health = health;
+                return true;
             }
 
             private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false, int paramInt = 0,
