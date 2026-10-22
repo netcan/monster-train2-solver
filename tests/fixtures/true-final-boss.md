@@ -142,6 +142,27 @@ Entropy 目标上执行；普通房间战斗、预览、带攻击者或来源卡
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Damage -SkipBuild`。
 
+## 真实法术来源与法术护盾
+
+`true-final-boss-spell-damage-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-195550-c7f2f7ad`，28.69 秒，原生正常退出且原始
+文件未改。选择起始牌组中真实存在、没有升级/额外特性的法术实例（编号 5），
+将其作为 `ApplyDamageToTarget` 的 `playedCard` 来源；没有伪造卡牌或调整出生生命。
+这是实际伤害 API 的校准，不计完整出牌流程/资源消耗验收。
+
+14 次原生调用覆盖五个目标，完整房间/列车/统计/光环/共享生命/RNG 状态一致，
+并从同一冻结根状态连续推进，64 条并发分支保持父状态不变。Dominion 前四次
+19 点伤害逐层消耗法术护盾、生命不变；第五次才实际扣血，之后致命伤害由
+生命链接保护到 1 血。其余身体也覆盖法术致命保护与实际恢复。
+
+共享生命伤害接口只为已捕获、无升级/额外特性的普通法术开放来源编号；
+缺失来源、单位攻击者和复杂卡牌签名继续拒绝。整回合、终态与玩家入口仍待接入。
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -TrueFinalBossSpellDamage -SkipBuild
+./scripts/Check-TrueFinalBoss.ps1 -Case SpellDamage -SkipBuild
+```
+
 ## 五实体实际伤害与治疗
 
 `true-final-boss-all-target-damage-calibration.mt2f` 来自

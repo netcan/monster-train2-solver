@@ -16,7 +16,8 @@ namespace MonsterTrain2Poju.Model
         { State = state; Events = Array.AsReadOnly(events.ToArray()); DamageStage = damageStage; UnsupportedReason = unsupportedReason; }
     }
     // Bridge calibrated live health updates to all physical train rooms. This
-    // interface does not admit the TFB controller or full damage/heal callbacks.
+    // interface admits calibrated nonterminal damage/healing, while the TFB
+    // controller, attacks and terminal cleanup remain separate boundaries.
     public static class LinkedBossHealthModel
     {
         internal static CombatContext? WithHealth(CombatContext source, int targetId, int health, out string? error)
@@ -52,14 +53,14 @@ namespace MonsterTrain2Poju.Model
                 enchantments.TestRng, enchantments.AutomaticLifecycle));
         }
 
-        public static LinkedBossHealthResult ApplyDamage(TrainCombatState source, int targetId, int damage) => Combat(source, targetId, damage, false);
+        public static LinkedBossHealthResult ApplyDamage(TrainCombatState source, int targetId, int damage, int sourceCardId = 0) => Combat(source, targetId, damage, false, sourceCardId);
         public static LinkedBossHealthResult ApplyHeal(TrainCombatState source, int targetId, int amount) => Combat(source, targetId, amount, true);
-        private static LinkedBossHealthResult Combat(TrainCombatState source, int targetId, int amount, bool healing)
+        private static LinkedBossHealthResult Combat(TrainCombatState source, int targetId, int amount, bool healing, int sourceCardId = 0)
         {
             RoomCombatState? room = source.Rooms.SingleOrDefault(item => item.Units.Any(unit => unit.Id == targetId));
             if (room == null || source.Context?.LifeLinks?.Actors.Any(actor => actor.Id == targetId) != true)
                 return new LinkedBossHealthResult(null, Array.Empty<HealthChangedEvent>(), null, "Missing physical linked-boss target.");
-            RoomCombatResult applied = healing ? RoomCombatModel.ApplyCardHeal(room, targetId, amount) : RoomCombatModel.ApplyCardDamage(room, targetId, amount);
+            RoomCombatResult applied = healing ? RoomCombatModel.ApplyCardHeal(room, targetId, amount) : RoomCombatModel.ApplyCardDamage(room, targetId, amount, sourceCardId);
             if (!applied.Supported) return new LinkedBossHealthResult(null, Array.Empty<HealthChangedEvent>(), null, applied.UnsupportedReason);
             CombatContext context = applied.State!.Context!;
             var byId = context.LifeLinks!.Actors.ToDictionary(actor => actor.Id);

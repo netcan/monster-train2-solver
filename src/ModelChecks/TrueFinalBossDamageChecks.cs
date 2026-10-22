@@ -8,17 +8,20 @@ internal static class TrueFinalBossDamageChecks
     {
         void Require(bool condition, string reason) => TrueFinalBossChecks.Require(condition, reason);
         string Json(object value) => JsonSerializer.Serialize(value, ModelJson.Options);
-        bool allTargets = root.GetProperty("Boundary").GetString() == "OriginalLiveAllTrueFinalBossDamageAndHealCoroutines";
+        bool spellSource = root.GetProperty("Boundary").GetString() == "OriginalLiveTrueFinalBossSpellDamageCoroutines";
+        bool allTargets = spellSource || root.GetProperty("Boundary").GetString() == "OriginalLiveAllTrueFinalBossDamageAndHealCoroutines";
+        int sourceCardId = root.GetProperty("SourceCard").GetInt32();
         Require(root.GetProperty("Schema").GetInt32() == 1 &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
             (allTargets || root.GetProperty("Boundary").GetString() == "OriginalLiveEntropyDamageAndHealCoroutines") &&
             root.GetProperty("OriginalActorsAndStartingStats").GetBoolean() && root.GetProperty("NativeCompleted").GetBoolean() &&
-            root.GetProperty("ControllerExcluded").GetBoolean() && root.GetProperty("SourceCard").GetInt32() == 0 &&
+            root.GetProperty("ControllerExcluded").GetBoolean() && (spellSource ? sourceCardId > 0 : sourceCardId == 0) &&
             root.GetProperty("Attacker").GetInt32() == 0 && root.GetProperty("DamageType").GetString() == "Default",
             "Missing original paid non-preview damage/healing controls.");
         FixtureValue[] rows = root.GetProperty("Rows").EnumerateArray().ToArray();
         int[] values = new[] { 19, 4000, 9, 100, int.MaxValue, 0, 3500, 0, 100, 1, 4000, int.MaxValue };
         if (allTargets) values = values.Concat(new[] { 19, 4000, 9, 100, int.MaxValue, 19, 4000, 9, 100, int.MaxValue, 4000, int.MaxValue }).ToArray();
+        if (spellSource) values = new[] { 19, 19, 19, 19, 19, 4000, int.MaxValue, 4000, int.MaxValue, 4000, int.MaxValue, 4000, 9, int.MaxValue };
         Require(rows.Length == values.Length && rows.Select(row => row.GetProperty("Value").GetInt32()).SequenceEqual(values) &&
             rows[0].GetProperty("Before").Deserialize<RoomCombatState>()!.Context!.LifeLinks!.Actors.Select(actor => actor.Health)
                 .SequenceEqual(new[] { 1555, 2750, 3500, 3500, 3500 }), "Incomplete native damage/heal chain or original starting health.");
@@ -28,6 +31,14 @@ internal static class TrueFinalBossDamageChecks
         string? frozenParent = null;
         TrainCombatState? originalParent = null;
         int damageCount = 0, healCount = 0, recovered = 0, protectedLethal = 0;
+        if (spellSource)
+        {
+            CardInstanceState? source = rows[0].GetProperty("Before").Deserialize<RoomCombatState>()!.Context!.FindCard(sourceCardId);
+            Require(source != null && source.DataId == root.GetProperty("SourceCardDataId").GetString() &&
+                source.MaskDescriptor?.Definition.CardType == "Spell" && CardBranchMaskModel.Resolve(source).Traits.Count == 0 &&
+                source.Permanent.Upgrades.Count == 0 && source.Temporary.Upgrades.Count == 0,
+                "Spell damage requires a real captured plain spell from the original starting deck.");
+        }
         foreach (FixtureValue row in rows)
         {
             RoomCombatState before = row.GetProperty("Before").Deserialize<RoomCombatState>()!;
@@ -42,7 +53,7 @@ internal static class TrueFinalBossDamageChecks
                 row.GetProperty("AllBossesAlive").GetBoolean(),
                 "Native target was not an original true-final-boss actor or unmodeled controller interactions were present.");
             string immutable = Json(before);
-            RoomCombatResult result = operation == "Damage" ? RoomCombatModel.ApplyCardDamage(before, target, value) :
+            RoomCombatResult result = operation == "Damage" ? RoomCombatModel.ApplyCardDamage(before, target, value, sourceCardId) :
                 RoomCombatModel.ApplyCardHeal(before, target, value);
             string? difference = result.Supported ? ModelJson.Difference(Json(result.State!), Json(actual)) : result.UnsupportedReason;
             Require(result.Supported && difference == null && immutable == Json(before),
@@ -56,14 +67,14 @@ internal static class TrueFinalBossDamageChecks
             }
             TrainCombatState beforeTrain = Train(before);
             string immutableTrain = Json(beforeTrain);
-            LinkedBossHealthResult wholeTrain = operation == "Damage" ? LinkedBossHealthModel.ApplyDamage(beforeTrain, target, value) :
+            LinkedBossHealthResult wholeTrain = operation == "Damage" ? LinkedBossHealthModel.ApplyDamage(beforeTrain, target, value, sourceCardId) :
                 LinkedBossHealthModel.ApplyHeal(beforeTrain, target, value);
             Require(wholeTrain.Supported && ModelJson.Difference(Json(wholeTrain.State!), Json(Train(actual))) == null && Json(beforeTrain) == immutableTrain,
                 "Full native train/world damage or heal propagation differs: " + operation + "/" + value + ": " + wholeTrain.UnsupportedReason);
             originalParent ??= beforeTrain;
             frozenParent ??= Json(originalParent);
             frozenChain ??= beforeTrain;
-            LinkedBossHealthResult chained = operation == "Damage" ? LinkedBossHealthModel.ApplyDamage(frozenChain, target, value) :
+            LinkedBossHealthResult chained = operation == "Damage" ? LinkedBossHealthModel.ApplyDamage(frozenChain, target, value, sourceCardId) :
                 LinkedBossHealthModel.ApplyHeal(frozenChain, target, value);
             Require(chained.Supported && ModelJson.Difference(Json(chained.State!), Json(Train(actual))) == null,
                 "Paid native mixed-floor damage/heal chain differs from one frozen train root: " + operation + "/" + value + ": " + chained.UnsupportedReason);
@@ -89,16 +100,29 @@ internal static class TrueFinalBossDamageChecks
             }
             sharedRoots.Add(before); immutableRoots.Add(immutable);
         }
-        Require(damageCount == (allTargets ? 14 : 7) && healCount == (allTargets ? 10 : 5) && protectedLethal >= (allTargets ? 5 : 2) && recovered >= (allTargets ? 5 : 2) &&
+        Require(damageCount == (spellSource ? 10 : allTargets ? 14 : 7) && healCount == (spellSource ? 4 : allTargets ? 10 : 5) &&
+            protectedLethal >= (spellSource ? 4 : allTargets ? 5 : 2) && recovered >= (spellSource ? 4 : allTargets ? 5 : 2) &&
             (!allTargets || rows.Select(row => row.GetProperty("TargetId").GetInt32()).Distinct().Count() == 5),
             "Native chain lacks protected lethal hits, actual healing or alternating physical floors.");
         RoomCombatState seed = rows[0].GetProperty("Before").Deserialize<RoomCombatState>()!;
+        if (spellSource)
+        {
+            for (int index = 0; index < 4; index++)
+            {
+                CombatUnit dominion = rows[index].GetProperty("Actual").Deserialize<RoomCombatState>()!.Units.Single(unit => unit.Id == 2);
+                Require(dominion.Health == 1555 && (dominion.Status("spell shield")?.Stacks ?? 0) == 3 - index,
+                    "Original Dominion spell shields must block four real card hits before life-link protection.");
+            }
+            Require(!RoomCombatModel.ApplyCardDamage(seed, 2, 1, int.MaxValue).Supported &&
+                !RoomCombatModel.ApplyCardDamage(seed, 2, 1, sourceCardId, attackerUnitId: 1).Supported,
+                "Missing card sources and uncalibrated spell attackers must remain guarded.");
+        }
         Parallel.For(0, 64, index =>
         {
             int selected = index % rows.Length; FixtureValue row = rows[selected];
             RoomCombatState before = sharedRoots[selected];
             int target = row.GetProperty("TargetId").GetInt32(), value = row.GetProperty("Value").GetInt32();
-            RoomCombatResult result = row.GetProperty("Operation").GetString() == "Damage" ? RoomCombatModel.ApplyCardDamage(before, target, value) :
+            RoomCombatResult result = row.GetProperty("Operation").GetString() == "Damage" ? RoomCombatModel.ApplyCardDamage(before, target, value, sourceCardId) :
                 RoomCombatModel.ApplyCardHeal(before, target, value);
             Require(result.Supported && ModelJson.Difference(Json(result.State!), Json(row.GetProperty("Actual").Deserialize<RoomCombatState>()!)) == null,
                 "Concurrent paid native damage/heal branch differs.");
@@ -108,6 +132,6 @@ internal static class TrueFinalBossDamageChecks
             Json(originalParent!) == frozenParent &&
             TrueFinalBossChecks.Assets.All(asset => !OuterBossDefinitions.Supports(asset)),
             "Paid damage/healing must not admit uncalibrated TFB attack scheduling or the Level8 controller.");
-        Console.WriteLine($"TRUE-FINAL-BOSS-DAMAGE PASS: {rows.Length} paid original live coroutine calls, {(allTargets ? 5 : 2)} targets; full room/train/global context/status/RNG match, linked floor health, lethal protection, actual healing and 64 immutable concurrent branches. Attack scheduling, terminal death and full battle remain guarded.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-DAMAGE PASS: {rows.Length} paid original live coroutine calls, {(allTargets ? 5 : 2)} targets, sourceCard={sourceCardId}; full room/train/global context/status/RNG match, linked floor health, lethal protection, actual healing and 64 immutable concurrent branches. Attack scheduling, terminal death and full battle remain guarded.");
     }
 }

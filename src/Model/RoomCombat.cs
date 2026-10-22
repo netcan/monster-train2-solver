@@ -871,8 +871,14 @@ namespace MonsterTrain2Poju.Model
             Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false)
         {
             string? error = Validate(state, linkedHealthOnly: true);
-            if (state.Units.Any(unit => unit.Status("lifelink") != null) && (sourceCardId != 0 || attackerUnitId != 0))
-                error = "Linked boss damage with an attacker or source card requires separate native calibration.";
+            if (state.Units.Any(unit => unit.Status("lifelink") != null))
+            {
+                CardInstanceState? source = sourceCardId == 0 ? null : state.Context?.FindCard(sourceCardId);
+                if (attackerUnitId != 0 || sourceCardId != 0 && (source?.MaskDescriptor?.Definition.CardType != "Spell" ||
+                    source.Permanent.Upgrades.Count != 0 || source.Temporary.Upgrades.Count != 0 ||
+                    CardBranchMaskModel.Resolve(source).Traits.Count != 0))
+                    error = "Linked boss damage requires no attacker and a captured plain spell source; modified card signatures remain guarded.";
+            }
             if (error != null || damage < 0 || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid card damage target or amount.");
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);

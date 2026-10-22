@@ -16,6 +16,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'true-final-boss-live-world-observation.mt2f',
     'true-final-boss-damage-calibration.mt2f',
     'true-final-boss-all-target-damage-calibration.mt2f',
+    'true-final-boss-spell-damage-calibration.mt2f',
     'true-final-boss-death-dominion.mt2f',
     'true-final-boss-death-savagery.mt2f',
     'true-final-boss-death-entropybot.mt2f',
