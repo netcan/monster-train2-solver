@@ -389,3 +389,8 @@ separate boundaries. No full regression or Mac package is built.
 ```powershell
 scripts/Check-PlayerAdvisor.ps1 -Case RoomMoonEnemy -SkipBuild
 ```
+
+Original spell-owned moon upgrades with these room masks now have separate
+fifteen-boundary component and paid whole-battle/fresh-replay acceptance.
+See [room spell upgrades](room-moon-spell-upgrades.md). Living-unit resource
+traits and preview callback combinations retain their guards.

@@ -34,23 +34,28 @@ namespace MonsterTrain2Poju.Model
                 CardInstanceState? card = context.FindCard(token.InstanceId);
                 if (card == null || !Present(card)) continue;
                 if (context.QueryFrame?.MoonPhase is not (1 or 2) || context.QueryFrame.SelectedRoomIndex == null ||
-                    context.RoomCapacities?.Any(room => room.Attachments?.Any(attachment => attachment.MoonPhase != null) == true) == true ||
                     context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true)
-                { error = "Moon spell upgrades require captured phase/selection; room overrides and active relic combinations need separate witnesses."; return source; }
-                CardMoonUpgradeResult result = Update(card, context.QueryFrame.MoonPhase.Value, preview: context.IsolatedBattlePreview == true && drawn == null);
+                { error = "Moon spell upgrades require captured phase/selection; active relic combinations need separate witnesses."; return source; }
+                foreach (RoomMoonPhaseRule rule in context.RoomCapacities?.SelectMany(room => room.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
+                    .Select(attachment => attachment.MoonPhase).OfType<RoomMoonPhaseRule>() ?? Enumerable.Empty<RoomMoonPhaseRule>())
+                    if (RoomMoonPhaseModel.Validate(rule) is string reason) { error = reason; return source; }
+                int roomMask = context.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == context.QueryFrame.SelectedRoomIndex)?.Attachments?
+                    .Aggregate(0, (mask, attachment) => mask | (attachment.MoonPhase?.AdditionalMask ?? 0)) ?? 0;
+                CardMoonUpgradeResult result = Update(card, context.QueryFrame.MoonPhase.Value, preview: context.IsolatedBattlePreview == true && drawn == null,
+                    roomMask: roomMask);
                 if (!result.Supported) { error = result.UnsupportedReason; return source; }
                 context = context.WithCard(result.Card!);
             }
             return context;
         }
         // This boundary covers spell-owned upgrades; living unit callbacks are separate.
-        public static CardMoonUpgradeResult Update(CardInstanceState source, int phase, bool reset = false, bool preview = false)
+        public static CardMoonUpgradeResult Update(CardInstanceState source, int phase, bool reset = false, bool preview = false, int roomMask = 0)
         {
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
             if (!Present(source))
                 return new CardMoonUpgradeResult(source);
             CardMoonUpgradeResult Reject(string reason) => new CardMoonUpgradeResult(null, reason);
-            if (descriptor == null || descriptor.Definition.CardType != "Spell" || descriptor.SourceTraits == null || phase is not (1 or 2) ||
+            if (descriptor == null || descriptor.Definition.CardType != "Spell" || descriptor.SourceTraits == null || phase is not (1 or 2) || roomMask is not (0 or 1) ||
                 descriptor.TemporaryTraits.Any(trait => trait.RuntimeType == Trait) || descriptor.PermanentReplacements.Any(rule => rule.OldName == Trait || rule.NewRuntimeType == Trait) ||
                 source.Permanent.Upgrades.Concat(source.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true))
                 return Reject("Moon card upgrades require unchanged spell base traits and captured source parameters.");
@@ -82,7 +87,12 @@ namespace MonsterTrain2Poju.Model
                     !KnownPayload(definition.MoonPhaseUpgrade) || !KnownPayload(state.Upgrade) || state.Upgrade.DataId != definition.MoonPhaseUpgrade.DataId)
                     return Reject("Missing or uncalibrated original moon upgrade payload/private state.");
                 if (preview && !reset) continue;
-                bool active = !reset && (definition.Int & phase) != 0;
+                // Native Exclusive uses a nonzero room override in place of
+                // global phase; Additive accepts either. The original Gravity
+                // traits are Exclusive, even when Eclipse exposes both phases
+                // to ordinary character callbacks on the same floor.
+                int effective = definition.Int2 == 1 && roomMask != 0 ? roomMask : phase | roomMask;
+                bool active = !reset && (definition.Int & effective) != 0;
                 if (!reset && state.Active == active) continue;
                 CardUpgradeModifier upgrade = state.Upgrade;
                 var bases = descriptor.BaseTraits.ToList(); var permanent = card.Permanent.Upgrades.ToList();

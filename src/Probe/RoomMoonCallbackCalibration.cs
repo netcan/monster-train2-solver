@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Shade => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SHADE") == "1";
         internal static bool Movement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_MOVEMENT") == "1";
         internal static bool Enemy => Movement && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_ENEMY") == "1";
+        internal static bool SpellUpgrades => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_UPGRADES") == "1";
         internal static bool Started, Completed;
         internal static string? Error;
         private static AllGameManagers Managers => AllGameManagers.Instance!;
@@ -71,6 +72,12 @@ namespace MonsterTrain2Poju.Probe
         }
         private static IEnumerator Run(ManualLogSource log)
         {
+            if (SpellUpgrades)
+            {
+                yield return RoomMoonSpellUpgradeCalibration.Run(log);
+                Completed = true;
+                yield break;
+            }
             var data = Managers.GetAllGameData(); var cards = Managers.GetCardManager();
             var rooms = Managers.GetRoomManager(); var player = Managers.GetPlayerManager();
             cards.AddNewCard(data.FindCardData(MoonPhaseCardScenario.MoonriseId)!, CardPile.HandPile, false, false, animate: false);

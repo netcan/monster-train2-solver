@@ -76,7 +76,8 @@ namespace MonsterTrain2Poju.Probe
                 var effect = new CardEffectData("CardEffectAddStatusEffect", null!, Team.Type.Monsters);
                 effect.Cheat_SetTargetMode(TargetMode.Self);
                 Set(effect, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "conduit", count = 3 } });
-                Set(steward.GetSpawnCharacterData(), "triggers", steward.GetSpawnCharacterData().GetTriggers()
+                CharacterData friendly = steward.GetSpawnCharacterData()!;
+                Set(friendly, "triggers", friendly.GetTriggers()
                     .Concat(new[] { new CharacterTriggerData(CharacterTriggerData.Trigger.OnSpawn, effect) }).ToList());
             }
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);

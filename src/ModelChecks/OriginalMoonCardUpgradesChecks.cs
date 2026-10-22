@@ -16,6 +16,7 @@ internal static class OriginalMoonCardUpgradesChecks
     }
     internal static void Native(FixtureValue root)
     {
+        bool roomMask = root.TryGetProperty("OriginalMoonCardUpgradesRoomMask", out FixtureValue maskFlag) && maskFlag.GetBoolean();
         Require(root.GetProperty("OriginalMoonCardUpgradesPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing settled original moon upgrade battle.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
@@ -28,7 +29,7 @@ internal static class OriginalMoonCardUpgradesChecks
             BattleActionResult attempted = BattleActionModel.PlayCard(last, new PlayCardAction(ids[5], 1, targetUnitId: target.Id));
             Console.WriteLine("MOON-UPGRADE-NEXT-ACTION: " + attempted.Reason);
         }
-        Require(ids.Length == 16 && actions.Length == 15 && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
+        Require(ids.Length == (roomMask ? 17 : 16) && actions.Length == (roomMask ? 16 : 15) && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
         foreach (FixtureValue row in hands)
         {
             CombatContext before = row.GetProperty("Before").Deserialize<CombatContext>()!, actual = row.GetProperty("After").Deserialize<CombatContext>()!;
@@ -42,8 +43,12 @@ internal static class OriginalMoonCardUpgradesChecks
             BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!, after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             CardInstanceState source = before.Spawn.Train.Context!.FindCard(ids[index])!, discarded = after.Spawn.Train.Context!.FindCard(ids[index])!;
             int phase = index < 10 ? 1 : 2;
-            Require(before.Spawn.Train.Context.QueryFrame!.MoonPhase == phase && source.MaskDescriptor!.BaseTraits.Where(trait => trait.RuntimeType == CardMoonUpgradeModel.Trait)
-                .All(trait => trait.MoonPhaseUpgradeState != null && trait.MoonPhaseUpgradeState.Active == ((trait.ParamInt & phase) != 0)), "Original spell phase/private upgrade state differs.");
+            CardSourceTrait[] definitions = source.MaskDescriptor!.SourceTraits!.Where(trait => trait.Type == CardMoonUpgradeModel.Trait).ToArray();
+            CardTraitValue[] traits = source.MaskDescriptor.BaseTraits.Where(trait => trait.RuntimeType == CardMoonUpgradeModel.Trait).ToArray();
+            Require(before.Spawn.Train.Context.QueryFrame!.MoonPhase == phase && definitions.Length == traits.Length &&
+                traits.Select((trait, position) => trait.MoonPhaseUpgradeState != null && trait.MoonPhaseUpgradeState.Active ==
+                    ((trait.ParamInt & (roomMask && index != 5 ? definitions[position].Int2 == 1 ? 1 : phase | 1 : phase)) != 0)).All(active => active),
+                "Original spell selected-room/private upgrade state differs.");
             Require(discarded.MaskDescriptor!.BaseTraits.Where(trait => trait.RuntimeType == CardMoonUpgradeModel.Trait)
                 .All(trait => trait.MoonPhaseUpgradeState is { Active: false, Cached: true }) && after.Spawn.Train.Context.Cards.Discard.Any(token => token.InstanceId == source.InstanceId), "Played discard must remove/reset moon upgrades.");
             if (index is 6 or 12)
@@ -55,8 +60,8 @@ internal static class OriginalMoonCardUpgradesChecks
             if (index is 5 or 11)
             {
                 int target = row.GetProperty("Action").GetProperty("TargetUnitId").GetInt32();
-                Require(after.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == target)).RoomIndex == (phase == 1 ? 0 : 1),
-                    "Gravity must descend at New and ascend at Full using native physical positions.");
+                Require(after.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == target)).RoomIndex == (phase == 1 || roomMask ? 0 : 1),
+                    "Gravity must use Exclusive New in Eclipse and global phase outside the mask.");
             }
             if (index is 7 or 13)
             {
@@ -65,7 +70,14 @@ internal static class OriginalMoonCardUpgradesChecks
             }
         }
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("ORIGINAL-MOON-CARD-UPGRADES PASS: five unchanged spells at both phases, complete hand callback contexts, Stronger Magic Power refresh, upgrade OnCast effects, played/unplayed reset, redraw and 16 immutable battle chains. Room overrides, units, recast copies and relic combinations need separate witnesses.");
+        if (roomMask)
+        {
+            FixtureValue cast = actions.Single(row => row.GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == ids[16]);
+            BattleTurnState installed = cast.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            Require(installed.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Attachments!.Single().MoonPhase != null,
+                "Missing original paid Eclipse installation.");
+        }
+        Console.WriteLine($"ORIGINAL-MOON-CARD-UPGRADES PASS: five unchanged spells at both phases, full hand contexts, stronger magic-power refresh, upgraded OnCast, played/unplayed reset/redraw, 16 immutable chains; selectedRoomMask={roomMask}. Units, recast copies and active relic combinations remain separate boundaries.");
     }
     private static string Json(object? value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string reason) { if (!condition) throw new InvalidOperationException(reason); }

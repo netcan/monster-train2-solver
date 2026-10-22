@@ -1,7 +1,7 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 899 archives (823 full battles and
-76 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-22): 902 archives (825 full battles and
+77 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 The opposing moon callback pair `full-battle-eclipse-chamber-enemy-callbacks{,-replay}.mt2f`
@@ -35,6 +35,14 @@ chains match. See [Conduit movement](conduit-movement.md).
 publications and independent frozen forecasts through 34 decisions, winning
 at Pyre80 in both processes. Eight shared-card snapshot witnesses retain
 both teams' independent upgrades; every input, full state and RNG matches.
+
+`room-moon-spell-upgrade-calibration.mt2f` supplies fifteen original room-mask/
+selection/phase boundaries for five unchanged spells. Additive and Exclusive
+traits, forty active-state changes and complete hand/private-state/RNG match
+eight immutable branches per boundary. The paid pair
+`full-battle-original-moon-card-upgrades-room-mask{,-replay}.mt2f` also wins
+at Pyre80 with sixteen plays/five EndTurns, twenty-one frozen inputs and
+sixteen immutable full model chains. See [room spell upgrades](room-moon-spell-upgrades.md).
 
 The natural Fragile checkpoint is retained in `campaign-progressed-ring8-fragile.zip`
 with seven preceding native wins and thirteen hash-verified restore members.

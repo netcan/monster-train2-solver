@@ -127,6 +127,14 @@ namespace MonsterTrain2Poju.Model
             var synchronized = new TrainCombatState(rooms.Select(room => new RoomCombatState(room.RoomIndex,
                 room.Deployment, room.Units, room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
                 source.Movement, source.EnemySlotsPerRoom, context);
+            if (moonChanged && context != null)
+            {
+                // Installing/removing the native room modifier refreshes hand
+                // resource traits too, even when there are no callback actors.
+                context = CardMoonUpgradeModel.RefreshHand(context, out string? handError);
+                if (handError != null) return Fail(handError);
+                synchronized = CardSpellModel.WithContext(synchronized, context);
+            }
             if (moonChanged && source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger =>
                 trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost")))
             {
