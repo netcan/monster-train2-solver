@@ -49,13 +49,15 @@ namespace MonsterTrain2Poju.Probe
                 added.ApplyPermanentUpgrade(upgrade, managers.GetSaveManager(), ignoreUpgradeAnimation: true);
             }
             row.CardId = trace.CardId(added);
-            if (TrueFinalBossLethalScenario.CommandedAttack)
+            if (TrueFinalBossLethalScenario.CommandedAttack || TrueFinalBossLethalScenario.PyreCommand)
             {
-                CardData command = managers.GetSaveManager().GetAllGameData().FindCardData("1737fa0b-7f37-41e8-9183-ed9e6a391556")!;
-                if (command.name != "Eagleheart" || command.GetCost() != 2 || command.GetCardType() != CardType.Spell ||
-                    !command.GetEffects().Select(effect => effect.GetEffectStateName()).SequenceEqual(new[] {
+                bool pyre = TrueFinalBossLethalScenario.PyreCommand;
+                CardData command = managers.GetSaveManager().GetAllGameData().FindCardData(pyre ? OriginalPyreshotScenario.CardDataId :
+                    "1737fa0b-7f37-41e8-9183-ed9e6a391556")!;
+                if (command.name != (pyre ? "Pyreshot" : "Eagleheart") || command.GetCost() != (pyre ? 3 : 2) || command.GetCardType() != CardType.Spell ||
+                    !command.GetEffects().Select(effect => effect.GetEffectStateName()).SequenceEqual(pyre ? new[] { "CardEffectAttackWithUnit" } : new[] {
                         "CardEffectFloorRearrange", "CardEffectAddStatusEffect", "CardEffectAttackWithUnit" }))
-                    throw new InvalidOperationException("Original Eagleheart command signature changed.");
+                    throw new InvalidOperationException("Original command signature changed.");
                 CardState spell = cards.AddNewCard(command, CardPile.HandPile, false, false, animate: false);
                 row.CommandCardId = trace.CardId(spell); row.CommandCardDataId = command.GetID();
                 row.CommandDefinition = BattleActionProbe.Definition(command);

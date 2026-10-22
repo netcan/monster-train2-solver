@@ -4,7 +4,7 @@ namespace MonsterTrain2Poju.Model
 {
     internal static class TrueFinalBossTerminalCombatModel
     {
-        internal static bool SupportsRoot(RoomCombatState source, int targetId)
+        internal static bool SupportsRoot(RoomCombatState source, int targetId, bool externalPyreAttack = false)
         {
             LifeLinkContext? links = source.Context?.LifeLinks;
             EnchantmentWorld? world = source.Context?.Enchantments;
@@ -27,8 +27,8 @@ namespace MonsterTrain2Poju.Model
                 source.Units.Any(unit => unit.Id == targetId && assets.Contains(unit.AssetKey) && unit.Health == 1 &&
                     (!source.Preview || source.RoomIndex == 3 && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
                         source.RoomIndex == 0 && unit.AssetKey == "Boss_Level9_Entropy_Bot_V2" &&
-                        source.Units.Any(ally => TrueFinalBossCombatModel.SupportsAlly(ally, source.Context) &&
-                            ally.Status("valor") is { Stacks: 5, ParamInt: 1 })));
+                        (externalPyreAttack || source.Units.Any(ally => TrueFinalBossCombatModel.SupportsAlly(ally, source.Context) &&
+                            ally.Status("valor") is { Stacks: 5, ParamInt: 1 }))));
         }
     }
 }

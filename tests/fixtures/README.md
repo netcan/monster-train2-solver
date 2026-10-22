@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1049 archives,
+Current manifest inventory (2026-10-23): 1050 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,6 +12,14 @@ summon/birth/draw/HP-control/command chains match. The initial deck additions,
 draw ordering and owner HP controls are explicit; this is a controlled win.
 See [true-final-boss evidence](true-final-boss.md). The focused `PaidSpell`
 case includes this command alongside its ten paid damage-spell fixtures.
+`true-final-boss-pyre-command.mt2f` adds the original three-cost Pyreshot:
+the Pyre attacks the bottom outer body, stays on floor three with 80 HP,
+and removes all five bosses while the ordinary ally survives. Complete native
+unit-turn and paid-card states/RNG plus sixteen independent full chains match.
+The same explicit initial card/order and three-owner HP controls apply. This
+also fixes remote actor location during aura synchronization and prevents
+cross-floor group removal from restoring stale bosses. `PaidSpell` includes
+both command fixtures; these remain controlled wins.
 
 Run `scripts/Check-FixtureCatalog.ps1` for a fast byte/hash/registration audit;
 it never simulates a battle. Both model and completion entry points use this

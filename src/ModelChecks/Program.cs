@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--true-final-boss-pyre-command-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossCommandedAttackChecks.Native(fixture.RootElement, pyreCommand: true);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-commanded-attack-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4112,6 +4119,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("tr
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossPaidSpellChecks.Native(fixture.RootElement, allied: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("true-final-boss-pyre-command.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossCommandedAttackChecks.Native(fixture.RootElement, pyreCommand: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).Equals("true-final-boss-commanded-attack.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

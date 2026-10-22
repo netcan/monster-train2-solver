@@ -2061,13 +2061,15 @@ namespace MonsterTrain2Poju.Model
             source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
                 room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);
 
+        private static bool RemovedLinkedGroup(TrainCombatState source, RoomCombatState changed) =>
+            source.Context?.LifeLinks is { Actors.Count: 5 } links && links.Actors.All(actor => actor.TrueFinalBoss) &&
+            changed.Context?.LifeLinks == null && changed.Context?.AllScenarioBossesDead == true && changed.Context.Enchantments != null;
+
         private static TrainCombatState ReplaceRoom(TrainCombatState source, RoomCombatState changed)
         {
             // Removing an original true-final-boss body removes its complete
             // linked group, including actors on the other three floors.
-            bool removedLinkedGroup = source.Context?.LifeLinks is { Actors.Count: 5 } links &&
-                links.Actors.All(actor => actor.TrueFinalBoss) && changed.Context?.LifeLinks == null &&
-                changed.Context?.AllScenarioBossesDead == true && changed.Context.Enchantments != null;
+            bool removedLinkedGroup = RemovedLinkedGroup(source, changed);
             RoomCombatState[] rooms = removedLinkedGroup ? changed.Context!.Enchantments!.Rooms.ToArray() :
                 source.Rooms.Select(room => room.RoomIndex == changed.RoomIndex ? changed : room).ToArray();
             var alive = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
@@ -2118,7 +2120,11 @@ namespace MonsterTrain2Poju.Model
                 if (updatedActor == null)
                     return UnsupportedTrain("External unit attack did not retain the actor's updated state.");
                 CombatContext context = turn.State!.Context!;
-                RoomCombatState[] rooms = source.Rooms.Select(room =>
+                // Group death can remove actors on every floor while the
+                // commanded attacker stays in its original physical room.
+                IReadOnlyList<RoomCombatState> physicalRooms = RemovedLinkedGroup(source, turn.State)
+                    ? context.Enchantments!.Rooms : source.Rooms;
+                RoomCombatState[] rooms = physicalRooms.Select(room =>
                 {
                     if (room.RoomIndex == attackRoom.RoomIndex) return turn.State;
                     if (room.RoomIndex != actorRoom.RoomIndex) return new RoomCombatState(room.RoomIndex, room.Deployment,

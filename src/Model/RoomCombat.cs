@@ -563,7 +563,9 @@ namespace MonsterTrain2Poju.Model
             if (overrideTargets != null && (overrideTargets.Distinct().Count() != overrideTargets.Count ||
                 overrideTargets.Any(id => !state.Units.Any(unit => unit.Id == id))))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), "Unit turn override targets require captured unique room identities.");
-            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre, externalActor: externalActor)
+            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre, externalActor: externalActor,
+                externalActorRoomIndex: externalActor == null ? -1 : state.Context?.Enchantments?.Rooms
+                    .FirstOrDefault(room => room.Units.Any(unit => unit.Id == externalActor.Id))?.RoomIndex ?? -1)
                 .UnitTurn(unitId, ignoreAttackPrevention, overrideTargets);
         }
 
@@ -2581,7 +2583,9 @@ namespace MonsterTrain2Poju.Model
                             .Concat(births).ToArray(),
                         originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                         originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
-                    ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(CurrentRoom(), context)));
+                    // A commanded external actor attacks this room without
+                    // moving into it. Restore the aura world from physical units.
+                    ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(PhysicalRoom(), context)));
                 }
                 if (preview.units.Any(unit => !unit.Alive && (preview.IsTerminalBossDeath(unit) || unit.Source.IsPyre) &&
                     units.Any(live => live.Alive && live.Source.Id == unit.Source.Id))) ClearTerminalCards();
@@ -3442,7 +3446,8 @@ namespace MonsterTrain2Poju.Model
                 if (context?.LifeLinks?.Actors.Any(actor => actor.Id == target.Source.Id) == true)
                 {
                     CombatContext? updated = LinkedBossHealthModel.WithHealth(context, target.Source.Id, health, out string? error,
-                        allowTerminal: health == 0 && TrueFinalBossTerminalCombatModel.SupportsRoot(source, target.Source.Id));
+                        allowTerminal: health == 0 && TrueFinalBossTerminalCombatModel.SupportsRoot(source, target.Source.Id,
+                            externalPyreAttack: units.Any(unit => unit.Source.IsPyre && externalTurnActorIds.Contains(unit.Source.Id))));
                     if (updated == null) { unsupportedReason = error; return false; }
                     context = updated;
                     foreach (WorkingUnit unit in units)
@@ -3495,7 +3500,7 @@ namespace MonsterTrain2Poju.Model
                     var queued = triggerQueue.Dequeue();
                     if (queued.RoomIndex != source.RoomIndex)
                     {
-                        RoomCombatState synced = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
+                        RoomCombatState synced = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
                             .Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                         context = synced.Context;
                         RoomCombatState? remote = context?.Enchantments?.Rooms.FirstOrDefault(room => room.RoomIndex == queued.RoomIndex);
@@ -3515,7 +3520,7 @@ namespace MonsterTrain2Poju.Model
                         RoomCombatResult fired = ApplyQueuedCharacterTrigger(EnchantmentWorldModel.Room(remote, context), callback, QueueCallback);
                         if (!fired.Supported) { unsupportedReason = fired.UnsupportedReason; break; }
                         events.AddRange(fired.Events); dispatches.AddRange(fired.Dispatches);
-                        ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(CurrentRoom(), fired.State!.Context)));
+                        ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(PhysicalRoom(), fired.State!.Context)));
                         battleWon |= fired.Outcome == RoomOutcome.BattleWon;
                         continue;
                     }
@@ -4253,7 +4258,7 @@ namespace MonsterTrain2Poju.Model
 
             private bool UpdateEnchantments(int? onlySourceId = null)
             {
-                RoomCombatState current = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
+                RoomCombatState current = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
                     .Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                 RoomCombatResult result = EnchantmentWorldModel.Update(current, onlySourceId);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
@@ -4264,7 +4269,7 @@ namespace MonsterTrain2Poju.Model
 
             private bool UpdateEnchantmentEffect(int unitId, int triggerIndex, int effectIndex)
             {
-                RoomCombatState current = EnchantmentWorldModel.Sync(CurrentRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
+                RoomCombatState current = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
                     .Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                 RoomCombatResult result = EnchantmentWorldModel.UpdateEffect(current, unitId, triggerIndex, effectIndex);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }

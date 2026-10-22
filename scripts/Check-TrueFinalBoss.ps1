@@ -36,6 +36,7 @@ foreach ($item in $Case) {
     if ($item -in @('PaidSpell', 'ProtectedSpell')) {
         if ($item -eq 'PaidSpell') {
             Invoke-TrueFinalBossArchive 'true-final-boss-commanded-attack.mt2f' '--true-final-boss-commanded-attack-only'
+            Invoke-TrueFinalBossArchive 'true-final-boss-pyre-command.mt2f' '--true-final-boss-pyre-command-only'
         }
         $prefixes = if ($item -eq 'ProtectedSpell') { @('protected-spell') } else { @('paid-spell', 'allied-paid-spell') }
         foreach ($prefix in $prefixes) {

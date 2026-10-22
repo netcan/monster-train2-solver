@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using MonsterTrain2Poju.Model;
 using Newtonsoft.Json.Linq;
@@ -15,6 +16,7 @@ namespace MonsterTrain2Poju.Probe
         {
             public int Sequence { get; set; }
             public int ActorId { get; set; }
+            public CombatUnit? ExternalActor { get; set; }
             public RoomCombatState Before { get; set; } = null!;
             public RoomCombatResult Predicted { get; set; } = null!;
             public RoomCombatState? Actual { get; set; }
@@ -32,7 +34,10 @@ namespace MonsterTrain2Poju.Probe
             {
                 RoomCombatState before = trace.Capture(room);
                 record = new Record { Sequence = trace.NextPhaseSequence(), ActorId = trace.UnitId(actor), Before = before };
-                record.Predicted = RoomCombatModel.ApplyUnitTurn(before, record.ActorId);
+                if (before.Units.All(unit => unit.Id != record.ActorId))
+                    record.ExternalActor = before.Context!.Enchantments!.Rooms.SelectMany(floor => floor.Units)
+                        .Single(unit => unit.Id == record.ActorId);
+                record.Predicted = RoomCombatModel.ApplyUnitTurn(before, record.ActorId, externalActor: record.ExternalActor);
                 Records.Add(record); active = record;
             }
             catch (Exception error) { trace.CaptureFailure(error); }

@@ -50,6 +50,7 @@ param(
     [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')][string] $TrueFinalBossProtectedSpellTarget = '',
     [switch] $TrueFinalBossLethalAlly,
     [switch] $TrueFinalBossCommandedAttack,
+    [switch] $TrueFinalBossPyreCommand,
     [ValidateRange(0, 25)][int] $TrueFinalBossFrontHealth = 0,
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossSpawn,
@@ -693,7 +694,8 @@ if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $Or
     $TrueFinalBossBirth -or $TrueFinalBossSpawn -or $TrueFinalBossScheduledSpawn -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossPyreBaneTargets -or $TrueFinalBossDeath)) {
     throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
 }
-if ($TrueFinalBossCommandedAttack) {
+if ($TrueFinalBossCommandedAttack -or $TrueFinalBossPyreCommand) {
+    if ($TrueFinalBossCommandedAttack -and $TrueFinalBossPyreCommand) { throw 'Select one original command card.' }
     if ($TrueFinalBossLethalAlly -or $TrueFinalBossLethalSpellTarget -or $TrueFinalBossProtectedSpellTarget) {
         throw 'Commanded attack requires its separate original ally and three-owner control.'
     }
@@ -1396,6 +1398,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_ORDINARY_ALLY_UPGRADE = $TrueFinalBossOrdinaryAllyUpgrade
     MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_TARGET_ONLY = $(if ($TrueFinalBossProtectedSpellTarget) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_COMMANDED_ATTACK = $(if ($TrueFinalBossCommandedAttack) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_PYRE_COMMAND = $(if ($TrueFinalBossPyreCommand) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_FRONT_HEALTH = [string]$TrueFinalBossFrontHealth
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SPAWN = $(if ($TrueFinalBossSpawn) { '1' } else { '0' })
