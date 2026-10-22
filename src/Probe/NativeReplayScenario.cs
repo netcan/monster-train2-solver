@@ -334,7 +334,7 @@ namespace MonsterTrain2Poju.Probe
                 // The native TFB map sequence loads its intro directly while
                 // retaining DestinationReached until the fight button is used.
                 if (save.GetGameSequence() == SaveData.GameSequence.BattleIntro ||
-                    TrueFinalBossBirthProbe.Enabled && screen.GetScreenActive(ScreenName.BattleIntro))
+                    TrueFinalBossBirthProbe.RouteEnabled && screen.GetScreenActive(ScreenName.BattleIntro))
                 {
                     Enter(Stage.NaturalIntro, 120f);
                     return;
@@ -363,7 +363,7 @@ namespace MonsterTrain2Poju.Probe
                         .Select(index => index + ":" + save.GetScenarioData(index)?.name)));
                     if (targetDistance > 0)
                     {
-                        if (TrueFinalBossBirthProbe.Enabled)
+                        if (TrueFinalBossBirthProbe.RouteEnabled)
                         {
                             TrueFinalBossBirthProbe.Navigate(save, map, log);
                             map.ChooseBranch(MapScreen.BranchSelection.LeftBranch);

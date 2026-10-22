@@ -38,6 +38,7 @@ param(
     [switch] $OuterBossTurns,
     [ValidateSet('', 'AllyBuffer', 'Fragile', 'Corrupter')][string] $OriginalOuterBossVariant = '',
     [switch] $OriginalOuterBossTrial,
+    [switch] $OriginalTrueFinalBoss,
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossHealth,
     [switch] $TrueFinalBossLifeLink,
@@ -667,6 +668,10 @@ if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or 
     throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns.'
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant) { throw 'OriginalOuterBossTrial requires an explicit original outer-boss variant.' }
+if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $OriginalOuterBossVariant -or
+    $TrueFinalBossBirth -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink)) {
+    throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
+}
 if ($TrueFinalBossHealth) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossLifeLink) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossBirth) {
@@ -1300,6 +1305,7 @@ $environment = @{
     MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBossTurns) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_OUTER_BOSS = $OriginalOuterBossVariant
     MT2_PROBE_ORIGINAL_OUTER_BOSS_TRIAL = $(if ($OriginalOuterBossTrial) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_TRUE_FINAL_BOSS = $(if ($OriginalTrueFinalBoss) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH = $(if ($TrueFinalBossHealth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_LIFE_LINK = $(if ($TrueFinalBossLifeLink) { '1' } else { '0' })

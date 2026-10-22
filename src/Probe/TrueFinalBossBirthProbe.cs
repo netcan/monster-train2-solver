@@ -15,6 +15,8 @@ namespace MonsterTrain2Poju.Probe
     internal static class TrueFinalBossBirthProbe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_BIRTH") == "1";
+        internal static bool RouteEnabled => Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_TRUE_FINAL_BOSS") == "1";
+        internal static object? Control => route;
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         private static object? route;

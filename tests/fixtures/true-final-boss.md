@@ -78,3 +78,19 @@ RNG 未变；不通过重置 RNG 获得此结论。
 
 下一步为原生回合流、跨层伤害/治疗及终局移除回调。Level9 仍被玩家入口和
 Level8 模型签名保护；上述组件不计作整场可求解或胜局。
+
+## 原始整场诊断入口
+
+`-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件
+处退出。它与组件捕获互斥，要求全新隔离存档和距离 8；整场轨迹保留跳图控制。
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -OriginalTrueFinalBoss -Policy no-cards -BattleDistance 8 -PhysicalSpawnPoints -BranchCardMasks -FullRuleCatalog -SkipBuild -TimeoutSeconds 240
+```
+
+`full-battle-no-cards-20261022-185533-c8428f7f` 原生正常退出，49.19 秒，原始
+资源、牌组和火炉未改，150 次分支掩码捕获通过。六次空过的火炉生命依次为
+72、61、44、3，最后归零（第一次结束回合只出生，仍为 80）。该局败北；采集失败、
+模型差异和待完成项均为零，但 **unsupported 为 65**，集中在真终局出生、外层
+控制器和 lifelink。此运行仅用于定位原生回合流，不登记为模型验收 fixture，
+也不计整场覆盖、玩家入口可用或胜局。
