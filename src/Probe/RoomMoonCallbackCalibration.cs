@@ -21,6 +21,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool SpellUpgrades => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_UPGRADES") == "1";
         internal static bool SpellAdvance => SpellUpgrades && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_ADVANCE") == "1";
         internal static bool SpellCostRelic => SpellAdvance && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_COST_RELIC") == "1";
+        internal static bool SpellAttackRelic => SpellAdvance && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_ATTACK_RELIC") == "1";
         internal static bool Started, Completed;
         internal static string? Error;
         private static AllGameManagers Managers => AllGameManagers.Instance!;

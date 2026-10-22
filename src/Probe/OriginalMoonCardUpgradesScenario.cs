@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool RoomMask => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_ROOM_MASK") == "1";
         internal static bool Lunacy => RoomMask && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_LUNACY") == "1";
         internal static bool CostRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_COST_RELIC") == "1";
+        internal static bool AttackRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_ATTACK_RELIC") == "1";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static readonly List<HandSample> Hands = new List<HandSample>();

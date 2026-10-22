@@ -33,10 +33,10 @@ namespace MonsterTrain2Poju.Model
             {
                 CardInstanceState? card = context.FindCard(token.InstanceId);
                 if (card == null || !Present(card)) continue;
-                // Unconditional Blight/Junk cost effects neither match spells
-                // nor receive moon-resource callbacks; validate their payloads below.
+                // These validated relic modifier signatures do not match the
+                // refreshed spells or receive moon-resource callbacks.
                 if (context.QueryFrame?.MoonPhase is not (1 or 2) || context.QueryFrame.SelectedRoomIndex == null ||
-                    context.Relics?.Any(relic => relic.EffectTypes.Any(type => type != RelicModel.ModifyCardTypeCost)) == true)
+                    context.Relics?.Any(relic => !CompatibleRelic(relic)) == true)
                 { error = "Moon spell upgrades require captured phase/selection; active relic combinations need separate witnesses."; return source; }
                 if (RelicModel.Validate(context.Relics) is string relicError)
                 { error = relicError; return source; }
@@ -56,6 +56,11 @@ namespace MonsterTrain2Poju.Model
             }
             return context;
         }
+        private static bool CompatibleRelic(CombatRelicState relic) =>
+            relic.EffectTypes.All(type => type is RelicModel.ModifyCardTypeCost or RelicModel.ModifyCardAttack) &&
+            (relic.CardAttackModifiers == null || relic.CardAttackModifiers.All(rule =>
+                rule.CardType == "Monster" && rule.CharacterName == "" &&
+                rule.CharacterSubtypeKey == "" && rule.CardFilter == null));
         // This boundary covers spell-owned upgrades; living unit callbacks are separate.
         public static CardMoonUpgradeResult Update(CardInstanceState source, int phase, bool reset = false, bool preview = false, int roomMask = 0)
         {

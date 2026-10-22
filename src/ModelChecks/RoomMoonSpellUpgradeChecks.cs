@@ -15,6 +15,9 @@ internal static class RoomMoonSpellUpgradeChecks
         bool costRelic = root.TryGetProperty("CostRelicControls", out FixtureValue costFlag) && costFlag.GetBoolean();
         int[] costIds = costRelic ? root.GetProperty("CostControlIds").Deserialize<int[]>()! : [];
         Require(!costRelic || advance && costIds.Length == 2, "Missing cost-relic spell composition controls.");
+        bool attackRelic = root.TryGetProperty("AttackRelicControls", out FixtureValue attackFlag) && attackFlag.GetBoolean();
+        int[] attackIds = attackRelic ? root.GetProperty("AttackControlIds").Deserialize<int[]>()! : [];
+        Require(!attackRelic || advance && !costRelic && attackIds.Length == 1, "Missing separate monster attack relic controls.");
         Require(ids.Length == (advance ? 6 : 5) && root.GetProperty("Rows").GetArrayLength() == 15, "Missing original spells or controls.");
         int witnesses = 0, changes = 0, exclusive = 0, additive = 0, selections = 0;
         bool guardsChecked = false, advanceGuardChecked = false;
@@ -61,6 +64,15 @@ internal static class RoomMoonSpellUpgradeChecks
             Require(row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")), "Spell room upgrade advanced gameplay RNG.");
             CombatContext after = actual.Context!;
             if (costRelic) CostRelic(after, costIds);
+            if (attackRelic) AttackRelic(after, ids, attackIds);
+            if (attackRelic && operation == "Refresh" && !guardsChecked)
+            {
+                var malformed = System.Text.Json.Nodes.JsonNode.Parse(parent)!;
+                malformed["Context"]!["Relics"]!.AsArray().Single(node => node!["DataId"]!.GetValue<string>() ==
+                    "79122f7a-6895-443a-830c-2db23027776c")!["CardAttackModifiers"]![0]!["CardType"] = "Spell";
+                TrainCombatState unknown = JsonSerializer.Deserialize<TrainCombatState>(malformed.ToJsonString(), ModelJson.Options)!;
+                Require(!RoomMoonPhaseModel.Refresh(unknown, false).Supported, "Uncalibrated spell-matching attack relic bypassed the moon guard.");
+            }
             if (costRelic && operation == "Refresh" && !guardsChecked)
             {
                 var malformed = System.Text.Json.Nodes.JsonNode.Parse(parent)!;
@@ -134,7 +146,27 @@ internal static class RoomMoonSpellUpgradeChecks
             if (operation == "Select") selections++;
         }
         Require(changes > 0 && exclusive > 0 && additive > 0 && selections == 6 && guardsChecked && (!advance || advanceGuardChecked), "Missing changed upgrades, both room modes, guard or selection controls.");
-        Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells={ids.Length} lunacyResourceControls={advance} costRelicControls={costRelic} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
+        Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells={ids.Length} lunacyResourceControls={advance} costRelicControls={costRelic} attackRelicControls={attackRelic} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
+    }
+    internal static void AttackRelic(CombatContext context, int[] spells, int[] monsters)
+    {
+        CombatRelicState owner = context.Relics!.Single(relic => relic.DataId == "79122f7a-6895-443a-830c-2db23027776c");
+        Require(owner.AssetKey == "MoreOrLessArtifactsRelic" && owner.EffectTypes.SequenceEqual(
+            [RelicModel.ModifyCardAttack, RelicModel.ModifyCardAttack]) && RelicModel.Validate(context) == null,
+            "Original monster attack relic definitions differ.");
+        Require(owner.CardAttackModifiers!.Select(rule => (rule.EffectIndex, rule.CardType, rule.CharacterName, rule.CharacterSubtypeKey,
+            rule.AttackModifier, rule.AttackMultiplier, rule.UnmodifiedAttackMultiplier, rule.MultiplyByUpgradeCount,
+            rule.MultiplyByRelicCount, rule.ExcludeChampions, rule.ExcludeStartRelics, rule.CardFilter))
+            .SequenceEqual([(0, "Monster", "", "", -1, 1f, 0, false, true, false, true, null),
+                (1, "Monster", "", "", 10, 1f, 0, false, false, false, false, null)]), "Original count/flat attack signatures changed.");
+        int counted = context.Relics.Count(relic => owner.CardAttackModifiers[0].CountRoles!
+            .Any(role => role.Id == relic.DataId && role.Collected && !role.BossGiven && !role.SoulSavior && !role.ActiveStarter));
+        Require(counted is > 0 and < 10 && owner.CardAttackModifiers.All(rule => rule.AppliedCardAttacks != null) &&
+            monsters.All(id => context.FindCard(id)!.Temporary.Offsets.Damage == 10 - counted &&
+                owner.CardAttackModifiers[0].AppliedCardAttacks!.Any(entry => entry.CardInstanceId == id && entry.Amount == -counted) &&
+                owner.CardAttackModifiers[1].AppliedCardAttacks!.Any(entry => entry.CardInstanceId == id && entry.Amount == 10)) &&
+            spells.All(id => owner.CardAttackModifiers.All(rule => rule.AppliedCardAttacks!.All(entry => entry.CardInstanceId != id))),
+            "Monster attack contribution or untouched spell tracking differs.");
     }
     internal static void CostRelic(CombatContext context, int[] ids)
     {

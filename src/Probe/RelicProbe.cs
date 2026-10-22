@@ -190,7 +190,8 @@ namespace MonsterTrain2Poju.Probe
                         var filter = (CardUpgradeMaskData)Field("_cardFilter");
                         RelicCardAttackContribution[]? applied = null;
                         if ((relic.GetRelicDataID() == RelicEndCombatModel.CavendishId ||
-                            relic.GetRelicDataID() == RelicEndCombatModel.GrosMichelId) && FullBattleTrace.Active != null)
+                            relic.GetRelicDataID() == RelicEndCombatModel.GrosMichelId ||
+                            relic.GetRelicDataID() == "79122f7a-6895-443a-830c-2db23027776c") && FullBattleTrace.Active != null)
                         {
                             var tracking = (System.Collections.IEnumerable)AccessTools.Field(item.Effect.GetType(), "_appliedEffects").GetValue(item.Effect);
                             applied = tracking.Cast<object>().Select(entry =>

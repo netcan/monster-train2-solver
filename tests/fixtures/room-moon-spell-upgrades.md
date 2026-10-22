@@ -288,3 +288,44 @@ separate acceptance tasks. No full regression or Mac build is performed.
 scripts/Check-PlayerAdvisor.ps1 -Case MoonRoomCostRelic -SkipBuild
 scripts/Run-FullBattleProbe.ps1 -PlayerAdvisor -RollingAdvice -OriginalMoonCardUpgradesCostRelic -RollingInput tests/fixtures/full-battle-player-moon-room-cost-relic-search.mt2f -PlannerHorizon 6 -PlannerTimeLimitMs 10000 -PlannerTacticalSeed -SkipBuild
 ```
+
+## Original relic-count attack with moon spell refresh
+
+`room-moon-spell-attack-relic-calibration.mt2f` retains source
+`full-battle-no-cards-20261022-161438-5ca02005` (35.96 seconds, normal exit,
+protected originals unchanged). The original `MoreOrLessArtifactsRelic` keeps
+its two `RelicEffectModifyCardAttack` definitions: -1 per counted nonstarter
+relic, then +10, both restricted to Monster cards. Acquisition for this component
+uses the original definition without the separate count scenario's authored
+unit stats. An unchanged Steward is the positive modifier control.
+
+All fifteen resource/phase/selection/attachment boundaries match full context,
+RNG and eight immutable branches each. Capture now also retains this owner's
+private applied-attack contributions: the Steward keeps both native entries,
+while all six original spell identities receive none. The five moon upgrade
+spells retain 105 trait snapshots, forty changes and both Eclipse modes.
+The model accepts validated attack modifiers restricted to Monster cards with
+no name/subtype/filter override; a spell-matching altered payload remains
+rejected. Other relic effect types and filters keep their guards.
+
+`full-battle-original-moon-card-upgrades-attack-relic{,-replay}.mt2f` retains
+source `full-battle-units-spells-and-junk-20261022-161610-7a87826f` (118.71
+seconds) and fresh process `full-battle-units-spells-and-junk-20261022-161916-b5b01c46`
+(99.05 seconds). Both win at Pyre80 after twenty plays/five EndTurns, settle,
+exit normally, preserve protected originals and have four zero failure counters.
+All twenty-five frozen inputs, full state/RNG and sixteen immutable complete
+chains match. Twenty complete native hand-resource callbacks per process also
+match, including the private relic contributions and paid Lunacy 2/3/0 advances.
+
+The original count-owner fixture passes its 64 native manager comparisons,
+45 classification/reset/repeat controls and complete battle checks; the prior
+cost-relic moon component also passes. These are controlled durable-unit/energy
+scenes. Actual player acceptance of this attack-relic composition and natural
+late-game decks remain separate. No full regression or Mac build is performed.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -RoomMoonSpellAttackRelic -SkipBuild
+scripts/Run-FullBattleProbe.ps1 -OriginalMoonCardUpgradesAttackRelic -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-spell-upgrades-only tests/fixtures/room-moon-spell-attack-relic-calibration.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-attack-relic.mt2f
+```

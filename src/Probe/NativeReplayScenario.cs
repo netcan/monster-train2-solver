@@ -461,6 +461,9 @@ namespace MonsterTrain2Poju.Probe
                         OriginalBoneDogScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalGrosMichelScenario.Enabled && !OriginalGrosMichelScenario.Acquired)
                         OriginalGrosMichelScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && (RoomMoonCallbackCalibration.SpellAttackRelic || OriginalMoonCardUpgradesScenario.AttackRelic) &&
+                        !OriginalRelicCountAttackScenario.Acquired)
+                        OriginalRelicCountAttackScenario.AcquireBeforeBattle(managers!, log, authorUnits: false);
                     if (fullBattle && (OriginalCardTypeCostScenario.Enabled || RoomMoonCallbackCalibration.SpellCostRelic ||
                         OriginalMoonCardUpgradesScenario.CostRelic) && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);

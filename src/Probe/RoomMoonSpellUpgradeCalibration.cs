@@ -56,6 +56,8 @@ namespace MonsterTrain2Poju.Probe
             int[] costIds = RoomMoonCallbackCalibration.SpellCostRelic ?
                 new[] { OriginalCardTypeCostScenario.BlightId, OriginalCardTypeCostScenario.JunkId }
                     .Select(id => Trace.CardId(cards.AddNewCard(data.FindCardData(id)!, CardPile.HandPile, false, false, animate: false))).ToArray() : Array.Empty<int>();
+            int[] attackIds = RoomMoonCallbackCalibration.SpellAttackRelic ? new[] {
+                Trace.CardId(cards.AddNewCard(data.FindCardData(MagneticRelayScenario.StewardId)!, CardPile.HandPile, false, false, animate: false)) } : Array.Empty<int>();
             CardState storm = cards.GetHand().Single(card => Trace.CardId(card) == ids[0]);
             CardUpgradeData numeric = data.GetAllCardUpgradeData().First(item => item.GetBonusDamage() > 0 && item.GetTraitDataUpgrades().Count == 0 &&
                 item.GetCardTriggerUpgrades().Count == 0 && item.GetStatusEffectUpgrades().Count == 0);
@@ -90,9 +92,11 @@ namespace MonsterTrain2Poju.Probe
                 PreviewUpdatesSuppressed = Managers.GetCombatManager()!.SuppressCombatPreviewUpdates, Boundary = "AfterOriginalCoroutineAndTriggerQueue",
                 SpellUpgradeControls = true, SpellAdvanceControls = RoomMoonCallbackCalibration.SpellAdvance,
                 CostRelicControls = RoomMoonCallbackCalibration.SpellCostRelic, CostControlIds = costIds,
+                AttackRelicControls = RoomMoonCallbackCalibration.SpellAttackRelic, AttackControlIds = attackIds,
                 ShadeCallbacks = false, MovementControls = false, EnemyControls = false,
                 ActorIds = Array.Empty<int>(), CardIds = ids, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0], Rows = rows }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                RoomMoonCallbackCalibration.SpellAttackRelic ? "room-moon-spell-attack-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellCostRelic ? "room-moon-spell-cost-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellAdvance ? "room-moon-spell-advance-calibration.mt2f" : "room-moon-spell-upgrade-calibration.mt2f"))) document.Write(output);
             log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS spellUpgrades=true rows=" + rows.Count + " gameplayRngUnchanged=" + unchanged);

@@ -15,11 +15,11 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Prepared { get; private set; }
         internal static bool CaptureReady { get; private set; }
         internal static readonly System.Collections.Generic.List<object> Controls = new System.Collections.Generic.List<object>();
-        internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
+        internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log, bool authorUnits = true)
         {
             var save = managers.GetSaveManager(); var data = save.GetAllGameData();
             if (Acquired || save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle) throw new InvalidOperationException("Relic-count owner requires pre-battle acquisition.");
-            foreach (var card in save.GetDeckState())
+            foreach (var card in save.GetDeckState().Where(_ => authorUnits))
             {
                 var definition = data.FindCardData(card.GetCardDataID()); var unit = definition?.GetSpawnCharacterData();
                 if (unit == null) continue;
