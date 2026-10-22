@@ -42,3 +42,17 @@ archive supplies actual successors for the focused movement regression. The
 older complete Ring7 native archive also passes the same
 policy/freeze workflow, verifying input-format compatibility. These checks did
 not rerun unrelated battles or the full regression.
+
+The failed run exposed two separate timing errors. The casting outer boss's
+action movement applies room-change relics but suppresses its character
+ascend/descend trigger; ordinary Bump still fires that trigger. Otherwise the
+floor-transition relic incorrectly deals 3 damage plus the boss's 10 Pyregel.
+Ascension also leaves the vacancies of relic kills until the next
+`RunMonsterTurn`, which centers every room before granting energy.
+
+`ModelChecks --observed-successors-only <archive>` checks each captured actual
+input and all train phases without accepting the archive's old predictions or
+failure counters. After these fixes, the failed Corrupter archive matches all
+17 observed successors and four train phases. The already accepted Ring7 and
+Fragile sources also match their 50 and 54 successors; four existing Bump
+archives retain their original damage, Pyregel and paired Boss checks.

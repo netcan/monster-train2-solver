@@ -614,7 +614,7 @@ namespace MonsterTrain2Poju.Model
                     source.Rooms[index].Units.First(unit => unit.Id == trigger.UnitId), trigger.Kind));
                 if (index >= 0 && trigger.Kind == "OnShift") QueueSentries(source.Rooms[index], trigger.UnitId, queue);
             }
-            return ApplyCharacterQueue(source, queue);
+            return ApplyCharacterQueue(source, queue, centerRelicDeaths: false);
         }
 
         public static TrainCombatResult Sentry(TrainCombatState source, int movedUnitId)
@@ -635,7 +635,8 @@ namespace MonsterTrain2Poju.Model
                 queue.Add(new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, actor, "OnSentry", overrideTarget: moved));
         }
 
-        internal static TrainCombatResult ApplyCharacterQueue(TrainCombatState source, List<RoomCombatModel.QueuedCharacterTrigger> queue)
+        internal static TrainCombatResult ApplyCharacterQueue(TrainCombatState source,
+            List<RoomCombatModel.QueuedCharacterTrigger> queue, bool centerRelicDeaths = true)
         {
             RoomCombatState[] rooms = source.Rooms.ToArray(); CombatContext? context = source.Context;
             var results = new List<RoomCombatResult>(); RoomOutcome outcome = RoomOutcome.Exchanged; string? error = null;
@@ -667,7 +668,12 @@ namespace MonsterTrain2Poju.Model
                 int roomPosition = Array.FindIndex(rooms, room => room.RoomIndex == queued.RoomIndex);
                 if (roomPosition < 0) { error = "Character removal room is not present in train state."; return false; }
                 RoomCombatResult returned;
-                if (queued.RelicDamageRemoval && queued.CompletePhysicalRemovalAfterQueue && context?.SpawnPoints != null)
+                // Ascension orders the room before dispatching PostAscension. Damage
+                // from that queue removes its victims without another order pass.
+                if (!centerRelicDeaths && queued.RelicDamageRemoval)
+                    returned = RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[roomPosition], context), queued.Unit,
+                        refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
+                else if (queued.RelicDamageRemoval && queued.CompletePhysicalRemovalAfterQueue && context?.SpawnPoints != null)
                 {
                     bool multipleDeaths = queue.Count(item => item.RelicDamageRemoval && item.CompletePhysicalRemovalAfterQueue &&
                         item.Kind == "OnDeath" && item.RoomIndex == queued.RoomIndex && item.Unit.Team == queued.Unit.Team) > 1;

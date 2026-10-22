@@ -136,7 +136,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool TryApplyBeforeMovementTrigger(RoomCombatState state,
             RoomCombatModel.QueuedCharacterTrigger queued, Action<RoomCombatModel.QueuedCharacterTrigger> enqueue,
-            out RoomCombatResult result)
+            out RoomCombatResult result, bool enqueueMovementTrigger = true)
         {
             result = null!;
             CombatRelicState[] relics = state.Context?.Relics?.ToArray() ?? Array.Empty<CombatRelicState>();
@@ -175,7 +175,7 @@ namespace MonsterTrain2Poju.Model
                 foreach (RoomCombatModel.QueuedCharacterTrigger callback in applied.PendingCallbacks) enqueue(callback);
                 foreach (CombatUnit unit in applied.RetainedUnits) retained[unit.Id] = unit;
             }
-            enqueue(queued.WithRelicMovementStatusApplied());
+            if (enqueueMovementTrigger) enqueue(queued.WithRelicMovementStatusApplied());
             result = new RoomCombatResult(state, RoomOutcome.Exchanged, 0, events,
                 retainedUnits: retained.Values.ToArray());
             return true;

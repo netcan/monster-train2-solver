@@ -51,7 +51,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static BumpResult Apply(TrainCombatState source, IReadOnlyList<int> targets, int amount,
             IReadOnlyList<RoomPlayRule> roomRules, int sourceCardId,
-            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pending, SpawnPointReference? teleportGoal = null)
+            IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pending, SpawnPointReference? teleportGoal = null,
+            bool outerBossActionMovement = false)
         {
             string? error = TrainCombatModel.Validate(source);
             var events = new List<CombatEvent>(); var retained = new Dictionary<int, CombatUnit>();
@@ -404,7 +405,14 @@ namespace MonsterTrain2Poju.Model
                 moved.Add((id, oldPoint.RoomIndex, destination.RoomIndex, true));
 
                 string movementTrigger = amount > 0 ? "PostAscension" : "PostDescension";
-                queue.Add(new RoomCombatModel.QueuedCharacterTrigger(destination.RoomIndex, boss, movementTrigger));
+                var movement = new RoomCombatModel.QueuedCharacterTrigger(destination.RoomIndex, boss, movementTrigger);
+                // HeroManager suppresses the casting boss's character movement trigger
+                // during its action phase, but still applies room-change relic effects.
+                if (!outerBossActionMovement || boss.BumpRules?.OuterBossRelentlessPhase == true)
+                    queue.Add(movement);
+                else if (RelicMovementStatusModel.TryApplyBeforeMovementTrigger(state.Rooms[destination.RoomIndex],
+                    movement, queue.Add, out RoomCombatResult statuses, enqueueMovementTrigger: false) && !Accept(statuses))
+                    return false;
                 if (!Drain()) return false;
                 boss = Get(id) ?? retained.GetValueOrDefault(id) ?? boss;
                 queue.Add(new RoomCombatModel.QueuedCharacterTrigger(destination.RoomIndex, boss, "OnShift"));

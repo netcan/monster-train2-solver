@@ -96,7 +96,7 @@ internal static class TrainCombatChecks
             if (!result.Supported) { unsupported++; continue; }
             TrainCombatState actual = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             Require(Comparable(result.State!, kind) == Comparable(actual, kind),
-                "Native train state differs at phase " + phase.GetProperty("Index"));
+                "Native train state differs at phase " + phase.GetProperty("Index").GetInt32());
             matched++;
         }
         Require(matched > 0, "No native train phases were verified.");

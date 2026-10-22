@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--observed-successors-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrainCombatChecks.Native(fixture.RootElement);
+    RollingAdviceChecks.ObservedSuccessors(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-campaign-trial-gold-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

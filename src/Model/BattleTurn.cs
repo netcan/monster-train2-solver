@@ -558,6 +558,21 @@ namespace MonsterTrain2Poju.Model
             string? preBossError = ResolveOuterBoss(true, moon);
             if (preBossError != null) return Unsupported(preBossError);
             context = train.Context!;
+            // RunMonsterTurn centers every room after boss actions and before
+            // granting energy. Ascension relic deaths can leave vacancies until here.
+            if (context.SpawnPoints != null)
+            {
+                foreach (RoomCombatState room in train.Rooms)
+                foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
+                {
+                    var scope = new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
+                        room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds);
+                    BattleSpawnPointResult centered = BattleSpawnPointModel.Apply(context.SpawnPoints, scope, "Compact", team);
+                    if (!centered.Supported) return Unsupported("Player turn room centering: " + centered.Error);
+                    context = context.WithSpawnPoints(centered.State!);
+                }
+                train = WithContext(train, context, false);
+            }
             if (context.Resources != null)
             {
                 RelicResourceResult resourceEnergy = RelicResourceModel.StartTurn(context,

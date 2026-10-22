@@ -119,7 +119,8 @@ namespace MonsterTrain2Poju.Model
                 if (destination == room) return true;
                 if (actor.Status("immobile") != null || actor.Status("rooted") != null)
                 { error = "Native action movement of an immobilized outer boss is not calibrated."; return false; }
-                BumpResult moved = BumpModel.Apply(train, new[] { boss.UnitId }, destination - room, rules);
+                BumpResult moved = BumpModel.Apply(train, new[] { boss.UnitId }, destination - room, rules,
+                    0, null, outerBossActionMovement: true);
                 if (!moved.Supported) { error = moved.UnsupportedReason; return false; }
                 if (moved.Outcome != RoomOutcome.Exchanged)
                 { error = "Terminal outer-boss action movement requires native phase calibration."; return false; }

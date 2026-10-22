@@ -9,6 +9,29 @@ internal static class RollingAdviceChecks
     private static BattleTurnState State(FixtureValue value) => value.Deserialize<BattleTurnState>()!;
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
     private static string Key(BattleTurnState state, bool terminal = false) => BattleTurnChecks.Comparable(state, terminal);
+    // Partial failure archives remain useful native observations. This deliberately
+    // checks actual successors only; it does not accept their old plans or counters.
+    internal static void ObservedSuccessors(FixtureValue fixture)
+    {
+        FixtureValue[] records = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(records.Length > 0 && fixture.GetProperty("CaptureFailures").GetInt32() == 0,
+            "Missing captured native successors.");
+        BattleTurnState? previous = null;
+        for (int index = 0; index < records.Length; index++)
+        {
+            FixtureValue record = records[index];
+            BattleTurnState root = State(record.GetProperty("Root"));
+            Require(previous == null || Key(previous) == Key(root), "Observed native chain differs at " + index);
+            bool end = record.GetProperty("IsEndTurn").GetBoolean();
+            PlayCardAction? action = end ? null : record.GetProperty("Action").Deserialize<PlayCardAction>();
+            BattleTurnState next = BattlePlannerChecks.Replay(root, [new BattleSearchStep(action, end)], out RoomOutcome outcome);
+            previous = State(record.GetProperty("Actual"));
+            string predictedKey = Key(next, Terminal(outcome)), actualKey = Key(previous, Terminal(outcome));
+            Require(predictedKey == actualKey,
+                "Observed native successor differs at " + index + ": " + ModelJson.Difference(predictedKey, actualKey));
+        }
+        Console.WriteLine($"OBSERVED-SUCCESSORS PASS: {records.Length} actual native inputs; original plan acceptance remains separate.");
+    }
     private static string[] ActualBosses(FixtureValue fixture) => fixture.GetProperty("RollingDecisions").EnumerateArray()
         .SelectMany(record => new[] { State(record.GetProperty("Root")), State(record.GetProperty("Actual")) })
         .SelectMany(state => state.Spawn.Train.Rooms.Where(room => !room.Preview).SelectMany(room => room.Units))
