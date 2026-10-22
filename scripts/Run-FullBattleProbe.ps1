@@ -53,6 +53,7 @@ param(
     [switch] $TrueFinalBossLethalAlly,
     [switch] $TrueFinalBossCommandedAttack,
     [switch] $TrueFinalBossPyreCommand,
+    [switch] $TrueFinalBossLethalCombat,
     [ValidateRange(0, 25)][int] $TrueFinalBossFrontHealth = 0,
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossSpawn,
@@ -695,6 +696,17 @@ if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant) { throw 'Origin
 if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $OriginalOuterBossVariant -or
     $TrueFinalBossBirth -or $TrueFinalBossSpawn -or $TrueFinalBossScheduledSpawn -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossPyreBaneTargets -or $TrueFinalBossDeath)) {
     throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
+}
+if ($TrueFinalBossLethalCombat) {
+    if (-not $OriginalTrueFinalBoss -or $TrueFinalBossLethal -or $TrueFinalBossLethalAlly -or
+        $TrueFinalBossLethalSpellTarget -or $TrueFinalBossProtectedSpellTarget -or $TrueFinalBossLethalPreview -or
+        $TrueFinalBossCommandedAttack -or $TrueFinalBossPyreCommand -or $TrueFinalBossAllyUpgrade -or
+        $TrueFinalBossOrdinaryAllyUpgrade -or $TrueFinalBossDormantSavagery -or $TrueFinalBossRelentless -or
+        ($TrueFinalBossOrdinaryAlly -and $TrueFinalBossOrdinaryAlly -notin @('Steward', 'Avenger'))) {
+        throw 'Ordinary terminal combat requires a separate original ally and explicit three-owner HP control.'
+    }
+    if (-not $TrueFinalBossOrdinaryAlly) { $TrueFinalBossOrdinaryAlly = 'Avenger' }
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
 }
 if ($TrueFinalBossCommandedAttack -or $TrueFinalBossPyreCommand) {
     if ($TrueFinalBossCommandedAttack -and $TrueFinalBossPyreCommand) { throw 'Select one original command card.' }
@@ -1395,7 +1407,8 @@ $environment = @{
     MT2_PROBE_ORIGINAL_TRUE_FINAL_BOSS = $(if ($OriginalTrueFinalBoss) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DORMANT = $(if ($TrueFinalBossDormantSavagery) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_RELENTLESS = $(if ($TrueFinalBossRelentless) { '1' } else { '0' })
-    MT2_PROBE_TRUE_FINAL_BOSS_LETHAL = $(if ($TrueFinalBossLethal) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_LETHAL = $(if ($TrueFinalBossLethal -or $TrueFinalBossLethalCombat) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_COMBAT = $(if ($TrueFinalBossLethalCombat) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_PREVIEW = $(if ($TrueFinalBossLethalPreview) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_SPELL_TARGET = $TrueFinalBossLethalSpellTarget
     MT2_PROBE_TRUE_FINAL_BOSS_ALLY_UPGRADE = $TrueFinalBossAllyUpgrade

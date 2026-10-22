@@ -84,7 +84,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
-            bool terminal = TrueFinalBossLethalScenario.PaidSpell;
+            bool terminal = TrueFinalBossLethalScenario.PaidSpell || TrueFinalBossLethalScenario.OrdinaryCombat;
             foreach (int id in terminal ? new[] { Evidence!.CardId } : new[] { Evidence!.AnchorCardId, Evidence.CardId })
                 if (state.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0)
                     return BattleActionModel.EnumerateActions(state, id, includeAbilities: false).SupportedActions

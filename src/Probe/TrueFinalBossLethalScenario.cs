@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
             public string PaidSpellTarget { get; set; } = "";
             public int RemovedSpellShield { get; set; }
             public bool TargetOwnerOnly { get; set; }
+            public bool OrdinaryCombat { get; set; }
         }
         internal static Record? Evidence { get; private set; }
         private static int paidCardId;
@@ -26,6 +27,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool PaidSpell => PaidSpellTarget.Length > 0;
         internal static bool CommandedAttack => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_COMMANDED_ATTACK") == "1";
         internal static bool PyreCommand => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_PYRE_COMMAND") == "1";
+        internal static bool OrdinaryCombat => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_COMBAT") == "1";
         internal static bool TargetOwnerOnly => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_TARGET_ONLY") == "1";
         internal static string TargetAsset => PaidSpellTarget == "Dominion" ? "Boss_Level9_Dominion_V2" :
             PaidSpellTarget == "Savagery" ? "Boss_Level9_Savagery_V2" :
@@ -67,7 +69,7 @@ namespace MonsterTrain2Poju.Probe
             CharacterState[] owners = assets.Select(asset => managers.GetHeroManager().GetCharactersReadOnly()
                 .Single(unit => unit.GetSourceCharacterData().GetAssetKey() == asset)).ToArray();
             var row = new Record { Before = trace.CaptureDecision(), OwnerIds = owners.Select(trace.UnitId).ToArray(), PaidSpellTarget = PaidSpellTarget,
-                TargetOwnerOnly = TargetOwnerOnly,
+                TargetOwnerOnly = TargetOwnerOnly, OrdinaryCombat = OrdinaryCombat,
                 RefreshPreview = Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_PREVIEW") == "1",
                 Debuffs = owners.Select(unit => unit.GetHP() - 1).ToArray() };
             if (!row.Debuffs.SequenceEqual(new[] { 1554, 2749, 3499 }))

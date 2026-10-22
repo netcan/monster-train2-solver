@@ -22,6 +22,7 @@ function Invoke-TrueFinalBossArchive([string] $archive, [string] $mode) {
 }
 foreach ($item in $Case) {
     if ($item -eq 'OrdinaryAlly') {
+        Invoke-TrueFinalBossArchive 'true-final-boss-triggered-ordinary-pyre.mt2f' '--true-final-boss-allied-lethal-only'
         foreach ($kind in @('steward', 'warrior', 'animus', 'warrior-health', 'animus-damage', 'warrior-both', 'avenger')) {
             Invoke-TrueFinalBossArchive "true-final-boss-ordinary-ally-$kind.mt2f" '--true-final-boss-ordinary-ally-only'
         }
