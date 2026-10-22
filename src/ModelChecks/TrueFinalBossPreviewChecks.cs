@@ -67,9 +67,8 @@ internal static class TrueFinalBossPreviewChecks
                 Require(step.Supported && step.Outcome == RoomOutcome.Exchanged && difference == null, "Independent true-final-boss prefix differs at " + index + ": " + difference);
                 battle = step.State!;
             }
-            Require(JsonSerializer.Serialize(original, ModelJson.Options) == parent && !BattleTurnModel.EndTurn(battle).Supported,
-                "The five-turn prefix must preserve its root and retain the uncalibrated terminal guard.");
+            Require(JsonSerializer.Serialize(original, ModelJson.Options) == parent, "The five-turn preview prefix must preserve its root.");
         }
-        Console.WriteLine("TRUE-FINAL-BOSS-PREVIEW PASS: five original UI previews, sixteen executed rooms and one cancelled room, full state/context/cards/RNG equality; 64 immutable previews and independent five-EndTurn prefix; no allied units or terminal cleanup.");
+        Console.WriteLine("TRUE-FINAL-BOSS-PREVIEW PASS: five original UI previews, sixteen executed rooms and one cancelled room, full state/context/cards/RNG equality; 64 immutable previews and independent five-EndTurn prefix; no allied units.");
     }
 }

@@ -1672,6 +1672,7 @@ namespace MonsterTrain2Poju.Probe
                 PreviewScheduling = PreviewSchedulingProbe.Records,
                 TrueFinalBossPreviews = TrueFinalBossPreviewProbe.Records,
                 TrueFinalBossPreviewRooms = TrueFinalBossPreviewProbe.Rooms,
+                TrueFinalBossPyreCardDamage = TrueFinalBossTerminalProbe.Records,
                 CardAnimationSettlement = new { Enabled = CardAnimationSettlement.Enabled, CardAnimationSettlement.PreviewWaits,
                     CardAnimationSettlement.DecisionWaits, CardAnimationSettlement.ScheduledMovements,
                     CardAnimationSettlement.PendingMovements, EnchantmentCombatProbe.RetainedRemovedSourceCount },

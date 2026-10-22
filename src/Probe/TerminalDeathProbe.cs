@@ -86,8 +86,8 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(CharacterState killedCharacter, ref IEnumerator __result)
             {
                 // RunBossKillPreview invokes this while the temporary character states are active.
-                if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "terminal-death-damage" &&
-                    DamageDeathQueueScenario.Prepared && FullBattleTrace.Active != null)
+                if ((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "terminal-death-damage" &&
+                    DamageDeathQueueScenario.Prepared || TrueFinalBossTurnProbe.Enabled) && FullBattleTrace.Active != null)
                     __result = WrapKillCam(__result, killedCharacter);
             }
         }

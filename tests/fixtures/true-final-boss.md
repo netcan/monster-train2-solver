@@ -398,6 +398,28 @@ Dominion 的跨层前排查询正确排除火炉并得到空目标。不能据�
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Preview -SkipBuild`。
 
+## 原始牌组全程空过整场校准
+
+`true-final-boss-full-battle-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-214143-15622e29`。原生整局正常退出、败北，受保护
+文件与原始资产/牌组/火炉未变；采集失败、模型差异、unsupported、待完成均为零，
+首次通过该路线的整局验收。默认 UI 预览仍开启。
+
+六次 EndTurn 全部匹配；模型只使用部署根状态独立推进到相同败北，完整状态/
+牌堆/RNG 与原生逐步一致，16 条并发整局结果一致且根状态不变。出生、普通波次、
+施法期、房间战斗、升层和预览都由模型自身状态串联。
+
+原生七次有卡牌来源的火炉伤害中，前六次正常返回；最后一次未使用灾厄从三血
+造成三点伤害，在 `AfterStopCombatLoop` 捕获时 ApplyDamage 尚未返回，也未进入
+火炉 CheckForDeath/ShowKillCam。该边界火炉已不在房间，七张手牌仍保留，
+KillCamActivated 仍为 false。模型只在该已校准的真终局 HeroTurn 卡牌伤害边界
+延后清牌，不能把死亡镜头的更晚清理提前应用。
+
+此路线没有友军单位，也没有撑到无情期或获胜；不关闭有友军单位、外层预览
+伤害、一血 Savagery、无情期、真终局 Boss 死亡调度与玩家入口的剩余验收。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Battle -SkipBuild`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件
