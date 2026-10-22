@@ -97,7 +97,7 @@ namespace MonsterTrain2Poju.Model
             ConduitRetained = conduitRetained == null ? null : Array.AsReadOnly(conduitRetained
                 .OrderBy(value => value.Contributor.UnitId).ToArray());
             PermanentlyDisabledAbilities = permanentlyDisabledAbilities == null ? null : Array.AsReadOnly(permanentlyDisabledAbilities.ToArray()); }
-        internal CombatContext WithLifeLinks(LifeLinkContext world) => new CombatContext(Cards, BattleRng,
+        internal CombatContext WithLifeLinks(LifeLinkContext? world) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
             NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState,
             RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId,

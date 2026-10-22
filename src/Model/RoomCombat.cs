@@ -2494,6 +2494,10 @@ namespace MonsterTrain2Poju.Model
                     copied = EnchantmentWorldModel.Room(copied, train.Context);
                 }
                 CombatUnit? externalActor = externalTurnActorIds.Contains(actor.Source.Id) ? actor.Freeze() : null;
+                if (copied.Context?.LifeLinks is LifeLinkContext previewLinks)
+                    copied = copied.WithContext(copied.Context.WithLifeLinks(new LifeLinkContext(previewLinks.Actors.Select(link =>
+                        new LifeLinkActor(link.Id, link.LinkedId, link.Health, link.Health, link.Initialized, link.HasLifeLink,
+                            link.TrueFinalBoss, link.OuterBoss)).ToArray(), true, 0)));
                 var previewTargets = hasExternalTargetRoster ? units
                     .Where(unit => externalTurnActorIds.Contains(unit.Source.Id) && unit.Source.Id != externalActor?.Id)
                     .Select(unit => (unit.RoomIndex, unit.Freeze())).ToArray() : null;
@@ -2973,6 +2977,11 @@ namespace MonsterTrain2Poju.Model
                 bool immediateHarvest = false, bool doNotFullyRemove = false, bool returnSpawnerAfterQueue = false)
             {
                 if (target.DeathFinished) return;
+                if (!source.Preview && target.Health == 0 && TrueFinalBossTerminalCombatModel.SupportsDominion(source, target.Source.Id))
+                {
+                    RemoveTrueFinalBossGroup(actor, target, sourceCardId);
+                    return;
+                }
                 if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: false));
@@ -3067,6 +3076,42 @@ namespace MonsterTrain2Poju.Model
                 var removed = BattleSpawnPointModel.Apply(context.SpawnPoints, CurrentRoom(), "Remove", unit.Source.Team, unit.Source.Id);
                 if (!removed.Supported) { unsupportedReason = removed.Error; return; }
                 context = context.WithSpawnPoints(removed.State!);
+            }
+
+            private void RemoveTrueFinalBossGroup(WorkingUnit? attacker, WorkingUnit root, int sourceCardId)
+            {
+                battleWon = true;
+                context = context!.WithBossesDead();
+                ClearTerminalCards();
+                DispatchDeathStatistics(attacker, root, sourceCardId, sacrifice: false);
+                int[] ids = source.Context!.LifeLinks!.Actors.Select(actor => actor.Id).ToArray();
+                var roster = source.Context.Enchantments!.Rooms.SelectMany(room => room.Units.Select(unit => (room.RoomIndex, Unit: unit)))
+                    .Where(actor => ids.Contains(actor.Unit.Id)).OrderByDescending(actor => actor.RoomIndex).ToArray();
+                foreach (var actor in roster)
+                {
+                    WorkingUnit? unit = units.FirstOrDefault(candidate => candidate.Source.Id == actor.Unit.Id);
+                    if (unit == null)
+                    {
+                        unit = NewUnit(actor.Unit, false, actor.RoomIndex); units.Add(unit);
+                        externalTurnActorIds.Add(unit.Source.Id);
+                    }
+                    if (unit == root && unit.Source.DeathState != null)
+                        unit.Apply(unit.Freeze().WithDeathState(new UnitDeathState(true, true, false,
+                            isSacrifice: false, statisticsListenerOnce: false)));
+                    unit.Removed = true;
+                    RemovePhysicalPoint(unit);
+                }
+                EnchantmentWorld world = context.Enchantments!;
+                context = context.WithLifeLinks(null).WithEnchantments(new EnchantmentWorld(world.Rooms.Select(room =>
+                    new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Where(unit => !ids.Contains(unit.Id)).ToArray(),
+                        room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
+                    world.Movement.Where(rule => !ids.Contains(rule.UnitId)).ToArray(), world.EnemySlotsPerRoom,
+                    world.RetainedUnits.Where(actor => !ids.Contains(actor.Unit.Id)).ToArray(),
+                    world.EnchanterIds.Where(id => !ids.Contains(id)).ToArray(), world.AllowUpdates, world.Updating,
+                    world.Preview, world.TestRng, world.AutomaticLifecycle));
+                if (context.QueryFrame?.SelectedRoomIndex != null)
+                    context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: roster.Last().RoomIndex));
+                Emit("Death", attacker, root, 0);
             }
 
             private void DispatchDeathStatistics(WorkingUnit? actor, WorkingUnit target, int sourceCardId, bool sacrifice)
@@ -3392,7 +3437,8 @@ namespace MonsterTrain2Poju.Model
             {
                 if (context?.LifeLinks?.Actors.Any(actor => actor.Id == target.Source.Id) == true)
                 {
-                    CombatContext? updated = LinkedBossHealthModel.WithHealth(context, target.Source.Id, health, out string? error);
+                    CombatContext? updated = LinkedBossHealthModel.WithHealth(context, target.Source.Id, health, out string? error,
+                        allowTerminal: health == 0 && TrueFinalBossTerminalCombatModel.SupportsDominion(source, target.Source.Id));
                     if (updated == null) { unsupportedReason = error; return false; }
                     context = updated;
                     foreach (WorkingUnit unit in units)

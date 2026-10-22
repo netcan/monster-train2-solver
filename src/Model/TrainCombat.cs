@@ -785,7 +785,7 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatState room = rooms[index];
                 if (!room.Units.Any(unit => targetIds.Contains(unit.Id))) continue;
                 rooms[index] = room.WithUnits(room.Units.Select(unit => changed.TryGetValue(unit.Id, out CombatUnit? updated)
-                    ? updated : unit).ToArray());
+                    ? updated : unit).Where(unit => unit.DeathState?.IsDestroyed != true).ToArray());
             }
         }
 

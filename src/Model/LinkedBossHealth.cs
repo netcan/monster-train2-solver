@@ -20,13 +20,14 @@ namespace MonsterTrain2Poju.Model
     // controller, attacks and terminal cleanup remain separate boundaries.
     public static class LinkedBossHealthModel
     {
-        internal static CombatContext? WithHealth(CombatContext source, int targetId, int health, out string? error)
+        internal static CombatContext? WithHealth(CombatContext source, int targetId, int health, out string? error, bool allowTerminal = false)
         {
             LifeLinkContext? world = source.LifeLinks;
             error = world == null ? "Missing global linked-boss health." : LifeLinkModel.Validate(world);
             if (error != null) return null;
             LifeLinkActor? target = world!.Actors.SingleOrDefault(actor => actor.Id == targetId);
-            if (target == null || health <= 0 || !world.CalculatingPreview && world.SharedPreviewHpChange != 0)
+            if (target == null || health < 0 || health == 0 && (!allowTerminal || LifeLinkModel.Protected(world!, targetId)) ||
+                !world.CalculatingPreview && world.SharedPreviewHpChange != 0)
             { error = "Linked boss health requires a captured live target; preview and terminal updates remain guarded."; return null; }
             if (world.CalculatingPreview)
             {

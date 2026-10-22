@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--true-final-boss-lethal-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossLethalChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] is "--true-final-boss-relentless-only" or "--true-final-boss-relentless-phases-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4019,6 +4026,11 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-relent
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossRelentlessChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-lethal-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossLethalChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-multi-allied-calibration", StringComparison.OrdinalIgnoreCase)))
 {

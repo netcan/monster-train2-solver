@@ -28,6 +28,7 @@ internal static class BattleTurnChecks
         // The dedicated checker composes this explicitly recorded native control
         // between deployment and the remaining independently simulated turns.
         if (fixture.TryGetProperty("TrueFinalBossRelentlessControl", out FixtureValue phaseControl) && phaseControl.ValueKind == FixtureKind.Object) return;
+        if (fixture.TryGetProperty("TrueFinalBossLethalControl", out FixtureValue lethalControl) && lethalControl.ValueKind == FixtureKind.Object) return;
         if (fixture.TryGetProperty("Policy", out FixtureValue policy) &&
             policy.GetString() is "units-and-junk" or "units-spells-and-junk") return;
         BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;

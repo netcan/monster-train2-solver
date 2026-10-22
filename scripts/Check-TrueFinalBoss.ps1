@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Death')][string[]] $Case = @('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Death'),
+    [ValidateSet('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'Death')][string[]] $Case = @('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'Death'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -49,6 +49,7 @@ foreach ($item in $Case) {
     elseif ($item -eq 'Dormant') { 'true-final-boss-dormant-calibration.mt2f' }
     elseif ($item -eq 'DormantTrample') { 'true-final-boss-dormant-trample-calibration.mt2f' }
     elseif ($item -eq 'Relentless') { 'true-final-boss-relentless-calibration.mt2f' }
+    elseif ($item -eq 'Lethal') { 'true-final-boss-lethal-calibration.mt2f' }
     elseif ($item -eq 'Phases') { 'true-final-boss-phase-calibration.mt2f' }
     elseif ($item -eq 'ExhaustedPhases') { 'true-final-boss-exhausted-phase-calibration.mt2f' }
     else { 'true-final-boss-damage-calibration.mt2f' }
@@ -72,6 +73,7 @@ foreach ($item in $Case) {
     elseif ($item -eq 'MultiAllied') { '--true-final-boss-multi-allied-only' }
     elseif ($item -in @('Dormant', 'DormantTrample')) { '--true-final-boss-dormant-only' }
     elseif ($item -eq 'Relentless') { '--true-final-boss-relentless-only' }
+    elseif ($item -eq 'Lethal') { '--true-final-boss-lethal-only' }
     elseif ($item -in @('Phases', 'ExhaustedPhases')) { '--true-final-boss-phases-only' }
     else { '--true-final-boss-damage-only' }
     Invoke-TrueFinalBossArchive $archive $mode

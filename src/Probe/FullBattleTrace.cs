@@ -644,7 +644,7 @@ namespace MonsterTrain2Poju.Probe
                     {
                         RoomIndex = target.RoomIndex,
                         Unit = actualTrain.Rooms.Single(item => item.RoomIndex == target.RoomIndex).Units
-                            .Single(unit => unit.Id == target.Unit.Id)
+                            .FirstOrDefault(unit => unit.Id == target.Unit.Id) ?? CaptureRetained(target.Unit.Id)
                     }).ToArray();
                 }
                 if (stage.Predicted.Supported)
@@ -782,6 +782,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 OriginalTrueFinalBossRoute = TrueFinalBossBirthProbe.Control,
                 TrueFinalBossDormantControl = TrueFinalBossDormantScenario.Evidence,
+                TrueFinalBossLethalControl = TrueFinalBossLethalScenario.Evidence,
                 TrueFinalBossRelentlessControl = TrueFinalBossRelentlessScenario.Evidence,
                 TrueFinalBossRelentlessActions = TrueFinalBossRelentlessScenario.Enabled ? OuterBossPhaseProbe.CapturedActions : null,
 #endif

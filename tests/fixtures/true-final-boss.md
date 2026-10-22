@@ -508,6 +508,30 @@ UI 卡牌规则，仍比较楼层启用状态、完整战斗持久状态和残�
 原生采集入口为 `-OriginalTrueFinalBoss -TrueFinalBossRelentless -BattleDistance 8`，
 另带 `-Policy no-cards -PhysicalSpawnPoints -BranchCardMasks`。
 
+## 普通攻击杀死 Dominion 的整场终局
+
+`true-final-boss-lethal-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-231416-9cbf94a5`。只在第一战斗前用原生
+`DebuffHP` 将 Dominion、Savagery 和 Entropy Bot 三个独立主体降至一血，
+三个外壳依旧共享 Bot 的一血。完整前后快照和模型逐项验证 1554/2749/3499
+三次减血；阶段仍为 Casting，循环出怪、队列、原始资产/牌组及火炉未改。
+
+Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 Dominion。
+攻击前临时死亡预览会清理卡牌，实际死亡再调用五实体组移除。未被命中的
+四个实体仍是一血，随后以销毁状态离场，不能将全组写成零血。跨层原生采集
+现在能读取已经离场的对象；不会因它不在活动楼层列表中而漏报或抛出异常。
+
+新进程原生获胜、火炉 77 血、受保护文件未变，`DEPTH-PASS` 且四项失败计数
+全零。七个房间阶段、三个单位回合、三个列车阶段与两个 EndTurn 匹配；
+16 条从部署根状态出发、明确应用一次减血控制后独立推演的整场分支一致。
+普通终局死亡与已有无情期、生命更新、带友军真终局定向回归分别验证。
+当前入口仅接受完整原始五实体、一血主体、无额外单位/装备/升级/死亡回调
+和无活动遗物效果的 Dominion 致死；其他主体和自然胜局仍保留保护。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Lethal -SkipBuild`。
+原生采集为 `-OriginalTrueFinalBoss -TrueFinalBossLethal -BattleDistance 8`，
+另带 `-Policy no-cards -PhysicalSpawnPoints -BranchCardMasks`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

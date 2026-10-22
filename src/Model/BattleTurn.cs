@@ -833,7 +833,9 @@ namespace MonsterTrain2Poju.Model
         private static EnemySpawnState WithTrain(EnemySpawnState spawn, TrainCombatState train, int turn, UnityRng rng) =>
             new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, rng, train.Context?.NextUnitId ?? spawn.NextUnitId,
                 spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
-                spawn.FirstTreasureRoom, turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds, spawn.OuterBoss, spawn.QueuedOuterBoss,
+                spawn.FirstTreasureRoom, turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds,
+                spawn.OuterBoss is { AssetKey: "Boss_Level9_Entropy_Top_V2" } && !train.Rooms.Any(room => room.Units.Any(unit => unit.Id == spawn.OuterBoss.UnitId))
+                    ? null : spawn.OuterBoss, spawn.QueuedOuterBoss,
                 spawn.QueuedTrueFinalBoss, spawn.TrueFinalBoss);
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
