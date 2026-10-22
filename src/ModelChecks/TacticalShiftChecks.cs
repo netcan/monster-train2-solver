@@ -70,7 +70,25 @@ internal static class TacticalShiftChecks
         using var independent = new BattleStateKeys();
         Require(outcome == RoomOutcome.BattleWon && independent.Key(replayed) == independent.Key(plan.State) &&
             independent.Key(root) == parent, "Winning shift continuation changed its root or failed full-state/RNG replay.");
+        var deployment = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        string deploymentParent = independent.Key(deployment);
+        var bounded = BattlePlanner.Plan(deployment, keys.Key,
+            new BattlePlannerOptions(56, 12, 8, 12, TimeSpan.FromSeconds(30), 0, useTacticalSeed: true, allowShorterHorizon: true));
+        Require(bounded.CompletedHorizon && bounded.Outcome == RoomOutcome.BattleWon && bounded.ExpandedNodes <= 56 &&
+            bounded.UnsupportedAttempts.Count == 0, "Long-window fallback exhausted the node budget before the known complete win.");
+        replayed = BattlePlannerChecks.Replay(deployment, bounded.Steps, out outcome);
+        Require(outcome == RoomOutcome.BattleWon && independent.Key(replayed) == independent.Key(bounded.State) &&
+            independent.Key(deployment) == deploymentParent, "Whole-battle bounded win failed immutable full-state/RNG replay.");
+        var shorter = BattlePlanner.Plan(deployment, keys.Key,
+            new BattlePlannerOptions(2, 12, 8, 12, TimeSpan.FromSeconds(30), 0, useTacticalSeed: true, allowShorterHorizon: true));
+        Require(shorter.ReachedNodeLimit && shorter.UsedShorterHorizon && !shorter.CompletedHorizon &&
+            shorter.TurnsCompleted == 1 && shorter.Steps.Count == 2 && !shorter.Steps[0].IsEndTurn && shorter.Steps[1].IsEndTurn,
+            "A tiny budget must retain an honestly labeled complete deployment turn.");
+        replayed = BattlePlannerChecks.Replay(deployment, shorter.Steps, out outcome);
+        Require(outcome == shorter.Outcome && independent.Key(replayed) == independent.Key(shorter.State) &&
+            independent.Key(deployment) == deploymentParent, "Short fallback failed immutable full-state/RNG replay.");
         Console.WriteLine($"TACTICAL-SHIFT PASS: ability then tank restoration; unaffordable/missing-card controls; immutable winning full-state/RNG replay in {plan.ExpandedNodes} nodes.");
+        Console.WriteLine($"TACTICAL-BUDGET PASS: whole-battle win in {bounded.ExpandedNodes}/56 nodes; honest one-turn fallback in 2 nodes.");
     }
 
     private static int? Front(BattleTurnState state, int room) => state.Spawn.Train.Rooms.Single(item => item.RoomIndex == room)
