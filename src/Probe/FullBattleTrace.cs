@@ -785,6 +785,7 @@ namespace MonsterTrain2Poju.Probe
                 NativeWon,
                 TerminalCaptureBoundary = "AfterStopCombatLoop",
                 TerminalEffectsSettled,
+                NativeEffectSettlement = NativeEffectSettlement.Evidence,
                 Policy = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY"),
                 ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
                 OriginalChampionStartTurnHealSchema = OriginalChampionStartTurnHealScenario.Prepared ? 208 : 0,

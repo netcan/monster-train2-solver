@@ -3405,7 +3405,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool Ready(AllGameManagers managers, SaveManager save, CombatManager? combat, CardManager? cards)
         {
             return !LoadingScreen.IsWorking() && !save.PreviewMode && !PreviewRngIsolation.Active && CardAnimationSettlement.Ready() && save.GetGameSequence() == SaveData.GameSequence.InBattle &&
-                combat != null && cards != null && combat.ShouldShowEndTurnButton() &&
+                combat != null && cards != null && NativeEffectSettlement.Ready(combat) && combat.ShouldShowEndTurnButton() &&
                 (!save.GetBattlePreviewEnabled() || !(bool)typeof(CombatManager).GetField("combatStateChanged",
                     BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(combat)) &&
                 combat.HaveCardsBeenDrawnForCurrentTurn() && !combat.IsRunningTriggerQueue &&

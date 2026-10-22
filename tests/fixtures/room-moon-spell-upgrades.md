@@ -83,3 +83,20 @@ history. The model guard remains intact. No full regression or Mac package is bu
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --player-moon-room-turn-only tests/fixtures/player-moon-room-turn-calibration.mt2f
 ```
+
+## Pending native effects after floor selection
+
+The subsequent diagnostic player profile
+`full-battle-units-spells-and-junk-20261022-141016-c8eba506` passes that EndTurn,
+then exposes a separate driver/observer race on decision sixteen. Moving focus
+from Eclipse floor two to unmasked floor zero enqueues its original support
+spell. The old readiness check only inspected running triggers; it could issue
+Gravity before RunCombat consumed the pending effects queue. Gravity therefore
+still descended, while the settled action model correctly expected Full ascend.
+That failed whole battle remains diagnostic evidence only.
+
+The player observer and native driver now share a read-only settlement check:
+pending effects must be empty, the current card effect must finish and native
+external input must be enabled. The game processes its own queue normally; the
+check neither executes effects nor rewrites card upgrades. Captured wait counts
+make this boundary independently observable in subsequent player acceptance.
