@@ -1,8 +1,17 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1048 archives,
+Current manifest inventory (2026-10-23): 1049 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`true-final-boss-commanded-attack.mt2f` adds the original paid Eagleheart
+command: move the original small Steward to the front, apply five Valor,
+attack the bottom outer body while bypassing dormant Savagery, then remove
+the five linked bosses. Native unit-turn state/RNG and sixteen independent
+summon/birth/draw/HP-control/command chains match. The initial deck additions,
+draw ordering and owner HP controls are explicit; this is a controlled win.
+See [true-final-boss evidence](true-final-boss.md). The focused `PaidSpell`
+case includes this command alongside its ten paid damage-spell fixtures.
 
 Run `scripts/Check-FixtureCatalog.ps1` for a fast byte/hash/registration audit;
 it never simulates a battle. Both model and completion entry points use this

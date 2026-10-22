@@ -57,7 +57,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState attackerState, int roomIndex, ref IEnumerator __result)
             {
-                if ((TrueFinalBossTurnProbe.Enabled && (attackerState.IsTrueFinalBoss() || attackerState.IsPyreHeart() || TrueFinalBossDormantScenario.Enabled) ||
+                if ((TrueFinalBossTurnProbe.Enabled && (attackerState.IsTrueFinalBoss() || attackerState.IsPyreHeart() || TrueFinalBossDormantScenario.Enabled || TrueFinalBossLethalScenario.CommandedAttack) ||
                     Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "unit-turn-begin" or "team-turn-begin" or "hit-kill" or "dying-upgrades" or "attack-triggers" or "triggered-status") &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Wrap(__result, attackerState, roomIndex);

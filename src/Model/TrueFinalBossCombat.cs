@@ -19,6 +19,7 @@ namespace MonsterTrain2Poju.Model
             unit.CanAttack && !unit.EndsBattleOnDeath && unit.Ability == null &&
             unit.Triggers.Count == 0 && unit.EquipmentCards.Count == 0 &&
             unit.Modifiers?.Upgrades.Count == 0 && unit.Statuses.All(status => status.Id == "corruption" ||
+                ordinary && status.Id == "valor" && status.Stacks == 5 && status.ParamInt == 1 ||
                 status.Id == "multistrike" && status.ParamInt == 2 &&
                     (unit.AssetKey == "MonsterBanishedChampion1" && status.Stacks == 1 || ordinary && status.Stacks is >= 1 and <= 2));
         }
@@ -41,7 +42,7 @@ namespace MonsterTrain2Poju.Model
                 modifiers.SynergizeStatuses?.Count > 0 || modifiers.Sentry != null || modifiers.TroopAura != null ||
                 modifiers.StatusAttackModifiers?.Count > 0) return false;
             return definition.StartingStatuses.All(status => status.Id == "multistrike" && status.Count is >= 1 and <= 2) &&
-                unit.Statuses.Where(status => status.Id != "corruption").All(status =>
+                unit.Statuses.Where(status => status.Id is not ("corruption" or "valor")).All(status =>
                     definition.StartingStatuses.Any(original => original.Id == status.Id && original.Count == status.Stacks)) &&
                 definition.StartingStatuses.All(original => unit.Status(original.Id)?.Stacks == original.Count);
         }

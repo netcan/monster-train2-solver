@@ -24,6 +24,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_LETHAL") == "1";
         internal static string PaidSpellTarget => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_SPELL_TARGET") ?? "";
         internal static bool PaidSpell => PaidSpellTarget.Length > 0;
+        internal static bool CommandedAttack => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_COMMANDED_ATTACK") == "1";
         internal static bool TargetOwnerOnly => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_TARGET_ONLY") == "1";
         internal static string TargetAsset => PaidSpellTarget == "Dominion" ? "Boss_Level9_Dominion_V2" :
             PaidSpellTarget == "Savagery" ? "Boss_Level9_Savagery_V2" :
@@ -33,6 +34,17 @@ namespace MonsterTrain2Poju.Probe
             if (state.Spawn.Turn == 0) return null;
             if (TargetOwnerOnly && paidCardId > 0 && state.Spawn.Train.Context!.Statistics!.Value(paidCardId, "TimesPlayed", "ThisBattle") > 0)
                 return null;
+            if (CommandedAttack)
+            {
+                int card = TrueFinalBossOrdinaryAllyScenario.Evidence!.CardId;
+                int unit = state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(actor => actor.SpawnerCardId == card).Id;
+                int command = TrueFinalBossOrdinaryAllyScenario.Evidence.CommandCardId;
+                if (!state.Spawn.Train.Context!.Cards.Hand.Any(token => token.InstanceId == command))
+                    throw new InvalidOperationException("Prepared original Eagleheart was not drawn.");
+                // Native legality is the oracle even while a model guard is
+                // being calibrated; the trace still counts unsupported results.
+                return new PlayCardAction(command, 0, targetUnitId: unit);
+            }
             CombatUnit target = state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.AssetKey == TargetAsset);
             BattleActionEnumeration choices = BattleActionModel.EnumerateActions(state, includeAbilities: false);
             PlayCardAction? selected = choices.SupportedActions.FirstOrDefault(action => action.TargetUnitId == target.Id &&

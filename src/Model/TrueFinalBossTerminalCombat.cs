@@ -25,7 +25,10 @@ namespace MonsterTrain2Poju.Model
                 unit.Statuses.All(status => status.Id is "buff" or "immobile" or "lifelink" or "pyrebound" or "spell shield" or "pyrebane" or "trample")) &&
                 source.Context!.Relics?.Any(relic => relic.EffectTypes.Count > 0 || relic.IsCovenant == true) != true &&
                 source.Units.Any(unit => unit.Id == targetId && assets.Contains(unit.AssetKey) && unit.Health == 1 &&
-                    (!source.Preview || source.RoomIndex == 3 && unit.AssetKey == "Boss_Level9_Dominion_V2"));
+                    (!source.Preview || source.RoomIndex == 3 && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
+                        source.RoomIndex == 0 && unit.AssetKey == "Boss_Level9_Entropy_Bot_V2" &&
+                        source.Units.Any(ally => TrueFinalBossCombatModel.SupportsAlly(ally, source.Context) &&
+                            ally.Status("valor") is { Stacks: 5, ParamInt: 1 })));
         }
     }
 }

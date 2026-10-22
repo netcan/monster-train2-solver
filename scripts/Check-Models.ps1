@@ -25,6 +25,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'true-final-boss-lethal-calibration.mt2f',
     'true-final-boss-lethal-preview-calibration.mt2f',
     'true-final-boss-paid-spell-dominion.mt2f',
+    'true-final-boss-commanded-attack.mt2f',
     'true-final-boss-allied-paid-spell-dominion.mt2f',
     'true-final-boss-allied-paid-spell-savagery.mt2f',
     'true-final-boss-allied-paid-spell-entropybot.mt2f',

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using MonsterTrain2Poju.Model;
@@ -14,6 +15,10 @@ namespace MonsterTrain2Poju.Probe
             public int CardId { get; set; }
             public string CardDataId { get; set; } = "";
             public string UpgradeKind { get; set; } = "";
+            public int CommandCardId { get; set; }
+            public string CommandCardDataId { get; set; } = "";
+            public int CommandDrawIndex { get; set; } = -1;
+            public CardPlayRule? CommandDefinition { get; set; }
             public CardPlayRule Definition { get; set; } = null!;
             public BattleTurnState Before { get; set; } = null!;
             public BattleTurnState Actual { get; set; } = null!;
@@ -44,6 +49,31 @@ namespace MonsterTrain2Poju.Probe
                 added.ApplyPermanentUpgrade(upgrade, managers.GetSaveManager(), ignoreUpgradeAnimation: true);
             }
             row.CardId = trace.CardId(added);
+            if (TrueFinalBossLethalScenario.CommandedAttack)
+            {
+                CardData command = managers.GetSaveManager().GetAllGameData().FindCardData("1737fa0b-7f37-41e8-9183-ed9e6a391556")!;
+                if (command.name != "Eagleheart" || command.GetCost() != 2 || command.GetCardType() != CardType.Spell ||
+                    !command.GetEffects().Select(effect => effect.GetEffectStateName()).SequenceEqual(new[] {
+                        "CardEffectFloorRearrange", "CardEffectAddStatusEffect", "CardEffectAttackWithUnit" }))
+                    throw new InvalidOperationException("Original Eagleheart command signature changed.");
+                CardState spell = cards.AddNewCard(command, CardPile.HandPile, false, false, animate: false);
+                row.CommandCardId = trace.CardId(spell); row.CommandCardDataId = command.GetID();
+                row.CommandDefinition = BattleActionProbe.Definition(command);
+                cards.MoveCardFromHandToTopOfDeck(spell);
+                // Deployment reshuffles draw + discarded hand before the first
+                // normal draw. Arrange only the initial pile, preserving RNG.
+                BattleTurnState prepared = trace.CaptureDecision();
+                BattleTurnState summoned = BattleActionModel.EnumerateActions(prepared, row.CardId, includeAbilities: false)
+                    .SupportedCandidates.First(candidate => candidate.Action.RoomIndex == 0 && candidate.Action.PlayerPosition == 0).Result.State!;
+                CardCycleState cycle = CardCycleModel.DiscardHand(summoned.Spawn.Train.Context!.Cards).State!;
+                int count = cycle.Draw.Count + cycle.Discard.Count;
+                row.CommandDrawIndex = cycle.Rng.Shuffle(Enumerable.Range(0, count).ToArray()).Items
+                    .Skip(count - 5).Last(index => index < cycle.Draw.Count);
+                var deck = (List<CardState>)AccessTools.Field(typeof(CardManager), "pileDeck").GetValue(cards);
+                int originalIndex = deck.IndexOf(spell);
+                CardState displaced = deck[row.CommandDrawIndex];
+                deck[row.CommandDrawIndex] = spell; deck[originalIndex] = displaced;
+            }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
             row.Actual = trace.CaptureDecision();
             Evidence = row;
