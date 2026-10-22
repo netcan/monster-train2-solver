@@ -38,6 +38,7 @@ copy callbacks retain separate evidence requirements.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --permanent-traits-only tests/fixtures/permanent-trait-calibration.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --typed-draw-pure
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -PermanentTraits -TimeoutSeconds 600 -SkipBuild
 ```
 
@@ -45,3 +46,8 @@ Focused regression checks retain the prior 100-operation Holdover variant matrix
 native clone refresh, permanent Consume hand/temporary/generation paths, native
 Ephemeral copy routing, typed draw and immutable branches. The full fixture
 regression was not run.
+
+The Consume pure checks now accept the four calibrated permanent installation
+modes and verify base/private trait ownership, including cumulative instances.
+The old rejection assertion predated this native matrix and was stale; this
+correction changes only verification, with no expansion of production support.

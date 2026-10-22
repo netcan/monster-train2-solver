@@ -95,11 +95,17 @@ internal static class CardExhaustChecks
             hiddenRefreshed.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == Consume) == 2 &&
             hiddenRefreshed.ExhaustState!.BaseTraits.Count == 2,
             "An unrelated permanent upgrade must not reinstall a Consume trait hidden by SelfPurge.");
-        foreach (int stackMode in new[] { 1, 2, 3 })
+        // The detached native permanent-trait matrix calibrates all four
+        // installation modes, including cumulative private trait instances.
+        foreach (int stackMode in new[] { 0, 1, 2, 3 })
         {
             var permanent = HandUpgradeModel.Apply(root.Spawn.Train.Rooms[0], Upgrade(false, stackMode), "Permanent", root.PlayRules);
-            Require(!permanent.Supported && permanent.UnsupportedReason!.Contains("not modeled"),
-                "A permanent Consume stack mode that changes native base trait state must remain explicitly unsupported.");
+            Require(permanent.Supported, permanent.UnsupportedReason ?? "Native-calibrated permanent Consume mode was rejected.");
+            CardInstanceState stacked = permanent.State!.Context!.FindCard(1)!;
+            Require(stacked.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == Consume) == (stackMode == 3 ? 2 : 1) &&
+                stacked.ExhaustState!.BaseTraits.Count == (stackMode == 3 ? 2 : 1) &&
+                CardExhaustModel.Validate(stacked) == null && stacked.ExhaustState.UpgradeTrait == null,
+                "Permanent Consume installation must retain native base/private trait ownership for every stack mode.");
         }
 
         CardUpgradeModifier temporary = Upgrade(true);
