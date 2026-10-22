@@ -344,6 +344,8 @@ namespace MonsterTrain2Poju.Probe
                     managers.GetRelicManager().GetMagicPowerModification();
                 baseAttack = unchecked(baseAttack - unchecked(magebladeCoefficient * roomMagicPower));
             }
+            // Physical player snapshots must retain the same movement rules as
+            // their deployment and future-wave definitions.
             return new CombatUnit(id, character.GetSourceCharacterData()?.GetAssetKey() ?? "",
                 team, baseAttack, character.GetHP(), character.GetMaxHP(),
                 character.GetCanAttack(), character.IsPyreHeart(), endsBattle, statuses, triggers,
@@ -353,7 +355,7 @@ namespace MonsterTrain2Poju.Probe
                 lastAttacker == null || normalizeDestroyedAttacker && (lastAttacker.IsDestroyed || !lastAttacker.IsAlive) ? 0 : UnitId(lastAttacker), statuses,
                 character.GetEquipment().Select(CardId).ToArray(), TriggerStates(character).Count, AbilityCooldownProbe.Capture(character), AbilityCooldownProbe.CaptureDictionary(character), AbilityLifecycleProbe.Rules(character.GetSourceCharacterData()),
                 new HordeBaseStats(character.GetSourceCharacterData().GetAttackDamage(), character.GetSourceCharacterData().GetHealth()), character.IsSpawning, character.SacrificeCard == null ? 0 : CardId(character.SacrificeCard), DeathSignalProbe.Capture(character),
-                SentryAttackProbe.Definition(character.GetSourceCharacterData()) != null || TroopAuraProbe.Definition(character.GetSourceCharacterData()) != null || BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || (OriginalReactiveUnitsScenario.Enabled && team == CombatTeam.Enemy) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
+                BattleSpawnPointProbe.Enabled || SentryAttackProbe.Definition(character.GetSourceCharacterData()) != null || TroopAuraProbe.Definition(character.GetSourceCharacterData()) != null || BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || (OriginalReactiveUnitsScenario.Enabled && team == CombatTeam.Enemy) || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled)
                     || OuterBossPhaseProbe.CaptureAnchors || RoomMoonCallbackCalibration.Movement || EclipseChamberScenario.Movement
                     ? new UnitBumpRules(character.GetLoopsBetweenTrainFloors(), character.IsCompanionBoss(), character.IsOuterTrainBoss(),
                         character.IsOuterTrainBoss() && character.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Relentless,

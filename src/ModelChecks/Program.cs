@@ -1,6 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 1 && args[0] == "--tactical-target-only")
+{
+    TacticalTargetChecks.Run();
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--natural-movement-capture-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    NaturalMovementCaptureChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] is "--copy-on-play-only" or "--natural-copy-on-play-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3430,6 +3443,7 @@ HealingTriggerChecks.Run();
 TriggerUpgradeChecks.Run();
 EnemySpawningChecks.Run();
 BattleActionChecks.Run();
+TacticalTargetChecks.Run();
 SelectionStateChecks.Run();
 EndlessReturnChecks.Run();
 DecisionReferenceChecks.Run();
@@ -3685,6 +3699,7 @@ foreach (string path in args.Where(path => path.Contains("full-battle-natural-ri
 {
     using var document = ModelJson.ReadFixture(path);
     CopyOnPlayChecks.Native(document.RootElement, natural: true);
+    NaturalMovementCaptureChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-event-grafted-equipment", StringComparison.OrdinalIgnoreCase)))
 {

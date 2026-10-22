@@ -10,9 +10,12 @@ played-copy purges, 27 plays/seven EndTurns, Pyre80 victory and sixteen exact
 immutable branches. See [copy-on-play scope](copy-on-play.md).
 
 `full-battle-natural-ring7-copy-on-play.mt2f` combines the natural event graft,
-Titanite/Endless, Consume/copy and two spell-triggered Pyre heals. All 39 plays,
+Titanite/Endless, Consume/copy and two spell-triggered Pyre heals. All 40 plays,
 eight EndTurns and sixteen complete branches match; this fixed policy loses.
-It also verifies that Pyre healing reaches the shared aura world.
+It also verifies that Pyre healing reaches the shared aura world and ordinary
+physical capture includes Bump rules for live actors and future definitions.
+One actual Demonize descent and thirteen legal friendly/enemy targets are
+covered; tactical status targeting has separate positive/negative controls.
 
 The natural event-graft player pair validates 47 inputs through victory with
 Pyre15 in two independent native processes. All forecasts, full states and RNG

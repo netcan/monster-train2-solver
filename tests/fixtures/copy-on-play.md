@@ -43,10 +43,10 @@ This controlled victory does not establish natural Ring7 or player acceptance.
 
 `full-battle-natural-ring7-copy-on-play.mt2f` uses the unchanged natural
 `.probe-runs/campaign-ring8-20261022-072727-d98c7abf-before-ring7` checkpoint.
-Source `full-battle-units-spells-and-junk-20261022-090426-6c34f9d0` runs with
+Source `full-battle-units-spells-and-junk-20261022-091602-81a91b88` runs with
 physical positions, branch masks, death-dissolve and card-animation settlement.
 No deck, upgrade, health, boss or spawn-queue edits are applied. The fixed
-policy loses after 39 plays and eight EndTurns; all four failure counters are
+policy loses after 40 plays and eight EndTurns; all four failure counters are
 zero and terminal effects settle. Full serial and sixteen independent chains
 match state and RNG, including the original Consume/copy and played purge.
 
@@ -68,3 +68,34 @@ player acceptance can proceed.
 Focused affected checks also pass: 2,134 native trait refresh states, pure
 composition controls, ten native clone/upgrade refresh generations and the
 original first-spell-copy relic. No full regression or Mac build is run.
+
+## Ordinary movement capture and tactical targets
+
+The refreshed natural archive also includes Bump metadata whenever physical
+positions are captured, including ordinary player sessions. Previously those
+native getters were used only by dedicated effect scenarios: deployment and
+future enemy definitions therefore lacked movement rules in normal search.
+The native policy now actually plays original Demonize once, moving a unit
+down one floor and applying two melee-weakness stacks. All forty plays match.
+The dedicated gate checks 1,090 live actor snapshots, 23 future enemy and five
+deployment definitions. Its affordable original Demonize frontier contains
+thirteen legal targets across both teams with no unsupported attempts.
+
+Tactical candidates also recognize negative status payloads in main effects
+and OnCast callbacks when ranking enemy targets. Pure controls verify actual
+debuff/buff application and source isolation for both callback locations.
+The existing natural AllyBuffer tactical planning gate still wins with fifty
+inputs and passes independent replay, cancellation and shared node limits.
+Three cheap Ring7 policy trials still lose; neither capture nor target
+classification fixes establish a natural Ring7 victory.
+
+Two subsequent twelve-turn/30-second single searches on preferred floors one
+and two report zero unsupported attempts (235/245 expanded nodes), but still
+find only defeats. These are bounded model diagnostics, not an impossibility
+proof or native player acceptance.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-movement-capture-only `
+  tests/fixtures/full-battle-natural-ring7-copy-on-play.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-target-only
+```

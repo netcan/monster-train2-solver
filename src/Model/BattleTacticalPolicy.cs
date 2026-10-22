@@ -74,7 +74,9 @@ namespace MonsterTrain2Poju.Model
                 }
                 CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
                 if (target == null) return -100 * Math.Abs(action.RoomIndex - preferredDeploymentRoom);
-                bool harmful = rule.Effects.Any(effect => effect.Type is "Damage" or "Kill");
+                bool harmful = rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type is "Damage" or "Kill" ||
+                    (effect.Target is "DropTargetCharacter" or "LastTargetedCharacters") &&
+                    effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
                 if (harmful) return target.Team == CombatTeam.Enemy ? 1000 - target.Health : -100000;
                 return target.Team == CombatTeam.Player && !target.IsPyre
                     ? target.Attack + (target.Modifiers?.IsChampion == true ? 10000 : 0) : -100000;
