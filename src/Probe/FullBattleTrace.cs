@@ -183,6 +183,7 @@ namespace MonsterTrain2Poju.Probe
                 PermanentTraitCalibration.Capture(this);
                 TitaniteCalibration.Capture(this);
                 TitaniteCombinationCalibration.Capture(this);
+                TitaniteWeaknessCalibration.Capture(this);
                 RelicCardUpgradeCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_QUERIES") == "1") StatisticQueryCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_OVERFLOW") == "1") StatisticOverflowCalibration.Capture(this);
@@ -1679,6 +1680,7 @@ namespace MonsterTrain2Poju.Probe
                 CapacityTests = RoomCapacityProbe.Tests,
                 PreviewRngIsolation = PreviewRngIsolation.Records,
                 PreviewScheduling = PreviewSchedulingProbe.Records,
+                BossPreviewEnchantments = BossPreviewEnchantmentProbe.Records,
                 TrueFinalBossPreviews = TrueFinalBossPreviewProbe.Records,
                 TrueFinalBossPreviewRooms = TrueFinalBossPreviewProbe.Rooms,
                 TrueFinalBossPyreCardDamage = TrueFinalBossTerminalProbe.Records,

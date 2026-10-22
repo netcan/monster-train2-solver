@@ -1,8 +1,15 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1050 archives,
+Current manifest inventory (2026-10-23): 1051 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`titanite-weakness-calibration.mt2f` adds 144 isolated native damage-stage
+controls. Titanite rounds damage before melee/spell weakness, followed by
+Titanskin and armor: a five-point non-piercing attack becomes six with one
+Titanite and one melee weakness. Shield, card/unit piercing, zero/even damage,
+immediate/deferred weakness consumption and immutable roots are checked.
+See [Titanite combinations](titanite-combinations.md).
 
 `true-final-boss-commanded-attack.mt2f` adds the original paid Eagleheart
 command: move the original small Steward to the front, apply five Valor,

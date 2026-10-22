@@ -2628,35 +2628,6 @@ namespace MonsterTrain2Poju.Model
                     damage = checked(damage + StatusMagnitude(target, "pyregel"));
                     Trigger(target, "pyregel", 1);
                 }
-                // Native applies source traits and flat damage increases before melee weakness.
-                if (direct && actor != null && target.Alive && !target.Has("untouchable") &&
-                    target.Has("melee weakness") && !target.Has("damage shield"))
-                {
-                    int beforeWeakness = damage;
-                    int stacks = target.Count("melee weakness");
-                    damage = checked(damage * (stacks + 1));
-                    if (damage != beforeWeakness) Trigger(target, "melee weakness", stacks);
-                }
-                if (kind == "Spell" && sourceCardId > 0 && damage > 0 && target.Alive && target.Has("spell weakness"))
-                {
-                    CardInstanceState? sourceCard = context?.FindCard(sourceCardId);
-                    if (sourceCard?.MaskDescriptor == null)
-                    {
-                        unsupportedReason = "Spell Weakness requires the native source card type.";
-                        return;
-                    }
-                    string? cardError = CardModifierModel.UnsupportedReason(sourceCard);
-                    if (cardError != null) { unsupportedReason = cardError; return; }
-                    bool isSpell = sourceCard.MaskDescriptor.Definition.CardType == "Spell";
-                    bool hasShield = target.Has("damage shield") || target.Has("spell shield");
-                    if (isSpell && (!hasShield || cardPiercing && !target.Has("untouchable")))
-                    {
-                        int beforeWeakness = damage;
-                        int stacks = target.Count("spell weakness");
-                        damage = checked(damage * (stacks + 1));
-                        if (damage != beforeWeakness) Trigger(target, "spell weakness", stacks);
-                    }
-                }
                 // Native resolves Spell Shield before Damage Shield. Both stages
                 // check card/relic piercing without the character attacker.
                 if (damage > 0 && kind == "Spell" && sourceCardId > 0 && target.Has("spell shield") && !cardPiercing)
@@ -2688,6 +2659,36 @@ namespace MonsterTrain2Poju.Model
                     damage = 0;
                 }
                 if (!reduceBeforeShield && target.Has("titanite")) damage = TitaniteModel.Adjust(damage, cardPiercing);
+                // Native OnPreAttacked runs after the shield/Titanite stage,
+                // before Titanskin and armor. Odd damage rounds before weakness.
+                if (direct && actor != null && target.Alive && !target.Has("untouchable") &&
+                    target.Has("melee weakness") && !target.Has("damage shield"))
+                {
+                    int beforeWeakness = damage;
+                    int stacks = target.Count("melee weakness");
+                    damage = checked(damage * (stacks + 1));
+                    if (damage != beforeWeakness) Trigger(target, "melee weakness", stacks);
+                }
+                if (kind == "Spell" && sourceCardId > 0 && damage > 0 && target.Alive && target.Has("spell weakness"))
+                {
+                    CardInstanceState? sourceCard = context?.FindCard(sourceCardId);
+                    if (sourceCard?.MaskDescriptor == null)
+                    {
+                        unsupportedReason = "Spell Weakness requires the native source card type.";
+                        return;
+                    }
+                    string? cardError = CardModifierModel.UnsupportedReason(sourceCard);
+                    if (cardError != null) { unsupportedReason = cardError; return; }
+                    bool isSpell = sourceCard.MaskDescriptor.Definition.CardType == "Spell";
+                    bool hasShield = target.Has("damage shield") || target.Has("spell shield");
+                    if (isSpell && (!hasShield || cardPiercing && !target.Has("untouchable")))
+                    {
+                        int beforeWeakness = damage;
+                        int stacks = target.Count("spell weakness");
+                        damage = checked(damage * (stacks + 1));
+                        if (damage != beforeWeakness) Trigger(target, "spell weakness", stacks);
+                    }
+                }
                 // Titanskin, like Titanite and Damage Shield, tests piercing
                 // without the character attacker. Unit piercing only bypasses armor.
                 if (damage > 0 && target.Has("titanskin") && !cardPiercing)

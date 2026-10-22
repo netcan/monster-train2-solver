@@ -42,3 +42,35 @@ unit requires captured status order and at most sixteen active statuses.
 Larger status lists remain guarded because native equal-order sorting changes
 their order. Natural Fragile victory and player entry require separate battle
 acceptance; this matrix alone does not establish either.
+
+## Weakness stage order · 2026-10-23
+
+`titanite-weakness-calibration.mt2f` retains 144 native stage operations from
+`full-battle-no-cards-20261023-033656-8f441fe3` (48.79 seconds). The enclosing
+native battle exits normally with `DEPTH-PASS`, settled effects, protected
+originals unchanged and four zero failure counters. The calibration itself
+uses a detached status dictionary and restores it in `finally`; live decision,
+all RNG streams and frame count remain unchanged.
+
+Native metadata puts Titanite/Damage Shield in `OnPreAttackedDamageShield`,
+both weaknesses in `OnPreAttacked`, then Titanskin and armor in their later
+stages. The old model multiplied weakness before halving: raw5 became five
+instead of the native six. Moving weakness after the shield stage fixes both
+melee and spell damage. Spell weakness remains marked for removal after the
+card resolves; melee weakness is consumed immediately.
+
+The matrix combines zero/even/odd damage, Titanite0/1, shield0/1, no defense,
+armor3 or Titanskin2, and ordinary/piercing card or unit sources. The focused
+checker replays actual unit attacks and card damage, compares native health,
+passive stacks, shield/armor spending and weakness removal flags, and proves
+each input immutable. The previous 1536-row matrix, 24-row float boundary
+calibration and spell-weakness controls also pass; no full regression runs.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -Policy no-cards -NativeWorker 2 `
+  -TitaniteWeakness -TimeoutSeconds 400 -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll `
+  --titanite-weakness-only tests/fixtures/titanite-weakness-calibration.mt2f
+```
+
+This damage-stage proof does not grant natural Fragile winning acceptance.

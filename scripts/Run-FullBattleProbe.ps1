@@ -19,6 +19,8 @@ param(
     [switch] $PermanentTraits,
     [switch] $TitaniteCalibration,
     [switch] $TitaniteCombinations,
+    [switch] $TitaniteWeakness,
+    [switch] $BossPreviewEnchantments,
     [switch] $ConduitMovement,
     [switch] $ConduitEnemyMovement,
     [switch] $RoomMoonCallbacks,
@@ -1622,6 +1624,8 @@ if ($HoldoverVariants) { $environment['MT2_PROBE_HOLDOVER_VARIANTS'] = '1' }
 if ($PermanentTraits) { $environment['MT2_PROBE_PERMANENT_TRAITS'] = '1' }
 if ($TitaniteCalibration) { $environment['MT2_PROBE_TITANITE'] = '1' }
 if ($TitaniteCombinations) { $environment['MT2_PROBE_TITANITE_COMBINATIONS'] = '1' }
+if ($TitaniteWeakness) { $environment['MT2_PROBE_TITANITE_WEAKNESS'] = '1' }
+if ($BossPreviewEnchantments) { $environment['MT2_PROBE_BOSS_PREVIEW_ENCHANTMENTS'] = '1' }
 if ($OriginalOverflowCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-overflow-cards' }
 if ($OriginalCorruptRestricted) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupt-restricted' }
 if ($OriginalStatusStackDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-stack-damage' }
