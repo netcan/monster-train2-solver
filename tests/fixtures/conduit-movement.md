@@ -158,3 +158,31 @@ authored composition, not a natural late-game deck or actual player acceptance.
 scripts/Run-FullBattleProbe.ps1 -EclipseChamberEnemyConduit -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-enemy-conduit-only tests/fixtures/full-battle-eclipse-chamber-enemy-conduit.mt2f
 ```
+
+## Actual player with opposing Conduit and moon callbacks
+
+`full-battle-player-room-moon-enemy-conduit-{search,replay}.mt2f` retains source
+`full-battle-units-spells-and-junk-20261022-133118-c10b8111` (242.58 seconds)
+and fresh replay `full-battle-units-spells-and-junk-20261022-133551-0edd2927`
+(101.42 seconds). Both use the real player assembly and win at Pyre80 after
+25 plays/five EndTurns. Both settle, exit normally, preserve protected originals
+and have four zero failure counters. All thirty inputs, complete native states,
+frozen forecasts and gameplay RNG match between the independent processes.
+
+The source publishes 32 times with pure capture/UI acceptance and retains its
+verified winning continuation for 29 later decisions. The used initial search
+takes 3.50 seconds; later response median/P95 is 1.04/1.77 seconds. Eight live
+opposing contributor snapshots and sixteen tracked hand-upgrade witnesses match,
+alongside the original opposing birth/phase callbacks and friendly room masks.
+The checker requires complete retained tracking, native contributor power and
+the actual temporary upgrade for each privately tracked card.
+
+This uses an authored carrier/hand and the six-turn/10,000-ms tactical budget.
+The player route does not Bump this opposing contributor; that operation is
+validated by the separate paid source/replay chain. Natural late-game decks,
+mixed opposing/friendly contributors and arbitrary trait combinations remain
+separate acceptance boundaries. No full regression or Mac package is built.
+
+```powershell
+scripts/Check-PlayerAdvisor.ps1 -Case RoomMoonEnemyConduit -SkipBuild
+```

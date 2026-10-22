@@ -1,8 +1,8 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'EventGraft', 'NaturalRing7')]
-    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'EventGraft', 'NaturalRing7'),
+    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'EventGraft', 'NaturalRing7')]
+    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'EventGraft', 'NaturalRing7'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -14,7 +14,7 @@ if (-not $SkipBuild) {
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
 $manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests/fixtures/manifest.tsv') -Delimiter "`t"
 foreach ($name in $Case) {
-    $prefix = switch ($name) { 'Moon' { 'player-moon' }; 'OuterBoss' { 'player-boss' }; 'OuterBossRolling' { 'player-boss-rolling' }; 'Conduit' { 'player-conduit' }; 'RoomMoon' { 'player-room-moon' }; 'RoomMoonMovement' { 'player-room-moon-movement' }; 'RoomMoonEnemy' { 'player-room-moon-enemy' }; 'EventGraft' { 'player-event-graft' }; 'NaturalRing7' { 'player-natural-ring7' } }
+    $prefix = switch ($name) { 'Moon' { 'player-moon' }; 'OuterBoss' { 'player-boss' }; 'OuterBossRolling' { 'player-boss-rolling' }; 'Conduit' { 'player-conduit' }; 'RoomMoon' { 'player-room-moon' }; 'RoomMoonMovement' { 'player-room-moon-movement' }; 'RoomMoonEnemy' { 'player-room-moon-enemy' }; 'RoomMoonEnemyConduit' { 'player-room-moon-enemy-conduit' }; 'EventGraft' { 'player-event-graft' }; 'NaturalRing7' { 'player-natural-ring7' } }
     $search = Join-Path $workspace "tests/fixtures/full-battle-$prefix-search.mt2f"
     $replay = Join-Path $workspace "tests/fixtures/full-battle-$prefix-replay.mt2f"
     foreach ($path in @($search, $replay)) {
