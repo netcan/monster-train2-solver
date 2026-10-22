@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1031 archives,
+Current manifest inventory (2026-10-23): 1033 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 

@@ -653,3 +653,17 @@ HP, deck and Pyre80 are unchanged. Both runs lose. This establishes bounded
 advice and replay, while natural victory and higher Covenant remain open.
 Diagnostic writers stay disabled in the player build. See
 [the complete evidence and supported scope](../tests/fixtures/player-true-final-boss-bounded.md).
+
+## Original Level9 ordinary ally · 2026-10-23
+
+The actual player assembly also completes the original encounter with an
+explicitly added original HornedWarrior, using three-turn/3,000-ms tactical
+advice. It publishes 22 plans and executes 20 inputs: 15 card plays and five
+EndTurns, including the Warrior summon. A fresh process replays every input
+with matching roots, complete forecasts, successors and RNG. Native counters
+are all zero; overlay interactions and pure captures pass (290 source/49 replay).
+Actual median/P95 response is 4.55/6.09 seconds.
+
+This uses explicit native jump/unlock and added-card controls; enemy assets,
+original HP/phases and Pyre80 are unchanged. Both runs lose. The original
+17-input player pair remains passing. See [ordinary ally player evidence](../tests/fixtures/player-true-final-boss-ordinary.md).

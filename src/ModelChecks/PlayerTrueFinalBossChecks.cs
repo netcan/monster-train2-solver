@@ -4,7 +4,7 @@ using MonsterTrain2Poju.Model;
 internal static class PlayerTrueFinalBossChecks
 {
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
-    internal static void Pair(FixtureValue source, FixtureValue replay)
+    internal static void Pair(FixtureValue source, FixtureValue replay, bool ordinaryAlly = false)
     {
         RollingAdviceChecks.FrozenPair(source, replay);
         BattleAdviceChecks.Native(source);
@@ -24,8 +24,13 @@ internal static class PlayerTrueFinalBossChecks
                 route.GetProperty("Scenario").GetString() == "Level9TrueFinalBoss_V2" &&
                 route.GetProperty("DistanceAfter").GetInt32() == 8 && route.GetProperty("PyreHealth").GetInt32() == 80 &&
                 route.GetProperty("ScenarioAssetsUnchanged").GetBoolean() && route.GetProperty("CharacterAssetsUnchanged").GetBoolean() &&
-                route.GetProperty("StartingDeckUnchanged").GetBoolean(), "Missing the explicit original route selection and unchanged assets/deck/Pyre.");
-            foreach (string field in new[] { "TrueFinalBossLethalControl", "TrueFinalBossRelentlessControl", "TrueFinalBossDormantControl" })
+                route.GetProperty("StartingDeckUnchanged").GetBoolean() == !ordinaryAlly,
+                "Missing the explicit original route selection and unchanged assets/Pyre with the declared deck control.");
+            bool added = fixture.TryGetProperty("TrueFinalBossOrdinaryAllyControl", out FixtureValue addition) && addition.ValueKind != FixtureKind.Null;
+            Require(added == ordinaryAlly && (!added || addition.GetProperty("Kind").GetString() == "Warrior" &&
+                addition.GetProperty("CardDataId").GetString() == "5de24977-6800-4015-a20e-9949e79e057c"),
+                "The ordinary player route must contain only its explicitly added original Warrior card.");
+            foreach (string field in new[] { "TrueFinalBossLethalControl", "TrueFinalBossRelentlessControl", "TrueFinalBossDormantControl", "TrueFinalBossAllyUpgradeControl" })
                 Require(!fixture.TryGetProperty(field, out FixtureValue control) || control.ValueKind == FixtureKind.Null,
                     "Player acceptance must not contain health or phase controls.");
         }
@@ -50,6 +55,11 @@ internal static class PlayerTrueFinalBossChecks
             source.GetProperty("Turns").GetArrayLength() > 1 && states.Any(state => state.Spawn.Train.Context!.CardInstances!.Any(card =>
                 card.MaskDescriptor?.SourceTraits != null && state.PlayRules!.Cards.Any(rule => rule.DataId == card.DataId && rule.AssetKey == "TFB_EntropyScourge"))),
             "Missing real search, card play, continued combat or original generated Scourge metadata.");
-        Console.WriteLine($"PLAYER-TRUE-FINAL-BOSS PASS: {records.Length} real player inputs and fresh frozen replay; complete forecasts/state/RNG, original queued birth, five-body casting/link state and generated Scourges. Controlled route; nativeWon={source.GetProperty("NativeWon").GetBoolean()}.");
+        if (ordinaryAlly)
+            Require(states.Any(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                unit.AssetKey == "BasicDemon" && unit.BaseAttack == 15 && unit.MaxHealth == 8 && unit.Status("multistrike")?.Stacks == 1 &&
+                TrueFinalBossCombatModel.SupportsAlly(unit, state.Spawn.Train.Context))),
+                "Real player advice must actually summon the added ordinary Warrior with complete source metadata.");
+        Console.WriteLine($"PLAYER-TRUE-FINAL-BOSS PASS: {records.Length} real player inputs and fresh frozen replay; complete forecasts/state/RNG, original queued birth, five-body casting/link state and generated Scourges. Controlled route{(ordinaryAlly ? " and original ordinary Warrior" : "")}; nativeWon={source.GetProperty("NativeWon").GetBoolean()}.");
     }
 }
