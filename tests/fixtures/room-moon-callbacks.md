@@ -276,8 +276,8 @@ enemy before deployment had created any; it is not curated. The accepted run
 explicitly spawns the original first-wave definition without changing it.
 
 This opens the existing modeled upgrade callbacks and actual enemy Bump phase
-refresh. The ordinary paid enemy chain is validated below; paid enemy callback
-chains, real player entry with this composition,
+refresh. Ordinary and callback-bearing paid enemy chains are validated below;
+real player entry with this composition,
 previews, other callback payloads, enemy Conduit and unit-owned moon resource
 traits retain their separate acceptance boundaries. No full regression or Mac
 package build is performed.
@@ -318,10 +318,46 @@ pass the focused thirteen-play/five-EndTurn checker. This fresh native run
 also exercises the extracted production process waiter on its ordinary exit
 path; its grace/failure paths have separate real child-process controls.
 
-This does not establish a paid enemy callback composition or real player
-advice for this route. No full regression or Mac package build is performed.
+The callback-bearing paid composition is validated next. This ordinary control
+does not establish real player advice for this route. No full regression or Mac package build is performed.
 
 ```powershell
 scripts/Run-FullBattleProbe.ps1 -EclipseChamberEnemyMovement -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-enemy-movement-only tests/fixtures/full-battle-eclipse-chamber-enemy-movement.mt2f
+```
+
+## Paid opposing callbacks and off-train birth
+
+`full-battle-eclipse-chamber-enemy-callbacks.mt2f` records profile
+`full-battle-units-spells-and-junk-20261022-131656-ee85e1b2` (122.41 seconds).
+The scene clones an original first-wave shield guard and appends unchanged
+Selene/Nightingale trigger definitions. Only the authored wave references the
+clone; original card, callback and enemy definitions remain intact. The queued
+spawn projection reads the same cloned definition as native HeroManager.
+
+This exposed an actual modeling gap: enemy Setup queues its initial global
+phase callback off-train, before any group OnSpawn callbacks run. Previously
+the model captured only its phase status/mask and missed Nightingale's upgrade
+and two multistrike stacks. Enemy spawning now preserves that shared queue.
+The carrier's initial New mask remains 5 even beneath a room override.
+
+After original Moonrise changes New to Full and adds one energy, two unchanged
+Hidden Passage/Dripfall pairs pay four energy and move the same opposing
+carrier across Eclipse. All four moves change cached understanding and remove
+or restore the original New upgrade; unrelated masks remain unchanged.
+Thirteen actions, five EndTurns, seven spawn boundaries, complete state/RNG
+and sixteen independent immutable full chains match. The battle wins at Pyre80.
+
+Fresh profile `full-battle-units-spells-and-junk-20261022-132006-c63cea47`
+replays all eighteen independently frozen inputs with zero search nodes in
+75.71 seconds and is retained as `full-battle-eclipse-chamber-enemy-callbacks-replay.mt2f`.
+Both processes settle, exit normally, preserve protected originals and have
+four zero failure counters. Full frozen roots, successors and terminal state/RNG
+match. The earlier setup diagnostic and the capture exposing the birth mismatch
+are not curated. Ordinary opposing and friendly paid controls still pass.
+No full regression or Mac package build is performed.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -EclipseChamberEnemyCallbacks -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-enemy-callbacks-only tests/fixtures/full-battle-eclipse-chamber-enemy-callbacks.mt2f
 ```

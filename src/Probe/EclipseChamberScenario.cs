@@ -17,6 +17,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool ShadeCallbacks => Callbacks && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_SHADE_CALLBACKS") == "1";
         internal static bool Movement => ShadeCallbacks && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_MOVEMENT") == "1";
         internal static bool EnemyMovement => Movement && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_ENEMY_MOVEMENT") == "1";
+        internal static bool EnemyCallbacks => EnemyMovement && Environment.GetEnvironmentVariable("MT2_PROBE_ECLIPSE_ENEMY_CALLBACKS") == "1";
+        internal const string EnemyCallbackKey = "PojuEclipseEnemyCallbacks";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static readonly List<Record> Records = new List<Record>();
@@ -64,6 +66,7 @@ namespace MonsterTrain2Poju.Probe
                 Set(steward.GetSpawnCharacterData(), "triggers", triggers);
             }
             Set(steward.GetSpawnCharacterData(), "subtypeKeys", new List<string> { "SubtypesData_Silent" });
+            if (EnemyCallbacks) PrepareEnemyCallbacks(managers, all, steward.GetSpawnCharacterData().GetTriggers().ToList(), log);
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
@@ -114,6 +117,30 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("ECLIPSE-CHAMBER-PREPARED original rooms and Moonrise, Silent/ordinary same-floor controls, outside-floor control and post-attachment birth.");
             Prepared = true; Set(managers.GetCombatManager()!, "combatStateChanged", true);
         }
+        private static void PrepareEnemyCallbacks(AllGameManagers managers, AllGameData all,
+            List<CharacterTriggerData> triggers, ManualLogSource log)
+        {
+            SaveManager save = managers.GetSaveManager();
+            var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(managers.GetHeroManager());
+            var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
+            CharacterData original = all.GetAllCharacterData().Single(unit => unit.GetAssetKey() == "ShieldGuardT1_BasicNonAttack");
+            var carrier = UnityEngine.Object.Instantiate(original); carrier.name = EnemyCallbackKey;
+            Set(carrier, "id", "ec110010-0000-4000-8000-000000000003");
+            Set(carrier, "triggers", original.GetTriggers().Concat(triggers).ToList());
+            ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(all)).Add(carrier);
+            int changed = 0;
+            foreach (SpawnGroupData group in ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
+                .GetValue(waves[0])).Cast<SpawnGroupData>())
+            {
+                var slot = ((IEnumerable)AccessTools.Field(typeof(SpawnGroupData), "characterDataContainerList").GetValue(group))
+                    .Cast<SpawnGroupData.CharacterDataContainer>().First(item =>
+                        !item.UseBossCharacter && item.Covenant == null && item.Replacements.Count == 0);
+                AccessTools.Field(typeof(SpawnGroupData.CharacterDataContainer), "characterData").SetValue(slot, carrier);
+                changed++;
+            }
+            if (changed == 0) throw new InvalidOperationException("Enemy callback calibration has no first-wave carrier.");
+            log.LogInfo("ECLIPSE-ENEMY-CALLBACKS-PREPARED authoredCarrier=true originalFullAndNewPayloads=true groups=" + changed);
+        }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
             CombatContext context = source.Spawn.Train.Context!;
@@ -125,7 +152,8 @@ namespace MonsterTrain2Poju.Probe
                         if (source.Spawn.Turn == 0) return null;
                         if (index == 8) return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play => play.CardInstanceId == ids[index]);
                         CombatUnit enemy = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
-                            .Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0).OrderBy(unit => unit.Id).First();
+                            .Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0)
+                            .OrderByDescending(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnMoonShade")).ThenBy(unit => unit.Id).First();
                         return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play =>
                             play.CardInstanceId == ids[index] && play.TargetUnitId == enemy.Id);
                     }

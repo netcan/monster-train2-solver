@@ -1927,6 +1927,14 @@ if (args.Length == 2 && args[0] == "--eclipse-enemy-movement-only")
     EclipseChamberChecks.EnemyMovement(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--eclipse-enemy-callbacks-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (!fixture.RootElement.GetProperty("EclipseChamberEnemyCallbacks").GetBoolean())
+        throw new InvalidOperationException("Missing opposing original callback carrier.");
+    EclipseChamberChecks.EnemyMovement(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--room-moon-callback-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -1937,6 +1945,13 @@ if (args.Length == 2 && args[0] == "--conduit-movement-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     ConduitMovementChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--player-room-moon-enemy-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerRoomMoonChecks.EnemyCallbacksPair(source.RootElement, replay.RootElement);
     return;
 }
 if (args.Length == 3 && args[0] == "--player-room-moon-movement-pair-only")
@@ -3728,7 +3743,9 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-ch
     EclipseChamberChecks.Movement(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-chamber-enemy-movement.mt2f", StringComparison.OrdinalIgnoreCase) ||
-    path.EndsWith("full-battle-eclipse-chamber-enemy-movement-replay.mt2f", StringComparison.OrdinalIgnoreCase)))
+    path.EndsWith("full-battle-eclipse-chamber-enemy-movement-replay.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-eclipse-chamber-enemy-callbacks.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-eclipse-chamber-enemy-callbacks-replay.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);
     EclipseChamberChecks.EnemyMovement(document.RootElement);

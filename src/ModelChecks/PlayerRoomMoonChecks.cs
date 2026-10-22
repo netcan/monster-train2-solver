@@ -3,6 +3,47 @@ using MonsterTrain2Poju.Model;
 
 internal static class PlayerRoomMoonChecks
 {
+    internal static void EnemyCallbacksPair(FixtureValue source, FixtureValue replay)
+    {
+        Require(source.GetProperty("EclipseChamberEnemyCallbacks").GetBoolean() &&
+            replay.GetProperty("EclipseChamberEnemyCallbacks").GetBoolean(), "Missing opposing callback composition.");
+        Pair(source, replay, requireMaskedEnemyBirths: false);
+        var actors = new HashSet<int>();
+        int upgraded = 0, births = 0;
+        foreach (FixtureValue row in source.GetProperty("RollingDecisions").EnumerateArray())
+            foreach (string boundary in new[] { "Root", "Actual" })
+                foreach (CombatUnit unit in row.GetProperty(boundary).Deserialize<BattleTurnState>()!
+                    .Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0 && unit.Team == CombatTeam.Enemy &&
+                        unit.Triggers.Any(trigger => trigger.Kind == "OnMoonShade")))
+                {
+                    actors.Add(unit.Id);
+                    Require(unit.AssetKey == "PojuEclipseEnemyCallbacks" && unit.MoonPhaseMask.HasValue &&
+                        (unit.MoonPhaseMask.Value & 4) == 4, "Player omitted the opposing carrier or its cached understanding.");
+                    foreach ((int bit, string key) in new[] { (1, "Nightingale_Upgrade"), (2, "SeleneAcolyte_MagicPower_Upgrade") })
+                    {
+                        bool present = unit.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == key);
+                        Require(present == ((unit.MoonPhaseMask.Value & bit) != 0), "Enemy callback upgrade differs from cached understanding.");
+                        if (present) upgraded++;
+                    }
+                }
+        foreach (FixtureValue row in source.GetProperty("Spawns").EnumerateArray())
+        {
+            var before = row.GetProperty("Before").Deserialize<EnemySpawnState>()!;
+            var after = row.GetProperty("Actual").Deserialize<EnemySpawnState>()!;
+            var existing = before.Train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+            foreach (CombatUnit born in after.Train.Rooms.SelectMany(room => room.Units).Where(unit =>
+                !existing.Contains(unit.Id) && unit.AssetKey == "PojuEclipseEnemyCallbacks"))
+            {
+                int phase = before.Train.Context!.QueryFrame!.MoonPhase!.Value;
+                Require((born.MoonPhaseMask & 3) == phase && born.Modifiers!.Upgrades.Any(upgrade =>
+                    upgrade.AssetKey == (phase == 1 ? "Nightingale_Upgrade" : "SeleneAcolyte_MagicPower_Upgrade")),
+                    "Player omitted the off-train enemy birth callback.");
+                births++;
+            }
+        }
+        Require(actors.Count > 0 && upgraded > 0 && births > 0, "No live opposing callback carrier or original birth upgrade was exercised.");
+        Console.WriteLine($"PLAYER-ROOM-MOON-ENEMY PASS liveOpposingActors={actors.Count} upgradeWitnesses={upgraded} originalBirthCallbacks={births} exactFrozenReplay=true");
+    }
     internal static void MovementPair(FixtureValue source, FixtureValue replay)
     {
         Require(source.GetProperty("EclipseChamberMovement").GetBoolean() && replay.GetProperty("EclipseChamberMovement").GetBoolean(),

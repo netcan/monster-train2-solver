@@ -241,8 +241,16 @@ namespace MonsterTrain2Poju.Model
                     // Native heroes initialize off-train, before their physical
                     // placement. Room overrides enter understanding only during
                     // the later global/resource refresh, not this spawn boundary.
-                    if (liveIndex >= 0) rooms[index][liveIndex] = MoonPhaseStatusModel.WithPhase(rooms[index][liveIndex], moon)
-                        .WithMoonPhaseMask(moon);
+                    if (liveIndex >= 0)
+                    {
+                        CombatUnit initialized = MoonPhaseStatusModel.WithPhase(rooms[index][liveIndex], moon).WithMoonPhaseMask(moon);
+                        rooms[index][liveIndex] = initialized;
+                        // Setup queues understanding callbacks off-train. They
+                        // join the shared queue before any group OnSpawn runs.
+                        string gained = moon == 2 ? "OnMoonLit" : "OnMoonShade";
+                        if (moon is 1 or 2 && initialized.Triggers.Any(trigger => trigger.Kind == gained))
+                            callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(index, initialized, gained));
+                    }
                 }
                 return null;
             }

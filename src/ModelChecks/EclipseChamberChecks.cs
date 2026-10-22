@@ -15,7 +15,8 @@ internal static class EclipseChamberChecks
                     if (source.Spawn.Turn == 0) return null;
                     if (index == 8) return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play => play.CardInstanceId == ids[index]);
                     CombatUnit enemy = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
-                        .Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0).OrderBy(unit => unit.Id).First();
+                        .Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0)
+                        .OrderByDescending(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnMoonShade")).ThenBy(unit => unit.Id).First();
                     return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play =>
                         play.CardInstanceId == ids[index] && play.TargetUnitId == enemy.Id);
                 }
@@ -144,7 +145,7 @@ internal static class EclipseChamberChecks
         BattleTurnState[] states = root.GetProperty("Actions").EnumerateArray()
             .Select(row => row.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
         CombatUnit[] actors = states.SelectMany(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units))
-            .Where(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnMoonLit") &&
+            .Where(unit => unit.Team == CombatTeam.Player && unit.Triggers.Any(trigger => trigger.Kind == "OnMoonLit") &&
                 unit.Triggers.Any(trigger => trigger.Kind == "OnMoonlitLost")).ToArray();
         Require(actors.Select(unit => unit.Id).Distinct().Count() == 3 &&
             actors.Any(unit => (unit.MoonPhaseMask & 3) == 3) && actors.Any(unit =>
@@ -195,7 +196,17 @@ internal static class EclipseChamberChecks
     internal static void EnemyMovement(FixtureValue root)
     {
         Require(root.GetProperty("EclipseChamberEnemyMovement").GetBoolean(), "Missing paid enemy movement scenario.");
+        bool callbacks = root.TryGetProperty("EclipseChamberEnemyCallbacks", out FixtureValue flag) && flag.GetBoolean();
         Callbacks(root);
+        if (callbacks)
+        {
+            EnemySpawningChecks.Native(root);
+            var birth = root.GetProperty("Spawns")[0].GetProperty("Actual").Deserialize<EnemySpawnState>()!;
+            CombatUnit carrier = birth.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.AssetKey == "PojuEclipseEnemyCallbacks");
+            Require(carrier.MoonPhaseMask == 5 && carrier.Status("multistrike")?.Stacks == 2 &&
+                carrier.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade"),
+                "Enemy birth omitted its off-train original New callback before OnSpawn.");
+        }
         FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
         BattleTurnState phaseBefore = actions[8].GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState phaseAfter = actions[8].GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -213,14 +224,16 @@ internal static class EclipseChamberChecks
             CombatUnit prior = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId);
             Require(before.Spawn.Turn == 1 && before.MoonPhase == "Full" && before.Energy - after.Energy == 1 &&
                 before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId == expected && prior.Team == CombatTeam.Enemy &&
-                prior.AssetKey == "ShieldGuardT1_BasicNonAttack" && prior.Triggers.All(trigger => !trigger.Kind.Contains("Moon")),
-                "Missing ordinary first-wave enemy, original spell, phase or actual payment.");
-            Require(MovementWitness(before, after, action, requireCallbacks: false, team: CombatTeam.Enemy),
-                "Paid ordinary enemy did not change its moon understanding.");
+                prior.AssetKey == (callbacks ? "PojuEclipseEnemyCallbacks" : "ShieldGuardT1_BasicNonAttack") &&
+                (callbacks ? new[] { "OnMoonLit", "OnMoonlitLost", "OnMoonShade", "OnMoonshadeLost" }
+                    .All(kind => prior.Triggers.Any(trigger => trigger.Kind == kind)) : prior.Triggers.All(trigger => !trigger.Kind.Contains("Moon"))),
+                "Missing first-wave enemy carrier, original spell, phase or actual payment.");
+            Require(MovementWitness(before, after, action, requireCallbacks: callbacks, team: CombatTeam.Enemy),
+                "Paid enemy did not change its moon understanding and expected upgrades.");
             targets.Add(prior.Id); moves++;
         }
         Require(moves == 4 && targets.Count == 1, "Missing complete repeated up/down pairs on one original enemy.");
-        Console.WriteLine("ECLIPSE-ENEMY-MOVEMENT-CHAIN PASS originalMovementCards=4 paidEnergy=4 sameEnemy=true maskChanges=4 immutableFullChains=16");
+        Console.WriteLine($"ECLIPSE-ENEMY-MOVEMENT-CHAIN PASS originalMovementCards=4 paidEnergy=4 sameEnemy=true maskChanges=4 enemyCallbacks={callbacks} immutableFullChains=16");
     }
     internal static bool MovementWitness(BattleTurnState before, BattleTurnState after, PlayCardAction action, bool requireCallbacks = true,
         CombatTeam team = CombatTeam.Player)
