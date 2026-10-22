@@ -38,7 +38,7 @@ foreach ($item in $Case) {
             Invoke-TrueFinalBossArchive 'true-final-boss-commanded-attack.mt2f' '--true-final-boss-commanded-attack-only'
             Invoke-TrueFinalBossArchive 'true-final-boss-pyre-command.mt2f' '--true-final-boss-pyre-command-only'
         }
-        $prefixes = if ($item -eq 'ProtectedSpell') { @('protected-spell') } else { @('paid-spell', 'allied-paid-spell') }
+        $prefixes = if ($item -eq 'ProtectedSpell') { @('protected-spell') } else { @('paid-spell', 'allied-paid-spell', 'triggered-paid-spell') }
         foreach ($prefix in $prefixes) {
             foreach ($target in @('dominion', 'savagery', 'entropybot', 'entropymid', 'entropytop')) {
                 Invoke-TrueFinalBossArchive "true-final-boss-$prefix-$target.mt2f" "--true-final-boss-$prefix-only"

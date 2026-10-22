@@ -704,10 +704,13 @@ if ($TrueFinalBossCommandedAttack -or $TrueFinalBossPyreCommand) {
     $TrueFinalBossLethalAlly = $true; $TrueFinalBossLethalSpellTarget = 'Savagery'
 }
 if ($TrueFinalBossLethalAlly) {
-    if (-not $TrueFinalBossLethalSpellTarget -or $TrueFinalBossProtectedSpellTarget -or $TrueFinalBossOrdinaryAlly -or $TrueFinalBossAllyUpgrade) {
+    if (-not $TrueFinalBossLethalSpellTarget -or $TrueFinalBossProtectedSpellTarget -or $TrueFinalBossAllyUpgrade -or
+        $TrueFinalBossOrdinaryAllyUpgrade -or ($TrueFinalBossOrdinaryAlly -and $TrueFinalBossOrdinaryAlly -notin @('Steward', 'Avenger')) -or
+        (($TrueFinalBossCommandedAttack -or $TrueFinalBossPyreCommand) -and $TrueFinalBossOrdinaryAlly -eq 'Avenger')) {
         throw 'Allied paid victory requires its original spell target and separate ally preparation.'
     }
-    $TrueFinalBossOrdinaryAlly = 'Steward'; $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+    if (-not $TrueFinalBossOrdinaryAlly) { $TrueFinalBossOrdinaryAlly = 'Steward' }
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
 }
 if ($TrueFinalBossOrdinaryAlly -and $TrueFinalBossAllyUpgrade) { throw 'Ordinary ally and upgraded ally require separate captures.' }
 if ($TrueFinalBossOrdinaryAllyUpgrade -and -not $TrueFinalBossOrdinaryAlly) { throw 'Ordinary ally upgrades require an explicit ordinary ally.' }

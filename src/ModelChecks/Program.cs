@@ -29,6 +29,13 @@ if (args.Length == 2 && args[0] == "--true-final-boss-protected-spell-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--true-final-boss-triggered-paid-spell-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossPaidSpellChecks.Native(fixture.RootElement, allied: true, triggeredAlly: true);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-true-final-boss-avenger-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -4144,6 +4151,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("tr
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossPaidSpellChecks.Native(fixture.RootElement, allied: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("true-final-boss-triggered-paid-spell-", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossPaidSpellChecks.Native(fixture.RootElement, allied: true, triggeredAlly: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).Equals("true-final-boss-pyre-command.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

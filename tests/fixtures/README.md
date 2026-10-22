@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1057 archives,
+Current manifest inventory (2026-10-23): 1062 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -15,13 +15,19 @@ See [Titanite combinations](titanite-combinations.md).
 Avenger OnHit callback against the original five linked bosses. Paid summons,
 six EndTurns, five native previews and sixteen immutable full chains match;
 all native failure counters are zero. Ten altered callback signatures,
-commanded Valor and terminal group death retain their guards. The added card
+commanded Valor and unit-sourced terminal group death retain their guards. The added card
 is explicit and the route loses. See [Avenger evidence](true-final-boss-avenger.md).
 The separate actual player pair now executes nine inputs including the Avenger
 summon and three OnHit witnesses, with complete forecasts/state/RNG matching a
 fresh native replay. Both losses have four zero counters and normal exits.
 Measured response median/P95 is 5.18/5.57 seconds at three turns/3,000 ms;
 see [player OnHit evidence](player-true-final-boss-avenger.md).
+Five `true-final-boss-triggered-paid-spell-*.mt2f` captures now separately
+calibrate paid plain-spell terminal cleanup with the original Avenger alive.
+All five original targets win with Avenger20/40 and Pyre80, zero native counters,
+and sixteen immutable summon/birth/HP-control/paid-victory chains per target.
+The explicit one-HP controls are retained; anonymous and unit-sourced damage
+remain guarded for this ally. See [terminal spell evidence](true-final-boss-avenger-terminal.md).
 
 `boss-preview-sweep-calibration.mt2f` retains a native Fragile diagnostic win
 with three historical intermediate mismatches. Its focused checker recomputes
