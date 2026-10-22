@@ -1,7 +1,7 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 910 archives (832 full battles and
-78 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-22): 1007 archives,
+224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 Run `scripts/Check-FixtureCatalog.ps1` for a fast byte/hash/registration audit;

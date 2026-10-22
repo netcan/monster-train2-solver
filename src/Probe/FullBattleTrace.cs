@@ -708,6 +708,9 @@ namespace MonsterTrain2Poju.Probe
             if (RollingAdviceScenario.Enabled && !PlayerAdvisorProbe.Enabled) TerminalDecision = CaptureDecision();
 #endif
             OuterBossPyreProbe.CompleteTerminal();
+#if DEVELOPMENT_PROBE
+            OuterBossPhaseProbe.CompleteTerminal(won);
+#endif
             if (won && OriginalBalatroEventCavendishScenario.Prepared)
             {
                 try { OriginalBalatroEventCavendishScenario.CaptureCardlessCallbacks(AllGameManagers.Instance!, log); }
@@ -779,6 +782,8 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 OriginalTrueFinalBossRoute = TrueFinalBossBirthProbe.Control,
                 TrueFinalBossDormantControl = TrueFinalBossDormantScenario.Evidence,
+                TrueFinalBossRelentlessControl = TrueFinalBossRelentlessScenario.Evidence,
+                TrueFinalBossRelentlessActions = TrueFinalBossRelentlessScenario.Enabled ? OuterBossPhaseProbe.CapturedActions : null,
 #endif
                 OriginalCarriageJackPrepared = OriginalCarriageJackScenario.Prepared,
                 OriginalTwoChargesOnCardConsumedPrepared = OriginalTwoChargesOnCardConsumedScenario.Prepared,

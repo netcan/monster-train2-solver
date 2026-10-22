@@ -62,7 +62,9 @@ namespace MonsterTrain2Poju.Model
         public OuterBossPhaseState? State { get; }
         public string? UnsupportedReason { get; }
         public bool Supported => State != null;
-        internal OuterBossPhaseResult(OuterBossPhaseState? state, string? error = null) { State = state; UnsupportedReason = error; }
+        public RoomOutcome Outcome { get; }
+        internal OuterBossPhaseResult(OuterBossPhaseState? state, string? error = null, RoomOutcome outcome = RoomOutcome.Exchanged)
+        { State = state; UnsupportedReason = error; Outcome = outcome; }
     }
     public static class OuterBossPhaseModel
     {

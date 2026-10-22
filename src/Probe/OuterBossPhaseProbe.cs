@@ -42,8 +42,10 @@ namespace MonsterTrain2Poju.Probe
             public OuterBossPhaseState Before { get; set; } = null!;
             public OuterBossPhaseState? Actual { get; set; }
             public bool NativeReturned { get; set; }
+            public bool? TerminalWon { get; set; }
         }
         private static readonly List<Record> Records = new List<Record>();
+        internal static IReadOnlyList<Record> CapturedActions => Records;
         private static readonly List<string> Errors = new List<string>();
         private static readonly List<object> QueueControls = new List<object>();
         internal static IReadOnlyList<object> Controls => QueueControls;
@@ -94,7 +96,7 @@ namespace MonsterTrain2Poju.Probe
                 Field<List<ActionGroupState>>(controller, "_actionGroups").Select(group => (IReadOnlyList<OuterBossActionProgress>)group.GetActions().Select(Action).ToArray()).ToArray(),
                 Field<ActionGroupState>(controller, "_roomDestroyActionGroup").GetActions().Select(Action).ToArray());
         }
-        private static OuterBossPhaseState Capture()
+        internal static OuterBossPhaseState Capture()
         {
             HeroManager heroes = AllGameManagers.Instance.GetHeroManager();
             TrueFinalBossPhaseFlags? flags = heroes.GetOuterTrainBossCharacter().IsTrueFinalBoss() ? new TrueFinalBossPhaseFlags(
@@ -161,6 +163,17 @@ namespace MonsterTrain2Poju.Probe
                 try { row.Actual = Capture(); pending = null; }
                 catch (Exception error) { Errors.Add(error.ToString()); }
             }
+        }
+        internal static void CompleteTerminal(bool won)
+        {
+            if (!TrueFinalBossRelentlessScenario.Enabled || pending == null) return;
+            try
+            {
+                pending.Actual = Capture();
+                pending.TerminalWon = won;
+                pending = null;
+            }
+            catch (Exception error) { Errors.Add(error.ToString()); }
         }
         internal static void Write(ManualLogSource log)
         {

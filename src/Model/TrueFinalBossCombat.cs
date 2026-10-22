@@ -7,7 +7,8 @@ namespace MonsterTrain2Poju.Model
         // Native full-route captures include authored physical anchors and the
         // complete aura world. Earlier health-only projections intentionally do
         // not opt into full combat. Other allied definitions and
-        // Hellforged relentless/destruction require their own calibration.
+        // Top-body relentless is also calibrated before the bounded destruction
+        // phase; other relentless layouts retain their own guards.
         internal static bool SupportsAlly(CombatUnit unit) => unit.Team == CombatTeam.Player && !unit.IsPyre &&
             (unit.AssetKey == "TrainStewardBig" && unit.BaseAttack == 8 && unit.MaxHealth == 25 && unit.Size == 3 ||
                 unit.AssetKey == "MonsterBanishedChampion1" && unit.BaseAttack == 1 && unit.MaxHealth == 10 && unit.Size == 2) &&
@@ -45,7 +46,8 @@ namespace MonsterTrain2Poju.Model
                 if (unit.Team != CombatTeam.Enemy || unit.Health != actor.Health || unit.MaxHealth != health[index] || unit.Status("lifelink") == null ||
                     actor.OuterBoss != (index >= 2) || actor.LinkedId != (index >= 3 ? bottom : 0) ||
                     index != 1 && floor != floors[index] || index == 1 && floor > 2 ||
-                    index >= 2 && (unit.BumpRules?.OuterBoss != true || unit.BumpRules.OuterBossRelentlessPhase ||
+                    index >= 2 && (unit.BumpRules?.OuterBoss != true || unit.BumpRules.OuterBossRelentlessPhase &&
+                        (index != 4 || unit.Status("relentless")?.Stacks != 1) ||
                         unit.BumpRules.CastingAnchorSlots?.Count != 4 || unit.BumpRules.RelentlessAnchorSlots?.Count != 4)) return false;
             }
             return true;

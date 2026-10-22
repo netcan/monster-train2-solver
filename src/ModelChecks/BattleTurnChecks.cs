@@ -25,6 +25,9 @@ internal static class BattleTurnChecks
         }
         Require(unsupported == 0, "Native EndTurn verification skipped unsupported turns.");
         Console.WriteLine($"NATIVE-TURN-CHECKS PASS: {matched} matched, {unsupported} unsupported.");
+        // The dedicated checker composes this explicitly recorded native control
+        // between deployment and the remaining independently simulated turns.
+        if (fixture.TryGetProperty("TrueFinalBossRelentlessControl", out FixtureValue phaseControl) && phaseControl.ValueKind == FixtureKind.Object) return;
         if (fixture.TryGetProperty("Policy", out FixtureValue policy) &&
             policy.GetString() is "units-and-junk" or "units-spells-and-junk") return;
         BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;

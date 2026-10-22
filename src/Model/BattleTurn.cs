@@ -413,12 +413,26 @@ namespace MonsterTrain2Poju.Model
                 spawn = spawned.State!; train = spawn.Train;
                 if (Terminal(spawned.Outcome)) return Finish(spawned.Outcome, 0, source.MoonPhase);
             }
-            string? postBossError = ResolveOuterBoss(false, source.MoonPhase);
-            if (postBossError != null) return Unsupported(postBossError);
             string moon = source.MoonPhase == "Full" ? "New" : "Full";
+            bool hellforgedMoonAdvanced = spawn.OuterBoss is { AssetKey: "Boss_Level9_Entropy_Top_V2", Phase: "Relentless" };
+            if (hellforgedMoonAdvanced)
+            {
+                // Native EndMonsterTurn advances the moon before the potentially
+                // terminal Hellforged post action, while the turn number is old.
+                MoonPhaseTransitionResult advanced = MoonPhaseTransitionModel.Apply(train,
+                    new CardActionEffect("AdvanceMoonPhase", "Room", 1, false, false, []), playerActionOnly: false);
+                if (!advanced.Supported) return Unsupported(advanced.UnsupportedReason!);
+                train = advanced.State!;
+            }
+            RoomOutcome bossPhaseOutcome = RoomOutcome.Exchanged;
+            string? postBossError = ResolveOuterBoss(false, hellforgedMoonAdvanced ? moon : source.MoonPhase);
+            if (postBossError != null) return Unsupported(postBossError);
+            if (Terminal(bossPhaseOutcome)) return Finish(bossPhaseOutcome, 0, moon);
             context = train.Context!;
             int turn = checked(spawn.Turn + 1);
-            if (source.MoonPhaseTrackingActive.HasValue)
+            if (hellforgedMoonAdvanced)
+                train = WithContext(train, context.WithQueryFrame(context.QueryFrame?.With(turn: turn)), false);
+            else if (source.MoonPhaseTrackingActive.HasValue)
             {
                 train = WithContext(train, context.WithQueryFrame(context.QueryFrame?.With(
                     turn: turn, moonPhaseTrackingActive: context.QueryFrame?.MoonPhaseTrackingActive ?? source.MoonPhaseTrackingActive)), false);
@@ -768,6 +782,7 @@ namespace MonsterTrain2Poju.Model
                     train.Context.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom, source.MoonPhaseTrackingActive);
                 OuterBossPhaseResult action = OuterBossPhaseModel.Apply(new OuterBossPhaseState(boundary, spawn.OuterBoss!, spawn.TrueFinalBoss), preCombat);
                 if (!action.Supported) return action.UnsupportedReason;
+                bossPhaseOutcome = action.Outcome;
                 TrainCombatState prior = train;
                 spawn = action.State!.Battle.Spawn; train = spawn.Train;
                 if (!RouteDeadUnits(prior, new TrainCombatResult(train, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>())))

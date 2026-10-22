@@ -12,6 +12,36 @@ namespace MonsterTrain2Poju.Model
     }
     public static class TrueFinalBossPhaseModel
     {
+        // Isolated native control, kept separate from the natural phase rules.
+        public static OuterBossPhaseResult EnterRelentlessWithExhaustedQueue(OuterBossPhaseState source)
+        {
+            OuterBossPhaseResult valid = Apply(source, false);
+            if (!valid.Supported || source.Boss.Phase != "Casting" || source.Battle.Spawn.Turn != 1 ||
+                source.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Count() != 6)
+                return new OuterBossPhaseResult(null, valid.UnsupportedReason ?? "Relentless control requires the original five-body first-turn boundary.");
+            TrainCombatState train = source.Battle.Spawn.Train;
+            RoomCombatState room = train.Rooms[2];
+            CombatStatus? relentless = train.Context!.StatusRules.SingleOrDefault(status => status.Id == "relentless");
+            if (relentless == null) return new OuterBossPhaseResult(null, "Missing native relentless status definition.");
+            RoomCombatResult added = StatusApplicationModel.Apply(room, source.Boss.UnitId, relentless.WithStacks(1));
+            if (!added.Supported) return new OuterBossPhaseResult(null, added.UnsupportedReason);
+            CombatUnit top = CompanionBossModel.RemoveTriggers(added.State!.Units.Single(unit => unit.Id == source.Boss.UnitId))
+                .WithOuterBossPhase(source.Boss.BaseCanAttack && (source.Boss.ValidAttackPhases & 2) != 0, true);
+            train = CardSpellModel.WithContext(new TrainCombatState(train.Rooms.Select(floor => new RoomCombatState(
+                floor.RoomIndex, floor.Deployment, floor.Units.Select(unit => unit.Id == top.Id ? top : unit).ToArray(),
+                floor.ExternalInteractions, added.State.Context, floor.Preview, floor.ActiveCompanionBossIds)).ToArray(),
+                train.Movement, train.EnemySlotsPerRoom, added.State.Context), added.State.Context!);
+            train = EnchantmentWorldModel.Rebase(train);
+            TrainCombatResult settled = TrainCombatModel.ApplyCharacterQueue(train, added.PendingCallbacks.ToList());
+            if (!settled.Supported || settled.Outcome != RoomOutcome.Exchanged)
+                return new OuterBossPhaseResult(null, settled.UnsupportedReason ?? "Terminal phase-control callbacks remain guarded.");
+            train = settled.State!;
+            OuterBossProgress boss = source.Boss;
+            var progress = new OuterBossProgress(boss.UnitId, boss.AssetKey, "Relentless", boss.ValidAttackPhases,
+                boss.BaseCanAttack, boss.Room, boss.MovementSpeed, boss.VisitedRooms, boss.Controller, boss.Actions, boss.DestroyActions);
+            return new OuterBossPhaseResult(TrueFinalBossRelentlessPhaseModel.Rebuild(source, train, progress,
+                source.TrueFinalBoss!, source.Battle.PlayRules!, source.Battle.SelectedRoom, spawnPhase: source.Battle.Spawn.Waves.Count, looping: false));
+        }
         // Hellforged casting does prepare the native action cursor, but its
         // authored controller has no ordinary actions. It never enters the
         // Level8 queue-empty transition or executes a room-destroy action here.
@@ -20,9 +50,11 @@ namespace MonsterTrain2Poju.Model
             OuterBossPhaseResult Fail(string reason) => new OuterBossPhaseResult(null, reason);
             BattleTurnState battle = source.Battle; OuterBossProgress boss = source.Boss;
             LifeLinkContext? world = battle.Spawn.Train.Context?.LifeLinks;
-            if (source.TrueFinalBoss is not { HellforgedBoss: true, WaitedOnRelentless: false, QueuedBossCount: 0 } ||
-                boss.AssetKey != "Boss_Level9_Entropy_Top_V2" || boss.Phase != "Casting" || boss.Room != 2 ||
-                boss.Controller.Groups.Count != 0 || boss.Controller.InitialAction != null || boss.Controller.CurrentGroup != null ||
+            if (source.TrueFinalBoss is not { HellforgedBoss: true, QueuedBossCount: 0 } ||
+                boss.AssetKey != "Boss_Level9_Entropy_Top_V2" || boss.Phase is not ("Casting" or "Relentless") || boss.Room != 2 ||
+                boss.Phase == "Casting" && source.TrueFinalBoss.WaitedOnRelentless ||
+                boss.Controller.Groups.Count != 0 || boss.Controller.InitialAction != null ||
+                boss.Phase == "Casting" && boss.Controller.CurrentGroup != null ||
                 boss.Actions.Count != 0 || battle.ExternalInteractions.Count > 0 || battle.Spawn.ExternalInteractions.Count > 0 ||
                 battle.Spawn.Train.Rooms.Count != 4 || battle.Spawn.Train.Rooms.Where((room, index) => room.RoomIndex != index || room.Preview).Any() ||
                 world == null || LifeLinkModel.Validate(world) != null || world.CalculatingPreview || world.SharedPreviewHpChange != 0 ||
@@ -49,6 +81,8 @@ namespace MonsterTrain2Poju.Model
             }
             if (units.Single(unit => unit.AssetKey == assets[4]).Id != boss.UnitId)
                 return Fail("True-final-boss global controller must belong to the top Entropy body.");
+            if (boss.Phase == "Relentless")
+                return TrueFinalBossRelentlessPhaseModel.Apply(source, preCombat);
             if (preCombat)
             {
                 BossActionControllerResult next = BossActionControllerModel.Apply(boss.Controller, "DecideNext");

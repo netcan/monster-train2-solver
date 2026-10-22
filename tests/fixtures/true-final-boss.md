@@ -482,6 +482,32 @@ KillCamActivated 仍为 false。模型只在该已校准的真终局 HeroTurn �
 原生采集入口增加 `-TrueFinalBossDormantSavagery`，践踏场景另加
 `-TrueFinalBossFrontHealth 5`；均要求 `-OriginalTrueFinalBoss` 和距离 8。
 
+## Hellforged 受控无情期与三层摧毁
+
+`true-final-boss-relentless-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-225849-da644ac9`。第一战斗前在隔离进程克隆
+运行时出怪模式、停止循环出怪并把队列指针移至末尾，再调用 Top 的原生
+`AdvanceToAttackPhase(Relentless)`。前后完整快照独立验证这三项明确控制及
+RNG 不变；持久资源、原始角色、牌组和火炉 80 血均未修改。该项不能当作
+自然阶段切换；原生 Hellforged 仍不会因普通出怪队列耗尽而自行切换。
+
+原生先置等待标记，下一次回合后动作才依次摧毁三层。Savagery 此时处于
+第三层，献祭它会移除五个真终局实体，生命链接和存活全局控制器同时消失。
+终局在外壳进入火炉战斗前中断动作协程，记录保留 `NativeReturned=false`
+和 `TerminalWon=true`，不能伪装为正常返回。终局月相已经推进而回合号仍旧；
+模型在相同边界停下。最终获胜、火炉 61 血，21 个房间阶段、六个列车阶段、
+三个 EndTurn 与完整状态/牌堆/RNG 匹配；四项失败计数全零且原生 `DEPTH-PASS`。
+
+四个阶段边界和 64 条不可变并发分支通过；终局沿用通用比较规则忽略已不可用的
+UI 卡牌规则，仍比较楼层启用状态、完整战斗持久状态和残留控制器。16 条独立
+整场分支从部署根状态出发，在第一战斗前应用一次明确控制，之后不回填原生
+中间快照。销毁入口仍拒绝额外单位、装备、升级、死亡触发器和活动遗物效果。
+此证据不覆盖自然胜局、自然致死伤害、额外友军或存活外壳的火炉战斗。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Relentless -SkipBuild`。
+原生采集入口为 `-OriginalTrueFinalBoss -TrueFinalBossRelentless -BattleDistance 8`，
+另带 `-Policy no-cards -PhysicalSpawnPoints -BranchCardMasks`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

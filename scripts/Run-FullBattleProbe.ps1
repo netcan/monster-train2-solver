@@ -40,6 +40,7 @@ param(
     [switch] $OriginalOuterBossTrial,
     [switch] $OriginalTrueFinalBoss,
     [switch] $TrueFinalBossDormantSavagery,
+    [switch] $TrueFinalBossRelentless,
     [ValidateRange(0, 25)][int] $TrueFinalBossFrontHealth = 0,
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossSpawn,
@@ -687,6 +688,12 @@ if (($TrueFinalBossDormantSavagery -or $TrueFinalBossFrontHealth) -and -not $Ori
     throw 'Dormant Savagery controls require the isolated original true-final-boss route.'
 }
 if ($TrueFinalBossFrontHealth -and -not $TrueFinalBossDormantSavagery) { throw 'Front health control requires Dormant Savagery.' }
+if ($TrueFinalBossRelentless) {
+    if (-not $OriginalTrueFinalBoss -or $TrueFinalBossDormantSavagery -or $OuterBossRelentless) {
+        throw 'Hellforged phase control requires the original TFB route without other phase/health controls.'
+    }
+    $OuterBossPhases = $true
+}
 if ($TrueFinalBossScheduledSpawn) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossPyreBaneTargets) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossHealth) { $TrueFinalBossBirth = $true }
@@ -1335,6 +1342,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_OUTER_BOSS_TRIAL = $(if ($OriginalOuterBossTrial) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_TRUE_FINAL_BOSS = $(if ($OriginalTrueFinalBoss) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DORMANT = $(if ($TrueFinalBossDormantSavagery) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_RELENTLESS = $(if ($TrueFinalBossRelentless) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_FRONT_HEALTH = [string]$TrueFinalBossFrontHealth
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SPAWN = $(if ($TrueFinalBossSpawn) { '1' } else { '0' })

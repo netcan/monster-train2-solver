@@ -3420,6 +3420,7 @@ namespace MonsterTrain2Poju.Probe
 
         private void AdvanceTurn(CombatManager combat)
         {
+            if (fullBattle && TrueFinalBossRelentlessScenario.Prepare()) return;
             if (fullBattle && TrueFinalBossDormantScenario.Prepare()) return;
             if (fullBattle) FullBattleTrace.Active?.BeginEndTurn();
             expectedTurn = combat.GetTurnCount() - initialTurn + 1;
