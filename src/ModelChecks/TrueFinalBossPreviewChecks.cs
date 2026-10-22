@@ -4,10 +4,12 @@ using MonsterTrain2Poju.Model;
 
 internal static class TrueFinalBossPreviewChecks
 {
-    internal static void Native(FixtureValue root, bool roomsOnly = false)
+    internal static void Native(FixtureValue root, bool roomsOnly = false, int prefixStart = 0)
     {
         void Require(bool value, string message) => TrueFinalBossChecks.Require(value, message);
         bool multi = root.GetProperty("Policy").GetString() == "units-and-junk";
+        if (root.TryGetProperty("TrueFinalBossDormantControl", out FixtureValue control) && control.ValueKind != FixtureKind.Null &&
+            control.GetProperty("FrontHealth").GetInt32() == 5) multi = false;
         FixtureValue[] rows = root.GetProperty("TrueFinalBossPreviews").EnumerateArray().ToArray();
         Require(rows.Length == 5 && rows.All(row => row.GetProperty("Actual").ValueKind != FixtureKind.Null), "Missing original UI preview completion.");
         var inputs = new List<TrainCombatState>(); var rules = new List<BattlePlayRules>(); var parents = new List<string>(); var expected = new List<string>();
@@ -57,10 +59,10 @@ internal static class TrueFinalBossPreviewChecks
                     JsonSerializer.Serialize(inputs[selected], ModelJson.Options) == parents[selected], "Concurrent UI preview changed its parent or result.");
             });
             FixtureValue turns = root.GetProperty("Turns");
-            BattleTurnState battle = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState battle = turns[prefixStart].GetProperty("Before").Deserialize<BattleTurnState>()!;
             string parent = JsonSerializer.Serialize(battle, ModelJson.Options);
             BattleTurnState original = battle;
-            for (int index = 0; index < 5; index++)
+            for (int index = prefixStart; index < 5; index++)
             {
                 BattleTurnResult step = BattleTurnModel.EndTurn(battle);
                 BattleTurnState actual = turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -70,6 +72,6 @@ internal static class TrueFinalBossPreviewChecks
             }
             Require(JsonSerializer.Serialize(original, ModelJson.Options) == parent, "The five-turn preview prefix must preserve its root.");
         }
-        Console.WriteLine($"TRUE-FINAL-BOSS-PREVIEW PASS: five original UI previews, {rooms.Length} captured room boundaries including terminal cancellation, full state/context/cards/RNG equality; 64 immutable previews and independent five-EndTurn prefix.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-PREVIEW PASS: five original UI previews, {rooms.Length} captured room boundaries including terminal cancellation, full state/context/cards/RNG equality; 64 immutable previews and independent {5 - prefixStart}-EndTurn prefix.");
     }
 }

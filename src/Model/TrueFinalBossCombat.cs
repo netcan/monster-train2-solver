@@ -6,7 +6,7 @@ namespace MonsterTrain2Poju.Model
     {
         // Native full-route captures include authored physical anchors and the
         // complete aura world. Earlier health-only projections intentionally do
-        // not opt into full combat. Other allied definitions, dormant Savagery and
+        // not opt into full combat. Other allied definitions and
         // Hellforged relentless/destruction require their own calibration.
         internal static bool SupportsAlly(CombatUnit unit) => unit.Team == CombatTeam.Player && !unit.IsPyre &&
             (unit.AssetKey == "TrainStewardBig" && unit.BaseAttack == 8 && unit.MaxHealth == 25 && unit.Size == 3 ||
@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Model
                 int floor = world.Rooms.Single(candidate => candidate.Units.Any(member => member.Id == unit.Id)).RoomIndex;
                 if (unit.Team != CombatTeam.Enemy || unit.Health != actor.Health || unit.MaxHealth != health[index] || unit.Status("lifelink") == null ||
                     actor.OuterBoss != (index >= 2) || actor.LinkedId != (index >= 3 ? bottom : 0) ||
-                    index != 1 && floor != floors[index] || index == 1 && (floor > 2 || unit.Health == 1) ||
+                    index != 1 && floor != floors[index] || index == 1 && floor > 2 ||
                     index >= 2 && (unit.BumpRules?.OuterBoss != true || unit.BumpRules.OuterBossRelentlessPhase ||
                         unit.BumpRules.CastingAnchorSlots?.Count != 4 || unit.BumpRules.RelentlessAnchorSlots?.Count != 4)) return false;
             }

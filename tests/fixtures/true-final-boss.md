@@ -458,6 +458,30 @@ KillCamActivated 仍为 false。模型只在该已校准的真终局 HeroTurn �
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case MultiAllied -SkipBuild`。
 
+## 一血 Savagery 实际攻击与践踏
+
+`true-final-boss-dormant-calibration.mt2f` 与
+`true-final-boss-dormant-trample-calibration.mt2f` 分别来自
+`full-battle-units-and-junk-20261022-222917-f78bc810` 和
+`full-battle-units-and-junk-20261022-222705-876d60dd`。第一战斗前在隔离存档用
+原生 DebuffHP 把 Savagery 降到一血；第二组另把第一层前排乘务员降至五血。
+前后完整快照证明只有记录中的 HP 减少，RNG 不变；资产/起始牌组不改。
+两进程正常退出、败北、受保护文件未变，四项失败计数全零。
+
+第一组包含 73 次原生单位回合，其中 69 次发生在受控边界后，Savagery 五次
+以一血进行攻击。原生友军的两次攻击跳过它，直接攻击后方外壳。第二组 63 次
+单位回合中，59 次发生在边界后，Savagery 四次一血攻击；第一次十点攻击杀死
+五血乘务员并造成五点践踏，后排原始流放者英雄从十血降至五血。普通选取目标
+过滤 Pyre Bane，践踏沿用原生的后继查找；不能把前者过滤规则错误套到践踏。
+
+两组完整列车阶段、五轮 UI 预览、卡牌和 RNG 一致；64 条不可变单位攻击分支
+及 16 条从受控第一战斗边界开始、不回填原生快照的独立败局链均通过。
+该项证明受控边界后的实际战斗，不把人工减血混入部署根状态的自然整场证明。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Dormant,DormantTrample -SkipBuild`。
+原生采集入口增加 `-TrueFinalBossDormantSavagery`，践踏场景另加
+`-TrueFinalBossFrontHealth 5`；均要求 `-OriginalTrueFinalBoss` 和距离 8。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

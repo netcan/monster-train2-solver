@@ -552,7 +552,7 @@ namespace MonsterTrain2Poju.Model
             string? error = Validate(state, linkedHealthOnly: true);
             bool localActor = state.Units.Any(unit => unit.Id == unitId);
             if (state.Units.Any(unit => unit.AssetKey == "Boss_Level9_Savagery_V2" && unit.Health == 1 &&
-                unit.Status("lifelink") != null && unit.Status("pyrebane") != null))
+                unit.Status("lifelink") != null && unit.Status("pyrebane") != null) && !TrueFinalBossCombatModel.Supports(state))
                 error = "Dormant Savagery attack turns require dedicated native combat-target calibration.";
             if (error != null || localActor == (externalActor != null) || externalActor != null && externalActor.Id != unitId)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
@@ -2436,7 +2436,7 @@ namespace MonsterTrain2Poju.Model
                         // Native prunes dead overrides before each strike, then
                         // falls back to normal targeting when none remain.
                         targets = units.Where(unit => unit.Alive && unit.InRoom && unit.Source.Team != actor.Source.Team &&
-                            !unit.Has("stealth") && !unit.Has("untouchable")).ToArray();
+                            !unit.Has("stealth") && !unit.Has("untouchable") && PyreBaneModel.Targetable(unit.Freeze(), inCombat: true)).ToArray();
                         if (targets.Length == 0) continue;
                         if (!sweep) targets = new[] { actor.Has("sniper") ? targets.Last() : targets.First() };
                     }

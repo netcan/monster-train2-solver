@@ -19,6 +19,7 @@ namespace MonsterTrain2Poju.Probe
             public RoomCombatResult Predicted { get; set; } = null!;
             public RoomCombatState? Actual { get; set; }
             public List<int> AttackedTargetIds { get; set; } = new List<int>();
+            public List<int> TrampleTargetIds { get; set; } = new List<int>();
             public string? Difference { get; set; }
         }
         private static IEnumerator Wrap(IEnumerator native, CharacterState actor, int roomIndex)
@@ -56,7 +57,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState attackerState, int roomIndex, ref IEnumerator __result)
             {
-                if ((TrueFinalBossTurnProbe.Enabled && (attackerState.IsTrueFinalBoss() || attackerState.IsPyreHeart()) ||
+                if ((TrueFinalBossTurnProbe.Enabled && (attackerState.IsTrueFinalBoss() || attackerState.IsPyreHeart() || TrueFinalBossDormantScenario.Enabled) ||
                     Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "unit-turn-begin" or "team-turn-begin" or "hit-kill" or "dying-upgrades" or "attack-triggers" or "triggered-status") &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Wrap(__result, attackerState, roomIndex);
@@ -67,10 +68,14 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Prefix(CharacterState __instance, CharacterState.ApplyDamageParams damageParams)
             {
-                if (active == null || damageParams.damageType != Damage.Type.DirectAttack || damageParams.attacker == null ||
+                if (active == null || damageParams.damageType is not (Damage.Type.DirectAttack or Damage.Type.Trample) || damageParams.attacker == null ||
                     AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 FullBattleTrace trace = FullBattleTrace.Active!;
-                if (trace.UnitId(damageParams.attacker) == active.ActorId) active.AttackedTargetIds.Add(trace.UnitId(__instance));
+                if (trace.UnitId(damageParams.attacker) == active.ActorId)
+                {
+                    if (damageParams.damageType == Damage.Type.DirectAttack) active.AttackedTargetIds.Add(trace.UnitId(__instance));
+                    else active.TrampleTargetIds.Add(trace.UnitId(__instance));
+                }
             }
         }
     }

@@ -778,6 +778,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalOuterBossTrialIntro = OriginalOuterBossRoute.TrialIntroControl,
 #if DEVELOPMENT_PROBE
                 OriginalTrueFinalBossRoute = TrueFinalBossBirthProbe.Control,
+                TrueFinalBossDormantControl = TrueFinalBossDormantScenario.Evidence,
 #endif
                 OriginalCarriageJackPrepared = OriginalCarriageJackScenario.Prepared,
                 OriginalTwoChargesOnCardConsumedPrepared = OriginalTwoChargesOnCardConsumedScenario.Prepared,

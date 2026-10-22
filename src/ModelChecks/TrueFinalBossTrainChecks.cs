@@ -10,6 +10,8 @@ internal static class TrueFinalBossTrainChecks
         void Require(bool value, string message) => TrueFinalBossChecks.Require(value, message);
         FixtureValue[] rows = root.GetProperty("TrainPhases").EnumerateArray().ToArray();
         bool multi = root.GetProperty("Policy").GetString() == "units-and-junk";
+        if (root.TryGetProperty("TrueFinalBossDormantControl", out FixtureValue control) && control.ValueKind != FixtureKind.Null &&
+            control.GetProperty("FrontHealth").GetInt32() == 5) multi = false;
         Require(rows.Length == (multi ? 11 : 10), "Missing native true-final-boss train phases.");
         int combat = 0, ascend = 0;
         var inputs = new List<TrainCombatState>(); var parents = new List<string>(); var expected = new List<string>();

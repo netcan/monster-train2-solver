@@ -39,6 +39,8 @@ param(
     [ValidateSet('', 'AllyBuffer', 'Fragile', 'Corrupter')][string] $OriginalOuterBossVariant = '',
     [switch] $OriginalOuterBossTrial,
     [switch] $OriginalTrueFinalBoss,
+    [switch] $TrueFinalBossDormantSavagery,
+    [ValidateRange(0, 25)][int] $TrueFinalBossFrontHealth = 0,
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossSpawn,
     [switch] $TrueFinalBossScheduledSpawn,
@@ -681,6 +683,10 @@ if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $Or
     throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
 }
 if ($TrueFinalBossSpawn) { $TrueFinalBossBirth = $true }
+if (($TrueFinalBossDormantSavagery -or $TrueFinalBossFrontHealth) -and -not $OriginalTrueFinalBoss) {
+    throw 'Dormant Savagery controls require the isolated original true-final-boss route.'
+}
+if ($TrueFinalBossFrontHealth -and -not $TrueFinalBossDormantSavagery) { throw 'Front health control requires Dormant Savagery.' }
 if ($TrueFinalBossScheduledSpawn) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossPyreBaneTargets) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossHealth) { $TrueFinalBossBirth = $true }
@@ -1328,6 +1334,8 @@ $environment = @{
     MT2_PROBE_ORIGINAL_OUTER_BOSS = $OriginalOuterBossVariant
     MT2_PROBE_ORIGINAL_OUTER_BOSS_TRIAL = $(if ($OriginalOuterBossTrial) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_TRUE_FINAL_BOSS = $(if ($OriginalTrueFinalBoss) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_DORMANT = $(if ($TrueFinalBossDormantSavagery) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_FRONT_HEALTH = [string]$TrueFinalBossFrontHealth
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SPAWN = $(if ($TrueFinalBossSpawn) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SCHEDULED_SPAWN = $(if ($TrueFinalBossScheduledSpawn) { '1' } else { '0' })
