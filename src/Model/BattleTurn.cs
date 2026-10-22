@@ -649,6 +649,13 @@ namespace MonsterTrain2Poju.Model
             ScorchStatusResult scorched = ScorchStatusModel.StartTurn(train);
             if (!scorched.Supported) return Unsupported(scorched.UnsupportedReason!);
             train = scorched.State!;
+            // Native drains queued room support effects after drawing and
+            // turn-begin statuses. Initial enemy focus can leave an Eclipse
+            // floor after the global phase refresh; retained spells must then
+            // understand the final selected room, not their pre-spawn floor.
+            CombatContext refreshedHand = CardMoonUpgradeModel.RefreshHand(train.Context!, out string? handMoonError);
+            if (handMoonError != null) return Unsupported(handMoonError);
+            train = WithContext(train, refreshedHand, false);
             spawn = WithTrain(spawn, train, turn, spawn.Rng);
             return Finish(RoomOutcome.Exchanged, train.Context!.QueryFrame?.Energy ?? source.EnergyPerTurn, moon);
 

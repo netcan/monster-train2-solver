@@ -1955,6 +1955,12 @@ if (args.Length == 3 && args[0] == "--player-mixed-conduit-pair-only")
     MixedConduitChecks.PlayerPair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--player-moon-room-turn-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PlayerMoonRoomSpellChecks.TurnBoundary(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--room-moon-spell-upgrades-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3801,8 +3807,14 @@ foreach (string path in args.Where(path => path.EndsWith("room-moon-spell-upgrad
     using var document = ModelJson.ReadFixture(path);
     RoomMoonSpellUpgradeChecks.Native(document.RootElement);
 }
+foreach (string path in args.Where(path => path.EndsWith("player-moon-room-turn-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    PlayerMoonRoomSpellChecks.TurnBoundary(document.RootElement);
+}
 foreach (string path in args.Where(path => path.EndsWith("full-battle-original-moon-card-upgrades-room-mask.mt2f", StringComparison.OrdinalIgnoreCase) ||
-    path.EndsWith("full-battle-original-moon-card-upgrades-room-mask-replay.mt2f", StringComparison.OrdinalIgnoreCase)))
+    path.EndsWith("full-battle-original-moon-card-upgrades-room-mask-replay.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-original-moon-card-upgrades-replay.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);
     OriginalMoonCardUpgradesChecks.Native(document.RootElement);

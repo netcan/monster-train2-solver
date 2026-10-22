@@ -1,7 +1,7 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 902 archives (825 full battles and
-77 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-22): 904 archives (826 full battles and
+78 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 The opposing moon callback pair `full-battle-eclipse-chamber-enemy-callbacks{,-replay}.mt2f`
@@ -43,6 +43,12 @@ eight immutable branches per boundary. The paid pair
 `full-battle-original-moon-card-upgrades-room-mask{,-replay}.mt2f` also wins
 at Pyre80 with sixteen plays/five EndTurns, twenty-one frozen inputs and
 sixteen immutable full model chains. See [room spell upgrades](room-moon-spell-upgrades.md).
+`player-moon-room-turn-calibration.mt2f` retains a failed real player run's
+first EndTurn and queued native hand callback. Complete state/RNG and sixteen
+immutable branches validate the fix for retained Gravity after enemy focus
+leaves Eclipse. The original five-spell baseline is refreshed with complete
+unit masks and a fresh twenty-input replay. The failed player run is not a
+whole-battle acceptance.
 
 The natural Fragile checkpoint is retained in `campaign-progressed-ring8-fragile.zip`
 with seven preceding native wins and thirteen hash-verified restore members.
@@ -1044,9 +1050,16 @@ played/unplayed discard reset, redraw, positive magic-power rescaling, physical
 descend/ascend, Dazed and other upgraded OnCast effects match. Fifteen plays/
 five EndTurns win with all four counters zero and sixteen immutable replay
 chains. Durable authored targets and a thirty-card hand limit keep each effect
-observable. Room overrides, living-unit traits, recast copies and active relic
-combinations need separate witnesses. Binary-only: 38,697 bytes/6,405 nodes,
-SHA-256 `6750bffb1df7e6009188f4dc09ff91d731b025fa54b7035948433ac0239b3396`.
+observable. The archive was refreshed on 2026-10-22 from profile
+`full-battle-units-spells-and-junk-20261022-140415-8aa600d6` with complete
+character phase masks; old captures lack the prior understanding required by
+the strict movement guard. The previous archive remains in Git history.
+Binary-only: 41,030 bytes/6,663 nodes, SHA-256
+`8b30af379ede9a7d06bb6c37da645a92116376774a572daf0d903523a984c04e`.
+The fresh `full-battle-original-moon-card-upgrades-replay.mt2f` validates all
+twenty frozen inputs in another normally exited native process. Room overrides
+now have [separate acceptance](room-moon-spell-upgrades.md); living-unit traits,
+recast copies and active relic combinations remain separate boundaries.
 Use `-OriginalMoonCardUpgrades` and `--original-moon-card-upgrades-only`.
 The 128-state serial/parallel search matches (46 roots, zero unsupported,
 three replayed steps). Focused gate `model-checks-20261019-040704-2ce7f172`

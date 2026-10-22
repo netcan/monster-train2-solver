@@ -52,3 +52,34 @@ This establishes a full controlled battle, not natural-deck or player acceptance
 scripts/Run-FullBattleProbe.ps1 -OriginalMoonCardUpgradesRoomMask -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-room-mask.mt2f
 ```
+
+## Retained spell after enemy focus changes the selected floor
+
+`player-moon-room-turn-calibration.mt2f` extracts a complete native EndTurn and
+one queued hand-resource callback from failed actual player profile
+`full-battle-units-spells-and-junk-20261022-140415-1e378fbe`. That source stops
+after thirteen decisions with a full-state mismatch and exits normally; it is
+explicitly not accepted as a winning battle. The component retains this failure
+provenance instead of relabeling the source as successful.
+
+The native deployment starts on Eclipse floor two at New. EndTurn advances to
+Full, initial enemies focus floor zero, then the native trigger queue refreshes
+the retained hand after drawing/turn-begin statuses. Gravity must switch from
+Exclusive New descend to unmasked Full ascend. The modeled final selected floor
+was already correct, but its retained upgrade still reflected the old floor.
+BattleTurn now refreshes the hand at this post-queue boundary. Complete successor
+state and every RNG match sixteen immutable branches; the independent native
+callback matches its complete before/after contexts as well.
+
+The original unmasked five-spell baseline is also refreshed with captured unit
+masks, retaining source `full-battle-units-spells-and-junk-20261022-140415-8aa600d6`
+(84.13 seconds) and fresh `full-battle-units-spells-and-junk-20261022-140601-c5143a8c`
+(74.08 seconds). Both win at Pyre80 after fifteen plays/five EndTurns, settle,
+exit normally, preserve protected originals and retain four zero failure counters.
+Twenty frozen inputs and sixteen complete immutable chains match. The old archive
+omitted masks required by strict movement validation; it is available in Git
+history. The model guard remains intact. No full regression or Mac package is built.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --player-moon-room-turn-only tests/fixtures/player-moon-room-turn-calibration.mt2f
+```
