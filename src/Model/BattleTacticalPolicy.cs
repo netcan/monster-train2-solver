@@ -14,6 +14,12 @@ namespace MonsterTrain2Poju.Model
             var omitted = new List<UnsupportedActionAttempt>(); unsupported = omitted;
             CombatContext? context = source.Spawn.Train.Context;
             if (context == null || source.PlayRules == null) return null;
+            BattleActionEnumeration? cachedAbilities = null;
+            bool protectedChampion = source.Spawn.Train.Rooms.Any(room =>
+                room.Units.Any(unit => unit.Team == CombatTeam.Enemy && unit.IsBoss == true) &&
+                room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0)
+                    ?.Modifiers?.IsChampion != true &&
+                room.Units.Any(unit => unit.Modifiers?.IsChampion == true && unit.Health > 0 && unit.Ability?.HasAbility == true));
             var choices = context.Cards.Hand.Select(token =>
             {
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == token.DataId);
@@ -26,14 +32,13 @@ namespace MonsterTrain2Poju.Model
             foreach (var choice in choices)
             {
                 CardPlayRule rule = choice.rule!;
-                if (rule.Effects.Any(effect => effect.Type == "FloorRearrange" &&
+                if (protectedChampion && rule.Effects.Any(effect => effect.Type == "FloorRearrange" &&
                     effect.Target == "DropTargetCharacter" && effect.Value == 0))
                 {
                     // A shift ability can temporarily expose its champion. Use
                     // it before a legal tank-restoring card instead of wasting
                     // that card on the tank already standing in front.
-                    BattleActionEnumeration shifts = UnitAbilityModel.EnumerateActivations(source);
-                    omitted.AddRange(shifts.UnsupportedAttempts);
+                    BattleActionEnumeration shifts = Abilities();
                     foreach (SupportedActionCandidate ability in shifts.SupportedCandidates.Where(ExposesChampion))
                     {
                         RoomCombatState room = source.Spawn.Train.Rooms.Single(item =>
@@ -64,9 +69,18 @@ namespace MonsterTrain2Poju.Model
                         omitted.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported tactical-seed action."));
                 }
             }
-            BattleActionEnumeration abilities = UnitAbilityModel.EnumerateActivations(source);
-            omitted.AddRange(abilities.UnsupportedAttempts);
+            BattleActionEnumeration abilities = Abilities();
             return abilities.SupportedCandidates.FirstOrDefault(candidate => !ExposesChampion(candidate) && !EmptyGoldReward(candidate));
+
+            BattleActionEnumeration Abilities()
+            {
+                if (cachedAbilities == null)
+                {
+                    cachedAbilities = UnitAbilityModel.EnumerateActivations(source);
+                    omitted.AddRange(cachedAbilities.UnsupportedAttempts);
+                }
+                return cachedAbilities;
+            }
 
             bool EmptyGoldReward(SupportedActionCandidate candidate)
             {
