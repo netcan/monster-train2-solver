@@ -138,7 +138,7 @@ namespace MonsterTrain2Poju.Model
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng,
                 old.NextUnitId, old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn,
                 old.FirstTreasureRoom, old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds,
-                old.OuterBoss == null ? null : progress);
+                old.OuterBoss == null ? null : progress, queuedTrueFinalBoss: old.QueuedTrueFinalBoss, trueFinalBoss: old.TrueFinalBoss);
             var streams = battle.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                 stream.Name == "BossActions" ? rng : stream.Name == "Battle" ? train.Context!.BattleRng : stream.State)).ToArray();
             return new OuterBossPhaseResult(new OuterBossPhaseState(new BattleTurnState(spawn, battle.Energy, battle.EnergyPerTurn,

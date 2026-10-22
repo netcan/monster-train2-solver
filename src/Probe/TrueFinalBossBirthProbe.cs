@@ -82,6 +82,7 @@ namespace MonsterTrain2Poju.Probe
             observing = true;
             int[] before = Queue(heroes);
             TrueFinalBossSpawnCalibration.Begin(heroes);
+            TrueFinalBossTurnProbe.Begin();
             bool returned = false;
             try { while (native.MoveNext()) yield return native.Current; returned = true; }
             finally
@@ -108,6 +109,7 @@ namespace MonsterTrain2Poju.Probe
                     if (!returned || !pure || route == null || created.Count != 5)
                         throw new InvalidOperationException("Incomplete or impure true-final-boss birth observation.");
                     TrueFinalBossSpawnCalibration.Complete(heroes, returned);
+                    TrueFinalBossTurnProbe.Complete(returned);
                     PyreBaneCalibration.Capture(created, () => Snapshot(heroes));
                     LinkedHealthCalibration.Capture(created, () => Snapshot(heroes));
                     LifeLinkCalibration.Capture(created, () => Snapshot(heroes));
@@ -136,14 +138,14 @@ namespace MonsterTrain2Poju.Probe
         private static class BirthPatch
         {
             private static void Postfix(ref IEnumerator __result, HeroManager __instance)
-            { if (Enabled && !AllGameManagers.Instance.GetSaveManager().PreviewMode) __result = Observe(__result, __instance); }
+            { if (RouteEnabled && !AllGameManagers.Instance.GetSaveManager().PreviewMode) __result = Observe(__result, __instance); }
         }
         [HarmonyPatch(typeof(HeroManager), "CreateHeroState")]
         private static class CreationPatch
         {
             private static void Prefix(CharacterData heroData, ref Action<CharacterState, CharacterData> afterCharacterCreated)
             {
-                if (!Enabled || !observing || AllGameManagers.Instance.GetSaveManager().PreviewMode) return;
+                if (!RouteEnabled || !observing || AllGameManagers.Instance.GetSaveManager().PreviewMode) return;
                 Action<CharacterState, CharacterData> callback = afterCharacterCreated;
                 afterCharacterCreated = (character, usedData) =>
                 {

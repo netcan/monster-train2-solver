@@ -59,6 +59,10 @@ namespace MonsterTrain2Poju.Probe
             if (TrueFinalBossSpawnCalibration.Definitions is IReadOnlyList<EnemyDefinition> finalBosses)
                 definitions = definitions.Concat(finalBosses.SelectMany(actor => actor.Unit.Triggers)
                     .SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)).Distinct().ToArray();
+            if (spawn.QueuedTrueFinalBoss != null || spawn.TrueFinalBoss != null)
+                definitions = definitions.Concat((spawn.QueuedTrueFinalBoss?.Definitions.Select(actor => actor.Unit) ??
+                    spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => spawn.Train.Context?.LifeLinks?.Actors.Any(actor => actor.Id == unit.Id) == true))
+                    .SelectMany(actor => actor.Triggers).SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)).Distinct().ToArray();
             if (spawn.OuterBoss != null)
                 definitions = definitions.Concat(spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Where(unit => unit.Id == spawn.OuterBoss.UnitId).SelectMany(unit => unit.Triggers)

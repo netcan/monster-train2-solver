@@ -248,6 +248,25 @@ Entropy Bot 前；最后一次死亡标记只给最后一个实体。当前仅�
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Death -SkipBuild`。
 
+## 首回合出生调度接入
+
+`true-final-boss-scheduled-spawn-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-203222-86a8609e`，27.17 秒，原生正常退出，受保护文件未变。
+原始五实体、牌组和火炉不改；完整出生调度边界及 64 条并发分支与原生匹配。
+
+`EnemySpawnState` 现携带待出生定义/队列及 Hellforged 标志，出牌、技能、抽牌分支、
+刷怪和回合状态转换均保留这些信息。首回合在普通首波处理后接入完整五实体出生，
+清空队列，安装全局 Top 控制器、三项初始访问记录及零移动速度，并保留三个身体的
+原生锚点数组。未来天灾牌的规则在出生前采集，避免首次抽到时缺少定义。
+
+此组件只接受已校准的首回合原始空场。后续生命周期、攻击调度和终局死亡继续拒绝；
+没有开放玩家入口，也不代表整场支持。
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -TrueFinalBossScheduledSpawn -SkipBuild
+./scripts/Check-TrueFinalBoss.ps1 -Case ScheduledSpawn -SkipBuild
+```
+
 ## 原生控制器与回合前后动作阶段
 
 `true-final-boss-controller-calibration.mt2f` 与 `true-final-boss-phase-calibration.mt2f`

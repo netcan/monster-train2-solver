@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--true-final-boss-scheduled-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossScheduledChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] is "--true-final-boss-phases-only" or "--true-final-boss-controllers-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3885,6 +3892,11 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-spawn-
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossSpawnChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-scheduled-spawn-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossScheduledChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-birth-calibration", StringComparison.OrdinalIgnoreCase)))
 {

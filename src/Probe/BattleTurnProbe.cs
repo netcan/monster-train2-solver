@@ -162,6 +162,8 @@ namespace MonsterTrain2Poju.Probe
             });
             if (state.Spawn.OuterBoss != null) result["OuterBoss"] = JToken.FromObject(state.Spawn.OuterBoss);
             if (state.Spawn.QueuedOuterBoss != null) result["QueuedOuterBoss"] = JToken.FromObject(state.Spawn.QueuedOuterBoss);
+            if (state.Spawn.QueuedTrueFinalBoss != null) result["QueuedTrueFinalBoss"] = JToken.FromObject(state.Spawn.QueuedTrueFinalBoss);
+            if (state.Spawn.TrueFinalBoss != null) result["TrueFinalBoss"] = JToken.FromObject(state.Spawn.TrueFinalBoss);
             return result;
         }
 

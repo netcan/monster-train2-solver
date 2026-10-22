@@ -4,6 +4,19 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
+    public sealed class TrueFinalBossSpawnDefinition
+    {
+        public IReadOnlyList<EnemyDefinition> Definitions { get; }
+        public IReadOnlyList<int> QueuedBosses { get; }
+        public OuterBossProgress Controller { get; }
+        public IReadOnlyList<string> ExternalInteractions { get; }
+        public TrueFinalBossSpawnDefinition(IReadOnlyList<EnemyDefinition> definitions, IReadOnlyList<int> queuedBosses,
+            OuterBossProgress controller, IReadOnlyList<string> externalInteractions)
+        {
+            Definitions = Array.AsReadOnly(definitions.ToArray()); QueuedBosses = Array.AsReadOnly(queuedBosses.ToArray());
+            Controller = controller; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
+        }
+    }
     // The entire native DoTrueFinalBossSpawning boundary, including creation,
     // room placement, OnSpawn and only then Entropy's shared-health links.
     public sealed class TrueFinalBossSpawnState
@@ -34,6 +47,42 @@ namespace MonsterTrain2Poju.Model
     }
     public static class TrueFinalBossSpawningModel
     {
+        // Integrate the calibrated creation boundary with the global controller
+        // and persistent HeroManager flags carried through subsequent turns.
+        public static BattleTurnResult ApplyQueued(BattleTurnState source)
+        {
+            BattleTurnResult Fail(string reason) => new BattleTurnResult(null, RoomOutcome.Unsupported, reason);
+            TrueFinalBossSpawnDefinition? queued = source.Spawn.QueuedTrueFinalBoss;
+            if (queued == null || source.Spawn.Turn != 1 || source.Spawn.Phase != 1 ||
+                source.Spawn.TrueFinalBoss != null || source.Spawn.OuterBoss != null ||
+                queued.Controller.AssetKey != "Boss_Level9_Entropy_Top_V2" || queued.Controller.UnitId != 0 ||
+                queued.Controller.Room != -1 || queued.Controller.Phase != "Casting" || queued.Controller.Controller.Groups.Count != 0 ||
+                queued.Controller.Actions.Count != 0)
+                return Fail("Missing original queued true-final-boss definition or empty global controller.");
+            TrueFinalBossSpawnResult born = Apply(new TrueFinalBossSpawnState(source, queued.Definitions, queued.QueuedBosses,
+                0, new[] { 0, 0, 0, 0 }, queued.ExternalInteractions));
+            if (!born.Supported) return Fail(born.UnsupportedReason!);
+            BattleTurnState battle = born.State!.Battle; EnemySpawnState old = battle.Spawn;
+            TrainCombatState train = old.Train;
+            train = EnchantmentWorldModel.Rebase(new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(
+                room.RoomIndex, room.Deployment, room.Units.Select(unit => unit.BumpRules?.OuterBoss == true
+                    ? unit.WithBumpRules(queued.Definitions.Single(definition => definition.Unit.AssetKey == unit.AssetKey).Unit.BumpRules!) : unit).ToArray(),
+                room.ExternalInteractions, train.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
+                train.Movement, train.EnemySlotsPerRoom, train.Context));
+            BossActionControllerResult initial = BossActionControllerModel.Apply(queued.Controller.Controller, "DecideInitial");
+            if (!initial.Supported) return Fail(initial.UnsupportedReason!);
+            OuterBossProgress authored = queued.Controller;
+            var controller = new OuterBossProgress(born.State.OuterBossId, authored.AssetKey, authored.Phase,
+                authored.ValidAttackPhases, authored.BaseCanAttack, 2, 0, new int[3], initial.State!, authored.Actions, authored.DestroyActions);
+            var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng,
+                old.NextUnitId, old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn,
+                old.FirstTreasureRoom, old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds,
+                controller, trueFinalBoss: new TrueFinalBossPhaseFlags(true, false, 0));
+            return new BattleTurnResult(new BattleTurnState(spawn, battle.Energy, battle.EnergyPerTurn, battle.DrawPerTurn,
+                battle.ForgePoints, battle.DragonsHoard, battle.MoonPhase, battle.RngStreams, battle.OtherPiles, battle.ExternalInteractions,
+                battle.PlayRules, battle.BattlePreviewEnabled, battle.UiRngIsolated, battle.CanonicalDecisionReferences,
+                battle.CanonicalPhysicalReferences, battle.SelectedRoom, battle.MoonPhaseTrackingActive), RoomOutcome.Exchanged);
+        }
         private static readonly string[] Assets = { "Boss_Level9_Dominion_V2", "Boss_Level9_Savagery_V2",
             "Boss_Level9_Entropy_Bot_V2", "Boss_Level9_Entropy_Mid_V2", "Boss_Level9_Entropy_Top_V2" };
         private static readonly int[] Health = { 1555, 2750, 3500, 3500, 3500 };

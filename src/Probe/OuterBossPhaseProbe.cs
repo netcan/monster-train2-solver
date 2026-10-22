@@ -14,13 +14,15 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_PHASES") == "1";
         internal static bool TurnsEnabled => PlayerOuterBossProbe.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_TURNS") == "1";
-        internal static bool CaptureAnchors => Enabled || TurnsEnabled;
+        internal static bool CaptureAnchors => Enabled || TurnsEnabled || TrueFinalBossTurnProbe.Enabled;
         internal static bool ModelsLiveBoss
         {
             get
             {
                 CharacterState? boss = AllGameManagers.Instance?.GetHeroManager()?.GetOuterTrainBossCharacter();
-                return TurnsEnabled && boss != null && boss.IsAlive && !boss.IsDestroyed && Supports(boss.GetSourceCharacterData());
+                return boss != null && boss.IsAlive && !boss.IsDestroyed &&
+                    (TurnsEnabled && Supports(boss.GetSourceCharacterData()) || TrueFinalBossTurnProbe.Enabled &&
+                        boss.IsTrueFinalBoss() && boss.GetSourceCharacterData().GetAssetKey() == "Boss_Level9_Entropy_Top_V2");
             }
         }
         private static bool ForceRelentless => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS") == "1";

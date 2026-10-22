@@ -30,6 +30,12 @@ namespace MonsterTrain2Poju.Probe
         internal static void Begin(HeroManager heroes)
         {
             if (!Enabled) return;
+            IReadOnlyList<EnemyDefinition> definitions = CaptureDefinitions(heroes, out IReadOnlyList<string> interactions);
+            Definitions = definitions;
+            before = Capture(heroes, definitions, interactions); rngBefore = Rng();
+        }
+        internal static IReadOnlyList<EnemyDefinition> CaptureDefinitions(HeroManager heroes, out IReadOnlyList<string> externalInteractions)
+        {
             SpawnPatternData pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
             var interactions = new List<string>();
             if (AllGameManagers.Instance.GetSaveManager().GetCovenantsForSpawnPattern().Count > 0)
@@ -43,8 +49,8 @@ namespace MonsterTrain2Poju.Probe
                     raw.ExternalInteractions.Where(value => value != "Spawned outer Boss actions" &&
                         value != "Spawned status has custom relentless removal").ToArray(), raw.CompanionBoss);
             }).ToArray();
-            Definitions = definitions;
-            before = Capture(heroes, definitions, interactions); rngBefore = Rng();
+            externalInteractions = interactions;
+            return definitions;
         }
         internal static void Complete(HeroManager heroes, bool nativeReturned)
         {

@@ -52,6 +52,7 @@ namespace MonsterTrain2Poju.Probe
             var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
             OuterBossProgress? outerBoss = OuterBossPhaseProbe.ModelsLiveBoss ? OuterBossPhaseProbe.CaptureProgress() : null;
             OuterBossSpawnDefinition? queuedOuterBoss = null;
+            TrueFinalBossSpawnDefinition? queuedTrueFinalBoss = TrueFinalBossTurnProbe.CaptureQueued(heroes);
             if ((OuterBossBirthProbe.Enabled || PlayerOuterBossProbe.Enabled) && heroes.GetOuterTrainBossCharacter() == null &&
                 managers.GetCombatManager().GetTurnCount() <= 1 && pattern.GetBossType() != SpawnPatternData.BossType.None)
             {
@@ -62,7 +63,7 @@ namespace MonsterTrain2Poju.Probe
                     if (candidate.Actor.ExternalInteractions.Count == 0) queuedOuterBoss = candidate;
                 }
             }
-            if (pattern.GetBossType() != SpawnPatternData.BossType.None && !ignoreOuterBossSpawnInteraction && outerBoss == null && queuedOuterBoss == null)
+            if (pattern.GetBossType() != SpawnPatternData.BossType.None && !ignoreOuterBossSpawnInteraction && outerBoss == null && queuedOuterBoss == null && queuedTrueFinalBoss == null)
                 interactions.Add("Outer or queued final boss spawning");
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) interactions.Add(relicError);
@@ -104,7 +105,8 @@ namespace MonsterTrain2Poju.Probe
                 (bool)AccessTools.Field(typeof(HeroManager), "treasureAndTraitorCharactersEnabled").GetValue(heroes),
                 easy ? 1 : 2, easy ? 1 : 0, managers.GetCombatManager()!.GetTurnCount(), interactions,
                 canonicalDecisionReferences: canonicalReferences,
-                pendingDestroyedUnitIds: canonicalReferences ? null : trace.PendingDestroyedUnitIds(), outerBoss: outerBoss, queuedOuterBoss: queuedOuterBoss);
+                pendingDestroyedUnitIds: canonicalReferences ? null : trace.PendingDestroyedUnitIds(), outerBoss: outerBoss, queuedOuterBoss: queuedOuterBoss,
+                queuedTrueFinalBoss: queuedTrueFinalBoss, trueFinalBoss: TrueFinalBossTurnProbe.CaptureFlags(heroes));
         }
 
         internal static EnemyDefinition Definition(CharacterData data) => Definition(data, false);

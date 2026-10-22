@@ -149,7 +149,7 @@ namespace MonsterTrain2Poju.Model
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping,
                 old.Rng, train.Context?.NextUnitId ?? old.NextUnitId, old.Treasures, old.TreasuresRemaining,
                 old.TreasureEnabled, old.FirstTreasureTurn, old.FirstTreasureRoom, old.Turn, old.ExternalInteractions,
-                old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds, old.OuterBoss, old.QueuedOuterBoss);
+                old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds, old.OuterBoss, old.QueuedOuterBoss, old.QueuedTrueFinalBoss, old.TrueFinalBoss);
             BattleRngStream[] streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                 stream.Name == "Battle" ? train.Context!.BattleRng : stream.State)).ToArray();
             return new BattleTurnResult(new BattleTurnState(spawn, source.Energy, source.EnergyPerTurn,
@@ -462,6 +462,22 @@ namespace MonsterTrain2Poju.Model
                     string? birthError = ResolveOuterBossBirth(moon);
                     if (birthError != null) return Unsupported(birthError);
                 }
+                if (spawn.QueuedTrueFinalBoss != null)
+                {
+                    var streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
+                        stream.Name == "Battle" ? train.Context!.BattleRng : stream.Name == "CardDraw" ? train.Context!.Cards.Rng :
+                        stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
+                    var boundary = new BattleTurnState(WithTrain(spawn, train, turn, spawn.Rng), train.Context!.QueryFrame?.Energy ?? 0,
+                        source.EnergyPerTurn, source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints,
+                        source.DragonsHoard, moon, streams, otherPiles, source.ExternalInteractions, outputPlayRules,
+                        source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences,
+                        source.CanonicalPhysicalReferences, train.Context.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom,
+                        source.MoonPhaseTrackingActive);
+                    BattleTurnResult born = TrueFinalBossSpawningModel.ApplyQueued(boundary);
+                    if (!born.Supported) return Unsupported(born.UnsupportedReason!);
+                    spawn = born.State!.Spawn; train = spawn.Train;
+                    otherPiles = born.State.OtherPiles.ToArray(); outputPlayRules = born.State.PlayRules;
+                }
                 TrainCombatResult initialOrder = EnchantmentWorldModel.UpdateAll(train);
                 if (!initialOrder.Supported) return Unsupported(initialOrder.UnsupportedReason!);
                 train = initialOrder.State!;
@@ -750,7 +766,7 @@ namespace MonsterTrain2Poju.Model
                     moonPhase, streams, otherPiles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled,
                     source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                     train.Context.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom, source.MoonPhaseTrackingActive);
-                OuterBossPhaseResult action = OuterBossPhaseModel.Apply(new OuterBossPhaseState(boundary, spawn.OuterBoss!), preCombat);
+                OuterBossPhaseResult action = OuterBossPhaseModel.Apply(new OuterBossPhaseState(boundary, spawn.OuterBoss!, spawn.TrueFinalBoss), preCombat);
                 if (!action.Supported) return action.UnsupportedReason;
                 TrainCombatState prior = train;
                 spawn = action.State!.Battle.Spawn; train = spawn.Train;
@@ -802,7 +818,8 @@ namespace MonsterTrain2Poju.Model
         private static EnemySpawnState WithTrain(EnemySpawnState spawn, TrainCombatState train, int turn, UnityRng rng) =>
             new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, rng, train.Context?.NextUnitId ?? spawn.NextUnitId,
                 spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
-                spawn.FirstTreasureRoom, turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds, spawn.OuterBoss, spawn.QueuedOuterBoss);
+                spawn.FirstTreasureRoom, turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds, spawn.OuterBoss, spawn.QueuedOuterBoss,
+                spawn.QueuedTrueFinalBoss, spawn.TrueFinalBoss);
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
         private static BattleTurnResult Unsupported(string reason) => new BattleTurnResult(null, RoomOutcome.Unsupported, reason);

@@ -256,7 +256,7 @@ namespace MonsterTrain2Poju.Probe
             bool outerBossHere = outerBoss != null && outerBoss.IsAlive && outerBoss.GetCurrentRoomIndex() == room.GetRoomIndex();
             if (outerBossHere && !includeOuterBossForBump && !OuterBossPhaseProbe.ModelsLiveBoss)
                 interactions.Add("Outer train boss");
-            if (heroes.HasNextBoss()) interactions.Add("Queued final bosses");
+            if (heroes.HasNextBoss() && !TrueFinalBossTurnProbe.HasQueuedBoss) interactions.Add("Queued final bosses");
             var characters = new List<CharacterState>();
             room.AddCharactersToList(characters, Team.Type.Heroes);
             room.AddCharactersToList(characters, Team.Type.Monsters);
