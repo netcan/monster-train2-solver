@@ -41,7 +41,7 @@ internal static class TrueFinalBossTrainChecks
         TrainCombatState allied = EnchantmentWorldModel.Rebase(new TrainCombatState(inputs[2].Rooms.Select(room => room.RoomIndex == 0 ?
             room.WithUnits(room.Units.Concat(new[] { ally }).ToArray()) : room).ToArray(), inputs[2].Movement, inputs[2].EnemySlotsPerRoom, inputs[2].Context));
         Require(!TrainCombatModel.ResolveCombat(allied).Supported, "No-allied-unit train proof must not admit uncalibrated friendly callbacks.");
-        Console.WriteLine($"TRUE-FINAL-BOSS-TRAIN PASS: {combat} native train combats and {ascend} ascents; units, physical points, shared context/cards/RNG and 64 immutable concurrent branches match; unprepared preview and allied units remain guarded.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-TRAIN PASS: {combat} native train combats and {ascend} ascents; units, physical points, shared context/cards/RNG and 64 immutable concurrent branches match; unprepared preview and uncalibrated allies remain guarded.");
     }
 
     internal static void RequirePreviewGuarded(TrainCombatState state)

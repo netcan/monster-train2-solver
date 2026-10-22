@@ -228,7 +228,7 @@ internal static class BattleTurnChecks
         fixture.TryGetProperty("DecisionPlayRulesSnapshotsFresh", out FixtureValue freshRules) && freshRules.GetBoolean() ||
         !HasRoomEnabledSnapshotConflict(fixture);
 
-    private static BattleTurnState RunIndependentChain(BattleTurnState root, FixtureValue oracle, bool compareRoomEnabled)
+    internal static BattleTurnState RunIndependentChain(BattleTurnState root, FixtureValue oracle, bool compareRoomEnabled)
     {
         // All following states come from the model. Native Before/Predicted states are never injected.
         BattleSimulationResult simulation = BattleSimulator.ResolveNoMoreCards(root);

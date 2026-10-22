@@ -69,6 +69,6 @@ internal static class TrueFinalBossPreviewChecks
             }
             Require(JsonSerializer.Serialize(original, ModelJson.Options) == parent, "The five-turn preview prefix must preserve its root.");
         }
-        Console.WriteLine("TRUE-FINAL-BOSS-PREVIEW PASS: five original UI previews, sixteen executed rooms and one cancelled room, full state/context/cards/RNG equality; 64 immutable previews and independent five-EndTurn prefix; no allied units.");
+        Console.WriteLine("TRUE-FINAL-BOSS-PREVIEW PASS: five original UI previews, sixteen executed rooms and one cancelled room, full state/context/cards/RNG equality; 64 immutable previews and independent five-EndTurn prefix.");
     }
 }

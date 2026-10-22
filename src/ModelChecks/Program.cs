@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--true-final-boss-allied-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossAlliedChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--terminal-death-only")
 {
     TerminalDeathChecks.Run();
@@ -3987,6 +3994,11 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-unit-t
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossUnitTurnChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-allied-battle-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossAlliedChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-full-battle-calibration", StringComparison.OrdinalIgnoreCase)))
 {

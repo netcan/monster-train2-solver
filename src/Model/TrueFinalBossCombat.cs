@@ -6,8 +6,14 @@ namespace MonsterTrain2Poju.Model
     {
         // Native full-route captures include authored physical anchors and the
         // complete aura world. Earlier health-only projections intentionally do
-        // not opt into full combat. Allied units, dormant Savagery and
+        // not opt into full combat. Other allied definitions, dormant Savagery and
         // Hellforged relentless/destruction require their own calibration.
+        internal static bool SupportsAlly(CombatUnit unit) => unit.Team == CombatTeam.Player && !unit.IsPyre &&
+            unit.AssetKey == "TrainStewardBig" && unit.BaseAttack == 8 && unit.MaxHealth == 25 &&
+            unit.Size == 3 && unit.CanAttack && !unit.EndsBattleOnDeath && unit.Ability == null &&
+            unit.Triggers.Count == 0 && unit.EquipmentCards.Count == 0 &&
+            unit.Modifiers?.Upgrades.Count == 0 && unit.Statuses.All(status => status.Id == "corruption");
+
         internal static bool Supports(RoomCombatState room)
         {
             LifeLinkContext? links = room.Context?.LifeLinks;
@@ -19,7 +25,8 @@ namespace MonsterTrain2Poju.Model
                 world.Rooms.Where((floor, index) => floor.RoomIndex != index || floor.Preview != room.Preview || floor.ExternalInteractions.Count > 0).Any()) return false;
             CombatUnit[] units = world.Rooms.SelectMany(floor => floor.Units).ToArray();
             int livingPyres = units.Count(unit => unit.IsPyre && unit.Health > 0);
-            if (units.Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre) || livingPyres > 1 || !room.Preview && livingPyres != 1)
+            if (units.Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && !SupportsAlly(unit)) ||
+                livingPyres > 1 || !room.Preview && livingPyres != 1)
                 return false;
             string[] assets = { "Boss_Level9_Dominion_V2", "Boss_Level9_Savagery_V2", "Boss_Level9_Entropy_Bot_V2",
                 "Boss_Level9_Entropy_Mid_V2", "Boss_Level9_Entropy_Top_V2" };

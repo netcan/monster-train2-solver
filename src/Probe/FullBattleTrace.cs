@@ -591,7 +591,7 @@ namespace MonsterTrain2Poju.Probe
                         captureContext: false).Units.FirstOrDefault(unit => unit.IsPyre) : null;
                     bool requiresTowerRoster = before.Units.SelectMany(unit => unit.Triggers)
                         .SelectMany(trigger => trigger.Effects)
-                        .Any(effect => (effect.Action ?? effect.UnitUpgrade)?.Target == "Tower");
+                        .Any(effect => (effect.Action ?? effect.UnitUpgrade)?.Target is "Tower" or "FrontInAllRooms");
                     TrainCombatState? beforeTrain = requiresTowerRoster ? CaptureTrain() : null;
                     (int RoomIndex, CombatUnit Unit)[] externalTargets = beforeTrain?.Rooms
                         .Where(item => item.RoomIndex != room.GetRoomIndex())

@@ -420,6 +420,25 @@ KillCamActivated 仍为 false。模型只在该已校准的真终局 HeroTurn �
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Battle -SkipBuild`。
 
+## 单乘务员付费整场校准
+
+`true-final-boss-allied-battle-calibration.mt2f` 来自
+`full-battle-steward-once-20261022-220416-f60c06b3`。原始场景、五 Boss、牌组和
+火炉定义未改；只打出一张原生 `TrainStewardBig`（8/25、三容量），其余空过。
+原生正常退出、败北，受保护文件未变，采集失败/差异/unsupported/待完成全零。
+
+支配者的 PostCombat 使第一层乘务员获得五层腐化，保持其所属楼层；采集器
+同时记录所有楼层前排的外部目标。乘务员在第一次实际战斗死亡，回到耗尽牌堆。
+预览死亡仅加入忽略名单，保留主物理站位；待命牌谓词在预览内报告死亡，
+预览结束后恢复主状态。完整房间/整列上下文、牌堆、物理站位与 RNG 均匹配。
+
+一个付费动作、六次 EndTurn、五次完整预览、十个列车阶段及 64 条阶段并发
+分支通过。另从出牌前根状态执行原生付费动作，再独立推演整场，16 条并发
+整局逐步一致，不注入后续原生 Before。其他友军、外层预览伤害、一血 Savagery、
+无情期、Boss 死亡与玩家入口仍需独立验收。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Allied -SkipBuild`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

@@ -100,8 +100,8 @@ namespace MonsterTrain2Poju.Model
             if (source.Definitions.Count != 5 || !source.QueuedBosses.OrderBy(value => value).SequenceEqual(new[] { 0, 1, 2 }) ||
                 source.OuterBossId != 0 || source.RoomBossIds.Count != 4 || source.RoomBossIds.Any(value => value != 0) ||
                 train.Rooms.Count != 4 || train.Rooms.Where((room, index) => room.RoomIndex != index).Any() ||
-                train.Movement.Count != 0 || train.Rooms.SelectMany(room => room.Units).Count() != 1 ||
-                train.Rooms.Any(room => room.Preview || room.Units.Any(unit => !unit.IsPyre) ||
+                train.Movement.Count != 0 || train.Rooms.SelectMany(room => room.Units).Count(unit => unit.IsPyre) != 1 ||
+                train.Rooms.Any(room => room.Preview || room.Units.Any(unit => !unit.IsPyre && !TrueFinalBossCombatModel.SupportsAlly(unit)) ||
                     room.ExternalInteractions.Any(value => value != "Queued final bosses")) ||
                 battle.PlayRules == null || battle.PlayRules.Rooms.Any(room => !room.Enabled) ||
                 battle.MoonPhaseTrackingActive == true || battle.ExternalInteractions.Count > 0 || old.ExternalInteractions.Count > 0 ||

@@ -242,7 +242,7 @@ namespace MonsterTrain2Poju.Model
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
                     externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : pyreRoomIndex,
                     externalTargets: requiresTowerTargets ? externalTargets : null);
-                if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                if (!result.Supported) return Unsupported("Train combat floor " + index + ": " + result.UnsupportedReason);
                 rooms[index] = result.State!; results.Add(result);
                 context = result.State!.Context;
                 if (externalPyre != null)
@@ -260,7 +260,7 @@ namespace MonsterTrain2Poju.Model
                     foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
                     {
                         var centered = BattleSpawnPointModel.Apply(context.SpawnPoints!, WithContext(rooms[index], context), "Compact", team);
-                        if (!centered.Supported) return Unsupported(centered.Error!);
+                        if (!centered.Supported) return Unsupported("After train combat floor " + index + ": " + centered.Error);
                         context = context.WithSpawnPoints(centered.State!);
                     }
                     rooms[index] = WithContext(rooms[index], context);

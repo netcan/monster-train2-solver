@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Death')][string[]] $Case = @('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Death'),
+    [ValidateSet('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'Death')][string[]] $Case = @('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'Death'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -44,6 +44,7 @@ foreach ($item in $Case) {
     elseif ($item -in @('PostCombat', 'Train')) { 'true-final-boss-post-combat-calibration.mt2f' }
     elseif ($item -eq 'Preview') { 'true-final-boss-preview-calibration.mt2f' }
     elseif ($item -eq 'Battle') { 'true-final-boss-full-battle-calibration.mt2f' }
+    elseif ($item -eq 'Allied') { 'true-final-boss-allied-battle-calibration.mt2f' }
     elseif ($item -eq 'Phases') { 'true-final-boss-phase-calibration.mt2f' }
     elseif ($item -eq 'ExhaustedPhases') { 'true-final-boss-exhausted-phase-calibration.mt2f' }
     else { 'true-final-boss-damage-calibration.mt2f' }
@@ -63,6 +64,7 @@ foreach ($item in $Case) {
     elseif ($item -eq 'Train') { '--true-final-boss-train-only' }
     elseif ($item -eq 'Preview') { '--true-final-boss-preview-only' }
     elseif ($item -eq 'Battle') { '--true-final-boss-battle-only' }
+    elseif ($item -eq 'Allied') { '--true-final-boss-allied-only' }
     elseif ($item -in @('Phases', 'ExhaustedPhases')) { '--true-final-boss-phases-only' }
     else { '--true-final-boss-damage-only' }
     Invoke-TrueFinalBossArchive $archive $mode

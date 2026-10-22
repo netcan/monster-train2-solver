@@ -516,7 +516,8 @@ namespace MonsterTrain2Poju.Model
                 if (state.Context.Enchantments?.AutomaticLifecycle != true || state.Preview)
                     return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                         "True-final-boss post-combat effects require the captured non-preview whole train.");
-                if (state.Context.Enchantments.Rooms.SelectMany(room => room.Units).Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre))
+                if (state.Context.Enchantments.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && !TrueFinalBossCombatModel.SupportsAlly(unit)))
                     return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                         "True-final-boss post-combat with allied units requires native cross-floor callback calibration.");
                 targets = state.Context.Enchantments.Rooms.Where(room => room.RoomIndex != state.RoomIndex)
@@ -3057,6 +3058,9 @@ namespace MonsterTrain2Poju.Model
 
             private void RemovePhysicalPoint(WorkingUnit unit)
             {
+                // Native MonsterManager's preview branch runs InnerCharacterDeath
+                // and adds the unit to its ignore list; it keeps the primary point.
+                if (source.Preview && context?.LifeLinks != null) return;
                 unit.Destroyed = true;
                 if (context != null) context = ConduitModel.Change(context, unit.RoomIndex, unit.Freeze(), source.Preview, remove: true);
                 if (context?.SpawnPoints == null) return;
@@ -4943,10 +4947,26 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (action.Type == "AddStatus")
                 {
+                    EnchantmentWorld? physicalWorld = context?.Enchantments;
                     RoomCombatResult applied = TriggeredStatusModel.Apply(RetainedStatusRoom(actor, targets.UnitIds), actor.Source.Id, effect, targets.UnitIds);
                     if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
                     context = applied.State!.Context;
                     foreach (CombatUnit changed in applied.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);
+                    // The retained status scope includes remote targets so native
+                    // status callbacks can inspect them. It is not a room move.
+                    // Restore their physical membership before the next aura sync.
+                    int[] remote = targets.UnitIds.Where(externalTurnActorIds.Contains).ToArray();
+                    if (remote.Length > 0 && physicalWorld != null && context?.Enchantments is EnchantmentWorld world)
+                    {
+                        var changed = units.Where(unit => remote.Contains(unit.Source.Id)).ToDictionary(unit => unit.Source.Id, unit => unit.Freeze());
+                        var rooms = world.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
+                            room.Units.Where(unit => !changed.ContainsKey(unit.Id)).Concat(physicalWorld.Rooms.Single(original =>
+                                original.RoomIndex == room.RoomIndex).Units.Where(unit => changed.ContainsKey(unit.Id))
+                                .Select(unit => changed[unit.Id])).ToArray(), room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray();
+                        context = context.WithEnchantments(new EnchantmentWorld(rooms, world.Movement, world.EnemySlotsPerRoom,
+                            world.RetainedUnits.Where(unit => !changed.ContainsKey(unit.Unit.Id)).ToArray(), world.EnchanterIds,
+                            world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle));
+                    }
                     foreach (QueuedCharacterTrigger callback in applied.PendingCallbacks) QueueCallback(callback);
                     foreach (CombatEvent item in applied.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
                     return true;
@@ -5319,7 +5339,9 @@ namespace MonsterTrain2Poju.Model
                 if (context != null && units.Any(unit => unit.Alive && unit.InRoom &&
                     unit.Source.Modifiers?.SelfAttackRules?.Any(rule => rule.Type == "RoomStateSelfDamagePerGoldModifier") == true))
                     context = context.WithStatistics(context.LiveStatistics);
-                if (!source.Preview && context != null)
+                // The native standby predicate observes preview deaths too;
+                // the outer preview transaction restores primary card piles.
+                if (context != null && (!source.Preview || context.LifeLinks != null))
                     context = UnitStandbyModel.MarkDead(context, units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray());
                 var removedIds = new HashSet<int>(units.Where(unit => !unit.Alive || unit.Removed || unit.Despawned).Select(unit => unit.Source.Id));
                 var localIds = units.Where(unit => !externalTurnActorIds.Contains(unit.Source.Id))
