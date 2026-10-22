@@ -4,6 +4,80 @@ using MonsterTrain2Poju.Model;
 
 internal static class PlayerMoonRoomSpellChecks
 {
+    internal static void Pair(FixtureValue source, FixtureValue replay)
+    {
+        RollingAdviceChecks.FrozenPair(source, replay, calibration: "original-moon-card-upgrades");
+        BattleAdviceChecks.Native(source, requireBoss: false, calibration: "original-moon-card-upgrades");
+        int traits = 0, exclusive = 0, additive = 0, maskedCasts = 0, eclipseCasts = 0, waits = 0;
+        var spells = new HashSet<string>();
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            Require(fixture.GetProperty("OriginalMoonCardUpgradesRoomMask").GetBoolean() &&
+                fixture.GetProperty("NativeWon").GetBoolean(), "Missing winning original moon spell/room player scene.");
+            EnemySpawningChecks.Native(fixture);
+            waits += fixture.GetProperty("NativeEffectSettlement").GetProperty("PendingEffectWaits").GetInt32();
+            foreach (FixtureValue row in fixture.GetProperty("RollingDecisions").EnumerateArray())
+            {
+                BattleTurnState before = row.GetProperty("Root").Deserialize<BattleTurnState>()!;
+                foreach (string boundary in new[] { "Root", "Actual" })
+                {
+                    CombatContext context = row.GetProperty(boundary).Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
+                    int phase = context.QueryFrame!.MoonPhase!.Value;
+                    int mask = Mask(context, context.QueryFrame.SelectedRoomIndex!.Value);
+                    foreach (CardToken token in context.Cards.Hand)
+                    {
+                        CardInstanceState card = context.FindCard(token.InstanceId)!;
+                        var definitions = card.MaskDescriptor?.SourceTraits?.Where(trait => trait.Type == CardMoonUpgradeModel.Trait).ToArray();
+                        if (definitions == null || definitions.Length == 0) continue;
+                        var runtime = card.MaskDescriptor!.BaseTraits.Where(trait => trait.RuntimeType == CardMoonUpgradeModel.Trait).ToArray();
+                        Require(runtime.Length == definitions.Length, "Player moon spell source/runtime traits differ.");
+                        for (int index = 0; index < definitions.Length; index++)
+                        {
+                            CardSourceTrait definition = definitions[index];
+                            int effective = definition.Int2 == 1 && mask != 0 ? mask : phase | mask;
+                            Require(runtime[index].MoonPhaseUpgradeState!.Active == ((definition.Int & effective) != 0),
+                                "Settled player hand retained the wrong room/global moon upgrade.");
+                            traits++;
+                            if (phase == 2 && mask == 1) { if (definition.Int2 == 1) exclusive++; else additive++; }
+                        }
+                    }
+                }
+                if (row.GetProperty("IsEndTurn").GetBoolean()) continue;
+                PlayCardAction action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                CardInstanceState played = before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!;
+                CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == played.DataId);
+                if (rule.AssetKey == "EclipseChamber") eclipseCasts++;
+                if (played.MaskDescriptor?.SourceTraits?.Any(trait => trait.Type == CardMoonUpgradeModel.Trait) != true) continue;
+                spells.Add(played.DataId);
+                if (Mask(before.Spawn.Train.Context, action.RoomIndex) != 0) maskedCasts++;
+            }
+        }
+        Require(spells.Count == 5 && eclipseCasts > 0 && maskedCasts > 0 && exclusive > 0 && additive > 0 && waits > 0,
+            "Missing original spell casts, both mask modes or pending native effects settlement witnesses.");
+        var records = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        BattleTurnState initial = records[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        string parent = JsonSerializer.Serialize(initial, ModelJson.Options);
+        Parallel.For(0, 16, _ =>
+        {
+            BattleTurnState state = initial;
+            foreach (FixtureValue row in records)
+            {
+                bool end = row.GetProperty("IsEndTurn").GetBoolean();
+                var action = end ? null : row.GetProperty("Action").Deserialize<PlayCardAction>();
+                state = BattlePlannerChecks.Replay(state, [new BattleSearchStep(action, end)], out RoomOutcome outcome);
+                bool terminal = outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+                Require(outcome == row.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
+                    BattleTurnChecks.Comparable(state, terminal) == BattleTurnChecks.Comparable(
+                        row.GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal), "Immutable player spell/room chain differs.");
+            }
+        });
+        Require(JsonSerializer.Serialize(initial, ModelJson.Options) == parent, "Player spell/room branch mutated its parent.");
+        Console.WriteLine($"PLAYER-MOON-ROOM-SPELLS PASS originalSpells={spells.Count} eclipseCasts={eclipseCasts} maskedSpellCasts={maskedCasts} settledTraitSnapshots={traits} exclusiveWitnesses={exclusive} additiveWitnesses={additive} pendingEffectWaits={waits} immutableBattleBranches=16 exactFrozenReplay=true");
+    }
+    private static int Mask(CombatContext context, int roomIndex) => context.RoomCapacities!
+        .Single(room => room.RoomIndex == roomIndex).Attachments?
+        .Aggregate(0, (mask, attachment) => mask | (attachment.MoonPhase?.AdditionalMask ?? 0)) ?? 0;
+
     internal static void TurnBoundary(FixtureValue root)
     {
         Require(root.GetProperty("Boundary").GetString() == "PlayerPublishedEndTurnAfterDrawAndTriggerQueue" &&

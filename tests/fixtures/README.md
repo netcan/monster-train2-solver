@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 904 archives (826 full battles and
+Current manifest inventory (2026-10-22): 906 archives (828 full battles and
 78 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -49,6 +49,11 @@ immutable branches validate the fix for retained Gravity after enemy focus
 leaves Eclipse. The original five-spell baseline is refreshed with complete
 unit masks and a fresh twenty-input replay. The failed player run is not a
 whole-battle acceptance.
+`full-battle-player-moon-room-spells-{search,replay}.mt2f` now supplies the
+actual player victory and fresh replay: 43 decisions, 37 plays/six EndTurns,
+Pyre80, all inputs/full forecasts/state/RNG and sixteen immutable chains match.
+The pair verifies all five original spells, 32 masked casts and both room modes;
+the live observer/driver waits for pending native effects after selection.
 
 The natural Fragile checkpoint is retained in `campaign-progressed-ring8-fragile.zip`
 with seven preceding native wins and thirteen hash-verified restore members.

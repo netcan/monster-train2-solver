@@ -100,3 +100,32 @@ pending effects must be empty, the current card effect must finish and native
 external input must be enabled. The game processes its own queue normally; the
 check neither executes effects nor rewrites card upgrades. Captured wait counts
 make this boundary independently observable in subsequent player acceptance.
+
+## Actual player victory and independent replay
+
+`full-battle-player-moon-room-spells-{search,replay}.mt2f` retains source
+`full-battle-units-spells-and-junk-20261022-141652-c2651ff8` (293.02 seconds)
+and fresh replay `full-battle-units-spells-and-junk-20261022-142200-b805a421`
+(127.11 seconds). Both actual player entry-point battles win at Pyre80 after
+37 plays and six EndTurns, settle, exit normally, preserve protected originals
+and have four zero failure counters. All 43 inputs, full states, forecasts and
+gameplay RNG match; the fresh process searches no nodes.
+
+The focused checker independently verifies 1,014 settled hand-trait snapshots,
+72 Exclusive and 180 Additive Full/Eclipse witnesses, all five original spell
+identities and 32 casts into masked floors across the pair. Nine native birth
+boundaries per process and sixteen immutable complete model branches match.
+The native driver observes 10,238 pending-effect waits across the pair; it reads
+the original queue rather than manually draining or changing it.
+
+The real player assembly publishes 45 times. Initial search takes 3.47 seconds
+and the first used response takes 6.75 seconds; the next 42 decisions retain
+the verified winning continuation (median/P95 response 0.97/1.46 seconds).
+This uses the controlled original-spell scene with authored durable units,
+energy/phase controls and a six-turn/ten-second tactical configuration. Natural
+late-game decks, default-budget performance and other trait/relic combinations
+remain separate acceptance tasks. No Mac package or full regression is built.
+
+```powershell
+scripts/Check-PlayerAdvisor.ps1 -Case MoonRoomSpells -SkipBuild
+```
