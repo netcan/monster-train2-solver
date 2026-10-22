@@ -320,12 +320,43 @@ match, including the private relic contributions and paid Lunacy 2/3/0 advances.
 The original count-owner fixture passes its 64 native manager comparisons,
 45 classification/reset/repeat controls and complete battle checks; the prior
 cost-relic moon component also passes. These are controlled durable-unit/energy
-scenes. Actual player acceptance of this attack-relic composition and natural
-late-game decks remain separate. No full regression or Mac build is performed.
+scenes. Natural late-game decks remain separate. No full regression or Mac
+build is performed.
 
 ```powershell
 scripts/Run-FullBattleProbe.ps1 -RoomMoonSpellAttackRelic -SkipBuild
 scripts/Run-FullBattleProbe.ps1 -OriginalMoonCardUpgradesAttackRelic -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-spell-upgrades-only tests/fixtures/room-moon-spell-attack-relic-calibration.mt2f
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-attack-relic.mt2f
+```
+
+### Actual player attack-relic pair
+
+`full-battle-player-moon-room-attack-relic-{search,replay}.mt2f` retains source
+`full-battle-units-spells-and-junk-20261022-163222-89c26728` (664.05 seconds)
+and direct player replay `full-battle-units-spells-and-junk-20261022-164502-3a2e3ac2`
+(229.40 seconds). Both load the separate Advisor assembly, win at Pyre80 after
+41 plays/seven EndTurns, settle, exit normally, preserve protected originals
+and have four zero failure counters. All 48 inputs, roots, successors, complete
+forecasts and RNG match. Fresh replay searches zero nodes and consumes the
+original player registry and RollingDecisions directly.
+
+Each process casts original Lunacy eight times at paid costs
+4/3/20/3/3/3/3/3 (42 total), including room masks and immediate Conduit updates.
+The pair checks 1,662 hand-trait snapshots, 24 Exclusive and 60 Additive
+witnesses, twenty masked casts, two Eclipse casts and sixteen immutable battle
+branches. Both original monster controls retain the two private relic attack
+contributions at every player boundary; all fourteen hand instances of the six
+original moon spell definitions stay out of the attack tracking tables.
+
+The source records fifty publications, 557 pure captures and all native UI
+interactions. Its first ten forecasts are bounded deployment windows. The
+first winning search on turn one takes 5.17 seconds (11.04 seconds response);
+37 subsequent publications retain the verified win, with median/P95 response
+1.61/2.65 seconds. The scene uses controlled durable units and six-turn,
+ten-second tactical settings; natural decks and default-budget performance
+remain separate.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --player-moon-room-spells-pair-only tests/fixtures/full-battle-player-moon-room-attack-relic-search.mt2f tests/fixtures/full-battle-player-moon-room-attack-relic-replay.mt2f
 ```
