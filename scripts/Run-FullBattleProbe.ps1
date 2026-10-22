@@ -36,6 +36,7 @@ param(
     [ValidateRange(0, 100000)] [int] $OuterBossRelentlessHealth = 0,
     [ValidateRange(0, 99999)] [int] $OuterBossRelentlessPyreHealth = 0,
     [switch] $OuterBossTurns,
+    [ValidateSet('', 'Corrupter')][string] $OriginalOuterBossVariant = '',
     [switch] $OuterBossBirth,
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
@@ -658,6 +659,9 @@ if ($OuterBossRelentless -and -not $OuterBossPhases) { throw '-OuterBossRelentle
 if ($OuterBossRelentlessHealth -and -not $OuterBossRelentless) { throw '-OuterBossRelentlessHealth requires -OuterBossRelentless.' }
 if ($OuterBossRelentlessPyreHealth -and -not $OuterBossRelentless) { throw '-OuterBossRelentlessPyreHealth requires -OuterBossRelentless.' }
 if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns requires -PhysicalSpawnPoints.' }
+if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or -not $OuterBossTurns -or $PlayerAdvisor)) {
+    throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns and cannot use PlayerAdvisor.'
+}
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
 if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
@@ -1282,6 +1286,7 @@ $environment = @{
     MT2_PROBE_OUTER_BOSS_RELENTLESS_HEALTH = [string]$OuterBossRelentlessHealth
     MT2_PROBE_OUTER_BOSS_RELENTLESS_PYRE_HEALTH = [string]$OuterBossRelentlessPyreHealth
     MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBossTurns) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_OUTER_BOSS = $OriginalOuterBossVariant
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_PYRE = $(if ($OuterBossPyre) { '1' } else { '0' })
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"

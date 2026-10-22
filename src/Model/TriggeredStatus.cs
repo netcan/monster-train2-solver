@@ -26,6 +26,16 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect action = effect.Action!;
             if (action.Statuses.Count == 0) return "Triggered status requires a nonempty status pool.";
             if (action.Statuses.Any(status => !RoomCombatModel.KnowsStatus(status.Id))) return "Unmodeled triggered status definition.";
+            if (effect.Type == "CardEffectMultiplyStatusEffect")
+            {
+                TriggeredStatusScaling? scaling = effect.StatusScaling;
+                if (action.Type != "AddStatus" || action.Target != "LastAttackedCharacter" || !action.AllowPlayer || action.AllowEnemy ||
+                    action.Value != 0 || action.Range != null || action.Statuses.Count != 1 ||
+                    action.Statuses[0].Id != "corruption" || action.Statuses[0].Stacks != 2 || action.Tests?.StrictTargets == true ||
+                    scaling?.ActorStatus != null || scaling?.MissingHealth == true || scaling?.MagicPower == true ||
+                    scaling?.IgnoreDualism == true || (scaling?.Subtype.Length ?? 0) != 0 || scaling?.HealthChoicePercent != null)
+                    return "Triggered status multiplication requires the original fixed Corrupter attack payload.";
+            }
             if (effect.Type == "CardEffectAddStatusEffectBasedOnHealth")
             {
                 var health = effect.StatusScaling;
@@ -152,8 +162,20 @@ namespace MonsterTrain2Poju.Model
                     if (draw.Value >= chance) continue;
                 }
                 CombatUnit before = state.Units.First(unit => unit.Id == id);
-                RoomCombatResult added = StatusApplicationModel.ApplyRetained(state, id, status, sourceCardId ?? actor.SpawnerCardId,
-                    overrideImmunity: action.Target == "Pyre");
+                CombatStatus incoming = status;
+                bool multiply = effect.Type == "CardEffectMultiplyStatusEffect";
+                if (multiply)
+                {
+                    int current = before.Status(status.Id)?.Stacks ?? 0;
+                    int product = unchecked(current * status.Stacks);
+                    int delta = unchecked(product - current);
+                    // Native only adds a positive difference. Overflow and zero
+                    // stacks do not remove statuses or publish callbacks.
+                    if (product <= 0 || delta <= 0) continue;
+                    incoming = status.WithStacks(delta);
+                }
+                RoomCombatResult added = StatusApplicationModel.ApplyRetained(state, id, incoming, sourceCardId ?? actor.SpawnerCardId,
+                    overrideImmunity: action.Target == "Pyre", fromEffectType: multiply ? "CardEffectMultiplyStatusEffect" : null);
                 if (!added.Supported) return added;
                 callbacks.AddRange(added.PendingCallbacks);
                 state = added.State!;

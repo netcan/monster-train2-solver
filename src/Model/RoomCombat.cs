@@ -1356,15 +1356,15 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
                             effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules" or "CardEffectSynergizeStatusEffects") &&
-                            effect.Type is not ("CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
+                            effect.Type is not ("CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type is not ("CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits"))
                             return "Mismatched triggered damage multiplier.";
                         if (effect.StatusScaling != null && effect.Type is not ("CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or
-                            "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth")) return "Mismatched triggered status scaling.";
+                            "CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth")) return "Mismatched triggered status scaling.";
                         if (effect.Type == "CardEffectDespawnCharacter") continue;
                         if (effect.Type == "CardEffectHeal" || effect.Type == "CardEffectDamage" || effect.Type == "CardEffectPyreDamageIfNoPlayerUnits" ||
-                            effect.Type is "CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth")
+                            effect.Type is "CardEffectAddStatusEffect" or "CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth")
                         {
                             CardActionEffect? action = effect.Action;
                             if (action?.Type != (effect.Type == "CardEffectHeal" ? "Heal" : effect.Type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" ? "Damage" : "AddStatus")) return "Missing triggered action definition.";

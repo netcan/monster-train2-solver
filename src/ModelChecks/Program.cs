@@ -1689,6 +1689,39 @@ if (args.Length == 3 && args[0] == "--player-boss-fragile-bounded-pair-only")
     return;
 }
 
+if (args.Length == 5 && args[0] == "--outer-boss-corrupter-only")
+{
+    using var battle = ModelJson.ReadFixture(args[1]);
+    using var birth = ModelJson.ReadFixture(args[2]);
+    using var phases = ModelJson.ReadFixture(args[3]);
+    using var controller = ModelJson.ReadFixture(args[4]);
+    OuterBossCorrupterChecks.Native(battle.RootElement, birth.RootElement, phases.RootElement, controller.RootElement);
+    return;
+}
+
+if (args.Length == 1 && args[0] == "--outer-boss-corrupter-pure")
+{
+    TriggeredStatusChecks.Run();
+    RelicChecks.Run();
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--outer-boss-corrupter-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    OuterBossCorrupterChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--outer-boss-corrupter-relentless-only")
+{
+    using var battle = ModelJson.ReadFixture(args[1]);
+    using var phases = ModelJson.ReadFixture(args[2]);
+    OuterBossCorrupterChecks.Relentless(battle.RootElement, phases.RootElement);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-boss-fragile-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -3630,6 +3663,20 @@ foreach (string path in args.Where(path => path.Contains("full-battle-original-c
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();
+foreach (string directory in args.Where(path => Path.GetFileName(path).Contains("corrupter", StringComparison.OrdinalIgnoreCase))
+    .Select(path => Path.GetDirectoryName(Path.GetFullPath(path))!).Distinct())
+{
+    using var battle = ModelJson.ReadFixture(Path.Combine(directory, "full-battle-outer-boss-corrupter-casting.mt2f"));
+    using var birth = ModelJson.ReadFixture(Path.Combine(directory, "outer-boss-corrupter-birth-calibration.mt2f"));
+    using var phases = ModelJson.ReadFixture(Path.Combine(directory, "outer-boss-corrupter-phase-calibration.mt2f"));
+    using var controller = ModelJson.ReadFixture(Path.Combine(directory, "boss-action-corrupter-controller-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(Path.Combine(directory, "full-battle-outer-boss-corrupter-casting-replay.mt2f"));
+    using var relentless = ModelJson.ReadFixture(Path.Combine(directory, "outer-boss-corrupter-relentless-turn-calibration.mt2f"));
+    using var relentlessPhases = ModelJson.ReadFixture(Path.Combine(directory, "outer-boss-corrupter-relentless-phase-calibration.mt2f"));
+    OuterBossCorrupterChecks.Native(battle.RootElement, birth.RootElement, phases.RootElement, controller.RootElement);
+    OuterBossCorrupterChecks.Pair(battle.RootElement, replay.RootElement);
+    OuterBossCorrupterChecks.Relentless(relentless.RootElement, relentlessPhases.RootElement);
+}
 foreach (string path in args.Where(path => path.Contains("full-battle-outer-boss-fragile-no-cards", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);

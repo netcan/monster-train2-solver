@@ -43,11 +43,12 @@ internal static class OuterBossBirthChecks
         CombatUnit born = actual.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == actual.Boss.UnitId);
         EnchantmentRule[] auras = born.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
             .Select(effect => effect.Enchantment!).ToArray();
-        Require(auras.Length == 1 && auras[0].Bound && auras[0].State.PrimaryTargets.Count == 0 &&
-            auras[0].State.CachedStatus == null && born.Triggers.Where(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))
+        bool deferredAura = born.AssetKey == "Boss_Level8_Corrupter" ? auras.Length == 0 :
+            auras.Length == 1 && auras[0].Bound && auras[0].State.PrimaryTargets.Count == 0 && auras[0].State.CachedStatus == null;
+        Require(deferredAura && born.Triggers.Where(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))
                 .All(trigger => !trigger.HasTriggered) && (occupiedFloors == 0 || chosenPlayers > 0),
             "Native birth must bind its aura without firing AfterSpawnEnchant or eagerly applying targets.");
-        Console.WriteLine($"OUTER-BOSS-BIRTH PASS: initial action, room {actual.Boss.Room}, {occupiedFloors} occupied floors/{chosenPlayers} selected allies, deferred aura binding, physical birth and full battle/controller/RNG equality; immutable boundary.");
+        Console.WriteLine($"OUTER-BOSS-BIRTH PASS: initial action, room {actual.Boss.Room}, {occupiedFloors} occupied floors/{chosenPlayers} selected allies, {auras.Length} deferred auras, physical birth and full battle/controller/RNG equality; immutable boundary.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

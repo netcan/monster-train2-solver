@@ -81,6 +81,12 @@ the real player entry on the same natural checkpoint: 44 plays/nine EndTurns,
 53 exact inputs and full forecasts/RNG, both boss phases and six shorter verified
 windows under a three-turn/three-second tactical budget. Both processes lose;
 natural winning acceptance remains open. See [Fragile player evidence](player-fragile-bounded.md).
+
+The ordinary Corrupter now has original birth, casting, corruption multiplication,
+24-input fresh replay and separate controlled Relentless/floor/Pyre evidence.
+Its casting pair loses with four zero counters. The controlled route retains its
+explicit queue/Pyre mutation and expected one mismatch; it is not a natural win
+or player acceptance. See [Corrupter calibration](outer-boss-corrupter.md).
 See [outer-boss validation](outer-boss-variants.md).
 
 `full-battle-natural-ring7-tactical-win.mt2f` verifies a natural Rax victory:

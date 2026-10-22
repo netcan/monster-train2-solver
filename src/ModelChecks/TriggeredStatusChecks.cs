@@ -91,6 +91,24 @@ internal static class TriggeredStatusChecks
             "Preview modified live added-status statistics.");
         Require(!TriggeredStatusModel.Apply(new(0, false, root.Units, [], context, true), 1, Effect(50, [new("armor", 1)]), [4, 5]).Supported,
             "Vanilla history-dependent preview randomness was silently approximated.");
+        CombatEffect Multiply(string status = "corruption", int factor = 2, int chance = 0) =>
+            new("CardEffectMultiplyStatusEffect", chance, 0, "", 0, [], false,
+                action: new("AddStatus", "LastAttackedCharacter", chance, false, true, [new(status, factor, stackable: true)]));
+        foreach (int stacks in new[] { 0, 2, 7, int.MaxValue })
+        foreach (int health in new[] { 0, 10 })
+        {
+            var multiplyRoot = Room(Unit(1, CombatTeam.Enemy), Unit(4, CombatTeam.Player, health, 10,
+                stacks > 0 ? [new("corruption", stacks, stackable: true)] : []));
+            string multiplyParent = JsonSerializer.Serialize(multiplyRoot);
+            RoomCombatResult doubled = TriggeredStatusModel.Apply(multiplyRoot, 1, Multiply(), [4], 0);
+            int expectedStacks = stacks is 0 or int.MaxValue ? stacks : stacks * 2;
+            Require(doubled.Supported && (doubled.State!.Units.Single(unit => unit.Id == 4).Status("corruption")?.Stacks ?? 0) == expectedStacks &&
+                doubled.State!.Context!.BattleRng.Equals(rng) && JsonSerializer.Serialize(multiplyRoot) == multiplyParent,
+                "Corruption multiplication lost its retained dying target, no-op/overflow boundary, RNG or immutable input.");
+        }
+        Require(TriggeredStatusModel.Validate(Multiply("armor")) != null && TriggeredStatusModel.Validate(Multiply(factor: 3)) != null &&
+            TriggeredStatusModel.Validate(Multiply(chance: 50)) != null,
+            "An uncalibrated multiplication status, factor or chance bypassed the original Corrupter payload guard.");
         string expected = JsonSerializer.Serialize(feedback);
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(TriggeredStatusModel.Apply(root, 1,
             Effect(0, [new("armor", 0, stackable: true)]), [4, 5])) == expected, "Parallel status branch differs."));

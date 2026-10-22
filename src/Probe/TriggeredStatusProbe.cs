@@ -40,7 +40,8 @@ namespace MonsterTrain2Poju.Probe
                 Kind = parameters.sourceCharacterTriggerState?.GetTrigger().ToString() ?? "",
                 SourceCardId = parameters.playedCard == null ? 0 : trace.CardId(parameters.playedCard),
                 Targets = parameters.targets.Select(trace.UnitId).ToArray(),
-                Effect = new CombatEffect(effect.GetCardEffect() is CardEffectAddStatusEffectPerLastAttackDamage ? "CardEffectAddStatusEffectPerLastAttackDamage" :
+                Effect = new CombatEffect(effect.GetCardEffect() is CardEffectMultiplyStatusEffect ? "CardEffectMultiplyStatusEffect" :
+                    effect.GetCardEffect() is CardEffectAddStatusEffectPerLastAttackDamage ? "CardEffectAddStatusEffectPerLastAttackDamage" :
                     effect.GetCardEffect() is CardEffectAddStatusEffectBasedOnHealth ? "CardEffectAddStatusEffectBasedOnHealth" : "CardEffectAddStatusEffect", effect.GetParamInt(), 0, "", 0, Array.Empty<string>(), false,
                     action: UnitTriggerActionProbe.Capture(effect), statusScaling: UnitTriggerActionProbe.Scaling(effect)),
                 Before = trace.Capture(room), BeforeTrain = captureTrain ? trace.CaptureTrain() : null,
@@ -61,6 +62,17 @@ namespace MonsterTrain2Poju.Probe
                     }
                     catch (Exception error) { trace.CaptureFailure(error); }
                 }
+            }
+        }
+        [HarmonyPatch(typeof(CardEffectMultiplyStatusEffect), nameof(CardEffectMultiplyStatusEffect.ApplyEffect))]
+        private static class MultiplyPatch
+        {
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+            {
+                if (OuterBossPhaseProbe.TurnsEnabled && FullBattleTrace.Active != null &&
+                    !AllGameManagers.Instance!.GetSaveManager().PreviewMode &&
+                    cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == "Boss_Level8_Corrupter")
+                    __result = Wrap(__result, cardEffectState, cardEffectParams);
             }
         }
         [HarmonyPatch(typeof(CardEffectAddStatusEffectPerLastAttackDamage), nameof(CardEffectAddStatusEffectPerLastAttackDamage.ApplyEffect))]

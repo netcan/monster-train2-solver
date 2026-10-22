@@ -8,7 +8,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class UnitTriggerActionProbe
     {
         private static bool StatusEffect(string type) =>
-            type is "CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or
+            type is "CardEffectAddStatusEffect" or "CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or
                 "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth";
         private static bool DamageEffect(string type) =>
             type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits";

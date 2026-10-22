@@ -5,7 +5,8 @@ repeats, room behavior, target team, payloads and room modifiers without consumi
 gameplay RNG. In the current game module
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, all six Level8 definitions use one
 zero-repeat group with one `RandomOccupiedBossActionBehavior`, targeting Monsters
-and carrying no action effects. Their unit triggers differ. The three Level9
+and carrying no action effects. These are three ordinary variants and their
+three Titan Trial counterparts. Their unit triggers differ. The three Level9
 Entropy actors have no action groups and remain outside this model.
 
 ## Fragile baseline
@@ -117,7 +118,8 @@ bytes/18,535 nodes; SHA-256
 Two Firebrand-first stable-formation scouts lose after seven EndTurns; a
 45-second/441-node bounded search also returns the nine-EndTurn loss. These
 offline diagnostics provide no additional winning-player acceptance. Fragile's
-natural winning route and player entry remain open goals.
+natural winning route remains open; its bounded player route has separate
+acceptance above.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-fragile-only `

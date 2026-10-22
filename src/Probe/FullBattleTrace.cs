@@ -761,6 +761,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalUncontrolledGroupPrepared = MixScenario.UncontrolledGroupMode && MixScenario.Prepared,
                 DeathDissolveSettlementEnabled = DeathDissolveSettlement.Enabled,
                 OuterBossTurnsEnabled = OuterBossPhaseProbe.TurnsEnabled,
+                OriginalOuterBossRoute = OriginalOuterBossRoute.Control,
                 OriginalCarriageJackPrepared = OriginalCarriageJackScenario.Prepared,
                 OriginalTwoChargesOnCardConsumedPrepared = OriginalTwoChargesOnCardConsumedScenario.Prepared,
                 OriginalTwoChargesOnCardConsumedCoverage = OriginalTwoChargesOnCardConsumedScenario.Evidence,

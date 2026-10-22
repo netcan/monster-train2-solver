@@ -65,7 +65,8 @@ internal static class OuterBossPhaseChecks
                 "Natural relentless transition lacks explicit control-free provenance.");
         Require(count >= (earlyDefeat ? 5 : forced ? 6 : occupied ? 9 : 11) && pre >= (earlyDefeat ? 3 : forced ? 3 : occupied ? 5 : 6) &&
             post >= (earlyDefeat ? 2 : forced ? 3 : occupied ? 4 : 5) && moves >= (earlyDefeat ? 2 : forced ? 2 : occupied ? 4 : 5) &&
-            initial == 1 && (forced || transitions > 0 ? transitions == 1 && destroyed >= 2 : destroyed == 0 && (!occupied || auraTargets > 0)),
+            initial == 1 && (forced || transitions > 0 ? transitions == 1 && destroyed >= 2 : destroyed == 0 &&
+                (!occupied || expectedBoss != "Boss_Level8_AllyBuffer" || auraTargets > 0)),
             "Missing native initial action, moving casting actions or post-combat no-op controls.");
         Console.WriteLine($"OUTER-BOSS-PHASE PASS: {count} settled native actions ({pre} pre, {post} post), {moves} moves, {initial} initial latch, {auraTargets} new live aura targets, {transitions} relentless transitions, {destroyed} destroyed rooms; explicit control={forced}; complete battle/controller/RNG equality and immutable parents.");
     }

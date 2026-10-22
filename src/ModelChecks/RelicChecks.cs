@@ -36,6 +36,9 @@ internal static class RelicChecks
             refusal.Reason!.Contains("Unmodeled relic effect"), "An unimplemented relic was silently ignored without an external guard.");
         Require(RelicModel.Validate(root.Spawn.Train.Context!.WithRelics([new("", "empty", [])])) != null,
             "A missing relic identity was accepted.");
+        Require(RelicModel.Validate([new("8d2aa7e6-2992-4809-87e1-6fe2befac166", "Enemy_CorruptSeraph_ApplyStatuses", ["RelicEffectOnlyTooltips"])]) == null &&
+            RelicModel.Validate([new("mixed", "mixed", ["RelicEffectOnlyTooltips", "UncalibratedCombatEffect"])]) != null,
+            "A tooltip-only native effect was rejected or hid another uncalibrated effect on the same relic.");
         var untyped = UnitAbilityModel.Activate(WithIncant(UnitAbilityChecks.Root(typed: false), [relic]), action);
         Require(!untyped.Supported && untyped.Reason!.Contains("captured Spell/ability classification"),
             "A relic ability guessed missing native card classification.");

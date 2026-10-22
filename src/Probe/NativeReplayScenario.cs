@@ -350,6 +350,7 @@ namespace MonsterTrain2Poju.Probe
                         .Select(index => index + ":" + save.GetScenarioData(index)?.name)));
                     if (targetDistance > 0)
                     {
+                        OriginalOuterBossRoute.Select(save, targetDistance, log);
                         // Use the native map's navigation; scenario assets, boss
                         // stats, starting deck and relics remain unmodified.
                         AccessTools.Method(typeof(MapScreen), "Cheat_SetDistance").Invoke(map, new object[] { targetDistance });

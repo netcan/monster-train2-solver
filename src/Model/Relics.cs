@@ -268,6 +268,9 @@ namespace MonsterTrain2Poju.Model
                     // Native IOverrideDraftRarityRelicEffect is consulted only by
                     // reward drafts. Its acquired deck is already in battle state.
                     if (effect == "RelicEffectOverrideCardDraftRarity") continue;
+                    // ICharacterGeneratingRelicEffect only supplies a tooltip
+                    // character. The sealed native type has no combat hooks.
+                    if (effect == "RelicEffectOnlyTooltips") continue;
                     // IModifyCardUpgradeSlotCountRelicEffect is consumed by
                     // BalanceData.GetUpgradeSlots, not combat callbacks. Its
                     // acquired card upgrades are already in the native input.
