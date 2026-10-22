@@ -67,9 +67,7 @@ internal static class OfflineBattleSearch
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         using var source = FixtureDocument.Read(input);
-        foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
-            Require(source.RootElement.GetProperty(counter).GetInt32() == 0, "Native input has nonzero " + counter);
-        Require(source.RootElement.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native source did not settle.");
+        RequireNativeInput(source.RootElement);
         BattleTurnState root = DeploymentRoot(source.RootElement);
         Require(root.Spawn.Turn == 0, "Frozen whole-battle actions require the native deployment root.");
         Step[] steps = System.Text.Json.JsonSerializer.Deserialize<Step[]>(actionsJson)!;
@@ -101,9 +99,7 @@ internal static class OfflineBattleSearch
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         using var source = FixtureDocument.Read(input);
         FixtureValue trace = source.RootElement;
-        foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
-            Require(trace.GetProperty(counter).GetInt32() == 0, "Native input has nonzero " + counter);
-        Require(trace.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native input did not settle.");
+        RequireNativeInput(trace);
         BattleTurnState root = DeploymentRoot(trace);
         Require(root.Spawn.Turn == 0, "Offline whole-battle planning requires the native deployment root.");
         using var rootKeys = new BattleStateKeys();
@@ -201,6 +197,18 @@ internal static class OfflineBattleSearch
 
     private static BattleTurnState DeploymentRoot(FixtureValue trace)
     {
+        if (IsDeploymentObservation(trace))
+        {
+            FixtureValue player = trace.GetProperty("PlayerAdvisor");
+            FixtureValue overlay = player.GetProperty("Overlay");
+            BattleTurnState root = trace.GetProperty("Root").Deserialize<BattleTurnState>()!;
+            Require(trace.GetProperty("Schema").GetInt32() == 1 && root.Spawn.Turn == 0 &&
+                player.GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&
+                overlay.GetProperty("Captures").GetInt32() > 0 && overlay.GetProperty("PurityFailures").GetInt32() == 0 &&
+                overlay.GetProperty("Failures").GetInt32() == 0 && !overlay.GetProperty("InTestScenario").GetBoolean(),
+                "Offline planning needs a pure original deployment observation in the actual player's identity space.");
+            return root;
+        }
         // Player capture and development capture own separate instance IDs.
         // A rolling replay must retain the namespace used by its driver.
         if (trace.TryGetProperty("RollingDecisions", out FixtureValue rolling) && rolling.GetArrayLength() > 0)
@@ -208,6 +216,17 @@ internal static class OfflineBattleSearch
         FixtureValue[] actions = trace.GetProperty("Actions").EnumerateArray().ToArray();
         return (actions.Length > 0 ? actions[0] : trace.GetProperty("Turns")[0])
             .GetProperty("Before").Deserialize<BattleTurnState>()!;
+    }
+
+    private static bool IsDeploymentObservation(FixtureValue trace) =>
+        trace.TryGetProperty("EvidenceKind", out FixtureValue kind) && kind.GetString() == "NativeDeploymentObservation";
+
+    private static void RequireNativeInput(FixtureValue trace)
+    {
+        if (IsDeploymentObservation(trace)) { DeploymentRoot(trace); return; }
+        foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(trace.GetProperty(counter).GetInt32() == 0, "Native input has nonzero " + counter);
+        Require(trace.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native input did not settle.");
     }
 
     private static BattleTurnState Apply(BattleTurnState source, PlayCardAction? action, bool end, out RoomOutcome outcome)

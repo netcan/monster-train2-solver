@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using BepInEx.Logging;
 using MonsterTrain2Poju.Fixtures;
+using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Model;
 using Newtonsoft.Json.Linq;
 
@@ -46,6 +48,25 @@ namespace MonsterTrain2Poju.Probe
         private static FixtureValue[]? frozen;
         private static bool waiting;
         private static bool terminalObserved;
+#if DEVELOPMENT_PROBE
+        private static bool deploymentExportAttempted;
+        private static void ExportPlayerDeployment()
+        {
+            if (Replay || deploymentExportAttempted || Records.Count != 0) return;
+            deploymentExportAttempted = true;
+            BattleTurnState root = PlayerAdvisorProbe.Capture();
+            if (root.Spawn.Turn != 0) return;
+            // This is an observation, not a completed or accepted native battle.
+            // Keep the actual player's identity space for later frozen inputs.
+            using (var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, EvidenceKind = "NativeDeploymentObservation", Root = root,
+                PlayerAdvisor = PlayerAdvisorProbe.Evidence
+            }))
+            using (var stream = new FileStream(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "player-deployment.mt2f"), FileMode.CreateNew, FileAccess.Write)) document.Write(stream);
+        }
+#endif
 
         internal static bool AwaitingAdvice(BattleTurnState root)
         {
@@ -54,6 +75,7 @@ namespace MonsterTrain2Poju.Probe
             if (PlayerAdvisorProbe.Enabled)
             {
                 if (!PlayerAdvisorProbe.CaptureInitialized) return true;
+                ExportPlayerDeployment();
                 if (waiting) Observe(PlayerAdvisorProbe.Capture(), false);
                 return !Replay && !PlayerAdvisorProbe.ReadyFor();
             }

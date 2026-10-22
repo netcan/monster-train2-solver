@@ -50,6 +50,11 @@ if ($BattleReplay) {
     $sourceDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($BattleReplay)
     try {
         $sourceRoot = $sourceDocument.RootElement
+        $kindValue = [MonsterTrain2Poju.Fixtures.FixtureValue]::new()
+        if ($sourceRoot.TryGetProperty('EvidenceKind', [ref]$kindValue) -and
+            $kindValue.GetString() -in @('ModelPrediction', 'NativeDeploymentObservation')) {
+            throw 'Campaign continuation needs a settled native victory, not a model prediction or deployment observation.'
+        }
         if (-not $sourceRoot.GetProperty('NativeWon').GetBoolean() -or -not $sourceRoot.GetProperty('TerminalEffectsSettled').GetBoolean() -or
             @('CaptureFailures', 'Mismatches', 'Unsupported', 'Pending').Where({ $sourceRoot.GetProperty($_).GetInt32() -ne 0 }).Count -gt 0) {
             throw 'Campaign continuation needs a settled native victory with all four failure counters zero.'
