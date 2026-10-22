@@ -43,14 +43,29 @@ and leaves original Steam files unchanged. It publishes no suggestions and
 performs no new search; its 172 player captures are pure. The source and fresh
 replay use the identical restored native save hash above.
 
-The native campaign continuation is currently being verified. Its initial
-development-only diagnostic
+The native campaign continuation now passes in
+`campaign-ring8-20261023-054016-2d0cf43c`: all fifty frozen player inputs replay,
+the original post-battle rewards/map/merchant choices continue, and the native
+Ring8 checkpoint retains seven original victories and Pyre84. Its 72 audit
+events end with `complete`; the game exits normally, original Steam files are
+unchanged, the injected player plugin is archived and the original worker
+configuration state is restored. An additional preflight now rejects a losing
+source or an earlier-ring replay with outer-boss probes before launching.
+The ordinary non-replay Ring1 startup also passes in
+`campaign-ring1-20261023-054820-b0b11296` with 28 audit events, a normal exit
+and unchanged original files; this compatibility check runs no battle.
+
+The initial development-only diagnostic
 `campaign-ring8-20261023-053047-5333097c` failed before its first input because
 the actual player and development captures have distinct card identity spaces.
 `Run-CampaignProgress.ps1` now detects player-origin frozen plans, loads the
 actual player assembly with its captured search configuration, keeps the
 original strict full-state/RNG comparison, and restores the isolated worker's
 configuration/plugin state afterward. No identity differences are ignored.
+`campaign-ring8-20261023-053300-6672fed2` separately replayed all fifty inputs
+and won, but export correctly failed because the caller supplied the Ring8
+birth probe for Ring7. It is retained as a failed diagnostic, not accepted
+campaign progress; the corrected continuation omits those probes.
 
 Probe archives now additionally retain a read-only `NativeRunInput` observation
 at their first valid checkpoint: actual loaded seed, distance/scenario, cheat

@@ -30,6 +30,12 @@ if ($InputProfile) {
     if ((Split-Path $source -Parent) -ine $profilesRoot) { throw 'InputProfile must be a direct child of .probe-runs.' }
     if (-not (Test-Path -LiteralPath (Join-Path $source 'saves/save-singlePlayer.json'))) { throw 'InputProfile has no native save.' }
 }
+if (-not $SkipBuild) {
+    dotnet build (Join-Path $workspace 'src/Probe/Probe.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
+    if ($LASTEXITCODE -ne 0) { throw 'Campaign driver build failed.' }
+}
+$playerReplay = $false
+$playerSettings = $null
 if ($BattleReplay) {
     if (-not $InputProfile) { throw 'BattleReplay requires a native InputProfile.' }
     $BattleReplay = (Resolve-Path -LiteralPath $BattleReplay).Path
@@ -37,10 +43,31 @@ if ($BattleReplay) {
     if ($inputSave.gameSequence -ne 6 -or $inputSave.wasDevCheatUsed -or $StopBeforeRing -ne ([int]$inputSave.runState.distance + 2)) {
         throw 'BattleReplay must continue an unmodified BattleIntro checkpoint to the immediately following ring.'
     }
+    if (($OuterBossTurns -or $OuterBossBirth) -and [int]$inputSave.runState.distance -ne 7) {
+        throw 'Outer-boss replay probes require the Ring8 battle; omit them when replaying an earlier ring.'
+    }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $sourceDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($BattleReplay)
+    try {
+        $sourceRoot = $sourceDocument.RootElement
+        if (-not $sourceRoot.GetProperty('NativeWon').GetBoolean() -or -not $sourceRoot.GetProperty('TerminalEffectsSettled').GetBoolean() -or
+            @('CaptureFailures', 'Mismatches', 'Unsupported', 'Pending').Where({ $sourceRoot.GetProperty($_).GetInt32() -ne 0 }).Count -gt 0) {
+            throw 'Campaign continuation needs a settled native victory with all four failure counters zero.'
+        }
+        $playerValue = [MonsterTrain2Poju.Fixtures.FixtureValue]::new()
+        if ($sourceDocument.RootElement.TryGetProperty('PlayerAdvisor', [ref]$playerValue) -and
+            $playerValue.ValueKind -ne [MonsterTrain2Poju.Fixtures.FixtureKind]::Null) {
+            if ($playerValue.GetProperty('Assembly').GetString() -cne 'MonsterTrain2Poju.Advisor') {
+                throw 'Unknown player assembly in the frozen battle.'
+            }
+            $playerReplay = $true
+            $playerSettings = $playerValue.GetProperty('Overlay').ToObjectGraph()
+        }
+    } finally { $sourceDocument.Dispose() }
 }
-if (-not $SkipBuild) {
-    dotnet build (Join-Path $workspace 'src/Probe/Probe.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
-    if ($LASTEXITCODE -ne 0) { throw 'Campaign driver build failed.' }
+if ($playerReplay -and -not $SkipBuild) {
+    dotnet build (Join-Path $workspace 'src/Advisor/Advisor.csproj') -c Release --no-restore -p:WarningLevel=0 -p:BuildProjectReferences=false -v:q
+    if ($LASTEXITCODE -ne 0) { throw 'Campaign player assembly build failed.' }
 }
 $originalRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'AppData/LocalLow/Shiny Shoe/MonsterTrain2'
 function Get-OriginalHashes {
@@ -69,10 +96,37 @@ $savePath = Join-Path $profile 'saves/save-singlePlayer.json'
     StoryChoiceOrder = $StoryChoiceOrder;
     DeploymentRoom = $DeploymentRoom;
     OuterBossTurns = [bool]$OuterBossTurns; OuterBossBirth = [bool]$OuterBossBirth;
-    BattleReplay = $BattleReplay; BattleReplaySHA256 = $(if ($BattleReplay) { (Get-FileHash -LiteralPath $BattleReplay -Algorithm SHA256).Hash } else { $null }) } |
+    BattleReplay = $BattleReplay; PlayerReplay = $playerReplay;
+    BattleReplaySHA256 = $(if ($BattleReplay) { (Get-FileHash -LiteralPath $BattleReplay -Algorithm SHA256).Hash } else { $null }) } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-input.json')
+$playerCheckPlugin = $null; $playerConfigPath = $null; $playerConfigBackup = $null
+$playerConfigPrepared = $false; $process = $null
+try {
 foreach ($assembly in @('Probe', 'Model', 'FixtureArchive')) {
     Copy-Item -LiteralPath (Join-Path $workspace "src/Probe/bin/Release/netstandard2.1/$assembly.dll") -Destination (Join-Path $gameRoot 'BepInEx/plugins') -Force
+}
+if ($playerReplay) {
+    $pluginDir = Join-Path $gameRoot 'BepInEx/plugins'
+    if (@(Get-ChildItem -LiteralPath $pluginDir -Filter 'MonsterTrain2Poju.Advisor.dll' -File -Recurse).Count -ne 0) {
+        throw 'The isolated campaign worker already contains a player advisor.'
+    }
+    $playerCheckPlugin = Join-Path $pluginDir ('PojuPlayerCheck-' + [Guid]::NewGuid().ToString('N'))
+    $null = New-Item -ItemType Directory -Path $playerCheckPlugin
+    Copy-Item -LiteralPath (Join-Path $workspace 'src/Advisor/bin/Release/netstandard2.1/MonsterTrain2Poju.Advisor.dll') -Destination $playerCheckPlugin
+    $playerConfigPath = Join-Path $gameRoot 'BepInEx/config/netcan.monstertrain2.advisor.cfg'
+    $playerConfigBackup = Join-Path $profile 'original-player-advisor.cfg'
+    if (Test-Path -LiteralPath $playerConfigPath) { Move-Item -LiteralPath $playerConfigPath -Destination $playerConfigBackup }
+    $playerConfigPrepared = $true
+    @"
+[General]
+Enabled = true
+PauseWhenHidden = true
+[Search]
+Horizon = $($playerSettings['Horizon'])
+TimeLimitMs = $($playerSettings['TimeLimitMs'])
+PreferredFloor = $(1 + [int]$playerSettings['PreferredDeploymentRoom'])
+TacticalSeed = $($playerSettings['TacticalSeed'])
+"@ | Set-Content -LiteralPath $playerConfigPath -Encoding utf8
 }
 $start = [Diagnostics.ProcessStartInfo]::new($executable)
 $start.WorkingDirectory = $gameRoot
@@ -108,6 +162,7 @@ if ($BattleReplay) {
     $settings.MT2_PROBE_ROLLING_INPUT = $BattleReplay
     $settings.MT2_PROBE_SETTLE_DEATH_DISSOLVES = '1'
     $settings.MT2_PROBE_BINARY_CAPTURE = '1'
+    if ($playerReplay) { $settings.MT2_PROBE_PLAYER_ADVISOR = '1' }
 }
 foreach ($entry in $settings.GetEnumerator()) { $start.Environment[$entry.Key] = $entry.Value }
 $process = [Diagnostics.Process]::Start($start)
@@ -130,11 +185,17 @@ if ($BattleReplay -and (Test-Path -LiteralPath (Join-Path $profile 'full-battle.
         $trace['CaptureFailures'] -eq 0 -and $trace['Mismatches'] -eq 0 -and $trace['Unsupported'] -eq 0 -and $trace['Pending'] -eq 0 -and
         $decisions.Count -gt 0 -and @($decisions | Where-Object { $_['Mode'] -ne 'replay' -or $_['Nodes'] -ne 0 -or
             $_['Difference'] -or $null -eq $_['Actual'] }).Count -eq 0
+    if ($playerReplay) {
+        $player = $trace['PlayerAdvisor']
+        $replayPassed = $replayPassed -and $player['Assembly'] -ceq 'MonsterTrain2Poju.Advisor' -and
+            $player['Overlay']['PurityFailures'] -eq 0 -and $player['Overlay']['Failures'] -eq 0 -and
+            $player['Overlay']['Published'] -eq 0
+    }
 }
 $passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $replayPassed
 $runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
 $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCode = $process.ExitCode;
-    BattleReplayPassed = $replayPassed;
+    BattleReplayPassed = $replayPassed; PlayerReplay = $playerReplay;
     NativeCampaignWon = $runOutcome.Count -eq 1 -and $runOutcome[0].data.won -eq $true;
     NativeVictoryType = $(if ($runOutcome.Count -eq 1) { $runOutcome[0].data.victoryType } else { $null });
     OriginalFilesUnchanged = $unchanged; Events = $audit.Count; BattlesWon = @($audit | Where-Object { $_.kind -eq 'battle-outcome' -and $_.data.won }).Count;
@@ -142,3 +203,18 @@ $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCo
 $summary | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-summary.json')
 $summary | ConvertTo-Json -Compress
 if (-not $passed) { throw "Native campaign did not complete: $profile" }
+} finally {
+    if ($process -and -not $process.HasExited) { $process.Kill(); $process.WaitForExit() }
+    if ($playerCheckPlugin -and (Test-Path -LiteralPath $playerCheckPlugin)) {
+        Move-Item -LiteralPath $playerCheckPlugin -Destination (Join-Path $profile 'player-plugin')
+        foreach ($dependency in @('Model.dll', 'FixtureArchive.dll')) {
+            Copy-Item -LiteralPath (Join-Path $gameRoot "BepInEx/plugins/$dependency") -Destination (Join-Path $profile 'player-plugin')
+        }
+    }
+    if ($playerConfigPrepared) {
+        if (Test-Path -LiteralPath $playerConfigPath) {
+            Move-Item -LiteralPath $playerConfigPath -Destination (Join-Path $profile 'checked-player-advisor.cfg')
+        }
+        if (Test-Path -LiteralPath $playerConfigBackup) { Move-Item -LiteralPath $playerConfigBackup -Destination $playerConfigPath }
+    }
+}

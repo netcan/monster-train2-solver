@@ -280,3 +280,26 @@ unknown additional callback guard; acquired gold and card upgrades remain part
 of the captured battle input. The focused campaign calibration passes again.
 This closes the rejected-input cause, not the still-pending natural Corrupter
 victory or the quality of a bounded search.
+
+The seed42 route now has a verified seventh native victory and a natural
+Corrupter Ring8 checkpoint. The actual player search and independent fresh
+player replay each execute fifty inputs, win with Pyre84 and have four zero
+failure counters. Full input/forecast/state/RNG checks pass; see
+[trial-gold player evidence](player-campaign-trial-gold.md).
+
+`campaign-ring8-20261023-054016-2d0cf43c` then replays the winning player plan
+with the actual player assembly and continues native rewards, map and merchant
+choices. `PlayerReplay`, `BattleReplayPassed`, `NativePassed` and original-file
+preservation are true, with normal process exit and 72 audit events. The
+read-only final pool audit selects index2, `Level8FinalBossCorrupter`, without
+changing the original map. Worker configuration restoration and removal of the
+injected plugin pass as well.
+
+`campaign-progressed-ring8-corrupter.zip` preserves seven native wins, 31
+cards, Pyre84 and the original native choice/input-hash ancestry. Export and
+restore verify fifteen payloads; archive SHA256 is
+`51a352631359175acd2247654fb9e10a471577fc99cbf57b803aef734a6855b1`,
+and the retained pre-Ring8 save SHA256 is
+`83d483d4672f68d5d4c37babcb5a0f698df354de2fc46ba0101cca65ddaf4b06`.
+This closes checkpoint preparation, not the separately pending Corrupter
+player victory and fresh full-battle replay.
