@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--shorter-advice-budget-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    ShorterAdviceBudgetChecks.Run(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-natural-ring7-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -3848,6 +3855,11 @@ foreach (string path in args.Where(path => path.EndsWith("player-moon-room-turn-
 {
     using var document = ModelJson.ReadFixture(path);
     PlayerMoonRoomSpellChecks.TurnBoundary(document.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("player-fragile-budget-boundary.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    ShorterAdviceBudgetChecks.Run(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-original-moon-card-upgrades-room-mask.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-original-moon-card-upgrades-cost-relic.mt2f", StringComparison.OrdinalIgnoreCase) ||

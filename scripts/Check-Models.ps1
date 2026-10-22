@@ -13,6 +13,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-terminal-purge-copy.mt2f', 'full-battle-terminal-purge-copy-replay.mt2f',
     'full-battle-terminal-purge-copy-consume.mt2f', 'full-battle-terminal-purge-copy-consume-replay.mt2f',
     'player-terminal-copy-target-calibration.mt2f',
+    'player-fragile-budget-boundary.mt2f',
     'full-battle-player-terminal-copy-consume-search.mt2f', 'full-battle-player-terminal-copy-consume-replay.mt2f',
     'full-battle-player-terminal-purge-copy-consume-search.mt2f', 'full-battle-player-terminal-purge-copy-consume-replay.mt2f',
     'full-battle-player-terminal-copy-search.mt2f', 'full-battle-player-terminal-copy-replay.mt2f',

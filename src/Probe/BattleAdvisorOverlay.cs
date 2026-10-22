@@ -87,7 +87,7 @@ namespace MonsterTrain2Poju.Probe
             string? externalTool = playerSession ? null : Environment.GetEnvironmentVariable("MT2_PROBE_DOTNET_PLANNER");
             if (string.IsNullOrEmpty(externalTool))
                 session = new BattleAdviceSession(new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromMilliseconds(timeLimitMs),
-                    preferredDeploymentRoom: floor, useTacticalSeed: tactical));
+                    preferredDeploymentRoom: floor, useTacticalSeed: tactical, allowShorterHorizon: playerSession));
             else
             {
                 var external = new ExternalBattlePlanner(externalTool!, horizon, timeLimitMs, floor, tactical);
@@ -332,7 +332,10 @@ namespace MonsterTrain2Poju.Probe
             var text = new StringBuilder();
             text.Append(plan.Outcome == RoomOutcome.BattleWon ? "预计获胜" : plan.Outcome == RoomOutcome.PlayerDefeated ? "预计战败" :
                 plan.Outcome == RoomOutcome.Stalemate ? "预计僵持" : "规划窗口结束")
-                .Append(" · 火炉 ").Append(hp).Append(" 血\n\n下一步：\n");
+                .Append(" · 火炉 ").Append(hp).Append(" 血");
+            if (plan.UsedShorterHorizon)
+                text.Append(" · 已完成 ").Append(plan.TurnsCompleted).Append('/').Append(plan.RequestedTurns).Append(" 回合（预算内缩短）");
+            text.Append("\n\n下一步：\n");
             BattleSearchStep step = plan.Steps[0];
             if (step.IsEndTurn) text.Append("结束回合");
             else

@@ -14,10 +14,12 @@ namespace MonsterTrain2Poju.Model
         public int MaxActionsPerTurn { get; }
         public int PreferredDeploymentRoom { get; }
         public bool UseTacticalSeed { get; }
+        public bool AllowShorterHorizon { get; }
         public TimeSpan TimeLimit { get; }
 
         public BattlePlannerOptions(int maxNodes = 2048, int maxTurns = 3, int beamWidth = 16,
-            int maxActionsPerTurn = 12, TimeSpan? timeLimit = null, int preferredDeploymentRoom = 2, bool useTacticalSeed = false)
+            int maxActionsPerTurn = 12, TimeSpan? timeLimit = null, int preferredDeploymentRoom = 2, bool useTacticalSeed = false,
+            bool allowShorterHorizon = false)
         {
             if (maxNodes < 1 || maxTurns < 1 || beamWidth < 1 || maxActionsPerTurn < 1 || preferredDeploymentRoom < 0)
                 throw new ArgumentOutOfRangeException(nameof(maxNodes));
@@ -26,6 +28,7 @@ namespace MonsterTrain2Poju.Model
             MaxNodes = maxNodes; MaxTurns = maxTurns; BeamWidth = beamWidth; MaxActionsPerTurn = maxActionsPerTurn;
             PreferredDeploymentRoom = preferredDeploymentRoom;
             UseTacticalSeed = useTacticalSeed;
+            AllowShorterHorizon = allowShorterHorizon;
         }
     }
 
@@ -47,13 +50,16 @@ namespace MonsterTrain2Poju.Model
         public bool ReachedNodeLimit { get; }
         public bool ReachedActionLimit { get; }
         public bool CompletedHorizon { get; }
+        public int RequestedTurns { get; }
+        public bool UsedShorterHorizon { get; }
         public double? PolicyBaselineScore { get; }
         public IReadOnlyList<UnsupportedActionAttempt> UnsupportedAttempts { get; }
 
         internal BattlePlanResult(BattleTurnState state, RoomOutcome outcome, IReadOnlyList<BattleSearchStep> steps,
             double score, int turns, int nodes, int duplicates, int beamPruned, TimeSpan elapsed,
             bool timedOut, bool cancelled, bool nodeLimit, bool actionLimit, bool completed,
-            IReadOnlyList<UnsupportedActionAttempt> unsupported, double? policyBaselineScore)
+            IReadOnlyList<UnsupportedActionAttempt> unsupported, double? policyBaselineScore,
+            int requestedTurns = 0, bool usedShorterHorizon = false)
         {
             State = state; Outcome = outcome; Steps = Array.AsReadOnly(steps.ToArray()); Score = score;
             TurnsCompleted = turns; ExpandedNodes = nodes; DuplicateStates = duplicates; BeamPruned = beamPruned;
@@ -61,6 +67,7 @@ namespace MonsterTrain2Poju.Model
             ReachedActionLimit = actionLimit; CompletedHorizon = completed;
             UnsupportedAttempts = Array.AsReadOnly(unsupported.ToArray());
             PolicyBaselineScore = policyBaselineScore;
+            RequestedTurns = requestedTurns; UsedShorterHorizon = usedShorterHorizon;
         }
     }
 
@@ -97,6 +104,7 @@ namespace MonsterTrain2Poju.Model
             var unsupportedKeys = new HashSet<string>(StringComparer.Ordinal);
             var root = new Node(source, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), 0, 0, Score(source, RoomOutcome.Exchanged));
             Node fallback = root;
+            Node? completedPrefix = null;
             Node? best = null;
             double? policyBaselineScore = null;
 
@@ -125,6 +133,11 @@ namespace MonsterTrain2Poju.Model
             {
                 if (node.Turns > fallback.Turns || node.Turns == fallback.Turns && Better(node, fallback)) fallback = node;
                 if ((Terminal(node) || node.Turns >= options.MaxTurns) && (best == null || Better(node, best))) best = node;
+                // A usable shorter window ends after a complete EndTurn. Do
+                // not publish an arbitrary truncated action sequence.
+                if (node.Turns > 0 && node.Actions == 0 && node.Steps[node.Steps.Count - 1].IsEndTurn &&
+                    (completedPrefix == null || node.Turns > completedPrefix.Turns ||
+                        node.Turns == completedPrefix.Turns && Better(node, completedPrefix))) completedPrefix = node;
             }
             bool Better(Node left, Node right) => left.Score < right.Score ||
                 left.Score == right.Score && left.PositionCost < right.PositionCost;
@@ -185,7 +198,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     Stop();
                     return new BattlePlanResult(tactical.State, tactical.Outcome, tactical.Steps, tactical.Score, tactical.Turns,
-                        nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, true, unsupported, null);
+                        nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, true, unsupported, null,
+                        options.MaxTurns);
                 }
             }
 
@@ -309,9 +323,12 @@ namespace MonsterTrain2Poju.Model
             // Cancellation/time can occur inside one atomic model expansion.
             cancelled |= cancellationToken.IsCancellationRequested;
             timedOut |= watch.Elapsed >= options.TimeLimit;
-            Node selected = best ?? fallback;
+            bool shorter = best == null && options.AllowShorterHorizon && completedPrefix != null &&
+                !cancelled && (timedOut || nodeLimit);
+            Node selected = best ?? (shorter ? completedPrefix! : fallback);
             return new BattlePlanResult(selected.State, selected.Outcome, selected.Steps, selected.Score, selected.Turns,
-                nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null, unsupported, policyBaselineScore);
+                nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null, unsupported, policyBaselineScore,
+                options.MaxTurns, shorter);
         }
 
         private sealed class Node

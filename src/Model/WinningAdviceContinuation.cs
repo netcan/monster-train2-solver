@@ -32,7 +32,7 @@ namespace MonsterTrain2Poju.Model
             BattleSearchStep[] steps = original.Steps.Skip(offset).ToArray();
             return new BattlePlanResult(original.State, RoomOutcome.BattleWon, steps, original.Score,
                 steps.Count(step => step.IsEndTurn), 0, 0, 0, TimeSpan.Zero,
-                false, false, false, false, true, Array.Empty<UnsupportedActionAttempt>(), null);
+                false, false, false, false, true, Array.Empty<UnsupportedActionAttempt>(), null, original.RequestedTurns);
         }
     }
 }

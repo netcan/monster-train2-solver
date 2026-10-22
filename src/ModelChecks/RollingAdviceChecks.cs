@@ -53,6 +53,13 @@ internal static class RollingAdviceChecks
                 step.GetProperty("Action").ValueKind == FixtureKind.Null ? null : step.GetProperty("Action").Deserialize<PlayCardAction>(),
                 step.GetProperty("IsEndTurn").GetBoolean())).ToArray();
             BattleTurnState planned = BattlePlannerChecks.Replay(root, steps, out RoomOutcome plannedOutcome);
+            if (record.TryGetProperty("UsedShorterHorizon", out FixtureValue shorter) && shorter.GetBoolean())
+                Require(!Terminal(plannedOutcome) && steps.Last().IsEndTurn &&
+                    steps.Count(step => step.IsEndTurn) == record.GetProperty("TurnsPlanned").GetInt32() &&
+                    record.GetProperty("TurnsPlanned").GetInt32() > 0 &&
+                    record.GetProperty("TurnsPlanned").GetInt32() < record.GetProperty("RequestedHorizon").GetInt32() &&
+                    record.GetProperty("PolicyBaselineScore").ValueKind == FixtureKind.Null,
+                    "Shorter advice mislabeled a partial turn or winning forecast.");
             double score = record.GetProperty("Score").GetDouble();
             Require(plannedOutcome == record.GetProperty("PlannedOutcome").Deserialize<RoomOutcome>() &&
                 Key(planned, Terminal(plannedOutcome)) == Key(State(record.GetProperty("Planned")), Terminal(plannedOutcome)) &&
@@ -106,6 +113,10 @@ internal static class RollingAdviceChecks
             foreach (string field in new[] { "PlanSteps", "PlannedOutcome", "Score", "PolicyBaselineScore", "Generation" })
                 Require(first[index].GetProperty(field).ContentEquals(second[index].GetProperty(field)),
                     "Fresh rolling replay changed the frozen forecast field " + field);
+            foreach (string field in new[] { "RequestedHorizon", "TurnsPlanned", "UsedShorterHorizon" })
+                if (first[index].TryGetProperty(field, out FixtureValue value))
+                    Require(second[index].TryGetProperty(field, out FixtureValue frozenValue) && value.ContentEquals(frozenValue),
+                        "Fresh rolling replay changed the planning window field " + field);
             bool plannedTerminal = Terminal(first[index].GetProperty("PlannedOutcome").Deserialize<RoomOutcome>());
             Require(Key(State(first[index].GetProperty("Planned")), plannedTerminal) ==
                 Key(State(second[index].GetProperty("Planned")), plannedTerminal), "Fresh replay changed the full forecast state or RNG.");

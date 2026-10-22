@@ -174,10 +174,16 @@ namespace MonsterTrain2Poju.Model
         private static WinningAdviceContinuation? VerifyAndRetain(BattleTurnState root, BattlePlanResult plan,
             bool retain, CancellationToken token = default)
         {
-            if (plan.Cancelled || !plan.CompletedHorizon || plan.Steps.Count == 0)
+            if (plan.Cancelled || (!plan.CompletedHorizon && !plan.UsedShorterHorizon) || plan.Steps.Count == 0)
                 throw new InvalidOperationException("No complete verified continuation within the planning budget. turns=" +
                     plan.TurnsCompleted + " nodes=" + plan.ExpandedNodes + " elapsedMs=" + plan.Elapsed.TotalMilliseconds +
                     " reasons=" + string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));
+            if (plan.UsedShorterHorizon && (plan.CompletedHorizon || plan.TurnsCompleted < 1 ||
+                plan.TurnsCompleted >= plan.RequestedTurns || (!plan.TimedOut && !plan.ReachedNodeLimit) ||
+                plan.PolicyBaselineScore.HasValue || !plan.Steps[plan.Steps.Count - 1].IsEndTurn ||
+                plan.Steps.Count(step => step.IsEndTurn) != plan.TurnsCompleted ||
+                plan.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate))
+                throw new InvalidOperationException("Invalid shorter planning window.");
             BattleTurnState replayed = root;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             using var keys = new BattleStateKeys();

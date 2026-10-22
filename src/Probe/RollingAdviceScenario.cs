@@ -28,6 +28,9 @@ namespace MonsterTrain2Poju.Probe
             public double? PolicyBaselineScore { get; set; }
             public int Nodes { get; set; }
             public bool ReusedWinningContinuation { get; set; }
+            public int RequestedHorizon { get; set; }
+            public int TurnsPlanned { get; set; }
+            public bool UsedShorterHorizon { get; set; }
             public long Generation { get; set; }
             public BattleAdvisorOverlay.Publication? Timing { get; set; }
             public string? Difference { get; set; }
@@ -109,6 +112,7 @@ namespace MonsterTrain2Poju.Probe
                     PlanSteps = steps.ToList(), Planned = plan.State, PlannedOutcome = plan.Outcome, Score = plan.Score,
                     PolicyBaselineScore = plan.PolicyBaselineScore, Nodes = plan.ExpandedNodes,
                     ReusedWinningContinuation = advice.ReusedWinningContinuation,
+                    RequestedHorizon = plan.RequestedTurns, TurnsPlanned = plan.TurnsCompleted, UsedShorterHorizon = plan.UsedShorterHorizon,
                     Generation = timing.Generation, Timing = timing };
                 if (decision.IsEndTurn)
                 {
