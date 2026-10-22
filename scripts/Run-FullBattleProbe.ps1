@@ -42,6 +42,7 @@ param(
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossHealth,
     [switch] $TrueFinalBossLifeLink,
+    [switch] $TrueFinalBossHealthUpdates,
     [switch] $OuterBossBirth,
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
@@ -669,13 +670,14 @@ if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or 
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant) { throw 'OriginalOuterBossTrial requires an explicit original outer-boss variant.' }
 if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $OriginalOuterBossVariant -or
-    $TrueFinalBossBirth -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink)) {
+    $TrueFinalBossBirth -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates)) {
     throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
 }
 if ($TrueFinalBossHealth) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossLifeLink) { $TrueFinalBossBirth = $true }
+if ($TrueFinalBossHealthUpdates) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossBirth) {
-    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'TrueFinalBossBirth is an isolated original birth observation.' }
     $Policy = 'no-cards'; $BattleDistance = 8; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1309,6 +1311,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH = $(if ($TrueFinalBossHealth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_LIFE_LINK = $(if ($TrueFinalBossLifeLink) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_HEALTH_UPDATES = $(if ($TrueFinalBossHealthUpdates) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_PYRE = $(if ($OuterBossPyre) { '1' } else { '0' })
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"
@@ -1895,6 +1898,7 @@ if ($TrueFinalBossBirth) {
     $componentNames = @('true-final-boss-birth-calibration.mt2f')
     if ($TrueFinalBossHealth) { $componentNames += 'true-final-boss-linked-health-calibration.mt2f' }
     if ($TrueFinalBossLifeLink) { $componentNames += 'true-final-boss-life-link-calibration.mt2f' }
+    if ($TrueFinalBossHealthUpdates) { $componentNames += 'true-final-boss-health-updates-calibration.mt2f' }
     $componentPaths = @($componentNames | ForEach-Object { Join-Path $profile $_ })
     $componentPath = $componentPaths[-1]
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or

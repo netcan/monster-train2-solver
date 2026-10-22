@@ -79,6 +79,28 @@ RNG 未变；不通过重置 RNG 获得此结论。
 下一步为原生回合流、跨层伤害/治疗及终局移除回调。Level9 仍被玩家入口和
 Level8 模型签名保护；上述组件不计作整场可求解或胜局。
 
+## 防死与共享生命更新组合
+
+`true-final-boss-health-updates-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-190544-c60a5ac8`，原生正常退出、`DEPTH-PASS`，
+26.64 秒，受保护文件未变。五个原始角色临时绑定新建隔离状态，调用原生
+`DebuffHP`、私有 `UpdateHp`，或先执行原生 lifelink 伤害阶段再扣血。
+只运行非终结更新，原始状态引用、预览控制、终局标志、世界、帧和 RNG 均未变。
+
+180 个矩阵控制和两条各 10 步的依赖链验证原始/有效共享生命、更新标记、
+生命信号和共享预览伤害；`TrueFinalBossHealthModel` 全部匹配，256 条并发分支
+不改输入。包含五个目标、两种战斗预览上下文、整数边界、不扣血、致命伤害
+保留 1 血、三组都剩 1 血后恢复生命、跨层继续扣血以及生命属性的 99999 上限。
+
+更新链接实体会同步三层生命，但 `hpChangedSignal` 只派发给被更新的角色，
+不会广播给共享生命所有者或其他链接角色。只有 Entropy 更新会改变全局
+`TrueFinalBossBattlePreviewHpChange`；它在非预览战斗时也累计，生命恢复会减小
+此值。累计使用请求值，生命属性随后再截断到 99999，二者不能颠倒。
+
+此边界中的 `UpdateHp` 是直接生命更新，**不是完整治疗协程**；没有运行
+伤害过滤、受伤/治疗触发、死亡或全体移除。会导致死亡的操作仍显式拒绝。
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case HealthUpdates -SkipBuild`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

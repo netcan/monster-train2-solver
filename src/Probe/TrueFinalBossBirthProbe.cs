@@ -108,6 +108,7 @@ namespace MonsterTrain2Poju.Probe
                         throw new InvalidOperationException("Incomplete or impure true-final-boss birth observation.");
                     LinkedHealthCalibration.Capture(created, () => Snapshot(heroes));
                     LifeLinkCalibration.Capture(created, () => Snapshot(heroes));
+                    TrueFinalBossHealthCalibration.Capture(created, () => Snapshot(heroes));
                     Completed = true;
                 }
                 catch (Exception error) { Error = error.ToString(); }

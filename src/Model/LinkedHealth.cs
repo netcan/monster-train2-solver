@@ -62,6 +62,11 @@ namespace MonsterTrain2Poju.Model
                 LinkedHealthActor owner = actor.LinkedId == 0 ? actor : state.Actors.Single(other => other.Id == actor.LinkedId);
                 return new LinkedHealthValue(actor.Id, owner.RawHealth, owner.RawMaxHealth);
             }).ToArray());
+        public static LinkedHealthResult Read(LinkedHealthState source)
+        {
+            string? invalid = Validate(source);
+            return invalid == null ? new LinkedHealthResult(Snapshot(source)) : new LinkedHealthResult(null, invalid);
+        }
         public static LinkedHealthResult Write(LinkedHealthState source, int targetId, string property, int value)
         {
             string? invalid = Validate(source);
