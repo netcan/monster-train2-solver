@@ -55,6 +55,7 @@ param(
     [switch] $TrueFinalBossSpellDamage,
     [switch] $TrueFinalBossPyreBaneTargets,
     [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')][string] $TrueFinalBossDeath = '',
+    [switch] $TrueFinalBossDeathSpellSource,
     [switch] $OuterBossBirth,
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
@@ -711,12 +712,13 @@ if ($TrueFinalBossSpellDamage) {
     $TrueFinalBossDamage = $true
 }
 if ($TrueFinalBossDamage) { $TrueFinalBossBirth = $true }
+if ($TrueFinalBossDeathSpellSource -and -not $TrueFinalBossDeath) { throw 'TrueFinalBossDeathSpellSource requires an explicit death target.' }
 if ($TrueFinalBossDeath) {
     if ($TrueFinalBossDamage) { throw 'Controlled terminal capture is separate from original nonterminal damage/healing.' }
     $TrueFinalBossBirth = $true
 }
 if ($TrueFinalBossBirth) {
-    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossSpawn', 'TrueFinalBossScheduledSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossPyreBaneTargets', 'TrueFinalBossDeath', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossSpawn', 'TrueFinalBossScheduledSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossPyreBaneTargets', 'TrueFinalBossDeath', 'TrueFinalBossDeathSpellSource', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'TrueFinalBossBirth is an isolated original birth observation.' }
     $Policy = 'no-cards'; $BattleDistance = 8; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1363,6 +1365,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_SPELL_DAMAGE = $(if ($TrueFinalBossSpellDamage) { '1' } else { '0' })
     MT2_PROBE_PYREBANE_TARGETS = $(if ($TrueFinalBossPyreBaneTargets) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DEATH = $TrueFinalBossDeath
+    MT2_PROBE_TRUE_FINAL_BOSS_DEATH_SPELL_SOURCE = $(if ($TrueFinalBossDeathSpellSource) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_PYRE = $(if ($OuterBossPyre) { '1' } else { '0' })
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"
@@ -1954,7 +1957,7 @@ if ($TrueFinalBossBirth) {
     if ($TrueFinalBossLifeLink) { $componentNames += 'true-final-boss-life-link-calibration.mt2f' }
     if ($TrueFinalBossHealthUpdates) { $componentNames += 'true-final-boss-health-updates-calibration.mt2f' }
     if ($TrueFinalBossDamage) { $componentNames += $(if ($TrueFinalBossSpellDamage) { 'true-final-boss-spell-damage-calibration.mt2f' } elseif ($TrueFinalBossDamageAllTargets) { 'true-final-boss-all-target-damage-calibration.mt2f' } else { 'true-final-boss-damage-calibration.mt2f' }) }
-    if ($TrueFinalBossDeath) { $componentNames += "true-final-boss-death-$($TrueFinalBossDeath.ToLowerInvariant()).mt2f" }
+    if ($TrueFinalBossDeath) { $componentNames += "true-final-boss-$(if ($TrueFinalBossDeathSpellSource) { 'spell-death' } else { 'death' })-$($TrueFinalBossDeath.ToLowerInvariant()).mt2f" }
     $componentPaths = @($componentNames | ForEach-Object { Join-Path $profile $_ })
     $componentPath = $componentPaths[-1]
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or

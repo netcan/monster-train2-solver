@@ -3083,7 +3083,10 @@ namespace MonsterTrain2Poju.Model
                 battleWon = true;
                 context = context!.WithBossesDead();
                 ClearTerminalCards();
-                DispatchDeathStatistics(attacker, root, sourceCardId, sacrifice: false);
+                // Original TFB spawning appends RemoveBossActionQueuedVFX after
+                // the statistics once-listener. CoroutineSignal<T>.Invoke only
+                // advances the final multicast delegate's returned iterator, so
+                // the earlier CardStatistics coroutine never executes.
                 int[] ids = source.Context!.LifeLinks!.Actors.Select(actor => actor.Id).ToArray();
                 var roster = source.Context.Enchantments!.Rooms.SelectMany(room => room.Units.Select(unit => (room.RoomIndex, Unit: unit)))
                     .Where(actor => ids.Contains(actor.Unit.Id)).OrderByDescending(actor => actor.RoomIndex).ToArray();

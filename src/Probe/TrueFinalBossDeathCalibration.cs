@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static string Target => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_DEATH") ?? "";
         internal static bool Enabled => Target.Length > 0;
+        private static bool SpellSource => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_DEATH_SPELL_SOURCE") == "1";
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         private static bool started;
@@ -61,13 +62,31 @@ namespace MonsterTrain2Poju.Probe
             bool protectedTarget = StatusEffectLifeLinkState.ProtectedByLifeLink(actors[index], managers.GetHeroManager(), managers.GetMonsterManager(), combat);
             if (protectedTarget || actors.Any(actor => actor.GetHP() != 1)) { Error = "Controlled terminal setup did not remove life-link protection."; yield break; }
             FullBattleTrace trace = FullBattleTrace.Active!;
+            CardState? sourceCard = SpellSource ? managers.GetCardManager().GetAllCards(new List<CardState>()).First(card =>
+                card.GetCardType() == CardType.Spell && card.GetTraits().Count == 0 &&
+                card.GetCardStateModifiers().GetCardUpgrades().Count == 0 &&
+                card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectDamage")) : null;
+            int sourceCardId = sourceCard == null ? 0 : trace.CardId(sourceCard);
             RoomState targetRoom = actors[index].GetCurrentRoom();
             controlledRoom = targetRoom;
             var roomBeforeDamage = trace.Capture(targetRoom, includeOuterBossForBump: true);
             var trainBeforeDamage = trace.CaptureDecision(includeOuterBossForBump: true).Spawn.Train;
+            object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(actors[index]);
+            object signal = AccessTools.Field(primary.GetType(), "deathSignal").GetValue(primary);
+            var once = (Delegate?)AccessTools.Field(signal.GetType(), "OnceListener").GetValue(signal);
+            string[] deathOnceCallbacks = (once?.GetInvocationList() ?? Array.Empty<Delegate>())
+                .Select(callback => callback.Method.DeclaringType!.Name + "." + callback.Method.Name).ToArray();
             observing = true;
-            yield return combat.ApplyDamageToTarget(1, actors[index], new CombatManager.ApplyDamageToTargetParameters
-                { damageType = Damage.Type.Default, finalEffectInSequence = true });
+            var damageRows = new List<object>();
+            int hitCount = SpellSource && index == 0 ? 5 : 1;
+            for (int hit = 0; hit < hitCount; hit++)
+            {
+                var hitBefore = trace.Capture(targetRoom, includeOuterBossForBump: true);
+                yield return combat.ApplyDamageToTarget(1, actors[index], new CombatManager.ApplyDamageToTargetParameters
+                    { damageType = Damage.Type.Default, finalEffectInSequence = true, playedCard = sourceCard });
+                damageRows.Add(new { Before = hitBefore, Actual = trace.Capture(targetRoom, includeOuterBossForBump: true),
+                    Terminal = !actors[index].IsAlive });
+            }
             object afterDamage = new { Actors = Actors(actors),
                 FinishedDying = actors.Where(actor => actor.HasFinishedDying).Select(Id).ToArray(),
                 Active = managers.GetHeroManager().GetCharactersReadOnly().Select(Id).ToArray(), Roots = roots.Count, Steps = steps.Count,
@@ -81,6 +100,8 @@ namespace MonsterTrain2Poju.Probe
                 Schema = 1, GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId,
                 Boundary = "ControlledOriginalTrueFinalBossLethalDamageAndRemoval", Setup = "OriginalDebuffHPToOne",
                 Target = Target, TargetId = Id(actors[index]), Original = original, Controlled = controlled,
+                SourceCard = sourceCardId, SourceCardDataId = sourceCard?.GetCardDataID(), DamageRows = damageRows,
+                DeathOnceCallbacks = deathOnceCallbacks,
                 TargetProtected = protectedTarget, NativeDamageReturned = true, AfterDamageBeforeRemoval = afterDamage,
                 NativeRemovalReturned = true, Roots = roots, Steps = steps,
                 RoomBeforeDamage = roomBeforeDamage, RoomAfterRemoval = trace.Capture(targetRoom, includeOuterBossForBump: true),
@@ -90,7 +111,8 @@ namespace MonsterTrain2Poju.Probe
                 AllScenarioBossesDead = combat.AllScenarioBossesDead, NativeWon = FullBattleTrace.Active!.NativeWon,
                 PyreHealth = managers.GetPlayerManager().GetTowerHP(), RngBeforeControl = rngBefore, RngAfterDamage = Rng()
             }))
-            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "true-final-boss-death-" + Target.ToLowerInvariant() + ".mt2f"))) document.Write(output);
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "true-final-boss-" + (SpellSource ? "spell-death-" : "death-") + Target.ToLowerInvariant() + ".mt2f"))) document.Write(output);
             Completed = true;
         }
         private static IEnumerator Root(IEnumerator native, CharacterState actor, List<CharacterState> activeList,

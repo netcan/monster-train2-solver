@@ -4100,10 +4100,11 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-damage
     TrueFinalBossDamageChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("true-final-boss-death-", StringComparison.OrdinalIgnoreCase) ||
-    Path.GetFileName(path).StartsWith("true-final-boss-terminal-damage-", StringComparison.OrdinalIgnoreCase)))
+    Path.GetFileName(path).StartsWith("true-final-boss-terminal-damage-", StringComparison.OrdinalIgnoreCase) ||
+    Path.GetFileName(path).StartsWith("true-final-boss-terminal-spell-", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    TrueFinalBossDeathChecks.Native(fixture.RootElement, Path.GetFileName(path).StartsWith("true-final-boss-terminal-damage-", StringComparison.OrdinalIgnoreCase));
+    TrueFinalBossDeathChecks.Native(fixture.RootElement, Path.GetFileName(path).StartsWith("true-final-boss-terminal-", StringComparison.OrdinalIgnoreCase));
 }
 foreach (string path in args.Where(path => path.Contains("outer-boss-turn-calibration", StringComparison.OrdinalIgnoreCase)))
 {

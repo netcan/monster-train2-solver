@@ -67,7 +67,37 @@ internal static class TrueFinalBossDeathChecks
             RoomCombatState before = roomInput.Deserialize<RoomCombatState>()!;
             RoomCombatState after = root.GetProperty("RoomAfterGroup").Deserialize<RoomCombatState>()!;
             string parent = Json(before);
-            RoomCombatResult Apply() => RoomCombatModel.ApplyCardDamage(before, target, 1);
+            int sourceCardId = root.TryGetProperty("SourceCard", out FixtureValue sourceCard) ? sourceCard.GetInt32() : 0;
+            FixtureValue[] hits = sourceCardId == 0 ? Array.Empty<FixtureValue>() : root.GetProperty("DamageRows").EnumerateArray().ToArray();
+            if (sourceCardId > 0)
+            {
+                CardInstanceState card = before.Context!.FindCard(sourceCardId)!;
+                Require(card.DataId == root.GetProperty("SourceCardDataId").GetString() && card.MaskDescriptor!.Definition.CardType == "Spell" &&
+                    hits.Length == (targetIndex == 0 ? 5 : 1) && hits.Last().GetProperty("Terminal").GetBoolean(),
+                    "Missing original plain spell source, four Dominion shield hits and final lethal hit.");
+                Require(root.GetProperty("DeathOnceCallbacks").Deserialize<string[]>()!.SequenceEqual(new[] {
+                    "CardStatistics.OnCharacterDeath", "HeroManager.RemoveBossActionQueuedVFX" }) &&
+                    Json(before.Context.Statistics!.Values) == Json(after.Context!.Statistics!.Values),
+                    "Native TFB multicast ordering must mask the statistics coroutine and preserve the cached card values.");
+            }
+            RoomCombatResult Apply()
+            {
+                RoomCombatState state = before;
+                RoomCombatResult? result = null;
+                for (int index = 0; index < Math.Max(1, hits.Length); index++)
+                {
+                    if (hits.Length > 0) Require(Json(state) == Json(hits[index].GetProperty("Before").Deserialize<RoomCombatState>()!),
+                        "Dependent spell damage changed its native intermediate input.");
+                    result = RoomCombatModel.ApplyCardDamage(state, target, 1, sourceCardId);
+                    if (!result.Supported) return result;
+                    if (hits.Length > 0 && index < hits.Length - 1)
+                        Require(result.Outcome != RoomOutcome.BattleWon && !hits[index].GetProperty("Terminal").GetBoolean() &&
+                            Json(result.State!) == Json(hits[index].GetProperty("Actual").Deserialize<RoomCombatState>()!),
+                            "Native spell-shield hit differs or killed the target prematurely.");
+                    state = result.State!;
+                }
+                return result!;
+            }
             RoomCombatResult damage = Apply();
             Require(damage.Supported && damage.Outcome == RoomOutcome.BattleWon && Json(damage.State!) == Json(after),
                 "Native complete lethal room/context differs: " + (damage.Supported ?
@@ -94,7 +124,7 @@ internal static class TrueFinalBossDeathChecks
                 Train(branch) == expectedTrain, "Concurrent complete lethal room/train damage differs."); });
             Require(Json(before) == parent, "Complete terminal damage mutated its parent.");
             Require(Json(trainBefore) == trainParent, "Complete terminal damage mutated its train parent.");
-            Console.WriteLine("TRUE-FINAL-BOSS-TERMINAL-DAMAGE PASS: complete native room/train, shared outer HP, physical cleanup, cards/statistics/RNG and 64 immutable branches; stop-loop captured separately.");
+            Console.WriteLine("TRUE-FINAL-BOSS-TERMINAL-DAMAGE PASS: complete native room/train, shared outer HP, physical cleanup, cards/statistics/RNG and 64 immutable branches; sourceCard=" + sourceCardId + "; stop-loop captured separately.");
         }
         Console.WriteLine($"TRUE-FINAL-BOSS-DEATH PASS target={names[targetIndex]}: explicit original one-HP control, native lethal/deferred cleanup phases, all five removed in 3/2/1/0/0 order, flags/active lists and 64 immutable branches. NativeWon={root.GetProperty("NativeWon").ValueKind}; controlled component only.");
     }

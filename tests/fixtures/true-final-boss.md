@@ -570,6 +570,32 @@ Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case TerminalDamage -SkipBuild`。
 原生采集仍用 `-TrueFinalBossDeath <主体>`，现在包含完整状态证据。
 
+## 五主体的普通法术来源致死
+
+`true-final-boss-terminal-spell-{dominion,savagery,entropybot,entropymid,entropytop}.mt2f`
+来自 2026-10-23 五个全新进程，在同样明确的一血控制后，以原始无特征/升级的
+伤害法术作为 `playedCard`，执行原生 `ApplyDamageToTarget`。Dominion 连续五次
+一伤害：前四次消耗护盾，第五次死亡；其余主体分别一次致死。模型从各自首个
+输入连续推进全部命中，不注入后续原生 Before。完整房间、列车、跨层共享生命、
+卡牌/物理清理、统计和 RNG 均匹配，各 64 条不可变并发链通过。
+
+该来源暴露了原生一次性死亡监听器的实际执行规则：`CreateHeroState` 先挂接
+`CardStatistics.OnCharacterDeath`，真终局出生再挂接
+`HeroManager.RemoveBossActionQueuedVFX`。`CoroutineSignal<T>.Invoke` 只推进
+多播委托最后返回的协程，因此统计协程未执行；虽仍可观察到统计监听器存在，
+不能据此增加击杀计数或刷新缓存。模型只在已校准的原始真终局组移除中复现
+此行为，未改普通死亡统计。fixture 通过只读反射保留上述两个回调及顺序。
+
+附加死亡监听器会改变这个原生顺序，`full-battle-no-cards-20261022-235914-e930f210`
+仅供诊断，不登记或计入验收。最终五组均未附加监听器，原始文件未变，原生组件
+获胜、正常退出。独立无来源致死、普通攻击整场与致死 UI 定向回归通过。
+
+此项验收的是带法术来源的伤害协程，不包含支付、选中/打出卡牌的完整动作，
+也不放宽任意特征、升级或攻击者签名。其他主体的 UI 致死仍未单独校准。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case TerminalSpell -SkipBuild`。
+原生采集在 `-TrueFinalBossDeath <主体>` 上追加 `-TrueFinalBossDeathSpellSource`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件
