@@ -166,8 +166,8 @@ control are included. Existing thirteen/fifteen-row callbacks and the original
 nineteen-operation Bump fixture still pass their focused checks.
 
 Missing cached masks, friendly previews and unknown room-mask rules are rejected
-by explicit negative controls. Enemy mask changes, other callback payloads and
-unit-owned moon resource traits remain guarded. This isolated component does
+by explicit negative controls. Enemy mask changes are calibrated separately
+below; other callback payloads and unit-owned moon resource traits remain guarded. This isolated component does
 not establish a full paid-card action chain or player rolling-advice acceptance
 with movement; those require their own native execution and independent replay.
 No full regression or Mac package build is performed.
@@ -247,4 +247,41 @@ regression or Mac package build is performed.
 scripts/Run-FullBattleProbe.ps1 -EclipseChamberMovement -PlayerAdvisor -RollingAdvice -PlannerTacticalSeed -PlannerDeploymentRoom 0 -PlannerHorizon 6 -PlannerTimeLimitMs 10000 -SkipBuild
 scripts/Run-FullBattleProbe.ps1 -EclipseChamberMovement -PlayerAdvisor -RollingAdvice -RollingInput <source-profile>/full-battle.mt2f -PlannerTacticalSeed -PlannerDeploymentRoom 0 -PlannerHorizon 6 -PlannerTimeLimitMs 10000 -SkipBuild
 scripts/Check-PlayerAdvisor.ps1 -Case RoomMoonMovement -SkipBuild
+```
+
+## Opposing carriers and ordinary enemy movement
+
+`room-moon-enemy-movement-calibration.mt2f` records profile
+`full-battle-no-cards-20261022-125807-9f9754c9` (40.29 seconds, normal exit and
+unchanged protected originals). Native HeroManager creates six opposing
+Selene/Nightingale carriers from unchanged original definitions; six friendly
+carriers and one unchanged first-wave enemy provide cross-team and no-callback
+controls. Their placement and ownership are authored; these are not natural
+enemy-deck definitions.
+
+All 39 complete native boundaries and gameplay RNG match: fifteen refreshes,
+seven phase assignments, four attachment changes and thirteen enemy Bumps.
+Ten Bumps change cached understanding, 52 opposing upgrade changes occur across
+the sequence, and two ordinary enemy moves change only its mask. The stale-phase
+control still refreshes only the moved enemy. Full is compared before New, and
+the native None bit remains intact. Each row passes eight parallel immutable
+branches, including complete card-pipeline refresh comparisons.
+
+Unknown room masks must be rejected before the no-change fast path: enemies do
+not receive the friendly attachment-upgrade validation that previously caught
+them incidentally. Explicit unknown callback, prior-mask and preview guards
+also pass. Existing 13/15/37-row components and the twelve-paid-play friendly
+chain pass focused checks. The first diagnostic attempted to select a wave
+enemy before deployment had created any; it is not curated. The accepted run
+explicitly spawns the original first-wave definition without changing it.
+
+This opens the existing modeled upgrade callbacks and actual enemy Bump phase
+refresh. Paid enemy card chains, real player entry with this composition,
+previews, other callback payloads, enemy Conduit and unit-owned moon resource
+traits retain their separate acceptance boundaries. No full regression or Mac
+package build is performed.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -RoomMoonEnemyMovement -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-callback-only tests/fixtures/room-moon-enemy-movement-calibration.mt2f
 ```

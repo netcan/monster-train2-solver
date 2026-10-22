@@ -13,14 +13,26 @@ internal static class RoomMoonCallbackChecks
             root.GetProperty("Boundary").GetString() == "AfterOriginalCoroutineAndTriggerQueue", "Incomplete native room moon capture.");
         bool shade = root.TryGetProperty("ShadeCallbacks", out FixtureValue shadeFlag) && shadeFlag.GetBoolean();
         bool movement = root.TryGetProperty("MovementControls", out FixtureValue movementFlag) && movementFlag.GetBoolean();
+        bool enemy = root.TryGetProperty("EnemyControls", out FixtureValue enemyFlag) && enemyFlag.GetBoolean();
         int refreshes = 0, shifts = 0, attachments = 0, mixed = 0, changed = 0, shadeChanges = 0, bumps = 0, maskChanges = 0;
+        int enemyBumps = 0, enemyUpgradeChanges = 0, ordinaryEnemyChanges = 0;
         FixtureValue[] rows = root.GetProperty("Rows").EnumerateArray().ToArray();
-        Require((!movement || shade) && rows.Length == (movement ? 37 : shade ? 15 : 13) &&
-            root.GetProperty("ActorIds").GetArrayLength() == (shade ? 6 : 3), "Missing native controls.");
+        Require((!enemy || movement) && (!movement || shade) && rows.Length == (enemy ? 39 : movement ? 37 : shade ? 15 : 13) &&
+            root.GetProperty("ActorIds").GetArrayLength() == (enemy ? 12 : shade ? 6 : 3), "Missing native controls.");
         foreach (FixtureValue row in rows)
         {
             TrainCombatState before = row.GetProperty("Before").GetProperty("Train").Deserialize<TrainCombatState>()!;
             TrainCombatState actual = row.GetProperty("Actual").GetProperty("Train").Deserialize<TrainCombatState>()!;
+            if (enemy)
+            {
+                int[] actorIds = root.GetProperty("ActorIds").Deserialize<int[]>()!;
+                CombatUnit[] carriers = before.Rooms.SelectMany(room => room.Units).Where(unit => actorIds.Contains(unit.Id)).ToArray();
+                Require(carriers.Length == 12 && carriers.Count(unit => unit.Team == CombatTeam.Player) == 6 &&
+                    carriers.Count(unit => unit.Team == CombatTeam.Enemy) == 6 &&
+                    carriers.Count(unit => unit.Team == CombatTeam.Enemy && unit.Triggers.Any(trigger => trigger.Kind == "OnMoonLit")) == 3 &&
+                    carriers.Count(unit => unit.Team == CombatTeam.Enemy && unit.Triggers.Any(trigger => trigger.Kind == "OnMoonShade")) == 3,
+                    "Missing both original moon callback definitions on both native teams.");
+            }
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
             string operation = row.GetProperty("Operation").GetString()!;
             bool refresh = operation == "Refresh";
@@ -82,6 +94,7 @@ internal static class RoomMoonCallbackChecks
                 CombatUnit prior = before.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == id);
                 RoomCombatState room = actual.Rooms.Single(room => room.Units.Any(unit => unit.Id == id));
                 CombatUnit moved = room.Units.Single(unit => unit.Id == id);
+                if (moved.Team == CombatTeam.Enemy) enemyBumps++;
                 if (row.GetProperty("Label").GetString() == "full-enters-mask")
                     GuardedMovement(before, row, id);
                 Require(!before.Rooms.Single(old => old.Units.Any(unit => unit.Id == id)).RoomIndex.Equals(room.RoomIndex) &&
@@ -89,6 +102,14 @@ internal static class RoomMoonCallbackChecks
                         actual.Context!.QueryFrame!.MoonPhase!.Value),
                     "Native Bump did not refresh its moved character after changing rooms.");
                 if (prior.MoonPhaseMask != moved.MoonPhaseMask) maskChanges++;
+                if (enemy && id == root.GetProperty("OrdinaryEnemyId").GetInt32())
+                {
+                    Require(moved.Team == CombatTeam.Enemy && moved.Triggers.All(trigger => !trigger.Kind.Contains("Moon")) &&
+                        prior.MoonPhaseMask != moved.MoonPhaseMask &&
+                        JsonSerializer.Serialize(prior.Modifiers) == JsonSerializer.Serialize(moved.Modifiers),
+                        "Ordinary enemy movement must change understanding without moon upgrade callbacks.");
+                    ordinaryEnemyChanges++;
+                }
                 if (row.GetProperty("Label").GetString() == "only-moved-character-refreshes-stale-phase")
                 {
                     CombatUnit[] others = before.Rooms.SelectMany(item => item.Units).Where(unit => unit.Id != id).ToArray();
@@ -108,6 +129,9 @@ internal static class RoomMoonCallbackChecks
             if (actual.Rooms.SelectMany(room => room.Units).Any(unit => (unit.MoonPhaseMask & 3) == 3)) mixed++;
             changed += actual.Rooms.SelectMany(room => room.Units).Count(unit => before.Rooms.SelectMany(room => room.Units)
                 .Any(prior => prior.Id == unit.Id && prior.Modifiers!.Upgrades.Count != unit.Modifiers!.Upgrades.Count));
+            enemyUpgradeChanges += actual.Rooms.SelectMany(room => room.Units).Count(unit => unit.Team == CombatTeam.Enemy &&
+                before.Rooms.SelectMany(room => room.Units).Any(prior => prior.Id == unit.Id &&
+                    prior.Modifiers!.Upgrades.Count != unit.Modifiers!.Upgrades.Count));
             shadeChanges += actual.Rooms.SelectMany(room => room.Units).Count(unit => before.Rooms.SelectMany(room => room.Units)
                 .Any(prior => prior.Id == unit.Id && prior.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade") !=
                     unit.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "Nightingale_Upgrade")));
@@ -116,8 +140,10 @@ internal static class RoomMoonCallbackChecks
             "Missing refresh, shift, mixed mask or actual callback witnesses.");
         Require(!shade || attachments == (movement ? 4 : 2) && shadeChanges >= 12,
             "Missing explicit attachment/removal and original Nightingale callback changes.");
-        Require(!movement || bumps == 11 && maskChanges >= 8, "Missing physical movement and understanding-change witnesses.");
-        Console.WriteLine($"ROOM-MOON-CALLBACK PASS refreshes={refreshes} shifts={shifts} attachments={attachments} bumps={bumps} maskChanges={maskChanges} mixed={mixed} changedUpgrades={changed} shadeChanges={shadeChanges} parallelBranches=8 immutable=true");
+        Require(!movement || bumps == (enemy ? 13 : 11) && maskChanges >= (enemy ? 10 : 8), "Missing physical movement and understanding-change witnesses.");
+        Require(!enemy || enemyBumps == 13 && enemyUpgradeChanges >= 40 && ordinaryEnemyChanges == 2,
+            "Missing opposing callback carriers or ordinary enemy mask-change controls.");
+        Console.WriteLine($"ROOM-MOON-CALLBACK PASS refreshes={refreshes} shifts={shifts} attachments={attachments} bumps={bumps} maskChanges={maskChanges} mixed={mixed} changedUpgrades={changed} shadeChanges={shadeChanges} enemyBumps={enemyBumps} enemyUpgradeChanges={enemyUpgradeChanges} ordinaryEnemyChanges={ordinaryEnemyChanges} parallelBranches=8 immutable=true");
     }
     private static void GuardedMovement(TrainCombatState before, FixtureValue row, int id)
     {
@@ -135,10 +161,14 @@ internal static class RoomMoonCallbackChecks
         Reject(state =>
         {
             foreach (JsonNode? room in state["Rooms"]!.AsArray()) room!["Preview"] = true;
-        }, "friendly preview");
+        }, "moon understanding preview");
         Reject(state => state["Context"]!["RoomCapacities"]!.AsArray()
             .Single(room => room!["RoomIndex"]!.GetValue<int>() == 0)!["Attachments"]![0]!["MoonPhase"]!["AdditionalMask"] = 2,
             "unknown room moon rule");
+        Reject(state => state["Rooms"]!.AsArray().SelectMany(room => room!["Units"]!.AsArray())
+            .SelectMany(unit => unit!["Triggers"]!.AsArray())
+            .First(trigger => trigger!["Kind"]!.GetValue<string>().Contains("Moon") && trigger["Effects"]!.AsArray().Count > 0)!
+            ["Effects"]![0]!["Type"] = "UncalibratedMoonCallback", "unknown callback payload");
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

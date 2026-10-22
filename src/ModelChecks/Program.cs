@@ -3710,7 +3710,8 @@ foreach (string path in args.Where(path => path.Contains("conduit-movement-calib
     ConduitMovementChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("room-moon-callback-calibration", StringComparison.OrdinalIgnoreCase) ||
-    path.Contains("room-moon-movement-calibration", StringComparison.OrdinalIgnoreCase)))
+    path.Contains("room-moon-movement-calibration", StringComparison.OrdinalIgnoreCase) ||
+    path.Contains("room-moon-enemy-movement-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);
     RoomMoonCallbackChecks.Native(document.RootElement);

@@ -17,6 +17,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_CALLBACKS") == "1";
         internal static bool Shade => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SHADE") == "1";
         internal static bool Movement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_MOVEMENT") == "1";
+        internal static bool Enemy => Movement && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_ENEMY") == "1";
         internal static bool Started, Completed;
         internal static string? Error;
         private static AllGameManagers Managers => AllGameManagers.Instance!;
@@ -89,6 +90,34 @@ namespace MonsterTrain2Poju.Probe
                         data.FindCardData("7775c5b5-eed9-4864-9976-9c86896becc1")!.GetSpawnCharacterData(), null!, floor,
                         unit => { actors.Add(unit); Trace.UnitId(unit); }, SpawnMode.SelectedSlot,
                         rooms.GetRoom(floor).GetMonsterPoint(1), isCardless: true);
+            var enemies = new List<CharacterState>();
+            CharacterState? ordinaryEnemy = null;
+            if (Enemy)
+            {
+                SaveManager save = Managers.GetSaveManager();
+                var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(Managers.GetHeroManager());
+                var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
+                CharacterData ordinary = ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
+                    .GetValue(waves[0])).Cast<SpawnGroupData>()
+                    .SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()))
+                    .First(unit => !unit.GetTriggers().Any(trigger => trigger.GetTrigger().ToString().Contains("Moon")));
+                yield return Managers.GetHeroManager().SpawnHeroInRoom(ordinary, 0, null!);
+                var initial = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(initial, Team.Type.Heroes);
+                ordinaryEnemy = initial.Single(); Trace.UnitId(ordinaryEnemy);
+                // Authored opposing carriers use unchanged original definitions;
+                // native HeroManager owns their actual team, creation and placement.
+                foreach (string cardId in new[] { "2b7a187f-da0b-4c34-b8c5-b18755911b43", "7775c5b5-eed9-4864-9976-9c86896becc1" })
+                    foreach (int floor in new[] { 1, 0, 2 })
+                    {
+                        var prior = new List<CharacterState>();
+                        rooms.GetRoom(floor).AddCharactersToList(prior, Team.Type.Heroes);
+                        yield return Managers.GetHeroManager().SpawnHeroInRoom(data.FindCardData(cardId)!.GetSpawnCharacterData(), floor, null!);
+                        var current = new List<CharacterState>();
+                        rooms.GetRoom(floor).AddCharactersToList(current, Team.Type.Heroes);
+                        CharacterState enemy = current.Single(unit => !prior.Contains(unit));
+                        enemies.Add(enemy); Trace.UnitId(enemy);
+                    }
+            }
             yield return player.SetMoonPhase(PlayerManager.MoonPhase.Full);
             yield return Managers.GetCombatManager().RunTriggerQueue();
             CardData eclipseData = data.FindCardData(EclipseChamberScenario.DataId)!;
@@ -125,30 +154,36 @@ namespace MonsterTrain2Poju.Probe
             yield return Refresh("detached-full-noop", refresh);
             if (Movement)
             {
+                List<CharacterState> movers = Enemy ? enemies : actors;
                 yield return Record("movement-attach", "Attach", false, 0,
                     rooms.GetRoom(0).AddTrainRoomAttachment("poju-room-moon-movement", eclipse, upgrade, null!,
                         Team.Type.Monsters, TrainRoomAttachmentType.Primary, Managers.GetCoreManagers(), skipTargeting: true));
-                yield return Move("full-enters-mask", actors[0], -1);
-                yield return Move("full-leaves-mask", actors[0], 1);
-                yield return Move("new-enters-via-bump", actors[3], -1);
+                yield return Move("full-enters-mask", movers[0], -1);
+                yield return Move("full-leaves-mask", movers[0], 1);
+                yield return Move("new-enters-via-bump", movers[3], -1);
                 yield return Refresh("enter-character-refresh-is-noop", refresh);
-                yield return Move("new-leaves-via-bump", actors[3], 1);
+                yield return Move("new-leaves-via-bump", movers[3], 1);
                 yield return Refresh("resource-refresh-after-bump-is-noop", resourceOnly);
                 yield return Refresh("leave-character-refresh-is-noop", refresh);
-                yield return Move("native-new-holder-leaves-mask", actors[4], 1);
+                yield return Move("native-new-holder-leaves-mask", movers[4], 1);
                 yield return Refresh("holder-leave-refresh-is-noop", refresh);
-                yield return Move("native-new-holder-reenters-mask", actors[4], -1);
+                yield return Move("native-new-holder-reenters-mask", movers[4], -1);
                 yield return Refresh("holder-return-refresh-is-noop", refresh);
                 yield return player.SetMoonPhase(PlayerManager.MoonPhase.New, shouldTriggerShift: false);
                 yield return Managers.GetCombatManager().RunTriggerQueue();
-                yield return Move("only-moved-character-refreshes-stale-phase", actors[0], -1);
+                yield return Move("only-moved-character-refreshes-stale-phase", movers[0], -1);
                 yield return Record("restore-full-after-target-only", "SetMoonPhase", false, 2, player.SetMoonPhase(PlayerManager.MoonPhase.Full));
-                yield return Move("target-only-return", actors[0], 1);
+                yield return Move("target-only-return", movers[0], 1);
                 yield return Record("movement-global-new", "SetMoonPhase", false, 1, player.SetMoonPhase(PlayerManager.MoonPhase.New));
-                yield return Move("global-new-unmasked-control", actors[2], -1);
-                yield return Move("global-new-enters-mask-control", actors[2], -1);
-                yield return Move("global-new-two-floor-return", actors[2], 2);
+                yield return Move("global-new-unmasked-control", movers[2], -1);
+                yield return Move("global-new-enters-mask-control", movers[2], -1);
+                yield return Move("global-new-two-floor-return", movers[2], 2);
                 yield return Record("movement-global-full", "SetMoonPhase", false, 2, player.SetMoonPhase(PlayerManager.MoonPhase.Full));
+                if (Enemy)
+                {
+                    yield return Move("ordinary-enemy-leaves-mask", ordinaryEnemy!, 1);
+                    yield return Move("ordinary-enemy-reenters-mask", ordinaryEnemy!, -1);
+                }
                 yield return Record("movement-detach", "Detach", false, 0,
                     rooms.GetRoom(0).RemoveTrainRoomAttachment(rooms.GetRoom(0).Attachments.Single(), Managers.GetCoreManagers()));
                 yield return Refresh("movement-reset-full-noop", refresh);
@@ -158,10 +193,12 @@ namespace MonsterTrain2Poju.Probe
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeCompleted = true, RngUnchanged = rngUnchanged, PreviewUpdatesSuppressed = Managers.GetCombatManager().SuppressCombatPreviewUpdates,
                 Boundary = "AfterOriginalCoroutineAndTriggerQueue",
-                ShadeCallbacks = Shade, MovementControls = Movement, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0],
-                ActorIds = actors.Select(Trace.UnitId).ToArray(), Rows = rows }))
+                ShadeCallbacks = Shade, MovementControls = Movement, EnemyControls = Enemy,
+                OrdinaryEnemyId = ordinaryEnemy == null ? 0 : Trace.UnitId(ordinaryEnemy),
+                AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0],
+                ActorIds = actors.Concat(enemies).Select(Trace.UnitId).ToArray(), Rows = rows }))
             using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
-                Movement ? "room-moon-movement-calibration.mt2f" : "room-moon-callback-calibration.mt2f"))) document.Write(stream);
+                Enemy ? "room-moon-enemy-movement-calibration.mt2f" : Movement ? "room-moon-movement-calibration.mt2f" : "room-moon-callback-calibration.mt2f"))) document.Write(stream);
             Completed = true; log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS rows=" + rows.Count + " gameplayRngUnchanged=" + rngUnchanged);
         }
     }

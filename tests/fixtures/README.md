@@ -1,7 +1,7 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 883 archives (809 full battles and
-74 component calibrations), 224/224 original relic owners (100%): 206 battle
+Current manifest inventory (2026-10-22): 884 archives (809 full battles and
+75 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 The natural Fragile checkpoint is retained in `campaign-progressed-ring8-fragile.zip`
@@ -57,7 +57,8 @@ through card actions, then observes native turn-end destruction with animation
 settlement enabled. Thirty-six plays, eight EndTurns and sixteen complete
 immutable branches match. `full-battle-train-heal-per-ember.mt2f` calibrates the
 original upgrade with explicit carrier/cost/HP controls: raw costs 1,1,3,1,
-paid costs 1,0,2,0 and actual healing 1,1,3,0. X-cost healing remains guarded.
+paid costs 1,0,2,0 and actual healing 1,1,3,0. The separate X-cost fixture above
+now covers original Vent; negative healing remains guarded.
 See [removal and healing scope](retired-auras-and-ember-healing.md).
 
 `full-battle-event-grafted-equipment.mt2f` covers naturally acquired
@@ -102,6 +103,14 @@ changes, fifteen refreshes, seven global shifts and four attachment changes.
 Only the moved actor refreshes after Shift/Sentry; stale non-targets remain
 unchanged. Eight immutable branches per row and missing-mask/preview/unknown
 room-rule guards pass. See [scope and reproduction](room-moon-callbacks.md).
+
+`room-moon-enemy-movement-calibration.mt2f` adds 39 complete native boundaries,
+with unchanged original Selene/Nightingale definitions created on both teams
+and an ordinary first-wave enemy. Thirteen enemy moves include ten mask changes;
+52 enemy upgrade changes and two callback-free controls match full state/RNG.
+Eight immutable branches per row and unknown-payload/room-rule/preview/mask
+guards pass. This authored component does not establish a paid enemy action
+chain or natural late-game player acceptance.
 
 `full-battle-eclipse-chamber-movement.mt2f` extends that mechanism to twelve
 paid plays and five EndTurns, winning with Pyre80. Two original Hidden Passage
