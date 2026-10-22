@@ -163,7 +163,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (!Enabled || AllGameManagers.Instance.GetSaveManager().PreviewMode) return;
                 CharacterState boss = Field<CharacterState>(__instance, "_characterState");
-                if (boss.IsOuterTrainBoss()) Owners[Field<BossActionController>(__instance, "_bossActionController")] = boss.GetSourceCharacterData().name;
+                if (boss.IsOuterTrainBoss() || boss.IsTrueFinalBoss()) Owners[Field<BossActionController>(__instance, "_bossActionController")] = boss.GetSourceCharacterData().name;
             }
         }
         [HarmonyPatch(typeof(BossActionController), nameof(BossActionController.DecideInitialAction))]

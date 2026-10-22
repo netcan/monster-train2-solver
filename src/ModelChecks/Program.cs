@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] is "--true-final-boss-phases-only" or "--true-final-boss-controllers-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--true-final-boss-phases-only") TrueFinalBossPhaseChecks.Phases(fixture.RootElement);
+    else TrueFinalBossPhaseChecks.Controllers(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--pyrebane-targets-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3861,6 +3869,17 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-pyreba
 {
     using var fixture = ModelJson.ReadFixture(path);
     PyreBaneChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-controller-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossPhaseChecks.Controllers(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-phase-calibration", StringComparison.OrdinalIgnoreCase) ||
+    path.Contains("true-final-boss-exhausted-phase-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossPhaseChecks.Phases(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-spawn-calibration", StringComparison.OrdinalIgnoreCase)))
 {

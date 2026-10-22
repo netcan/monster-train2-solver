@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Birth', 'Spawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Death')][string[]] $Case = @('Birth', 'Spawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Death'),
+    [ValidateSet('Birth', 'Spawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Death')][string[]] $Case = @('Birth', 'Spawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Death'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -36,6 +36,9 @@ foreach ($item in $Case) {
     elseif ($item -eq 'AllTargetDamage') { 'true-final-boss-all-target-damage-calibration.mt2f' }
     elseif ($item -eq 'SpellDamage') { 'true-final-boss-spell-damage-calibration.mt2f' }
     elseif ($item -eq 'PyreBaneTargets') { 'true-final-boss-pyrebane-targets-calibration.mt2f' }
+    elseif ($item -eq 'Controllers') { 'true-final-boss-controller-calibration.mt2f' }
+    elseif ($item -eq 'Phases') { 'true-final-boss-phase-calibration.mt2f' }
+    elseif ($item -eq 'ExhaustedPhases') { 'true-final-boss-exhausted-phase-calibration.mt2f' }
     else { 'true-final-boss-damage-calibration.mt2f' }
     $mode = if ($item -eq 'Birth') { '--true-final-boss-birth-only' }
     elseif ($item -eq 'Spawn') { '--true-final-boss-spawn-only' } elseif ($item -eq 'Health') {
@@ -44,6 +47,8 @@ foreach ($item in $Case) {
     elseif ($item -eq 'HealthUpdates') { '--true-final-boss-health-updates-only' }
     elseif ($item -eq 'World') { '--true-final-boss-world-only' }
     elseif ($item -eq 'PyreBaneTargets') { '--pyrebane-targets-only' }
+    elseif ($item -eq 'Controllers') { '--true-final-boss-controllers-only' }
+    elseif ($item -in @('Phases', 'ExhaustedPhases')) { '--true-final-boss-phases-only' }
     else { '--true-final-boss-damage-only' }
     Invoke-TrueFinalBossArchive $archive $mode
 }

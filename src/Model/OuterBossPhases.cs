@@ -52,7 +52,10 @@ namespace MonsterTrain2Poju.Model
     {
         public BattleTurnState Battle { get; }
         public OuterBossProgress Boss { get; }
-        public OuterBossPhaseState(BattleTurnState battle, OuterBossProgress boss) { Battle = battle; Boss = boss; }
+        public TrueFinalBossPhaseFlags? TrueFinalBoss { get; }
+        public bool ShouldSerializeTrueFinalBoss() => TrueFinalBoss != null;
+        public OuterBossPhaseState(BattleTurnState battle, OuterBossProgress boss, TrueFinalBossPhaseFlags? trueFinalBoss = null)
+        { Battle = battle; Boss = boss; TrueFinalBoss = trueFinalBoss; }
     }
     public sealed class OuterBossPhaseResult
     {
@@ -67,6 +70,7 @@ namespace MonsterTrain2Poju.Model
         // these phase boundaries independently of whole-EndTurn integration.
         public static OuterBossPhaseResult Apply(OuterBossPhaseState source, bool preCombat)
         {
+            if (source.Boss.AssetKey == "Boss_Level9_Entropy_Top_V2") return TrueFinalBossPhaseModel.Apply(source, preCombat);
             if (source.Boss.Phase == "Relentless" || preCombat && source.Battle.Spawn.Phase >= source.Battle.Spawn.Waves.Count)
                 return OuterBossRelentlessPhaseModel.Apply(source, preCombat);
             return Casting(source, preCombat);

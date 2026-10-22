@@ -92,8 +92,15 @@ namespace MonsterTrain2Poju.Probe
                 Field<List<ActionGroupState>>(controller, "_actionGroups").Select(group => (IReadOnlyList<OuterBossActionProgress>)group.GetActions().Select(Action).ToArray()).ToArray(),
                 Field<ActionGroupState>(controller, "_roomDestroyActionGroup").GetActions().Select(Action).ToArray());
         }
-        private static OuterBossPhaseState Capture() => new OuterBossPhaseState(FullBattleTrace.Active!.CaptureDecision(
-            includeOuterBossForBump: true, ignoreOuterBossSpawnInteraction: true), CaptureProgress());
+        private static OuterBossPhaseState Capture()
+        {
+            HeroManager heroes = AllGameManagers.Instance.GetHeroManager();
+            TrueFinalBossPhaseFlags? flags = heroes.GetOuterTrainBossCharacter().IsTrueFinalBoss() ? new TrueFinalBossPhaseFlags(
+                Field<bool>(heroes, "hasHellforgedBoss"), Field<bool>(heroes, "hasHellforgedBossWaitedOnRelentless"),
+                Field<List<int>>(heroes, "queuedTrueFinalBosses").Count) : null;
+            return new OuterBossPhaseState(FullBattleTrace.Active!.CaptureDecision(
+                includeOuterBossForBump: true, ignoreOuterBossSpawnInteraction: true), CaptureProgress(), flags);
+        }
         private static IEnumerator Observe(IEnumerator native)
         {
             Record? row = null;

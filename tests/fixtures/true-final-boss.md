@@ -248,6 +248,32 @@ Entropy Bot 前；最后一次死亡标记只给最后一个实体。当前仅�
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Death -SkipBuild`。
 
+## 原生控制器与回合前后动作阶段
+
+`true-final-boss-controller-calibration.mt2f` 与 `true-final-boss-phase-calibration.mt2f`
+来自 `full-battle-no-cards-20261022-201428-384921d9`，53.05 秒，原生正常退出。
+原始资源、牌组及火炉保持不变。控制器覆盖 Dominion、Savagery 与全局 Entropy
+Top 的 11 次实际调用，以及 1152 次隔离原生转换。Dominion/Top 普通动作组为空，
+Savagery 有一个初始动作；不能把五实体控制器都当作空定义。
+
+九个自然回合前后动作阶段（五次前置、四次后置）保持 Hellforged Casting。
+完整战斗、普通敌军、牌堆、控制器和 RNG 与原生一致，64 条并发分支不改父状态。
+期间 Savagery 在三层循环，Dominion 被火炉实际攻击，不能假设跨回合生命不变。
+
+`true-final-boss-exhausted-phase-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-202001-f0c85a57`，34.27 秒，原生正常退出。
+此场景明确在第二回合把原始九波刷怪队列推进到末尾，并将火炉生命/上限设为 1。
+三个动作阶段（两次前置、一次后置）及 64 条并发分支完整匹配，验证刷怪队列
+清空时仍保持 Casting，不进入普通 Level8 的无情期切换。
+
+两个来源整局的采集失败、模型差异、待完成项为零，但 unsupported 分别为
+65/23，原生均败北，封装器均 `DEPTH-FAIL`。以上仅关闭控制器与动作阶段组件，
+受控一血场景不算自然战斗、自然胜局或整场支持。
+
+```powershell
+./scripts/Check-TrueFinalBoss.ps1 -Case Controllers,Phases,ExhaustedPhases -SkipBuild
+```
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件
