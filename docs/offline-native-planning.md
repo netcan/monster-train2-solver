@@ -56,3 +56,12 @@ failure counters. After these fixes, the failed Corrupter archive matches all
 17 observed successors and four train phases. The already accepted Ring7 and
 Fragile sources also match their 50 and 54 successors; four existing Bump
 archives retain their original damage, Pyregel and paired Boss checks.
+
+The middle-deployment native run `20261023-061531-9847a7c1` then exposed a
+separate triggered-status omission at input23: Firebrand's visible OnHit adds
+2 Valor, which its Duality doubles to 4. Triggered status application now uses
+the source character's Duality, preserves hidden-trigger and IgnoreDualism
+exemptions, excludes the Corrupter multiplier's null character source, and
+requires captured display categories. The partial archive matches all 23
+actual inputs and six train phases after this correction. Its failed original
+plan remains a diagnostic, not a native victory.

@@ -24,6 +24,24 @@ internal static class TriggeredStatusChecks
         CombatTrigger Trigger(string kind, params CombatEffect[] effects) => new(kind, false, false, true, 1, effects, false);
         RoomCombatState Room(params CombatUnit[] units) => new(0, false, units, [], context);
         var root = Room(Unit(1, CombatTeam.Player, card: 1), Unit(4, CombatTeam.Enemy), Unit(5, CombatTeam.Enemy));
+        var dual = Room(Unit(1, CombatTeam.Player, statuses: [new("duality", 1)]), Unit(4, CombatTeam.Enemy));
+        var valor = new CombatStatus("valor", 2, stackable: true, displayCategory: "Positive");
+        foreach (var status in new[] { valor, new CombatStatus("corruption", 2, stackable: true, displayCategory: "Negative"),
+            new CombatStatus("armor", 2, stackable: true) })
+        {
+            var doubled = TriggeredStatusModel.Apply(dual, 1, Effect(0, [status]), [4]);
+            Require(doubled.Supported && doubled.State!.Units.Single(u => u.Id == 4).Status(status.Id)!.Stacks == 4,
+                "Visible character status trigger did not apply source Duality: " + status.Id);
+        }
+        foreach (bool hidden in new[] { false, true })
+        {
+            var ignored = TriggeredStatusModel.Apply(dual, 1,
+                Effect(0, [valor], scaling: new(ignoreDualism: !hidden)), [4], isFromHiddenTrigger: hidden);
+            Require(ignored.Supported && ignored.State!.Units.Single(u => u.Id == 4).Status("valor")!.Stacks == 2,
+                "Hidden or explicitly exempt status trigger incorrectly applied Duality.");
+        }
+        Require(!TriggeredStatusModel.Apply(dual, 1, Effect(0, [new("valor", 2)]), [4]).Supported,
+            "Triggered Duality accepted missing native display metadata.");
         string parent = JsonSerializer.Serialize(root);
         var feedback = TriggeredStatusModel.Apply(root, 1, Effect(0, [new("armor", 0, stackable: true)]), [4, 5]);
         Require(feedback.Supported && feedback.State!.Units.Single(u => u.Id == 5).Status("armor")!.Stacks == 3 &&

@@ -3744,7 +3744,7 @@ namespace MonsterTrain2Poju.Model
                             {
                                 if (live < 0 && effect.Action.Type == "DrawNextTurn" && retained.StateId == null)
                                 { unsupportedReason = "Detached bonus-draw trigger source requires captured persistent identity."; break; }
-                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, retained.StateId ?? (live < 0 ? index : live), effectIndex, kind, lastSpawnedOverrideUnitId)) break;
+                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, retained.StateId ?? (live < 0 ? index : live), effectIndex, kind, lastSpawnedOverrideUnitId, retained.IgnoreSilence)) break;
                             }
                             else if (effect.UnitUpgrade != null)
                             {
@@ -4689,7 +4689,7 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }
 
-            private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId)
+            private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId, bool hiddenTrigger)
             {
                 CardActionEffect action = effect.Action!;
                 if (action.Type == "ScheduleNextDrawUpgrade")
@@ -5027,7 +5027,8 @@ namespace MonsterTrain2Poju.Model
                 if (action.Type == "AddStatus")
                 {
                     EnchantmentWorld? physicalWorld = context?.Enchantments;
-                    RoomCombatResult applied = TriggeredStatusModel.Apply(RetainedStatusRoom(actor, targets.UnitIds), actor.Source.Id, effect, targets.UnitIds);
+                    RoomCombatResult applied = TriggeredStatusModel.Apply(RetainedStatusRoom(actor, targets.UnitIds), actor.Source.Id,
+                        effect, targets.UnitIds, isFromHiddenTrigger: hiddenTrigger);
                     if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
                     context = applied.State!.Context;
                     foreach (CombatUnit changed in applied.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);

@@ -89,7 +89,7 @@ namespace MonsterTrain2Poju.Model
         // The engine supplies a fixed collection and retains dying actor/target snapshots.
         // Native TestEffect selects on BattleTest; only actual application advances Battle here.
         internal static RoomCombatResult Apply(RoomCombatState source, int actorId, CombatEffect effect, IReadOnlyList<int> targetIds,
-            int? sourceCardId = null)
+            int? sourceCardId = null, bool isFromHiddenTrigger = false)
         {
             string? error = Validate(effect);
             CombatUnit? actor = source.Units.FirstOrDefault(unit => unit.Id == actorId);
@@ -97,7 +97,7 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported(error ?? "Triggered status requires captured actor, targets and battle context.");
             CardActionEffect action = effect.Action!;
             if (effect.Type == "CardEffectAddStatusEffectBasedOnHealth")
-                return ApplyHealthChoice(source, actor, effect, targetIds, sourceCardId);
+                return ApplyHealthChoice(source, actor, effect, targetIds, sourceCardId, isFromHiddenTrigger);
             bool perSelfAttack = effect.Type == "CardEffectAddStatusEffectPerSelfAttack";
             bool perLastAttack = effect.Type == "CardEffectAddStatusEffectPerLastAttackDamage";
             if (perLastAttack && source.Context.Statistics == null)
@@ -146,6 +146,10 @@ namespace MonsterTrain2Poju.Model
             }
             if (perLastAttack)
                 status = status.WithStacks(context.Statistics!.LastAttackDamageDealt / (action.Value == 0 ? 1 : action.Value));
+            bool duality = effect.Type != "CardEffectMultiplyStatusEffect" && !isFromHiddenTrigger &&
+                scaling?.IgnoreDualism != true && actor.Status("duality")?.Stacks > 0;
+            if (duality && status.Id != "armor" && status.DisplayCategory == null)
+                return Unsupported("Triggered Duality requires the captured status display category.");
             int chance = perSelfAttack || perLastAttack ? 0 : action.Value;
             if (!perSelfAttack && !perLastAttack && action.Range != null)
             {
@@ -175,7 +179,8 @@ namespace MonsterTrain2Poju.Model
                     incoming = status.WithStacks(delta);
                 }
                 RoomCombatResult added = StatusApplicationModel.ApplyRetained(state, id, incoming, sourceCardId ?? actor.SpawnerCardId,
-                    overrideImmunity: action.Target == "Pyre", fromEffectType: multiply ? "CardEffectMultiplyStatusEffect" : null);
+                    overrideImmunity: action.Target == "Pyre", fromEffectType: multiply ? "CardEffectMultiplyStatusEffect" : null,
+                    doubleForDuality: duality && AffectedByDuality(incoming));
                 if (!added.Supported) return added;
                 callbacks.AddRange(added.PendingCallbacks);
                 state = added.State!;
@@ -196,8 +201,11 @@ namespace MonsterTrain2Poju.Model
             int threshold = (int)Math.Ceiling((float)percent / 100f * maximum);
             return (above ? health >= threshold : health < threshold) ? 0 : 1;
         }
+        private static bool AffectedByDuality(CombatStatus status) => status.Id == "armor" ||
+            status.DisplayCategory is "Positive" or "Negative";
+
         private static RoomCombatResult ApplyHealthChoice(RoomCombatState source, CombatUnit actor, CombatEffect effect,
-            IReadOnlyList<int> targets, int? sourceCardId)
+            IReadOnlyList<int> targets, int? sourceCardId, bool isFromHiddenTrigger)
         {
             var state = source; var events = new List<CombatEvent>();
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
@@ -208,7 +216,11 @@ namespace MonsterTrain2Poju.Model
                     effect.StatusScaling.HealthChoiceAbove);
                 if (selected >= effect.Action!.Statuses.Count) continue;
                 var status = effect.Action.Statuses[selected];
-                var added = StatusApplicationModel.ApplyRetained(state, id, status, sourceCardId ?? actor.SpawnerCardId);
+                bool duality = !isFromHiddenTrigger && actor.Status("duality")?.Stacks > 0;
+                if (duality && status.Id != "armor" && status.DisplayCategory == null)
+                    return Unsupported("Triggered Duality requires the captured status display category.");
+                var added = StatusApplicationModel.ApplyRetained(state, id, status, sourceCardId ?? actor.SpawnerCardId,
+                    doubleForDuality: duality && AffectedByDuality(status));
                 if (!added.Supported) return added;
                 state = added.State!; callbacks.AddRange(added.PendingCallbacks);
                 events.Add(new CombatEvent(0, "TriggeredStatus:" + status.Id, actor.Id, id,
