@@ -1,8 +1,8 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
-    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
+    [ValidateSet('Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
+    [string[]] $Case = @('Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -25,6 +25,7 @@ foreach ($name in $Case) {
         'TrueFinalBossOrdinary' { 'player-true-final-boss-ordinary' }
         'TrueFinalBossOrdinaryUpgraded' { 'player-true-final-boss-ordinary-upgraded' }
         'TrueFinalBossAvenger' { 'player-true-final-boss-avenger' }
+        'TrueFinalBossAvengerUpgraded' { 'player-true-final-boss-avenger-upgraded' }
         'TrialAllyBuffer' { 'player-boss-trial-allybuffer-bounded' }
         'TrialFragile' { 'player-boss-trial-fragile-bounded' }
         'TrialCorrupter' { 'player-boss-trial-corrupter-bounded' }

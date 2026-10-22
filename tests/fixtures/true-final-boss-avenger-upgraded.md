@@ -24,4 +24,6 @@ Damage 来源 `full-battle-units-and-junk-20261023-045030-c9e8a8df`；
 Both 来源 `full-battle-units-and-junk-20261023-045223-2636c61b`。
 使用 `-TrueFinalBossOrdinaryAlly Avenger -TrueFinalBossOrdinaryAllyUpgrade
 Health|Damage|Both` 采集；`Check-TrueFinalBoss.ps1 -Case OrdinaryAlly`
-登记三项。未运行全量回归或构建 Mac 包。
+登记三项。双强化另外完成真实玩家建议及新进程九输入冻结重放，实际
+部署 30/60 的单位并有三次受击见证，见 [玩家配对验收](player-true-final-boss-avenger-upgraded.md)。
+未运行全量回归或构建 Mac 包。

@@ -6,7 +6,7 @@ internal static class PlayerTrueFinalBossChecks
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
     internal static void Pair(FixtureValue source, FixtureValue replay, bool ordinaryAlly = false, bool upgradedAlly = false, bool triggeredAlly = false)
     {
-        Require(!triggeredAlly || ordinaryAlly && !upgradedAlly, "Triggered player ally must use its separately calibrated unmodified profile.");
+        Require(!triggeredAlly || ordinaryAlly, "Triggered player ally requires its declared original source profile.");
         RollingAdviceChecks.FrozenPair(source, replay);
         BattleAdviceChecks.Native(source);
         Require(source.GetProperty("PlayerAdvisor").GetProperty("InteractionsPassed").GetBoolean(),
@@ -71,7 +71,7 @@ internal static class PlayerTrueFinalBossChecks
         {
             int cardId = source.GetProperty("TrueFinalBossOrdinaryAllyControl").GetProperty("CardId").GetInt32();
             BattleTurnState? deployed = states.FirstOrDefault(state => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
-                unit.SpawnerCardId == cardId && unit.AssetKey == "MonsterAvenger" && unit.BaseAttack == 20 && unit.MaxHealth == 40 &&
+                unit.SpawnerCardId == cardId && unit.AssetKey == "MonsterAvenger" && unit.BaseAttack == (upgradedAlly ? 30 : 20) && unit.MaxHealth == (upgradedAlly ? 60 : 40) &&
                 unit.Triggers.Count == 1 && TrueFinalBossCombatModel.SupportsAlly(unit, state.Spawn.Train.Context)));
             Require(deployed != null, "Real player advice must actually summon the original OnHit ally with complete source metadata.");
             CombatUnit ally = deployed!.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == cardId);
