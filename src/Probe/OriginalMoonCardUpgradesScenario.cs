@@ -14,6 +14,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool RoomMask => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_ROOM_MASK") == "1";
         internal static bool Lunacy => RoomMask && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_LUNACY") == "1";
+        internal static bool CostRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_COST_RELIC") == "1";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static readonly List<HandSample> Hands = new List<HandSample>();
@@ -63,6 +64,7 @@ namespace MonsterTrain2Poju.Probe
                 created.AddRange(new[] { Add("e9fa09e5-13bd-4826-a8e5-969332cbfbbf"), Add(refill.GetID()),
                     Add("e9fa09e5-13bd-4826-a8e5-969332cbfbbf"), Add("e9fa09e5-13bd-4826-a8e5-969332cbfbbf") });
             }
+            if (CostRelic) created.AddRange(new[] { Add(OriginalCardTypeCostScenario.BlightId), Add(OriginalCardTypeCostScenario.JunkId) });
             foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardUpgradeData numeric = all.GetAllCardUpgradeData().First(upgrade => upgrade.GetBonusDamage() > 0 && upgrade.GetTraitDataUpgrades().Count == 0 &&
                 upgrade.GetCardTriggerUpgrades().Count == 0 && upgrade.GetStatusEffectUpgrades().Count == 0);

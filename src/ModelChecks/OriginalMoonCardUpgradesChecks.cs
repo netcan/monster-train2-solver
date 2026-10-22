@@ -18,6 +18,7 @@ internal static class OriginalMoonCardUpgradesChecks
     {
         bool roomMask = root.TryGetProperty("OriginalMoonCardUpgradesRoomMask", out FixtureValue maskFlag) && maskFlag.GetBoolean();
         bool lunacy = root.TryGetProperty("OriginalMoonCardUpgradesLunacy", out FixtureValue lunacyFlag) && lunacyFlag.GetBoolean();
+        bool costRelic = root.TryGetProperty("OriginalMoonCardUpgradesCostRelic", out FixtureValue costFlag) && costFlag.GetBoolean();
         Require(root.GetProperty("OriginalMoonCardUpgradesPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing settled original moon upgrade battle.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
@@ -30,7 +31,22 @@ internal static class OriginalMoonCardUpgradesChecks
             BattleActionResult attempted = BattleActionModel.PlayCard(last, new PlayCardAction(ids[5], 1, targetUnitId: target.Id));
             Console.WriteLine("MOON-UPGRADE-NEXT-ACTION: " + attempted.Reason);
         }
-        Require(ids.Length == (lunacy ? 21 : roomMask ? 17 : 16) && actions.Length == (lunacy ? 20 : roomMask ? 16 : 15) && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
+        Require(ids.Length == (costRelic ? 23 : lunacy ? 21 : roomMask ? 17 : 16) && actions.Length == (costRelic ? 22 : lunacy ? 20 : roomMask ? 16 : 15) && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
+        if (costRelic)
+        {
+            Require(lunacy, "Cost relic composition requires the Lunacy controls.");
+            foreach (int index in new[] { 21, 22 })
+            {
+                FixtureValue row = actions.Single(row => row.GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == ids[index]);
+                BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                RoomMoonSpellUpgradeChecks.CostRelic(before.Spawn.Train.Context!, ids.Skip(21).ToArray());
+                Require(before.Energy == 0 && after.Energy == 0 && after.Spawn.Train.Context!.OtherPiles!
+                    .Single(pile => pile.Name == "Purged").Cards.Any(token => token.InstanceId == ids[index]),
+                    "Discounted original Blight/Junk must play free and purge after the moon/Conduit chain.");
+            }
+            Console.WriteLine("MOON-COST-RELIC PASS originalCheaperBlightScourge=true twoFreeOriginalPurges=true completeNativeCallbacks=true");
+        }
         if (lunacy)
         {
             Require(roomMask, "Lunacy composition requires the original room mask.");
@@ -99,7 +115,7 @@ internal static class OriginalMoonCardUpgradesChecks
             Require(installed.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Attachments!.Single().MoonPhase != null,
                 "Missing original paid Eclipse installation.");
         }
-        Console.WriteLine($"ORIGINAL-MOON-CARD-UPGRADES PASS: five unchanged spells at both phases, full hand contexts, stronger magic-power refresh, upgraded OnCast, played/unplayed reset/redraw, 16 immutable chains; selectedRoomMask={roomMask}. Units, recast copies and active relic combinations remain separate boundaries.");
+        Console.WriteLine($"ORIGINAL-MOON-CARD-UPGRADES PASS: five unchanged spells at both phases, full hand contexts, stronger magic-power refresh, upgraded OnCast, played/unplayed reset/redraw, 16 immutable chains; selectedRoomMask={roomMask} costRelic={costRelic}. Other unit, recast-copy and relic combinations remain separate boundaries.");
     }
     private static string Json(object? value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string reason) { if (!condition) throw new InvalidOperationException(reason); }

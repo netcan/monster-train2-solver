@@ -33,9 +33,13 @@ namespace MonsterTrain2Poju.Model
             {
                 CardInstanceState? card = context.FindCard(token.InstanceId);
                 if (card == null || !Present(card)) continue;
+                // Unconditional Blight/Junk cost effects neither match spells
+                // nor receive moon-resource callbacks; validate their payloads below.
                 if (context.QueryFrame?.MoonPhase is not (1 or 2) || context.QueryFrame.SelectedRoomIndex == null ||
-                    context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true)
+                    context.Relics?.Any(relic => relic.EffectTypes.Any(type => type != RelicModel.ModifyCardTypeCost)) == true)
                 { error = "Moon spell upgrades require captured phase/selection; active relic combinations need separate witnesses."; return source; }
+                if (RelicModel.Validate(context.Relics) is string relicError)
+                { error = relicError; return source; }
                 foreach (RoomMoonPhaseRule rule in context.RoomCapacities?.SelectMany(room => room.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
                     .Select(attachment => attachment.MoonPhase).OfType<RoomMoonPhaseRule>() ?? Enumerable.Empty<RoomMoonPhaseRule>())
                     if (RoomMoonPhaseModel.Validate(rule) is string reason) { error = reason; return source; }

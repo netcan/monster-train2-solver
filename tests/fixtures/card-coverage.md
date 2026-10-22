@@ -105,7 +105,7 @@ Across all classifications, 585 identities (559 logbook) have at least one defin
 - [Native legality evidence](card-legality-evidence.tsv): definition-matched full-card rejection queries, with zero-based `OriginalUnplayableCardsQueries` indices, floor and native discardability. Trait-only range queries are excluded; rejected attempts do not count as direct plays.
 - [Fixture manifest](manifest.tsv): archive byte counts and SHA-256; every indexed full battle is checked against it.
 
-Indexed 847 full battles and 11703 native actions whose captured prediction is supported, actual state exists and difference is null. 754 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
+Indexed 849 full battles and 11747 native actions whose captured prediction is supported, actual state exists and difference is null. 762 actions use scenario-only identities; 0 actions lack a resolvable card/rule and are not counted as card evidence. Excluded captures with missing/nonzero original counters: 1. Accepted component fixtures are used for catalog-fact validation, not counted as native card plays. No current simulation checks are rerun by this indexer.
 
 ## Largest recorded guard groups
 

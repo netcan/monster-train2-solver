@@ -53,6 +53,9 @@ namespace MonsterTrain2Poju.Probe
             int[] ids = originals.Select(id => Trace.CardId(cards.AddNewCard(data.FindCardData(id)!, CardPile.HandPile, false, false, animate: false))).ToArray();
             if (RoomMoonCallbackCalibration.SpellAdvance)
                 ids = ids.Concat(new[] { Trace.CardId(cards.AddNewCard(data.FindCardData("e9fa09e5-13bd-4826-a8e5-969332cbfbbf")!, CardPile.HandPile, false, false, animate: false)) }).ToArray();
+            int[] costIds = RoomMoonCallbackCalibration.SpellCostRelic ?
+                new[] { OriginalCardTypeCostScenario.BlightId, OriginalCardTypeCostScenario.JunkId }
+                    .Select(id => Trace.CardId(cards.AddNewCard(data.FindCardData(id)!, CardPile.HandPile, false, false, animate: false))).ToArray() : Array.Empty<int>();
             CardState storm = cards.GetHand().Single(card => Trace.CardId(card) == ids[0]);
             CardUpgradeData numeric = data.GetAllCardUpgradeData().First(item => item.GetBonusDamage() > 0 && item.GetTraitDataUpgrades().Count == 0 &&
                 item.GetCardTriggerUpgrades().Count == 0 && item.GetStatusEffectUpgrades().Count == 0);
@@ -86,9 +89,11 @@ namespace MonsterTrain2Poju.Probe
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId, NativeCompleted = true, RngUnchanged = unchanged,
                 PreviewUpdatesSuppressed = Managers.GetCombatManager()!.SuppressCombatPreviewUpdates, Boundary = "AfterOriginalCoroutineAndTriggerQueue",
                 SpellUpgradeControls = true, SpellAdvanceControls = RoomMoonCallbackCalibration.SpellAdvance,
+                CostRelicControls = RoomMoonCallbackCalibration.SpellCostRelic, CostControlIds = costIds,
                 ShadeCallbacks = false, MovementControls = false, EnemyControls = false,
                 ActorIds = Array.Empty<int>(), CardIds = ids, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0], Rows = rows }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                RoomMoonCallbackCalibration.SpellCostRelic ? "room-moon-spell-cost-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellAdvance ? "room-moon-spell-advance-calibration.mt2f" : "room-moon-spell-upgrade-calibration.mt2f"))) document.Write(output);
             log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS spellUpgrades=true rows=" + rows.Count + " gameplayRngUnchanged=" + unchanged);
         }

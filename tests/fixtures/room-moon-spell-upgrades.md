@@ -210,3 +210,44 @@ regression is performed.
 ```powershell
 scripts/Check-PlayerAdvisor.ps1 -Case MoonRoomLunacy -SkipBuild
 ```
+
+## Unchanged Blight/Junk cost relic with Lunacy and Eclipse
+
+`room-moon-spell-cost-relic-calibration.mt2f` adds the original
+`CheaperBlightScourge` before battle, without modifying its two unconditional
+`RelicEffectModifyCardTypeCost` definitions. Original SelfPurgeBlight and
+ScourgeT1 retain their definitions and the native -99 cost/+99 X-cost offsets.
+Source `full-battle-no-cards-20261022-154309-449c5152` exits normally in 30.07
+seconds, preserves protected originals and matches all fifteen component
+boundaries, complete state/RNG and eight immutable branches per boundary.
+The six spells, including unchanged Lunacy, keep 105 trait snapshots, forty
+upgrade changes and both Eclipse modes. An altered conditional-cost payload
+is still rejected before refresh.
+
+The prior guard rejected every active relic. It now admits only the existing
+validated unconditional Blight/Junk cost signatures, whose filters do not
+match spells and whose effects have no moon-resource callback. Other effect
+types and unknown/conditional cost parameters remain guarded.
+
+`full-battle-original-moon-card-upgrades-cost-relic{,-replay}.mt2f` retains
+source `full-battle-units-spells-and-junk-20261022-154501-733cf86e` (111.99
+seconds) and fresh process `full-battle-units-spells-and-junk-20261022-154726-785f5ad6`
+(99.54 seconds). Both win at Pyre80 after twenty-two plays/five EndTurns,
+settle, exit normally, preserve protected originals and have four zero failure
+counters. All twenty-seven frozen inputs, full states and RNG match the
+zero-node independent replay and sixteen immutable model chains. The two
+unchanged cost-control cards are played and purged at zero energy, alongside
+Lunacy's paid 2/3/0 advances, all five original moon spells and Eclipse.
+Twenty complete native hand-resource callbacks also match per process.
+
+The old five-spell component and original card-type-cost battle pass focused
+checks. These remain controlled durable-unit/energy scenes; actual player
+acceptance of this relic composition and natural late-game decks are separate.
+No full regression or Mac build is performed.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -RoomMoonSpellCostRelic -SkipBuild
+scripts/Run-FullBattleProbe.ps1 -OriginalMoonCardUpgradesCostRelic -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-spell-upgrades-only tests/fixtures/room-moon-spell-cost-relic-calibration.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-cost-relic.mt2f
+```

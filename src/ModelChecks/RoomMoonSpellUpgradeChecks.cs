@@ -12,6 +12,9 @@ internal static class RoomMoonSpellUpgradeChecks
             root.GetProperty("Boundary").GetString() == "AfterOriginalCoroutineAndTriggerQueue", "Missing native room spell upgrade controls.");
         int[] ids = root.GetProperty("CardIds").Deserialize<int[]>()!;
         bool advance = root.TryGetProperty("SpellAdvanceControls", out FixtureValue flag) && flag.GetBoolean();
+        bool costRelic = root.TryGetProperty("CostRelicControls", out FixtureValue costFlag) && costFlag.GetBoolean();
+        int[] costIds = costRelic ? root.GetProperty("CostControlIds").Deserialize<int[]>()! : [];
+        Require(!costRelic || advance && costIds.Length == 2, "Missing cost-relic spell composition controls.");
         Require(ids.Length == (advance ? 6 : 5) && root.GetProperty("Rows").GetArrayLength() == 15, "Missing original spells or controls.");
         int witnesses = 0, changes = 0, exclusive = 0, additive = 0, selections = 0;
         bool guardsChecked = false, advanceGuardChecked = false;
@@ -57,6 +60,15 @@ internal static class RoomMoonSpellUpgradeChecks
             Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Spell room branch mutated its parent.");
             Require(row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")), "Spell room upgrade advanced gameplay RNG.");
             CombatContext after = actual.Context!;
+            if (costRelic) CostRelic(after, costIds);
+            if (costRelic && operation == "Refresh" && !guardsChecked)
+            {
+                var malformed = System.Text.Json.Nodes.JsonNode.Parse(parent)!;
+                malformed["Context"]!["Relics"]!.AsArray().Single(node => node!["DataId"]!.GetValue<string>() ==
+                    "a19cac7c-b2e0-42bd-bc1e-d180e17a1c15")!["CardTypeCosts"]![0]!["ConditionCount"] = 1;
+                TrainCombatState unknown = JsonSerializer.Deserialize<TrainCombatState>(malformed.ToJsonString(), ModelJson.Options)!;
+                Require(!RoomMoonPhaseModel.Refresh(unknown, false).Supported, "Uncalibrated conditional cost relic bypassed the moon guard.");
+            }
             int selectedRoom = after.QueryFrame!.SelectedRoomIndex!.Value, phase = after.QueryFrame.MoonPhase!.Value;
             int roomMask = after.RoomCapacities!.Single(room => room.RoomIndex == selectedRoom).Attachments!
                 .Aggregate(0, (mask, attachment) => mask | (attachment.MoonPhase?.AdditionalMask ?? 0));
@@ -122,7 +134,22 @@ internal static class RoomMoonSpellUpgradeChecks
             if (operation == "Select") selections++;
         }
         Require(changes > 0 && exclusive > 0 && additive > 0 && selections == 6 && guardsChecked && (!advance || advanceGuardChecked), "Missing changed upgrades, both room modes, guard or selection controls.");
-        Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells={ids.Length} lunacyResourceControls={advance} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
+        Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells={ids.Length} lunacyResourceControls={advance} costRelicControls={costRelic} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
+    }
+    internal static void CostRelic(CombatContext context, int[] ids)
+    {
+        CombatRelicState owner = context.Relics!.Single(relic => relic.DataId == "a19cac7c-b2e0-42bd-bc1e-d180e17a1c15");
+        Require(owner.AssetKey == "CheaperBlightScourge" && owner.EffectTypes.SequenceEqual(
+            [RelicModel.ModifyCardTypeCost, RelicModel.ModifyCardTypeCost]) && RelicModel.Validate(context) == null &&
+            owner.CardTypeCosts!.Select(rule => (rule.EffectIndex, rule.CardType, rule.Amount, rule.IgnoreRestrictions, rule.ConditionCount))
+                .SequenceEqual([(0, "Blight", -99, false, 0), (1, "Junk", -99, false, 0)]), "Original cost relic signature changed.");
+        for (int index = 0; index < 2; index++)
+        {
+            CardInstanceState card = context.FindCard(ids[index])!;
+            Require(card.DataId == (index == 0 ? "21038774-c0a4-413c-ab7e-27e458228e5f" : "62cc5532-5fa0-4e66-9fec-85be573af359") &&
+                card.Temporary.Offsets.Cost == -99 && card.Temporary.Offsets.XCost == 99,
+                "Moon refresh changed the original Blight/Junk relic discount.");
+        }
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
