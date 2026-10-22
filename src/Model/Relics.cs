@@ -268,6 +268,11 @@ namespace MonsterTrain2Poju.Model
                     // Native IOverrideDraftRarityRelicEffect is consulted only by
                     // reward drafts. Its acquired deck is already in battle state.
                     if (effect == "RelicEffectOverrideCardDraftRarity") continue;
+                    // This original Covenant purges/builds its deck only in
+                    // ApplyStartOfRunRelicEffects. Special-character selection
+                    // is already carried by the captured native spawn pattern.
+                    if (relic.IsCovenant == true && relic.AssetKey == "Covenant01_StrongerEnemiesMoreCards" &&
+                        effect is "RelicEffectPurgeStarterDeck" or "RelicEffectAddCardSetStartOfRun" or "RelicEffectEnableSpecialCharacters") continue;
                     // ICharacterGeneratingRelicEffect only supplies a tooltip
                     // character. The sealed native type has no combat hooks.
                     if (effect == "RelicEffectOnlyTooltips") continue;

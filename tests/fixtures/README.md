@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1074 archives,
+Current manifest inventory (2026-10-23): 1078 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -12,6 +12,13 @@ acquired relics, every forecast and complete state/RNG remain checked. See
 `campaign-completed-corrupter.zip` additionally retains the native eight-win
 Standard completion, hash-verified inherited winning replay and post-EndGame
 story observation; restore verifies all 33 payload files.
+
+Four isolated original Covenant definitions now have complete true-final-boss
+birth comparisons, pure native stat previews and 64 immutable branches each.
+The stronger-boss definition raises original health/attack without replacing
+the raw/Horde bases; three nonmatching controls retain baseline stats. This
+is a controlled birth boundary, with later combat and natural unlock still
+guarded. See [Covenant birth evidence](true-final-boss-covenant-birth.md).
 
 The original trial-gold campaign relic now also works in actual player battle
 inputs. A natural seed42 Ring7 checkpoint, previously rejected before any

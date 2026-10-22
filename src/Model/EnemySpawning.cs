@@ -4,6 +4,15 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
+    public sealed class EnemyBirthStatAdjustment
+    {
+        public int Attack { get; }
+        public int Health { get; }
+        public IReadOnlyList<string> CovenantIds { get; }
+        public EnemyBirthStatAdjustment(int attack, int health, IReadOnlyList<string> covenantIds)
+        { Attack = attack; Health = health; CovenantIds = Array.AsReadOnly(covenantIds.ToArray()); }
+    }
+
     public sealed class EnemyDefinition
     {
         public CombatUnit Unit { get; }
@@ -11,11 +20,20 @@ namespace MonsterTrain2Poju.Model
         public bool Loops { get; }
         public bool CompanionBoss { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
-        public EnemyDefinition(CombatUnit unit, bool ascends, bool loops, IReadOnlyList<string> externalInteractions, bool companionBoss = false)
-        { Unit = unit; Ascends = ascends; Loops = loops; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); CompanionBoss = companionBoss; }
+        public EnemyBirthStatAdjustment? BirthStats { get; }
+        // Archive hydration uses the sole public constructor. Keep the older
+        // entry point for the existing friend assemblies that capture units.
+        internal EnemyDefinition(CombatUnit unit, bool ascends, bool loops, IReadOnlyList<string> externalInteractions, bool companionBoss = false)
+            : this(unit, ascends, loops, externalInteractions, companionBoss, null) { }
+        public EnemyDefinition(CombatUnit unit, bool ascends, bool loops, IReadOnlyList<string> externalInteractions, bool companionBoss,
+            EnemyBirthStatAdjustment? birthStats)
+        { Unit = unit; Ascends = ascends; Loops = loops; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); CompanionBoss = companionBoss; BirthStats = birthStats; }
         internal CombatUnit Create(int id) => new CombatUnit(id, Unit.AssetKey, CombatTeam.Enemy,
-            Unit.BaseAttack, Unit.Health, Unit.MaxHealth, Unit.CanAttack, false, Unit.EndsBattleOnDeath,
-            Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes, modifiers: Unit.Modifiers, isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards, nextTriggerId: Unit.NextTriggerId, ability: Unit.Ability, statusDictionary: Unit.StatusDictionary, abilityRules: Unit.AbilityRules, hordeDefinition: Unit.HordeDefinition, isSpawning: Unit.IsSpawning, sacrificeCardId: Unit.SacrificeCardId, deathState: Unit.DeathState, bumpRules: Unit.BumpRules, lastFeederId: Unit.LastFeederId, moonPhaseMask: Unit.MoonPhaseMask);
+            checked(Unit.BaseAttack + (BirthStats?.Attack ?? 0)), checked(Unit.Health + (BirthStats?.Health ?? 0)),
+            checked(Unit.MaxHealth + (BirthStats?.Health ?? 0)), Unit.CanAttack, false, Unit.EndsBattleOnDeath,
+            Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes,
+            modifiers: BirthStats?.Attack is > 0 ? Unit.Modifiers!.WithDamageBuff(checked(Unit.Modifiers.DamageBuff + BirthStats.Attack)) : Unit.Modifiers,
+            isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards, nextTriggerId: Unit.NextTriggerId, ability: Unit.Ability, statusDictionary: Unit.StatusDictionary, abilityRules: Unit.AbilityRules, hordeDefinition: Unit.HordeDefinition, isSpawning: Unit.IsSpawning, sacrificeCardId: Unit.SacrificeCardId, deathState: Unit.DeathState, bumpRules: Unit.BumpRules, lastFeederId: Unit.LastFeederId, moonPhaseMask: Unit.MoonPhaseMask);
     }
 
     public sealed class EnemyGroup

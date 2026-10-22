@@ -38,7 +38,7 @@ namespace MonsterTrain2Poju.Probe
         {
             SpawnPatternData pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
             var interactions = new List<string>();
-            if (AllGameManagers.Instance.GetSaveManager().GetCovenantsForSpawnPattern().Count > 0)
+            if (AllGameManagers.Instance.GetSaveManager().GetCovenantsForSpawnPattern().Count > 0 && TrueFinalBossCovenantScenario.Evidence == null)
                 interactions.Add("True-final-boss Covenant birth effects require separate calibration.");
             var definitions = pattern.GetTrueFinalBosses().SelectMany(group => group.characters).Select(data =>
             {
@@ -47,7 +47,8 @@ namespace MonsterTrain2Poju.Probe
                 // boundary captures creation and OnSpawn only.
                 return new EnemyDefinition(raw.Unit, raw.Ascends, raw.Loops,
                     raw.ExternalInteractions.Where(value => value != "Spawned outer Boss actions" &&
-                        value != "Spawned status has custom relentless removal").ToArray(), raw.CompanionBoss);
+                        value != "Spawned status has custom relentless removal").ToArray(), raw.CompanionBoss,
+                        TrueFinalBossCovenantScenario.CaptureStats(data));
             }).ToArray();
             externalInteractions = interactions;
             return definitions;

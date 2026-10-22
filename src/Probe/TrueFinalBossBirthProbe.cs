@@ -31,12 +31,13 @@ namespace MonsterTrain2Poju.Probe
         internal static void Navigate(SaveManager save, MapScreen map, ManualLogSource log)
         {
             if (route != null) throw new InvalidOperationException("True-final-boss route was already selected.");
+            TrueFinalBossCovenantScenario.Prepare(save);
             bool unlockedBefore = save.Cheats.ForceTFBUnlocked;
             int distanceBefore = save.GetCurrentDistance();
             object before = Rng();
             map.Cheat_JumpToTFB();
             object after = Rng();
-            route = new { Kind = "NativeCheatJumpToTFB", UnlockOverrideBefore = unlockedBefore,
+            route = new { Kind = "NativeCheatJumpToTFB", CovenantControl = TrueFinalBossCovenantScenario.Evidence, UnlockOverrideBefore = unlockedBefore,
                 UnlockOverrideAfter = save.Cheats.ForceTFBUnlocked, DistanceBefore = distanceBefore,
                 DistanceAfter = save.GetCurrentDistance(), Scenario = save.GetCurrentScenarioData()?.name,
                 RngBefore = before, RngAfter = after, ScenarioAssetsUnchanged = true,

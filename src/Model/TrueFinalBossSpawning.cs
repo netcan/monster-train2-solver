@@ -96,6 +96,15 @@ namespace MonsterTrain2Poju.Model
             TrueFinalBossSpawnResult Fail(string reason) => new TrueFinalBossSpawnResult(null, reason);
             BattleTurnState battle = source.Battle; EnemySpawnState old = battle.Spawn;
             TrainCombatState train = old.Train; CombatContext? captured = train.Context;
+            var covenants = captured?.Relics?.Where(relic => relic.IsCovenant == true).ToArray() ?? Array.Empty<CombatRelicState>();
+            bool covenantBirth = covenants.Length == 1 && new[] { "Covenant00_FTUE", "Covenant01_StrongerEnemiesMoreCards",
+                "Covenant04_StrongerBosses", "Covenant08_StrongerEnemies" }.Contains(covenants[0].AssetKey) &&
+                !string.IsNullOrEmpty(covenants[0].DataId) && source.Definitions.All(definition => definition.BirthStats is { } stats &&
+                    stats.CovenantIds.SequenceEqual(new[] { covenants[0].DataId }) && stats.Attack >= 0 && stats.Health >= 0 &&
+                    (long)definition.Unit.BaseAttack + stats.Attack <= int.MaxValue &&
+                    (long)definition.Unit.MaxHealth + stats.Health <= int.MaxValue && definition.Unit.Modifiers != null);
+            if (!covenantBirth && source.Definitions.Any(definition => definition.BirthStats != null))
+                return Fail("Birth stat adjustments require their calibrated original Covenant context.");
             if (source.ExternalInteractions.Count > 0) return Fail(string.Join("; ", source.ExternalInteractions));
             if (source.Definitions.Count != 5 || !source.QueuedBosses.OrderBy(value => value).SequenceEqual(new[] { 0, 1, 2 }) ||
                 source.OuterBossId != 0 || source.RoomBossIds.Count != 4 || source.RoomBossIds.Any(value => value != 0) ||
@@ -107,9 +116,9 @@ namespace MonsterTrain2Poju.Model
                 battle.MoonPhaseTrackingActive == true || battle.ExternalInteractions.Count > 0 || old.ExternalInteractions.Count > 0 ||
                 captured?.SpawnPoints == null || captured.LifeLinks != null || captured.Enchantments?.AutomaticLifecycle != true ||
                 captured.Enchantments.RetainedUnits.Count != 0 || captured.Enchantments.EnchanterIds.Count != 0 ||
-                captured.Relics?.Any(relic => relic.EffectTypes.Count > 0 || relic.IsCovenant == true) == true ||
+                captured.Relics?.Any(relic => relic.IsCovenant == true ? !covenantBirth : relic.EffectTypes.Count > 0) == true ||
                 old.OuterBoss != null || old.QueuedOuterBoss != null)
-                return Fail("True-final-boss birth requires the calibrated fresh five-actor route, enabled floors and inert relic context.");
+                return Fail("True-final-boss birth requires the calibrated fresh five-actor route, enabled floors and relic context.");
             for (int index = 0; index < 5; index++)
             {
                 EnemyDefinition definition = source.Definitions[index]; CombatUnit unit = definition.Unit;

@@ -56,6 +56,8 @@ param(
     [switch] $TrueFinalBossLethalCombat,
     [ValidateRange(0, 25)][int] $TrueFinalBossFrontHealth = 0,
     [switch] $TrueFinalBossBirth,
+    [ValidateSet('', 'Covenant00_FTUE', 'Covenant01_StrongerEnemiesMoreCards', 'Covenant04_StrongerBosses', 'Covenant08_StrongerEnemies')]
+    [string] $TrueFinalBossCovenant = '',
     [switch] $TrueFinalBossSpawn,
     [switch] $TrueFinalBossScheduledSpawn,
     [switch] $TrueFinalBossHealth,
@@ -772,8 +774,11 @@ if ($TrueFinalBossDeath) {
     if ($TrueFinalBossDamage) { throw 'Controlled terminal capture is separate from original nonterminal damage/healing.' }
     $TrueFinalBossBirth = $true
 }
+if ($TrueFinalBossCovenant -and (-not $TrueFinalBossBirth -or -not $TrueFinalBossSpawn)) {
+    throw 'TrueFinalBossCovenant requires an isolated birth and complete spawn observation.'
+}
 if ($TrueFinalBossBirth) {
-    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossSpawn', 'TrueFinalBossScheduledSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossPyreBaneTargets', 'TrueFinalBossDeath', 'TrueFinalBossDeathSpellSource', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossCovenant', 'TrueFinalBossSpawn', 'TrueFinalBossScheduledSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossPyreBaneTargets', 'TrueFinalBossDeath', 'TrueFinalBossDeathSpellSource', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'TrueFinalBossBirth is an isolated original birth observation.' }
     $Policy = 'no-cards'; $BattleDistance = 8; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1418,6 +1423,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_PYRE_COMMAND = $(if ($TrueFinalBossPyreCommand) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_FRONT_HEALTH = [string]$TrueFinalBossFrontHealth
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_COVENANT = $TrueFinalBossCovenant
     MT2_PROBE_TRUE_FINAL_BOSS_SPAWN = $(if ($TrueFinalBossSpawn) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SCHEDULED_SPAWN = $(if ($TrueFinalBossScheduledSpawn) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH = $(if ($TrueFinalBossHealth) { '1' } else { '0' })
