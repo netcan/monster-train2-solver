@@ -14,6 +14,7 @@ namespace MonsterTrain2Poju.Probe
             public BattleTurnState Actual { get; set; } = null!;
             public int[] OwnerIds { get; set; } = Array.Empty<int>();
             public int[] Debuffs { get; set; } = Array.Empty<int>();
+            public bool RefreshPreview { get; set; }
         }
         internal static Record? Evidence { get; private set; }
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_LETHAL") == "1";
@@ -29,12 +30,14 @@ namespace MonsterTrain2Poju.Probe
             CharacterState[] owners = assets.Select(asset => managers.GetHeroManager().GetCharactersReadOnly()
                 .Single(unit => unit.GetSourceCharacterData().GetAssetKey() == asset)).ToArray();
             var row = new Record { Before = trace.CaptureDecision(), OwnerIds = owners.Select(trace.UnitId).ToArray(),
+                RefreshPreview = Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_PREVIEW") == "1",
                 Debuffs = owners.Select(unit => unit.GetHP() - 1).ToArray() };
             if (!row.Debuffs.SequenceEqual(new[] { 1554, 2749, 3499 }))
                 throw new InvalidOperationException("Lethal control requires unchanged original owner HP.");
             for (int index = 0; index < owners.Length; index++) owners[index].DebuffHP(row.Debuffs[index]);
             row.Actual = trace.CaptureDecision();
             Evidence = row;
+            if (row.RefreshPreview) managers.GetCombatManager().ToggleCombatPreviewFromExternalSource();
             return true;
         }
     }

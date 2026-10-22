@@ -42,6 +42,7 @@ param(
     [switch] $TrueFinalBossDormantSavagery,
     [switch] $TrueFinalBossRelentless,
     [switch] $TrueFinalBossLethal,
+    [switch] $TrueFinalBossLethalPreview,
     [ValidateRange(0, 25)][int] $TrueFinalBossFrontHealth = 0,
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossSpawn,
@@ -698,6 +699,7 @@ if ($TrueFinalBossRelentless) {
 if ($TrueFinalBossLethal -and (-not $OriginalTrueFinalBoss -or $TrueFinalBossDormantSavagery -or $TrueFinalBossRelentless -or $OuterBossRelentless)) {
     throw 'Lethal TFB control requires the original route without other health/phase controls.'
 }
+if ($TrueFinalBossLethalPreview -and -not $TrueFinalBossLethal) { throw 'Lethal preview requires the explicit lethal health control.' }
 if ($TrueFinalBossScheduledSpawn) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossPyreBaneTargets) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossHealth) { $TrueFinalBossBirth = $true }
@@ -1348,6 +1350,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_DORMANT = $(if ($TrueFinalBossDormantSavagery) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_RELENTLESS = $(if ($TrueFinalBossRelentless) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_LETHAL = $(if ($TrueFinalBossLethal) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_PREVIEW = $(if ($TrueFinalBossLethalPreview) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_FRONT_HEALTH = [string]$TrueFinalBossFrontHealth
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SPAWN = $(if ($TrueFinalBossSpawn) { '1' } else { '0' })

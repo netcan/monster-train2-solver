@@ -532,6 +532,23 @@ Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 
 原生采集为 `-OriginalTrueFinalBoss -TrueFinalBossLethal -BattleDistance 8`，
 另带 `-Policy no-cards -PhysicalSpawnPoints -BranchCardMasks`。
 
+## 致死 UI 预览与实战恢复
+
+`true-final-boss-lethal-preview-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-231941-cac0f384`，在上述三次减血后显式标记
+原生 UI 预览需刷新。两次完整预览分别覆盖健康状态四个房间和一血状态的
+单个终局房间；后一预览预测 Dominion 死亡、火炉 77 血，并停止后续房间。
+预览返回后五个实体及生命链接的实战/预览生命全部恢复为一血，预测的死亡
+不会污染下一个实际 EndTurn。完整恢复后状态与原生战斗输入逐项一致。
+
+新进程原生获胜、四项失败计数全零，70 个分支掩码上下文完整；两个 EndTurn、
+三个实际单位回合、两次 UI 预览和五个预览房间均匹配。16 条独立分支从部署
+根状态推演出生、三次明确减血、UI 刷新和实战获胜，完整终局状态/RNG 一致。
+此项扩展未放宽生产模型范围，仍不表示自然胜局或其他主体的致死已覆盖。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case LethalPreview -SkipBuild`。
+原生采集在 Lethal 参数上追加 `-TrueFinalBossLethalPreview`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

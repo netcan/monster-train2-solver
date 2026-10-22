@@ -17,6 +17,10 @@ internal static class TrueFinalBossLethalChecks
             Require(changed.Supported, "Independent original owner HP control failed: " + changed.UnsupportedReason);
             train = changed.State!;
         }
+        return WithTrain(state, train);
+    }
+    private static BattleTurnState WithTrain(BattleTurnState state, TrainCombatState train)
+    {
         EnemySpawnState old = state.Spawn;
         var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng, old.NextUnitId,
             old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn, old.FirstTreasureRoom, old.Turn,
@@ -26,6 +30,54 @@ internal static class TrueFinalBossLethalChecks
             state.DragonsHoard, state.MoonPhase, state.RngStreams, state.OtherPiles, state.ExternalInteractions, state.PlayRules,
             state.BattlePreviewEnabled, state.UiRngIsolated, state.CanonicalDecisionReferences, state.CanonicalPhysicalReferences,
             state.SelectedRoom, state.MoonPhaseTrackingActive);
+    }
+    private static BattleTurnState Refresh(BattleTurnState state)
+    {
+        TrainCombatResult preview = TrueFinalBossPreviewModel.Refresh(state.Spawn.Train, state.PlayRules!);
+        Require(preview.Supported, "Independent lethal UI preview failed: " + preview.UnsupportedReason);
+        return WithTrain(state, preview.State!);
+    }
+    private static void Previews(FixtureValue root, BattleTurnState controlled, FixtureValue[] turns)
+    {
+        FixtureValue[] previews = root.GetProperty("TrueFinalBossPreviews").EnumerateArray().ToArray();
+        FixtureValue[] rooms = root.GetProperty("TrueFinalBossPreviewRooms").EnumerateArray().ToArray();
+        Require(previews.Length == 2 && rooms.Length == 5, "Expected healthy and lethal UI previews, with four healthy rooms and one terminal room.");
+        foreach (FixtureValue row in previews)
+        {
+            TrainCombatState before = row.GetProperty("Before").Deserialize<TrainCombatState>()!;
+            TrainCombatState actual = row.GetProperty("Actual").Deserialize<TrainCombatState>()!;
+            string parent = Json(before);
+            TrainCombatResult result = TrueFinalBossPreviewModel.Refresh(before, controlled.PlayRules!);
+            Require(result.Supported && TrueFinalBossTrainChecks.Comparable(result.State!, "Preview") ==
+                TrueFinalBossTrainChecks.Comparable(actual, "Preview") && Json(before) == parent,
+                "Native lethal UI preview/restoration differs: " + (result.Supported ?
+                ModelJson.Difference(TrueFinalBossTrainChecks.Comparable(result.State!, "Preview"),
+                    TrueFinalBossTrainChecks.Comparable(actual, "Preview")) : result.UnsupportedReason));
+        }
+        foreach (FixtureValue row in rooms)
+        {
+            RoomCombatState before = row.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState actual = row.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            EnchantmentWorld world = before.Context!.Enchantments!;
+            CombatUnit pyre = world.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre);
+            RoomCombatResult result = RoomCombatModel.Resolve(before, externalPyre: before.RoomIndex != 3 ? pyre : null,
+                externalPyreRoomIndex: before.RoomIndex != 3 ? 3 : -1,
+                externalTargets: before.RoomIndex != 3 ? null : world.Rooms.Where(room => room.RoomIndex != 3)
+                    .SelectMany(room => room.Units.Select(unit => (room.RoomIndex, unit))).ToArray());
+            Require(result.Supported && Json(result.State!) == Json(actual), "Native lethal preview room differs: " +
+                (result.Supported ? ModelJson.Difference(Json(result.State!), Json(actual)) : result.UnsupportedReason));
+        }
+        RoomCombatState lethal = rooms[4].GetProperty("Actual").Deserialize<RoomCombatState>()!;
+        Require(lethal.Units.Single().IsPyre && lethal.Units.Single().Health == 77 &&
+            lethal.Context!.LifeLinks!.Actors.Single(actor => actor.Id == controlled.Spawn.Train.Rooms
+                .SelectMany(room => room.Units).Single(unit => unit.AssetKey == "Boss_Level9_Dominion_V2").Id).Health == 0,
+            "Lethal UI prediction must remove Dominion while retaining the independent live owner plane.");
+        BattleTurnState restored = Refresh(controlled);
+        BattleTurnState next = turns[1].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        Require(BattleTurnChecks.Comparable(restored) == BattleTurnChecks.Comparable(next) &&
+            restored.Spawn.Train.Context!.LifeLinks!.Actors.All(actor => actor.Health == 1 && actor.PreviewHealth == 1) &&
+            !restored.Spawn.Train.Context.LifeLinks.CalculatingPreview && restored.Spawn.Train.Rooms.Sum(room => room.Units.Count) == 6,
+            "Lethal UI refresh must restore all five live bodies, linked HP and the subsequent combat input.");
     }
     internal static void Native(FixtureValue root)
     {
@@ -37,6 +89,7 @@ internal static class TrueFinalBossLethalChecks
             root.GetProperty("TerminalEffectsSettled").GetBoolean() && root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
             root.GetProperty("Actions").GetArrayLength() == 0, "Missing original isolated TFB route and terminal capture provenance.");
         FixtureValue control = root.GetProperty("TrueFinalBossLethalControl");
+        bool refreshPreview = control.TryGetProperty("RefreshPreview", out FixtureValue refresh) && refresh.GetBoolean();
         BattleTurnState before = control.GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState controlled = control.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         Require(Json(Prepare(before)) == Json(controlled) && control.GetProperty("Debuffs").Deserialize<int[]>()!.SequenceEqual(new[] { 1554, 2749, 3499 }),
@@ -49,6 +102,7 @@ internal static class TrueFinalBossLethalChecks
             controlled.Spawn.OuterBoss?.Phase == "Casting", "Owner IDs, five one-HP bodies or unchanged native phase/waves differ.");
         FixtureValue[] turns = root.GetProperty("Turns").EnumerateArray().ToArray();
         Require(turns.Length == 2 && root.GetProperty("NativeWon").GetBoolean(), "Expected deployment and one normal lethal combat turn.");
+        if (refreshPreview) Previews(root, controlled, turns);
         foreach (FixtureValue row in turns)
         {
             BattleTurnResult result = BattleTurnModel.EndTurn(row.GetProperty("Before").Deserialize<BattleTurnState>()!);
@@ -77,7 +131,8 @@ internal static class TrueFinalBossLethalChecks
         {
             BattleTurnResult born = BattleTurnModel.EndTurn(deployment);
             Require(born.Supported, "Independent original birth failed.");
-            BattleTurnResult won = BattleTurnModel.EndTurn(Prepare(born.State!));
+            BattleTurnState prepared = Prepare(born.State!);
+            BattleTurnResult won = BattleTurnModel.EndTurn(refreshPreview ? Refresh(prepared) : prepared);
             Require(won.Supported && won.Outcome == RoomOutcome.BattleWon, "Independent lethal combat failed: " + won.UnsupportedReason);
             return BattleTurnChecks.Comparable(won.State!, true, true);
         }
@@ -93,6 +148,6 @@ internal static class TrueFinalBossLethalChecks
         Require(Json(deployment) == parent, "Lethal chain mutated its deployment root.");
         Require(new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(key => root.GetProperty(key).GetInt32() == 0),
             "Native lethal route must finish with all four failure counters zero.");
-        Console.WriteLine("TRUE-FINAL-BOSS-LETHAL PASS: explicit three-owner HP control; normal Pyre attack, five-body removal and full victory state/RNG; two EndTurns and 16 independent immutable chains.");
+        Console.WriteLine("TRUE-FINAL-BOSS-LETHAL PASS: explicit three-owner HP control; " + (refreshPreview ? "two UI previews/five rooms and complete live restoration; " : "") + "normal Pyre attack, five-body removal and full victory state/RNG; two EndTurns and 16 independent immutable chains.");
     }
 }
