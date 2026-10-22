@@ -29,16 +29,7 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("TFB ally upgrade requires isolated original deployment.");
             CardState card = managers.GetCardManager().GetHand().First(item =>
                 item.GetSpawnCharacterData()?.GetAssetKey() == "TrainStewardBig");
-            CardUpgradeData data = save.GetAllGameData().GetAllCardUpgradeData().Single(item =>
-                item.GetID() == (Kind == "Health" ? "32c1b067-d47d-4841-b166-1a227378a937" : "1f0a08f2-ab63-442e-a089-a1063bf7e7aa") &&
-                item.name == (Kind == "Health" ? "BlessingBonusHealth" : "EnhanceAttackOnConsume") &&
-                item.GetBonusHP() == (Kind == "Health" ? 20 : 0) &&
-                item.GetBonusDamage() == (Kind == "Damage" ? 10 : 0) &&
-                item.GetCostReduction() == 0 && item.GetXCostReduction() == 0 && item.GetBonusHeal() == 0 && item.GetBonusSize() == 0 &&
-                item.GetBonusEquipment() == 0 && item.GetBonusUpgradeSlotCount() == 0 && item.GetStatusEffectUpgrades().Count == 0 &&
-                item.GetTraitDataUpgrades().Count == 0 && item.GetRemoveTraitUpgrades().Count == 0 && item.GetCharacterTriggerUpgrades().Count == 0 &&
-                item.GetCardTriggerUpgrades().Count == 0 && item.GetRoomModifierUpgrades().Count == 0 && item.GetUpgradesToRemove().Count == 0 &&
-                item.GetUnitAbilityUpgrade() == null && item.GetRoomAbilityUpgrade() == null && !item.GetUpgradeWillBeScaledByNonMagicPowerTrait());
+            CardUpgradeData data = Definition(save.GetAllGameData(), Kind);
             FullBattleTrace trace = FullBattleTrace.Active!;
             var row = new Record { Kind = Kind, CardId = trace.CardId(card), UpgradeName = data.name,
                 UpgradeDataId = data.GetID(), Before = trace.CaptureDecision() };
@@ -50,6 +41,15 @@ namespace MonsterTrain2Poju.Probe
             Evidence = row;
             return true;
         }
+        internal static CardUpgradeData Definition(AllGameData all, string kind) => all.GetAllCardUpgradeData().Single(item =>
+            item.GetID() == (kind == "Health" ? "32c1b067-d47d-4841-b166-1a227378a937" : "1f0a08f2-ab63-442e-a089-a1063bf7e7aa") &&
+            item.name == (kind == "Health" ? "BlessingBonusHealth" : "EnhanceAttackOnConsume") &&
+            item.GetBonusHP() == (kind == "Health" ? 20 : 0) && item.GetBonusDamage() == (kind == "Damage" ? 10 : 0) &&
+            item.GetCostReduction() == 0 && item.GetXCostReduction() == 0 && item.GetBonusHeal() == 0 && item.GetBonusSize() == 0 &&
+            item.GetBonusEquipment() == 0 && item.GetBonusUpgradeSlotCount() == 0 && item.GetStatusEffectUpgrades().Count == 0 &&
+            item.GetTraitDataUpgrades().Count == 0 && item.GetRemoveTraitUpgrades().Count == 0 && item.GetCharacterTriggerUpgrades().Count == 0 &&
+            item.GetCardTriggerUpgrades().Count == 0 && item.GetRoomModifierUpgrades().Count == 0 && item.GetUpgradesToRemove().Count == 0 &&
+            item.GetUnitAbilityUpgrade() == null && item.GetRoomAbilityUpgrade() == null && !item.GetUpgradeWillBeScaledByNonMagicPowerTrait());
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
             if (state.Spawn.Train.Context!.Statistics!.Value(Evidence!.CardId, "TimesPlayed", "ThisBattle") > 0) return null;

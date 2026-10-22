@@ -667,11 +667,39 @@ Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 
 
 生产保护按原始召唤卡定义和运行时结构判断，接受上述普通攻击签名；只读增加
 原始出生生命上限，连同攻击/容量/初始状态共同核对，旧采集缺少生命元数据时拒绝。
-不依赖单位名称。额外触发器、技能、装备、升级、其他初始状态、克隆和
+不依赖单位名称。额外触发器、技能、装备、其他初始状态、克隆和
 无法核对的召唤来源仍受保护；带未知升级的相同单位也明确拒绝。
 
 入口：`./scripts/Check-TrueFinalBoss.ps1 -Case OrdinaryAlly -SkipBuild`。
 原生采集：`-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossOrdinaryAlly Steward|Warrior|Animus`。
+
+## 普通友军的永久数值强化签名
+
+同一普通召唤/攻击签名现可携带至多两个纯正数值永久升级，按原始攻击/生命、
+有序升级和原生统计计算规则核对实际单位；不按升级或单位名称逐个放开。
+升级必须只增加攻击或生命，且保留完整来源、掩码和生命周期元数据。
+额外状态、卡牌/单位回调、技能、装备、偏移、临时升级、克隆和无法核对的
+原始生命仍拒绝。攻击强化的原始伤害缓存只在与当前数值一致时接受。
+
+| fixture 后缀 | 明确准备的原生升级 | 实际单位 / 首轮伤害 | 原生来源（`.probe-runs/` 下） |
+| --- | --- | --- | --- |
+| `warrior-health` | `BlessingBonusHealth`，生命 +20 | 15/28，Multistrike 1 / 30 | `full-battle-units-and-junk-20261023-012003-4e0f2389` |
+| `animus-damage` | `EnhanceAttackOnConsume`，攻击 +10 | 13/8，Multistrike 2 / 39 | `full-battle-units-and-junk-20261023-012003-df432cab` |
+| `warrior-both` | 上述两个升级依次叠加 | 25/28，Multistrike 1 / 50 | `full-battle-units-and-junk-20261023-012200-4ac0ed53` |
+
+文件为 `true-final-boss-ordinary-ally-<后缀>.mt2f`。三组均两次付费召唤、
+六次 EndTurn、五次原生 UI 预览与恢复；各 16 条从准备后的根出发的完整
+独立不可变链匹配所有状态/RNG。三个新进程均正常退出、四项失败计数全零。
+这是显式添加原始单位卡并应用原生升级的受控牌组；敌军生命/阶段与原始
+单位定义未改，三局均败北，不计自然牌组或自然胜局。
+
+缺少升级来源、附加卡牌回调、临时升级、未知空升级及缺少原始生命元数据的
+负例继续拒绝。旧三组普通友军、两种乘务员强化及普通狱魔玩家冻结重放通过。
+最初缺少分支掩码/物理站位采集的来源仅作诊断，不登记验收。
+
+入口仍为 `./scripts/Check-TrueFinalBoss.ps1 -Case OrdinaryAlly -SkipBuild`。
+原生采集增加 `-TrueFinalBossOrdinaryAllyUpgrade Health|Damage|Both`，
+该入口自动开启分支卡牌掩码和物理站位采集。未运行全量回归或构建 Mac 包。
 
 ## 原始整场诊断入口
 

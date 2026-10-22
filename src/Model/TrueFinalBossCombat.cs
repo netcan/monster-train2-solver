@@ -29,11 +29,13 @@ namespace MonsterTrain2Poju.Model
             CardMaskDefinition? definition = card?.MaskDescriptor?.Definition;
             UnitModifiers? modifiers = unit.Modifiers;
             if (card == null || definition == null || modifiers == null || !modifiers.SpawnerMatchesDefinition || modifiers.IsClone ||
-                card.ExternalInteractions.Count != 0 || !Unmodified(card.Permanent) || !Unmodified(card.Temporary) ||
-                definition.CardType != "Monster" || !definition.IsSpawner || !definition.HasSpawnData || !definition.CanAttack ||
+                card.ExternalInteractions.Count != 0 || !OrdinaryPermanent(card.Permanent) || !Unmodified(card.Temporary) ||
+                definition.DataId != card.DataId || definition.CardType != "Monster" || !definition.IsSpawner || !definition.HasSpawnData || !definition.CanAttack ||
                 definition.AuthoredUnitAbility || definition.EquipmentUnitAbility || definition.AuthoredGraft ||
                 definition.MainEffectNames.Count != 1 || definition.MainEffectNames[0] != "CardEffectSpawnMonster" ||
-                definition.UnmodifiedSpawnAttack != unit.BaseAttack || definition.UnmodifiedSpawnHealth != unit.MaxHealth || definition.BaseSize != unit.Size ||
+                !definition.UnmodifiedSpawnAttack.HasValue || !definition.UnmodifiedSpawnHealth.HasValue ||
+                CardModifierModel.UpgradedStat(definition.UnmodifiedSpawnAttack.Value, "Damage", true, card.Permanent) != unit.BaseAttack ||
+                CardModifierModel.UpgradedStat(definition.UnmodifiedSpawnHealth.Value, "Health", true, card.Permanent) != unit.MaxHealth || definition.BaseSize != unit.Size ||
                 modifiers.SelfAttackRules?.Count > 0 || modifiers.RoomResources?.Count > 0 || modifiers.RoomStatuses?.Count > 0 ||
                 modifiers.RoomTriggerCounts?.Count > 0 || modifiers.SpawnCopySubtype != null || modifiers.Graft != null ||
                 modifiers.SynergizeStatuses?.Count > 0 || modifiers.Sentry != null || modifiers.TroopAura != null ||
@@ -43,7 +45,31 @@ namespace MonsterTrain2Poju.Model
                     definition.StartingStatuses.Any(original => original.Id == status.Id && original.Count == status.Stacks)) &&
                 definition.StartingStatuses.All(original => unit.Status(original.Id)?.Stacks == original.Count);
         }
-        private static bool Unmodified(CardModifiers modifiers) => modifiers.Upgrades.Count == 0 && modifiers.PersistentHealth == 0 &&
+        private static bool Unmodified(CardModifiers modifiers) => modifiers.Upgrades.Count == 0 && NoOffsets(modifiers);
+        private static bool OrdinaryPermanent(CardModifiers modifiers) => NoOffsets(modifiers) && modifiers.Upgrades.Count <= 2 &&
+            modifiers.Upgrades.All(PureNumericUpgrade);
+        private static bool PureNumericUpgrade(CardUpgradeModifier upgrade)
+        {
+            CardLifecycleUpgrade? lifecycle = upgrade.Lifecycle;
+            return upgrade.DataId.Length > 0 && upgrade.AssetKey.Length > 0 && Numeric(upgrade.Stats) &&
+                upgrade.Statuses.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null &&
+                upgrade.ExternalInteractions.Count == 0 && !upgrade.RemoveOnDiscard && !upgrade.Unique && !upgrade.ExcludeFromClones &&
+                !upgrade.RestrictSizeToRoomCapacity && !upgrade.MagicPowerTraitScalingOnly && !upgrade.DoNotReplaceExistingAbility &&
+                upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 &&
+                (upgrade.CloneDamageBase == null || upgrade.CloneDamageBase == upgrade.Stats.Damage) && upgrade.CloneHealBase == null &&
+                upgrade.EquipmentSourceCardId == null && upgrade.EquipmentSourceUpgradeIndex == null &&
+                upgrade.MaskMetadata is { UnitAbility: false, Statuses.Count: 0 } &&
+                lifecycle != null && lifecycle.AssetKey == upgrade.AssetKey && lifecycle.Values.DataId == upgrade.DataId &&
+                Numeric(lifecycle.Values.Stats) && lifecycle.Values.Stats.Damage == upgrade.Stats.Damage &&
+                lifecycle.Values.Stats.Health == upgrade.Stats.Health && lifecycle.Values.Statuses.Count == 0 && !lifecycle.Values.UnitAbility &&
+                !lifecycle.RemoveOnDiscard && !lifecycle.Unique && !lifecycle.AvoidClobbering && lifecycle.AddedTraits.Count == 0 &&
+                lifecycle.RemovedRuntimeTypes.Count == 0 && lifecycle.TraitsModified.Count == 0 && lifecycle.ReplacedAssets.Count == 0 &&
+                lifecycle.Triggers.Count == 0 && (lifecycle.OriginalDamage == null || lifecycle.OriginalDamage == upgrade.Stats.Damage) && lifecycle.OriginalHeal == null;
+        }
+        private static bool Numeric(CardStatModifier stats) => stats.Damage >= 0 && stats.Health >= 0 &&
+            (stats.Damage > 0 || stats.Health > 0) && stats.Cost == 0 && stats.Heal == 0 && stats.Size == 0 &&
+            stats.XCost == 0 && stats.EquipmentLimit == 0 && stats.UpgradeSlotCount == 0;
+        private static bool NoOffsets(CardModifiers modifiers) => modifiers.PersistentHealth == 0 &&
             modifiers.ExternalInteractions.Count == 0 && modifiers.MergedEquipment == null && modifiers.BoxedCards?.Count is not > 0 &&
             modifiers.Offsets.Damage == 0 && modifiers.Offsets.Health == 0 && modifiers.Offsets.Cost == 0 && modifiers.Offsets.Heal == 0 &&
             modifiers.Offsets.Size == 0 && modifiers.Offsets.XCost == 0 && modifiers.Offsets.EquipmentLimit == 0 && modifiers.Offsets.UpgradeSlotCount == 0;
