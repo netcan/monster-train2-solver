@@ -18,7 +18,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit[] bodies = world.Rooms.SelectMany(room => room.Units).Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
             if (bodies.Length != 5 || assets.Any(asset => bodies.Count(unit => unit.AssetKey == asset) != 1)) return false;
             return world.Rooms.SelectMany(room => room.Units).All(unit => unit.IsPyre ||
-                unit.Team == CombatTeam.Player && TrueFinalBossCombatModel.SupportsAlly(unit, source.Context) ||
+                unit.Team == CombatTeam.Player && unit.Triggers.Count == 0 && TrueFinalBossCombatModel.SupportsAlly(unit, source.Context) ||
                 unit.Team == CombatTeam.Enemy && unit.EquipmentCards.Count == 0 && unit.Modifiers?.Upgrades.Count == 0 &&
                 links.Actors.Any(actor => actor.Id == unit.Id) &&
                 unit.Triggers.All(trigger => trigger.Kind is "OnSpawn" or "PostCombat" or "OnTrainRoomLoop") &&

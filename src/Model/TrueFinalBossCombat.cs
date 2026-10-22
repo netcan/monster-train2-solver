@@ -6,8 +6,9 @@ namespace MonsterTrain2Poju.Model
     {
         // Native full-route captures include authored physical anchors and the
         // complete aura world. Ordinary summon/attack signatures and two
-        // original Steward upgrades are calibrated alongside the baseline
-        // actors. Other callbacks and relentless layouts retain their guards.
+        // original Steward upgrades and one fixed OnHit weakness signature
+        // are calibrated alongside the baseline actors. Other callbacks and
+        // relentless layouts retain their guards.
         internal static bool SupportsAlly(CombatUnit unit) => SupportsAlly(unit, null);
         internal static bool SupportsAlly(CombatUnit unit, CombatContext? context)
         {
@@ -17,11 +18,40 @@ namespace MonsterTrain2Poju.Model
                 unit.AssetKey == "MonsterBanishedChampion1" && unit.BaseAttack == 1 && unit.MaxHealth == 10 && unit.Size == 2 ||
                 SupportsUpgradedSteward(unit, context) || ordinary) &&
             unit.CanAttack && !unit.EndsBattleOnDeath && unit.Ability == null &&
-            unit.Triggers.Count == 0 && unit.EquipmentCards.Count == 0 &&
+            (unit.Triggers.Count == 0 || ordinary && unit.Status("valor") == null && SupportsOnHitMeleeWeakness(unit, context)) && unit.EquipmentCards.Count == 0 &&
             unit.Modifiers?.Upgrades.Count == 0 && unit.Statuses.All(status => status.Id == "corruption" ||
                 ordinary && status.Id == "valor" && status.Stacks == 5 && status.ParamInt == 1 ||
                 status.Id == "multistrike" && status.ParamInt == 2 &&
                     (unit.AssetKey == "MonsterBanishedChampion1" && status.Stacks == 1 || ordinary && status.Stacks is >= 1 and <= 2));
+        }
+
+        private static bool SupportsOnHitMeleeWeakness(CombatUnit unit, CombatContext? context)
+        {
+            CardInstanceState? card = context?.FindCard(unit.SpawnerCardId);
+            if (card?.Permanent.Upgrades.Count != 0 || card.Temporary.Upgrades.Count != 0 || unit.Triggers.Count != 1) return false;
+            CombatTrigger trigger = unit.Triggers[0];
+            if (trigger.Kind != "OnHit" || trigger.Once || trigger.IgnoreSilence || trigger.FireCount != 1 ||
+                trigger.SkipDuringDeployment != false || trigger.TriggerAtThreshold != 0 || trigger.StateId == null ||
+                trigger.DeathwishActive != null || trigger.Conditions != null || trigger.RemoveOnRelentlessChange ||
+                trigger.NoCountModifiersAllowed == true || trigger.SuppressTriggerNotification != null ||
+                trigger.Origin is not { UpgradeId.Length: 0, EquipmentCardId: 0, IsFromEquipment: false, OnlyIfEquipped: false } ||
+                trigger.Effects.Count != 1) return false;
+            CombatEffect effect = trigger.Effects[0];
+            CardActionEffect? action = effect.Action;
+            TriggeredStatusScaling? scaling = effect.StatusScaling;
+            return effect.Type == "CardEffectAddStatusEffect" && effect.Value == 0 && effect.Counter == 0 && effect.Count == 0 &&
+                effect.CardPool.Count == 0 && !effect.SkipDuplicateInHand && effect.Generation == null && effect.UnitUpgrade == null &&
+                effect.DamageStatusMultiplier == null && effect.Summon == null && effect.Enchantment == null && effect.BoxedPool == null &&
+                scaling is { ActorStatus: null, MissingHealth: false, MagicPower: false, IgnoreDualism: false,
+                    Subtype.Length: 0, HealthChoicePercent: null, HealthChoiceAbove: false } &&
+                action is { Type: "AddStatus", Target: "LastAttackerCharacter", Value: 0, AllowEnemy: true, AllowPlayer: false,
+                    Statuses.Count: 1, Upgrade: null, Range: null, Generation: null, Lifetime.Length: 0, OnlyIfNoEnemies: false,
+                    CooldownParameter: null, AbilityChange: null, CopyHeroStats: null, ScaleUpgrade: false,
+                    SourceStatusMultiplier: null, StatusAdjustmentFilter: null, RemoveHalfStatusEffects: null } &&
+                action.Statuses[0] is { Id: "melee weakness", Stacks: 1, ParamInt: 0, RemoveWhenTriggered: true } &&
+                action.Tests is { ShouldTest: true, FailToCast: false, CancelSubsequent: false, StrictTargets: false, MustHaveValidTargets: false } &&
+                action.Filters is { Health: "Both", RequiredStatuses.Count: 0, ExcludedStatuses.Count: 0, IgnoreBosses: false,
+                    Subtype.Length: 0, ExcludedSubtypes.Count: 0 };
         }
 
         private static bool SupportsOrdinaryAlly(CombatUnit unit, CombatContext? context)

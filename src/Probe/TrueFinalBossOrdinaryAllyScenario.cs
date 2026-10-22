@@ -36,7 +36,8 @@ namespace MonsterTrain2Poju.Probe
             CardManager cards = managers.GetCardManager();
             FullBattleTrace trace = FullBattleTrace.Active!;
             string id = Kind == "Steward" ? "38e70e6a-20f3-4e36-8d31-c5110be07f87" : Kind == "Warrior" ?
-                "5de24977-6800-4015-a20e-9949e79e057c" : "e66178fd-b8e7-401c-b570-7832840ea902";
+                "5de24977-6800-4015-a20e-9949e79e057c" : Kind == "Animus" ? "e66178fd-b8e7-401c-b570-7832840ea902" :
+                Kind == "Avenger" ? "69fcbe85-a5b7-4a83-bf6d-21888604d99e" : throw new InvalidOperationException("Unknown original ally.");
             var row = new Record { Kind = Kind, UpgradeKind = UpgradeKind, CardDataId = id, Before = trace.CaptureDecision(),
                 AnchorCardId = trace.CardId(cards.GetHand().First(card => card.GetSpawnCharacterData()?.GetAssetKey() == "TrainStewardBig")) };
             CardData data = managers.GetSaveManager().GetAllGameData().FindCardData(id)!;

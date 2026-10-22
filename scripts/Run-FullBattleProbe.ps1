@@ -42,7 +42,7 @@ param(
     [switch] $OriginalOuterBossTrial,
     [switch] $OriginalTrueFinalBoss,
     [ValidateSet('', 'Health', 'Damage')][string] $TrueFinalBossAllyUpgrade = '',
-    [ValidateSet('', 'Steward', 'Warrior', 'Animus')][string] $TrueFinalBossOrdinaryAlly = '',
+    [ValidateSet('', 'Steward', 'Warrior', 'Animus', 'Avenger')][string] $TrueFinalBossOrdinaryAlly = '',
     [ValidateSet('', 'Health', 'Damage', 'Both')][string] $TrueFinalBossOrdinaryAllyUpgrade = '',
     [switch] $TrueFinalBossDormantSavagery,
     [switch] $TrueFinalBossRelentless,
@@ -711,6 +711,7 @@ if ($TrueFinalBossLethalAlly) {
 }
 if ($TrueFinalBossOrdinaryAlly -and $TrueFinalBossAllyUpgrade) { throw 'Ordinary ally and upgraded ally require separate captures.' }
 if ($TrueFinalBossOrdinaryAllyUpgrade -and -not $TrueFinalBossOrdinaryAlly) { throw 'Ordinary ally upgrades require an explicit ordinary ally.' }
+if ($TrueFinalBossOrdinaryAlly -eq 'Avenger' -and $TrueFinalBossOrdinaryAllyUpgrade) { throw 'Triggered allies require separate upgrade calibration.' }
 if ($TrueFinalBossOrdinaryAllyUpgrade) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true }
 if ($TrueFinalBossAllyUpgrade -or $TrueFinalBossOrdinaryAlly) {
     if (-not $OriginalTrueFinalBoss -or $TrueFinalBossLethal -or ($TrueFinalBossLethalSpellTarget -and -not $TrueFinalBossLethalAlly) -or $TrueFinalBossDormantSavagery -or $TrueFinalBossRelentless -or $OuterBossRelentless) {

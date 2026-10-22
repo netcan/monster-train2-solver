@@ -674,6 +674,14 @@ Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 
 入口：`./scripts/Check-TrueFinalBoss.ps1 -Case OrdinaryAlly -SkipBuild`。
 原生采集：`-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossOrdinaryAlly Steward|Warrior|Animus`。
 
+## 普通友军的受击回调签名
+
+原始 Avenger 的 `OnHit → LastAttackerCharacter → melee weakness 1` 现通过
+完整原生整场校准；原始五主体属性/阶段未改，明确添加单位卡。两次付费召唤、
+六次 EndTurn、五次 UI 预览及 16 条独立完整链一致，四项计数为零；路线败北。
+带回调友军的终局组死亡、勇气组合和十种触发签名变化仍拒绝。
+详见 [Avenger 独立证据](true-final-boss-avenger.md)。
+
 ## 普通友军的永久数值强化签名
 
 同一普通召唤/攻击签名现可携带至多两个纯正数值永久升级，按原始攻击/生命、
