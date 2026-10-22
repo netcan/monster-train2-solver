@@ -149,6 +149,12 @@ namespace MonsterTrain2Poju.Probe
                 if (TrueFinalBossBirthProbe.Error != null) Finish(false, TrueFinalBossBirthProbe.Error);
                 else
                 {
+                    if (TrueFinalBossDeathCalibration.Enabled)
+                    {
+                        TrueFinalBossDeathCalibration.Tick();
+                        if (TrueFinalBossDeathCalibration.Error != null) { Finish(false, TrueFinalBossDeathCalibration.Error); return; }
+                        if (!TrueFinalBossDeathCalibration.Completed) return;
+                    }
                     log.LogInfo("TRUE-FINAL-BOSS-BIRTH-NATIVE PASS five original actors; read-only capture; model acceptance pending.");
                     Finish(true, "True-final-boss birth component captured; full battle remains guarded.");
                 }

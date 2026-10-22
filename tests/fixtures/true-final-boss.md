@@ -142,6 +142,26 @@ Entropy 目标上执行；普通房间战斗、预览、带攻击者或来源卡
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Damage -SkipBuild`。
 
+## 致命伤害与全体移除
+
+五份 `true-final-boss-death-{dominion,savagery,entropybot,entropymid,entropytop}.mt2f`
+分别来自独立的新原生进程。出生属性、资源和火炉保留原值；随后明确调用原生
+`DebuffHP` 把三个独立组都调到 1 血，对所选实体施加 1 点实际伤害，再执行原生
+`RemoveDeadCharacters`。这是一血控制场景，不计自然战斗或自然胜局。
+
+五次都正常退出、`DEPTH-PASS`，受保护文件未变，用时 27.35–29.44 秒。伤害后
+仍有五个活跃列表成员、没有移除调用，只有直接目标完成死亡信号；Entropy
+链接组的三个生命同时为零，其他组仍为 1。清理阶段才调用一次
+`RemoveTrueFinalBoss`，并对**全部五个真终局实体**执行 `RemoveCharacterInner`，
+不是只移除死亡目标或三个 Entropy。五次均触发原生胜利，火炉仍为 80。
+
+`TrueFinalBossRemovalModel` 与五次原生完整移除顺序、每步活跃列表和转发标志
+一致，320 条并发计划不改父状态。楼层按 3/2/1/0/0 降序，同层 Savagery 在
+Entropy Bot 前；最后一次死亡标记只给最后一个实体。当前仅校准原始五实体组，
+其他数量拒绝。它不代替完整死亡回调、击杀镜头、出牌终结与整场控制器的模型。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Death -SkipBuild`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

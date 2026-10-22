@@ -109,6 +109,7 @@ namespace MonsterTrain2Poju.Probe
                     LinkedHealthCalibration.Capture(created, () => Snapshot(heroes));
                     LifeLinkCalibration.Capture(created, () => Snapshot(heroes));
                     TrueFinalBossHealthCalibration.Capture(created, () => Snapshot(heroes));
+                    TrueFinalBossDeathCalibration.Arm(created);
                     Completed = !TrueFinalBossDamageCalibration.Enabled;
                 }
                 catch (Exception error) { Error = error.ToString(); }

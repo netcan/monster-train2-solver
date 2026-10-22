@@ -44,6 +44,7 @@ param(
     [switch] $TrueFinalBossLifeLink,
     [switch] $TrueFinalBossHealthUpdates,
     [switch] $TrueFinalBossDamage,
+    [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')][string] $TrueFinalBossDeath = '',
     [switch] $OuterBossBirth,
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
@@ -671,15 +672,19 @@ if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or 
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant) { throw 'OriginalOuterBossTrial requires an explicit original outer-boss variant.' }
 if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $OriginalOuterBossVariant -or
-    $TrueFinalBossBirth -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossDamage)) {
+    $TrueFinalBossBirth -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossDamage -or $TrueFinalBossDeath)) {
     throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
 }
 if ($TrueFinalBossHealth) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossLifeLink) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossHealthUpdates) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossDamage) { $TrueFinalBossBirth = $true }
+if ($TrueFinalBossDeath) {
+    if ($TrueFinalBossDamage) { throw 'Controlled terminal capture is separate from original nonterminal damage/healing.' }
+    $TrueFinalBossBirth = $true
+}
 if ($TrueFinalBossBirth) {
-    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossDamage', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossDamage', 'TrueFinalBossDeath', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'TrueFinalBossBirth is an isolated original birth observation.' }
     $Policy = 'no-cards'; $BattleDistance = 8; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1315,6 +1320,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_LIFE_LINK = $(if ($TrueFinalBossLifeLink) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH_UPDATES = $(if ($TrueFinalBossHealthUpdates) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DAMAGE = $(if ($TrueFinalBossDamage) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_DEATH = $TrueFinalBossDeath
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_PYRE = $(if ($OuterBossPyre) { '1' } else { '0' })
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"
@@ -1903,6 +1909,7 @@ if ($TrueFinalBossBirth) {
     if ($TrueFinalBossLifeLink) { $componentNames += 'true-final-boss-life-link-calibration.mt2f' }
     if ($TrueFinalBossHealthUpdates) { $componentNames += 'true-final-boss-health-updates-calibration.mt2f' }
     if ($TrueFinalBossDamage) { $componentNames += 'true-final-boss-damage-calibration.mt2f' }
+    if ($TrueFinalBossDeath) { $componentNames += "true-final-boss-death-$($TrueFinalBossDeath.ToLowerInvariant()).mt2f" }
     $componentPaths = @($componentNames | ForEach-Object { Join-Path $profile $_ })
     $componentPath = $componentPaths[-1]
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
