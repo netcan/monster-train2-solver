@@ -231,6 +231,7 @@ param(
     [switch] $DragonHoard,
     [switch] $TrainHeal,
     [switch] $TrainHealPerEmber,
+    [switch] $TrainHealPerEmberX,
     [switch] $CopyOnPlay,
     [switch] $Overheal,
     [switch] $Corruption,
@@ -1091,6 +1092,7 @@ if ($OriginalUncontrolledGroup) { $Mix = $true; $MixChoices = '01' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHealPerEmber) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($TrainHealPerEmberX) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($CopyOnPlay) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Corruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1582,6 +1584,7 @@ if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
 if ($TrainHealPerEmber) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal-per-ember' }
+if ($TrainHealPerEmberX) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal-per-ember-x' }
 if ($CopyOnPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'copy-on-play' }
 if ($Overheal) { $environment['MT2_PROBE_MODIFIERS'] = 'overheal' }
 if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
@@ -2276,6 +2279,10 @@ if ($ConditionalPyreLethal -and ($trace.ModifierScenario -ne 'conditional-pyre-d
     $trace.NativeWon -or @($trace.Turns).Count -ne 2 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'CONDITIONAL-PYRE-DAMAGE-PREPARED original=HeavyT3_PyreDamageIfUnblocked firstWaveGroups=\d+' -Quiet))) {
     throw 'Original conditional Pyre lethal boundary was not captured.'
+}
+if ($TrainHealPerEmberX -and ($trace.ModifierScenario -ne 'train-heal-per-ember-x' -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'EMBER-TRAIN-HEAL-X-PREPARED original upgrade; two original Stewards, two original Vent cards with \+2 X; Pyre missing 12 HP.' -Quiet))) {
+    throw 'Original X-cost Pyre healing controls were not prepared.'
 }
 if ($SoulSiphon -and ($trace.ModifierScenario -ne 'soul-siphon' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'SOUL-SIPHON-STATUS stage=' -Quiet) -or

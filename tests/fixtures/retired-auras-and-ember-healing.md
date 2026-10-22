@@ -59,8 +59,46 @@ The Pyre starts five HP below its native maximum. No unit stats are edited.
 The native battle wins with 80 Pyre HP: 23 plays, seven EndTurns, all four failure
 counters zero and settled terminal effects. Complete state/RNG and sixteen
 independent immutable branches match. Resource capture now includes card-trigger
-healing upgrades after their owner leaves hand. X-cost and negative healing
-remain explicitly rejected pending native calibration.
+healing upgrades after their owner leaves hand. Negative healing remains
+explicitly rejected pending native calibration.
+
+## Healing from paid X cost
+
+`full-battle-train-heal-per-ember-x.mt2f` adds two original Train Stewards and
+two original Vent cards, all carrying the unchanged original healing upgrade.
+The second Steward has an explicit one-ember discount. Both Vent carriers have
+an explicit +2 X upgrade and Freeze so they remain in hand through deployment.
+The Pyre starts twelve HP below its original maximum; unit stats, original
+Vent damage and native waves remain unchanged. This is an authored mechanism
+calibration, separate from natural deck or player-entry acceptance.
+
+| Carrier | Paid cost | Extra X | Native healing |
+| --- | ---: | ---: | ---: |
+| Train Steward | 1 | 0 | 1 |
+| Discounted Train Steward | 0 | 0 | 1 |
+| Vent | 3 | 2 | 3 |
+| Vent | 0 | 2 | 0 |
+
+The native effect reads GetCardPlayedCost with allowModifications false during
+resolution. The model reuses its UnmodifiedPlayedCost query, including the
+native energy fallback when a paid-cost entry is absent. Settled decisions
+clear transient played-cost entries, so the oracle is actual energy spent and
+native HP changes, followed by complete action/turn state and RNG comparison.
+
+Source `full-battle-units-spells-and-junk-20261022-124156-a51e568d` wins with
+Pyre75, 20 plays/seven EndTurns, 58 matching room stages and all four failure
+counters zero. It records DEPTH-PASS and exits normally after 107.99 seconds;
+protected originals remain unchanged. Sixteen independent immutable full-battle
+branches match the native chain. The fixed-cost/capped controls still pass.
+Archive: 47,602 bytes/7,567 nodes; SHA-256
+`56488383b845d5e9e8b2c6dc7b96bf832d2d5ba850d77b8c0457e427a97919cb`.
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -TrainHealPerEmberX -NativeWorker 1 `
+  -SettleDeathDissolves -SettleCardAnimations -SkipBuild -TimeoutSeconds 240
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --ember-train-heal-x-only `
+  tests/fixtures/full-battle-train-heal-per-ember-x.mt2f
+```
 
 Focused checks:
 

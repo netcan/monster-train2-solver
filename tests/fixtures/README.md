@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 881 archives (807 full battles and
+Current manifest inventory (2026-10-22): 883 archives (809 full battles and
 74 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,7 +9,11 @@ with seven preceding native wins and thirteen hash-verified restore members.
 `full-battle-natural-fragile-no-cards.mt2f` matches five native EndTurns;
 `full-battle-natural-fragile-status.mt2f` matches 39 plays/seven EndTurns and
 fixes unrelated remote Pyre actors entering local triggered-status scopes.
-Both are losses and do not establish Fragile winning-player acceptance.
+`full-battle-natural-fragile-titanite.mt2f` adds 44 plays/nine EndTurns,
+including natural Titanite/shield/grafted Firebrand deployment and the remote
+lethal Pyre boundary before killcam. Its 53 frozen inputs, 83 room stages and
+full state/RNG match a fresh native process with four zero failure counters.
+All three are losses and do not establish Fragile winning-player acceptance.
 See [outer-boss validation](outer-boss-variants.md).
 
 `full-battle-natural-ring7-tactical-win.mt2f` verifies a natural Rax victory:
@@ -23,6 +27,12 @@ The source captures the whole native victory and `DEPTH-PASS`, then hits its
 outer runner's exit deadline; its final protected-file comparison is unverified.
 The exact natural input is retained in `campaign-progressed-ring7-tactical.zip`.
 See [Ring7 tactics and acceptance limits](natural-ring7-tactics.md).
+
+`full-battle-train-heal-per-ember-x.mt2f` verifies original Vent carriers with
+the original per-ember healing upgrade. With +2 X modifiers, paid3/0 still
+heals3/0. The complete native victory has 20 plays/seven EndTurns and Pyre75;
+58 room stages and sixteen independent full state/RNG branches match.
+See [cost-based healing](retired-auras-and-ember-healing.md).
 
 `full-battle-copy-on-play.mt2f` calibrates original CreateSpellCopyWithPurge
 on plain and ChaosScepter Consume carriers: three actual copies and three

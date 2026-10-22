@@ -94,6 +94,34 @@ additional native acceptance. The first immediate obstacle is surviving ordinary
 high-health waves before the final boss phase; repeating the same native loss
 does not add winning-player evidence.
 
+After the isolated Titanite/shield ordering calibration, the unchanged natural
+root also deploys its original grafted Firebrand with Titanite, Endless and
+one damage shield. `full-battle-natural-fragile-titanite.mt2f` records a longer
+loss: 44 plays/nine EndTurns, all 53 frozen inputs and full state/RNG matching.
+The last remote PostCombat hit reduces Pyre17 to zero before death callbacks
+or killcam. Its zero-HP Pyre must also leave the shared aura room; retaining it
+there could restore the dead actor into the physical train at final refresh.
+The native room capture retains the original zero-HP object separately for
+lifecycle comparison, without clearing cards or fabricating death callbacks.
+
+Source `full-battle-units-spells-and-junk-20261022-124156-0e389513` exits normally
+after 287.65 seconds, records DEPTH-PASS, preserves protected originals and has
+zero capture/mismatch/unsupported/pending counters. All 83 room stages and
+336 context inventories pass independent checks. Both the local status scope
+and final lethal boundary also pass two immutable replays. Archive: 113,025
+bytes/18,535 nodes; SHA-256
+`7cbe64f58ba53561ed34ee1cfab9419e9ae36c6e98355a998092bda583d80afa`.
+
+Two Firebrand-first stable-formation scouts lose after seven EndTurns; a
+45-second/441-node bounded search also returns the nine-EndTurn loss. These
+offline diagnostics provide no additional winning-player acceptance. Fragile's
+natural winning route and player entry remain open goals.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-fragile-only `
+  tests/fixtures/full-battle-natural-fragile-titanite.mt2f
+```
+
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-fragile-only `
   tests/fixtures/full-battle-natural-fragile-no-cards.mt2f

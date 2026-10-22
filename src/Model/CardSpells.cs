@@ -565,7 +565,13 @@ namespace MonsterTrain2Poju.Model
                         if (descriptor == null) return UnsupportedTrain("Healing per ember requires the played card's raw cost and cost type.");
                         int multiplier = descriptor.BaseCost;
                         if (descriptor.Definition.XCost)
-                            return UnsupportedTrain("Per-ember healing on X-cost cards requires native calibration.");
+                        {
+                            StatisticQueryResult paid = StatisticQueryModel.Evaluate(state.Context!,
+                                new CardStatisticQuery("UnmodifiedPlayedCost", variableCost: true), sourceCardId);
+                            if (!paid.Supported) return UnsupportedTrain(paid.UnsupportedReason!);
+                            state = WithContext(state, paid.Context!);
+                            multiplier = paid.Value;
+                        }
                         amount = unchecked(amount * multiplier);
                         if (amount < 0) return UnsupportedTrain("Negative healing per ember requires native damage calibration.");
                     }

@@ -531,6 +531,9 @@ internal static class BattleActionChecks
         if (fixture.TryGetProperty("ModifierScenario", out var conditionalPyrePolicy) &&
             conditionalPyrePolicy.GetString() is "conditional-pyre-damage" or "conditional-pyre-damage-lethal")
             chooser = ConditionalPyreDamageChecks.Choose;
+        if (fixture.TryGetProperty("ModifierScenario", out var emberHealPolicy) &&
+            emberHealPolicy.GetString() is "train-heal-per-ember" or "train-heal-per-ember-x")
+            chooser = source => EmberTrainHealChecks.Choose(source, emberHealPolicy.GetString() == "train-heal-per-ember-x");
         if (fixture.TryGetProperty("ModifierScenario", out var selfAttackStatusPolicy) &&
             selfAttackStatusPolicy.GetString() == "self-attack-status")
             chooser = SelfAttackStatusChecks.Choose;

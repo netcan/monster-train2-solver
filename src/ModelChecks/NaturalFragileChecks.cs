@@ -23,9 +23,34 @@ internal static class NaturalFragileChecks
         }
         else
         {
-            Require(actions.GetArrayLength() == 39 && turns.Length == 7 && !fixture.GetProperty("NativeWon").GetBoolean(),
+            bool titaniteRoute = actions.GetArrayLength() == 44 && turns.Length == 9;
+            Require((actions.GetArrayLength() == 39 && turns.Length == 7 || titaniteRoute) && !fixture.GetProperty("NativeWon").GetBoolean(),
                 "Unexpected natural triggered-status calibration route.");
             RollingAdviceChecks.Native(fixture);
+            if (titaniteRoute)
+            {
+                Require(actions.EnumerateArray().Any(action => action.GetProperty("Actual").Deserialize<BattleTurnState>()!
+                    .Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.AssetKey == "MonsterFirebrand" &&
+                        unit.Status("titanite")?.Stacks == 1 && unit.Status("damage shield")?.Stacks == 1 &&
+                        unit.Status("endless")?.Stacks == 1 && unit.EquipmentCards?.Count == 1)),
+                    "The natural Titanite route did not deploy its original grafted Firebrand/shield combination.");
+                BattleTurnState lastBefore = turns[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
+                BattleTurnState lastAfter = turns[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(lastBefore.Spawn.Train.Rooms[3].Units.Single(unit => unit.IsPyre).Health == 17 &&
+                    lastAfter.Spawn.Train.Rooms[3].Units.All(unit => !unit.IsPyre) &&
+                    lastAfter.Spawn.Train.Context is { KillCamActivated: false, EnergyState.PyreAlive: false } &&
+                    lastAfter.Spawn.Train.Context.CardInstances!.Count > 0,
+                    "Natural remote lethal Pyre damage must retain cards and stop before killcam.");
+                string lastImmutable = BattlePlannerChecks.Key(lastBefore);
+                for (int repeat = 0; repeat < 2; repeat++)
+                {
+                    BattleTurnResult result = BattleTurnModel.EndTurn(lastBefore);
+                    Require(result.Supported && result.Outcome == RoomOutcome.PlayerDefeated &&
+                        BattleTurnChecks.Comparable(result.State!, terminal: true) == BattleTurnChecks.Comparable(lastAfter, terminal: true),
+                        "Natural remote lethal boundary failed independent full-state/RNG replay.");
+                }
+                Require(BattlePlannerChecks.Key(lastBefore) == lastImmutable, "Natural lethal replay mutated its root.");
+            }
             var boundary = turns.Single(turn => turn.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Turn == 3);
             var before = boundary.GetProperty("Before").Deserialize<BattleTurnState>()!;
             var after = boundary.GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -42,7 +67,7 @@ internal static class NaturalFragileChecks
                 BattleTurnChecks.Comparable(second.State!) == BattleTurnChecks.Comparable(after),
                 "The affected native boundary failed independent immutable replay.");
         }
-        Console.WriteLine($"NATURAL-FRAGILE PASS plays={actions.GetArrayLength()} turns={turns.Length}: unchanged natural root, complete state/RNG and physical Pyre retained; victory acceptance remains separate.");
+        Console.WriteLine($"NATURAL-FRAGILE PASS plays={actions.GetArrayLength()} turns={turns.Length}: unchanged natural root, complete state/RNG and native Pyre lifecycle; victory acceptance remains separate.");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

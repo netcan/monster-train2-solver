@@ -63,6 +63,14 @@ if (args.Length == 2 && args[0] == "--ember-train-heal-only")
     EmberTrainHealChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--ember-train-heal-x-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EmberTrainHealChecks.XCost(fixture.RootElement);
+    RoomCombatChecks.NativeRoomOnly(args[1]);
+    Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
+    return;
+}
 
 if (args.Length == 2 && args[0] == "--titanite-only")
 {
@@ -3722,10 +3730,15 @@ foreach (string path in args.Where(path => path.Contains("full-battle-retired-au
     using var document = ModelJson.ReadFixture(path);
     RetiredAuraChecks.Native(document.RootElement);
 }
-foreach (string path in args.Where(path => path.Contains("full-battle-train-heal-per-ember", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => path.EndsWith("full-battle-train-heal-per-ember.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);
     EmberTrainHealChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-train-heal-per-ember-x.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    EmberTrainHealChecks.XCost(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-copy-on-play", StringComparison.OrdinalIgnoreCase)))
 {
@@ -3755,7 +3768,8 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
     }
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-fragile-no-cards.mt2f", StringComparison.OrdinalIgnoreCase) ||
-    path.EndsWith("full-battle-natural-fragile-status.mt2f", StringComparison.OrdinalIgnoreCase)))
+    path.EndsWith("full-battle-natural-fragile-status.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-natural-fragile-titanite.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);
     NaturalFragileChecks.Native(document.RootElement);

@@ -52,7 +52,10 @@ namespace MonsterTrain2Poju.Model
             var external = externalUnits?.Count > 0 ? externalUnits.ToDictionary(unit => unit.Id) : null;
             var rooms = world.Rooms.Select(room => room.RoomIndex == source.RoomIndex ? source :
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Where(unit => !currentIds.Contains(unit.Id))
-                    .Select(unit => external != null && external.TryGetValue(unit.Id, out CombatUnit? changed) ? changed : unit).ToArray(),
+                    .Select(unit => external != null && external.TryGetValue(unit.Id, out CombatUnit? changed) ? changed : unit)
+                    // Remote lethal tower damage stops before the death queue. The
+                    // native room and aura snapshots still exclude its zero-HP Pyre.
+                    .Where(unit => !unit.IsPyre || unit.Health > 0).ToArray(),
                     room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             var liveIds = rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
             var retained = world.RetainedUnits.Where(actor => !liveIds.Contains(actor.Unit.Id)).ToList();
