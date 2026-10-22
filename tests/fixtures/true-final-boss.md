@@ -142,6 +142,27 @@ Entropy 目标上执行；普通房间战斗、预览、带攻击者或来源卡
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Damage -SkipBuild`。
 
+## Savagery 一血时的选目标
+
+`true-final-boss-pyrebane-targets-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-200703-401b635d`，26.52 秒，原生正常退出，原始
+文件未变。对原生 Savagery 临时使用分离的生命/状态信息，并在每项后还原；
+原始身体、房间、帧、16 条随机流及 Unity 随机状态保持不变。
+
+480 组查询覆盖生命 1/2/2750、lifelink 和 pyrebane 的开关、战斗/放置阶段、
+Room/FrontInRoom/BackInRoom/Weakest/RandomInRoom 五种模式和四个原生随机种子。
+同时携带两个状态且生命恰为 1 时，战斗中各模式均排除 Savagery；放置阶段
+只在前排和层内随机模式排除，整层/后排/最低生命查询保持原生结果。
+
+`CardTargetModel` 的房间目标收集与搜索器随机分支候选池均接入该规则；480 组
+目标/可选性/随机状态逐项匹配，128 条并发查询不改父状态。该检查没有开放
+真终局攻击、死亡或整回合控制器。
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -TrueFinalBossPyreBaneTargets -SkipBuild
+./scripts/Check-TrueFinalBoss.ps1 -Case PyreBaneTargets -SkipBuild
+```
+
 ## 真实法术来源与法术护盾
 
 `true-final-boss-spell-damage-calibration.mt2f` 来自

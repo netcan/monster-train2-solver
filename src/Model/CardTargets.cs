@@ -109,7 +109,7 @@ namespace MonsterTrain2Poju.Model
 
         public static CardTargets Collect(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> lastTargets,
             CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false, int selfUnitId = 0,
-            int lastSpawnedOverrideUnitId = 0, bool ignorePyre = true, int lastSacrificedUnitId = 0)
+            int lastSpawnedOverrideUnitId = 0, bool ignorePyre = true, int lastSacrificedUnitId = 0, bool inCombat = false)
         {
             if (effect.Target == "LastSpawnedCharacter") return LastSpawned(room, lastSpawnedOverrideUnitId);
             if (effect.Target == "LastSacrificedCharacter") return new CardTargets(lastSacrificedUnitId > 0 ? new[] { lastSacrificedUnitId } : Array.Empty<int>());
@@ -135,7 +135,8 @@ namespace MonsterTrain2Poju.Model
                 return new CardTargets(accepted ? new[] { occupant!.Id } : Array.Empty<int>(), filterError);
             }
             CombatUnit[] candidates = room.Units.OrderBy(unit => unit.Team).Where(unit => Allowed(unit) && (!ignorePyre || !unit.IsPyre) &&
-                !unit.Statuses.Any(status => status.Id == "untouchable") && MatchesFilters(effect, unit, false, ref filterError)).ToArray();
+                !unit.Statuses.Any(status => status.Id == "untouchable") && !PyreBaneModel.ExcludedFromRoomMode(unit, effect.Target, inCombat) &&
+                MatchesFilters(effect, unit, false, ref filterError)).ToArray();
             if (filterError != null) return new CardTargets(Array.Empty<int>(), filterError);
             if (effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.TargetSubtype.Length > 0)
                 candidates = candidates.Where(unit => unit.Subtypes.Contains(effect.TargetSubtype)).ToArray();
@@ -207,6 +208,9 @@ namespace MonsterTrain2Poju.Model
                 transferAttackMultiplier: effect.TransferAttackMultiplier, statusTransfer: effect.StatusTransfer,
                 unitTriggerKind: effect.UnitTriggerKind, healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                 sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe), Array.Empty<int>());
+            if (result.Supported && effect.Target == "RandomInRoom")
+                result = new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == id && !PyreBaneModel.ExcludedFromRoomMode(unit, effect.Target))).ToArray());
             return result.Supported && effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.TargetSubtype.Length > 0
                 ? new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && unit.Subtypes.Contains(effect.TargetSubtype))).ToArray()) : result;

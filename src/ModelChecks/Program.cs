@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--pyrebane-targets-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PyreBaneChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length >= 2 && args[0] == "--true-final-boss-death-only")
 {
     foreach (string path in args.Skip(1))
@@ -3849,6 +3856,11 @@ foreach (string path in args.Where(path => path.Contains("outer-boss-birth-calib
 {
     using var fixture = ModelJson.ReadFixture(path);
     OuterBossBirthChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-pyrebane-targets-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    PyreBaneChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-spawn-calibration", StringComparison.OrdinalIgnoreCase)))
 {

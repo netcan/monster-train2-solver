@@ -108,6 +108,7 @@ namespace MonsterTrain2Poju.Probe
                     if (!returned || !pure || route == null || created.Count != 5)
                         throw new InvalidOperationException("Incomplete or impure true-final-boss birth observation.");
                     TrueFinalBossSpawnCalibration.Complete(heroes, returned);
+                    PyreBaneCalibration.Capture(created, () => Snapshot(heroes));
                     LinkedHealthCalibration.Capture(created, () => Snapshot(heroes));
                     LifeLinkCalibration.Capture(created, () => Snapshot(heroes));
                     TrueFinalBossHealthCalibration.Capture(created, () => Snapshot(heroes));

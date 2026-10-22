@@ -47,6 +47,7 @@ param(
     [switch] $TrueFinalBossDamage,
     [switch] $TrueFinalBossDamageAllTargets,
     [switch] $TrueFinalBossSpellDamage,
+    [switch] $TrueFinalBossPyreBaneTargets,
     [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')][string] $TrueFinalBossDeath = '',
     [switch] $OuterBossBirth,
     [switch] $OuterBossPyre,
@@ -675,10 +676,11 @@ if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or 
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant) { throw 'OriginalOuterBossTrial requires an explicit original outer-boss variant.' }
 if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $OriginalOuterBossVariant -or
-    $TrueFinalBossBirth -or $TrueFinalBossSpawn -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossDeath)) {
+    $TrueFinalBossBirth -or $TrueFinalBossSpawn -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossPyreBaneTargets -or $TrueFinalBossDeath)) {
     throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
 }
 if ($TrueFinalBossSpawn) { $TrueFinalBossBirth = $true }
+if ($TrueFinalBossPyreBaneTargets) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossHealth) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossLifeLink) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossHealthUpdates) { $TrueFinalBossBirth = $true }
@@ -693,7 +695,7 @@ if ($TrueFinalBossDeath) {
     $TrueFinalBossBirth = $true
 }
 if ($TrueFinalBossBirth) {
-    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossDeath', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossPyreBaneTargets', 'TrueFinalBossDeath', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'TrueFinalBossBirth is an isolated original birth observation.' }
     $Policy = 'no-cards'; $BattleDistance = 8; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1332,6 +1334,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_DAMAGE = $(if ($TrueFinalBossDamage) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DAMAGE_ALL_TARGETS = $(if ($TrueFinalBossDamageAllTargets) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SPELL_DAMAGE = $(if ($TrueFinalBossSpellDamage) { '1' } else { '0' })
+    MT2_PROBE_PYREBANE_TARGETS = $(if ($TrueFinalBossPyreBaneTargets) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DEATH = $TrueFinalBossDeath
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_PYRE = $(if ($OuterBossPyre) { '1' } else { '0' })
@@ -1918,6 +1921,7 @@ Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.
 if ($TrueFinalBossBirth) {
     $componentNames = @('true-final-boss-birth-calibration.mt2f')
     if ($TrueFinalBossSpawn) { $componentNames += 'true-final-boss-spawn-calibration.mt2f' }
+    if ($TrueFinalBossPyreBaneTargets) { $componentNames += 'true-final-boss-pyrebane-targets-calibration.mt2f' }
     if ($TrueFinalBossHealth) { $componentNames += 'true-final-boss-linked-health-calibration.mt2f' }
     if ($TrueFinalBossLifeLink) { $componentNames += 'true-final-boss-life-link-calibration.mt2f' }
     if ($TrueFinalBossHealthUpdates) { $componentNames += 'true-final-boss-health-updates-calibration.mt2f' }
