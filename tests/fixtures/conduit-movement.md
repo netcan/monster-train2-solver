@@ -211,3 +211,24 @@ remain separate. No full regression or Mac package is built.
 scripts/Run-FullBattleProbe.ps1 -EclipseChamberMixedConduit -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --eclipse-mixed-conduit-only tests/fixtures/full-battle-eclipse-chamber-mixed-conduit.mt2f
 ```
+
+The actual player pair `full-battle-player-mixed-conduit-{search,replay}.mt2f`
+retains profiles `full-battle-units-spells-and-junk-20261022-134708-9dd76edb`
+(312.54 seconds) and `full-battle-units-spells-and-junk-20261022-135242-0c0f2620`
+(122.15 seconds). Both win at Pyre80 after 28 plays/six EndTurns, settle, exit
+normally, preserve protected originals and have four zero failure counters.
+All 34 inputs, published forecasts, full native states and RNG match between
+the independent processes. The focused pair checks eight shared-card snapshot
+witnesses with independent upgrades from both teams, twenty live opposing
+contributor snapshots and twenty opposing tracked hand-upgrade records.
+
+The real player publishes 36 times with pure capture/UI checks. Its used initial
+search takes 5.21 seconds and complete first response 9.83 seconds. Subsequent
+33 decisions retain the verified winning continuation, with median/P95 response
+1.25/1.77 seconds. This still uses the authored hand/carriers and six-turn/10,000-ms
+tactical budget. Player-published Bumps on opposing carriers and natural decks
+remain separate boundaries; the paid chain above validates opposing movement.
+
+```powershell
+scripts/Check-PlayerAdvisor.ps1 -Case MixedConduit -SkipBuild
+```
