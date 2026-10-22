@@ -65,7 +65,7 @@ namespace MonsterTrain2Poju.Model
             var definition = new CardMaskDefinition(d.DataId, d.CardType, d.Rarity, d.IsSpawner, d.HasSpawnData, d.CanAttack,
                 d.Subtypes, d.StartingStatuses, statuses, names, d.LinkedClan, d.XCost, d.BaseSize, 1,
                 d.AuthoredUnitAbility, d.EquipmentUnitAbility, d.AuthoredGraft, d.CanScaleWithMagicPower, d.IsChampionCard,
-                d.UnmodifiedSpawnAttack, d.HasStartingUpgrades);
+                d.UnmodifiedSpawnAttack, d.HasStartingUpgrades, d.UnmodifiedSpawnHealth);
             return new CardMaskDescriptor(definition, descriptor.BaseCost, descriptor.BaseTraits, descriptor.AuthoredCastEffects,
                 descriptor.Purified, descriptor.PermanentGraft, descriptor.TemporaryTraits, descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers, descriptor.HoldoverUpgradePending, descriptor.GraftedEquipment);
         }

@@ -647,6 +647,32 @@ Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 
 入口：`./scripts/Check-TrueFinalBoss.ps1 -Case AllyUpgrade -SkipBuild`。
 原生采集：`-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossAllyUpgrade Health|Damage`。
 
+## 按普通召唤/攻击签名开放友军
+
+`true-final-boss-ordinary-ally-{steward,warrior,animus}.mt2f` 从原生目录筛选
+仅有召唤效果、无单位触发器/技能/装备/升级的原始卡。部署前明确添加一张
+对应单位卡，保留原始定义、敌军生命/阶段、火炉和能量；牌组准备已显式标记。
+实际扣费在大乘务员后方召唤所选单位，其他卡不打。
+
+| 单位 | 原始签名 | 对 Savagery 的第一轮实战伤害 | 原生来源（`.probe-runs/` 下） |
+| --- | --- | --- | --- |
+| 小乘务员 | 14/5，二容量，普通攻击 | 14 | `full-battle-units-and-junk-20261023-005911-0248d680` |
+| HornedWarrior | 15/8，二容量，Multistrike 1 | 30 | `full-battle-units-and-junk-20261023-005710-973031fb` |
+| AnimusOfWill | 3/8，二容量，Multistrike 2 | 9 | `full-battle-units-and-junk-20261023-005710-354bbd95` |
+
+三个新进程均两次付费出牌、六次结束回合后败北，四项失败计数全零。
+各五次 UI 预览/恢复、完整状态和 RNG 匹配；从准备后的根独立付费出牌并
+推进整场，各 16 条并发不可变链一致，不注入后续原生 Before。
+该项未把人工添加卡牌的准备动作或败局当作自然牌组/自然胜局验收。
+
+生产保护按原始召唤卡定义和运行时结构判断，接受上述普通攻击签名；只读增加
+原始出生生命上限，连同攻击/容量/初始状态共同核对，旧采集缺少生命元数据时拒绝。
+不依赖单位名称。额外触发器、技能、装备、升级、其他初始状态、克隆和
+无法核对的召唤来源仍受保护；带未知升级的相同单位也明确拒绝。
+
+入口：`./scripts/Check-TrueFinalBoss.ps1 -Case OrdinaryAlly -SkipBuild`。
+原生采集：`-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossOrdinaryAlly Steward|Warrior|Animus`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

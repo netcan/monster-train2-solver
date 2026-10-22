@@ -784,6 +784,7 @@ namespace MonsterTrain2Poju.Probe
                 TrueFinalBossDormantControl = TrueFinalBossDormantScenario.Evidence,
                 TrueFinalBossLethalControl = TrueFinalBossLethalScenario.Evidence,
                 TrueFinalBossAllyUpgradeControl = TrueFinalBossAllyUpgradeScenario.Evidence,
+                TrueFinalBossOrdinaryAllyControl = TrueFinalBossOrdinaryAllyScenario.Evidence,
                 TrueFinalBossRelentlessControl = TrueFinalBossRelentlessScenario.Evidence,
                 TrueFinalBossRelentlessActions = TrueFinalBossRelentlessScenario.Enabled ? OuterBossPhaseProbe.CapturedActions : null,
 #endif

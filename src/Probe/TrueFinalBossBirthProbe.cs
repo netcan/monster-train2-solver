@@ -40,7 +40,7 @@ namespace MonsterTrain2Poju.Probe
                 UnlockOverrideAfter = save.Cheats.ForceTFBUnlocked, DistanceBefore = distanceBefore,
                 DistanceAfter = save.GetCurrentDistance(), Scenario = save.GetCurrentScenarioData()?.name,
                 RngBefore = before, RngAfter = after, ScenarioAssetsUnchanged = true,
-                CharacterAssetsUnchanged = true, StartingDeckUnchanged = !TrueFinalBossAllyUpgradeScenario.Enabled, PyreHealth = save.GetTowerHP() };
+                CharacterAssetsUnchanged = true, StartingDeckUnchanged = !TrueFinalBossAllyUpgradeScenario.Enabled && !TrueFinalBossOrdinaryAllyScenario.Enabled, PyreHealth = save.GetTowerHP() };
             log.LogInfo("TRUE-FINAL-BOSS-ROUTE native jump; unlock override=" + save.Cheats.ForceTFBUnlocked +
                 " distance=" + save.GetCurrentDistance() + " scenario=" + save.GetCurrentScenarioData()?.name);
         }

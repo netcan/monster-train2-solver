@@ -62,6 +62,15 @@ internal static class TrueFinalBossAllyUpgradeChecks
         Replay();
         Parallel.For(0, 16, _ => Replay());
         Require(Json(before) == parent, "Independent upgraded chains mutated their original root.");
+        Previews(root);
+        Require(new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(key => root.GetProperty(key).GetInt32() == 0),
+            "Native upgraded-ally acceptance requires all four failure counters zero.");
+        Console.WriteLine("TRUE-FINAL-BOSS-ALLY-UPGRADE PASS kind=" + kind + "; original numeric upgrade and paid Steward; six EndTurns, native UI previews and 16 independent immutable full chains.");
+    }
+    internal static void Previews(FixtureValue root)
+    {
+        FixtureValue turns = root.GetProperty("Turns");
+        Require(root.GetProperty("TrueFinalBossPreviews").GetArrayLength() == 5, "Missing five native UI previews.");
         foreach (FixtureValue preview in root.GetProperty("TrueFinalBossPreviews").EnumerateArray())
         {
             TrainCombatState input = preview.GetProperty("Before").Deserialize<TrainCombatState>()!;
@@ -73,8 +82,5 @@ internal static class TrueFinalBossAllyUpgradeChecks
                 "Upgraded allied UI preview differs: " + (result.Supported ? ModelJson.Difference(TrueFinalBossTrainChecks.Comparable(result.State!, "Preview"),
                     TrueFinalBossTrainChecks.Comparable(actual, "Preview")) : result.UnsupportedReason));
         }
-        Require(new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(key => root.GetProperty(key).GetInt32() == 0),
-            "Native upgraded-ally acceptance requires all four failure counters zero.");
-        Console.WriteLine("TRUE-FINAL-BOSS-ALLY-UPGRADE PASS kind=" + kind + "; original numeric upgrade and paid Steward; six EndTurns, native UI previews and 16 independent immutable full chains.");
     }
 }

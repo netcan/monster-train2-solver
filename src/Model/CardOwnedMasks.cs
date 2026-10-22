@@ -48,12 +48,14 @@ namespace MonsterTrain2Poju.Model
         public bool? CanScaleWithMagicPower { get; }
         public bool? IsChampionCard { get; }
         public int? UnmodifiedSpawnAttack { get; }
+        public int? UnmodifiedSpawnHealth { get; }
         public bool? HasStartingUpgrades { get; }
         public CardMaskDefinition(string dataId, string cardType, string rarity, bool isSpawner, bool hasSpawnData, bool canAttack,
             IReadOnlyList<string> subtypes, IReadOnlyList<UpgradeMaskStatus> startingStatuses,
             IReadOnlyList<IReadOnlyList<UpgradeMaskStatus>> mainEffectStatuses, IReadOnlyList<string> mainEffectNames,
             string? linkedClan, bool xCost, int baseSize, int targetMode, bool authoredUnitAbility, bool equipmentUnitAbility, bool authoredGraft,
-            bool? canScaleWithMagicPower = null, bool? isChampionCard = null, int? unmodifiedSpawnAttack = null, bool? hasStartingUpgrades = null)
+            bool? canScaleWithMagicPower = null, bool? isChampionCard = null, int? unmodifiedSpawnAttack = null, bool? hasStartingUpgrades = null,
+            int? unmodifiedSpawnHealth = null)
         {
             DataId = dataId; CardType = cardType; Rarity = rarity; IsSpawner = isSpawner; HasSpawnData = hasSpawnData; CanAttack = canAttack;
             Subtypes = Array.AsReadOnly(subtypes.ToArray()); StartingStatuses = Array.AsReadOnly(startingStatuses.ToArray());
@@ -62,6 +64,7 @@ namespace MonsterTrain2Poju.Model
             AuthoredUnitAbility = authoredUnitAbility; EquipmentUnitAbility = equipmentUnitAbility; AuthoredGraft = authoredGraft;
             CanScaleWithMagicPower = canScaleWithMagicPower; IsChampionCard = isChampionCard;
             UnmodifiedSpawnAttack = unmodifiedSpawnAttack;
+            UnmodifiedSpawnHealth = unmodifiedSpawnHealth;
             HasStartingUpgrades = hasStartingUpgrades;
         }
     }

@@ -40,6 +40,7 @@ param(
     [switch] $OriginalOuterBossTrial,
     [switch] $OriginalTrueFinalBoss,
     [ValidateSet('', 'Health', 'Damage')][string] $TrueFinalBossAllyUpgrade = '',
+    [ValidateSet('', 'Steward', 'Warrior', 'Animus')][string] $TrueFinalBossOrdinaryAlly = '',
     [switch] $TrueFinalBossDormantSavagery,
     [switch] $TrueFinalBossRelentless,
     [switch] $TrueFinalBossLethal,
@@ -688,7 +689,8 @@ if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $Or
     $TrueFinalBossBirth -or $TrueFinalBossSpawn -or $TrueFinalBossScheduledSpawn -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossPyreBaneTargets -or $TrueFinalBossDeath)) {
     throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
 }
-if ($TrueFinalBossAllyUpgrade) {
+if ($TrueFinalBossOrdinaryAlly -and $TrueFinalBossAllyUpgrade) { throw 'Ordinary ally and upgraded ally require separate captures.' }
+if ($TrueFinalBossAllyUpgrade -or $TrueFinalBossOrdinaryAlly) {
     if (-not $OriginalTrueFinalBoss -or $TrueFinalBossLethal -or $TrueFinalBossLethalSpellTarget -or $TrueFinalBossDormantSavagery -or $TrueFinalBossRelentless -or $OuterBossRelentless) {
         throw 'Ally upgrade requires the original TFB route without health/phase controls.'
     }
@@ -1365,6 +1367,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_PREVIEW = $(if ($TrueFinalBossLethalPreview) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_SPELL_TARGET = $TrueFinalBossLethalSpellTarget
     MT2_PROBE_TRUE_FINAL_BOSS_ALLY_UPGRADE = $TrueFinalBossAllyUpgrade
+    MT2_PROBE_TRUE_FINAL_BOSS_ORDINARY_ALLY = $TrueFinalBossOrdinaryAlly
     MT2_PROBE_TRUE_FINAL_BOSS_FRONT_HEALTH = [string]$TrueFinalBossFrontHealth
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SPAWN = $(if ($TrueFinalBossSpawn) { '1' } else { '0' })

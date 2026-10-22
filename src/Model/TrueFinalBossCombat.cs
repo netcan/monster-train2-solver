@@ -5,19 +5,48 @@ namespace MonsterTrain2Poju.Model
     internal static class TrueFinalBossCombatModel
     {
         // Native full-route captures include authored physical anchors and the
-        // complete aura world. Earlier health-only projections intentionally do
-        // not opt into full combat. Other allied definitions and
-        // Top-body relentless is also calibrated before the bounded destruction
-        // phase; other relentless layouts retain their own guards.
+        // complete aura world. Ordinary summon/attack signatures and two
+        // original Steward upgrades are calibrated alongside the baseline
+        // actors. Other callbacks and relentless layouts retain their guards.
         internal static bool SupportsAlly(CombatUnit unit) => SupportsAlly(unit, null);
-        internal static bool SupportsAlly(CombatUnit unit, CombatContext? context) => unit.Team == CombatTeam.Player && !unit.IsPyre &&
+        internal static bool SupportsAlly(CombatUnit unit, CombatContext? context)
+        {
+            bool ordinary = SupportsOrdinaryAlly(unit, context);
+            return unit.Team == CombatTeam.Player && !unit.IsPyre &&
             (unit.AssetKey == "TrainStewardBig" && unit.BaseAttack == 8 && unit.MaxHealth == 25 && unit.Size == 3 ||
                 unit.AssetKey == "MonsterBanishedChampion1" && unit.BaseAttack == 1 && unit.MaxHealth == 10 && unit.Size == 2 ||
-                SupportsUpgradedSteward(unit, context)) &&
+                SupportsUpgradedSteward(unit, context) || ordinary) &&
             unit.CanAttack && !unit.EndsBattleOnDeath && unit.Ability == null &&
             unit.Triggers.Count == 0 && unit.EquipmentCards.Count == 0 &&
             unit.Modifiers?.Upgrades.Count == 0 && unit.Statuses.All(status => status.Id == "corruption" ||
-                unit.AssetKey == "MonsterBanishedChampion1" && status.Id == "multistrike" && status.Stacks == 1 && status.ParamInt == 2);
+                status.Id == "multistrike" && status.ParamInt == 2 &&
+                    (unit.AssetKey == "MonsterBanishedChampion1" && status.Stacks == 1 || ordinary && status.Stacks is >= 1 and <= 2));
+        }
+
+        private static bool SupportsOrdinaryAlly(CombatUnit unit, CombatContext? context)
+        {
+            CardInstanceState? card = context?.FindCard(unit.SpawnerCardId);
+            CardMaskDefinition? definition = card?.MaskDescriptor?.Definition;
+            UnitModifiers? modifiers = unit.Modifiers;
+            if (card == null || definition == null || modifiers == null || !modifiers.SpawnerMatchesDefinition || modifiers.IsClone ||
+                card.ExternalInteractions.Count != 0 || !Unmodified(card.Permanent) || !Unmodified(card.Temporary) ||
+                definition.CardType != "Monster" || !definition.IsSpawner || !definition.HasSpawnData || !definition.CanAttack ||
+                definition.AuthoredUnitAbility || definition.EquipmentUnitAbility || definition.AuthoredGraft ||
+                definition.MainEffectNames.Count != 1 || definition.MainEffectNames[0] != "CardEffectSpawnMonster" ||
+                definition.UnmodifiedSpawnAttack != unit.BaseAttack || definition.UnmodifiedSpawnHealth != unit.MaxHealth || definition.BaseSize != unit.Size ||
+                modifiers.SelfAttackRules?.Count > 0 || modifiers.RoomResources?.Count > 0 || modifiers.RoomStatuses?.Count > 0 ||
+                modifiers.RoomTriggerCounts?.Count > 0 || modifiers.SpawnCopySubtype != null || modifiers.Graft != null ||
+                modifiers.SynergizeStatuses?.Count > 0 || modifiers.Sentry != null || modifiers.TroopAura != null ||
+                modifiers.StatusAttackModifiers?.Count > 0) return false;
+            return definition.StartingStatuses.All(status => status.Id == "multistrike" && status.Count is >= 1 and <= 2) &&
+                unit.Statuses.Where(status => status.Id != "corruption").All(status =>
+                    definition.StartingStatuses.Any(original => original.Id == status.Id && original.Count == status.Stacks)) &&
+                definition.StartingStatuses.All(original => unit.Status(original.Id)?.Stacks == original.Count);
+        }
+        private static bool Unmodified(CardModifiers modifiers) => modifiers.Upgrades.Count == 0 && modifiers.PersistentHealth == 0 &&
+            modifiers.ExternalInteractions.Count == 0 && modifiers.MergedEquipment == null && modifiers.BoxedCards?.Count is not > 0 &&
+            modifiers.Offsets.Damage == 0 && modifiers.Offsets.Health == 0 && modifiers.Offsets.Cost == 0 && modifiers.Offsets.Heal == 0 &&
+            modifiers.Offsets.Size == 0 && modifiers.Offsets.XCost == 0 && modifiers.Offsets.EquipmentLimit == 0 && modifiers.Offsets.UpgradeSlotCount == 0;
 
         private static bool SupportsUpgradedSteward(CombatUnit unit, CombatContext? context)
         {
