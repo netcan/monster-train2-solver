@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death')][string[]] $Case = @('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death'),
+    [ValidateSet('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death', 'TerminalDamage')][string[]] $Case = @('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death', 'TerminalDamage'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -21,9 +21,10 @@ function Invoke-TrueFinalBossArchive([string] $archive, [string] $mode) {
     if ($LASTEXITCODE -ne 0) { throw "True-final-boss focused check failed: $archive" }
 }
 foreach ($item in $Case) {
-    if ($item -eq 'Death') {
+    if ($item -in @('Death', 'TerminalDamage')) {
+        $prefix = if ($item -eq 'Death') { 'death' } else { 'terminal-damage' }
         foreach ($target in @('dominion', 'savagery', 'entropybot', 'entropymid', 'entropytop')) {
-            Invoke-TrueFinalBossArchive "true-final-boss-death-$target.mt2f" '--true-final-boss-death-only'
+            Invoke-TrueFinalBossArchive "true-final-boss-$prefix-$target.mt2f" "--true-final-boss-$prefix-only"
         }
         continue
     }

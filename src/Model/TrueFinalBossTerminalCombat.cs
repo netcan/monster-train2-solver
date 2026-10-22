@@ -4,11 +4,11 @@ namespace MonsterTrain2Poju.Model
 {
     internal static class TrueFinalBossTerminalCombatModel
     {
-        internal static bool SupportsDominion(RoomCombatState source, int targetId)
+        internal static bool SupportsRoot(RoomCombatState source, int targetId)
         {
             LifeLinkContext? links = source.Context?.LifeLinks;
             EnchantmentWorld? world = source.Context?.Enchantments;
-            if (source.RoomIndex != 3 || links == null || LifeLinkModel.Validate(links) != null ||
+            if (links == null || LifeLinkModel.Validate(links) != null ||
                 links.Actors.Count != 5 || links.Actors.Any(actor => actor.Health != 1 || !actor.Initialized || !actor.TrueFinalBoss || !actor.HasLifeLink) ||
                 world?.AutomaticLifecycle != true || world.Rooms.Count != 4 ||
                 !source.Preview && !TrueFinalBossCombatModel.Supports(source) || source.Preview && !links.CalculatingPreview)
@@ -23,7 +23,8 @@ namespace MonsterTrain2Poju.Model
                 unit.Triggers.All(trigger => trigger.Kind is "OnSpawn" or "PostCombat" or "OnTrainRoomLoop") &&
                 unit.Statuses.All(status => status.Id is "buff" or "immobile" or "lifelink" or "pyrebound" or "spell shield" or "pyrebane" or "trample")) &&
                 source.Context!.Relics?.Any(relic => relic.EffectTypes.Count > 0 || relic.IsCovenant == true) != true &&
-                source.Units.Any(unit => unit.Id == targetId && unit.AssetKey == "Boss_Level9_Dominion_V2" && unit.Health == 1);
+                source.Units.Any(unit => unit.Id == targetId && assets.Contains(unit.AssetKey) && unit.Health == 1 &&
+                    (!source.Preview || source.RoomIndex == 3 && unit.AssetKey == "Boss_Level9_Dominion_V2"));
         }
     }
 }

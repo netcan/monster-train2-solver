@@ -22,6 +22,9 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<object> steps = new List<object>();
         private static IReadOnlyList<CharacterState> actors = Array.Empty<CharacterState>();
         private static object? original;
+        private static RoomState? controlledRoom;
+        private static object? roomAfterGroup;
+        private static object? trainAfterGroup;
         private static int Id(CharacterState actor) => FullBattleTrace.Active!.UnitId(actor);
         private static object Rng() => Enum.GetValues(typeof(RngId)).Cast<RngId>().Select(id =>
             new { Id = id.ToString(), Words = RngCalibration.Words(RandomManager.GetState(id)) }).ToArray();
@@ -57,6 +60,11 @@ namespace MonsterTrain2Poju.Probe
             object controlled = Actors(actors);
             bool protectedTarget = StatusEffectLifeLinkState.ProtectedByLifeLink(actors[index], managers.GetHeroManager(), managers.GetMonsterManager(), combat);
             if (protectedTarget || actors.Any(actor => actor.GetHP() != 1)) { Error = "Controlled terminal setup did not remove life-link protection."; yield break; }
+            FullBattleTrace trace = FullBattleTrace.Active!;
+            RoomState targetRoom = actors[index].GetCurrentRoom();
+            controlledRoom = targetRoom;
+            var roomBeforeDamage = trace.Capture(targetRoom, includeOuterBossForBump: true);
+            var trainBeforeDamage = trace.CaptureDecision(includeOuterBossForBump: true).Spawn.Train;
             observing = true;
             yield return combat.ApplyDamageToTarget(1, actors[index], new CombatManager.ApplyDamageToTargetParameters
                 { damageType = Damage.Type.Default, finalEffectInSequence = true });
@@ -75,6 +83,9 @@ namespace MonsterTrain2Poju.Probe
                 Target = Target, TargetId = Id(actors[index]), Original = original, Controlled = controlled,
                 TargetProtected = protectedTarget, NativeDamageReturned = true, AfterDamageBeforeRemoval = afterDamage,
                 NativeRemovalReturned = true, Roots = roots, Steps = steps,
+                RoomBeforeDamage = roomBeforeDamage, RoomAfterRemoval = trace.Capture(targetRoom, includeOuterBossForBump: true),
+                TrainBeforeDamage = trainBeforeDamage, TrainAfterRemoval = trace.CaptureDecision(includeOuterBossForBump: true).Spawn.Train,
+                RoomAfterGroup = roomAfterGroup, TrainAfterGroup = trainAfterGroup,
                 ActiveAfter = managers.GetHeroManager().GetCharactersReadOnly().Select(Id).ToArray(),
                 AllScenarioBossesDead = combat.AllScenarioBossesDead, NativeWon = FullBattleTrace.Active!.NativeWon,
                 PyreHealth = managers.GetPlayerManager().GetTowerHP(), RngBeforeControl = rngBefore, RngAfterDamage = Rng()
@@ -92,6 +103,11 @@ namespace MonsterTrain2Poju.Probe
             finally
             {
                 (native as IDisposable)?.Dispose();
+                if (returned && controlledRoom != null)
+                {
+                    roomAfterGroup = FullBattleTrace.Active!.Capture(controlledRoom, includeOuterBossForBump: true);
+                    trainAfterGroup = FullBattleTrace.Active.CaptureDecision(includeOuterBossForBump: true).Spawn.Train;
+                }
                 roots.Add(new { TargetId = Id(actor), Before = before, Death = death, Vanish = vanishUnit,
                     LastDeath = isLastDeathInSet, IgnoreTriggers = ignoreTriggers, DoNotFullyRemove = doNotFullyRemove,
                     FireRemovedSignal = fireRemovedSignal, NativeReturned = returned, StartStep = start, EndStep = steps.Count,

@@ -127,12 +127,12 @@ if (args.Length == 2 && args[0] == "--pyrebane-targets-only")
     return;
 }
 
-if (args.Length >= 2 && args[0] == "--true-final-boss-death-only")
+if (args.Length >= 2 && args[0] is "--true-final-boss-death-only" or "--true-final-boss-terminal-damage-only")
 {
     foreach (string path in args.Skip(1))
     {
         using var fixture = ModelJson.ReadFixture(path);
-        TrueFinalBossDeathChecks.Native(fixture.RootElement);
+        TrueFinalBossDeathChecks.Native(fixture.RootElement, args[0] == "--true-final-boss-terminal-damage-only");
     }
     return;
 }
@@ -4091,10 +4091,11 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-damage
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossDamageChecks.Native(fixture.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("true-final-boss-death-", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("true-final-boss-death-", StringComparison.OrdinalIgnoreCase) ||
+    Path.GetFileName(path).StartsWith("true-final-boss-terminal-damage-", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    TrueFinalBossDeathChecks.Native(fixture.RootElement);
+    TrueFinalBossDeathChecks.Native(fixture.RootElement, Path.GetFileName(path).StartsWith("true-final-boss-terminal-damage-", StringComparison.OrdinalIgnoreCase));
 }
 foreach (string path in args.Where(path => path.Contains("outer-boss-turn-calibration", StringComparison.OrdinalIgnoreCase)))
 {

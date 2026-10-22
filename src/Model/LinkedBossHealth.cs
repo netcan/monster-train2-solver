@@ -76,6 +76,9 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult applied = healing ? RoomCombatModel.ApplyCardHeal(room, targetId, amount) : RoomCombatModel.ApplyCardDamage(room, targetId, amount, sourceCardId);
             if (!applied.Supported) return new LinkedBossHealthResult(null, Array.Empty<HealthChangedEvent>(), null, applied.UnsupportedReason);
             CombatContext context = applied.State!.Context!;
+            if (context.LifeLinks == null)
+                return new LinkedBossHealthResult(null, Array.Empty<HealthChangedEvent>(), null,
+                    "The live linked-health bridge cannot represent terminal combat; use the room/battle combat result.");
             var byId = context.LifeLinks!.Actors.ToDictionary(actor => actor.Id);
             var rooms = source.Rooms.Select(original =>
             {

@@ -2977,7 +2977,7 @@ namespace MonsterTrain2Poju.Model
                 bool immediateHarvest = false, bool doNotFullyRemove = false, bool returnSpawnerAfterQueue = false)
             {
                 if (target.DeathFinished) return;
-                if (!source.Preview && target.Health == 0 && TrueFinalBossTerminalCombatModel.SupportsDominion(source, target.Source.Id))
+                if (!source.Preview && target.Health == 0 && TrueFinalBossTerminalCombatModel.SupportsRoot(source, target.Source.Id))
                 {
                     RemoveTrueFinalBossGroup(actor, target, sourceCardId);
                     return;
@@ -3092,7 +3092,8 @@ namespace MonsterTrain2Poju.Model
                     WorkingUnit? unit = units.FirstOrDefault(candidate => candidate.Source.Id == actor.Unit.Id);
                     if (unit == null)
                     {
-                        unit = NewUnit(actor.Unit, false, actor.RoomIndex); units.Add(unit);
+                        int health = context.LifeLinks!.Actors.Single(link => link.Id == actor.Unit.Id).Health;
+                        unit = NewUnit(actor.Unit.WithHealth(health), false, actor.RoomIndex); units.Add(unit);
                         externalTurnActorIds.Add(unit.Source.Id);
                     }
                     if (unit == root && unit.Source.DeathState != null)
@@ -3438,7 +3439,7 @@ namespace MonsterTrain2Poju.Model
                 if (context?.LifeLinks?.Actors.Any(actor => actor.Id == target.Source.Id) == true)
                 {
                     CombatContext? updated = LinkedBossHealthModel.WithHealth(context, target.Source.Id, health, out string? error,
-                        allowTerminal: health == 0 && TrueFinalBossTerminalCombatModel.SupportsDominion(source, target.Source.Id));
+                        allowTerminal: health == 0 && TrueFinalBossTerminalCombatModel.SupportsRoot(source, target.Source.Id));
                     if (updated == null) { unsupportedReason = error; return false; }
                     context = updated;
                     foreach (WorkingUnit unit in units)

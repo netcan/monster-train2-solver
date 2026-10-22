@@ -4,10 +4,12 @@ using MonsterTrain2Poju.Model;
 
 internal static class TrueFinalBossDeathChecks
 {
-    internal static void Native(FixtureValue root)
+    internal static void Native(FixtureValue root, bool requireCompleteState = false)
     {
         void Require(bool condition, string reason) => TrueFinalBossChecks.Require(condition, reason);
         string Json(object value) => JsonSerializer.Serialize(value, ModelJson.Options);
+        Require(!requireCompleteState || root.TryGetProperty("RoomAfterGroup", out FixtureValue complete) && complete.ValueKind != FixtureKind.Null,
+            "Complete terminal acceptance requires the native group-return room/train snapshots.");
         int[] Ids(FixtureValue value) => value.EnumerateArray().Select(actor => actor.GetProperty("Id").GetInt32()).ToArray();
         Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
             root.GetProperty("Boundary").GetString() == "ControlledOriginalTrueFinalBossLethalDamageAndRemoval" &&
@@ -60,6 +62,40 @@ internal static class TrueFinalBossDeathChecks
             !TrueFinalBossRemovalModel.Plan(actors.Skip(1).ToArray(), target, true, true, true).Supported &&
             TrueFinalBossChecks.Assets.All(asset => !OuterBossDefinitions.Supports(asset)),
             "Removal planning mutated its parent, accepted missing group/target or opened the Level8 controller.");
+        if (root.TryGetProperty("RoomBeforeDamage", out FixtureValue roomInput))
+        {
+            RoomCombatState before = roomInput.Deserialize<RoomCombatState>()!;
+            RoomCombatState after = root.GetProperty("RoomAfterGroup").Deserialize<RoomCombatState>()!;
+            string parent = Json(before);
+            RoomCombatResult Apply() => RoomCombatModel.ApplyCardDamage(before, target, 1);
+            RoomCombatResult damage = Apply();
+            Require(damage.Supported && damage.Outcome == RoomOutcome.BattleWon && Json(damage.State!) == Json(after),
+                "Native complete lethal room/context differs: " + (damage.Supported ?
+                    ModelJson.Difference(Json(damage.State!), Json(after)) : damage.UnsupportedReason));
+            TrainCombatState trainBefore = root.GetProperty("TrainBeforeDamage").Deserialize<TrainCombatState>()!;
+            TrainCombatState trainAfter = root.GetProperty("TrainAfterGroup").Deserialize<TrainCombatState>()!;
+            string trainParent = Json(trainBefore);
+            string Train(RoomCombatResult result)
+            {
+                CombatContext context = result.State!.Context!;
+                EnchantmentWorld world = context.Enchantments!;
+                return TrueFinalBossTrainChecks.Comparable(new TrainCombatState(world.Rooms.Select(room => room.WithContext(context)).ToArray(),
+                    world.Movement, world.EnemySlotsPerRoom, context), "Damage");
+            }
+            string expectedTrain = TrueFinalBossTrainChecks.Comparable(trainAfter, "Damage");
+            Require(!LinkedBossHealthModel.ApplyDamage(trainBefore, target, 1).Supported,
+                "The nonterminal health bridge must reject a terminal result without throwing or losing its outcome.");
+            Require(Train(damage) == expectedTrain, "Native complete lethal train differs: " + ModelJson.Difference(Train(damage), expectedTrain));
+            Require(trainBefore.Context!.LifeLinks!.Actors.All(actor => actor.Health == 1) && trainAfter.Context!.LifeLinks == null &&
+                trainAfter.Rooms.SelectMany(room => room.Units).Single().IsPyre && trainAfter.Context.QueryFrame!.RunningCombat == true &&
+                root.GetProperty("TrainAfterRemoval").Deserialize<TrainCombatState>()!.Context!.QueryFrame!.RunningCombat == false,
+                "Group-removal return and subsequent outer stop-loop boundaries must remain distinct.");
+            Parallel.For(0, 64, _ => { RoomCombatResult branch = Apply(); Require(branch.Supported && Json(branch.State!) == Json(after) &&
+                Train(branch) == expectedTrain, "Concurrent complete lethal room/train damage differs."); });
+            Require(Json(before) == parent, "Complete terminal damage mutated its parent.");
+            Require(Json(trainBefore) == trainParent, "Complete terminal damage mutated its train parent.");
+            Console.WriteLine("TRUE-FINAL-BOSS-TERMINAL-DAMAGE PASS: complete native room/train, shared outer HP, physical cleanup, cards/statistics/RNG and 64 immutable branches; stop-loop captured separately.");
+        }
         Console.WriteLine($"TRUE-FINAL-BOSS-DEATH PASS target={names[targetIndex]}: explicit original one-HP control, native lethal/deferred cleanup phases, all five removed in 3/2/1/0/0 order, flags/active lists and 64 immutable branches. NativeWon={root.GetProperty("NativeWon").ValueKind}; controlled component only.");
     }
 }

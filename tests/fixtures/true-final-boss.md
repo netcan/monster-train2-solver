@@ -549,6 +549,27 @@ Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case LethalPreview -SkipBuild`。
 原生采集在 Lethal 参数上追加 `-TrueFinalBossLethalPreview`。
 
+## 五主体致死伤害的完整房间与列车边界
+
+`true-final-boss-terminal-damage-{dominion,savagery,entropybot,entropymid,entropytop}.mt2f`
+复用原生五实体死亡探针，另记录完整房间/列车、外壳锚点、五实体组移除返回、
+随后停止战斗循环四个边界。五个新进程都保留原始资产、显式将生命降为一血，
+再分别执行一次无来源的原生一伤害。它们补充旧死亡组件，旧 fixture 继续保留。
+
+五种命中主体的完整房间/列车结果均独立匹配，每种包含 64 条不可变并发分支；
+包括卡牌清理、统计、物理锚点、RNG、生命链接清除和全部五实体离场。
+命中外壳时三个共享生命均为零，其余两主体仍为一血；命中独立主体时只有它
+归零，其余保留一血。此前离场的跨层外壳重建时漏用了共享生命结果，现已修正。
+
+组移除返回时战斗仍运行；随后外层停止循环才推进月相并进入 EndOfCombat。
+两种快照分别保留，完整伤害模型对照组移除边界，不将后续循环效果混入伤害。
+原生组件最终均获胜；仍不代表自然整场胜局、带来源法术/攻击者的所有致死路径，
+或其他主体的 UI 致死预览。仅放开原始五实体、一血、无额外友军/装备/升级/
+活动遗物效果的实战致死；独立 UI 预览仍只开放已校准的 Dominion 范围。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case TerminalDamage -SkipBuild`。
+原生采集仍用 `-TrueFinalBossDeath <主体>`，现在包含完整状态证据。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件
