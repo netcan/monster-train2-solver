@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death', 'TerminalDamage', 'TerminalSpell', 'PaidSpell', 'AllyUpgrade', 'OrdinaryAlly')][string[]] $Case = @('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death', 'TerminalDamage', 'TerminalSpell', 'PaidSpell', 'AllyUpgrade', 'OrdinaryAlly'),
+    [ValidateSet('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death', 'TerminalDamage', 'TerminalSpell', 'PaidSpell', 'ProtectedSpell', 'AllyUpgrade', 'OrdinaryAlly')][string[]] $Case = @('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death', 'TerminalDamage', 'TerminalSpell', 'PaidSpell', 'ProtectedSpell', 'AllyUpgrade', 'OrdinaryAlly'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -33,9 +33,10 @@ foreach ($item in $Case) {
         }
         continue
     }
-    if ($item -eq 'PaidSpell') {
+    if ($item -in @('PaidSpell', 'ProtectedSpell')) {
+        $prefix = if ($item -eq 'ProtectedSpell') { 'protected-spell' } else { 'paid-spell' }
         foreach ($target in @('dominion', 'savagery', 'entropybot', 'entropymid', 'entropytop')) {
-            Invoke-TrueFinalBossArchive "true-final-boss-paid-spell-$target.mt2f" '--true-final-boss-paid-spell-only'
+            Invoke-TrueFinalBossArchive "true-final-boss-$prefix-$target.mt2f" "--true-final-boss-$prefix-only"
         }
         continue
     }

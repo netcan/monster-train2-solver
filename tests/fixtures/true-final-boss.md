@@ -701,6 +701,41 @@ Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 
 原生采集增加 `-TrueFinalBossOrdinaryAllyUpgrade Health|Damage|Both`，
 该入口自动开启分支卡牌掩码和物理站位采集。未运行全量回归或构建 Mac 包。
 
+## 健康独立主体下的付费生命链接保护
+
+`true-final-boss-protected-spell-{dominion,savagery,entropybot,entropymid,entropytop}.mt2f`
+分别命中五个原始主体。只将命中所属的独立生命所有者明确降至一血，其余
+独立所有者保留原始生命；命中外壳时只调整底层所有者，原生链接会同步三层。
+Dominion 另明确移除四层法术护盾，以检验生命链接的伤害拦截。
+没有修改原始单位定义、牌组、火炉或阶段。
+
+| 命中主体 | 独立所有者减血向量（Dominion/Savagery/外壳） | 原生来源（`.probe-runs/` 下） |
+| --- | --- | --- |
+| Dominion | 1554/0/0 | `full-battle-units-spells-and-junk-20261023-013602-3c2b1fce` |
+| Savagery | 0/2749/0 | `full-battle-units-spells-and-junk-20261023-013602-164774d1` |
+| 底层外壳 | 0/0/3499 | `full-battle-units-spells-and-junk-20261023-013811-ffc2a4b1` |
+| 中层外壳 | 0/0/3499 | `full-battle-units-spells-and-junk-20261023-013811-86e5f818` |
+| 顶层外壳 | 0/0/3499 | `full-battle-units-spells-and-junk-20261023-014020-65f3f4ba` |
+
+每组实际支付一能量，原始 `StarterFireStarter` 的一伤被生命链接完全阻止，
+随后仍正常添加两层 Pyregel；五个主体均存活、生命链接状态不变。
+原生 `ProtectedByLifeLink` 和模型均要求其他独立所有者不高于一血，
+才允许当前主体死亡。因此生产死亡保护保持原样，不能据此开放提前致死。
+
+各一张付费法术、六次 EndTurn 后正常结束为败局，原文件未变、四项失败
+计数全零。独立从部署结束回合出生，复现唯一已声明的 HP/护盾控制，付费
+施法后连续推进全部余下回合；各 16 条并发不可变链的完整状态/RNG 一致。
+独立链不注入任何后续原生 Before。搜索前沿保留实际合法命中，并明确验证
+不会错误地把受保护的目标判为胜局；正常死亡入口在这些根状态上继续拒绝。
+
+旧五个全临界血量的付费胜局、正常火炉致死/UI 预览和双强化友军完整链通过。
+最初以提前致死为目标的两个诊断进程因生命链接阻止死亡而未完成整场，
+未作为验收归档。新入口只打一次明确付费法术，再推进完整余下回合。
+
+入口：`./scripts/Check-TrueFinalBoss.ps1 -Case ProtectedSpell -SkipBuild`。
+原生采集：`-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossProtectedSpellTarget Dominion|Savagery|EntropyBot|EntropyMid|EntropyTop`。
+这是明确控制生命的机制验收，不计自然受伤或自然胜局；未运行全量回归或构建 Mac 包。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

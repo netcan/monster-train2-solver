@@ -232,24 +232,24 @@ internal static class BattleTurnChecks
         fixture.TryGetProperty("DecisionPlayRulesSnapshotsFresh", out FixtureValue freshRules) && freshRules.GetBoolean() ||
         !HasRoomEnabledSnapshotConflict(fixture);
 
-    internal static BattleTurnState RunIndependentChain(BattleTurnState root, FixtureValue oracle, bool compareRoomEnabled)
+    internal static BattleTurnState RunIndependentChain(BattleTurnState root, FixtureValue oracle, bool compareRoomEnabled, int startIndex = 0)
     {
         // All following states come from the model. Native Before/Predicted states are never injected.
         BattleSimulationResult simulation = BattleSimulator.ResolveNoMoreCards(root);
-        Require(simulation.Supported && simulation.Turns.Count == oracle.GetArrayLength(),
+        Require(simulation.Supported && simulation.Turns.Count == oracle.GetArrayLength() - startIndex,
             "Independent full simulation did not reach the expected terminal turn: " + simulation.UnsupportedReason);
         for (int index = 0; index < simulation.Turns.Count; index++)
         {
             BattleTurnResult result = simulation.Turns[index];
             Require(result.Supported, "Independent full chain rejected turn " + index + ": " + result.UnsupportedReason);
-            FixtureValue actualTurn = oracle[index];
+            FixtureValue actualTurn = oracle[index + startIndex];
             BattleTurnState actual = actualTurn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             bool terminalTurn = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
             Require(result.Outcome == (RoomOutcome)actualTurn.GetProperty("ActualOutcome").GetInt32() &&
                 Comparable(result.State!, terminalTurn, compareRoomEnabled) == Comparable(actual, terminalTurn, compareRoomEnabled),
                 "Independent full chain diverged at turn " + index);
             bool terminal = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-            Require(terminal == (index == oracle.GetArrayLength() - 1), "The independent chain terminated at the wrong turn.");
+            Require(terminal == (index == simulation.Turns.Count - 1), "The independent chain terminated at the wrong turn.");
         }
         return simulation.State!;
     }

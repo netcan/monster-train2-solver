@@ -6,12 +6,13 @@ internal static class TrueFinalBossLethalChecks
 {
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
     private static string Json(object value) => JsonSerializer.Serialize(value, ModelJson.Options);
-    internal static BattleTurnState Prepare(BattleTurnState state)
+    internal static BattleTurnState Prepare(BattleTurnState state, string? onlyOwner = null)
     {
         TrainCombatState train = state.Spawn.Train;
         string[] assets = { "Boss_Level9_Dominion_V2", "Boss_Level9_Savagery_V2", "Boss_Level9_Entropy_Bot_V2" };
         foreach (string asset in assets)
         {
+            if (onlyOwner != null && asset != onlyOwner) continue;
             CombatUnit actor = train.Rooms.SelectMany(room => room.Units).Single(unit => unit.AssetKey == asset);
             LinkedBossHealthResult changed = LinkedBossHealthModel.Apply(train, actor.Id, "DebuffHP", actor.Health - 1);
             Require(changed.Supported, "Independent original owner HP control failed: " + changed.UnsupportedReason);

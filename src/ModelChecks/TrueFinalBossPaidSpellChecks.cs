@@ -6,9 +6,10 @@ internal static class TrueFinalBossPaidSpellChecks
 {
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
     private static string Json(object value) => JsonSerializer.Serialize(value, ModelJson.Options);
-    private static BattleTurnState Prepare(BattleTurnState before, string target)
+    internal static BattleTurnState Prepare(BattleTurnState before, string target, bool targetOwnerOnly = false)
     {
-        BattleTurnState prepared = TrueFinalBossLethalChecks.Prepare(before);
+        string owner = target == "Dominion" ? "Boss_Level9_Dominion_V2" : target == "Savagery" ? "Boss_Level9_Savagery_V2" : "Boss_Level9_Entropy_Bot_V2";
+        BattleTurnState prepared = TrueFinalBossLethalChecks.Prepare(before, targetOwnerOnly ? owner : null);
         if (target != "Dominion") return prepared;
         TrainCombatState train = prepared.Spawn.Train;
         RoomCombatState room = train.Rooms.Single(item => item.RoomIndex == 3);
@@ -30,6 +31,8 @@ internal static class TrueFinalBossPaidSpellChecks
             "Missing unchanged original route or settled terminal capture.");
         FixtureValue control = root.GetProperty("TrueFinalBossLethalControl");
         string target = control.GetProperty("PaidSpellTarget").GetString()!;
+        Require(!control.TryGetProperty("TargetOwnerOnly", out FixtureValue selectedOwner) || !selectedOwner.GetBoolean(),
+            "Paid victory requires the declared three-owner critical-health control.");
         Require(new[] { "Dominion", "Savagery", "EntropyBot", "EntropyMid", "EntropyTop" }.Contains(target) &&
             !control.GetProperty("RefreshPreview").GetBoolean() && control.GetProperty("RemovedSpellShield").GetInt32() == (target == "Dominion" ? 4 : 0) &&
             control.GetProperty("Debuffs").Deserialize<int[]>()!.SequenceEqual(new[] { 1554, 2749, 3499 }),

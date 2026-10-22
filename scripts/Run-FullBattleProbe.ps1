@@ -47,6 +47,7 @@ param(
     [switch] $TrueFinalBossLethal,
     [switch] $TrueFinalBossLethalPreview,
     [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')][string] $TrueFinalBossLethalSpellTarget = '',
+    [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')][string] $TrueFinalBossProtectedSpellTarget = '',
     [ValidateRange(0, 25)][int] $TrueFinalBossFrontHealth = 0,
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossSpawn,
@@ -710,6 +711,13 @@ if ($TrueFinalBossRelentless) {
     }
     $OuterBossPhases = $true
 }
+if ($TrueFinalBossProtectedSpellTarget) {
+    if ($TrueFinalBossLethalSpellTarget -or $TrueFinalBossLethalPreview -or $TrueFinalBossOrdinaryAlly -or $TrueFinalBossAllyUpgrade) {
+        throw 'Protected spell calibration requires separate original owner HP controls.'
+    }
+    $TrueFinalBossLethalSpellTarget = $TrueFinalBossProtectedSpellTarget
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+}
 if ($TrueFinalBossLethalSpellTarget) { $TrueFinalBossLethal = $true; $Policy = 'units-spells-and-junk' }
 if ($TrueFinalBossLethalSpellTarget -and $TrueFinalBossLethalPreview) { throw 'Paid spell and lethal preview require separate native captures.' }
 if ($TrueFinalBossLethal -and (-not $OriginalTrueFinalBoss -or $TrueFinalBossDormantSavagery -or $TrueFinalBossRelentless -or $OuterBossRelentless)) {
@@ -1372,6 +1380,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_ALLY_UPGRADE = $TrueFinalBossAllyUpgrade
     MT2_PROBE_TRUE_FINAL_BOSS_ORDINARY_ALLY = $TrueFinalBossOrdinaryAlly
     MT2_PROBE_TRUE_FINAL_BOSS_ORDINARY_ALLY_UPGRADE = $TrueFinalBossOrdinaryAllyUpgrade
+    MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_TARGET_ONLY = $(if ($TrueFinalBossProtectedSpellTarget) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_FRONT_HEALTH = [string]$TrueFinalBossFrontHealth
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SPAWN = $(if ($TrueFinalBossSpawn) { '1' } else { '0' })
