@@ -4,9 +4,10 @@ using MonsterTrain2Poju.Model;
 
 internal static class OuterBossCorrupterChecks
 {
-    internal static void Native(FixtureValue battle, FixtureValue birth, FixtureValue phases, FixtureValue controller)
+    internal static void Native(FixtureValue battle, FixtureValue birth, FixtureValue phases, FixtureValue controller,
+        string boss = "Boss_Level8_Corrupter")
     {
-        const string boss = "Boss_Level8_Corrupter";
+        Require(boss is "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial", "Uncalibrated Corrupter definition.");
         FixtureValue control = battle.GetProperty("OriginalOuterBossRoute");
         Require(control.GetProperty("Kind").GetString() == "SelectOriginalOuterBossScenario" &&
             control.GetProperty("Distance").GetInt32() == 7 && control.GetProperty("Boss").GetString() == boss &&
@@ -22,7 +23,8 @@ internal static class OuterBossCorrupterChecks
         CombatUnit original = birth.GetProperty("Births")[0].GetProperty("Before").Deserialize<OuterBossCreationState>()!.CreatedUnit;
         Require(original.AssetKey == boss && original.BaseAttack == 20 && original.MaxHealth == 2800 && original.Triggers.Count == 2 &&
             original.Triggers[0].Kind == "OnAttacking" && original.Triggers[0].Effects.Single().Type == "CardEffectMultiplyStatusEffect" &&
-            original.Triggers[1].Kind == "OnTurnBegin" && original.Triggers[1].Effects.Single().Action!.Statuses.Single().Stacks == 2,
+            original.Triggers[1].Kind == "OnTurnBegin" && original.Triggers[1].Effects.Single().Action!.Statuses.Single().Stacks ==
+                (boss == "Boss_Level8_Corrupter_TitanTrial" ? 4 : 2),
             "The original Corrupter attack, health or trigger payload changed.");
         int multiplied = 0, positive = 0, dying = 0;
         foreach (FixtureValue record in battle.GetProperty("TriggeredStatuses").EnumerateArray())
@@ -71,9 +73,8 @@ internal static class OuterBossCorrupterChecks
     }
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 
-    internal static void Pair(FixtureValue source, FixtureValue replay)
+    internal static void Pair(FixtureValue source, FixtureValue replay, string boss = "Boss_Level8_Corrupter")
     {
-        const string boss = "Boss_Level8_Corrupter";
         OuterBossTurnChecks.Deployment(replay, boss, minimumTurns: 3);
         RollingAdviceChecks.Native(replay);
         FixtureValue[] actions = source.GetProperty("Actions").EnumerateArray().ToArray();
@@ -96,12 +97,11 @@ internal static class OuterBossCorrupterChecks
                 "Source/fresh complete native successor or RNG differs at input " + (play + end - 1));
         }
         Require(play == actions.Length && end == turns.Length, "Frozen native replay missed inputs.");
-        Console.WriteLine($"OUTER-BOSS-CORRUPTER-PAIR PASS: {records.Length} exact original/fresh inputs and complete native successors/RNG, zero replay search nodes; native loss.");
+        Console.WriteLine($"OUTER-BOSS-FROZEN-PAIR PASS boss={boss}: {records.Length} exact original/fresh inputs and complete native successors/RNG, zero replay search nodes; native loss.");
     }
 
-    internal static void Relentless(FixtureValue battle, FixtureValue phases)
+    internal static void Relentless(FixtureValue battle, FixtureValue phases, string boss = "Boss_Level8_Corrupter", int expectedPyreHealth = 8745)
     {
-        const string boss = "Boss_Level8_Corrupter";
         OuterBossPhaseChecks.Native(phases, boss);
         Require(phases.GetProperty("ForcedSpawnQueueEmpty").GetBoolean() &&
             phases.GetProperty("QueueControls").GetArrayLength() == 2 &&
@@ -151,12 +151,12 @@ internal static class OuterBossCorrupterChecks
             }
             Require(action == remaining.Length && current.Spawn.OuterBoss == null &&
                 current.PlayRules!.Rooms.Count(room => !room.IsPyre && !room.Enabled) == 3 &&
-                current.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 8745 &&
+                current.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == expectedPyreHealth &&
                 JsonSerializer.Serialize(root, ModelJson.Options) == immutable,
                 "Controlled route lost its inputs, immutable root, original Pyre outcome or three destroyed rooms.");
         }
         Replay();
         Parallel.For(0, 4, _ => Replay());
-        Console.WriteLine($"OUTER-BOSS-CORRUPTER-RELENTLESS PASS: eight native phases, three destroyed rooms, {remaining.Length} paid actions/three EndTurns from one post-control root and four concurrent branches; Pyre8745; explicit queue/Pyre controls, no natural victory claimed.");
+        Console.WriteLine($"OUTER-BOSS-RELENTLESS PASS boss={boss}: eight native phases, three destroyed rooms, {remaining.Length} paid actions/three EndTurns from one post-control root and four concurrent branches; Pyre{expectedPyreHealth}; explicit queue/Pyre controls, no natural victory claimed.");
     }
 }

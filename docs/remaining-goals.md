@@ -176,7 +176,13 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    状态/RNG 均匹配，原始 Boss/牌组/火炉未变，面板交互通过且四项失败计数为零。
    该项显式选择原始场景，不是自然推进；3 回合/3 秒软搜索配置的实际响应中位数/
    P95 为 4.59/5.42 秒。详见 [Corrupter 玩家验收](../tests/fixtures/player-corrupter-bounded.md)。
-   六个 Level8 定义为三种普通版本和各自的 Titan Trial 版本，后者继续保留保护。
+   六个 Level8 定义为三种普通版本和各自的 Titan Trial 版本。三个 Trial 的原生模型
+   现也通过原始罪孽遗物替换、出生、强化载荷、控制器及完整付费链：独立新进程
+   重放共 66 个输入，完整状态/RNG 匹配，六个进程四项失败计数均为零。
+   三组受控无情场景另验证各 8 个阶段边界、三层摧毁和火炉战斗；明确清空出怪
+   队列并提高火炉血量，不计自然胜局。Trial 玩家入口仍待独立实际建议/重放验收，
+   原生 Covenant 出生保护和 Level9 Entropy 保护保持。详见
+   [Trial 校准](../tests/fixtures/outer-boss-trials.md)。
    详见 [Corrupter 原生校准](../tests/fixtures/outer-boss-corrupter.md)。
    Fragile 已完成原生出生、8 次控制器操作、1152 次隔离转换，以及 4 个完整
    EndTurn 的移动光环/远程火种伤害败局校准，四项失败计数为零；这仍是跳图

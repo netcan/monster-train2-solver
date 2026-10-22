@@ -584,10 +584,10 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (!LoadingScreen.IsWorking() && screen.GetScreenActive(ScreenName.BattleIntro) &&
                     screen.GetScreen(ScreenName.BattleIntro) is BattleIntroScreen intro &&
-                    (bool)fightAvailable.GetValue(intro)! &&
-                    ReplayManager.TryClickButton(intro.GetFightButton()))
+                    (bool)fightAvailable.GetValue(intro)! && intro.GetFightButton().interactable)
                 {
-                    Enter(Stage.Battle, 120f);
+                    OriginalOuterBossRoute.PrepareIntro(save, intro, log);
+                    if (ReplayManager.TryClickButton(intro.GetFightButton())) Enter(Stage.Battle, 120f);
                 }
                 return;
             }

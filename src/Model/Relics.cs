@@ -271,6 +271,10 @@ namespace MonsterTrain2Poju.Model
                     // ICharacterGeneratingRelicEffect only supplies a tooltip
                     // character. The sealed native type has no combat hooks.
                     if (effect == "RelicEffectOnlyTooltips") continue;
+                    // Native creation substitutions are resolved while capturing
+                    // every queued/wave definition. Uncalibrated mappings add an
+                    // external interaction there; no combat callbacks run here.
+                    if (effect == "RelicEffectOnSpawnHeroSubstitution") continue;
                     // IModifyCardUpgradeSlotCountRelicEffect is consumed by
                     // BalanceData.GetUpgradeSlots, not combat callbacks. Its
                     // acquired card upgrades are already in the native input.

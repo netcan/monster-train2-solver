@@ -23,6 +23,9 @@ namespace MonsterTrain2Poju.Probe
                 if (pattern == null || pattern.GetBossType() == SpawnPatternData.BossType.None) return false;
                 var harder = (bool)AccessTools.Field(typeof(HeroManager), "harderOuterTrainBossEnabled").GetValue(heroes);
                 CharacterData? data = pattern.GetOuterTrainBossCharacter(harder);
+                if (data == null) return false;
+                data = OuterBossSubstitutionProbe.Resolve(data, out bool substitutionsSupported);
+                if (!substitutionsSupported) return false;
                 return data?.GetAssetKey() is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" &&
                     OuterBossPhaseProbe.Supports(data);
             }

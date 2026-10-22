@@ -9,6 +9,11 @@ and carrying no action effects. These are three ordinary variants and their
 three Titan Trial counterparts. Their unit triggers differ. The three Level9
 Entropy actors have no action groups and remain outside this model.
 
+All three Trial definitions now have separate original-sin substitution,
+birth/controller/casting, complete paid chains and fresh replay, plus explicit
+controlled Relentless/floor/Pyre evidence. Actual player pairs remain pending;
+see [Trial calibration](outer-boss-trials.md).
+
 ## Fragile baseline
 
 Profile `full-battle-no-cards-20261022-073027-ae4eaf17` uses seed 424244 and native

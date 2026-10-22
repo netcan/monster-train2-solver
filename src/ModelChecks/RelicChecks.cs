@@ -39,6 +39,9 @@ internal static class RelicChecks
         Require(RelicModel.Validate([new("8d2aa7e6-2992-4809-87e1-6fe2befac166", "Enemy_CorruptSeraph_ApplyStatuses", ["RelicEffectOnlyTooltips"])]) == null &&
             RelicModel.Validate([new("mixed", "mixed", ["RelicEffectOnlyTooltips", "UncalibratedCombatEffect"])]) != null,
             "A tooltip-only native effect was rejected or hid another uncalibrated effect on the same relic.");
+        Require(RelicModel.Validate([new("native-substitution", "original-trial", ["RelicEffectOnSpawnHeroSubstitution"])]) == null &&
+            RelicModel.Validate([new("mixed", "mixed", ["RelicEffectOnSpawnHeroSubstitution", "UncalibratedCombatEffect"])]) != null,
+            "A captured native creation substitution was rejected or hid an uncalibrated combat effect.");
         var untyped = UnitAbilityModel.Activate(WithIncant(UnitAbilityChecks.Root(typed: false), [relic]), action);
         Require(!untyped.Supported && untyped.Reason!.Contains("captured Spell/ability classification"),
             "A relic ability guessed missing native card classification.");

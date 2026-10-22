@@ -110,7 +110,9 @@ namespace MonsterTrain2Poju.Probe
         internal static EnemyDefinition Definition(CharacterData data) => Definition(data, false);
         internal static EnemyDefinition Definition(CharacterData data, bool captureBirthLifecycle)
         {
+            data = OuterBossSubstitutionProbe.Resolve(data, out bool substitutionsSupported);
             var interactions = new List<string>();
+            if (!substitutionsSupported) interactions.Add("Uncalibrated native hero creation substitution");
             if (data.GetRoomModifiersData().Any(modifier => !UnitSelfAttackModel.Known(modifier.GetRoomStateModifierClassName()) &&
                 !UnitRoomResourceModel.Known(modifier.GetRoomStateModifierClassName()) &&
                 !UnitRoomStatusModel.Known(modifier.GetRoomStateModifierClassName()) &&

@@ -71,7 +71,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OuterBossPhaseProbe.TurnsEnabled && FullBattleTrace.Active != null &&
                     !AllGameManagers.Instance!.GetSaveManager().PreviewMode &&
-                    cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == "Boss_Level8_Corrupter")
+                    cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() is
+                        "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial")
                     __result = Wrap(__result, cardEffectState, cardEffectParams);
             }
         }

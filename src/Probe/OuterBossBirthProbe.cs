@@ -29,6 +29,7 @@ namespace MonsterTrain2Poju.Probe
         internal static CombatUnit? CreatedDefinition => pending?.Definition ?? pending?.Template?.Actor.Unit;
         internal static OuterBossSpawnDefinition Definition(CharacterData data)
         {
+            data = OuterBossSubstitutionProbe.Resolve(data, out bool substitutionsSupported);
             EnemyDefinition actor = EnemySpawningProbe.Definition(data, true);
             var interactions = actor.ExternalInteractions.Where(value => value != "Spawned outer Boss actions").ToList();
             if (!OuterBossPhaseProbe.Supports(data))
@@ -36,7 +37,7 @@ namespace MonsterTrain2Poju.Probe
             AllGameManagers managers = AllGameManagers.Instance;
             if (managers.GetSaveManager().GetCovenantsForSpawnPattern().Count > 0)
                 interactions.Add("Outer-boss OnSpawn Covenant effects require separate calibration.");
-            if (managers.GetRelicManager().GetRelicEffects(new List<RelicEffectOnSpawnHeroSubstitution>()).Count > 0)
+            if (!substitutionsSupported)
                 interactions.Add("Outer-boss creation substitutions require separate calibration.");
             if (data.GetRoomModifiersData().Count > 0)
                 interactions.Add("Outer-boss creation room modifiers require separate calibration.");

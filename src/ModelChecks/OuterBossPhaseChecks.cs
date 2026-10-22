@@ -57,7 +57,8 @@ internal static class OuterBossPhaseChecks
                 .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets).Where(target => target.IsEnchanted && !previousTargets.Contains(target.UnitId))
                 .Select(target => target.UnitId).ToHashSet();
             auraTargets += actual.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Count(unit =>
-                appliedTargets.Contains(unit.Id) && unit.Team == CombatTeam.Player && unit.Status("debuff")?.Stacks == 5);
+                appliedTargets.Contains(unit.Id) && unit.Team == CombatTeam.Player && unit.Status("debuff")?.Stacks ==
+                    (expectedBoss == "Boss_Level8_AllyBuffer_TitanTrial" ? 10 : 5));
             count++;
         }
         if (!forced && transitions > 0)
@@ -66,7 +67,7 @@ internal static class OuterBossPhaseChecks
         Require(count >= (earlyDefeat ? 5 : forced ? 6 : occupied ? 9 : 11) && pre >= (earlyDefeat ? 3 : forced ? 3 : occupied ? 5 : 6) &&
             post >= (earlyDefeat ? 2 : forced ? 3 : occupied ? 4 : 5) && moves >= (earlyDefeat ? 2 : forced ? 2 : occupied ? 4 : 5) &&
             initial == 1 && (forced || transitions > 0 ? transitions == 1 && destroyed >= 2 : destroyed == 0 &&
-                (!occupied || expectedBoss != "Boss_Level8_AllyBuffer" || auraTargets > 0)),
+                (!occupied || expectedBoss is not ("Boss_Level8_AllyBuffer" or "Boss_Level8_AllyBuffer_TitanTrial") || auraTargets > 0)),
             "Missing native initial action, moving casting actions or post-combat no-op controls.");
         Console.WriteLine($"OUTER-BOSS-PHASE PASS: {count} settled native actions ({pre} pre, {post} post), {moves} moves, {initial} initial latch, {auraTargets} new live aura targets, {transitions} relentless transitions, {destroyed} destroyed rooms; explicit control={forced}; complete battle/controller/RNG equality and immutable parents.");
     }
