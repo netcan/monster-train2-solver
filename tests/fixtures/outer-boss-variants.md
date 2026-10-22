@@ -87,6 +87,12 @@ frozen inputs: 39 plays and seven EndTurns, with zero failure counters and
 settled terminal effects. The affected turn-three boundary retains its live
 Pyre in physical room three and passes two independent immutable replays.
 Both natural archives are losses; they do not establish a Fragile victory.
+Three preferred-floor tactical scouts also reach model losses (41/46/46 inputs).
+A separate 30-second bounded search expands 245 nodes and independently verifies
+its complete seven-EndTurn losing forecast. These scouts are diagnostics, not
+additional native acceptance. The first immediate obstacle is surviving ordinary
+high-health waves before the final boss phase; repeating the same native loss
+does not add winning-player evidence.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-fragile-only `

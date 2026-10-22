@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 877 archives (804 full battles and
+Current manifest inventory (2026-10-22): 879 archives (806 full battles and
 73 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -15,8 +15,14 @@ See [outer-boss validation](outer-boss-variants.md).
 `full-battle-natural-ring7-tactical-win.mt2f` verifies a natural Rax victory:
 57 plays/ten EndTurns and Pyre46, with all frozen inputs and full state/RNG
 matching a fresh native process. The updated general tactical seed also wins
-from the deployment root with Pyre62 in the model. Actual player acceptance
-is separate. See [Ring7 tactics](natural-ring7-tactics.md).
+from the deployment root with Pyre62 in the model. The actual player pair
+`full-battle-player-natural-ring7-{search,replay}.mt2f` also records 50 plays/
+ten EndTurns and Pyre62. Both captures settle with zero failure counters;
+the independent frozen replay exits normally and preserves protected originals.
+The source captures the whole native victory and `DEPTH-PASS`, then hits its
+outer runner's exit deadline; its final protected-file comparison is unverified.
+The exact natural input is retained in `campaign-progressed-ring7-tactical.zip`.
+See [Ring7 tactics and acceptance limits](natural-ring7-tactics.md).
 
 `full-battle-copy-on-play.mt2f` calibrates original CreateSpellCopyWithPurge
 on plain and ChaosScepter Consume carriers: three actual copies and three

@@ -1797,6 +1797,8 @@ $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
     -WorkingDirectory $gameRoot -ArgumentList $gameArguments `
     -Environment $environment -WindowStyle $(if ($ShowWindow) { 'Normal' } else { 'Hidden' }) -PassThru
 Write-Output "FULL-BATTLE-RUN pid=$($process.Id) worker=$NativeWorker policy=$Policy profile=$profile"
+$exitDeadlineSeconds = $TimeoutSeconds
+$terminalExitGrace = $false
 while (-not $process.WaitForExit(250)) {
     if ($FailFastOnIsolatedUnitReject -and (Test-Path -LiteralPath $unityLog) -and
         (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-ISOLATED-(UNIT|EQUIPMENT|SPELL)-REJECT' -Quiet)) {
@@ -1804,10 +1806,21 @@ while (-not $process.WaitForExit(250)) {
         $process.WaitForExit()
         throw "Isolated card model preflight rejected a requested card; native run stopped early; inspect $unityLog"
     }
-    if ($nativeTimer.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+    if ($nativeTimer.Elapsed.TotalSeconds -ge $exitDeadlineSeconds) {
+        # Exporting a complete late-game trace and Unity teardown can cross the
+        # battle deadline after the terminal result is already captured. Give
+        # that phase one bounded grace period; all exit/capture checks below
+        # still have to pass.
+        if (-not $terminalExitGrace -and (Test-Path -LiteralPath $unityLog) -and
+            (Select-String -LiteralPath $unityLog -Pattern 'BATTLE-TERMINAL won=(True|False) pyre=' -Quiet)) {
+            $terminalExitGrace = $true
+            $exitDeadlineSeconds = $TimeoutSeconds + 60
+            Write-Output 'FULL-BATTLE-EXIT-GRACE terminalCaptured=True seconds=60'
+            continue
+        }
         $process.Kill()
         $process.WaitForExit()
-        throw "Full battle timed out after $TimeoutSeconds seconds; profile: $profile"
+        throw "Full battle timed out after $exitDeadlineSeconds seconds; profile: $profile"
     }
 }
 $nativeTimer.Stop()

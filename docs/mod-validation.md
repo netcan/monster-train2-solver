@@ -609,3 +609,31 @@ Ring5 acceptance for the exact Firebrand/MeatShield event pair, not default
 budget performance, Ring7 victory or Fragile player acceptance. The weaker
 Ring7 scout only published losing plans and was stopped; it is not curated
 as a complete acceptance trace. No full regression or Mac build was run.
+
+### Natural seventh-battle player victory
+
+Actual player publications now defeat original Rax from the stronger natural
+seed424244 checkpoint: 50 plays, ten EndTurns and Pyre62. The 60 consumed
+publications include a verified deployment fallback, two successful fresh
+winning searches and 57 retained winning continuations. Every forecast after
+the first winning search remains a full victory. The source records 683 pure
+captures, 62 publications and zero failures; the rendered panel and the normal
+pause/hide/refresh/pointer/drag controls pass. Median/P95 consumed response is
+2.50/3.94 seconds, with the fresh winning searches requiring additional search
+and verification time.
+
+The source captures its settled terminal state and `DEPTH-PASS`, then hits
+the outer harness's 900-second deadline during exit. This is a completed native
+battle capture, **not a clean source runner pass**; its final protected-file
+comparison is unverified. The harness now gives an already captured terminal
+result a single sixty-second exit grace without relaxing its normal checks.
+Independent frozen native replay from the retained original checkpoint also
+wins with Pyre62 in 504.36 seconds, with all 60 unchanged inputs and complete
+state/RNG matched. It has zero failure counters, settled terminal effects,
+normal code-zero exit and protected originals unchanged. Its actual player
+assembly records 206 pure captures and zero publications/search nodes.
+See [complete evidence and limits](../tests/fixtures/natural-ring7-tactics.md).
+
+This case uses horizon12/30,000-ms tactical search, floor3 in the user config
+(zero-based room2). It does not establish default three-turn/3,000-ms performance
+or a Fragile victory. No full regression or Mac package build is performed.

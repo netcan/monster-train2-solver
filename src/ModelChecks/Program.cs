@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--player-natural-ring7-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NaturalRing7TacticsChecks.PlayerPair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--natural-fragile-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3720,6 +3728,16 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
 {
     using var document = ModelJson.ReadFixture(path);
     NaturalRing7TacticsChecks.Native(document.RootElement);
+}
+{
+    string? sourcePath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-natural-ring7-search.mt2f", StringComparison.OrdinalIgnoreCase));
+    string? replayPath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-natural-ring7-replay.mt2f", StringComparison.OrdinalIgnoreCase));
+    if (sourcePath != null && replayPath != null)
+    {
+        using var source = ModelJson.ReadFixture(sourcePath);
+        using var replay = ModelJson.ReadFixture(replayPath);
+        NaturalRing7TacticsChecks.PlayerPair(source.RootElement, replay.RootElement);
+    }
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-fragile-no-cards.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-natural-fragile-status.mt2f", StringComparison.OrdinalIgnoreCase)))
