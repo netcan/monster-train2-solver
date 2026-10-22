@@ -369,6 +369,10 @@ namespace MonsterTrain2Poju.Model
                     var ignored = new HashSet<string>(cachedCopy == null && copying.DataId == creation.DataId ? permanent.Upgrades.Select(upgrade => upgrade.DataId) :
                         Array.Empty<string>(), StringComparer.Ordinal);
                     ignored.UnionWith(discardIgnored);
+                    if (applyOptionalUpgrade && rule.Upgrade?.Lifecycle?.ReplacedAssets.Count > 0)
+                        foreach (CardUpgradeModifier upgrade in copying.Permanent.Upgrades.Concat(copying.Temporary.Upgrades)
+                            .Where(upgrade => rule.Upgrade.Lifecycle.ReplacedAssets.Contains(upgrade.AssetKey)))
+                            ignored.Add(upgrade.DataId);
                     if (cachedCopy == null)
                         foreach (CardUpgradeModifier upgrade in copying.Permanent.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
                     permanent = Copy(permanent, copying.Permanent, ignored, forAddCardPipeline: true);
@@ -475,8 +479,9 @@ namespace MonsterTrain2Poju.Model
             if (card.MaskDescriptor == null) return "Copy generation requires branch-owned source traits.";
             // Freeze and Ephemeral inherit GetIsCopyable=true; their discard/play
             // callbacks do not invalidate the captured CanBeCopied query.
-            bool NeutralType(string type) => type is "CardTraitFreeze" or "CardTraitEphemeral" or CardRetainModel.Trait or "CardTraitIgnoreArmor";
-            bool Neutral(CardTraitValue trait) => NeutralType(trait.RuntimeType) && trait.DeclaredName == trait.RuntimeType;
+            bool NeutralType(string type) => type is "CardTraitFreeze" or "CardTraitEphemeral" or CardRetainModel.Trait or "CardTraitIgnoreArmor" or "CardTraitExhaustState";
+            bool Neutral(CardTraitValue trait) => (NeutralType(trait.RuntimeType) || trait.RuntimeType == CardCopyOnPlayModel.Trait &&
+                CardCopyOnPlayModel.Validate(card) == null) && trait.DeclaredName == trait.RuntimeType;
             if (card.MaskDescriptor.TemporaryTraits.Any(trait => !Neutral(trait)) ||
                 card.MaskDescriptor.PermanentReplacements.Any(rule => !NeutralType(rule.OldName) || !NeutralType(rule.NewRuntimeType)) ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>

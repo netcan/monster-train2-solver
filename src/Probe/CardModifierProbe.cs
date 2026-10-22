@@ -217,10 +217,11 @@ namespace MonsterTrain2Poju.Probe
             if (!roomAttachmentUnitUpgrade && upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade room ability");
             CardLifecycleUpgrade lifecycle = CardUpgradeLifecycleProbe.Definition(upgrade);
             bool discardCleanup = CardBranchMaskProbe.Enabled && upgrade.GetAssetName() is
-                "CopyOnPlayTraitUpgradeNoEphemeral" or "RemoveEphemeral" or "StardustInvocation_Upgrade_NoEphemeral";
+                "CopyOnPlayTraitUpgrade" or "CopyOnPlayTraitUpgradeNoEphemeral" or "RemoveEphemeral" or "StardustInvocation_Upgrade_NoEphemeral";
             bool supportedTraitLifecycle = (lifecycle.AddedTraits.Count > 0 || lifecycle.RemovedRuntimeTypes.Count > 0) && lifecycle.AddedTraits.All(trait =>
                 trait.RuntimeType == trait.DeclaredName &&
                 (trait.RuntimeType is "CardTraitIgnoreArmor" or "CardTraitSelfPurge" or "CardTraitExhaustState" or "CardTraitEphemeral" ||
+                    trait.RuntimeType == CardCopyOnPlayModel.Trait && CardBranchMaskProbe.Enabled && upgrade.GetAssetName() == "CreateSpellCopyWithPurge" ||
                     trait.RuntimeType == CardCorruptStateModel.Trait && CardBranchMaskProbe.Enabled ||
                     trait.RuntimeType == "CardTraitDistinct" && trait.StackMode == 0 && CardBranchMaskProbe.Enabled ||
                     trait.RuntimeType == "CardTraitDrawInDeploymentPhase" ||

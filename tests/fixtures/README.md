@@ -1,8 +1,13 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 872 archives (799 full battles and
+Current manifest inventory (2026-10-22): 873 archives (800 full battles and
 73 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-copy-on-play.mt2f` calibrates original CreateSpellCopyWithPurge
+on plain and ChaosScepter Consume carriers: three actual copies and three
+played-copy purges, 27 plays/seven EndTurns, Pyre80 victory and sixteen exact
+immutable branches. See [copy-on-play scope](copy-on-play.md).
 
 The natural event-graft player pair validates 47 inputs through victory with
 Pyre15 in two independent native processes. All forecasts, full states and RNG

@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] is "--copy-on-play-only" or "--natural-copy-on-play-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CopyOnPlayChecks.Native(fixture.RootElement, natural: args[0] == "--natural-copy-on-play-only");
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-event-graft-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -3668,6 +3675,11 @@ foreach (string path in args.Where(path => path.Contains("full-battle-train-heal
 {
     using var document = ModelJson.ReadFixture(path);
     EmberTrainHealChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("full-battle-copy-on-play", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    CopyOnPlayChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-event-grafted-equipment", StringComparison.OrdinalIgnoreCase)))
 {

@@ -10,6 +10,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Known(string name) => name == "CardTraitShowCardTargets" || name == "CardTraitReturnToHandEquipment" || name == "CardTraitScalingAdjustCapacity" || name == "CardTraitSelfPurge" || name == "CardTraitInfusion" || name == "CardTraitPersistent" || name == "CardTraitScalingAddDamage" || name == "CardTraitScalingAddStatusEffect" ||
             name == "CardTraitIntrinsicState" && CardBranchMaskProbe.Enabled ||
+            name == CardCopyOnPlayModel.Trait && CardBranchMaskProbe.Enabled ||
             (name == CardGraftedEquipmentModel.Trait || name == CardCorruptStateModel.Trait) && CardBranchMaskProbe.Enabled ||
             name == "CardTraitScalingAddForged" || name == "CardTraitScalingHealTrain" || name == "CardTraitFreeze" || name == "CardTraitCraftedSpike" ||
             (name == "CardTraitScalingFeederRules" || name == "CardTraitDistinct" || name == CardCorruptRestrictedModel.Trait || name == CardStatusDamageModel.Trait || name == CardSpecificDamageModel.Trait || name == CardScaledEnergyModel.Trait || name == CardStatusRemovalScalingModel.Trait || name == CardEffectApplicationsModel.Trait) && CardBranchMaskProbe.Enabled ||

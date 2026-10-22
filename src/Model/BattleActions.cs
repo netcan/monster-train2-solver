@@ -1060,6 +1060,9 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
             }
+            bool copyOnDiscard = !skipNaturalDiscard && discardInstance != null && CardCopyOnPlayModel.Present(discardInstance);
+            if (terminal && copyOnDiscard)
+                return Unsupported("Terminal copy-on-play routing requires native calibration.");
             BattleStatistics? statistics = context.Statistics;
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
             if (!skipNaturalDiscard) statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
@@ -1093,6 +1096,17 @@ namespace MonsterTrain2Poju.Model
                 // the card to standby. That removes the pending standby return,
                 // so only MoveToStandByPile records an exhaustion.
                 context = CardExhaustModel.MoveConsumedToStandby(context, card);
+            }
+            // Native records the discard and earlier Consume callback before creating
+            // the copy. The new identity must not inherit their broadcast statistics.
+            if (copyOnDiscard)
+            {
+                CardGenerationResult copied = CardCopyOnPlayModel.Discarded(context, context.FindCard(card.InstanceId)!);
+                if (!copied.Supported) return Unsupported(copied.UnsupportedReason!);
+                context = copied.Context!;
+            }
+            if (consumedOnPlay)
+            {
                 context = ephemeralPurgeCallbacks
                     ? context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name is "Standby" or "Exhausted"
                         ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray())

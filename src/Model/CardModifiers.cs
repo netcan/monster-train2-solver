@@ -400,6 +400,8 @@ namespace MonsterTrain2Poju.Model
             if (moonError != null) return moonError;
             string? graftError = CardGraftedEquipmentModel.Validate(instance);
             if (graftError != null) return graftError;
+            string? copyError = CardCopyOnPlayModel.Validate(instance);
+            if (copyError != null) return copyError;
             if (instance.Permanent.MergedEquipment?.Validate() is string mergeError) return mergeError;
             string? exhaustError = CardExhaustModel.Validate(instance);
             if (exhaustError != null) return exhaustError;

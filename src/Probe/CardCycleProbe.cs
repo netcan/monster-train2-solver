@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CardTraitState trait in card.GetTraitStates())
                 {
                     // End-turn DiscardHand sets handDiscarded=true, which also suppresses Treasure.
-                    if (!(drawing && trait is CardTraitPermafrost) && !(CardBranchMaskProbe.Enabled && trait is CardTraitAddCardUpgradeOnMoonPhase or CardTraitRetain) && !(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion || trait is CardTraitFreeze || trait is CardTraitScalingAddEnergy || trait is CardTraitScalingAddCards || trait is CardTraitTreasure)) &&
+                    if (!(drawing && trait is CardTraitPermafrost) && !(CardBranchMaskProbe.Enabled && trait is CardTraitAddCardUpgradeOnMoonPhase or CardTraitRetain or CardTraitCopyOnPlay) && !(kind == "Discard" && (trait is CardTraitSelfPurge || trait is CardTraitExhaustState || trait is CardTraitEphemeral || trait is CardTraitInfusion || trait is CardTraitFreeze || trait is CardTraitScalingAddEnergy || trait is CardTraitScalingAddCards || trait is CardTraitTreasure)) &&
                         callbacks.Any(callback => trait.GetType().GetMethod(callback,
                         BindingFlags.Instance | BindingFlags.Public)?.DeclaringType != typeof(CardTraitState)))
                         interactions.Add(trait.GetType().Name + " " + kind + " callback");

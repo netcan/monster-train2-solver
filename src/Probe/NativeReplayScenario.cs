@@ -1960,6 +1960,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 TrainHealScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && CopyOnPlayScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Copy-on-play fixture must start on deployment turn.");
+                numericModifiersPrepared = true;
+                CopyOnPlayScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && EmberTrainHealScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Per-ember healing fixture must start on deployment turn.");
@@ -2983,6 +2989,7 @@ namespace MonsterTrain2Poju.Probe
                 if (DragonHoardScenario.Enabled) pendingPlay = DragonHoardScenario.Choose(decision);
                 if (TrainHealScenario.Enabled) pendingPlay = TrainHealScenario.Choose(decision);
                 if (EmberTrainHealScenario.Enabled) pendingPlay = EmberTrainHealScenario.Choose(decision);
+                if (CopyOnPlayScenario.Enabled) pendingPlay = CopyOnPlayScenario.Choose(decision);
                 if (OverhealScenario.Enabled) pendingPlay = OverhealScenario.Choose(decision);
                 if (CorruptionScenario.Enabled) pendingPlay = CorruptionScenario.Choose(decision);
                 if (PermanentCorruptionScenario.Enabled) pendingPlay = PermanentCorruptionScenario.Choose(decision);

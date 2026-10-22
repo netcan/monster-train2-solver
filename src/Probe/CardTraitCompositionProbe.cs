@@ -14,7 +14,16 @@ namespace MonsterTrain2Poju.Probe
             data.GetTraitIsRemovable(), (int)data.GetStackMode(), parameterUpgradeCastEffects: CastEffects(data), feedingQuery: FeedingQuery(data),
             handCostTargetType: data.GetTraitStateName() == "CardTraitIncreaseCostOfCardsInHand" ? data.GetParamCardType().ToString() : null,
             graftSevered: data.GetTraitStateName() == CardGraftedEquipmentModel.Trait ? false : (bool?)null,
-            holdoverPending: data.GetTraitStateName() == CardRetainModel.Trait ? false : (bool?)null);
+            holdoverPending: data.GetTraitStateName() == CardRetainModel.Trait ? false : (bool?)null,
+            copyOnPlayUpgrade: CopyUpgrade(data));
+        private static CardUpgradeModifier? CopyUpgrade(CardTraitData data)
+        {
+            if (data.GetTraitStateName() != CardCopyOnPlayModel.Trait || data.GetCardUpgradeDataParam() == null) return null;
+            var definition = data.GetCardUpgradeDataParam();
+            if (definition.name != "CopyOnPlayTraitUpgrade") return null;
+            var state = new CardUpgradeState(); state.Setup(definition);
+            return CardModifierProbe.Upgrade(state, rejectFilters: false, filtersAlreadyApplied: true);
+        }
         private static CardStatisticQuery? FeedingQuery(CardTraitData data)
         {
             if (data.GetTraitStateName() != "CardTraitScalingFeederRules") return null;
@@ -44,7 +53,8 @@ namespace MonsterTrain2Poju.Probe
                 moonPhaseUpgradeState: (CardBranchMaskProbe.Enabled || MoonPhaseCardUpgradeCalibration.Capturing) && trait is CardTraitAddCardUpgradeOnMoonPhase
                     ? MoonPhaseCardUpgradeCalibration.State(trait) : null,
                 graftSevered: trait is CardTraitGraftedEquipment graft ? graft.Severed : (bool?)null,
-                holdoverPending: trait is CardTraitRetain ? (bool?)AccessTools.Field(typeof(CardTraitRetain), "retained").GetValue(trait) : null);
+                holdoverPending: trait is CardTraitRetain ? (bool?)AccessTools.Field(typeof(CardTraitRetain), "retained").GetValue(trait) : null,
+                copyOnPlayUpgrade: data == null ? null : CopyUpgrade(data));
         }
         internal static List<CardTraitState> Bases(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "traits").GetValue(card);
         internal static List<CardTraitState> Combined(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "combinedTraits").GetValue(card);
