@@ -99,7 +99,7 @@ Earlier failed diagnostic profiles remain unaccepted whole battles. The original
 nonterminal copy and original Permafrost fixtures pass focused regression.
 
 These are controlled mechanic calibrations; natural final bosses, other
-discard callbacks/orders/counts, terminal purge copies and actual player
+discard callbacks/orders/counts and actual player
 terminal-copy recommendations require separate witnesses.
 
 ```powershell
@@ -111,6 +111,42 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --terminal-copy-only t
 Focused affected checks also pass: 2,134 native trait refresh states, pure
 composition controls, ten native clone/upgrade refresh generations and the
 original first-spell-copy relic. No full regression or Mac build is run.
+
+## Temporary copies delivering the final blow
+
+`full-battle-terminal-purge-copy{,-replay}.mt2f` records profiles
+`full-battle-units-spells-and-junk-20261022-144734-394a7d5f` (48.28 seconds) and
+`full-battle-units-spells-and-junk-20261022-144850-45a23e2f` (47.40 seconds).
+The Consume pair is `full-battle-terminal-purge-copy-consume{,-replay}.mt2f`,
+profiles `full-battle-units-spells-and-junk-20261022-144734-b7bcdbb4` (49.71 seconds)
+and `full-battle-units-spells-and-junk-20261022-144850-04e9bac7` (48.63 seconds).
+All four win at Pyre79 with four plays/four EndTurns, settle, exit normally,
+preserve protected originals and retain four zero failure counters. Each fresh
+process replays eight independently frozen inputs with zero search nodes.
+
+The first boss has an explicit authored 2000 HP control. The retained original
+Flicker first deals nonlethal damage and generates its real temporary copy;
+that copy immediately delivers the killing cast. Both ordinary and Consume
+copies retain two native Purged references, no standby/exhausted reference,
+and create no recursive copy after victory. The complete terminal state,
+statistics, registry and RNG match sixteen immutable branches and complete
+native action/turn chains; seven enemy birth boundaries also match.
+
+Terminal purge routing is enabled only for the captured original temporary
+upgrade on trait-free spells, optionally with the calibrated earlier Consume
+callback. Missing upgrade, additional discard callbacks and other terminal
+destinations remain guarded. The ordinary terminal-copy pair and original
+nonterminal copy fixture pass focused regression. Earlier failed experiments
+remain diagnostic: Ephemeral forcibly discards at EndTurn even when Frozen,
+so retaining an already-created copy until boss birth is not a valid control.
+These remain controlled mechanic calibrations, with actual player suggestions
+and natural final bosses requiring their own evidence.
+
+```powershell
+scripts/Run-FullBattleProbe.ps1 -CopyOnPlayTerminalPurge -SkipBuild
+scripts/Run-FullBattleProbe.ps1 -CopyOnPlayTerminalPurge -CopyOnPlayTerminalConsume -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --terminal-purge-copy-only tests/fixtures/full-battle-terminal-purge-copy.mt2f
+```
 
 ## Ordinary movement capture and tactical targets
 

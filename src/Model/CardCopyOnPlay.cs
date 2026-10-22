@@ -12,6 +12,31 @@ namespace MonsterTrain2Poju.Model
              card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true) ||
              card.MaskDescriptor.PermanentReplacements.Any(rule => rule.OldName == Trait || rule.NewRuntimeType == Trait));
 
+        public static bool SupportsTerminalPurge(CardInstanceState card)
+        {
+            if (card.MaskDescriptor is not CardMaskDescriptor descriptor || descriptor.Definition.CardType != "Spell" ||
+                descriptor.SourceTraits == null || descriptor.SourceTraits.Count != 0 || descriptor.BaseTraits.Count > 1 ||
+                descriptor.BaseTraits.Any(trait => trait.RuntimeType != "CardTraitExhaustState" || trait.DeclaredName != "CardTraitExhaustState" ||
+                    trait.ParamInt != 0 || trait.StackMode != 0) ||
+                descriptor.TemporaryTraits.Count != 0 || descriptor.PermanentReplacements.Count != 0 ||
+                card.GraftedEquipmentCardId.HasValue || Present(card)) return false;
+            var upgrades = card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).ToArray();
+            var purge = card.Temporary.Upgrades.Where(upgrade => upgrade.DataId == "513224dd-223f-48ed-bf0a-afd486aef98b" &&
+                upgrade.AssetKey == "CopyOnPlayTraitUpgrade").ToArray();
+            if (purge.Length != 1 || upgrades.Any(upgrade => upgrade.RemoveOnDiscard || upgrade.ExternalInteractions.Count != 0) ||
+                purge[0].Lifecycle is not { } lifecycle || lifecycle.AddedTraits.Count != 1 ||
+                lifecycle.AddedTraits[0].RuntimeType != "CardTraitEphemeral" || lifecycle.AddedTraits[0].DeclaredName != "CardTraitEphemeral" ||
+                lifecycle.AddedTraits[0].ParamInt != 0 || lifecycle.AddedTraits[0].StackMode != 0 ||
+                !lifecycle.RemovedRuntimeTypes.SequenceEqual(new[] { Trait }) ||
+                !lifecycle.ReplacedAssets.SequenceEqual(new[] { "CreateSpellCopyWithPurge" })) return false;
+            var traits = CardExhaustModel.RefreshTraits(card).CombinedTraits!.ToArray();
+            return traits.Count(trait => trait.RuntimeType == "CardTraitEphemeral") == 1 &&
+                traits.Count(trait => trait.RuntimeType == "CardTraitExhaustState") <= 1 &&
+                traits.All(trait => trait.RuntimeType is "CardTraitEphemeral" or "CardTraitExhaustState") &&
+                Array.FindIndex(traits, trait => trait.RuntimeType == "CardTraitExhaustState") <
+                    Array.FindIndex(traits, trait => trait.RuntimeType == "CardTraitEphemeral");
+        }
+
         public static string? Validate(CardInstanceState card)
         {
             if (!Present(card)) return null;

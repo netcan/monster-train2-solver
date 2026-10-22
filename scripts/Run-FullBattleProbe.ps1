@@ -243,6 +243,7 @@ param(
     [switch] $CopyOnPlay,
     [switch] $CopyOnPlayTerminal,
     [switch] $CopyOnPlayTerminalConsume,
+    [switch] $CopyOnPlayTerminalPurge,
     [switch] $Overheal,
     [switch] $Corruption,
     [switch] $CorruptionUnitTrigger,
@@ -1112,7 +1113,7 @@ if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' 
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHealPerEmber) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHealPerEmberX) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
-if ($CopyOnPlayTerminalConsume) { $CopyOnPlayTerminal = $true }
+if ($CopyOnPlayTerminalConsume -or $CopyOnPlayTerminalPurge) { $CopyOnPlayTerminal = $true }
 if ($CopyOnPlayTerminal) { $CopyOnPlay = $true }
 if ($CopyOnPlay) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1617,6 +1618,7 @@ if ($TrainHealPerEmberX) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal-per
 if ($CopyOnPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'copy-on-play' }
 if ($CopyOnPlayTerminal) { $environment['MT2_PROBE_COPY_ON_PLAY_TERMINAL'] = '1' }
 if ($CopyOnPlayTerminalConsume) { $environment['MT2_PROBE_COPY_ON_PLAY_TERMINAL_CONSUME'] = '1' }
+if ($CopyOnPlayTerminalPurge) { $environment['MT2_PROBE_COPY_ON_PLAY_TERMINAL_PURGE'] = '1' }
 if ($Overheal) { $environment['MT2_PROBE_MODIFIERS'] = 'overheal' }
 if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
 if ($CorruptionUnitTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-unit-trigger' }

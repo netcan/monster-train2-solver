@@ -792,6 +792,7 @@ namespace MonsterTrain2Poju.Probe
                 NativeEffectSettlement = NativeEffectSettlement.Evidence,
                 CopyOnPlayTerminal = CopyOnPlayTerminalScenario.Enabled,
                 CopyOnPlayTerminalConsume = CopyOnPlayTerminalScenario.Consume,
+                CopyOnPlayTerminalPurge = CopyOnPlayTerminalScenario.PurgeCopy,
                 CopyOnPlayTerminalCardIds = CopyOnPlayTerminalScenario.CardIds,
                 Policy = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY"),
                 ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
