@@ -447,9 +447,22 @@ namespace MonsterTrain2Poju.Probe
                 resources: RelicResourceProbe.CaptureResources(managers),
                 mixState: new MixRuntimeState(managers.GetCombatManager()!.LastMixCardSelected?.GetID(),
                     managers.GetCombatManager()!.LastMixUpgradeSelected?.GetID()),
-                conduitRetained: ConduitProbe.CaptureRetained(this));
+                conduitRetained: ConduitProbe.CaptureRetained(this), lifeLinks: CaptureLifeLinks(managers));
             CardBranchMaskProbe.Observe(this, context);
             return context;
+        }
+
+        private LifeLinkContext? CaptureLifeLinks(AllGameManagers managers)
+        {
+            CharacterState[] actors = managers.GetHeroManager().GetCharactersReadOnly()
+                .Where(actor => actor.IsTrueFinalBoss() && !actor.IsDestroyed).ToArray();
+            if (actors.Length == 0) return null;
+            // Full-battle projections contain live health. UI preview state is
+            // deliberately separate: its copies drop links and change on hover.
+            return new LifeLinkContext(actors.Select(actor => new LifeLinkActor(UnitId(actor),
+                actor.GetLinkedCharacterState() == null ? 0 : UnitId(actor.GetLinkedCharacterState()),
+                actor.GetHP(), actor.GetHP(), actor.Initialized, actor.HasStatusEffect("lifelink"),
+                actor.IsTrueFinalBoss(), actor.IsOuterTrainBoss())).ToArray(), false, 0);
         }
 
         private bool HasCopyUnitsCard(AllGameManagers managers)

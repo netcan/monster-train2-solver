@@ -5,6 +5,14 @@ if (args.Length == 2 && args[0] == "--true-final-boss-health-updates-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     TrueFinalBossHealthChecks.Native(fixture.RootElement);
+    LinkedBossHealthChecks.Bridge(fixture.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--true-final-boss-world-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    LinkedBossHealthChecks.Capture(fixture.RootElement);
     return;
 }
 
@@ -3837,6 +3845,12 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-health
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossHealthChecks.Native(fixture.RootElement);
+    LinkedBossHealthChecks.Bridge(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-live-world-observation", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    LinkedBossHealthChecks.Capture(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("outer-boss-turn-calibration", StringComparison.OrdinalIgnoreCase)))
 {

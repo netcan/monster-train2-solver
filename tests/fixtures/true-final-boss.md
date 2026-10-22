@@ -101,6 +101,25 @@ Level8 模型签名保护；上述组件不计作整场可求解或胜局。
 伤害过滤、受伤/治疗触发、死亡或全体移除。会导致死亡的操作仍显式拒绝。
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case HealthUpdates -SkipBuild`。
 
+## 整车生命状态接入
+
+整场捕获现保留 `CombatContext.LifeLinks`，记录五个实体的有效生命、链接所有者
+和角色类别；所有上下文复制路径保留它。这里是实战投影，预览生命规范为实战
+生命、预览累计为零，避免鼠标悬停产生的 UI 副本和累计伤害混入搜索状态。
+
+`LinkedBossHealthModel.Apply` 把已校准的生命更新应用到整车：重建共享上下文并
+更新三个物理楼层的所有链接实体，保持位置和无关状态不变。100 个原生实战
+操作（含连续链）匹配；另外 100 个正在计算 UI 预览的上下文被明确拒绝。
+此接口尚未放行普通房间战斗或真终局控制器。
+
+`true-final-boss-live-world-observation.mt2f` 来自
+`full-battle-no-cards-20261022-191115-02aafd2d`。原生正常退出，49.66 秒，完整
+空过败局的 11 个出生后回合边界中，共享状态与各物理楼层的生命/角色一致。
+采集失败、差异、待完成均为零，unsupported 仍为 65，严格整场检查正确报
+`DEPTH-FAIL`；这份文件仅验收共享状态捕获，不计整场模型通过。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case HealthUpdates,World -SkipBuild`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件
