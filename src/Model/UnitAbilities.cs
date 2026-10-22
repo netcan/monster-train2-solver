@@ -170,7 +170,7 @@ namespace MonsterTrain2Poju.Model
                 if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);
                 train = preview.State!; context = train.Context!;
             }
-            if (source.CanonicalPhysicalReferences) train = TrainCombatModel.CompleteFrameRemovals(train);
+            if (source.CanonicalPhysicalReferences) train = TrainCombatModel.CompleteFrameRemovals(train, Array.Empty<int>());
             else if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
             EnemySpawnState old = source.Spawn;
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng, train.Context?.NextUnitId ?? old.NextUnitId,

@@ -1129,7 +1129,9 @@ namespace MonsterTrain2Poju.Model
                 train = preview.State!; context = train.Context!;
             }
             EnemySpawnState spawn = source.Spawn;
-            if (source.CanonicalPhysicalReferences) train = TrainCombatModel.CompleteFrameRemovals(train);
+            // Card kills enter the managers' removal lists. Their Unity objects
+            // and bound auras survive until the turn-end ProcessRemovals call.
+            if (source.CanonicalPhysicalReferences) train = TrainCombatModel.CompleteFrameRemovals(train, Array.Empty<int>());
             else if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
             spawn = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
                 train.Context?.NextUnitId ?? nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,

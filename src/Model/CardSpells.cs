@@ -532,7 +532,7 @@ namespace MonsterTrain2Poju.Model
                     if (routingError != null) return UnsupportedTrain(routingError);
                     continue;
                 }
-                if (effect.Type == "HealTrain")
+                if (effect.Type is "HealTrain" or "HealTrainPerEmber")
                 {
                     if (targets.UnitIds.Count != 1) return UnsupportedTrain("Train healing requires one live Pyre target.");
                     RoomCombatState? pyreRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == targets.UnitIds[0]));
@@ -558,6 +558,17 @@ namespace MonsterTrain2Poju.Model
                         }
                     }
                     amount = unchecked(amount + effect.Value);
+                    if (effect.Type == "HealTrainPerEmber")
+                    {
+                        CardInstanceState? played = state.Context!.FindCard(sourceCardId) ?? resolvingCard;
+                        CardMaskDescriptor? descriptor = played?.MaskDescriptor;
+                        if (descriptor == null) return UnsupportedTrain("Healing per ember requires the played card's raw cost and cost type.");
+                        int multiplier = descriptor.BaseCost;
+                        if (descriptor.Definition.XCost)
+                            return UnsupportedTrain("Per-ember healing on X-cost cards requires native calibration.");
+                        amount = unchecked(amount * multiplier);
+                        if (amount < 0) return UnsupportedTrain("Negative healing per ember requires native damage calibration.");
+                    }
                     if (amount > 0 && state.Context!.Resources!.TowerHealingDisabled != true)
                     {
                         int healed = Math.Min(amount, maximum.Value - pyre.Health);
@@ -2163,7 +2174,7 @@ namespace MonsterTrain2Poju.Model
                         return "Dragon's Hoard gold rewards require captured amount and gold resource rules.";
                     continue;
                 }
-                if (effect.Type == "HealTrain")
+                if (effect.Type is "HealTrain" or "HealTrainPerEmber")
                 {
                     if (effect.Target != "Pyre" || source.Preview || effect.Range != null)
                         return "Train healing requires a fixed Pyre target outside preview.";
@@ -2563,7 +2574,7 @@ namespace MonsterTrain2Poju.Model
                 case "HealOverheal": return count > 0;
                 case "HealRelative":
                 case "SwapStats": return count > 0;
-                case "HealTrain": return count > 0;
+                case "HealTrain": case "HealTrainPerEmber": return count > 0;
                 case "Sacrifice": return count > 0;
                 case "SacrificeOrFeed": return count > 0;
                 case "Kill": return effect.Tests?.MustHaveValidTargets != true || count > 0;

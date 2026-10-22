@@ -22,7 +22,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase", "CardEffectUpdateMoonPhaseResource",
             "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
-            "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectSetHealth", "CardEffectSacrifice", "CardEffectSacrificeOrFeed", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
+            "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectHealPyrePerEmberCost", "CardEffectSetHealth", "CardEffectSacrifice", "CardEffectSacrificeOrFeed", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
             "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits", "CardEffectDrawType",
@@ -517,6 +517,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectHealAndOverheal" ? "HealOverheal" :
                 effect.GetEffectStateName() == "CardEffectHealAndDamageRelative" ? "HealRelative" :
                 effect.GetEffectStateName() == "CardEffectHealTrain" ? "HealTrain" :
+                effect.GetEffectStateName() == "CardEffectHealPyrePerEmberCost" ? "HealTrainPerEmber" :
                 effect.GetEffectStateName() == "CardEffectSetHealth" ? "SetHealth" :
                 effect.GetEffectStateName() == "CardEffectAddTempSwapStats" ? "SwapStats" :
                 effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
@@ -635,7 +636,7 @@ namespace MonsterTrain2Poju.Probe
                 if (data == null) interactions.Add("Room attachment trigger requires card ownership.");
                 else roomAttachment = CapacityAttachment(data, effect, interactions);
             }
-            return new CardActionEffect(type, effect.GetTargetMode().ToString(), type == "RefreshMoonPhase" ? (effect.GetParamBool() ? 1 : 0) : effect.GetParamInt(),
+            return new CardActionEffect(type, type == "HealTrainPerEmber" ? "Pyre" : effect.GetTargetMode().ToString(), type == "RefreshMoonPhase" ? (effect.GetParamBool() ? 1 : 0) : effect.GetParamInt(),
                 type == "SpawnOrStatus" || effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
                 type != "SpawnOrStatus" && effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses, upgrade, lifetime,
                 new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(),
@@ -657,7 +658,7 @@ namespace MonsterTrain2Poju.Probe
                 nextDrawUpgrade: type == "ScheduleNextDrawUpgrade" ? TypedDrawProbe.UpgradeRule(effect) : null,
                 requiredGold: type == "ScheduleNextDrawUpgrade" ? effect.GetAdditionalParamInt() : 0,
                 goldCostRequired: type == "RewardGold" ? effect.GetParamBool() : (bool?)null,
-                useCardTraits: (type == "DamagePerSourceAttack" || type == "HealTrain") && effect.GetParamBool(),
+                useCardTraits: (type is "DamagePerSourceAttack" or "HealTrain" or "HealTrainPerEmber") && effect.GetParamBool(),
                 requireEquipment: (type == "AttackWithUnit" || type == "AttackTargetsWithSelfUnit") && effect.GetParamBool(), useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
                 countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool(), spawnFallbackUnit: spawnFallbackUnit,
                 disallowStatusStackModifiers: type == "SpawnOrStatus" && effect.GetDisallowStatusEffectStackModifiers(),

@@ -1,6 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--retired-aura-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RetiredAuraChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--ember-train-heal-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EmberTrainHealChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--titanite-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3637,6 +3650,16 @@ foreach (string path in args.Where(path => path.Contains("holdover-variants-cali
 {
     using var document = ModelJson.ReadFixture(path);
     HoldoverVariantChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("full-battle-retired-aura-card-kill", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    RetiredAuraChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("full-battle-train-heal-per-ember", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    EmberTrainHealChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-event-grafted-equipment", StringComparison.OrdinalIgnoreCase)))
 {

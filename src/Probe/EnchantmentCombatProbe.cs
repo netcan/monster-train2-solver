@@ -10,6 +10,9 @@ namespace MonsterTrain2Poju.Probe
     internal static class EnchantmentCombatProbe
     {
         private static readonly Type EntryType = AccessTools.Inner(typeof(CardEffectEnchant), "EnchantedState");
+        private static readonly System.Reflection.FieldInfo DestroyedState = AccessTools.Field(typeof(CharacterState), "destroyedState");
+        private static readonly HashSet<int> RetainedRemovedSources = new HashSet<int>();
+        internal static int RetainedRemovedSourceCount => RetainedRemovedSources.Count;
         private static bool Bound(CardEffectEnchant effect)
         {
             var source = (CharacterState?)AccessTools.Field(typeof(CardEffectEnchant), "enchanterCharacter").GetValue(effect);
@@ -19,9 +22,8 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static bool AwaitingSourceDestruction(IEnumerable<CharacterState> units)
         {
-            // Ordinary killed enemies can remain as live Unity objects until
-            // a later combat phase. Only a retired, still-bound aura depends
-            // on Unity.Destroy before the next complete snapshot is stable.
+            // InRemoveList actors remain live until CombatManager.ProcessRemovals
+            // at turn end. Wait only once Unity.Destroy has actually been scheduled.
             foreach (CharacterState owner in units)
             {
                 if (owner == null || !owner.IsEnchanter) continue;
@@ -31,7 +33,12 @@ namespace MonsterTrain2Poju.Probe
                     {
                         if (state.GetCardEffect() is not CardEffectEnchant effect) continue;
                         var source = (CharacterState?)AccessTools.Field(typeof(CardEffectEnchant), "enchanterCharacter").GetValue(effect);
-                        if (source != null && source.IsDestroyed && Bound(effect)) return true;
+                        if (source != null && source.IsDestroyed && Bound(effect))
+                        {
+                            if ((CharacterState.DestroyedState)DestroyedState.GetValue(source) == CharacterState.DestroyedState.Destroyed)
+                                return true;
+                            RetainedRemovedSources.Add(source.GetInstanceID());
+                        }
                     }
             }
             return false;

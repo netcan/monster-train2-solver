@@ -1625,7 +1625,7 @@ namespace MonsterTrain2Poju.Probe
                 PreviewScheduling = PreviewSchedulingProbe.Records,
                 CardAnimationSettlement = new { Enabled = CardAnimationSettlement.Enabled, CardAnimationSettlement.PreviewWaits,
                     CardAnimationSettlement.DecisionWaits, CardAnimationSettlement.ScheduledMovements,
-                    CardAnimationSettlement.PendingMovements },
+                    CardAnimationSettlement.PendingMovements, EnchantmentCombatProbe.RetainedRemovedSourceCount },
                 UnitPostCombats = PostCombatHealingProbe.Records,
                 UnitUpgradeScalingCalibrationContextUnchanged = UnitUpgradeScalingScenario.CalibrationContextUnchanged,
                 RemovedStatusScaling = UnitUpgradeScalingScenario.RemovalMode,

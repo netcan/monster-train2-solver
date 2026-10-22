@@ -1,8 +1,16 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-22): 868 archives (795 full battles and
+Current manifest inventory (2026-10-22): 870 archives (797 full battles and
 73 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+`full-battle-retired-aura-card-kill.mt2f` retains a killed enchanter's binding
+through card actions, then observes native turn-end destruction with animation
+settlement enabled. Thirty-six plays, eight EndTurns and sixteen complete
+immutable branches match. `full-battle-train-heal-per-ember.mt2f` calibrates the
+original upgrade with explicit carrier/cost/HP controls: raw costs 1,1,3,1,
+paid costs 1,0,2,0 and actual healing 1,1,3,0. X-cost healing remains guarded.
+See [removal and healing scope](retired-auras-and-ember-healing.md).
 
 `full-battle-event-grafted-equipment.mt2f` covers naturally acquired
 Firebrand/MeatShield grafting, its temporary equipment trait, severing and

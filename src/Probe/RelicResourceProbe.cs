@@ -88,7 +88,8 @@ namespace MonsterTrain2Poju.Probe
                 triggerEffects.Contains("CardEffectAdjustDragonsHoard") || triggerEffects.Contains("CardEffectRewardGoldPerDragonHoard") ||
                 unitTriggerEffects.Contains("CardEffectAdjustDragonsHoard") || unitTriggerEffects.Contains("CardEffectRewardGoldPerDragonHoard") ||
                 unitTriggerEffects.Contains("CardEffectAdjustDragonsHoardPerStatusEffect");
-            bool trainHealCards = cardEffects.Any(effect => effect.GetCardEffect() is CardEffectHealTrain) ||
+            bool trainHealCards = cardEffects.Any(effect => effect.GetCardEffect() is CardEffectHealTrain or CardEffectHealPyrePerEmberCost) ||
+                triggerEffects.Contains("CardEffectHealTrain") || triggerEffects.Contains("CardEffectHealPyrePerEmberCost") ||
                 unitTriggerEffects.Contains("CardEffectHealTrain") || unitTriggerEffects.Contains("CardEffectPermanentlyAdjustMaxPyreHealth");
             runCardResourceObserved |= cardEffects.Any(effect => effect.GetCardEffect() is CardEffectAddRunCard) ||
                 unitTriggerEffects.Contains("CardEffectAddRunCard");

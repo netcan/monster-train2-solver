@@ -229,6 +229,7 @@ param(
     [switch] $RemoveAllStatusEffects,
     [switch] $DragonHoard,
     [switch] $TrainHeal,
+    [switch] $TrainHealPerEmber,
     [switch] $Overheal,
     [switch] $Corruption,
     [switch] $CorruptionUnitTrigger,
@@ -1086,6 +1087,7 @@ if ($OriginalUncontrolledGroup -and $MixChoices -and $MixChoices -ne '01') { thr
 if ($OriginalUncontrolledGroup) { $Mix = $true; $MixChoices = '01' }
 if ($DragonHoard) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($TrainHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($TrainHealPerEmber) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($Overheal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($Corruption) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($CorruptionUnitTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1573,6 +1575,7 @@ if ($OriginalSmeltEmberRelicBulk) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($RemoveAllStatusEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'remove-all-status-effects' }
 if ($DragonHoard) { $environment['MT2_PROBE_MODIFIERS'] = 'dragon-hoard' }
 if ($TrainHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal' }
+if ($TrainHealPerEmber) { $environment['MT2_PROBE_MODIFIERS'] = 'train-heal-per-ember' }
 if ($Overheal) { $environment['MT2_PROBE_MODIFIERS'] = 'overheal' }
 if ($Corruption) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption' }
 if ($CorruptionUnitTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'corruption-unit-trigger' }
