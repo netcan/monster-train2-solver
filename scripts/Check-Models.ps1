@@ -721,23 +721,7 @@ if ($Fixture.Count -gt 0) {
     }
 }
 $fixtures = @($selectedFixtureNames | ForEach-Object { Join-Path $workspace ('tests\fixtures\' + $_) })
-$manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests\fixtures\manifest.tsv') -Delimiter "`t"
-if ($manifest.Count -ne $fixtureNames.Count) { throw 'Fixture manifest inventory differs from the curated regression list.' }
-$manifestByName = @{}
-foreach ($entry in $manifest) {
-    if ($manifestByName.ContainsKey($entry.archive)) { throw "Duplicate fixture manifest entry: $($entry.archive)" }
-    if ($entry.archive -notin $fixtureNames) { throw "Unexpected fixture manifest entry: $($entry.archive)" }
-    $manifestByName[$entry.archive] = $entry
-}
-foreach ($fixturePath in $fixtures) {
-    $name = Split-Path -Leaf $fixturePath
-    if (-not $manifestByName.ContainsKey($name)) { throw "Fixture missing from manifest: $name" }
-    $entry = $manifestByName[$name]
-    if ((Get-Item -LiteralPath $fixturePath).Length -ne [long]$entry.archive_bytes -or
-        (Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash -ne $entry.archive_sha256) {
-        throw "Fixture archive integrity check failed: $name"
-    }
-}
+& (Join-Path $PSScriptRoot 'Check-FixtureCatalog.ps1')
 if ($Fixture.Count -gt 0) {
     Write-Host "FIXTURE-INTEGRITY PASS: $($fixtures.Count) selected of $($fixtureNames.Count) curated archives match the SHA-256 manifest."
 } else {

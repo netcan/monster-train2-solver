@@ -39,24 +39,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Fresh-process policy verification failed.' }
 
     # Byte/hash/registration checks inspect metadata, not simulated regressions.
+    & (Join-Path $PSScriptRoot 'Check-FixtureCatalog.ps1')
     $manifest = @(Import-Csv tests/fixtures/manifest.tsv -Delimiter "`t")
-    if (@($manifest.archive | Select-Object -Unique).Count -ne $manifest.Count) { throw 'Duplicate fixture manifest rows.' }
-    $taskTokens = $null; $taskErrors = $null
-    $ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $workspace 'scripts/Check-Models.ps1'), [ref]$taskTokens, [ref]$taskErrors)
-    if ($taskErrors.Count -gt 0) { throw 'Check-Models.ps1 contains parse errors.' }
-    $assignment = $ast.Find({ param($node) $node -is [Management.Automation.Language.AssignmentStatementAst] -and
-        $node.Left -is [Management.Automation.Language.VariableExpressionAst] -and $node.Left.VariablePath.UserPath -eq 'fixtureNames' }, $true)
-    $registered = @($assignment.Right.FindAll({ param($node) $node -is [Management.Automation.Language.StringConstantExpressionAst] }, $true) | ForEach-Object Value)
-    foreach ($row in $manifest) {
-        $path = Join-Path 'tests/fixtures' $row.archive
-        if (-not (Test-Path -LiteralPath $path) -or (Get-Item -LiteralPath $path).Length -ne [long]$row.archive_bytes -or
-            (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $row.archive_sha256 -or $row.archive -notin $registered) {
-            throw "Fixture bytes/hash/registration mismatch: $($row.archive)"
-        }
-    }
-    if (@(Get-ChildItem tests/fixtures -File -Filter '*.mt2f' | Where-Object Name -NotIn $manifest.archive).Count -gt 0) {
-        throw 'Unregistered fixture archives.'
-    }
     pwsh -NoProfile -File scripts/Get-CardCoverageInventory.ps1 -Check -SkipBuild
     if ($LASTEXITCODE -ne 0) { throw 'Coverage inventory is stale.' }
     Write-Output "SOLVER-COMPLETION PASS: focused native/model/CLI checks; $($manifest.Count) fixture hashes/registrations; coverage index current. No full regression. Predictions: $output"

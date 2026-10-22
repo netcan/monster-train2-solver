@@ -4,6 +4,10 @@ Current manifest inventory (2026-10-22): 906 archives (828 full battles and
 78 component calibrations), 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
+Run `scripts/Check-FixtureCatalog.ps1` for a fast byte/hash/registration audit;
+it never simulates a battle. Both model and completion entry points use this
+same catalog check. Use focused fixture/player cases for behavioral changes.
+
 The opposing moon callback pair `full-battle-eclipse-chamber-enemy-callbacks{,-replay}.mt2f`
 verifies 13 plays/five EndTurns and Pyre80 in two fresh native processes.
 It fixes missing off-train enemy birth callbacks and covers four paid original
