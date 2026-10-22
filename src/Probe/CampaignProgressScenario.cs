@@ -443,6 +443,17 @@ namespace MonsterTrain2Poju.Probe
             byte[] bytes = File.ReadAllBytes(Path.Combine(destination, "saves", "save-singlePlayer.json"));
             string hash;
             using (SHA256 sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
+            // Read the native pool as well as its stored index: different run
+            // definitions need not use the same index for the same final boss.
+            SaveManager save = AllGameManagers.Instance.GetSaveManager();
+            var finals = new List<ScenarioData>();
+            save.GetRunData().GetDistanceData(7).GetAllScenarioDatas(finals);
+            int selected = save.GetRunState().GetNodeStateAtDistance(7).scenarioIndex;
+            var pool = new List<object>();
+            for (int index = 0; index < finals.Count; index++) pool.Add(new { index, scenario = finals[index].name });
+            Record("final-boss-route", new { selectedIndex = selected,
+                selectedScenario = selected >= 0 && selected < finals.Count ? finals[selected].name : null,
+                pool });
             Record("checkpoint", new { ring, profile = destination, sha256 = hash });
             File.Copy(auditPath, Path.Combine(destination, "campaign-audit.jsonl"));
         }
