@@ -1141,7 +1141,7 @@ namespace MonsterTrain2Poju.Model
             train = cardCompleted.State!; context = train.Context!;
             if (source.BattlePreviewEnabled && !terminal)
             {
-                TrainCombatResult preview = BattlePreviewModel.Refresh(train);
+                TrainCombatResult preview = BattlePreviewModel.Refresh(train, outputPlayRules);
                 if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);
                 train = preview.State!; context = train.Context!;
             }

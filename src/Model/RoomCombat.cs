@@ -889,7 +889,7 @@ namespace MonsterTrain2Poju.Model
             Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false)
         {
             string? error = Validate(state, linkedHealthOnly: true);
-            if (state.Units.Any(unit => unit.Status("lifelink") != null))
+            if (state.Units.Any(unit => unit.Id == targetId && unit.Status("lifelink") != null))
             {
                 CardInstanceState? source = sourceCardId == 0 ? null : state.Context?.FindCard(sourceCardId);
                 if (attackerUnitId != 0 || sourceCardId != 0 && (source?.MaskDescriptor?.Definition.CardType != "Spell" ||
@@ -1009,7 +1009,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, bool linkedHealthOnly = false)
         {
-            linkedHealthOnly |= TrueFinalBossCombatModel.Supports(state);
+            bool linkedCombat = TrueFinalBossCombatModel.Supports(state);
+            linkedHealthOnly |= linkedCombat;
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) return relicError;
             if (state.Context?.Enchantments?.AutomaticLifecycle == false && state.Context.Enchantments.Rooms.SelectMany(room => room.Units).Any(unit =>
@@ -1088,7 +1089,7 @@ namespace MonsterTrain2Poju.Model
                     if (!KnownStatuses.Contains(status.Id) && !(linkedHealthOnly &&
                         (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
                             status.Id == "pyrebane" && unit.AssetKey == "Boss_Level9_Savagery_V2") &&
-                        !state.Preview && state.Context?.LifeLinks is LifeLinkContext world && !world.CalculatingPreview &&
+                        state.Context?.LifeLinks is LifeLinkContext world && (linkedCombat || !state.Preview && !world.CalculatingPreview) &&
                         world.SharedPreviewHpChange == 0 && LifeLinkModel.Validate(world) == null &&
                         world.Actors.Any(actor => actor.Id == unit.Id && actor.TrueFinalBoss && actor.Initialized && actor.HasLifeLink && actor.Health == unit.Health)))
                         return "Unmodeled status " + status.Id + " on " + unit.AssetKey;
@@ -4329,7 +4330,7 @@ namespace MonsterTrain2Poju.Model
 
             private bool ActionTriggerPassesTest(WorkingUnit actor, CombatTrigger trigger, int lastSpawnedOverrideUnitId)
             {
-                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null || effect.Action != null || effect.Summon != null || effect.Enchantment != null ||
+                if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null || effect.Action != null || effect.Summon != null || effect.Enchantment != null || effect.Generation != null ||
                     effect.Type == "CardEffectUnboxJackInTheBoxUnitCard")) return true;
                 bool passed = trigger.Effects.Count == 0;
                 foreach (CombatEffect effect in trigger.Effects)

@@ -41,17 +41,17 @@ internal static class TrueFinalBossTrainChecks
         TrainCombatState allied = EnchantmentWorldModel.Rebase(new TrainCombatState(inputs[2].Rooms.Select(room => room.RoomIndex == 0 ?
             room.WithUnits(room.Units.Concat(new[] { ally }).ToArray()) : room).ToArray(), inputs[2].Movement, inputs[2].EnemySlotsPerRoom, inputs[2].Context));
         Require(!TrainCombatModel.ResolveCombat(allied).Supported, "No-allied-unit train proof must not admit uncalibrated friendly callbacks.");
-        Console.WriteLine($"TRUE-FINAL-BOSS-TRAIN PASS: {combat} native train combats and {ascend} ascents; units, physical points, shared context/cards/RNG and 64 immutable concurrent branches match; preview and allied units remain guarded.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-TRAIN PASS: {combat} native train combats and {ascend} ascents; units, physical points, shared context/cards/RNG and 64 immutable concurrent branches match; unprepared preview and allied units remain guarded.");
     }
 
     internal static void RequirePreviewGuarded(TrainCombatState state)
     {
         var preview = new TrainCombatState(state.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
             room.Units, room.ExternalInteractions, state.Context, true, room.ActiveCompanionBossIds)).ToArray(), state.Movement, state.EnemySlotsPerRoom, state.Context);
-        TrueFinalBossChecks.Require(!TrainCombatModel.ResolveCombat(preview).Supported, "Uncalibrated true-final-boss preview must remain guarded.");
+        TrueFinalBossChecks.Require(!TrainCombatModel.ResolveCombat(preview).Supported, "True-final-boss preview without prepared health copies must remain guarded.");
     }
 
-    private static string Comparable(TrainCombatState state, string kind)
+    internal static string Comparable(TrainCombatState state, string kind)
     {
         JsonObject value = JsonSerializer.SerializeToNode(state, ModelJson.Options)!.AsObject();
         // Room snapshots carry a redundant capture-time context; the authoritative

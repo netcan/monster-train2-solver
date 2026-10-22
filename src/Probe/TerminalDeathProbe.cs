@@ -15,6 +15,8 @@ namespace MonsterTrain2Poju.Probe
             public int Sequence { get; set; }
             public int UnitId { get; set; }
             public bool DuringPreview { get; set; }
+            public bool SceneKillCamActive { get; set; }
+            public bool CombatKillCamActive { get; set; }
             public CombatContext Before { get; set; } = null!;
             public CombatContext? Actual { get; set; }
             public bool Completed { get; set; }
@@ -34,13 +36,15 @@ namespace MonsterTrain2Poju.Probe
             public bool FinishedDying { get; set; }
             public bool Completed { get; set; }
         }
-        private static bool Enabled() => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "terminal-death-damage" &&
-            DamageDeathQueueScenario.Prepared && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
+        private static bool Enabled() => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "terminal-death-damage" &&
+            DamageDeathQueueScenario.Prepared || TrueFinalBossTurnProbe.Enabled) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         private static IEnumerator WrapKillCam(IEnumerator native, CharacterState unit)
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             var record = new KillCamRecord { Sequence = KillCams.Count, UnitId = trace.UnitId(unit),
-                DuringPreview = AllGameManagers.Instance!.GetSaveManager().PreviewMode, Before = trace.CaptureContext() };
+                DuringPreview = AllGameManagers.Instance!.GetSaveManager().PreviewMode, Before = trace.CaptureContext(),
+                SceneKillCamActive = AllGameManagers.Instance.GetRoomManager().GetEdiface().IsKillCamActivated(),
+                CombatKillCamActive = (bool)AccessTools.Field(typeof(CombatManager), "isKillCamActivated").GetValue(AllGameManagers.Instance.GetCombatManager()) };
             KillCams.Add(record);
             try { while (native.MoveNext()) yield return native.Current; record.Completed = true; }
             finally { (native as IDisposable)?.Dispose(); record.Actual = trace.CaptureContext(); }

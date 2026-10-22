@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] is "--true-final-boss-preview-only" or "--true-final-boss-preview-rooms-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossPreviewChecks.Native(fixture.RootElement, args[0] == "--true-final-boss-preview-rooms-only");
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--train-only")
 {
     TrainCombatChecks.Run();
@@ -3965,6 +3972,11 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-unit-t
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossUnitTurnChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-preview-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossPreviewChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-post-combat-calibration", StringComparison.OrdinalIgnoreCase)))
 {

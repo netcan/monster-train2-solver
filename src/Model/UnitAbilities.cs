@@ -166,7 +166,7 @@ namespace MonsterTrain2Poju.Model
             train = CardSpellModel.WithContext(train, context);
             if (source.BattlePreviewEnabled && !Terminal(outcome))
             {
-                TrainCombatResult preview = BattlePreviewModel.Refresh(train);
+                TrainCombatResult preview = BattlePreviewModel.Refresh(train, source.PlayRules);
                 if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);
                 train = preview.State!; context = train.Context!;
             }

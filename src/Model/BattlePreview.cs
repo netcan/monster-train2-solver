@@ -9,10 +9,18 @@ namespace MonsterTrain2Poju.Model
         // The installed game's preview does not guard SetAttackDamageDealt with PreviewMode.
         // Room units are copied, while source card caches also retain native
         // preview writes. Their weak references resolve to the restored live units.
-        internal static TrainCombatResult Refresh(TrainCombatState source)
+        internal static TrainCombatResult Refresh(TrainCombatState source, BattlePlayRules? playRules = null)
         {
             CombatContext? context = source.Context;
             if (context?.Statistics == null) return new TrainCombatResult(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
+            if (context.LifeLinks is LifeLinkContext links)
+            {
+                if (playRules == null || !source.Rooms.All(TrueFinalBossCombatModel.Supports))
+                    return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Uncalibrated true-final-boss preview scope.");
+                context = context.WithLifeLinks(new LifeLinkContext(links.Actors.Select(actor => new LifeLinkActor(actor.Id,
+                    actor.LinkedId, actor.Health, actor.Health, actor.Initialized, actor.HasLifeLink, actor.TrueFinalBoss,
+                    actor.OuterBoss)).ToArray(), true, 0));
+            }
             BattleSpawnPoints? originalPoints = context.SpawnPoints;
             if (originalPoints != null) context = context.WithSpawnPoints(originalPoints.BeginPreview());
             var previewTrain = new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
@@ -86,12 +94,42 @@ namespace MonsterTrain2Poju.Model
             TrainCombatResult preDiscard = TrainCombatModel.EndTurnPreHandDiscard(previewTrain, CombatTeam.Player);
             if (!preDiscard.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
                 Array.Empty<RoomCombatResult>(), "Battle preview: " + preDiscard.UnsupportedReason);
-            CombatContext previewContext = preDiscard.State!.Context!;
+            TrainCombatState preparedTrain = preDiscard.State!;
+            if (context.LifeLinks != null)
+            {
+                // CardManager previews unplayed negative triggers before the first
+                // room. Original scourges can already kill the preview Pyre here.
+                var unplayed = preparedTrain.Context!.Cards.Hand.Select((card, index) => new
+                { Card = card, Index = index, Rule = playRules!.Cards.FirstOrDefault(rule => rule.DataId == card.DataId) })
+                    .Where(item => item.Rule?.OnUnplayedNegativeEffects.Count > 0)
+                    .OrderBy(item => item.Rule!.UnplayedNegativeOrder.HasValue ? 0 : 1)
+                    .ThenBy(item => item.Rule!.UnplayedNegativeOrder ?? item.Index).ToArray();
+                foreach (var item in unplayed)
+                {
+                    CardInstanceState? instance = preparedTrain.Context!.FindCard(item.Card.InstanceId);
+                    if (instance == null) return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Missing preview unplayed card instance.");
+                    CardPlayRule rule = CardModifierModel.Resolve(item.Rule!, instance);
+                    if (rule.HasUnsupportedUnplayedTriggers || rule.OnUnplayedNegativeEffects.Any(effect => effect.Type != "Damage" || effect.Target != "Pyre" || effect.Range != null))
+                        return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Uncalibrated true-final-boss preview unplayed effect.");
+                    TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(preparedTrain, preparedTrain.Context.QueryFrame?.SelectedRoomIndex ?? 0,
+                        rule.OnUnplayedNegativeEffects, 0, item.Card.InstanceId, playRules!, preparedTrain.Context.OtherPiles,
+                        onUnplayedNegativeEffects: true);
+                    if (!applied.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), applied.UnsupportedReason);
+                    preparedTrain = applied.State!;
+                    if (applied.PendingCallbacks.Count > 0)
+                    {
+                        TrainCombatResult completed = TrainCombatModel.ApplyCharacterQueue(preparedTrain, applied.PendingCallbacks.ToList());
+                        if (!completed.Supported) return completed;
+                        preparedTrain = completed.State!;
+                    }
+                }
+            }
+            CombatContext previewContext = preparedTrain.Context!;
             CarryRoomCaches(previewContext);
-            ObserveSummons(preDiscard.State.Rooms.SelectMany(room => room.Units), previewContext);
-            int pyreRoomIndex = preDiscard.State.Rooms.Count - 1;
-            CombatUnit? previewPyre = preDiscard.State.Rooms[pyreRoomIndex].Units.FirstOrDefault(unit => unit.IsPyre);
-            foreach (RoomCombatState room in preDiscard.State.Rooms.Reverse())
+            ObserveSummons(preparedTrain.Rooms.SelectMany(room => room.Units), previewContext);
+            int pyreRoomIndex = preparedTrain.Rooms.Count - 1;
+            CombatUnit? previewPyre = preparedTrain.Rooms[pyreRoomIndex].Units.FirstOrDefault(unit => unit.IsPyre);
+            foreach (RoomCombatState room in preparedTrain.Rooms.Reverse().Where(_ => context.LifeLinks == null || previewPyre != null))
             {
                 bool targetsPyre = room.RoomIndex != pyreRoomIndex && room.Units.Any(unit =>
                     unit.Triggers.Any(trigger => trigger.Effects.Any(effect =>
@@ -100,7 +138,9 @@ namespace MonsterTrain2Poju.Model
                     room.Units, room.ExternalInteractions, previewContext, preview: true,
                     activeCompanionBossIds: room.ActiveCompanionBossIds)),
                     externalPyre: targetsPyre ? previewPyre : null,
-                    externalPyreRoomIndex: targetsPyre && previewPyre != null ? pyreRoomIndex : -1);
+                    externalPyreRoomIndex: targetsPyre && previewPyre != null ? pyreRoomIndex : -1,
+                    externalTargets: previewContext.LifeLinks == null || targetsPyre ? null : previewContext.Enchantments!.Rooms
+                        .Where(other => other.RoomIndex != room.RoomIndex).SelectMany(other => other.Units.Select(unit => (other.RoomIndex, unit))).ToArray());
                 if (!preview.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
                     Array.Empty<RoomCombatResult>(), "Battle preview: " + preview.UnsupportedReason);
                 if (targetsPyre && previewPyre != null)
@@ -116,6 +156,7 @@ namespace MonsterTrain2Poju.Model
                         previewContext = previewContext.WithCard(card.WithRoomCacheState(captured.PlayedRoomUnitIds, captured.RawPlayedRoomUnitIds));
                 }
                 previewContext = previewContext.WithStatistics(previewContext.Statistics!.WithLastAttackDamage(preview.State!.Context!.Statistics!.LastAttackDamageDealt));
+                if (previewContext.LifeLinks != null) previewContext = previewContext.WithLifeLinks(preview.State.Context.LifeLinks);
                 if (originalPoints?.NextPreviewCopyId.HasValue == true && preview.State.Context.SpawnPoints != null)
                     previewContext = previewContext.WithSpawnPoints(preview.State.Context.SpawnPoints);
                 if (context.IsolatedBattlePreview == true) previewContext = previewContext.WithBattleRng(preview.State!.Context!.BattleRng);
@@ -128,9 +169,10 @@ namespace MonsterTrain2Poju.Model
                             preview.State.Context.CardRegistry.Where(card => card.InstanceId >= firstPreviewCardId)).ToArray())
                             .WithNextCardId(preview.State.Context.NextCardId);
                 }
-                if (preview.RetainedUnits.Any(unit => unit.Health <= 0 && (unit.EndsBattleOnDeath || unit.IsPyre))) break;
+                if (context.LifeLinks != null && previewPyre == null || preview.RetainedUnits.Any(unit => unit.Health <= 0 && (unit.EndsBattleOnDeath || unit.IsPyre))) break;
             }
             context = context.WithStatistics(context.Statistics!.WithLastAttackDamage(previewContext.Statistics!.LastAttackDamageDealt));
+            if (source.Context!.LifeLinks != null) context = context.WithLifeLinks(source.Context.LifeLinks);
             if (originalPoints?.NextPreviewCopyId.HasValue == true)
                 context = context.WithSpawnPoints(BattleSpawnPoints.EndPreview(originalPoints, previewContext.SpawnPoints!, clearBirths: true));
             // Native preview births overwrite shared weak references. Their temporary
@@ -192,7 +234,7 @@ namespace MonsterTrain2Poju.Model
                 if (context.IsolatedBattlePreview == true)
                     train = EnchantmentWorldModel.Rebase(new TrainCombatState(train.Rooms, train.Movement,
                         train.EnemySlotsPerRoom, train.Context!.WithBattleRng(source.Context!.BattleRng)), testRng: originalWorld.TestRng);
-                if (statusesChanged) return Refresh(train);
+                if (statusesChanged) return Refresh(train, playRules);
             }
             return new TrainCombatResult(train, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
         }

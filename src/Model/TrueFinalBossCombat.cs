@@ -6,19 +6,20 @@ namespace MonsterTrain2Poju.Model
     {
         // Native full-route captures include authored physical anchors and the
         // complete aura world. Earlier health-only projections intentionally do
-        // not opt into full combat. Allied units, previews, dormant Savagery and
+        // not opt into full combat. Allied units, dormant Savagery and
         // Hellforged relentless/destruction require their own calibration.
         internal static bool Supports(RoomCombatState room)
         {
             LifeLinkContext? links = room.Context?.LifeLinks;
             EnchantmentWorld? world = room.Context?.Enchantments;
-            if (room.Preview || links == null || LifeLinkModel.Validate(links) != null || links.CalculatingPreview ||
+            if (links == null || LifeLinkModel.Validate(links) != null || room.Preview != links.CalculatingPreview ||
                 links.SharedPreviewHpChange != 0 || links.Actors.Count != 5 ||
                 links.Actors.Any(actor => !actor.Initialized || !actor.TrueFinalBoss || !actor.HasLifeLink || actor.Health <= 0 || actor.Health != actor.PreviewHealth) ||
-                world?.AutomaticLifecycle != true || world.Preview || world.Rooms.Count != 4 ||
-                world.Rooms.Where((floor, index) => floor.RoomIndex != index || floor.Preview || floor.ExternalInteractions.Count > 0).Any()) return false;
+                world?.AutomaticLifecycle != true || world.Preview != room.Preview || world.Rooms.Count != 4 ||
+                world.Rooms.Where((floor, index) => floor.RoomIndex != index || floor.Preview != room.Preview || floor.ExternalInteractions.Count > 0).Any()) return false;
             CombatUnit[] units = world.Rooms.SelectMany(floor => floor.Units).ToArray();
-            if (units.Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre) || units.Count(unit => unit.IsPyre && unit.Health > 0) != 1)
+            int livingPyres = units.Count(unit => unit.IsPyre && unit.Health > 0);
+            if (units.Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre) || livingPyres > 1 || !room.Preview && livingPyres != 1)
                 return false;
             string[] assets = { "Boss_Level9_Dominion_V2", "Boss_Level9_Savagery_V2", "Boss_Level9_Entropy_Bot_V2",
                 "Boss_Level9_Entropy_Mid_V2", "Boss_Level9_Entropy_Top_V2" };

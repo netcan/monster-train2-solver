@@ -141,7 +141,7 @@ namespace MonsterTrain2Poju.Model
                 train = CardSpellModel.WithContext(train, train.Context!.WithQueryFrame(train.Context.QueryFrame!.With(selectedRoomIndex: roomIndex)));
             if (selectionChanged && currentRoom >= 0 && source.BattlePreviewEnabled)
             {
-                TrainCombatResult preview = BattlePreviewModel.Refresh(train);
+                TrainCombatResult preview = BattlePreviewModel.Refresh(train, source.PlayRules);
                 if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);
                 train = preview.State!;
             }
@@ -688,7 +688,7 @@ namespace MonsterTrain2Poju.Model
                     spawn.Turn, spawn.Rng);
                 if (source.BattlePreviewEnabled && !Terminal(outcome))
                 {
-                    TrainCombatResult preview = BattlePreviewModel.Refresh(spawn.Train);
+                    TrainCombatResult preview = BattlePreviewModel.Refresh(spawn.Train, outputPlayRules);
                     if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);
                     spawn = WithTrain(spawn, preview.State!, spawn.Turn, spawn.Rng);
                 }
