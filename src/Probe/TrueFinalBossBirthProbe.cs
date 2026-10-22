@@ -104,6 +104,7 @@ namespace MonsterTrain2Poju.Probe
                     using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "true-final-boss-birth-calibration.mt2f"))) document.Write(output);
                     if (!returned || !pure || route == null || created.Count != 5)
                         throw new InvalidOperationException("Incomplete or impure true-final-boss birth observation.");
+                    LinkedHealthCalibration.Capture(created, () => Snapshot(heroes));
                     Completed = true;
                 }
                 catch (Exception error) { Error = error.ToString(); }

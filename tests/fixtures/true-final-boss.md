@@ -29,5 +29,30 @@ dotnet build src/ModelChecks/ModelChecks.csproj -c Release --no-restore -p:Warni
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --true-final-boss-birth-only tests/fixtures/true-final-boss-birth-calibration.mt2f
 ```
 
-下一步为共享生命写入、预览隔离、跨层战斗及终局移除回调校准。Level9 仍被玩家
-入口和 Level8 模型签名保护，不把观察归档计作已可求解或胜局。
+## 共享生命属性与原生预览深拷贝
+
+`true-final-boss-linked-health-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-184603-5d1d6576`，原生进程正常退出、
+`DEPTH-PASS`，26.92 秒，受保护游戏文件未变。出生后的五个原始实体分别临时绑定
+新建、隔离的原生 `StateInformation`；只调用原生 `Hp` / `MaxHp` 属性和
+`DeepCopyForPreview`，不调用伤害、治疗、死亡信号，不推进帧或恢复随机状态。
+结束后原始状态对象引用全部恢复，五个实体/房间/队列状态、16 条游戏 RNG、
+Unity 全局四字随机状态和帧号均未变。
+
+70 个独立写入控制覆盖五个目标、两个属性和 `17/0/-3/99999/100000/Int32`
+上下限；另有 10 个连续操作验证共享写入、两次原生深拷贝和副本独立写入。
+`LinkedHealthModel` 与每个边界的完整原始存储、读取数值和更新标记匹配，
+128 条并发分支匹配且输入不变。未知目标、未知属性、重复身份、悬空/自链接和
+循环链接拒绝；多级转发尚未校准。
+
+原生属性只有 99999 上限，负值不在此层归零；改最大生命也不会在此层补血或
+截断当前生命。链接目标写入会标记目标和所有者，但保留目标自己的底层存储。
+预览深拷贝读取共享生命数值，然后**去掉链接**，因此三个副本之后独立变更。
+这些是状态属性边界，不能代替伤害回调、全局战斗预览或死亡行为的校准。
+
+```powershell
+./scripts/Check-TrueFinalBoss.ps1 -SkipBuild
+```
+
+下一步为跨层伤害/治疗及终局移除回调。Level9 仍被玩家入口和 Level8 模型签名
+保护；出生观察与共享生命组件不计作整场可求解或胜局。

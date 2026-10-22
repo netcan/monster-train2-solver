@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
     'true-final-boss-birth-calibration.mt2f',
+    'true-final-boss-linked-health-calibration.mt2f',
     'full-battle-terminal-copy-on-play.mt2f', 'full-battle-terminal-copy-on-play-replay.mt2f',
     'full-battle-terminal-copy-on-play-consume.mt2f', 'full-battle-terminal-copy-on-play-consume-replay.mt2f',
     'full-battle-terminal-purge-copy.mt2f', 'full-battle-terminal-purge-copy-replay.mt2f',
