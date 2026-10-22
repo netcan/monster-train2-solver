@@ -47,6 +47,13 @@ if (args.Length == 2 && args[0] == "--true-final-boss-health-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--true-final-boss-spawn-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossSpawnChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-birth-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3842,6 +3849,11 @@ foreach (string path in args.Where(path => path.Contains("outer-boss-birth-calib
 {
     using var fixture = ModelJson.ReadFixture(path);
     OuterBossBirthChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-spawn-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossSpawnChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-birth-calibration", StringComparison.OrdinalIgnoreCase)))
 {

@@ -142,6 +142,29 @@ Entropy 目标上执行；普通房间战斗、预览、带攻击者或来源卡
 
 定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case Damage -SkipBuild`。
 
+## 五实体完整出生状态转换
+
+`true-final-boss-spawn-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-194609-d1087cb9`，26.80 秒，原生正常退出，原始
+资源/牌组/火炉未变。通过明确披露的原生跳图入口，在 `DoTrueFinalBossSpawning`
+前捕获五份原始定义和完整战斗状态，返回后再独立捕获实际结果。
+
+`TrueFinalBossSpawningModel` 从冻结输入分配五个共享编号，按原生固定组顺序创建，
+放置 Dominion/Savagery 与三个 Entropy 外部锚点，运行底部身体的原始单张天灾牌
+生成，随后建立共享生命并清空出生队列。完整列车、牌堆、卡牌实例/注册表、
+统计、光环世界、物理位置及可模拟随机流均与原生匹配，64 条并发分支不改父状态。
+无关的 13 条原生随机流未变；Battle 用于生成卡牌，Chatter 和 NonDeterministic
+允许原生声音/UI 调用。未来生成牌的规则在出生前捕获，避免牌已生成但规则缺失。
+
+该组件仅接受原始五实体、全楼层启用、只有火炉的空场及没有出生效果的遗物环境；
+Covenant、其他出生回调、特殊场面和真终局整回合控制器仍保留 guard。嵌套普通
+房间世界也保留外层 Boss 攻击 guard，不因该组件通过而开放未校准的整场预测。
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -TrueFinalBossSpawn -SkipBuild
+./scripts/Check-TrueFinalBoss.ps1 -Case Spawn -SkipBuild
+```
+
 ## 致命伤害与全体移除
 
 五份 `true-final-boss-death-{dominion,savagery,entropybot,entropymid,entropytop}.mt2f`

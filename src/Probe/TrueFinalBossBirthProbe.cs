@@ -81,6 +81,7 @@ namespace MonsterTrain2Poju.Probe
             if (observing) throw new InvalidOperationException("Nested true-final-boss birth observation.");
             observing = true;
             int[] before = Queue(heroes);
+            TrueFinalBossSpawnCalibration.Begin(heroes);
             bool returned = false;
             try { while (native.MoveNext()) yield return native.Current; returned = true; }
             finally
@@ -106,6 +107,7 @@ namespace MonsterTrain2Poju.Probe
                     using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "true-final-boss-birth-calibration.mt2f"))) document.Write(output);
                     if (!returned || !pure || route == null || created.Count != 5)
                         throw new InvalidOperationException("Incomplete or impure true-final-boss birth observation.");
+                    TrueFinalBossSpawnCalibration.Complete(heroes, returned);
                     LinkedHealthCalibration.Capture(created, () => Snapshot(heroes));
                     LifeLinkCalibration.Capture(created, () => Snapshot(heroes));
                     TrueFinalBossHealthCalibration.Capture(created, () => Snapshot(heroes));
