@@ -695,7 +695,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
         {
-            string? error = Validate(state);
+            string? error = Validate(state, linkedHealthOnly: kind is "PreCombat" or "EndTurnPreHandDiscard");
             if (error != null || !state.Units.Any(unit => unit.Id == unitId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Character phases require a living character actor.");
@@ -5179,9 +5179,10 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
             }
 
-            private bool BothTeamsPresent() => units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Player &&
-                !unit.Has("untouchable")) && units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Enemy &&
-                !unit.Has("untouchable"));
+            private bool BothTeamsPresent() => units.Any(unit => unit.Source.Team == CombatTeam.Player &&
+                CombatContinuationModel.Counts(unit.Alive, unit.InRoom, unit.Has("untouchable"), unit.Has("lifelink"))) &&
+                units.Any(unit => unit.Source.Team == CombatTeam.Enemy &&
+                    CombatContinuationModel.Counts(unit.Alive, unit.InRoom, unit.Has("untouchable"), unit.Has("lifelink")));
 
             private string Signature()
             {

@@ -293,6 +293,30 @@ Savagery 有一个初始动作；不能把五实体控制器都当作空定义�
 ./scripts/Check-TrueFinalBoss.ps1 -Case Controllers,Phases,ExhaustedPhases -SkipBuild
 ```
 
+## 持续战条件与双方回合前阶段
+
+`true-final-boss-continuation-calibration.mt2f` 与 `true-final-boss-passive-calibration.mt2f`
+来自 `full-battle-no-cards-20261022-204301-671d4b18`，56.78 秒，原生正常退出，
+受保护文件未变；原始五实体、牌组和火炉保持原值。
+
+前者在原生 Dominion/火炉物理房间，用隔离状态存储控制双方生命、lifelink、
+untouchable 和持续战开关，直接调用原生续战判定，共 288 次。结束后原始对象、
+帧号、16 条游戏 RNG 与 Unity RNG 不变；128 条并发查询匹配。生命链接单位
+仍参加首轮，但不计入继续持续战所需的双方存活单位；普通敌军仍可维持持续战。
+该证据仅校准判定，不是实际多轮攻击或完整战斗的验收。
+
+后者保留完整来源轨迹，定向验收 12 个双方回合前阶段：部署时两次，五实体
+出生后十次。原生顺序、五实体、后续普通波次、完整列车/上下文/RNG 与模型一致，
+64 条并发分支匹配且不修改输入。仅在回合前与弃手牌前阶段接纳已捕获的生命链接
+状态，Dominion 回合后效果保持独立保护；攻击与预览继续拒绝。
+
+来源整局原生败北，采集失败/模型差异/待完成项为零，unsupported 为 49，
+封装器 `DEPTH-FAIL`。没有把整局作为完整模型验收，也未开放玩家真终局入口。
+
+```powershell
+./scripts/Check-TrueFinalBoss.ps1 -Case Continuation,Passive -SkipBuild
+```
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

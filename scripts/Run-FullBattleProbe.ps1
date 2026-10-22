@@ -1924,7 +1924,7 @@ Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.
 if ($TrueFinalBossBirth) {
     $componentNames = @('true-final-boss-birth-calibration.mt2f')
     if ($TrueFinalBossSpawn) { $componentNames += 'true-final-boss-spawn-calibration.mt2f' }
-    if ($TrueFinalBossScheduledSpawn) { $componentNames += 'true-final-boss-scheduled-spawn-calibration.mt2f' }
+    if ($TrueFinalBossScheduledSpawn) { $componentNames += @('true-final-boss-scheduled-spawn-calibration.mt2f', 'true-final-boss-continuation-calibration.mt2f') }
     if ($TrueFinalBossPyreBaneTargets) { $componentNames += 'true-final-boss-pyrebane-targets-calibration.mt2f' }
     if ($TrueFinalBossHealth) { $componentNames += 'true-final-boss-linked-health-calibration.mt2f' }
     if ($TrueFinalBossLifeLink) { $componentNames += 'true-final-boss-life-link-calibration.mt2f' }

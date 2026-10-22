@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] is "--true-final-boss-continuation-only" or "--true-final-boss-passive-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--true-final-boss-passive-only") TrueFinalBossCombatFlowChecks.Passive(fixture.RootElement);
+    else TrueFinalBossCombatFlowChecks.Continuation(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-scheduled-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -3897,6 +3905,16 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-schedu
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossScheduledChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-continuation-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossCombatFlowChecks.Continuation(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-passive-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossCombatFlowChecks.Passive(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-birth-calibration", StringComparison.OrdinalIgnoreCase)))
 {

@@ -56,8 +56,9 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
         }
-        private static bool Enabled() => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "pre-combat" or "pre-combat-lethal" or "triggered-healing" or "post-combat-healing" or "triggered-damage" or "damage-death-queue" or "terminal-death-damage") &&
-            PreCombatScenario.Prepared && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
+        private static bool Enabled() => (TrueFinalBossTurnProbe.Enabled ||
+            (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "pre-combat" or "pre-combat-lethal" or "triggered-healing" or "post-combat-healing" or "triggered-damage" or "damage-death-queue" or "terminal-death-damage") &&
+            PreCombatScenario.Prepared) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         [HarmonyPatch(typeof(MonsterManager), nameof(MonsterManager.PreCombat))]
         private static class PlayerPatch
         { private static void Postfix(MonsterManager __instance, ref IEnumerator __result) { if (Enabled()) __result = Wrap(__result, __instance, CombatTeam.Player); } }

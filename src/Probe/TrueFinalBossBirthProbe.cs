@@ -110,6 +110,7 @@ namespace MonsterTrain2Poju.Probe
                         throw new InvalidOperationException("Incomplete or impure true-final-boss birth observation.");
                     TrueFinalBossSpawnCalibration.Complete(heroes, returned);
                     TrueFinalBossTurnProbe.Complete(returned);
+                    TrueFinalBossContinuationCalibration.Capture(created, () => Snapshot(heroes));
                     PyreBaneCalibration.Capture(created, () => Snapshot(heroes));
                     LinkedHealthCalibration.Capture(created, () => Snapshot(heroes));
                     LifeLinkCalibration.Capture(created, () => Snapshot(heroes));
@@ -117,7 +118,11 @@ namespace MonsterTrain2Poju.Probe
                     TrueFinalBossDeathCalibration.Arm(created);
                     Completed = !TrueFinalBossDamageCalibration.Enabled;
                 }
-                catch (Exception error) { Error = error.ToString(); }
+                catch (Exception error)
+                {
+                    Error = error.ToString();
+                    if (TrueFinalBossTurnProbe.Enabled) FullBattleTrace.Active!.CaptureFailure(error);
+                }
             }
             if (Error == null && TrueFinalBossDamageCalibration.Enabled)
             {

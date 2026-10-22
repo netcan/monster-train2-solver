@@ -154,7 +154,10 @@ namespace MonsterTrain2Poju.Model
 
         private static TrainCombatResult CharacterPhase(TrainCombatState source, CombatTeam team, string kind)
         {
-            string? error = Validate(source);
+            // These two passive phases never dispatch PostCombat, movement or
+            // attacks. Retain their deferred original boss effects while still
+            // validating all statuses and captured canonical health links.
+            string? error = Validate(source, linkedHealthOnly: true);
             if (error != null || team != CombatTeam.Player && team != CombatTeam.Enemy)
                 return Unsupported(error ?? "Invalid combat team.");
             RoomCombatState[] rooms = source.Rooms.ToArray();
@@ -784,7 +787,7 @@ namespace MonsterTrain2Poju.Model
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
 
-        internal static string? Validate(TrainCombatState source)
+        internal static string? Validate(TrainCombatState source, bool linkedHealthOnly = false)
         {
             string? relicError = RelicModel.Validate(source.Context);
             if (relicError != null) return relicError;
@@ -800,7 +803,7 @@ namespace MonsterTrain2Poju.Model
                 return "Enemy movement identities must be unique.";
             foreach (RoomCombatState room in source.Rooms)
             {
-                string? error = RoomCombatModel.Validate(room);
+                string? error = RoomCombatModel.Validate(room, linkedHealthOnly: linkedHealthOnly);
                 if (error != null) return error;
             }
             return null;

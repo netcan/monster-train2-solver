@@ -265,10 +265,12 @@ internal static class BattleTurnChecks
             state.BattlePreviewEnabled, state.UiRngIsolated,
             state.CanonicalPhysicalReferences
         });
-        if (state.Spawn.OuterBoss == null && state.Spawn.QueuedOuterBoss == null) return result;
+        if (state.Spawn.OuterBoss == null && state.Spawn.QueuedOuterBoss == null && state.Spawn.QueuedTrueFinalBoss == null && state.Spawn.TrueFinalBoss == null) return result;
         var enriched = System.Text.Json.Nodes.JsonNode.Parse(result)!.AsObject();
         if (state.Spawn.OuterBoss != null) enriched["OuterBoss"] = JsonSerializer.SerializeToNode(state.Spawn.OuterBoss);
         if (state.Spawn.QueuedOuterBoss != null) enriched["QueuedOuterBoss"] = JsonSerializer.SerializeToNode(state.Spawn.QueuedOuterBoss);
+        if (state.Spawn.QueuedTrueFinalBoss != null) enriched["QueuedTrueFinalBoss"] = JsonSerializer.SerializeToNode(state.Spawn.QueuedTrueFinalBoss);
+        if (state.Spawn.TrueFinalBoss != null) enriched["TrueFinalBoss"] = JsonSerializer.SerializeToNode(state.Spawn.TrueFinalBoss);
         return enriched.ToJsonString();
     }
     internal static object? ComparablePlayRules(BattlePlayRules? rules, bool compareRoomEnabled, bool compareForgeEligibility = true)
