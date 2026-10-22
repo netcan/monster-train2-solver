@@ -54,5 +54,27 @@ Unity 全局四字随机状态和帧号均未变。
 ./scripts/Check-TrueFinalBoss.ps1 -SkipBuild
 ```
 
-下一步为跨层伤害/治疗及终局移除回调。Level9 仍被玩家入口和 Level8 模型签名
-保护；出生观察与共享生命组件不计作整场可求解或胜局。
+## 原生 lifelink 防死阶段
+
+`true-final-boss-life-link-calibration.mt2f` 来自
+`full-battle-no-cards-20261022-185149-cfb4275a`，原生正常退出、`DEPTH-PASS`，
+26.99 秒，受保护文件未变。五个原始实体的原生状态被临时替换为隔离状态：
+调整三组生命、保留/移除 lifelink、设置预览生命和共享预览伤害；调用原生
+`StatusEffectLifeLinkState.ProtectedByLifeLink` 与 `TestTrigger`，不推进伤害协程。
+原始/预览状态引用、预览模式和累计伤害均恢复，实战状态、帧号、游戏与 Unity
+RNG 未变；不通过重置 RNG 获得此结论。
+
+1640 个上下文验证 3280 次保护查询与 9840 次伤害阶段输出，`LifeLinkModel`
+全部匹配；512 条共享输入的并发分支保持不可变。覆盖三组不同生命、临界 1/2
+生命、仅 Entropy 有状态、没有状态、四种预览上下文、死亡目标与整数边界。
+死亡目标保留输出哨兵，防死伤害和防止的伤害量遵循原生整数运算。
+
+五个实体的原始状态都有 lifelink，但三个 Entropy 因链接关系属于同一组，不能
+彼此提供保护。其他独立组有超过 1 点生命时，致命伤害最多扣到 1 点；预测模式
+使用预览生命，正在计算战斗预览时则用 Entropy 当前生命减共享预览伤害。
+不能把物理实体数量或同一组的副本数量当作独立保护来源。
+
+定向入口：`./scripts/Check-TrueFinalBoss.ps1 -Case LifeLink -SkipBuild`。
+
+下一步为原生回合流、跨层伤害/治疗及终局移除回调。Level9 仍被玩家入口和
+Level8 模型签名保护；上述组件不计作整场可求解或胜局。

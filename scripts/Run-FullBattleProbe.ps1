@@ -40,6 +40,7 @@ param(
     [switch] $OriginalOuterBossTrial,
     [switch] $TrueFinalBossBirth,
     [switch] $TrueFinalBossHealth,
+    [switch] $TrueFinalBossLifeLink,
     [switch] $OuterBossBirth,
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
@@ -667,8 +668,9 @@ if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or 
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant) { throw 'OriginalOuterBossTrial requires an explicit original outer-boss variant.' }
 if ($TrueFinalBossHealth) { $TrueFinalBossBirth = $true }
+if ($TrueFinalBossLifeLink) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossBirth) {
-    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossHealth', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'TrueFinalBossBirth is an isolated original birth observation.' }
     $Policy = 'no-cards'; $BattleDistance = 8; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1300,6 +1302,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_OUTER_BOSS_TRIAL = $(if ($OriginalOuterBossTrial) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH = $(if ($TrueFinalBossHealth) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_LIFE_LINK = $(if ($TrueFinalBossLifeLink) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_PYRE = $(if ($OuterBossPyre) { '1' } else { '0' })
     MT2_PROBE_BATTLE_DISTANCE = "$BattleDistance"
@@ -1883,10 +1886,15 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
 if ($TrueFinalBossBirth) {
-    $componentPath = Join-Path $profile $(if ($TrueFinalBossHealth) { 'true-final-boss-linked-health-calibration.mt2f' } else { 'true-final-boss-birth-calibration.mt2f' })
+    $componentNames = @('true-final-boss-birth-calibration.mt2f')
+    if ($TrueFinalBossHealth) { $componentNames += 'true-final-boss-linked-health-calibration.mt2f' }
+    if ($TrueFinalBossLifeLink) { $componentNames += 'true-final-boss-life-link-calibration.mt2f' }
+    $componentPaths = @($componentNames | ForEach-Object { Join-Path $profile $_ })
+    $componentPath = $componentPaths[-1]
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'TRUE-FINAL-BOSS-BIRTH-NATIVE PASS' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "True-final-boss birth observation failed; inspect $unityLog" }
+    if (@($componentPaths | Where-Object { -not (Test-Path -LiteralPath $_) }).Count) { throw 'An explicitly requested true-final-boss component archive is missing.' }
     [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
         ModelAcceptance = 'Pending independent focused checker; full battle remains guarded'; Trace = $componentPath } | ConvertTo-Json
     return

@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Birth', 'Health')][string[]] $Case = @('Birth', 'Health'),
+    [ValidateSet('Birth', 'Health', 'LifeLink')][string[]] $Case = @('Birth', 'Health', 'LifeLink'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -13,12 +13,16 @@ if (-not $SkipBuild) {
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
 $manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests/fixtures/manifest.tsv') -Delimiter "`t"
 foreach ($item in $Case) {
-    $archive = if ($item -eq 'Birth') { 'true-final-boss-birth-calibration.mt2f' } else { 'true-final-boss-linked-health-calibration.mt2f' }
+    $archive = if ($item -eq 'Birth') { 'true-final-boss-birth-calibration.mt2f' } elseif ($item -eq 'Health') {
+        'true-final-boss-linked-health-calibration.mt2f'
+    } else { 'true-final-boss-life-link-calibration.mt2f' }
     $path = Join-Path $workspace "tests/fixtures/$archive"
     $rows = @($manifest | Where-Object archive -CEQ $archive)
     if ($rows.Count -ne 1 -or (Get-Item -LiteralPath $path).Length -ne [long]$rows[0].archive_bytes -or
         (Get-FileHash -LiteralPath $path).Hash -ine $rows[0].archive_sha256) { throw "True-final-boss archive metadata differs: $archive" }
-    $mode = if ($item -eq 'Birth') { '--true-final-boss-birth-only' } else { '--true-final-boss-health-only' }
+    $mode = if ($item -eq 'Birth') { '--true-final-boss-birth-only' } elseif ($item -eq 'Health') {
+        '--true-final-boss-health-only'
+    } else { '--true-final-boss-life-link-only' }
     dotnet $checker $mode $path
     if ($LASTEXITCODE -ne 0) { throw "True-final-boss $item focused check failed." }
 }
