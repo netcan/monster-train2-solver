@@ -69,12 +69,18 @@ namespace MonsterTrain2Poju.Model
                 retained.RemoveAll(actor => actor.Unit.Id == unit.Id);
                 retained.Add(new EnchantmentRetainedUnit(unit, source.RoomIndex, source.Preview));
             }
+            // Status application can borrow a scope that retains a living revived
+            // enemy outside its room list. HeroManager still owns its movement rule.
+            var activeRetainedIds = retained.Where(actor => actor.Unit.Health > 0 &&
+                actor.Unit.DeathState?.IsDestroyed != true && actor.Unit.DeathState?.IsDespawned != true)
+                .Select(actor => actor.Unit.Id).ToHashSet();
             if (world.AutomaticLifecycle)
             {
                 var referenced = rooms.SelectMany(room => room.Units).Concat(retained.Select(actor => actor.Unit))
                     .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
                     .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets))
                     .Select(target => target.UnitId).Concat(world.EnchanterIds).ToHashSet();
+                referenced.UnionWith(activeRetainedIds);
                 if (RoomDeathEffectModel.RequiresBirthWorld(source.Context))
                 {
                     referenced.UnionWith(source.Context!.SpawnPoints?.Groups.SelectMany(group => group.Occupants) ?? Array.Empty<int>());
@@ -85,7 +91,7 @@ namespace MonsterTrain2Poju.Model
                     new EnchantmentRetainedUnit(actor.Unit, actor.Unit.DeathState?.IsDestroyed == true ? -1 : actor.RoomIndex, actor.Preview)).ToList();
             }
             world = new EnchantmentWorld(rooms,
-                world.Movement.Where(rule => liveIds.Contains(rule.UnitId)).ToArray(), world.EnemySlotsPerRoom, retained, world.EnchanterIds, world.AllowUpdates, world.Updating,
+                world.Movement.Where(rule => liveIds.Contains(rule.UnitId) || activeRetainedIds.Contains(rule.UnitId)).ToArray(), world.EnemySlotsPerRoom, retained, world.EnchanterIds, world.AllowUpdates, world.Updating,
                 world.Preview, world.TestRng, world.AutomaticLifecycle);
             return Room(source, source.Context!.WithEnchantments(world));
         }

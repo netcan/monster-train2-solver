@@ -16,6 +16,24 @@ internal static class RevivalChecks
                 Gold("OnDeath", 40), Gold("OnDeath", 41, threshold: 1)],
             statusRegistry: statuses, deathState: new(false, false, true, isSacrifice: false, statisticsListenerOnce: false));
         var context = new CombatContext(new([], [], [], rng, 0, []), rng, 0, 1, 10, [undying]);
+        var player = Actor(1, CombatTeam.Player, 10, []);
+        var revivedEnemy = Actor(2, CombatTeam.Enemy, 1, [new("undying", 1, stackable: true)]);
+        var world = new EnchantmentWorld([new(0, false, [player, revivedEnemy], [])],
+            [new(2, 1, true, false)], 7, [], [], true, false, false, rng, true);
+        var statusScope = new RoomCombatState(0, false, [player], [], context.WithEnchantments(world));
+        string originalWorld = JsonSerializer.Serialize(world);
+        var retained = EnchantmentWorldModel.Sync(statusScope, [revivedEnemy]);
+        var repeated = EnchantmentWorldModel.Sync(retained);
+        Require(repeated.Context!.Enchantments!.Movement.Single().UnitId == 2 &&
+            repeated.Context.Enchantments.RetainedUnits.Single().Unit.Id == 2,
+            "Repeated status scopes lost the living revived enemy or its movement rule.");
+        var restored = EnchantmentWorldModel.Sync(new RoomCombatState(0, false, [player, revivedEnemy], [], repeated.Context));
+        Require(restored.Context!.Enchantments!.Movement.Single().UnitId == 2 &&
+            restored.Context.Enchantments.RetainedUnits.Count == 0,
+            "A revived enemy did not rejoin its physical aura room without duplicate retention.");
+        var removed = EnchantmentWorldModel.Sync(statusScope, [Actor(2, CombatTeam.Enemy, 0, [])]);
+        Require(removed.Context!.Enchantments!.Movement.Count == 0 && JsonSerializer.Serialize(world) == originalWorld,
+            "Permanent death kept a movement rule, or revival synchronization mutated its parent.");
         var root = new RoomCombatState(0, false, [Actor(1, CombatTeam.Player, 10, [undying]),
             Actor(2, CombatTeam.Player, 10, []), Actor(3, CombatTeam.Enemy, 10, [])], [], context);
         string parent = Serialize(root);

@@ -95,8 +95,10 @@ internal static class TrainCombatChecks
             TrainCombatResult result = kind == "Combat" ? TrainCombatModel.ResolveCombat(before) : TrainCombatModel.Ascend(before);
             if (!result.Supported) { unsupported++; continue; }
             TrainCombatState actual = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
-            Require(Comparable(result.State!, kind) == Comparable(actual, kind),
-                "Native train state differs at phase " + phase.GetProperty("Index").GetInt32());
+            string predictedKey = Comparable(result.State!, kind), actualKey = Comparable(actual, kind);
+            Require(predictedKey == actualKey,
+                "Native train state differs at phase " + phase.GetProperty("Index").GetInt32() + ": " +
+                ModelJson.Difference(predictedKey, actualKey));
             matched++;
         }
         Require(matched > 0, "No native train phases were verified.");
