@@ -38,7 +38,13 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-planner-onl
 ```
 
 `policy-battle` freezes the seed's actions without search; its output is still a
-model prediction. The planner's rolling 12-turn/10,000-ms candidate completed
+model prediction. Its optional `--strength` selects the existing visible-strength
+policy instead of the tactical policy, making deployment comparisons cheap.
+All three whole-battle commands use the first `RollingDecisions.Root` when
+present. Player capture and development capture have separate instance-ID
+namespaces; taking `Actions[0].Before` from a player trace cannot be replayed by
+the player driver. Non-rolling traces retain the action/turn-root fallback.
+The planner's rolling 12-turn/10,000-ms candidate completed
 50 decisions with zero unsupported reasons and model Pyre21 in 163.84 seconds,
 including independent replay of all forecasts. The subsequent live rolling
 source also wins natively with Pyre21 after the same 50 decisions; its accepted

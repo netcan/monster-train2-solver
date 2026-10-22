@@ -45,19 +45,18 @@ internal static class OfflineBattleSearch
         result.Write(stream);
     }
 
-    internal static void Policy(string input, string output, int floor)
+    internal static void Policy(string input, string output, int floor, bool strength = false)
     {
         if (floor is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(floor));
         using var source = FixtureDocument.Read(input);
-        FixtureValue[] actions = source.RootElement.GetProperty("Actions").EnumerateArray().ToArray();
-        BattleTurnState current = (actions.Length > 0 ? actions[0] : source.RootElement.GetProperty("Turns")[0])
-            .GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState current = DeploymentRoot(source.RootElement);
         var steps = new List<Step>();
         RoomOutcome outcome = RoomOutcome.Exchanged;
         int played = 0;
         while (!Terminal(outcome) && steps.Count < 256)
         {
-            SupportedActionCandidate? choice = played < 18 ? BattleTacticalPolicy.Choose(current, out _, floor) : null;
+            SupportedActionCandidate? choice = played >= 18 ? null : strength
+                ? BattleHeuristicPolicy.Choose(current, out _, floor) : BattleTacticalPolicy.Choose(current, out _, floor);
             var step = new Step { Action = choice?.Action, IsEndTurn = choice == null };
             current = Apply(current, step.Action, step.IsEndTurn, out outcome);
             steps.Add(step); played = step.IsEndTurn ? 0 : played + 1;
@@ -71,9 +70,7 @@ internal static class OfflineBattleSearch
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(source.RootElement.GetProperty(counter).GetInt32() == 0, "Native input has nonzero " + counter);
         Require(source.RootElement.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native source did not settle.");
-        FixtureValue[] nativeActions = source.RootElement.GetProperty("Actions").EnumerateArray().ToArray();
-        BattleTurnState root = (nativeActions.Length > 0 ? nativeActions[0] : source.RootElement.GetProperty("Turns")[0])
-            .GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState root = DeploymentRoot(source.RootElement);
         Require(root.Spawn.Turn == 0, "Frozen whole-battle actions require the native deployment root.");
         Step[] steps = System.Text.Json.JsonSerializer.Deserialize<Step[]>(actionsJson)!;
         Require(steps.Length is > 0 and <= 256, "Expected 1..256 frozen actions.");
@@ -107,14 +104,7 @@ internal static class OfflineBattleSearch
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(trace.GetProperty(counter).GetInt32() == 0, "Native input has nonzero " + counter);
         Require(trace.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native input did not settle.");
-        BattleTurnState root;
-        if (trace.TryGetProperty("RollingDecisions", out FixtureValue rolling) && rolling.GetArrayLength() > 0)
-            root = rolling[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
-        else
-        {
-            FixtureValue[] actions = trace.GetProperty("Actions").EnumerateArray().ToArray();
-            root = (actions.Length > 0 ? actions[0] : trace.GetProperty("Turns")[0]).GetProperty("Before").Deserialize<BattleTurnState>()!;
-        }
+        BattleTurnState root = DeploymentRoot(trace);
         Require(root.Spawn.Turn == 0, "Offline whole-battle planning requires the native deployment root.");
         using var rootKeys = new BattleStateKeys();
         string immutable = rootKeys.Key(root);
@@ -207,6 +197,17 @@ internal static class OfflineBattleSearch
         Require(trace.GetProperty("NativeWon").GetBoolean() ==
             ((RoomOutcome)source.RootElement.GetProperty("Outcome").GetInt32() == RoomOutcome.BattleWon), "Native terminal outcome differs.");
         Console.WriteLine($"OFFLINE-NATIVE PASS: {first.Length} unchanged frozen decisions and zero-node fresh native replay, four zero failure counters and matching terminal outcome.");
+    }
+
+    private static BattleTurnState DeploymentRoot(FixtureValue trace)
+    {
+        // Player capture and development capture own separate instance IDs.
+        // A rolling replay must retain the namespace used by its driver.
+        if (trace.TryGetProperty("RollingDecisions", out FixtureValue rolling) && rolling.GetArrayLength() > 0)
+            return rolling[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        FixtureValue[] actions = trace.GetProperty("Actions").EnumerateArray().ToArray();
+        return (actions.Length > 0 ? actions[0] : trace.GetProperty("Turns")[0])
+            .GetProperty("Before").Deserialize<BattleTurnState>()!;
     }
 
     private static BattleTurnState Apply(BattleTurnState source, PlayCardAction? action, bool end, out RoomOutcome outcome)
