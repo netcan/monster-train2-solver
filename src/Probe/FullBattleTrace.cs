@@ -783,6 +783,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalTrueFinalBossRoute = TrueFinalBossBirthProbe.Control,
                 TrueFinalBossDormantControl = TrueFinalBossDormantScenario.Evidence,
                 TrueFinalBossLethalControl = TrueFinalBossLethalScenario.Evidence,
+                TrueFinalBossAllyUpgradeControl = TrueFinalBossAllyUpgradeScenario.Evidence,
                 TrueFinalBossRelentlessControl = TrueFinalBossRelentlessScenario.Evidence,
                 TrueFinalBossRelentlessActions = TrueFinalBossRelentlessScenario.Enabled ? OuterBossPhaseProbe.CapturedActions : null,
 #endif

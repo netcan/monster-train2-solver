@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--true-final-boss-ally-upgrade-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossAllyUpgradeChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-paid-spell-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4041,6 +4048,11 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-relent
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossRelentlessChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("true-final-boss-ally-upgrade-", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossAllyUpgradeChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("true-final-boss-paid-spell-", StringComparison.OrdinalIgnoreCase)))
 {

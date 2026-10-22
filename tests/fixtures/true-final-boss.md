@@ -623,6 +623,30 @@ Dominion 先攻击火炉三点；火炉的普通 45 点攻击随后杀死一血 
 原生采集：`-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossLethalSpellTarget <主体>`。
 仍为显式临界状态验收；自然真终局胜局、其他友军及升级/特征组合保持原有边界。
 
+## 原生永久数值升级的友军
+
+`true-final-boss-ally-upgrade-{health,damage}.mt2f` 保留原始真终局场景、敌军、
+生命/阶段、火炉和抽牌，只在部署期给一张原始乘务员显式附加一个原生永久升级。
+`StartingDeckUnchanged=false`，完整记录准备前后状态、原始升级名字、ID 和语义。
+随后实际扣费召唤该卡，其他牌全部不打，不人工修改任何单位定义。
+
+| 原生升级 | 召唤后签名 | 原生来源（`.probe-runs/` 下） |
+| --- | --- | --- |
+| `BlessingBonusHealth` | 8 攻击/45 生命，三容量 | `full-battle-units-and-junk-20261023-003719-710eff64` |
+| `EnhanceAttackOnConsume` | 18 攻击/25 生命，三容量 | `full-battle-units-and-junk-20261023-003719-520725df` |
+
+两局均自然进行六次结束回合后败北，原生四项失败计数全零、正常退出。
+各五次 UI 预览完整恢复与实际整场状态/RNG 一致。定向检查从升级前部署根开始，
+独立应用永久升级、扣费召唤并跑完整场；每种 16 条并发不可变链通过。
+原有乘务员、双友军/基础英雄和出生定向检查继续通过。
+
+生产保护只扩展到这两个原生数值升级的签名，并核对原始召唤卡的永久升级来源。
+只有相同面板数值、没有相应升级来源时仍拒绝；其他友军、装备、升级组合和
+自然真终局胜局未据此验收。
+
+入口：`./scripts/Check-TrueFinalBoss.ps1 -Case AllyUpgrade -SkipBuild`。
+原生采集：`-OriginalTrueFinalBoss -BattleDistance 8 -TrueFinalBossAllyUpgrade Health|Damage`。
+
 ## 原始整场诊断入口
 
 `-OriginalTrueFinalBoss` 使用同一原生跳图入口，随后继续执行整场，不在出生组件

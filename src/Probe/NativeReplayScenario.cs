@@ -773,6 +773,7 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             if (PlayerAdvisorProbe.Enabled && !PlayerAdvisorProbe.CaptureInitialized) return;
+            if (fullBattle && TrueFinalBossAllyUpgradeScenario.Prepare()) return;
             if (RoomMoonCallbackCalibration.Enabled)
             {
                 RoomMoonCallbackCalibration.Start(log);
@@ -2794,7 +2795,11 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
                 RelicStatusDecayProbe.Matrix();
-                if (TrueFinalBossLethalScenario.PaidSpell)
+                if (TrueFinalBossAllyUpgradeScenario.Enabled)
+                {
+                    pendingPlay = TrueFinalBossAllyUpgradeScenario.Choose(decision);
+                }
+                else if (TrueFinalBossLethalScenario.PaidSpell)
                 {
                     pendingPlay = TrueFinalBossLethalScenario.Choose(decision);
                 }

@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death', 'TerminalDamage', 'TerminalSpell', 'PaidSpell')][string[]] $Case = @('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death', 'TerminalDamage', 'TerminalSpell', 'PaidSpell'),
+    [ValidateSet('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death', 'TerminalDamage', 'TerminalSpell', 'PaidSpell', 'AllyUpgrade')][string[]] $Case = @('Birth', 'Spawn', 'ScheduledSpawn', 'Health', 'LifeLink', 'HealthUpdates', 'World', 'Damage', 'AllTargetDamage', 'SpellDamage', 'PyreBaneTargets', 'Controllers', 'Phases', 'ExhaustedPhases', 'Continuation', 'Passive', 'UnitTurns', 'PostCombat', 'Train', 'Preview', 'Battle', 'Allied', 'MultiAllied', 'Dormant', 'DormantTrample', 'Relentless', 'Lethal', 'LethalPreview', 'Death', 'TerminalDamage', 'TerminalSpell', 'PaidSpell', 'AllyUpgrade'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -21,6 +21,12 @@ function Invoke-TrueFinalBossArchive([string] $archive, [string] $mode) {
     if ($LASTEXITCODE -ne 0) { throw "True-final-boss focused check failed: $archive" }
 }
 foreach ($item in $Case) {
+    if ($item -eq 'AllyUpgrade') {
+        foreach ($kind in @('health', 'damage')) {
+            Invoke-TrueFinalBossArchive "true-final-boss-ally-upgrade-$kind.mt2f" '--true-final-boss-ally-upgrade-only'
+        }
+        continue
+    }
     if ($item -eq 'PaidSpell') {
         foreach ($target in @('dominion', 'savagery', 'entropybot', 'entropymid', 'entropytop')) {
             Invoke-TrueFinalBossArchive "true-final-boss-paid-spell-$target.mt2f" '--true-final-boss-paid-spell-only'

@@ -517,7 +517,7 @@ namespace MonsterTrain2Poju.Model
                     return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                         "True-final-boss post-combat effects require the captured non-preview whole train.");
                 if (state.Context.Enchantments.Rooms.SelectMany(room => room.Units)
-                    .Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && !TrueFinalBossCombatModel.SupportsAlly(unit)))
+                    .Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && !TrueFinalBossCombatModel.SupportsAlly(unit, state.Context)))
                     return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                         "True-final-boss post-combat with allied units requires native cross-floor callback calibration.");
                 targets = state.Context.Enchantments.Rooms.Where(room => room.RoomIndex != state.RoomIndex)
