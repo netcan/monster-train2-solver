@@ -1,6 +1,38 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--player-arkion-push-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NativeCovenantCampaignChecks.ArkionPushPair(source.RootElement, replay.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] is "--arkion-push-birth-only" or "--arkion-push-baseline-only" or "--arkion-push-growth-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--arkion-push-birth-only") ArkionPushChecks.Birth(fixture.RootElement);
+    else ArkionPushChecks.Battle(fixture.RootElement, args[1], args[0] == "--arkion-push-growth-only");
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--player-arkion-rage-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NativeCovenantCampaignChecks.ArkionRagePair(source.RootElement, replay.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] is "--arkion-rage-birth-only" or "--arkion-rage-baseline-only" or "--arkion-rage-growth-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--arkion-rage-birth-only") ArkionRageChecks.Birth(fixture.RootElement);
+    else ArkionRageChecks.Battle(fixture.RootElement, args[1], args[0] == "--arkion-rage-growth-only");
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-arkion-pyre-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -4953,6 +4985,34 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         using var replay = ModelJson.ReadFixture(replayPath);
         PlayerOuterBossChecks.CorrupterWinningPair(source.RootElement, replay.RootElement);
     }
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is
+    "full-battle-arkion-rage-baseline.mt2f" or "full-battle-arkion-rage-native-spells.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    ArkionRageChecks.Battle(fixture.RootElement, path, Path.GetFileName(path).Contains("native-spells"));
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-arkion-rage-search.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-arkion-rage-replay.mt2f"));
+    NativeCovenantCampaignChecks.ArkionRagePair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss-birth-calibration-arkion-rage.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    ArkionRageChecks.Birth(fixture.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is
+    "full-battle-arkion-push-baseline.mt2f" or "full-battle-arkion-push-native-spells.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    ArkionPushChecks.Battle(fixture.RootElement, path, Path.GetFileName(path).Contains("native-spells"));
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss-birth-calibration-arkion-push.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    ArkionPushChecks.Birth(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-arkion-pyre.mt2f"))
 {

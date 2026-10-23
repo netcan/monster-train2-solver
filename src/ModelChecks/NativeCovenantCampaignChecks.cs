@@ -87,6 +87,34 @@ internal static class NativeCovenantCampaignChecks
         Console.WriteLine("PLAYER-ARKION-PYRE PASS: original selected Ring3 encounter, two prior native victories, actual advice/UI and independent full-state/RNG replay.");
     }
 
+    internal static void ArkionRagePair(FixtureValue source, FixtureValue replay)
+    {
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            ArkionRageChecks.Input(fixture);
+            var initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            Require(initial.Spawn.QueuedOuterBoss?.Actor.Unit is { AssetKey: "Boss_Level3_Arkion_SiphonRage", BaseAttack: 7, Health: 425 } outer &&
+                outer.Statuses.Count == 0 && outer.Triggers.Count == 0,
+                "Arkion Rage player input changed the original queued boss or eagerly installed its relic trigger.");
+        }
+        Pair(source, replay, 2, 2, requireVictory: false, selectedOriginalBoss: true);
+        Console.WriteLine("PLAYER-ARKION-RAGE PASS: original selected Ring3 encounter, two prior native victories, player advice/UI and independent full-state/RNG replay.");
+    }
+
+    internal static void ArkionPushPair(FixtureValue source, FixtureValue replay)
+    {
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            ArkionPushChecks.Input(fixture);
+            var initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            Require(initial.Spawn.QueuedOuterBoss?.Actor.Unit is { AssetKey: "Boss_Level3_Arkion_PushAttack", BaseAttack: 13, Health: 425 } outer &&
+                outer.Statuses.Count == 0 && outer.Triggers.Single().Kind == "OnAttackingBeforeDamage",
+                "Arkion Push player input changed the original queued boss stats or attacked-target trigger.");
+        }
+        Pair(source, replay, 2, 2, requireVictory: false, selectedOriginalBoss: true);
+        Console.WriteLine("PLAYER-ARKION-PUSH PASS: original selected Ring3 encounter, two prior native victories, player advice/UI and independent full-state/RNG replay.");
+    }
+
     private static void Pair(FixtureValue source, FixtureValue replay, int level, int distance, bool requireVictory, bool selectedOriginalBoss = false)
     {
         Require(level is >= 1 and <= 10 && distance is >= 1 and <= 7,

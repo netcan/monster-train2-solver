@@ -45,7 +45,8 @@ internal static class OuterBossBirthChecks
             .Select(effect => effect.Enchantment!).ToArray();
         bool deferredAura = born.AssetKey is "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial" ||
             OuterBossDefinitions.IsAngelDuo(born.AssetKey) || OuterBossDefinitions.IsCael(born.AssetKey) ||
-            OuterBossDefinitions.IsArkionPyre(born.AssetKey) ? auras.Length == 0 :
+            OuterBossDefinitions.IsArkionPyre(born.AssetKey) || OuterBossDefinitions.IsArkionRage(born.AssetKey) ||
+            OuterBossDefinitions.IsArkionPush(born.AssetKey) ? auras.Length == 0 :
             auras.Length == 1 && auras[0].Bound && auras[0].State.PrimaryTargets.Count == 0 && auras[0].State.CachedStatus == null;
         Require(deferredAura && born.Triggers.Where(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))
                 .All(trigger => !trigger.HasTriggered) &&

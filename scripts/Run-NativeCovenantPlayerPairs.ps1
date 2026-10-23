@@ -8,7 +8,7 @@ param(
     [ValidateRange(1, 7)][int] $BattleDistance = 1,
     [switch] $AngelDuo,
     [ValidateSet('', 'LoopResolve', 'RevengeHarvest')][string] $AngelDuoVariant = '',
-    [ValidateSet('', 'CaelAtkHP', 'CaelDamageShield', 'CaelLifesteal', 'ArkionPyre')][string] $EarlyOuterBossVariant = '',
+    [ValidateSet('', 'CaelAtkHP', 'CaelDamageShield', 'CaelLifesteal', 'ArkionPyre', 'ArkionRage', 'ArkionPush')][string] $EarlyOuterBossVariant = '',
     [ValidateRange(2, 16)][int] $PlannerHorizon = 3,
     [ValidateRange(100, 30000)][int] $PlannerTimeLimitMs = 3000,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 900,
@@ -113,6 +113,8 @@ foreach ($level in $Rank) {
                     @($check, $source, $replay)
                 } elseif ($EarlyOuterBossVariant) {
                     if ($EarlyOuterBossVariant -eq 'ArkionPyre') { @('--player-arkion-pyre-pair-only', $source, $replay) }
+                    elseif ($EarlyOuterBossVariant -eq 'ArkionRage') { @('--player-arkion-rage-pair-only', $source, $replay) }
+                    elseif ($EarlyOuterBossVariant -eq 'ArkionPush') { @('--player-arkion-push-pair-only', $source, $replay) }
                     else { @('--player-cael-pair-only', $source, $replay, $EarlyOuterBossVariant.Substring(4)) }
                 } else {
                     @('--player-native-covenant-campaign-pair-only', $source, $replay, "$level", "$BattleDistance")

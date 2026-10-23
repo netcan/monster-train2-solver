@@ -1289,9 +1289,12 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (effect.Type == "CardEffectFloorRearrange")
                         {
-                            if (state.Context?.SpawnPoints == null || effect.Action is not
-                                { Type: "FloorRearrange", Target: "Self", Value: 0, Range: null })
-                                return "Triggered floor rearrangement requires its original self/front payload and physical positions.";
+                            bool self = effect.Action is { Type: "FloorRearrange", Target: "Self", Value: 0, Range: null };
+                            bool arkion = OuterBossDefinitions.IsArkionPush(unit.AssetKey) && trigger.Kind == "OnAttackingBeforeDamage" &&
+                                effect.Action is { Type: "FloorRearrange", Target: "LastAttackedCharacter", Value: 1, Range: null,
+                                    AllowEnemy: true, AllowPlayer: true, UseCardTraits: false } && effect.Action.Statuses.Count == 0;
+                            if (state.Context?.SpawnPoints == null || !self && !arkion)
+                                return "Triggered rearrangement requires its original self/front or Arkion attacked-target/back payload and physical positions.";
                             if (state.Units.Any(actor => actor.Triggers.Any(trigger => trigger.Kind is "OnShift" or "OnSentry")))
                                 return "Triggered floor rearrangement with movement callbacks is not calibrated.";
                             continue;

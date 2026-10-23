@@ -67,7 +67,8 @@ namespace MonsterTrain2Poju.Probe
             if (save.GetCovenantsForSpawnPattern().Count == 0) return true;
             if (data.name is not ("Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter") &&
                 !((OuterBossDefinitions.IsAngelDuo(data.name) || OuterBossDefinitions.IsCael(data.name) ||
-                    OuterBossDefinitions.IsArkionPyre(data.name)) && save.GetCovenants().All(owner =>
+                    OuterBossDefinitions.IsArkionPyre(data.name) || OuterBossDefinitions.IsArkionRage(data.name) ||
+                    OuterBossDefinitions.IsArkionPush(data.name)) && save.GetCovenants().All(owner =>
                     owner.GetSourceRelicData().name is "Covenant01_StrongerEnemiesMoreCards" or "Covenant02_BattlesNewEnemies"))) return false;
             return save.GetCovenantsForSpawnPattern().Select(owner => owner.GetRelicDataID()).SequenceEqual(
                 save.GetCovenants().Select(owner => owner.GetRelicDataID())) &&
