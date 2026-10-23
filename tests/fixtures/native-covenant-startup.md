@@ -202,7 +202,21 @@ Profiles below have prefix `full-battle-no-cards-20261023-`.
 
 Use `scripts/Check-NativeCovenantStartup.ps1 -Rank 8 -SkipBuild` for one
 baseline, or add `-Player` for an accepted source/replay pair (currently
-ranks 1–5). The default baseline ranks are 1–10; this runs only the selected
+ranks 1–5 and 10). The default baseline ranks are 1–10; this runs only the selected
 startup acceptance, never the full fixture suite. Higher-rank actual player
 advice, flying-boss compositions, earned unlocks and full campaigns remain
 separate acceptance targets.
+
+Highest cumulative rank ten now also passes actual player advice and fresh
+frozen replay: both win with Pyre4 after 33 inputs (26 card plays and seven
+EndTurns). All 35 source publications, UI interactions, complete forecasts,
+roots, successors and RNG match; player captures are 435/114 with zero purity
+failures. Native runtimes are 334.50/163.42 seconds, both normal exits with
+protected files unchanged and all four failure counters zero. Profile
+suffixes are `114040-65f9c3da` / `114617-b144a789`, prefixed
+`full-battle-units-spells-and-junk-20261023-`; player archive prefix is
+`full-battle-player-native-covenant-startup-10` with `-search.mt2f` /
+`-replay.mt2f`. Run `Check-NativeCovenantStartup.ps1 -Rank 10 -Player
+-SkipBuild`. This proves all ten original cumulative owners coexist in the
+actual first-battle player path; individual ranks 6–9 player pairs, flying
+bosses, full campaigns and earned unlocks remain separate.
