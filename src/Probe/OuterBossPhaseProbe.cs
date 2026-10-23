@@ -33,8 +33,10 @@ namespace MonsterTrain2Poju.Probe
             if (!OuterBossDefinitions.Supports(data.GetAssetKey()) || groups.Count != 1 ||
                 groups[0].GetNumRepeats() != 0 || groups[0].GetActions().Count != 1) return false;
             BossActionData action = groups[0].GetActions()[0];
-            return action.GetActionBehaviorName() == "RandomOccupiedBossActionBehavior" &&
-                action.GetParamTeamType() == Team.Type.Monsters && action.GetActionEffectData().Count == 0 &&
+            bool target = OuterBossDefinitions.IsArkionPyre(data.GetAssetKey())
+                ? action.GetActionBehaviorName() == "RandomBossActionBehavior" && action.GetParamTeamType() == Team.Type.None
+                : action.GetActionBehaviorName() == "RandomOccupiedBossActionBehavior" && action.GetParamTeamType() == Team.Type.Monsters;
+            return target && action.GetActionEffectData().Count == 0 &&
                 data.GetRoomModifiersData().Count == 0;
         }
         internal sealed class Record

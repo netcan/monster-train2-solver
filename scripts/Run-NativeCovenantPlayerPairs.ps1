@@ -8,7 +8,7 @@ param(
     [ValidateRange(1, 7)][int] $BattleDistance = 1,
     [switch] $AngelDuo,
     [ValidateSet('', 'LoopResolve', 'RevengeHarvest')][string] $AngelDuoVariant = '',
-    [ValidateSet('', 'CaelAtkHP', 'CaelDamageShield', 'CaelLifesteal')][string] $EarlyOuterBossVariant = '',
+    [ValidateSet('', 'CaelAtkHP', 'CaelDamageShield', 'CaelLifesteal', 'ArkionPyre')][string] $EarlyOuterBossVariant = '',
     [ValidateRange(2, 16)][int] $PlannerHorizon = 3,
     [ValidateRange(100, 30000)][int] $PlannerTimeLimitMs = 3000,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 900,
@@ -22,8 +22,8 @@ if ($AngelDuo -and ($Battle -ne 'Campaign' -or $Rank.Count -ne 1 -or $Rank[0] -n
 }
 if ($AngelDuoVariant -and -not $AngelDuo) { throw '-AngelDuoVariant requires -AngelDuo and its explicit selected-variant checker.' }
 if ($EarlyOuterBossVariant -and ($AngelDuo -or $Battle -ne 'Campaign' -or $Rank.Count -ne 1 -or
-    $Rank[0] -ne 2 -or $BattleDistance -ne 5)) {
-    throw 'Early outer-boss player pairs require their original rank-two Ring6 checkpoint and dedicated checker.'
+    $Rank[0] -ne 2 -or $BattleDistance -ne $(if ($EarlyOuterBossVariant.StartsWith('Cael')) { 5 } else { 2 }))) {
+    throw 'Early outer-boss player pairs require their original rank-two Ring3/Ring6 checkpoint and dedicated checker.'
 }
 if ($Battle -ne 'Outer' -and $PSBoundParameters.ContainsKey('Variant')) { throw '-Variant requires -Battle Outer.' }
 if ($Battle -eq 'Campaign') {
@@ -112,7 +112,8 @@ foreach ($level in $Rank) {
                     }
                     @($check, $source, $replay)
                 } elseif ($EarlyOuterBossVariant) {
-                    @('--player-cael-pair-only', $source, $replay, $EarlyOuterBossVariant.Substring(4))
+                    if ($EarlyOuterBossVariant -eq 'ArkionPyre') { @('--player-arkion-pyre-pair-only', $source, $replay) }
+                    else { @('--player-cael-pair-only', $source, $replay, $EarlyOuterBossVariant.Substring(4)) }
                 } else {
                     @('--player-native-covenant-campaign-pair-only', $source, $replay, "$level", "$BattleDistance")
                 }

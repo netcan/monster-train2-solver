@@ -32,7 +32,7 @@ namespace MonsterTrain2Poju.Probe
                     data.GetAssetKey() is "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
                         "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" or
                         "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth" ||
-                    OuterBossDefinitions.IsCael(data.GetAssetKey())) &&
+                    OuterBossDefinitions.IsCael(data.GetAssetKey()) || OuterBossDefinitions.IsArkionPyre(data.GetAssetKey())) &&
                     OuterBossPhaseProbe.Supports(data);
             }
         }

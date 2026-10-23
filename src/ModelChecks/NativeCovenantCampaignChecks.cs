@@ -73,6 +73,20 @@ internal static class NativeCovenantCampaignChecks
         Console.WriteLine($"PLAYER-CAEL PASS {variant}: explicit original encounter, five prior native victories, cumulative owners, actual player advice/UI and independent native full-state/RNG replay.");
     }
 
+    internal static void ArkionPyrePair(FixtureValue source, FixtureValue replay)
+    {
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            ArkionPyreChecks.Input(fixture);
+            var initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            Require(initial.Spawn.QueuedOuterBoss?.Actor.Unit is { AssetKey: "Boss_Level3_Arkion_DamagePyre", BaseAttack: 4, Health: 425 } outer &&
+                outer.Statuses.Single() is { Id: "multistrike", Stacks: 1 },
+                "Arkion Pyre player input changed its original queued boss stats or multistrike.");
+        }
+        Pair(source, replay, 2, 2, requireVictory: false, selectedOriginalBoss: true);
+        Console.WriteLine("PLAYER-ARKION-PYRE PASS: original selected Ring3 encounter, two prior native victories, actual advice/UI and independent full-state/RNG replay.");
+    }
+
     private static void Pair(FixtureValue source, FixtureValue replay, int level, int distance, bool requireVictory, bool selectedOriginalBoss = false)
     {
         Require(level is >= 1 and <= 10 && distance is >= 1 and <= 7,

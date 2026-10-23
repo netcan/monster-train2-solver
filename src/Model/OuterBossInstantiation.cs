@@ -43,7 +43,10 @@ namespace MonsterTrain2Poju.Model
             if (!OuterBossDefinitions.Supports(actor.Unit.AssetKey) || actor.Unit.Id != 0 || boss.UnitId != 0 ||
                 boss.AssetKey != actor.Unit.AssetKey || boss.Room != -1 || boss.Phase != "Casting" ||
                 old.OuterBoss != null || train.Context?.SpawnPoints == null || actor.Unit.BumpRules?.OuterBoss != true ||
-                (duo ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("titanskin")?.Stacks != 10 : actor.Unit.Statuses.Count != 0) ||
+                (duo ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("titanskin")?.Stacks != 10 :
+                    OuterBossDefinitions.IsArkionPyre(actor.Unit.AssetKey)
+                        ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("multistrike")?.Stacks != 1
+                        : actor.Unit.Statuses.Count != 0) ||
                 actor.Unit.Ability != null || actor.Unit.Modifiers?.Upgrades.Count != 0 ||
                 actor.CompanionBoss != duo || actor.Unit.BumpRules.CompanionBoss != duo || battle.MoonPhaseTrackingActive == true)
                 return Fail("Outer-boss instantiation requires the calibrated original definition without creation modifiers or moon tracking.");

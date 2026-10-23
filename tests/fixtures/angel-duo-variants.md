@@ -106,5 +106,23 @@ four counters zero. It is a controlled loss; ordinary player advice is separate.
 
 Focused checks: `--angel-duo-harvest-death-only` and
 `--angel-duo-harvest-death-battle-only`. All three exact original Angel Duo
-definitions now reach the player gate; the third's source/replay acceptance is
-still required before counting it as a curated player-pair scenario.
+definitions now reach the player gate and have separately accepted player pairs.
+
+Actual Revenge/Harvest player source
+`full-battle-units-spells-and-junk-20261023-182706-66704cdd` and fresh frozen replay
+`full-battle-units-spells-and-junk-20261023-184156-2a4b4969` both pass. Each executes
+56 inputs,45 card/ability plays and11 EndTurns, with93 room stages and22 train
+stages. The source publishes58 recommendations, each with a fresh full-root
+check;484 captures have zero purity/publication failures. UI and every full
+forecast, root, successor and RNG match the independent replay. Both processes
+exit normally (887.75s/603.77s), preserve protected originals and report all four
+failure counters zero. Both are losses at the disclosed2-turn/1500ms soft budget.
+These actual player inputs include no controlled Harvest damage or boss HP edits;
+the separate positive Harvest control above retains its own boundary.
+
+| Archive | Bytes | Nodes | SHA256 |
+| --- | ---: | ---: | --- |
+| full-battle-player-angel-duo-revenge-harvest-search.mt2f | 147866 | 22325 | 13d3c64cf1b20701ee9c9f45d62dcb19840a3b3f13976da27fefc3acf4a2c5ae |
+| full-battle-player-angel-duo-revenge-harvest-replay.mt2f | 143214 | 22026 | 2759e0cc2d4e1b3dd092344b4da04101ede89e40633e8725ebd1a0cda87cc29e |
+
+Focused pair: `--player-angel-duo-revenge-harvest-pair-only`.

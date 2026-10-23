@@ -1,13 +1,13 @@
 scenario	outer_boss	definition_gate	growth_signature	curated_battles	curated_player_pairs	player_sources
 Level3BattleHeavyHitter_PushAttack	Boss_Level3_Arkion_PushAttack	guarded		0	0	-
-Level3BattleHeavyHitter_PyreDamage	Boss_Level3_Arkion_DamagePyre	guarded		0	0	-
+Level3BattleHeavyHitter_PyreDamage	Boss_Level3_Arkion_DamagePyre	allowed		1	0	-
 Level3BattleHeavyHitter_SiphonRage	Boss_Level3_Arkion_SiphonRage	guarded	OnAnyHeroDeathOnFloor:CardEffectAddStatusEffect:0	0	0	-
 Level3ImmortalMass_Corruption	Boss_Level3_Fleshweaver_Corruption	guarded		0	0	-
 Level3ImmortalMass_MoreMass	Boss_Level3_Fleshweaver_MoreMass	guarded		0	0	-
 Level3ImmortalMass_Spikes	Boss_Level3_Fleshweaver_Spike	guarded		0	0	-
 Level6AngelDuo_LoopAttackResolveHealth	Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth	allowed	PostCombat:CardEffectBuffMaxHealth:60;OnTrainRoomLoop:CardEffectBuffDamage:8	3	1	full-battle-player-angel-duo-loop-resolve-search.mt2f
 Level6AngelDuo_RallyAttackIncantHealth	Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth	allowed	CardSpellPlayed:CardEffectBuffMaxHealth:30;OnKill:CardEffectBuffDamage:3	7	1	full-battle-player-angel-duo-search.mt2f
-Level6AngelDuo_RevengeAttackHarvestHealth	Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth	allowed	OnAnyHeroDeathOnFloor:CardEffectBuffMaxHealth:50;OnHit:CardEffectBuffDamage:1	3	0	-
+Level6AngelDuo_RevengeAttackHarvestHealth	Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth	allowed	OnAnyHeroDeathOnFloor:CardEffectBuffMaxHealth:50;OnHit:CardEffectBuffDamage:1	5	1	full-battle-player-angel-duo-revenge-harvest-search.mt2f
 Level6BattleEaterAtkHP	Boss_Level6_Cael_AtkHP	allowed		1	0	-
 Level6BattleEaterDamageShield	Boss_Level6_Cael_DamageShield	allowed		1	0	-
 Level6BattleEaterLifesteal	Boss_Level6_Cael_Lifesteal	allowed		1	0	-

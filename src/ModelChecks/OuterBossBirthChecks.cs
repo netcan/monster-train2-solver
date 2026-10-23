@@ -44,10 +44,12 @@ internal static class OuterBossBirthChecks
         EnchantmentRule[] auras = born.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
             .Select(effect => effect.Enchantment!).ToArray();
         bool deferredAura = born.AssetKey is "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial" ||
-            OuterBossDefinitions.IsAngelDuo(born.AssetKey) || OuterBossDefinitions.IsCael(born.AssetKey) ? auras.Length == 0 :
+            OuterBossDefinitions.IsAngelDuo(born.AssetKey) || OuterBossDefinitions.IsCael(born.AssetKey) ||
+            OuterBossDefinitions.IsArkionPyre(born.AssetKey) ? auras.Length == 0 :
             auras.Length == 1 && auras[0].Bound && auras[0].State.PrimaryTargets.Count == 0 && auras[0].State.CachedStatus == null;
         Require(deferredAura && born.Triggers.Where(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))
-                .All(trigger => !trigger.HasTriggered) && (occupiedFloors == 0 || chosenPlayers > 0),
+                .All(trigger => !trigger.HasTriggered) &&
+                (before.CreatedBoss.Actions[0][0].Behavior == "RandomBossActionBehavior" || occupiedFloors == 0 || chosenPlayers > 0),
             "Native birth must bind its aura without firing AfterSpawnEnchant or eagerly applying targets.");
         Console.WriteLine($"OUTER-BOSS-BIRTH PASS: initial action, room {actual.Boss.Room}, {occupiedFloors} occupied floors/{chosenPlayers} selected allies, {auras.Length} deferred auras, physical birth and full battle/controller/RNG equality; immutable boundary.");
     }

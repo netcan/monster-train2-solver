@@ -1,6 +1,22 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--player-arkion-pyre-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NativeCovenantCampaignChecks.ArkionPyrePair(source.RootElement, replay.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] is "--arkion-pyre-birth-only" or "--arkion-pyre-baseline-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--arkion-pyre-birth-only") ArkionPyreChecks.Birth(fixture.RootElement);
+    else ArkionPyreChecks.Battle(fixture.RootElement, args[1]);
+    return;
+}
+
 if (args.Length == 4 && args[0] == "--player-cael-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -4938,6 +4954,16 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         PlayerOuterBossChecks.CorrupterWinningPair(source.RootElement, replay.RootElement);
     }
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-arkion-pyre.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    ArkionPyreChecks.Battle(fixture.RootElement, path);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss-birth-calibration-arkion-pyre.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    ArkionPyreChecks.Birth(fixture.RootElement);
+}
 foreach (var variant in new[] { (Name: "atkhp", Native: "AtkHP"), (Name: "damage-shield", Native: "DamageShield"),
     (Name: "lifesteal", Native: "Lifesteal") })
 {
@@ -4976,6 +5002,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-angel-duo-loop-resolve-replay.mt2f"));
     NativeCovenantCampaignChecks.AngelDuoVariantPair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-angel-duo-revenge-harvest-search.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-angel-duo-revenge-harvest-replay.mt2f"));
+    NativeCovenantCampaignChecks.AngelDuoVariantPair(source.RootElement, replay.RootElement, "RevengeHarvest");
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss-birth-calibration-angel-duo-revenge-harvest.mt2f"))
 {

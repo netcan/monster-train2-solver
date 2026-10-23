@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1242 archives,
+Current manifest inventory (2026-10-23): 1246 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -9,6 +9,12 @@ no-card battle calibrations, including positive original enemy upgrades and
 sixteen immutable full chains each. Exact original encounter selection retains
 the five preceding victories, original assets and route RNG. Player-source/replay
 acceptance remains separate. See [Cael evidence](cael.md).
+
+Arkion's original Pyre-damage variant also passes its rank-two birth, positive
+remote damage and complete no-card battle with sixteen immutable full chains.
+The random-room controller retains exact native state/RNG. All three Angel Duo
+variants now have accepted actual player advice/fresh replay pairs. See
+[Arkion evidence](arkion.md) and [Angel Duo variants](angel-duo-variants.md).
 
 Native cumulative Covenant 2/10 also pass original true-final-boss birth and
 complete no-card battles, with exact full state/RNG and zero native failures.
