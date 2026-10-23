@@ -169,6 +169,7 @@ namespace MonsterTrain2Poju.Probe
                 nativeRunInput = new
                 {
                     Schema = 1, Seed = data.GetSeed(), Distance = save.GetCurrentDistance(),
+                    AscensionLevel = save.GetAscensionLevel(), StartingLevel = save.GetStartingConditions().AscensionLevel,
                     Scenario = save.GetScenarioData(save.GetCurrentDistance()).name,
                     WasDevCheatUsed = SaveManager.WasDevCheatUsed, BattlesWon = save.GetNumBattlesWon(),
                     Gold = save.GetGold(), PyreHealth = save.GetTowerHP(),

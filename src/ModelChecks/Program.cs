@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 5 && args[0] == "--player-native-covenant-campaign-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NativeCovenantCampaignChecks.Pair(source.RootElement, replay.RootElement, int.Parse(args[3]), int.Parse(args[4]));
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--observed-successors-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4743,6 +4751,18 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         using var replay = ModelJson.ReadFixture(replayPath);
         PlayerOuterBossChecks.CorrupterWinningPair(source.RootElement, replay.RootElement);
     }
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-player-native-covenant-campaign-", StringComparison.Ordinal) &&
+    path.EndsWith("-search.mt2f", StringComparison.Ordinal)))
+{
+    var name = System.Text.RegularExpressions.Regex.Match(Path.GetFileName(path),
+        @"^full-battle-player-native-covenant-campaign-(?<rank>\d{2})-ring(?<ring>[2-8])-search\.mt2f$");
+    Check(name.Success, "Invalid curated cumulative campaign fixture name.");
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!,
+        Path.GetFileName(path).Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal)));
+    NativeCovenantCampaignChecks.Pair(source.RootElement, replay.RootElement,
+        int.Parse(name.Groups["rank"].Value), int.Parse(name.Groups["ring"].Value) - 1);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-fragile-no-cards.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-natural-fragile-status.mt2f", StringComparison.OrdinalIgnoreCase) ||
