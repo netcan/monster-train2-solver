@@ -59,7 +59,7 @@ internal static class TrueFinalBossSpawnChecks
         Console.WriteLine("TRUE-FINAL-BOSS-SPAWN PASS: five original instances, physical anchors/rooms, Entropy scourge birth, links and entire battle/context/RNG equality; 64 concurrent immutable branches; full combat guarded.");
     }
 
-    private static void CovenantMetadata(FixtureValue control, TrueFinalBossSpawnState before)
+    internal static void CovenantMetadata(FixtureValue control, TrueFinalBossSpawnState before)
     {
         CombatRelicState owner = before.Battle.Spawn.Train.Context!.Relics!.Single(relic => relic.IsCovenant == true);
         TrueFinalBossChecks.Require(control.GetProperty("Kind").GetString() == "ControlledOriginalCovenantBeforeTFBBirth" &&
@@ -94,9 +94,13 @@ internal static class TrueFinalBossSpawnChecks
         EnemyDefinition[] spoofed = before.Definitions.Select(definition => new EnemyDefinition(definition.Unit,
             definition.Ascends, definition.Loops, definition.ExternalInteractions, definition.CompanionBoss,
             new EnemyBirthStatAdjustment(definition.BirthStats!.Attack, definition.BirthStats.Health, new[] { "different-covenant" }))).ToArray();
+        EnemyDefinition[] wrongStats = before.Definitions.Select(definition => new EnemyDefinition(definition.Unit,
+            definition.Ascends, definition.Loops, definition.ExternalInteractions, definition.CompanionBoss,
+            new EnemyBirthStatAdjustment(definition.BirthStats!.Attack, definition.BirthStats.Health + 1, definition.BirthStats.CovenantIds))).ToArray();
         TrueFinalBossChecks.Require(!TrueFinalBossSpawningModel.Apply(WithDefinitions(missing)).Supported &&
-            !TrueFinalBossSpawningModel.Apply(WithDefinitions(spoofed)).Supported,
-            "Missing or mismatched Covenant birth-stat origins must remain guarded.");
+            !TrueFinalBossSpawningModel.Apply(WithDefinitions(spoofed)).Supported &&
+            !TrueFinalBossSpawningModel.Apply(WithDefinitions(wrongStats)).Supported,
+            "Missing origins, mismatched origins and uncalibrated Covenant birth stats must remain guarded.");
         Console.WriteLine($"TRUE-FINAL-BOSS-COVENANT-BIRTH PASS owner={owner.AssetKey} previews={queries.Length}: pure native stats, preserved raw bases and guarded missing/spoofed origins.");
     }
 }

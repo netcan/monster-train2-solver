@@ -193,7 +193,9 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    Covenant 出生边界另已补齐四个单独原始定义（00/01/04/08）：纯原生数值预览、
    五个单位的完整出生状态/RNG、共享生命及每组 64 条不可变分支均匹配。
    更强首领的加血、攻击增量与原始/Horde 基础值分别保留；Covenant 1 的开局
-   清牌/补牌不在战斗中重复执行。仍未据此开放多 Covenant 组合或后续战斗，详见
+   清牌/补牌不在战斗中重复执行。04 另已完成原始空过败局：六个回合、十个列车
+   阶段、四十个房间阶段及十六条不可变整场分支全匹配，原生四项失败计数为零。
+   多 Covenant 组合及玩家入口仍需分别验收，详见
    [Covenant 出生校准](../tests/fixtures/true-final-boss-covenant-birth.md)。
    玩家入口目前开放已校准的
    `Boss_Level8_AllyBuffer`、`Boss_Level8_Fragile`、`Boss_Level8_Corrupter` 及其三个

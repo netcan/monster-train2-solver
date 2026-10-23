@@ -100,7 +100,9 @@ namespace MonsterTrain2Poju.Model
             bool covenantBirth = covenants.Length == 1 && new[] { "Covenant00_FTUE", "Covenant01_StrongerEnemiesMoreCards",
                 "Covenant04_StrongerBosses", "Covenant08_StrongerEnemies" }.Contains(covenants[0].AssetKey) &&
                 !string.IsNullOrEmpty(covenants[0].DataId) && source.Definitions.All(definition => definition.BirthStats is { } stats &&
-                    stats.CovenantIds.SequenceEqual(new[] { covenants[0].DataId }) && stats.Attack >= 0 && stats.Health >= 0 &&
+                    stats.CovenantIds.SequenceEqual(new[] { covenants[0].DataId }) &&
+                    TrueFinalBossCovenantModel.Adjustment(captured, definition.Unit.AssetKey, out int attack, out int health) &&
+                    stats.Attack == attack && stats.Health == health &&
                     (long)definition.Unit.BaseAttack + stats.Attack <= int.MaxValue &&
                     (long)definition.Unit.MaxHealth + stats.Health <= int.MaxValue && definition.Unit.Modifiers != null);
             if (!covenantBirth && source.Definitions.Any(definition => definition.BirthStats != null))

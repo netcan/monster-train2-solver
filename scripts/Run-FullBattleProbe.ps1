@@ -774,8 +774,8 @@ if ($TrueFinalBossDeath) {
     if ($TrueFinalBossDamage) { throw 'Controlled terminal capture is separate from original nonterminal damage/healing.' }
     $TrueFinalBossBirth = $true
 }
-if ($TrueFinalBossCovenant -and (-not $TrueFinalBossBirth -or -not $TrueFinalBossSpawn)) {
-    throw 'TrueFinalBossCovenant requires an isolated birth and complete spawn observation.'
+if ($TrueFinalBossCovenant -and -not ($OriginalTrueFinalBoss -or ($TrueFinalBossBirth -and $TrueFinalBossSpawn))) {
+    throw 'TrueFinalBossCovenant requires an isolated original route or complete spawn observation.'
 }
 if ($TrueFinalBossBirth) {
     $allowed = @('TrueFinalBossBirth', 'TrueFinalBossCovenant', 'TrueFinalBossSpawn', 'TrueFinalBossScheduledSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossPyreBaneTargets', 'TrueFinalBossDeath', 'TrueFinalBossDeathSpellSource', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')

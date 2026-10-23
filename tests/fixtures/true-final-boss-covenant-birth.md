@@ -1,5 +1,22 @@
 # Original Covenant true-final-boss birth
 
+`true-final-boss-covenant-battle-04.mt2f` extends the stronger-boss control
+through a complete original no-cards loss. Source
+`full-battle-no-cards-20261023-080549-fef7e51c` exits normally with protected
+files unchanged and all four native failure counters zero. Six EndTurns,
+ten train phases, forty room phases and sixteen independent immutable full
+chains match complete native state/RNG. Dominion/Savagery/Entropy retain
+2055/3250/4500 maximum HP and the native attack adjustments. No health,
+phase, encounter, card or wave substitution is applied. This remains an
+explicit native jump with a single original Covenant activated after run
+startup; it is neither a natural high-rank campaign nor a win.
+
+Run `ModelChecks --true-final-boss-covenant-battle-only <archive>` for the
+dedicated native-counter, origin, stat, room/train and full-chain acceptance.
+Missing/spoofed origins and off-by-one stat adjustments are rejected. The
+player Covenant gate, combined Covenants and terminal/relentless extensions
+remain guarded pending separate native evidence.
+
 Four `true-final-boss-spawn-calibration-covenant{00,01,04,08}.mt2f` archives
 compare complete native five-actor births with the pure model. Each process
 activates one complete original Covenant definition, discloses its native
@@ -56,6 +73,6 @@ control also pass. No full regression or Mac build is performed.
 The model admits one of these four original Covenant definitions only when
 all five stat projections carry the matching captured origin. The production
 capture's later-combat protection remains; multiple Covenants, natural rank
-progression and full Covenant true-final-boss combat require separate evidence.
+progression and further Covenant combat signatures require separate evidence.
 Ordinary rank-one wave capture also retains an explicit protection, so the
 startup-interface classification does not silently admit uncalibrated births.

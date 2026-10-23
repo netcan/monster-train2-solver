@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
 {
-    // Controlled birth observation only; this does not unlock a Covenant run.
+    // Controlled original route only; this does not unlock a Covenant run.
     internal static class TrueFinalBossCovenantScenario
     {
         internal static object? Evidence { get; private set; }
@@ -18,8 +18,8 @@ namespace MonsterTrain2Poju.Probe
             if (asset.Length == 0) return;
             string[] supported = { "Covenant00_FTUE", "Covenant01_StrongerEnemiesMoreCards",
                 "Covenant04_StrongerBosses", "Covenant08_StrongerEnemies" };
-            if (!TrueFinalBossBirthProbe.Enabled || Evidence != null || !supported.Contains(asset) || save.GetCovenants().Count != 0)
-                throw new InvalidOperationException("Covenant birth observation requires a fresh isolated component route.");
+            if (!TrueFinalBossBirthProbe.RouteEnabled || Evidence != null || !supported.Contains(asset) || save.GetCovenants().Count != 0)
+                throw new InvalidOperationException("Covenant observation requires a fresh isolated original route.");
             CovenantData data = save.GetAllGameData().GetAllCovenantDatas().Single(item => item.name == asset);
             object before = Rng();
             ((IList<CovenantState>)save.GetCovenants()).Add(new CovenantState(data));

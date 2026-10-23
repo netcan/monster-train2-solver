@@ -150,7 +150,8 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit unit = bodies.Single(actor => actor.AssetKey == assets[index]);
                 LifeLinkActor actor = links.Actors.Single(link => link.Id == unit.Id);
                 int floor = world.Rooms.Single(candidate => candidate.Units.Any(member => member.Id == unit.Id)).RoomIndex;
-                if (unit.Team != CombatTeam.Enemy || unit.Health != actor.Health || unit.MaxHealth != health[index] || unit.Status("lifelink") == null ||
+                if (!TrueFinalBossCovenantModel.Adjustment(room.Context, unit.AssetKey, out _, out int extraHealth) ||
+                    unit.Team != CombatTeam.Enemy || unit.Health != actor.Health || unit.MaxHealth != health[index] + extraHealth || unit.Status("lifelink") == null ||
                     actor.OuterBoss != (index >= 2) || actor.LinkedId != (index >= 3 ? bottom : 0) ||
                     index != 1 && floor != floors[index] || index == 1 && floor > 2 ||
                     index >= 2 && (unit.BumpRules?.OuterBoss != true || unit.BumpRules.OuterBossRelentlessPhase &&

@@ -21,7 +21,8 @@ namespace MonsterTrain2Poju.Probe
             RoomState room = managers.GetRoomManager().GetRoom(3);
             var characters = new List<CharacterState>(); room.AddCharactersToList(characters, Team.Type.Monsters);
             CharacterState pyre = characters.Single(character => character.IsPyreHeart());
-            if (dominion.GetHP() != 1555 || pyre.GetHP() != 80 || dominion.GetCurrentRoomIndex() != 3 ||
+            int bornHealth = 1555 + (TrueFinalBossCovenantScenario.CaptureStats(dominion.GetSourceCharacterData())?.Health ?? 0);
+            if (dominion.GetHP() != bornHealth || pyre.GetHP() != 80 || dominion.GetCurrentRoomIndex() != 3 ||
                 (bool)AccessTools.Field(typeof(CombatManager), "isKillCamActivated").GetValue(combat) ||
                 managers.GetHeroManager().HasNextBoss() || !managers.GetRoomManager().GetRoom(0).IsRoomEnabled())
                 throw new InvalidOperationException("Continuation calibration requires the original born Dominion/Pyre room without pending boss or kill cam.");

@@ -3,6 +3,21 @@ using MonsterTrain2Poju.Model;
 
 internal static class TrueFinalBossBattleChecks
 {
+    internal static void Covenant(FixtureValue root, string path)
+    {
+        foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            TrueFinalBossChecks.Require(root.GetProperty(counter).GetInt32() == 0, "Native Covenant battle has nonzero " + counter);
+        BattleTurnState before = root.GetProperty("Turns")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        TrueFinalBossSpawnDefinition queued = before.Spawn.QueuedTrueFinalBoss!;
+        TrueFinalBossChecks.Require(queued != null, "Missing original queued Covenant bosses.");
+        TrueFinalBossSpawnChecks.CovenantMetadata(root.GetProperty("OriginalTrueFinalBossRoute").GetProperty("CovenantControl"),
+            new TrueFinalBossSpawnState(before, queued!.Definitions, queued.QueuedBosses, 0, new int[4], queued.ExternalInteractions));
+        Native(root);
+        TrainCombatChecks.Native(root);
+        RoomCombatChecks.NativeRoomOnly(path);
+        Console.WriteLine("TRUE-FINAL-BOSS-COVENANT-BATTLE PASS: original single-Covenant activation, exact birth stats, six complete EndTurns, native room/train phases and full state/RNG; native failure counters zero. Controlled route and loss only.");
+    }
+
     internal static void Native(FixtureValue root)
     {
         void Require(bool value, string message) => TrueFinalBossChecks.Require(value, message);

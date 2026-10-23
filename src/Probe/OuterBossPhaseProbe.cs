@@ -26,8 +26,9 @@ namespace MonsterTrain2Poju.Probe
             }
         }
         private static bool ForceRelentless => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS") == "1";
-        internal static bool Supports(CharacterData data)
+        internal static bool Supports(CharacterData? data)
         {
+            if (data == null) return false;
             var groups = data.GetBossActionData();
             if (!OuterBossDefinitions.Supports(data.GetAssetKey()) || groups.Count != 1 ||
                 groups[0].GetNumRepeats() != 0 || groups[0].GetActions().Count != 1) return false;

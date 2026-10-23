@@ -165,6 +165,13 @@ if (args.Length == 2 && args[0] == "--terminal-death-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--true-final-boss-covenant-battle-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrueFinalBossBattleChecks.Covenant(fixture.RootElement, args[1]);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-battle-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4251,6 +4258,11 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-full-b
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossBattleChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("true-final-boss-covenant-battle-", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TrueFinalBossBattleChecks.Covenant(fixture.RootElement, path);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-preview-calibration", StringComparison.OrdinalIgnoreCase)))
 {
