@@ -2950,11 +2950,17 @@ if (args.Length == 2 && args[0] == "--planner-plateau-only")
     PlannerPlateauChecks.Native(fixture.RootElement);
     return;
 }
-if (args.Length is >= 2 and <= 4 && args[0] == "--rolling-forecast-only")
+if (args.Length == 2 && args[0] == "--deployment-forecast-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattleHeuristicChecks.DeploymentForecast(fixture.RootElement);
+    return;
+}
+if (args.Length is >= 2 and <= 4 && args[0] is "--rolling-forecast-only" or "--rolling-player-forecast-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     BattleHeuristicChecks.RollingForecast(fixture.RootElement, args.Length >= 3 ? int.Parse(args[2]) : 256,
-        args.Length == 4 ? int.Parse(args[3]) : 2);
+        args.Length == 4 ? int.Parse(args[3]) : 2, retainCurrentTurn: args[0] == "--rolling-player-forecast-only");
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--heuristic-forecast-only")
