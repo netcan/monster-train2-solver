@@ -104,3 +104,14 @@ both runs and the pair check pass. It never registers failed captures or
 automatically curates archives. This full path was exercised first with
 rank-ten Fragile above; `-Battle Startup` and `-Battle Final` select the
 corresponding existing native paths. Use only one batch per worker.
+
+Rank-two AllyBuffer also passes the same actual player/fresh frozen replay
+acceptance: nineteen inputs (fifteen plays, four EndTurns), twenty-one source
+publications, thirty-three room stages and eight train phases; complete UI,
+forecasts, roots, successors, controller references and RNG match. Both lose
+with Pyre0, normal native exits, protected originals unchanged and four zero
+native failure/purity counters. Captures are 269/65 and native runtimes
+272.48/125.76 seconds. Profile suffixes `130020-29f03403` /
+`130454-71530897` use the same player prefix; archive prefix is
+`full-battle-player-native-covenant-outer-boss-allybuffer-02` with
+search/replay suffixes. Select `-StartingRank 2 -Variant AllyBuffer -Player`.
