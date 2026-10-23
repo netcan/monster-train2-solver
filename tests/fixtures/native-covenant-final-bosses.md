@@ -53,7 +53,20 @@ Runtimes are 353.31/202.37 seconds. Source/replay suffixes are
 `121632-6b70a73e` / `122228-e5559588`, prefixed
 `full-battle-units-spells-and-junk-20261023-`.
 Use `Check-NativeCovenantFinalBoss.ps1 -Player -SkipBuild`; the player default
-selects accepted rank ten, while the baseline default selects ranks two/ten.
+selects both accepted ranks two/ten, as does the baseline default.
 This is advice/replay correctness for the fresh starting deck at the
 disclosed isolated route, not a winning high-rank final-boss deck or earned
-unlock. Rank two's individual player pair remains separate.
+unlock.
+
+Rank two now also passes actual player advice and independent frozen native
+replay: eighteen inputs (thirteen plays, five EndTurns), twenty source
+publications, forty room stages and ten train phases. Full UI interactions,
+every complete forecast/root/successor/controller reference and RNG match;
+both native processes exit normally, protected originals unchanged and all
+four native/purity failure counters zero. Both lose with Pyre0. Captures are
+251/63 and native runtimes 297.83/146.03 seconds. Profile suffixes
+`131539-2fb5afb4` / `132040-590ef68d` share the same player prefix above;
+archives use `full-battle-player-native-covenant-final-boss-02` with
+search/replay suffixes. `-Rank 2 -Player -SkipBuild` selects only this pair.
+This closes both individual cumulative ranks in the controlled final-boss
+player matrix; natural unlock/campaign victory remains a distinct goal.

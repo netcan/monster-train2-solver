@@ -7,7 +7,7 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
-if ($Rank.Count -eq 0) { $Rank = if ($Player) { @(10) } else { @(2, 10) } }
+if ($Rank.Count -eq 0) { $Rank = @(2, 10) }
 $workspace = Split-Path $PSScriptRoot -Parent
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
