@@ -93,9 +93,16 @@ internal static class TrueFinalBossLethalChecks
         bool refreshPreview = control.TryGetProperty("RefreshPreview", out FixtureValue refresh) && refresh.GetBoolean();
         BattleTurnState before = control.GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState controlled = control.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-        Require(Json(Prepare(before)) == Json(controlled) && control.GetProperty("Debuffs").Deserialize<int[]>()!.SequenceEqual(new[] { 1554, 2749, 3499 }),
-            "Native explicit owner health preparation changed more than the three recorded debuffs.");
         string[] owners = { "Boss_Level9_Dominion_V2", "Boss_Level9_Savagery_V2", "Boss_Level9_Entropy_Bot_V2" };
+        int[] authoredDebuffs = { 1554, 2749, 3499 };
+        int[] debuffs = owners.Select((asset, index) =>
+        {
+            Require(TrueFinalBossCovenantModel.Adjustment(before.Spawn.Train.Context, asset, out _, out int health),
+                "Lethal control contains an uncalibrated Covenant.");
+            return authoredDebuffs[index] + health;
+        }).ToArray();
+        Require(Json(Prepare(before)) == Json(controlled) && control.GetProperty("Debuffs").Deserialize<int[]>()!.SequenceEqual(debuffs),
+            "Native explicit owner health preparation changed more than the three calibrated recorded debuffs.");
         Require(control.GetProperty("OwnerIds").Deserialize<int[]>()!.SequenceEqual(owners.Select(asset =>
             before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.AssetKey == asset).Id)) &&
             controlled.Spawn.Train.Context!.LifeLinks!.Actors.All(actor => actor.Health == 1) &&
@@ -127,6 +134,12 @@ internal static class TrueFinalBossLethalChecks
                 (result.Supported ? ModelJson.Difference(Json(result.State!), Json(actual)) : result.UnsupportedReason));
         }
         BattleTurnState deployment = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        if (route.TryGetProperty("CovenantControl", out FixtureValue covenant) && covenant.ValueKind != FixtureKind.Null)
+        {
+            TrueFinalBossSpawnDefinition definition = deployment.Spawn.QueuedTrueFinalBoss!;
+            TrueFinalBossSpawnChecks.CovenantMetadata(covenant, new TrueFinalBossSpawnState(deployment,
+                definition.Definitions, definition.QueuedBosses, 0, new int[4], definition.ExternalInteractions));
+        }
         string parent = Json(deployment);
         string Replay()
         {

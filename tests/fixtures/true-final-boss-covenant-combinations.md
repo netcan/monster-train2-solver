@@ -21,7 +21,7 @@ focused checker requires all fifteen distinct nonempty subsets and 960
 immutable branches. Missing, repeated or unknown subsets fail acceptance.
 
 Run `scripts/Check-TrueFinalBossCovenants.ps1 -SkipBuild` for the exact matrix,
-combined full battle and controlled relentless evidence. It does not run the
+combined full battle and controlled relentless/terminal evidence. It does not run the
 full repository regression.
 
 `true-final-boss-covenant-battle-combined.mt2f`, source
@@ -61,6 +61,25 @@ state/RNG. Both win with Pyre61, normal exits, protected files unchanged and all
 four failure counters zero. This is a controlled phase transition and victory;
 it does not prove a natural transition or surviving-body combat against the Pyre.
 
+The critical-health controls separately cover real terminal combat:
+`true-final-boss-lethal-calibration-covenant04.mt2f` and
+`true-final-boss-lethal-preview-calibration-covenants.mt2f`, sources
+`full-battle-no-cards-20261023-091014-18e6dd7d` and
+`full-battle-no-cards-20261023-091014-264929e7`. The three independent owners
+receive explicit debuffs 2054/3249/4499, after the original Covenant-adjusted
+birth. Every linked body then has one HP. Two EndTurns, an ordinary lethal
+Pyre attack, full five-body death, controller/link/card cleanup, kill-camera
+state and sixteen immutable deployment-to-victory chains match native state/RNG.
+Both win with Pyre77, normal exits, protected files unchanged and all four
+failure counters zero. The combination additionally checks two UI previews,
+five room previews and complete restoration of the five live one-HP bodies.
+The original no-Covenant lethal-preview control also passes unchanged.
+
+Diagnostic attempts `full-battle-no-cards-20261023-090830-ea572815` and
+`full-battle-no-cards-20261023-090831-a05569a4` stopped at the old probe's fixed
+no-Covenant HP assertion and produced no full battle archive. Neither is
+promoted; accepted evidence comes from the fresh processes above.
+
 This remains the explicitly disclosed native `Cheat_JumpToTFB` route. Natural
-unlock, cumulative high-rank campaigns, winning play, relentless transitions
+unlock, cumulative high-rank campaigns, winning play, natural relentless transitions
 and other terminal signatures require their own evidence.

@@ -72,7 +72,10 @@ namespace MonsterTrain2Poju.Probe
                 TargetOwnerOnly = TargetOwnerOnly, OrdinaryCombat = OrdinaryCombat,
                 RefreshPreview = Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_LETHAL_PREVIEW") == "1",
                 Debuffs = owners.Select(unit => unit.GetHP() - 1).ToArray() };
-            if (!row.Debuffs.SequenceEqual(new[] { 1554, 2749, 3499 }))
+            int[] authoredHealth = { 1555, 2750, 3500 };
+            int[] expectedDebuffs = owners.Select((unit, index) => authoredHealth[index] - 1 +
+                (TrueFinalBossCovenantScenario.CaptureStats(unit.GetSourceCharacterData())?.Health ?? 0)).ToArray();
+            if (!row.Debuffs.SequenceEqual(expectedDebuffs))
                 throw new InvalidOperationException("Lethal control requires unchanged original owner HP.");
             if (TargetOwnerOnly)
             {

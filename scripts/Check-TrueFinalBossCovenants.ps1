@@ -21,4 +21,8 @@ foreach ($name in @('covenant04', 'covenants')) {
     dotnet $checker --true-final-boss-relentless-only (Join-Path $fixtures "true-final-boss-relentless-calibration-$name.mt2f")
     if ($LASTEXITCODE -ne 0) { throw "Original Covenant relentless control failed: $name" }
 }
+foreach ($name in @('true-final-boss-lethal-calibration-covenant04.mt2f', 'true-final-boss-lethal-preview-calibration-covenants.mt2f')) {
+    dotnet $checker --true-final-boss-lethal-only (Join-Path $fixtures $name)
+    if ($LASTEXITCODE -ne 0) { throw "Original Covenant terminal control failed: $name" }
+}
 Write-Output 'TRUE-FINAL-BOSS-COVENANTS-FOCUSED PASS; no full regression executed.'
