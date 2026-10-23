@@ -325,6 +325,7 @@ namespace MonsterTrain2Poju.Probe
                             clan.GetCardStyle() + " id=" + clan.GetID());
                         save.MarkOneTimeMessageComplete(OneTimeMessage.MoonPhase);
                     }
+                    StartingCovenantScenario.Select(setup, save);
                     startRunFromSetup.Invoke(setup, null);
                     return;
                 }
@@ -387,6 +388,7 @@ namespace MonsterTrain2Poju.Probe
                 int section = save.GetCurrentDistance() + 1;
                 if (map != null && map.TryGetBattleNodeUI(section, out MapBattleNodeUI node))
                 {
+                    if (fullBattle) StartingCovenantScenario.Observe(save);
                     if (fullBattle && CovenantEnemyStatsScenario.Enabled)
                         CovenantEnemyStatsScenario.Prepare(save);
                     if (fullBattle && CovenantCharacterFilterScenario.Enabled && !CovenantCharacterFilterScenario.Prepared)

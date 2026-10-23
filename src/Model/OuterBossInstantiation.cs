@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState train = old.Train; OuterBossSpawnDefinition definition = source.Definition;
             EnemyDefinition actor = definition.Actor; OuterBossProgress boss = definition.Boss;
             if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));
-            if (!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(train.Context))
+            if (!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(train.Context, actor.Unit.AssetKey))
                 return Fail("Outer-boss Covenant owners require separate calibration.");
             string? statError = EnemySpawningModel.ValidateBirthStats(actor, train.Context);
             if (statError != null) return Fail(statError);

@@ -45,6 +45,13 @@ internal static class CovenantOuterBossChecks
             invalid.Deserialize<OuterBossSpawnDefinition>(ModelJson.Options)!));
         Require(!rejected.Supported && rejected.UnsupportedReason!.Contains("Enemy birth stats"),
             "Spoofed Covenant outer-boss origins must remain guarded.");
+        JsonNode trial = JsonSerializer.SerializeToNode(before.Spawn.QueuedOuterBoss, ModelJson.Options)!;
+        trial["Actor"]!["Unit"]!["AssetKey"] = boss + "_TitanTrial";
+        trial["Boss"]!["AssetKey"] = boss + "_TitanTrial";
+        OuterBossInstantiationResult uncalibrated = OuterBossInstantiationModel.Apply(new OuterBossInstantiationState(before,
+            trial.Deserialize<OuterBossSpawnDefinition>(ModelJson.Options)!));
+        Require(!uncalibrated.Supported && uncalibrated.UnsupportedReason!.Contains("Covenant owners"),
+            "Uncalibrated Covenant/Titan Trial compositions must retain their creation guard.");
     }
 
     internal static void Native(FixtureValue root, FixtureValue birth, string variant, bool ftue)

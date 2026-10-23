@@ -25,6 +25,9 @@ live max HP receives the adjustment exactly once after creation. Every pure
 query preserves its frame and all sixteen RNG streams. All authored wave
 definitions match their native projections. Spoofed Covenant origins and
 missing outer-boss stat evidence are rejected.
+Native capture and the immutable model also reject Covenant/Titan Trial
+compositions until those combinations have their own calibration; existing
+no-Covenant trial births remain supported and pass a focused regression.
 
 Each control compares authored instantiation, the unplaced created actor,
 initial boss action, physical placement, deferred aura, complete battle and
