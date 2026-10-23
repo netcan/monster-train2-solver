@@ -3028,10 +3028,10 @@ namespace MonsterTrain2Poju.Model
                 { battleWon = true; context = context?.WithBossesDead(); }
                 // CheckForDeath runs the terminal kill camera before dispatching death signals.
                 // Unplayed card damage can stop the native main loop before
-                // CheckForDeath/ShowKillCam resumes. The original TFB route's
-                // AfterStopCombatLoop capture still owns its hand at that point.
-                bool stoppedBeforeKillCam = target.Source.IsPyre && nativeCardDamage && actor == null && sourceCardId > 0 && context?.LifeLinks != null &&
-                    context.EnergyState?.Phase == "HeroTurn";
+                // CheckForDeath/ShowKillCam resumes. Ordinary and TFB unplayed
+                // damage both retain the hand at AfterStopCombatLoop.
+                bool stoppedBeforeKillCam = target.Source.IsPyre && nativeCardDamage && actor == null && sourceCardId > 0 &&
+                    context?.EnergyState?.Phase == "HeroTurn";
                 if (!source.Preview && (terminalBossDeath || target.Source.IsPyre) && !stoppedBeforeKillCam) ClearTerminalCards();
                 activeCompanionBossIds.Remove(target.Source.Id);
                 if (activeCompanionBossIds.Count == 1)

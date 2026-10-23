@@ -130,5 +130,26 @@ separate from natural campaign victory. Profiles share the player prefix above.
 
 Archives use `full-battle-player-native-covenant-outer-boss-` followed by
 lowercase variant, two-digit rank and search/replay suffixes. Rank ten's
-three-variant actual player matrix is now complete; rank two only lacks
-Corrupter. Select the variant/rank with the focused checker above.
+three-variant actual player matrix is complete. Rank two's last Corrupter
+pair is now also complete, closing all six combinations. Select the
+variant/rank with the focused checker above.
+
+Rank-two Corrupter executes twenty-four inputs (eighteen plays, six EndTurns),
+with twenty-six source publications, forty-seven room stages and ten train
+phases. Captures are 326/83 and native runtimes 326.08/156.40 seconds. Both
+native processes lose with Pyre0, exit normally, leave protected originals
+unchanged and report four zero native failure counters and zero purity
+failures. Full UI, forecasts, roots, successors and RNG match. Profiles
+`133326-845383c7` / `133854-29be709e` use the same player prefix; archive
+prefix is `full-battle-player-native-covenant-outer-boss-corrupter-02`.
+
+This pair exposed two ordinary unplayed-card boundaries. Four original
+ScourgeT3 cards preview twenty damage against Pyre16, stopping all room
+previews and retaining the preceding native last-attack statistic45. The
+subsequent actual EndTurn kills the Pyre before kill-camera cleanup, retaining
+all five hand cards. Both rules previously only handled the true-final-boss
+path. Their repaired ordinary path now matches sixteen immutable full-turn
+branches for each boundary, and this positive check is required by the
+rank-two Corrupter pair. Failed profiles `131405-c6544be8` (preview statistic)
+and `132524-18fde8ea` (premature hand clearing) are diagnostic only, never
+curated. See [unplayed Pyre preview](unplayed-pyre-preview.md).

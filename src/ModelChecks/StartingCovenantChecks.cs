@@ -258,6 +258,7 @@ internal static class StartingCovenantChecks
     {
         OuterEvidence(source, variant, level); OuterEvidence(replay, variant, level);
         Pair(source, replay, level, 7);
+        if (variant == "Corrupter" && level == 2) UnplayedPyrePreviewChecks.Native(source);
     }
 
     internal static void ChosenNative(FixtureValue root, string path)

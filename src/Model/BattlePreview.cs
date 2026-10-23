@@ -95,10 +95,12 @@ namespace MonsterTrain2Poju.Model
             if (!preDiscard.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported,
                 Array.Empty<RoomCombatResult>(), "Battle preview: " + preDiscard.UnsupportedReason);
             TrainCombatState preparedTrain = preDiscard.State!;
-            if (context.LifeLinks != null)
+            if (playRules != null && preparedTrain.Context!.Cards.Hand.Any(card =>
+                playRules.Cards.Any(rule => rule.DataId == card.DataId && rule.OnUnplayedNegativeEffects.Count > 0)))
             {
                 // CardManager previews unplayed negative triggers before the first
-                // room. Original scourges can already kill the preview Pyre here.
+                // room, including ordinary battles. Original scourges can already
+                // kill the preview Pyre and stop every subsequent room here.
                 var unplayed = preparedTrain.Context!.Cards.Hand.Select((card, index) => new
                 { Card = card, Index = index, Rule = playRules!.Cards.FirstOrDefault(rule => rule.DataId == card.DataId) })
                     .Where(item => item.Rule?.OnUnplayedNegativeEffects.Count > 0)
@@ -110,7 +112,7 @@ namespace MonsterTrain2Poju.Model
                     if (instance == null) return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Missing preview unplayed card instance.");
                     CardPlayRule rule = CardModifierModel.Resolve(item.Rule!, instance);
                     if (rule.HasUnsupportedUnplayedTriggers || rule.OnUnplayedNegativeEffects.Any(effect => effect.Type != "Damage" || effect.Target != "Pyre" || effect.Range != null))
-                        return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Uncalibrated true-final-boss preview unplayed effect.");
+                        return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Uncalibrated preview unplayed effect.");
                     TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(preparedTrain, preparedTrain.Context.QueryFrame?.SelectedRoomIndex ?? 0,
                         rule.OnUnplayedNegativeEffects, 0, item.Card.InstanceId, playRules!, preparedTrain.Context.OtherPiles,
                         onUnplayedNegativeEffects: true);
@@ -129,8 +131,11 @@ namespace MonsterTrain2Poju.Model
             ObserveSummons(preparedTrain.Rooms.SelectMany(room => room.Units), previewContext);
             int pyreRoomIndex = preparedTrain.Rooms.Count - 1;
             CombatUnit? previewPyre = preparedTrain.Rooms[pyreRoomIndex].Units.FirstOrDefault(unit => unit.IsPyre);
+            bool previewStopped = source.Rooms.SelectMany(room => room.Units).Any(unit => unit.IsPyre) &&
+                (previewPyre == null || previewPyre.Health <= 0);
             foreach (RoomCombatState room in preparedTrain.Rooms.Reverse().Where(_ => context.LifeLinks == null || previewPyre != null))
             {
+                if (previewStopped) break;
                 bool targetsPyre = room.RoomIndex != pyreRoomIndex && room.Units.Any(unit =>
                     unit.Triggers.Any(trigger => trigger.Effects.Any(effect =>
                         effect.Type is "CardEffectPyreDamageIfNoPlayerUnits" or "CardEffectHealTrain")));
@@ -170,7 +175,8 @@ namespace MonsterTrain2Poju.Model
                             preview.State.Context.CardRegistry.Where(card => card.InstanceId >= firstPreviewCardId)).ToArray())
                             .WithNextCardId(preview.State.Context.NextCardId);
                 }
-                if (context.LifeLinks != null && previewPyre == null || preview.RetainedUnits.Any(unit => unit.Health <= 0 && (unit.EndsBattleOnDeath || unit.IsPyre))) break;
+                if (context.LifeLinks != null && previewPyre == null || preview.State.Units.Concat(preview.RetainedUnits)
+                    .Any(unit => unit.Health <= 0 && (unit.EndsBattleOnDeath || unit.IsPyre))) break;
             }
             context = context.WithStatistics(context.Statistics!.WithLastAttackDamage(previewContext.Statistics!.LastAttackDamageDealt));
             if (source.Context!.LifeLinks != null) context = context.WithLifeLinks(source.Context.LifeLinks);

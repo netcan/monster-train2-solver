@@ -8,6 +8,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'full-battle-player-native-covenant-outer-boss-corrupter-02-search.mt2f',
+    'full-battle-player-native-covenant-outer-boss-corrupter-02-replay.mt2f',
     'full-battle-player-native-covenant-final-boss-02-search.mt2f',
     'full-battle-player-native-covenant-final-boss-02-replay.mt2f',
     'status-trigger-order-calibration.mt2f',

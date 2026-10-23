@@ -6812,7 +6812,7 @@ if (-not $cardEffectKillSubtypeCoverage) { throw 'Native CardEffectKill did not 
 if (-not $cardRecursionCoverage) { throw 'Native WurmkinEtchings recursion did not restore the expected cards in a matched full battle action.' }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
-    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($OriginalBigDamageFromManyMorsels) { 169 } elseif ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } elseif ($SettleCardAnimations) { 106 } else { 105 }) -or
+    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($UnplayedCardTrigger) { 161 } elseif ($UnplayedCardEffects) { 163 } elseif ($OriginalBigDamageFromManyMorsels) { 169 } elseif ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } elseif ($SettleCardAnimations) { 106 } else { 105 }) -or
         @($trace.DeathDissolveSettlements).Count -eq 0 -or
         @($trace.DeathDissolveSettlements | Where-Object { -not $_.Completed -or $_.PendingAfter -ne 0 -or $_.Error }).Count -ne 0 -or
         @($trace.DeathDissolveCallbacks | Where-Object { $_.Error }).Count -ne 0) {
@@ -6820,7 +6820,7 @@ if ($SettleDeathDissolves) {
     }
 }
 if ($SettleCardAnimations) {
-    if ($trace.Schema -ne $(if ($OriginalBigDamageFromManyMorsels) { 169 } elseif ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } else { 106 }) -or -not $trace.CardAnimationSettlement.Enabled -or
+    if ($trace.Schema -ne $(if ($UnplayedCardTrigger) { 161 } elseif ($UnplayedCardEffects) { 163 } elseif ($OriginalBigDamageFromManyMorsels) { 169 } elseif ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } else { 106 }) -or -not $trace.CardAnimationSettlement.Enabled -or
         $trace.CardAnimationSettlement.PreviewWaits -lt 0 -or $trace.CardAnimationSettlement.DecisionWaits -lt 0 -or
         $trace.CardAnimationSettlement.ScheduledMovements -le 0 -or $trace.CardAnimationSettlement.PendingMovements -ne 0) {
         throw 'Native card-animation settlement protocol is missing or invalid.'

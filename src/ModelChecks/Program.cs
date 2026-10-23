@@ -2529,6 +2529,12 @@ if (args.Length == 2 && args[0] is "--status-trigger-order-only" or "--large-sta
     StatusTriggerOrderChecks.Native(fixture.RootElement, damage: args[0] == "--large-status-damage-only");
     return;
 }
+if (args.Length == 2 && args[0] == "--unplayed-pyre-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    UnplayedPyrePreviewChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--conduit-movement-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
