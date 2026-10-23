@@ -276,6 +276,9 @@ namespace MonsterTrain2Poju.Model
                     // These sealed native IMerchantRelicEffect implementations
                     // expose merchant price data and have no combat callbacks.
                     if (TrueFinalBossCovenantModel.MerchantOnlyOwner(relic)) continue;
+                    // This original Covenant only adds/upgrades starting cards.
+                    // Their actual native state is captured before combat.
+                    if (TrueFinalBossCovenantModel.StartupCardsOwner(relic)) continue;
                     // ICharacterGeneratingRelicEffect only supplies a tooltip
                     // character. The sealed native type has no combat hooks.
                     if (effect == "RelicEffectOnlyTooltips") continue;

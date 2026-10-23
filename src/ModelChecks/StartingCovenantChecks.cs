@@ -18,7 +18,7 @@ internal static class StartingCovenantChecks
         int level = startup.GetProperty("AscensionLevel").GetInt32();
         Require(!expectedLevel.HasValue || level == expectedLevel, "Native Covenant fixture uses a different declared cumulative rank.");
         Require(startup.GetProperty("Kind").GetString() == "NativeCovenantRunStartup" &&
-            level is 1 or 2 or 3 or 4 && startup.GetProperty("StartingLevel").GetInt32() == level &&
+            level is >= 1 and <= 5 && startup.GetProperty("StartingLevel").GetInt32() == level &&
             selection.GetProperty("Kind").GetString() == "SelectNativeCovenantAtRunSetup" &&
             selection.GetProperty("RequestedLevel").GetInt32() == level && selection.GetProperty("LevelAfter").GetInt32() == level &&
             !selection.GetProperty("EarnedUnlockClaimed").GetBoolean() && !selection.GetProperty("StartupEffectsInvokedByProbe").GetBoolean() &&
@@ -30,9 +30,10 @@ internal static class StartingCovenantChecks
             owner.GetProperty("Id").GetString() == "d3b53481-f26b-4344-ae8e-ec80b28d6004" && owner.GetProperty("Level").GetInt32() == 1,
             "Unexpected original rank-one Covenant owner.");
         FixtureValue[] calls = startup.GetProperty("StartupCalls").EnumerateArray().ToArray();
-        Require(calls.Length == 2 && calls[0].GetProperty("Effect").GetString() == "RelicEffectPurgeStarterDeck" &&
+        Require(calls.Length == (level >= 5 ? 4 : 2) && calls[0].GetProperty("Effect").GetString() == "RelicEffectPurgeStarterDeck" &&
             calls[1].GetProperty("Effect").GetString() == "RelicEffectAddCardSetStartOfRun" &&
-            calls.All(call => call.GetProperty("OwnerId").GetString() == owner.GetProperty("Id").GetString() &&
+            calls.Take(2).All(call => call.GetProperty("OwnerId").GetString() == owner.GetProperty("Id").GetString()) &&
+            calls.All(call =>
                 call.GetProperty("RngBefore").GetArrayLength() == 16 && call.GetProperty("RngAfter").GetArrayLength() == 16),
             "Native Covenant startup must execute each original purge/add callback exactly once.");
         FixtureValue purge = calls[0], add = calls[1];
@@ -42,7 +43,7 @@ internal static class StartingCovenantChecks
             purge.GetProperty("RngBefore").ContentEquals(purge.GetProperty("RngAfter")) &&
             purge.GetProperty("After").ContentEquals(add.GetProperty("Before")) &&
             add.GetProperty("After").GetArrayLength() > add.GetProperty("Before").GetArrayLength() &&
-            add.GetProperty("After").ContentEquals(startup.GetProperty("StartingDeck")),
+            (level >= 5 || add.GetProperty("After").ContentEquals(startup.GetProperty("StartingDeck"))),
             "The native startup callbacks must purge only non-champions, then rebuild the actual starting deck.");
         BattleTurnState before = root.GetProperty("Turns")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         CombatRelicState[] captured = before.Spawn.Train.Context!.Relics!.Where(relic => relic.IsCovenant == true).ToArray();
@@ -74,6 +75,28 @@ internal static class StartingCovenantChecks
                     isCovenant: true) : relic).ToArray();
             Require(!TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(invalid),
                 "The calibrated stronger-boss definition must not authorize additional callbacks.");
+        }
+        if (level >= 5)
+        {
+            Require(TrueFinalBossCovenantModel.StartupCardsOwner(captured[4]) &&
+                calls.Skip(2).All(call => call.GetProperty("Effect").GetString() == "RelicEffectAddCardsStartOfRun" &&
+                    call.GetProperty("OwnerId").GetString() == captured[4].DataId &&
+                    call.GetProperty("After").GetArrayLength() > call.GetProperty("Before").GetArrayLength()) &&
+                add.GetProperty("After").ContentEquals(calls[2].GetProperty("Before")) &&
+                calls[2].GetProperty("After").ContentEquals(calls[3].GetProperty("Before")) &&
+                calls[3].GetProperty("After").ContentEquals(startup.GetProperty("StartingDeck")),
+                "Rank five must execute both original add/upgrade callbacks exactly once and retain their actual cards/upgrades.");
+            FixtureValue[] added = startup.GetProperty("StartingDeck").EnumerateArray()
+                .Skip(add.GetProperty("After").GetArrayLength()).ToArray();
+            Require(added.Length == 2 && added.All(card => card.GetProperty("AssetKey").GetString() == "BlightPyreDamageInHand" &&
+                card.GetProperty("DataId").GetString() == "186180e9-94e9-47d0-b69c-865b9a6d27a4" &&
+                !card.GetProperty("IsChampion").GetBoolean() && card.GetProperty("Upgrades").GetArrayLength() == 0),
+                "The original rank-five startup must retain both native unupgraded Vengeful Shards.");
+            CombatRelicState[] invalid = captured.Select(relic => relic.AssetKey == "Covenant05_VengefulShards" ?
+                new CombatRelicState(relic.DataId, relic.AssetKey, relic.EffectTypes.Concat(new[] { "RelicEffectNull" }).ToArray(),
+                    isCovenant: true) : relic).ToArray();
+            Require(!TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(invalid),
+                "The startup-only Covenant must not authorize additional battle callbacks.");
         }
         Console.WriteLine($"NATIVE-COVENANT-STARTUP PASS: native rank {level} selection, exact cumulative owners, one original purge/add callback each and {startup.GetProperty("StartingDeck").GetArrayLength()} actual starting cards; original battle waves and stat-query purity match. Earned unlocks remain separate.");
     }

@@ -24,7 +24,11 @@ namespace MonsterTrain2Poju.Model
             owners.All(owner => KnownOwner(owner) && owner.AssetKey is "Covenant00_FTUE" or "Covenant01_StrongerEnemiesMoreCards" ||
                 owner.IsCovenant == true && owner.AssetKey == "Covenant02_BattlesNewEnemies" &&
                 owner.DataId == "92c18b99-e4c0-4953-ba2c-4815f570a66e" && owner.EffectTypes.Count == 0 ||
-                MerchantOnlyOwner(owner) || StrongerBossOwner(owner));
+                MerchantOnlyOwner(owner) || StrongerBossOwner(owner) || StartupCardsOwner(owner));
+
+        internal static bool StartupCardsOwner(CombatRelicState owner) => owner.IsCovenant == true &&
+            owner.AssetKey == "Covenant05_VengefulShards" && owner.DataId == "0310c0f2-f970-4656-9cc6-6d3c457303dd" &&
+            owner.EffectTypes.SequenceEqual(Enumerable.Repeat("RelicEffectAddCardsStartOfRun", 2));
 
         internal static bool StrongerBossOwner(CombatRelicState owner) => KnownOwner(owner) &&
             owner.AssetKey == "Covenant04_StrongerBosses" && owner.EffectTypes.SequenceEqual(

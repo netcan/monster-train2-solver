@@ -130,3 +130,22 @@ first battle wins in seven EndTurns with Pyre8: fourteen train stages,
 definitions and sixteen immutable full chains match. Native runtime is
 66.83 seconds, normal exit, protected files unchanged and all four failure
 counters zero. Player advice and independent replay remain separate.
+
+## Native cumulative rank five
+
+The exact original `Covenant05_VengefulShards` identity has two
+`RelicEffectAddCardsStartOfRun` callbacks. Both execute through native startup:
+the first-rank purge/add sequence changes 15 cards to one champion and then
+twenty cards; the two additional callbacks each append one original
+`BlightPyreDamageInHand` (`186180e9-94e9-47d0-b69c-865b9a6d27a4`), making
+22 cards. Their native permanent upgrades are recorded and empty. These
+start-of-run callbacks have no battle callback; the model retains actual
+captured card state and rejects altered effect signatures.
+
+`full-battle-native-covenant-startup-05.mt2f` comes from
+`full-battle-no-cards-20261023-112844-2d35a16a`. All five original owners and
+the complete startup callback chain are checked. Seven EndTurns win with
+Pyre5; fourteen train stages, 57 room stages, four pure native stat queries,
+seven authored wave definitions and sixteen immutable full chains match.
+Native runtime is 59.44 seconds, normal exit, protected files unchanged and
+all four failure counters zero. Player advice/replay remains separate.

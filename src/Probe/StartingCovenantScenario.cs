@@ -46,8 +46,12 @@ namespace MonsterTrain2Poju.Probe
 
         private static object Definition(CovenantData data) => new { AssetKey = data.name, Id = data.GetID(),
             Level = data.AscensionLevel, EffectTypes = data.GetEffects().Select(effect => effect.GetEffectClassName()).ToArray() };
-        private static object Deck(SaveManager save) => save.GetDeckState().Select(card => new {
-            AssetKey = card.GetAssetName(), DataId = card.GetCardDataID(), IsChampion = card.IsChampionCard() }).ToArray();
+        private static object Deck(SaveManager save) => save.GetDeckState().Select(card => Level >= 5 ? (object)new {
+            AssetKey = card.GetAssetName(), DataId = card.GetCardDataID(), IsChampion = card.IsChampionCard(),
+            Upgrades = card.GetCardStateModifiers().GetCardUpgrades().Select(upgrade => new {
+                Id = upgrade.GetCardUpgradeDataId(), Attack = upgrade.GetAttackDamage(),
+                Health = upgrade.GetAdditionalHP(), CostReduction = upgrade.GetCostReduction() }).ToArray()
+        } : new { AssetKey = card.GetAssetName(), DataId = card.GetCardDataID(), IsChampion = card.IsChampionCard() }).ToArray();
         private static object Rng() => Enum.GetValues(typeof(RngId)).Cast<RngId>().Select(id =>
             new { Id = id.ToString(), Words = RngCalibration.Words(RandomManager.GetState(id)) }).ToArray();
         internal static void ObserveStats(CharacterData data, object evidence)
@@ -82,6 +86,13 @@ namespace MonsterTrain2Poju.Probe
         private static class AddPatch
         {
             private static void Prefix(RelicEffectAddCardSetStartOfRun __instance, RelicEffectParams relicEffectParams, out Call? __state)
+            { __state = Before(__instance, relicEffectParams.saveManager); }
+            private static void Postfix(RelicEffectParams relicEffectParams, Call? __state) { After(__state, relicEffectParams.saveManager); }
+        }
+        [HarmonyPatch(typeof(RelicEffectAddCardsStartOfRun), "ApplyEffect")]
+        private static class AddCardsPatch
+        {
+            private static void Prefix(RelicEffectAddCardsStartOfRun __instance, RelicEffectParams relicEffectParams, out Call? __state)
             { __state = Before(__instance, relicEffectParams.saveManager); }
             private static void Postfix(RelicEffectParams relicEffectParams, Call? __state) { After(__state, relicEffectParams.saveManager); }
         }
