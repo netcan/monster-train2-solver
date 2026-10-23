@@ -4852,6 +4852,14 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         PlayerOuterBossChecks.CorrupterWinningPair(source.RootElement, replay.RootElement);
     }
 }
+foreach (string path in args.Where(path => path.EndsWith("full-battle-player-advisor-capture-search.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-advisor-capture-replay.mt2f"));
+    Check(source.RootElement.GetProperty("PlayerAdvisor").GetProperty("Overlay")
+        .GetProperty("PublicationRootChecks").GetInt32() > 0, "Missing mandatory fresh-publication observations.");
+    StartingCovenantChecks.Pair(source.RootElement, replay.RootElement, 2);
+}
 foreach (string path in args.Where(path => path.EndsWith("full-battle-player-angel-duo-search.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var source = ModelJson.ReadFixture(path);

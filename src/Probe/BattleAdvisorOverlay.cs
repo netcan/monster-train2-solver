@@ -43,6 +43,7 @@ namespace MonsterTrain2Poju.Probe
         internal int Captures { get; private set; }
         internal int PurityFailures { get; private set; }
         internal int Published { get; private set; }
+        internal int PublicationRootChecks { get; private set; }
         internal int Invalidations { get; private set; }
         internal int PlanningFrames { get; private set; }
         internal int PanelVertices { get; private set; }
@@ -61,7 +62,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal List<Publication> Publications { get; } = new List<Publication>();
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
-        internal object Evidence => new { Captures, PurityFailures, Published, Invalidations, PlanningFrames, PanelVertices, PanelPixels, Failures, Publications,
+        internal object Evidence => new { Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, PlanningFrames, PanelVertices, PanelPixels, Failures, Publications,
             Error = session.Error, UnavailableRoot = session.Status == BattleAdviceStatus.Unavailable ? lastCapture : null, Horizon = horizon,
             PreferredDeploymentRoom = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2"),
             TacticalSeed = Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1",
@@ -224,9 +225,13 @@ namespace MonsterTrain2Poju.Probe
             if (session.Status == BattleAdviceStatus.Planning) PlanningFrames++;
             if (!playerSession && Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR") == "1" &&
                 managers.GetCombatManager().GetTurnCount() < int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "0")) return;
-            if (Time.realtimeSinceStartup >= nextCapture && captureError == null)
+            // Input hooks invalidate immediately. While a worker runs, wait for
+            // its result; every new publication must first observe the live root.
+            bool unpublished = session.Current != null && !ReferenceEquals(displayed, session.Current);
+            int publicationCaptureFrame = -1;
+            if (captureError == null && (unpublished ||
+                session.Status != BattleAdviceStatus.Planning && Time.realtimeSinceStartup >= nextCapture))
             {
-                nextCapture = Time.realtimeSinceStartup + .5f;
                 try
                 {
                     var capture = Stopwatch.StartNew();
@@ -236,12 +241,18 @@ namespace MonsterTrain2Poju.Probe
                     string key = keys.Key(root);
                     capture.Stop();
                     session.Observe(root, key, capture.Elapsed);
+                    publicationCaptureFrame = Time.frameCount;
+                    // A slow capture must not make the next one immediately due.
+                    nextCapture = Time.realtimeSinceStartup + .5f;
                 }
                 catch (Exception error)
                 { session.Invalidate(); captureError = error.Message; log.LogError("ADVISOR-CAPTURE-FAIL " + error); }
             }
             if (session.Current != null && !ReferenceEquals(displayed, session.Current))
             {
+                if (publicationCaptureFrame != Time.frameCount)
+                    throw new InvalidOperationException("Advice publication requires a fresh full-state observation.");
+                PublicationRootChecks++;
                 displayed = session.Current; Published++;
                 displayFrame = Time.frameCount;
                 body.text = Describe(displayed);

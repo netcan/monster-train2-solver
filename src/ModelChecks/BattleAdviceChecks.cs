@@ -16,6 +16,9 @@ internal static class BattleAdviceChecks
         }
         Require(advice.GetProperty("Captures").GetInt32() > 0 && advice.GetProperty("PurityFailures").GetInt32() == 0,
             "Live capture changed native state or RNG.");
+        if (advice.TryGetProperty("PublicationRootChecks", out FixtureValue rootChecks))
+            Require(rootChecks.GetInt32() == advice.GetProperty("Published").GetInt32(),
+                "Some advice reached the panel without a fresh full-state observation.");
         Require(advice.GetProperty("Published").GetInt32() >= 2 && advice.GetProperty("Invalidations").GetInt32() > 0 &&
             advice.GetProperty("PlanningFrames").GetInt32() >= 2, "Missing live publication, action invalidation/replanning or background frames.");
         string? expected = conduitCalibration ? "original-conduit-relics" : calibration;
