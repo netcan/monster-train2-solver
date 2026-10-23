@@ -45,6 +45,20 @@ namespace MonsterTrain2Poju.Model
         }
         internal OuterBossProgress WithRoom(int room) => room == Room ? this : new OuterBossProgress(UnitId, AssetKey,
             Phase, ValidAttackPhases, BaseCanAttack, room, MovementSpeed, VisitedRooms, Controller, Actions, DestroyActions);
+        internal OuterBossProgress WithActor(TrainCombatState train)
+        {
+            RoomCombatState? floor = train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == UnitId));
+            if (floor == null) return this;
+            OuterBossProgress located = WithRoom(floor.RoomIndex);
+            if (!OuterBossDefinitions.IsAngelDuo(AssetKey)) return located;
+            CombatUnit actor = floor.Units.Single(unit => unit.Id == UnitId);
+            // Native GetMovementSpeed queries the current room/statuses rather
+            // than retaining the speed observed before a casting move or aura.
+            int speed = actor.Status("rooted") != null || actor.Status("immobile") != null ? 0 :
+                actor.Status("haste") != null ? Math.Max(1, train.Rooms.Count - 2 - floor.RoomIndex) : 1;
+            return located.MovementSpeed == speed ? located : new OuterBossProgress(UnitId, AssetKey,
+                Phase, ValidAttackPhases, BaseCanAttack, floor.RoomIndex, speed, VisitedRooms, Controller, Actions, DestroyActions);
+        }
         internal OuterBossProgress WithIdentity(int id) => new OuterBossProgress(id, AssetKey,
             Phase, ValidAttackPhases, BaseCanAttack, Room, MovementSpeed, VisitedRooms, Controller, Actions, DestroyActions);
     }
@@ -55,7 +69,7 @@ namespace MonsterTrain2Poju.Model
         public TrueFinalBossPhaseFlags? TrueFinalBoss { get; }
         public bool ShouldSerializeTrueFinalBoss() => TrueFinalBoss != null;
         public OuterBossPhaseState(BattleTurnState battle, OuterBossProgress boss, TrueFinalBossPhaseFlags? trueFinalBoss = null)
-        { Battle = battle; Boss = boss; TrueFinalBoss = trueFinalBoss; }
+        { Battle = battle; Boss = boss.WithActor(battle.Spawn.Train); TrueFinalBoss = trueFinalBoss; }
     }
     public sealed class OuterBossPhaseResult
     {

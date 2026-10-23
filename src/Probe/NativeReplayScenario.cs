@@ -287,6 +287,8 @@ namespace MonsterTrain2Poju.Probe
                     if (!save.HasRun(RunType.Class) || save.GetCurrentDistance() != targetDistance ||
                         save.GetGameSequence() != SaveData.GameSequence.BattleIntro)
                         throw new InvalidOperationException("A resumed battle requires a matching native BattleIntro checkpoint.");
+                    if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_ANGEL_DUO")))
+                        OriginalOuterBossRoute.ArmResume(save, targetDistance, log);
                     save.ContinueRunWithReplay(RunType.Class);
                     battleRoutePrepared = true;
                     log.LogInfo("ROLLING-NATIVE-CHECKPOINT distance=" + targetDistance);

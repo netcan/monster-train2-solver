@@ -528,7 +528,7 @@ namespace MonsterTrain2Poju.Probe
                 (bool)AccessTools.Field(typeof(PlayerManager), "isMoonPhaseTrackingActive").GetValue(player),
                 (bool)AccessTools.Field(typeof(PlayerManager), "isForgeTrackingActive").GetValue(player),
                 save.IsForgeToggleActive(), save.GetBalatroGrosMichelCombatRoundCount(),
-                save.GetCurrentScenarioData()?.name == "Level6AngelDuo_RallyAttackIncantHealth" ?
+                OuterBossDefinitions.IsAngelDuoScenario(save.GetCurrentScenarioData()?.name) ?
                     new ForcedRelentlessCounters((int)AccessTools.Field(typeof(CombatManager), "totalWaves").GetValue(combat),
                         (int)AccessTools.Field(typeof(CombatManager), "turnsRemainingWhenRelentlessTriggeredEarly").GetValue(combat)) : null);
         }

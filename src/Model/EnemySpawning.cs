@@ -92,7 +92,7 @@ namespace MonsterTrain2Poju.Model
             CanonicalDecisionReferences = canonicalDecisionReferences;
             PendingDestroyedUnitIds = pendingDestroyedUnitIds == null ? null : Array.AsReadOnly(pendingDestroyedUnitIds.ToArray());
             RoomCombatState? bossRoom = outerBoss == null ? null : train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == outerBoss.UnitId));
-            OuterBoss = bossRoom == null ? null : outerBoss!.WithRoom(bossRoom.RoomIndex);
+            OuterBoss = bossRoom == null ? null : outerBoss!.WithActor(train);
             QueuedOuterBoss = OuterBoss == null ? queuedOuterBoss : null;
             QueuedTrueFinalBoss = OuterBoss == null ? queuedTrueFinalBoss : null;
             TrueFinalBoss = trueFinalBoss;

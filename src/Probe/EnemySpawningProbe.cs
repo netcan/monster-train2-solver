@@ -69,7 +69,7 @@ namespace MonsterTrain2Poju.Probe
             }
             CharacterState? retainedOuter = heroes.GetOuterTrainBossCharacter();
             bool completedAngelDuoOuter = OuterBossPhaseProbe.TurnsEnabled &&
-                save.GetCurrentScenarioData()?.name == "Level6AngelDuo_RallyAttackIncantHealth" && (retainedOuter == null || !retainedOuter.IsAlive) &&
+                OuterBossDefinitions.IsAngelDuoScenario(save.GetCurrentScenarioData()?.name) && (retainedOuter == null || !retainedOuter.IsAlive) &&
                 state.Context?.QueryFrame?.ForcedRelentless?.RemainingTurns > 0;
             if (pattern.GetBossType() != SpawnPatternData.BossType.None && !ignoreOuterBossSpawnInteraction && outerBoss == null && queuedOuterBoss == null && queuedTrueFinalBoss == null && !completedAngelDuoOuter)
                 interactions.Add("Outer or queued final boss spawning");

@@ -26,7 +26,7 @@ namespace MonsterTrain2Poju.Model
             bool originalDuoPair = OuterBossDefinitions.IsAngelDuo(boss.AssetKey) &&
                 train.Context?.QueryFrame?.ForcedRelentless != null && train.Rooms.SelectMany(floor => floor.Units)
                     .Any(unit => unit.Id == actor.BumpRules.PairedBossUnitId && unit.Health > 0 &&
-                        unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack");
+                        unit.AssetKey == OuterBossDefinitions.AngelDuoCompanion(boss.AssetKey));
             if (!originalDuoPair && (actor.BumpRules.PairedBossUnitId != 0 || train.Movement.Any(rule => rule.CompanionBoss &&
                 (!OuterBossDefinitions.IsAngelDuo(boss.AssetKey) || rule.UnitId != boss.UnitId))))
                 return Fail("Paired companion and outer-boss phases require native integration calibration.");

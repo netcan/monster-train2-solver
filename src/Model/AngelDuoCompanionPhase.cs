@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Model
             if (!preCombat || old.Train.Context?.QueryFrame?.ForcedRelentless == null || old.Phase < old.Waves.Count)
                 return new BattleTurnResult(source, RoomOutcome.Exchanged);
             CombatUnit? companion = old.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit =>
-                unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" && unit.Health > 0);
+                OuterBossDefinitions.IsAngelDuoInner(unit.AssetKey) && unit.Health > 0);
             if (companion == null || companion.Status("relentless") != null)
                 return new BattleTurnResult(source, RoomOutcome.Exchanged);
             BattleTurnResult Fail(string reason) => new BattleTurnResult(null, RoomOutcome.Unsupported, reason);

@@ -13,6 +13,28 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static object? Control { get; private set; }
         internal static object? TrialIntroControl { get; private set; }
+        private static Action? resumeSelection;
+        internal static void ArmResume(SaveManager save, int distance, ManualLogSource log)
+        {
+            if (resumeSelection != null || Control != null) throw new InvalidOperationException("Original resume route was armed twice.");
+            resumeSelection = () => Select(save, distance, log);
+        }
+        [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.StartLoad))]
+        private static class ResumeRoutePatch
+        {
+            private static void Prefix(RunType runType, ref Action<bool>? doneCallback)
+            {
+                if (resumeSelection == null || runType != RunType.Class) return;
+                Action select = resumeSelection;
+                resumeSelection = null;
+                Action<bool>? native = doneCallback;
+                doneCallback = success =>
+                {
+                    if (success) select();
+                    native?.Invoke(success);
+                };
+            }
+        }
         private static object Rng() => Enum.GetValues(typeof(RngId)).Cast<RngId>()
             .Select(id => new { Id = id.ToString(), Words = RngCalibration.Words(RandomManager.GetState(id)) }).ToArray();
         internal static void PrepareIntro(SaveManager save, BattleIntroScreen intro, ManualLogSource log)
@@ -45,7 +67,14 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static void Select(SaveManager save, int distance, ManualLogSource log)
         {
+            string? duo = Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_ANGEL_DUO");
             string? variant = Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_OUTER_BOSS");
+            if (!string.IsNullOrEmpty(duo))
+            {
+                if (!string.IsNullOrEmpty(variant)) throw new InvalidOperationException("Original boss route controls cannot be combined.");
+                SelectAngelDuo(save, distance, duo, log);
+                return;
+            }
             if (string.IsNullOrEmpty(variant)) return;
             if (variant is not ("Corrupter" or "Fragile" or "AllyBuffer") || distance != 7 || Control != null)
                 throw new InvalidOperationException("Original outer-boss control requires one explicit Ring8 selection.");
@@ -85,6 +114,38 @@ namespace MonsterTrain2Poju.Probe
                 RngBefore = before, RngAfter = after, ScenarioAssetsUnchanged = true,
                 TitanTrial = trialControl };
             log.LogInfo("ORIGINAL-OUTER-BOSS-ROUTE boss=" + boss + " scenario=" + selected.name + " previous=" + scenarios[previous].name);
+        }
+
+        private static void SelectAngelDuo(SaveManager save, int distance, string variant, ManualLogSource log)
+        {
+            string boss = variant switch
+            {
+                "LoopResolve" => "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth",
+                "SlayIncant" => "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth",
+                "RevengeHarvest" => "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth",
+                _ => throw new InvalidOperationException("Unknown original Angel Duo variant.")
+            };
+            if (distance != 5 || Control != null || save.GetCurrentDistance() != 5 ||
+                save.GetGameSequence() != SaveData.GameSequence.BattleIntro)
+                throw new InvalidOperationException("Original Angel Duo selection requires a Ring6 checkpoint after five native wins.");
+            var scenarios = new List<ScenarioData>();
+            save.GetRunData().GetDistanceData(distance).GetAllScenarioDatas(scenarios);
+            ScenarioData selected = scenarios.Single(scenario => scenario.GetOuterTrainBoss(false)?.GetAssetKey() == boss);
+            NodeState node = save.GetRunState().GetNodeStateAtDistance(distance);
+            int previous = node.scenarioIndex, index = scenarios.IndexOf(selected);
+            string? generatedBefore = node.bossId, generatedAfter = selected.GetBossAtIndex(0)?.GetID();
+            object before = Rng();
+            node.scenarioIndex = index;
+            node.bossId = generatedAfter;
+            object after = Rng();
+            if (!JToken.DeepEquals(JToken.FromObject(before), JToken.FromObject(after)))
+                throw new InvalidOperationException("Original Angel Duo selection consumed native RNG.");
+            Control = new { Kind = "SelectOriginalAngelDuoScenario", Distance = distance, Boss = boss,
+                PreviousIndex = previous, PreviousScenario = scenarios[previous].name,
+                SelectedIndex = index, SelectedScenario = selected.name,
+                GeneratedWaveBossBefore = generatedBefore, GeneratedWaveBossAfter = generatedAfter,
+                RngBefore = before, RngAfter = after, ScenarioAssetsUnchanged = true };
+            log.LogInfo("ORIGINAL-ANGEL-DUO-ROUTE boss=" + boss + " scenario=" + selected.name + " previous=" + scenarios[previous].name);
         }
     }
 }

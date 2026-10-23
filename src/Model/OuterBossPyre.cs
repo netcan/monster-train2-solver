@@ -24,7 +24,7 @@ namespace MonsterTrain2Poju.Model
             bool originalDuoPair = OuterBossDefinitions.IsAngelDuo(boss.AssetKey) && actor != null &&
                 train.Context?.QueryFrame?.ForcedRelentless != null && train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == actor.BumpRules?.PairedBossUnitId && unit.Health > 0 &&
-                        unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack");
+                        unit.AssetKey == OuterBossDefinitions.AngelDuoCompanion(boss.AssetKey));
             if (!OuterBossDefinitions.Supports(boss.AssetKey) || boss.Phase != "Relentless" || boss.Room != pyre - 1 ||
                 actor?.BumpRules?.OuterBoss != true || actor.BumpRules.PairedBossUnitId != 0 && !originalDuoPair || actor.Health <= 0 ||
                 actor.Status("rooted") != null || actor.Status("immobile") != null || train.Context?.SpawnPoints == null ||

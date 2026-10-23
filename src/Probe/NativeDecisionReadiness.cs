@@ -1,4 +1,5 @@
 using HarmonyLib;
+using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -7,8 +8,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool CardsDrawn(CombatManager combat)
         {
             if (combat.HaveCardsBeenDrawnForCurrentTurn()) return true;
-            if (AllGameManagers.Instance.GetSaveManager().GetCurrentScenarioData()?.name !=
-                "Level6AngelDuo_RallyAttackIncantHealth") return false;
+            if (!OuterBossDefinitions.IsAngelDuoScenario(AllGameManagers.Instance.GetSaveManager().GetCurrentScenarioData()?.name)) return false;
             int skipped = (int)AccessTools.Field(typeof(CombatManager), "turnsRemainingWhenRelentlessTriggeredEarly").GetValue(combat);
             int waves = (int)AccessTools.Field(typeof(CombatManager), "totalWaves").GetValue(combat);
             int drawn = (int)AccessTools.Field(typeof(CombatManager), "turnCardsNotYetDrawn").GetValue(combat);

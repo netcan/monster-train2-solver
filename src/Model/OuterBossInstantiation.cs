@@ -69,7 +69,7 @@ namespace MonsterTrain2Poju.Model
             {
                 CombatUnit[] partners = train.Rooms.SelectMany(room => room.Units)
                     .Where(unit => unit.BumpRules?.CompanionBoss == true && unit.Health > 0).ToArray();
-                if (partners.Length != 1 || partners[0].AssetKey != "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack")
+                if (partners.Length != 1 || partners[0].AssetKey != OuterBossDefinitions.AngelDuoCompanion(actor.Unit.AssetKey))
                     return Fail("Angel duo creation requires its original live Savage companion.");
                 UnitBumpRules prior = created.BumpRules!;
                 created = created.WithBumpRules(new UnitBumpRules(prior.Loops, prior.CompanionBoss, prior.OuterBoss,

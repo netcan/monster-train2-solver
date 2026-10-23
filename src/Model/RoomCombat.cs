@@ -265,8 +265,7 @@ namespace MonsterTrain2Poju.Model
         internal CombatUnit WithoutRemovedCompanion(ISet<int> activeIds)
         {
             UnitBumpRules? rules = BumpRules;
-            if (AssetKey is not ("Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" or
-                "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth") || rules == null ||
+            if (!OuterBossDefinitions.IsAngelDuoActor(AssetKey) || rules == null ||
                 rules.PairedBossUnitId == 0 || activeIds.Contains(rules.PairedBossUnitId)) return this;
             return WithBumpRules(new UnitBumpRules(rules.Loops, rules.CompanionBoss, rules.OuterBoss,
                 rules.OuterBossRelentlessPhase, 0, rules.CastingAnchorSlots, rules.RelentlessAnchorSlots)).WithEndsBattleOnDeath(true);
@@ -1102,7 +1101,7 @@ namespace MonsterTrain2Poju.Model
                     return "Invalid retained status dictionary on unit " + unit.Id;
                 foreach (CombatStatus status in unit.Statuses)
                     if (!KnownStatuses.Contains(status.Id) && !(status.Id == "pyrebane" &&
-                        unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" && unit.Status("lifelink") == null) && !(linkedHealthOnly &&
+                        OuterBossDefinitions.IsAngelDuoInner(unit.AssetKey) && unit.Status("lifelink") == null) && !(linkedHealthOnly &&
                         (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
                             status.Id == "pyrebane" && unit.AssetKey == "Boss_Level9_Savagery_V2") &&
                         state.Context?.LifeLinks is LifeLinkContext world && (linkedCombat || !state.Preview && !world.CalculatingPreview) &&
@@ -1153,8 +1152,7 @@ namespace MonsterTrain2Poju.Model
                         if (effect.Type == "CardEffectForceRelentless")
                         {
                             if (trigger.Kind != "OnDeath" || effect.Value != 1 || effect.Action != null ||
-                                unit.BumpRules?.CompanionBoss != true || unit.AssetKey is not
-                                    ("Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" or "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth"))
+                                unit.BumpRules?.CompanionBoss != true || !OuterBossDefinitions.IsAngelDuoActor(unit.AssetKey))
                                 return "Uncalibrated forced-relentless trigger definition.";
                             continue;
                         }
@@ -1420,10 +1418,13 @@ namespace MonsterTrain2Poju.Model
                             bool duoSlay = unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" && trigger.Kind == "OnKill" &&
                                 effect.Value == 3 && effect.Action is { Target: "Tower", AllowPlayer: true, AllowEnemy: true } &&
                                 effect.Action.Filters?.Subtype == "SubtypesData_EntropicAngel";
+                            bool duoLoop = unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant1_LoopAttack" && trigger.Kind == "OnTrainRoomLoop" &&
+                                effect.Value == 8 && effect.Action is { Target: "Tower", AllowPlayer: true, AllowEnemy: true } &&
+                                effect.Action.Filters?.Subtype == "SubtypesData_EntropicAngel";
                             if (unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 || unit.Modifiers == null ||
                                 effect.Action is not { Type: "BuffAttack", Range: null } buff ||
                                 buff.Target is not ("Self" or "Room" or "Tower") || buff.Value != effect.Value || buff.UseCardTraits ||
-                                buff.Target != "Self" && (!buff.AllowEnemy || buff.AllowPlayer && !duoSlay))
+                                buff.Target != "Self" && (!buff.AllowEnemy || buff.AllowPlayer && !duoSlay && !duoLoop))
                                 return "Triggered attack buffs require a captured fixed enemy self/room/tower buff without parent-card traits.";
                             string? buffFilter = buff.Target == "Self" ? null : buff.Filters?.Validate();
                             if (buffFilter != null) return buffFilter;
@@ -5157,11 +5158,12 @@ namespace MonsterTrain2Poju.Model
                 {
                     string? healthError = TriggeredHealthModel.Validate(effect);
                     if (healthError != null) { unsupportedReason = healthError; return false; }
-                    bool duoIncantHealth = OuterBossDefinitions.IsAngelDuo(actor.Source.AssetKey) &&
-                        action.Type == "BuffHealth" && amount == 30 && action.Target == "Tower" &&
+                    bool duoHealth = (actor.Source.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" && amount == 30 ||
+                        actor.Source.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" && amount == 60) &&
+                        action.Type == "BuffHealth" && action.Target == "Tower" &&
                         action.Lifetime == "TemporaryUntilEndOfBattle" && action.Filters?.Subtype == "SubtypesData_SavageAngel";
                     if (targets.UnitIds.Any(id => units.All(unit => unit.Source.Id != id) ||
-                        !duoIncantHealth && units.Single(unit => unit.Source.Id == id).RoomIndex != source.RoomIndex))
+                        !duoHealth && units.Single(unit => unit.Source.Id == id).RoomIndex != source.RoomIndex))
                     { unsupportedReason = "Cross-floor triggered maximum-health mutation requires native calibration."; return false; }
                     foreach (int id in targets.UnitIds)
                     {

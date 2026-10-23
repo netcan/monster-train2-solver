@@ -1,6 +1,28 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--angel-duo-loop-resolve-birth-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AngelDuoVariantChecks.Birth(fixture.RootElement);
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--player-angel-duo-loop-resolve-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NativeCovenantCampaignChecks.AngelDuoVariantPair(source.RootElement, replay.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--angel-duo-loop-resolve-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AngelDuoVariantChecks.Battle(fixture.RootElement, args[1]);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--angel-duo-catalog-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4858,6 +4880,16 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         using var replay = ModelJson.ReadFixture(replayPath);
         PlayerOuterBossChecks.CorrupterWinningPair(source.RootElement, replay.RootElement);
     }
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-angel-duo-loop-resolve.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    AngelDuoVariantChecks.Battle(fixture.RootElement, path);
+}
+foreach (string path in args.Where(path => path.EndsWith("outer-boss-birth-calibration-angel-duo-loop-resolve.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    AngelDuoVariantChecks.Birth(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-player-advisor-capture-search.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

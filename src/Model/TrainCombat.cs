@@ -479,7 +479,7 @@ namespace MonsterTrain2Poju.Model
             // CombatManager.IsCombatInRoomDisabledForFinalBoss suppresses the
             // ascension tower pass when every living enemy has Life Link.
             bool pairedAngelArrival = shifted.Any(arrival => arrival.Destination == pyre && next[pyre].Units.Any(unit =>
-                unit.Id == arrival.UnitId && unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" &&
+                unit.Id == arrival.UnitId && OuterBossDefinitions.IsAngelDuoInner(unit.AssetKey) &&
                 unit.BumpRules?.PairedBossUnitId > 0 && next.SelectMany(room => room.Units).Any(partner =>
                     partner.Id == unit.BumpRules.PairedBossUnitId && partner.Health > 0)));
             if (enteredPyre && !pairedAngelArrival && next[pyre].Units.Any(unit => unit.Team == CombatTeam.Enemy &&

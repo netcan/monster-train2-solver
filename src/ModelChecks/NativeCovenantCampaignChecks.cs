@@ -37,7 +37,22 @@ internal static class NativeCovenantCampaignChecks
             (source.GetProperty("NativeWon").GetBoolean() ? "victory" : "bounded loss") + ".");
     }
 
-    private static void Pair(FixtureValue source, FixtureValue replay, int level, int distance, bool requireVictory)
+    internal static void AngelDuoVariantPair(FixtureValue source, FixtureValue replay)
+    {
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            AngelDuoVariantChecks.Input(fixture);
+            var initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            Require(initial.Spawn.QueuedOuterBoss?.Actor.Unit is { Health: 1250, BaseAttack: 11 } outer &&
+                outer.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" &&
+                initial.Spawn.Train.Context!.QueryFrame!.ForcedRelentless!.RemainingTurns == 0,
+                "Selected Angel Duo player input changed original queued health, attack or turn counters.");
+        }
+        Pair(source, replay, 2, 5, requireVictory: false, selectedAngelDuo: true);
+        Console.WriteLine("PLAYER-ANGEL-DUO-LOOP-RESOLVE PASS: explicit original variant selection, prior five-win native history, original bosses, actual player advice/UI and independent full-state/RNG replay.");
+    }
+
+    private static void Pair(FixtureValue source, FixtureValue replay, int level, int distance, bool requireVictory, bool selectedAngelDuo = false)
     {
         Require(level is >= 1 and <= 10 && distance is >= 1 and <= 7,
             "Natural cumulative campaign acceptance requires a declared rank and progressed ordinary battle.");
@@ -47,7 +62,7 @@ internal static class NativeCovenantCampaignChecks
                 fixture.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&
                 fixture.GetProperty("StartingCovenantControl").ValueKind == FixtureKind.Null &&
                 fixture.GetProperty("CovenantEnemyStatsControl").ValueKind == FixtureKind.Null &&
-                fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null,
+                (selectedAngelDuo || fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null),
                 "Natural campaign evidence requires the declared outcome and actual player capture from an unmodified native checkpoint.");
             Require(fixture.GetProperty("TerminalEffectsSettled").GetBoolean() &&
                 fixture.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop",

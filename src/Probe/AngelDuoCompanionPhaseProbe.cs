@@ -20,7 +20,7 @@ namespace MonsterTrain2Poju.Probe
             AllGameManagers managers = AllGameManagers.Instance;
             if (OuterBossPhaseProbe.TurnsEnabled && FullBattleTrace.Active != null &&
                 !managers.GetSaveManager().PreviewMode && phase == CombatManager.Phase.BossActionPreCombat &&
-                managers.GetSaveManager().GetCurrentScenarioData()?.name == "Level6AngelDuo_RallyAttackIncantHealth")
+                OuterBossDefinitions.IsAngelDuoScenario(managers.GetSaveManager().GetCurrentScenarioData()?.name))
             {
                 try
                 {

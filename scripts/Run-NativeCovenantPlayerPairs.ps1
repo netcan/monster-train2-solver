@@ -7,6 +7,7 @@ param(
     [string] $InputProfile = '',
     [ValidateRange(1, 7)][int] $BattleDistance = 1,
     [switch] $AngelDuo,
+    [ValidateSet('', 'LoopResolve')][string] $AngelDuoVariant = '',
     [ValidateRange(2, 16)][int] $PlannerHorizon = 3,
     [ValidateRange(100, 30000)][int] $PlannerTimeLimitMs = 3000,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 900,
@@ -18,6 +19,7 @@ $workspace = Split-Path $PSScriptRoot -Parent
 if ($AngelDuo -and ($Battle -ne 'Campaign' -or $Rank.Count -ne 1 -or $Rank[0] -ne 2 -or $BattleDistance -ne 5)) {
     throw '-AngelDuo requires the original rank-two Ring6 Campaign input; its checker verifies the exact scenario and unmodified bosses.'
 }
+if ($AngelDuoVariant -and -not $AngelDuo) { throw '-AngelDuoVariant requires -AngelDuo and its explicit selected-variant checker.' }
 if ($Battle -ne 'Outer' -and $PSBoundParameters.ContainsKey('Variant')) { throw '-Variant requires -Battle Outer.' }
 if ($Battle -eq 'Campaign') {
     if (-not $InputProfile -or $Rank.Count -ne 1) { throw 'Campaign pairs require one rank and an immutable native InputProfile.' }
@@ -51,6 +53,10 @@ foreach ($level in $Rank) {
         if ($Battle -eq 'Campaign') {
             $common.Remove('StartingCovenantLevel')
             $common.InputProfile = $InputProfile; $common.BattleDistance = $BattleDistance
+            if ($AngelDuoVariant) {
+                $common.AngelDuoVariant = $AngelDuoVariant
+                $common.OuterBossBirth = $true; $common.OuterBossTurns = $true
+            }
         } elseif ($Battle -eq 'Outer') {
             $common.BattleDistance = 7; $common.OriginalOuterBossVariant = $boss
             $common.OuterBossBirth = $true; $common.OuterBossTurns = $true
@@ -90,7 +96,8 @@ foreach ($level in $Rank) {
         $arguments = switch ($Battle) {
             'Campaign' {
                 if ($AngelDuo) {
-                    @('--player-angel-duo-pair-only', $source, $replay)
+                    $check = if ($AngelDuoVariant) { '--player-angel-duo-loop-resolve-pair-only' } else { '--player-angel-duo-pair-only' }
+                    @($check, $source, $replay)
                 } else {
                     @('--player-native-covenant-campaign-pair-only', $source, $replay, "$level", "$BattleDistance")
                 }
