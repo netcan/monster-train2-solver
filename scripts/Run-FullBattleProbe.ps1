@@ -57,7 +57,7 @@ param(
     [ValidateRange(0, 25)][int] $TrueFinalBossFrontHealth = 0,
     [switch] $TrueFinalBossBirth,
     [ValidateSet('', 'Covenant00_FTUE', 'Covenant01_StrongerEnemiesMoreCards', 'Covenant04_StrongerBosses', 'Covenant08_StrongerEnemies')]
-    [string] $TrueFinalBossCovenant = '',
+    [string[]] $TrueFinalBossCovenant = @(),
     [switch] $TrueFinalBossSpawn,
     [switch] $TrueFinalBossScheduledSpawn,
     [switch] $TrueFinalBossHealth,
@@ -777,6 +777,10 @@ if ($TrueFinalBossDeath) {
     if ($TrueFinalBossDamage) { throw 'Controlled terminal capture is separate from original nonterminal damage/healing.' }
     $TrueFinalBossBirth = $true
 }
+if (@($TrueFinalBossCovenant | Select-Object -Unique).Count -ne $TrueFinalBossCovenant.Count -or
+    ($TrueFinalBossCovenant.Count -gt 1 -and $TrueFinalBossCovenant -contains '')) {
+    throw 'TrueFinalBossCovenant requires distinct nonempty original definitions.'
+}
 if ($TrueFinalBossCovenant -and -not ($OriginalTrueFinalBoss -or ($TrueFinalBossBirth -and $TrueFinalBossSpawn))) {
     throw 'TrueFinalBossCovenant requires an isolated original route or complete spawn observation.'
 }
@@ -1426,7 +1430,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_PYRE_COMMAND = $(if ($TrueFinalBossPyreCommand) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_FRONT_HEALTH = [string]$TrueFinalBossFrontHealth
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
-    MT2_PROBE_TRUE_FINAL_BOSS_COVENANT = $TrueFinalBossCovenant
+    MT2_PROBE_TRUE_FINAL_BOSS_COVENANT = $TrueFinalBossCovenant -join ';'
     MT2_PROBE_TRUE_FINAL_BOSS_SPAWN = $(if ($TrueFinalBossSpawn) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SCHEDULED_SPAWN = $(if ($TrueFinalBossScheduledSpawn) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH = $(if ($TrueFinalBossHealth) { '1' } else { '0' })

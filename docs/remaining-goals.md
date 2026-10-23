@@ -204,7 +204,10 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    输入；四组共三十九个实际输入，完整预测/状态/RNG 与原生均匹配。四组 UI
    交互和所有纯读取采集通过，两边四项失败计数均为零，详见
    [Covenant 玩家矩阵](../tests/fixtures/player-true-final-boss-covenants.md)。
-   其余 Covenant、组合及对应无情/终结签名仍需分别验收，出生与整场边界详见
+   这四项的十五个非空子集已补出生矩阵，四项叠加另通过五个完整回合、十个列车
+   阶段、四十个房间阶段及十六条独立整场分支，原生四项失败计数全零；详见
+   [组合矩阵](../tests/fixtures/true-final-boss-covenant-combinations.md)。
+   其余 Covenant、其他组合及对应无情/终结签名仍需分别验收，出生与整场边界详见
    [Covenant 出生校准](../tests/fixtures/true-final-boss-covenant-birth.md)。
    玩家入口目前开放已校准的
    `Boss_Level8_AllyBuffer`、`Boss_Level8_Fragile`、`Boss_Level8_Corrupter` 及其三个

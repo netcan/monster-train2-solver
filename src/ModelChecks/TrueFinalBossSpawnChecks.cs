@@ -61,15 +61,22 @@ internal static class TrueFinalBossSpawnChecks
 
     internal static void CovenantMetadata(FixtureValue control, TrueFinalBossSpawnState before)
     {
-        CombatRelicState owner = before.Battle.Spawn.Train.Context!.Relics!.Single(relic => relic.IsCovenant == true);
-        TrueFinalBossChecks.Require(control.GetProperty("Kind").GetString() == "ControlledOriginalCovenantBeforeTFBBirth" &&
-            control.GetProperty("AssetKey").GetString() == owner.AssetKey && control.GetProperty("Id").GetString() == owner.DataId &&
+        CombatRelicState[] owners = before.Battle.Spawn.Train.Context!.Relics!.Where(relic => relic.IsCovenant == true).ToArray();
+        bool single = owners.Length == 1;
+        TrueFinalBossChecks.Require(TrueFinalBossCovenantModel.CalibratedOwners(owners) &&
+            control.GetProperty("Kind").GetString() == (single ? "ControlledOriginalCovenantBeforeTFBBirth" : "ControlledOriginalCovenantsBeforeTFBBirth") &&
             !control.GetProperty("StartOfRunEffectsApplied").GetBoolean() &&
             control.GetProperty("ActiveBefore").GetArrayLength() == 0 &&
-            control.GetProperty("ActiveAfter").EnumerateArray().Select(value => value.GetString()).SequenceEqual(new[] { owner.DataId }) &&
-            control.GetProperty("EffectTypes").EnumerateArray().Select(value => value.GetString()).SequenceEqual(owner.EffectTypes) &&
+            control.GetProperty("ActiveAfter").EnumerateArray().Select(value => value.GetString()).SequenceEqual(owners.Select(owner => owner.DataId)) &&
             control.GetProperty("RngBefore").ContentEquals(control.GetProperty("RngAfter")),
-            "Covenant birth must disclose a single unchanged original definition, controlled activation and unchanged RNG.");
+            "Covenant birth must disclose unique calibrated original definitions, controlled activation and unchanged RNG.");
+        FixtureValue[] definitions = single ? new[] { control } : control.GetProperty("Owners").EnumerateArray().ToArray();
+        TrueFinalBossChecks.Require(definitions.Length == owners.Length, "Missing controlled Covenant definitions.");
+        for (int index = 0; index < owners.Length; index++)
+            TrueFinalBossChecks.Require(definitions[index].GetProperty("AssetKey").GetString() == owners[index].AssetKey &&
+                definitions[index].GetProperty("Id").GetString() == owners[index].DataId &&
+                definitions[index].GetProperty("EffectTypes").EnumerateArray().Select(value => value.GetString()).SequenceEqual(owners[index].EffectTypes),
+                "Controlled Covenant definitions or activation order changed.");
         FixtureValue[] queries = control.GetProperty("StatQueries").EnumerateArray().ToArray();
         TrueFinalBossChecks.Require(queries.Length >= 5 && queries.Select(query => query.GetProperty("AssetKey").GetString())
             .ToHashSet().SetEquals(TrueFinalBossChecks.Assets), "Missing native stat previews for the five original bosses.");
@@ -77,13 +84,13 @@ internal static class TrueFinalBossSpawnChecks
         {
             EnemyDefinition definition = before.Definitions.Single(item => item.Unit.AssetKey == query.GetProperty("AssetKey").GetString());
             EnemyBirthStatAdjustment stats = definition.BirthStats!;
-            TrueFinalBossChecks.Require(stats != null && stats.CovenantIds.SequenceEqual(new[] { owner.DataId }) &&
+            TrueFinalBossChecks.Require(stats != null && TrueFinalBossCovenantModel.MatchesOrigins(before.Battle.Spawn.Train.Context, stats) &&
                 stats.Attack == query.GetProperty("Attack").GetInt32() && stats.Health == query.GetProperty("Health").GetInt32() &&
                 query.GetProperty("FrameBefore").GetInt32() == query.GetProperty("FrameAfter").GetInt32() &&
                 query.GetProperty("RngBefore").ContentEquals(query.GetProperty("RngAfter")),
                 "Birth stats must come from a pure native preview with the exact active Covenant origin.");
         }
-        TrueFinalBossChecks.Require(owner.AssetKey == "Covenant04_StrongerBosses"
+        TrueFinalBossChecks.Require(owners.Any(owner => owner.AssetKey == "Covenant04_StrongerBosses")
                 ? before.Definitions.Any(definition => definition.BirthStats!.Attack > 0 && definition.BirthStats.Health > 0)
                 : before.Definitions.All(definition => definition.BirthStats!.Attack == 0 && definition.BirthStats.Health == 0),
             "The stronger-boss positive control or nonmatching Covenant controls lost their calibrated behavior.");
@@ -101,6 +108,13 @@ internal static class TrueFinalBossSpawnChecks
             !TrueFinalBossSpawningModel.Apply(WithDefinitions(spoofed)).Supported &&
             !TrueFinalBossSpawningModel.Apply(WithDefinitions(wrongStats)).Supported,
             "Missing origins, mismatched origins and uncalibrated Covenant birth stats must remain guarded.");
-        Console.WriteLine($"TRUE-FINAL-BOSS-COVENANT-BIRTH PASS owner={owner.AssetKey} previews={queries.Length}: pure native stats, preserved raw bases and guarded missing/spoofed origins.");
+        TrueFinalBossChecks.Require(!TrueFinalBossCovenantModel.CalibratedOwners(owners.Concat(new[] { owners[0] }).ToArray()) &&
+            !TrueFinalBossCovenantModel.CalibratedOwners(new[] { new CombatRelicState(owners[0].DataId,
+                "unknown-covenant", owners[0].EffectTypes, isCovenant: true) }) &&
+            !TrueFinalBossCovenantModel.CalibratedOwners(new[] { new CombatRelicState("different-id",
+                owners[0].AssetKey, owners[0].EffectTypes, isCovenant: true) }) &&
+            !TrueFinalBossCovenantModel.CalibratedOwners(Array.Empty<CombatRelicState>()),
+            "Duplicate, unknown, mismatched and missing Covenant definitions must remain guarded.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-COVENANT-BIRTH PASS owners={string.Join('+', owners.Select(owner => owner.AssetKey))} previews={queries.Length}: pure native stats, preserved raw bases and guarded missing/spoofed/duplicate origins.");
     }
 }

@@ -18,7 +18,9 @@ preserve frame and every RNG stream. Capture now queries only actual waves.
 Ordinary-wave capture retains authored/Horde bases and projects native birth
 adjustments separately. A pure preview reads the exact original active
 Covenant; the model requires matching origins, modifier snapshots and bounded
-attack/health arithmetic. Other ranks and combined ranks retain their guards.
+attack/health arithmetic. All subsets of these four original definitions are
+covered by the [combination matrix](true-final-boss-covenant-combinations.md);
+other definitions retain their guards.
 
 `true-final-boss-covenant-battle-04.mt2f` extends the stronger-boss control
 through a complete original no-cards loss. Source

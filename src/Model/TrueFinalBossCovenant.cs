@@ -14,20 +14,22 @@ namespace MonsterTrain2Poju.Model
         {
             CombatRelicState[] owners = context?.Relics?.Where(relic => relic.IsCovenant == true).ToArray()
                 ?? System.Array.Empty<CombatRelicState>();
-            return owners.Length == 1 && KnownOwner(owners[0]) && stats.CovenantIds.SequenceEqual(new[] { owners[0].DataId });
+            return CalibratedOwners(owners) && stats.CovenantIds.SequenceEqual(owners.Select(owner => owner.DataId));
         }
 
-        // Original single-Covenant controls. Authored stats remain separate
-        // from the native birth adjustments; combined ranks stay guarded.
+        internal static bool CalibratedOwners(CombatRelicState[] owners) => owners.Length > 0 &&
+            owners.All(KnownOwner) && owners.Select(owner => owner.DataId).Distinct().Count() == owners.Length;
+
+        // Original additive Covenant controls. Authored stats remain separate
+        // from the native birth adjustments; other definitions stay guarded.
         internal static bool Adjustment(CombatContext? context, string asset, out int attack, out int health)
         {
             attack = 0; health = 0;
             CombatRelicState[] owners = context?.Relics?.Where(relic => relic.IsCovenant == true).ToArray()
                 ?? System.Array.Empty<CombatRelicState>();
             if (owners.Length == 0) return true;
-            if (owners.Length != 1 || !KnownOwner(owners[0])) return false;
-            CombatRelicState owner = owners[0];
-            if (owner.AssetKey != "Covenant04_StrongerBosses") return true;
+            if (!CalibratedOwners(owners)) return false;
+            if (!owners.Any(owner => owner.AssetKey == "Covenant04_StrongerBosses")) return true;
             if (asset == "Boss_Level9_Dominion_V2") { health = 500; return true; }
             if (asset == "Boss_Level9_Savagery_V2") { attack = 5; health = 500; return true; }
             if (asset is "Boss_Level9_Entropy_Bot_V2" or "Boss_Level9_Entropy_Mid_V2" or "Boss_Level9_Entropy_Top_V2")

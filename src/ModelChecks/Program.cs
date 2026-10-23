@@ -307,6 +307,12 @@ if (args.Length == 2 && args[0] == "--true-final-boss-health-only")
     return;
 }
 
+if (args.Length > 1 && args[0] == "--true-final-boss-covenants-matrix-only")
+{
+    TrueFinalBossCovenantMatrixChecks.Native(args.Skip(1));
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-spawn-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -2029,7 +2035,8 @@ if (args.Length == 3 && args[0] == "--player-true-final-boss-bounded-pair-only")
 }
 
 if (args.Length == 3 && args[0] is "--player-true-final-boss-covenant00-pair-only" or "--player-true-final-boss-covenant01-pair-only" or
-    "--player-true-final-boss-covenant04-pair-only" or "--player-true-final-boss-covenant08-pair-only")
+    "--player-true-final-boss-covenant04-pair-only" or "--player-true-final-boss-covenant08-pair-only" or
+    "--player-true-final-boss-covenants-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
@@ -2038,6 +2045,7 @@ if (args.Length == 3 && args[0] is "--player-true-final-boss-covenant00-pair-onl
         "--player-true-final-boss-covenant00-pair-only" => "Covenant00_FTUE",
         "--player-true-final-boss-covenant01-pair-only" => "Covenant01_StrongerEnemiesMoreCards",
         "--player-true-final-boss-covenant08-pair-only" => "Covenant08_StrongerEnemies",
+        "--player-true-final-boss-covenants-pair-only" => "Covenant00_FTUE;Covenant01_StrongerEnemiesMoreCards;Covenant04_StrongerBosses;Covenant08_StrongerEnemies",
         _ => "Covenant04_StrongerBosses"
     };
     PlayerTrueFinalBossChecks.Pair(source.RootElement, replay.RootElement, covenantAsset: covenant);

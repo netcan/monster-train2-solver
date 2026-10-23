@@ -15,7 +15,7 @@ internal static class TrueFinalBossBattleChecks
         TrueFinalBossSpawnChecks.CovenantMetadata(root.GetProperty("OriginalTrueFinalBossRoute").GetProperty("CovenantControl"),
             new TrueFinalBossSpawnState(before, queued!.Definitions, queued.QueuedBosses, 0, new int[4], queued.ExternalInteractions));
         FixtureValue route = root.GetProperty("OriginalTrueFinalBossRoute");
-        string owner = route.GetProperty("CovenantControl").GetProperty("AssetKey").GetString()!;
+        string[] owners = before.Spawn.Train.Context!.Relics!.Where(owner => owner.IsCovenant == true).Select(owner => owner.AssetKey).ToArray();
         int turns = root.GetProperty("Turns").GetArrayLength();
         TrueFinalBossChecks.Require(route.GetProperty("Kind").GetString() == "NativeCheatJumpToTFB" &&
             route.GetProperty("Scenario").GetString() == "Level9TrueFinalBoss_V2" && route.GetProperty("UnlockOverrideAfter").GetBoolean() &&
@@ -24,12 +24,13 @@ internal static class TrueFinalBossBattleChecks
             root.GetProperty("BattleDistance").GetInt32() == 8 && root.GetProperty("Policy").GetString() == "no-cards" &&
             !root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" && root.GetProperty("Actions").GetArrayLength() == 0 &&
-            turns == (owner == "Covenant04_StrongerBosses" ? 6 : 5), "Missing unchanged original Covenant no-cards full loss.");
+            turns >= 2 && (owners.Length != 1 || turns == (owners[0] == "Covenant04_StrongerBosses" ? 6 : 5)),
+            "Missing unchanged original Covenant no-cards full loss.");
         CovenantWaves(root, before);
         BattleTurnChecks.Native(root);
         TrainCombatChecks.Native(root);
         RoomCombatChecks.NativeRoomOnly(path);
-        Console.WriteLine($"TRUE-FINAL-BOSS-COVENANT-BATTLE PASS: original {owner}, exact birth stats, {turns} complete EndTurns, native room/train phases and full state/RNG; native failure counters zero. Controlled route and loss only.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-COVENANT-BATTLE PASS: original {string.Join('+', owners)}, exact birth stats, {turns} complete EndTurns, native room/train phases and full state/RNG; native failure counters zero. Controlled route and loss only.");
     }
 
     internal static void CovenantWaves(FixtureValue root, BattleTurnState before)
