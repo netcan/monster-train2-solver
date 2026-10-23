@@ -89,4 +89,20 @@ internal static class CovenantOuterBossChecks
         using var birth = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "outer-boss-birth-covenant-" + suffix + ".mt2f"));
         Native(battle.RootElement, birth.RootElement, variant, ftue);
     }
+
+    internal static void CuratedPair(string path)
+    {
+        string suffix = Path.GetFileNameWithoutExtension(path)["full-battle-player-covenant-outer-boss-".Length..^"-search".Length];
+        string variant = suffix.Split('-')[0] switch
+        {
+            "allybuffer" => "AllyBuffer", "fragile" => "Fragile", "corrupter" => "Corrupter",
+            _ => throw new InvalidOperationException("Unknown player Covenant outer-boss variant.")
+        };
+        bool ftue = suffix == variant.ToLowerInvariant() + "-00-01";
+        Require(ftue || suffix == variant.ToLowerInvariant() + "-01", "Unknown player Covenant context.");
+        using var source = ModelJson.ReadFixture(path);
+        using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!,
+            "full-battle-player-covenant-outer-boss-" + suffix + "-replay.mt2f"));
+        Pair(source.RootElement, replay.RootElement, variant, ftue);
+    }
 }

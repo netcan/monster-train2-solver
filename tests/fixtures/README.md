@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1131 archives,
+Current manifest inventory (2026-10-23): 1135 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -8,6 +8,9 @@ Original Ring8 bosses now have complete native Covenant 01 and 00+01 birth
 and no-cards controls: six full battles, raw creation followed by the native
 +1000/+3000 HP adjustment, exact state/RNG and sixteen immutable chains each.
 See [Covenant outer-boss evidence](covenant-outer-bosses.md).
+AllyBuffer also passes actual player advice/UI and fresh native replay in
+both contexts: 22 source inputs and 22 replay inputs, complete forecasts and
+state/RNG, with four zero native failure counters in every process.
 
 Ordinary rank-one enemy birth stats now have native complete-battle controls
 for original 01 and 00+01: seven-turn victories with Pyre10, pure wave-stat
