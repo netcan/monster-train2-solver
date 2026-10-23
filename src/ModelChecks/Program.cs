@@ -618,6 +618,15 @@ if (args.Length == 2 && args[0] == "--shorter-advice-budget-only")
     return;
 }
 
+if (args.Length == 3 && args[0] is "--player-natural-ring7-clean-pair-only" or "--player-natural-ring7-default-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NaturalRing7TacticsChecks.RestartPair(source.RootElement, replay.RootElement,
+        defaults: args[0] == "--player-natural-ring7-default-pair-only");
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-natural-ring7-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -4993,6 +5002,19 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         using var source = ModelJson.ReadFixture(sourcePath);
         using var replay = ModelJson.ReadFixture(replayPath);
         NaturalRing7TacticsChecks.PlayerPair(source.RootElement, replay.RootElement);
+    }
+}
+{
+    foreach (string preset in new[] { "clean", "default" })
+    {
+        string? source = args.FirstOrDefault(path => path.EndsWith($"full-battle-player-natural-ring7-{preset}-search.mt2f", StringComparison.OrdinalIgnoreCase));
+        string? replay = args.FirstOrDefault(path => path.EndsWith($"full-battle-player-natural-ring7-{preset}-replay.mt2f", StringComparison.OrdinalIgnoreCase));
+        if (source != null && replay != null)
+        {
+            using var first = ModelJson.ReadFixture(source);
+            using var second = ModelJson.ReadFixture(replay);
+            NaturalRing7TacticsChecks.RestartPair(first.RootElement, second.RootElement, defaults: preset == "default");
+        }
     }
 }
 {

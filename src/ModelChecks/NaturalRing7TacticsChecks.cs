@@ -3,6 +3,35 @@ using MonsterTrain2Poju.Model;
 
 internal static class NaturalRing7TacticsChecks
 {
+    internal static void RestartPair(FixtureValue source, FixtureValue replay, bool defaults)
+    {
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            NativeCampaignInputChecks.Native(fixture, 6, 424244, 60, "Level7BattleHordeSilence");
+            FixtureValue player = fixture.GetProperty("PlayerAdvisor");
+            FixtureValue overlay = player.GetProperty("Overlay");
+            Require(player.GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&
+                overlay.GetProperty("Horizon").GetInt32() == (defaults ? 3 : 12) &&
+                overlay.GetProperty("TimeLimitMs").GetInt32() == (defaults ? 3000 : 30000) &&
+                overlay.GetProperty("PreferredDeploymentRoom").GetInt32() == 2 &&
+                overlay.GetProperty("TacticalSeed").GetBoolean() == !defaults &&
+                fixture.GetProperty("StartingCovenantControl").ValueKind == FixtureKind.Null &&
+                fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null &&
+                (defaults || fixture.GetProperty("NativeWon").GetBoolean()),
+                "Ring7 restart changed the actual player settings, original encounter or required tactical victory.");
+            TrainCombatChecks.Native(fixture);
+        }
+        foreach (string field in new[] { "Seed", "Distance", "Scenario", "WasDevCheatUsed", "BattlesWon", "Gold", "PyreHealth", "CompletedBattles" })
+            Require(source.GetProperty("NativeRunInput").GetProperty(field).ContentEquals(
+                replay.GetProperty("NativeRunInput").GetProperty(field)), "Independent Ring7 replay changed input " + field);
+        RollingAdviceChecks.FrozenPair(source, replay);
+        BattleAdviceChecks.Native(source, requireBoss: false);
+        Require(source.GetProperty("Actions").GetArrayLength() > 0 &&
+            source.GetProperty("RollingDecisions").EnumerateArray().Any(row => row.GetProperty("Nodes").GetInt32() > 0),
+            "Ring7 restart must contain actual player searches and card inputs.");
+        Console.WriteLine($"PLAYER-NATURAL-RING7-{(defaults ? "DEFAULT" : "CLEAN")} PASS: original six-win checkpoint, actual settings/UI, complete forecasts/state/RNG and independent replay; victory={source.GetProperty("NativeWon").GetBoolean()}.");
+    }
+
     internal static void PlayerPair(FixtureValue source, FixtureValue replay)
     {
         foreach (var fixture in new[] { source, replay })

@@ -139,3 +139,42 @@ The focused acceptance command is:
 ```powershell
 ./scripts/Check-PlayerAdvisor.ps1 -Case NaturalRing7 -SkipBuild
 ```
+
+## Clean restart and actual default budget · 2026-10-23
+
+Two new source/replay pairs start from the same hash-verified six-win checkpoint
+above. No authored cards, health changes or encounter replacements are added.
+The original timeout record remains historical; the new tactical source and
+replay both exit normally, preserve protected originals, record DEPTH-PASS and
+have zero capture/mismatch/unsupported/pending counters.
+
+| Player settings | Source / replay suffix | Inputs / plays / EndTurns | Outcome | Native seconds source / replay |
+| --- | --- | --- | --- | --- |
+| 12 turns / 30000ms, tactical seed on | `212331-dfc907db` / `213848-31afa20d` | 60 / 50 / 10 | win, Pyre62 | 865.80 / 591.12 |
+| Actual defaults: 3 turns / 3000ms, tactical seed off | `212452-5e22e425` / `213238-a521cadf` | 16 / 8 / 8 | loss | 299.12 / 157.69 |
+
+All profile suffixes use prefix `full-battle-units-spells-and-junk-20261023-`.
+The tactical run finds the full winning line in its first consumed publication;
+the remaining 59 decisions reuse its verified suffix. Each fresh replay checks
+all native roots, inputs, successors, complete forecasts and RNG. The default
+pair verifies supported execution and its loss; it does not establish adequate
+default-budget strategy for this advanced run. Preferred deployment is floor2
+(zero based) in both presets. The ordinary seventh battle's clean-exit gap is
+closed by the new records, while default strategy quality remains open.
+
+The new registered archives are
+`full-battle-player-natural-ring7-{clean,default}-{search,replay}.mt2f`; their
+original profile names, sizes, hashes and node counts are in `manifest.tsv`.
+Dedicated checker commands are `--player-natural-ring7-clean-pair-only` and
+`--player-natural-ring7-default-pair-only`, each followed by its source/replay
+paths. To reproduce either native pair:
+
+```powershell
+./scripts/Run-NaturalRing7PlayerPair.ps1 -InputProfile <restored-before-ring7-profile> -Preset Clean -NativeWorker 2
+./scripts/Run-NaturalRing7PlayerPair.ps1 -InputProfile <restored-before-ring7-profile> -Preset Default -NativeWorker 3
+```
+
+The runner verifies the fixed original checkpoint hash, normal exits, zero
+failure counters, unchanged protected files and independent focused gates.
+`-SourceProfile <accepted-source-profile>` reuses an already accepted source
+without repeating its search. No full regression is involved.
