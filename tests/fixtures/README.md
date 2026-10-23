@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1183 archives,
+Current manifest inventory (2026-10-23): 1185 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -10,6 +10,10 @@ These retain native startup and disclose the isolated unlock/map jump.
 Rank ten's actual player advice and independent replay also match all twenty
 inputs, UI and complete forecasts/state/RNG; both lose with zero failures.
 See [cumulative final-boss evidence](native-covenant-final-bosses.md).
+
+Native rank six's actual player advice and independent replay also win with
+Pyre42 after thirty-three inputs, matching UI and all complete forecasts,
+state/RNG with zero failures. See [startup evidence](native-covenant-startup.md).
 
 Native Covenant 1 run initialization now has a complete first-battle control:
 normal run-setup callback/starting conditions, original startup purge/add
