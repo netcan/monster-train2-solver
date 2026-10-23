@@ -1,8 +1,13 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1177 archives,
+Current manifest inventory (2026-10-23): 1181 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+Native cumulative Covenant 2/10 also pass original true-final-boss birth and
+complete no-card battles, with exact full state/RNG and zero native failures.
+These retain native startup and disclose the isolated unlock/map jump.
+See [cumulative final-boss evidence](native-covenant-final-bosses.md).
 
 Native Covenant 1 run initialization now has a complete first-battle control:
 normal run-setup callback/starting conditions, original startup purge/add

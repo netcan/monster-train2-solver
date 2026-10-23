@@ -35,7 +35,8 @@ namespace MonsterTrain2Poju.Probe
         {
             if (Level == 0 || Evidence != null) return;
             if (selection == null || (save.GetCurrentDistance() != 0 &&
-                (save.GetCurrentDistance() != 7 || OriginalOuterBossRoute.Control == null)) || save.GetAscensionLevel() != Level ||
+                (save.GetCurrentDistance() != 7 || OriginalOuterBossRoute.Control == null) &&
+                (save.GetCurrentDistance() != 8 || TrueFinalBossBirthProbe.Control == null)) || save.GetAscensionLevel() != Level ||
                 save.GetStartingConditions().AscensionLevel != Level)
                 throw new InvalidOperationException("Native Covenant startup lacks its original starting conditions or explicit battle route.");
             Evidence = new { Kind = "NativeCovenantRunStartup", Selection = selection,

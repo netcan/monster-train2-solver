@@ -22,7 +22,8 @@ namespace MonsterTrain2Poju.Probe
             var characters = new List<CharacterState>(); room.AddCharactersToList(characters, Team.Type.Monsters);
             CharacterState pyre = characters.Single(character => character.IsPyreHeart());
             int bornHealth = 1555 + (TrueFinalBossCovenantScenario.CaptureStats(dominion.GetSourceCharacterData())?.Health ?? 0);
-            if (dominion.GetHP() != bornHealth || pyre.GetHP() != 80 || dominion.GetCurrentRoomIndex() != 3 ||
+            int bornPyreHealth = managers.GetSaveManager().GetTowerHP();
+            if (dominion.GetHP() != bornHealth || pyre.GetHP() != bornPyreHealth || bornPyreHealth <= 0 || dominion.GetCurrentRoomIndex() != 3 ||
                 (bool)AccessTools.Field(typeof(CombatManager), "isKillCamActivated").GetValue(combat) ||
                 managers.GetHeroManager().HasNextBoss() || !managers.GetRoomManager().GetRoom(0).IsRoomEnabled())
                 throw new InvalidOperationException("Continuation calibration requires the original born Dominion/Pyre room without pending boss or kill cam.");
@@ -92,7 +93,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 Schema = 1, GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId,
                 Boundary = "OriginalTrueFinalBossCombatContinuation", Route = TrueFinalBossBirthProbe.Control,
-                DetachedHealthAndStatusControls = true, OriginalUnitsAndRooms = true,
+                DetachedHealthAndStatusControls = true, OriginalUnitsAndRooms = true, BornPyreHealth = bornPyreHealth,
                 LiveWorldAndFrameAndRngUnchanged = unchanged, NativeCompleted = true, Rows = rows
             }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,

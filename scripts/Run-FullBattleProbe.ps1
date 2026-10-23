@@ -781,9 +781,9 @@ if ($TrueFinalBossDeath) {
     $TrueFinalBossBirth = $true
 }
 if ($StartingCovenantLevel -gt 0 -and ($InputProfile -or ($BattleDistance -ne 0 -and
-    ($BattleDistance -ne 7 -or -not $OriginalOuterBossVariant)) -or $EnemyStatCovenant.Count -gt 0 -or
-    $OriginalTrueFinalBoss -or $CovenantCharacterFilter)) {
-    throw 'StartingCovenantLevel requires fresh native run setup and the original first or explicitly selected Ring8 battle, without post-startup Covenant controls.'
+    ($BattleDistance -ne 7 -or -not $OriginalOuterBossVariant) -and ($BattleDistance -ne 8 -or -not $OriginalTrueFinalBoss)) -or
+    $EnemyStatCovenant.Count -gt 0 -or $TrueFinalBossCovenant.Count -gt 0 -or $CovenantCharacterFilter)) {
+    throw 'StartingCovenantLevel requires fresh native run setup and the original first, explicit Ring8 or original TFB route, without post-startup Covenant controls.'
 }
 if ($EnemyStatCovenant.Count -gt 0 -and ($InputProfile -or ($BattleDistance -ne 0 -and
     ($BattleDistance -ne 7 -or -not $OriginalOuterBossVariant)) -or $OriginalTrueFinalBoss -or

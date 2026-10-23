@@ -97,7 +97,8 @@ namespace MonsterTrain2Poju.Model
             BattleTurnState battle = source.Battle; EnemySpawnState old = battle.Spawn;
             TrainCombatState train = old.Train; CombatContext? captured = train.Context;
             var covenants = captured?.Relics?.Where(relic => relic.IsCovenant == true).ToArray() ?? Array.Empty<CombatRelicState>();
-            bool covenantBirth = TrueFinalBossCovenantModel.CalibratedOwners(covenants) &&
+            bool covenantBirth = (TrueFinalBossCovenantModel.CalibratedOwners(covenants) ||
+                TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(covenants)) &&
                 source.Definitions.All(definition => definition.BirthStats is { } stats &&
                     TrueFinalBossCovenantModel.MatchesOrigins(captured, stats) &&
                     TrueFinalBossCovenantModel.Adjustment(captured, definition.Unit.AssetKey, out int attack, out int health) &&

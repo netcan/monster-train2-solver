@@ -373,6 +373,7 @@ namespace MonsterTrain2Poju.Probe
                         if (TrueFinalBossBirthProbe.RouteEnabled)
                         {
                             TrueFinalBossBirthProbe.Navigate(save, map, log);
+                            if (fullBattle) StartingCovenantScenario.Observe(save);
                             map.ChooseBranch(MapScreen.BranchSelection.LeftBranch);
                             return;
                         }

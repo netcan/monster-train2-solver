@@ -58,7 +58,7 @@ internal static class StartingCovenantChecks
         {
             Require(captured[1].AssetKey == "Covenant02_BattlesNewEnemies" && captured[1].EffectTypes.Count == 0 &&
                 !TrueFinalBossCovenantModel.CalibratedOwners(captured),
-                "Rank two must retain its original selection-only owner without admitting uncalibrated final bosses.");
+                "Rank two must retain its original selection-only owner, distinct from the four-definition isolated controls.");
             CombatRelicState[] invalid = captured.Select(relic => relic.AssetKey == "Covenant02_BattlesNewEnemies" ?
                 new CombatRelicState(relic.DataId, relic.AssetKey, new[] { "RelicEffectNull" }, isCovenant: true) : relic).ToArray();
             Require(!TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(invalid),
@@ -148,6 +148,69 @@ internal static class StartingCovenantChecks
         BattleTurnChecks.Native(root);
         TrainCombatChecks.Native(root);
         RoomCombatChecks.NativeRoomOnly(path);
+    }
+
+    private static void FinalEvidence(FixtureValue root, int level)
+    {
+        Evidence(root, level, 8);
+        FixtureValue route = root.GetProperty("OriginalTrueFinalBossRoute");
+        Require(route.GetProperty("Kind").GetString() == "NativeCheatJumpToTFB" &&
+            !route.GetProperty("UnlockOverrideBefore").GetBoolean() && route.GetProperty("UnlockOverrideAfter").GetBoolean() &&
+            route.GetProperty("DistanceBefore").GetInt32() == 0 && route.GetProperty("DistanceAfter").GetInt32() == 8 &&
+            route.GetProperty("Scenario").GetString() == "Level9TrueFinalBoss_V2" &&
+            route.GetProperty("ScenarioAssetsUnchanged").GetBoolean() && route.GetProperty("CharacterAssetsUnchanged").GetBoolean() &&
+            route.GetProperty("StartingDeckUnchanged").GetBoolean() && route.GetProperty("CovenantControl").ValueKind == FixtureKind.Null &&
+            route.GetProperty("PyreHealth").GetInt32() == root.GetProperty("StartingCovenantControl").GetProperty("StartingPyre").GetProperty("Health").GetInt32(),
+            "Cumulative final-boss acceptance requires native startup and disclosed isolated unlock/route control, without post-startup activation.");
+        FixtureValue[] rng = route.GetProperty("RngBefore").EnumerateArray().ToArray();
+        Require(rng.Length == 16 && route.GetProperty("RngAfter").GetArrayLength() == 16 &&
+            rng.Zip(route.GetProperty("RngAfter").EnumerateArray()).All(pair => pair.First.GetProperty("Id").GetString() == "NonDeterministic" ||
+                pair.First.ContentEquals(pair.Second)), "The final-boss route changed gameplay RNG.");
+        BattleTurnState before = root.GetProperty("Turns")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        EnemyDefinition[] definitions = before.Spawn.QueuedTrueFinalBoss!.Definitions.ToArray();
+        Require(definitions.Select(value => value.Unit.AssetKey).SequenceEqual(TrueFinalBossChecks.Assets),
+            "Cumulative final-boss acceptance must retain all five original definitions.");
+        foreach (EnemyDefinition definition in definitions)
+        {
+            FixtureValue query = root.GetProperty("StartingCovenantControl").GetProperty("StatQueries").EnumerateArray()
+                .Single(value => value.GetProperty("AssetKey").GetString() == definition.Unit.AssetKey);
+            Require(definition.BirthStats != null && definition.Unit.BaseAttack == query.GetProperty("RawAttack").GetInt32() &&
+                definition.Unit.MaxHealth == query.GetProperty("RawHealth").GetInt32() &&
+                definition.BirthStats.Attack == query.GetProperty("Attack").GetInt32() &&
+                definition.BirthStats.Health == query.GetProperty("Health").GetInt32() &&
+                TrueFinalBossCovenantModel.MatchesOrigins(before.Spawn.Train.Context, definition.BirthStats),
+                "Cumulative final-boss definitions lost their raw stats, pure native adjustments or exact owners.");
+        }
+    }
+
+    internal static void FinalNative(FixtureValue root, FixtureValue birth, string path, int level)
+    {
+        FinalEvidence(root, level);
+        Require(root.GetProperty("Policy").GetString() == "no-cards" && root.GetProperty("Actions").GetArrayLength() == 0,
+            "Cumulative final-boss baseline must not play cards.");
+        TrueFinalBossScheduledChecks.Native(birth, cumulativeStartup: true);
+        BattleTurnChecks.Native(root);
+        TrainCombatChecks.Native(root);
+        RoomCombatChecks.NativeRoomOnly(path);
+        Console.WriteLine($"NATIVE-COVENANT-FINAL-BOSS PASS rank={level}: native cumulative startup, pure five-actor birth, scheduled placement and full battle/state/RNG; isolated unlock override only.");
+    }
+
+    internal static void FinalPair(FixtureValue source, FixtureValue replay, int level)
+    {
+        FinalEvidence(source, level); FinalEvidence(replay, level);
+        Pair(source, replay, level, 8);
+    }
+
+    internal static void CuratedFinal(FixtureValue root, string path, bool player)
+    {
+        string prefix = player ? "full-battle-player-native-covenant-final-boss-" : "full-battle-native-covenant-final-boss-";
+        string suffix = Path.GetFileNameWithoutExtension(path)[prefix.Length..];
+        if (player) suffix = suffix[..^"-search".Length];
+        int level = int.Parse(suffix);
+        string other = player ? prefix + suffix + "-replay.mt2f" : "true-final-boss-scheduled-native-covenant-" + suffix + ".mt2f";
+        using var document = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, other));
+        if (player) FinalPair(root, document.RootElement, level);
+        else FinalNative(root, document.RootElement, path, level);
     }
 
     private static void OuterEvidence(FixtureValue root, string variant, int level)

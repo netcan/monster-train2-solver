@@ -4,7 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class TrueFinalBossScheduledChecks
 {
-    internal static void Native(FixtureValue root)
+    internal static void Native(FixtureValue root, bool cumulativeStartup = false)
     {
         void Require(bool value, string message) => TrueFinalBossChecks.Require(value, message);
         Require(root.GetProperty("Schema").GetInt32() == 1 &&
@@ -17,7 +17,8 @@ internal static class TrueFinalBossScheduledChecks
         BattleTurnResult result = TrueFinalBossSpawningModel.ApplyQueued(before);
         string? difference = result.Supported ? ModelJson.Difference(JsonSerializer.Serialize(result.State, ModelJson.Options), expected) : result.UnsupportedReason;
         Require(result.Supported && difference == null, "Scheduled true-final-boss birth differs: " + difference);
-        Require(before.Spawn.QueuedTrueFinalBoss?.QueuedBosses.SequenceEqual(new[] { 0, 2, 1 }) == true &&
+        Require((cumulativeStartup ? before.Spawn.QueuedTrueFinalBoss?.QueuedBosses.OrderBy(value => value).SequenceEqual(new[] { 0, 1, 2 }) :
+            before.Spawn.QueuedTrueFinalBoss?.QueuedBosses.SequenceEqual(new[] { 0, 2, 1 })) == true &&
             before.Spawn.TrueFinalBoss == null && actual.Spawn.QueuedTrueFinalBoss == null &&
             actual.Spawn.OuterBoss is { UnitId: 6, Room: 2, AssetKey: "Boss_Level9_Entropy_Top_V2" } &&
             actual.Spawn.TrueFinalBoss is { HellforgedBoss: true, WaitedOnRelentless: false, QueuedBossCount: 0 } &&

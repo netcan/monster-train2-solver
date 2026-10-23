@@ -252,6 +252,12 @@ namespace MonsterTrain2Poju.Model
                         unit.Id == changedPyre.Id ? changedPyre : unit).Where(unit => unit.Health > 0).ToArray());
                 }
                 if (requiresTowerTargets) ApplyTowerUpdates(rooms, externalTargets, result.RetainedUnits);
+                // A lower-room kill preview can update effect objects owned by
+                // an already resolved upper room. Preserve those shared objects
+                // before collecting that room again as a later Tower target.
+                if (context?.Enchantments is EnchantmentWorld observed)
+                    rooms = rooms.Select(room => room.WithUnits(room.Units.Select(unit =>
+                        EnchantmentWorldModel.RestorePreviewEffects(unit, observed, false)).ToArray())).ToArray();
                 SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome))
                     return new TrainCombatResult(Freeze(source, rooms, context), result.Outcome, results);

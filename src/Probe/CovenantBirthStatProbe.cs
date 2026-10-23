@@ -20,6 +20,16 @@ namespace MonsterTrain2Poju.Probe
         internal static bool WavesCalibrated(SaveManager save)
         {
             if (Calibrated(save) && PlayerTrueFinalBossProbe.Enabled) return true;
+            return OrdinaryWavesCalibrated(save);
+        }
+
+        internal static bool FinalBossCalibrated(SaveManager save) =>
+            save.GetCovenantsForSpawnPattern().Select(owner => owner.GetRelicDataID()).SequenceEqual(
+                save.GetCovenants().Select(owner => owner.GetRelicDataID())) &&
+            (Calibrated(save) || OrdinaryWavesCalibrated(save));
+
+        private static bool OrdinaryWavesCalibrated(SaveManager save)
+        {
             var owners = save.GetCovenants();
             return owners.Any(owner => owner.GetRelicDataID() == "d3b53481-f26b-4344-ae8e-ec80b28d6004") &&
                 owners.Select(owner => owner.GetRelicDataID()).Distinct().Count() == owners.Count &&

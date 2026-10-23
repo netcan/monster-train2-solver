@@ -41,7 +41,10 @@ room healing. Their native iterators ignore shared copy/filter/upgrade
 fields, and fixed enemy tower buffs now use the existing global target
 resolver with boss exclusion. Terminal kill previews also update shared
 enchantment effect objects on remote tower targets; those objects must be
-imported alongside the local room. Earlier diagnostics `114437-6c672288`
+restored without importing stale remote numeric state. Shared effects must
+also survive successive whole-train rooms; see the focused regression and
+repair in [cumulative final-boss evidence](native-covenant-final-bosses.md).
+Earlier diagnostics `114437-6c672288`
 (24 unsupported stages) and `114747-ceff7e4e` (four mismatches) are not curated.
 After repair all 43 rooms of the latter match diagnostically, and the fresh
 six runs above provide strict native acceptance. Existing rank-one original

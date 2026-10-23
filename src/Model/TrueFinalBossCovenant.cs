@@ -92,7 +92,7 @@ namespace MonsterTrain2Poju.Model
             CombatRelicState[] owners = context?.Relics?.Where(relic => relic.IsCovenant == true).ToArray()
                 ?? System.Array.Empty<CombatRelicState>();
             if (owners.Length == 0) return true;
-            if (!CalibratedOwners(owners)) return false;
+            if (!CalibratedOwners(owners) && !CalibratedOrdinaryWaveOwners(owners)) return false;
             if (!owners.Any(owner => owner.AssetKey == "Covenant04_StrongerBosses")) return true;
             if (asset == "Boss_Level9_Dominion_V2") { health = 500; return true; }
             if (asset == "Boss_Level9_Savagery_V2") { attack = 5; health = 500; return true; }

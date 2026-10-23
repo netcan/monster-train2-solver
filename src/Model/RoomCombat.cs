@@ -2600,6 +2600,10 @@ namespace MonsterTrain2Poju.Model
                             .Concat(births).ToArray(),
                         originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                         originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
+                    // Remote Tower targets share effect objects with this
+                    // preview too, while their numeric primary state survives.
+                    foreach (WorkingUnit remote in units.Where(unit => externalTurnActorIds.Contains(unit.Source.Id)))
+                        remote.Apply(EnchantmentWorldModel.RestorePreviewEffects(remote.Freeze(), observed, false, removedPreviewIds));
                     // A commanded external actor attacks this room without
                     // moving into it. Restore the aura world from physical units.
                     ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(PhysicalRoom(), context)));
@@ -4273,14 +4277,8 @@ namespace MonsterTrain2Poju.Model
             private void ImportEnchantmentRoom(RoomCombatState state)
             {
                 context = state.Context;
-                // Tower-target triggers retain remote actors in this engine.
-                // Global aura updates and temporary kill previews also mutate
-                // their shared effect objects, so import those actors as well.
-                var remote = context?.Enchantments?.Rooms.Where(room => room.RoomIndex != source.RoomIndex)
-                    .SelectMany(room => room.Units).Where(unit => externalTurnActorIds.Contains(unit.Id)) ?? Array.Empty<CombatUnit>();
-                foreach (CombatUnit changed in state.Units.Concat(remote).Concat(context?.Enchantments?.RetainedUnits
-                    .Where(actor => actor.RoomIndex == source.RoomIndex || externalTurnActorIds.Contains(actor.Unit.Id))
-                    .Select(actor => actor.Unit) ?? Array.Empty<CombatUnit>()))
+                foreach (CombatUnit changed in state.Units.Concat(context?.Enchantments?.RetainedUnits
+                    .Where(actor => actor.RoomIndex == source.RoomIndex).Select(actor => actor.Unit) ?? Array.Empty<CombatUnit>()))
                 {
                     WorkingUnit? current = units.FirstOrDefault(unit => unit.Source.Id == changed.Id);
                     if (current != null) current.Apply(changed);
