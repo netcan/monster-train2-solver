@@ -106,7 +106,7 @@ namespace MonsterTrain2Poju.Model
                                 ? effect.WithEnchantment(new EnchantmentRule(effect.Enchantment.Targeting, effect.Enchantment.StatusPool,
                                     effect.Enchantment.State, false, effect.Enchantment.HasParentCard)) : effect).ToArray())).ToArray()),
                         actor.RoomIndex, actor.Preview)).ToArray(), world.EnchanterIds, world.AllowUpdates, world.Updating,
-                    world.Preview, world.TestRng, true));
+                    world.Preview, world.TestRng, true, world.TemporaryPreviewUnitIds));
             }
             return CardSpellModel.WithContext(source, context);
         }
@@ -136,7 +136,7 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithEnchantments(new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom,
                     world.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(actor.Unit.WithoutRemovedAttacker(activeIds),
                         actor.RoomIndex, actor.Preview)).ToArray(), world.EnchanterIds, world.AllowUpdates, world.Updating,
-                    world.Preview, world.TestRng, true));
+                    world.Preview, world.TestRng, true, world.TemporaryPreviewUnitIds));
             }
             return EnchantmentWorldModel.Rebase(new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                 room.Units.Select(unit => unit.WithoutRemovedAttacker(activeIds).WithTriggers(unit.Triggers.Select(trigger =>

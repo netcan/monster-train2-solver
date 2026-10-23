@@ -3166,6 +3166,8 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalFirstImpBonusScenario.Choose(decision) ?? pendingPlay;
                 if (ChosenIncantSpellScenario.Enabled)
                     pendingPlay = ChosenIncantSpellScenario.Choose(decision) ?? pendingPlay;
+                if (AngelDuoIncantScenario.Enabled)
+                    pendingPlay = AngelDuoIncantScenario.Choose(decision) ?? pendingPlay;
                 if (PlannerReplayScenario.TryChoose(decision, log, out PlayCardAction? planned))
                 {
                     pendingPlay = planned;

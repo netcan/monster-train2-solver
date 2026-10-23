@@ -60,5 +60,7 @@ are kept distinct; no cumulative campaign completion is claimed.
 
 The same Ring6 input now has accepted original Angel Duo birth and ordinary
 no-card battle coverage, with complete state/RNG and zero native failures.
-Player capture remains guarded until death phase switching and cross-floor
-Incant health mutation are independently calibrated; see [Angel Duo](angel-duo.md).
+Original cross-floor Incant health mutation and Slay attack buffs also now have
+accepted native fixed-policy coverage. Player capture remains guarded until
+death phase switching and companion Relentless phases are independently
+calibrated; see [Angel Duo](angel-duo.md).

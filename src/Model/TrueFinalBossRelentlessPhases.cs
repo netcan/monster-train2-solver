@@ -52,7 +52,7 @@ namespace MonsterTrain2Poju.Model
             EnchantmentWorld oldWorld = context.Enchantments!;
             var world = new EnchantmentWorld(rooms, Array.Empty<EnemyMovement>(), train.EnemySlotsPerRoom,
                 Array.Empty<EnchantmentRetainedUnit>(), Array.Empty<int>(), oldWorld.AllowUpdates, oldWorld.Updating,
-                oldWorld.Preview, oldWorld.TestRng, oldWorld.AutomaticLifecycle);
+                oldWorld.Preview, oldWorld.TestRng, oldWorld.AutomaticLifecycle, oldWorld.TemporaryPreviewUnitIds);
             context = new CombatContext(new CardCycleState(Array.Empty<CardToken>(), Array.Empty<CardToken>(),
                 Array.Empty<CardToken>(), context.Cards.Rng, context.Cards.DrawModifier, context.Cards.ExternalInteractions,
                 context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn),

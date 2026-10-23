@@ -207,7 +207,7 @@ namespace MonsterTrain2Poju.Model
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
                     room.ExternalInteractions.Append("Outer train boss").ToArray(), null, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
                 world.Movement, world.EnemySlotsPerRoom, world.RetainedUnits, world.EnchanterIds, world.AllowUpdates,
-                world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle));
+                world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
             train = CardSpellModel.WithContext(train, context);
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng,
                 context.NextUnitId!.Value, old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn,

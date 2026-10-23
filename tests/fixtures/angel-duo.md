@@ -41,7 +41,40 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-battle-onl
 ```
 
 These checks include sixteen independent immutable birth and complete battle
-branches. A no-card loss does not establish player victory, forced Relentless
-after companion death, or cross-floor Incant health mutations. Those lifecycle
-transitions retain explicit guards, and this boss is not yet enabled in player
-outer-boss capture.
+branches. A no-card loss does not establish player victory or forced Relentless
+after companion death. This boss is not yet enabled in player outer-boss capture.
+
+## Original cross-floor Incant and Slay
+
+`full-battle-angel-duo-incant.mt2f` preserves a separate fixed-policy run from
+the same original input. Only legal native spell selection is prioritized;
+the deck, units and authored effects remain unchanged. Five original spells
+cast on the outer boss's floor heal the remote Savage companion by30 and
+increase its maximum by30 each time. The outer boss's maximum is unchanged.
+An independent native exchange also witnesses the inner boss's original Slay
+granting its remote Entropic companion +3 attack.
+
+Triggered health applies in the target's physical room. Temporary kill previews
+track the exact copied actors, including the attacking actor and any paired
+boss on another floor, while other actors on that floor remain primary.
+Aura updates copy shared effect caches back into borrowed actors before the
+room's final synchronization. They preserve those actors' current numeric
+state, including real Pyre damage.
+
+Accepted source: `full-battle-units-spells-and-junk-20261023-150213-246ae9df`,
+296.42 seconds, native loss, normal exit and protected files unchanged. Final
+persisted acceptance has all four failure counters zero. All28 card plays,
+seven EndTurns, 64 room stages, 14 train stages and complete state/RNG match.
+The focused check also runs sixteen immutable branches per positive cast and
+sixteen complete recorded chains. The archive is94013 bytes/15234 nodes,
+SHA256 `38f2014f41f21c9277e9455402ca0e8a2abbbe35d5e7cdd0221bce7951fb4ff8`.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-incant-only tests/fixtures/full-battle-angel-duo-incant.mt2f
+```
+
+Existing chosen-cleric Tower attack casts, aura-world primitives, the cumulative
+rank-two final-boss battle and ordinary unplayed lethal Pyre previews pass their
+focused checks. No full catalog regression was run for this batch.
+Companion death forcing the native turn/spawn queue, companion Relentless/Pyre
+phases and actual player advice with a fresh frozen replay remain separate.

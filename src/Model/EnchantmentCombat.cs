@@ -39,12 +39,15 @@ namespace MonsterTrain2Poju.Model
         public bool Updating { get; }
         public bool Preview { get; }
         public UnityRng TestRng { get; }
+        public IReadOnlyList<int>? TemporaryPreviewUnitIds { get; }
         public EnchantmentCombatState(TrainCombatState train, IReadOnlyList<EnchantmentRetainedUnit> retainedUnits,
-            IReadOnlyList<int> enchanterIds, bool allowUpdates, bool updating, bool preview, UnityRng testRng)
+            IReadOnlyList<int> enchanterIds, bool allowUpdates, bool updating, bool preview, UnityRng testRng,
+            IReadOnlyList<int>? temporaryPreviewUnitIds = null)
         {
             Train = train; RetainedUnits = Array.AsReadOnly(retainedUnits.ToArray());
             EnchanterIds = Array.AsReadOnly(enchanterIds.ToArray()); AllowUpdates = allowUpdates; Updating = updating;
             Preview = preview; TestRng = testRng;
+            TemporaryPreviewUnitIds = temporaryPreviewUnitIds == null ? null : Array.AsReadOnly(temporaryPreviewUnitIds.ToArray());
             int[] ids = train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).Concat(retainedUnits.Select(unit => unit.Unit.Id)).ToArray();
             if (ids.Distinct().Count() != ids.Length) throw new ArgumentException("Live and retained enchantment identities must be unique.");
         }
@@ -100,7 +103,7 @@ namespace MonsterTrain2Poju.Model
         internal static EnchantmentCombatResult UpdateDeathwish(EnchantmentCombatState source)
         {
             var frame = new EnchantmentCombatState(source.Train, source.RetainedUnits, Array.Empty<int>(),
-                true, source.Updating, source.Preview, source.TestRng);
+                true, source.Updating, source.Preview, source.TestRng, source.TemporaryPreviewUnitIds);
             return new Engine(frame).All();
         }
         public static EnchantmentCombatResult UpdateEffect(EnchantmentCombatState source, int sourceId, int triggerIndex, int effectIndex)
@@ -115,7 +118,8 @@ namespace MonsterTrain2Poju.Model
                 room.ActiveCompanionBossIds)).ToArray(),
                 source.Train.Movement, source.Train.EnemySlotsPerRoom, source.Train.Context);
             return new EnchantmentCombatState(train, source.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(Prepare(actor.Unit),
-                actor.RoomIndex, actor.Preview)).ToArray(), source.EnchanterIds, source.AllowUpdates, source.Updating, source.Preview, source.TestRng);
+                actor.RoomIndex, actor.Preview)).ToArray(), source.EnchanterIds, source.AllowUpdates, source.Updating, source.Preview, source.TestRng,
+                source.TemporaryPreviewUnitIds);
         }
 
         // Native UpdateEnchantments only queues status callbacks. Its caller decides when to drain.
@@ -138,7 +142,7 @@ namespace MonsterTrain2Poju.Model
             if (!drained.Supported) return new EnchantmentCombatResult(null, result.Requests, result.PendingCallbacks, drained.UnsupportedReason);
             var state = source;
             return new EnchantmentCombatResult(new EnchantmentCombatState(drained.State!, state.RetainedUnits,
-                state.EnchanterIds, state.AllowUpdates, state.Updating, state.Preview, state.TestRng), result.Requests,
+                state.EnchanterIds, state.AllowUpdates, state.Updating, state.Preview, state.TestRng, state.TemporaryPreviewUnitIds), result.Requests,
                 Array.Empty<RoomCombatModel.QueuedCharacterTrigger>());
         }
 
@@ -172,7 +176,9 @@ namespace MonsterTrain2Poju.Model
             private EnchantmentCombatResult Finish() => new EnchantmentCombatResult(error == null ? state : null, requests, callbacks, error);
 
             private IEnumerable<EnchantmentRetainedUnit> Actors => state.Train.Rooms.SelectMany(room => room.Units.Select(unit =>
-                new EnchantmentRetainedUnit(unit, room.RoomIndex, room.Preview))).Concat(state.RetainedUnits);
+                new EnchantmentRetainedUnit(unit, room.RoomIndex, room.Preview))).Concat(state.RetainedUnits)
+                .Select(actor => state.TemporaryPreviewUnitIds == null ? actor : new EnchantmentRetainedUnit(actor.Unit,
+                    actor.RoomIndex, state.TemporaryPreviewUnitIds.Contains(actor.Unit.Id)));
             private EnchantmentRetainedUnit Find(int id) => Actors.Single(actor => actor.Unit.Id == id);
             private EnchantmentActor Actor(EnchantmentRetainedUnit item)
             {
@@ -393,7 +399,8 @@ namespace MonsterTrain2Poju.Model
             }
             private void Set(TrainCombatState? train = null, IReadOnlyList<EnchantmentRetainedUnit>? retained = null,
                 bool? updating = null, UnityRng? testRng = null) => state = new EnchantmentCombatState(train ?? state.Train,
-                    retained ?? state.RetainedUnits, state.EnchanterIds, state.AllowUpdates, updating ?? state.Updating, state.Preview, testRng ?? state.TestRng);
+                    retained ?? state.RetainedUnits, state.EnchanterIds, state.AllowUpdates, updating ?? state.Updating, state.Preview, testRng ?? state.TestRng,
+                    state.TemporaryPreviewUnitIds);
             private static TrainCombatState WithContext(TrainCombatState train, CombatContext? context) => new TrainCombatState(
                 train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
                     context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), train.Movement, train.EnemySlotsPerRoom, context);

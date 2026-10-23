@@ -63,7 +63,7 @@ namespace MonsterTrain2Poju.Model
                 enchantments.Movement, enchantments.EnemySlotsPerRoom, enchantments.RetainedUnits.Select(actor =>
                     new EnchantmentRetainedUnit(actor.Preview ? actor.Unit : Sync(actor.Unit), actor.RoomIndex, actor.Preview)).ToArray(),
                 enchantments.EnchanterIds, enchantments.AllowUpdates, enchantments.Updating, enchantments.Preview,
-                enchantments.TestRng, enchantments.AutomaticLifecycle));
+                enchantments.TestRng, enchantments.AutomaticLifecycle, enchantments.TemporaryPreviewUnitIds));
         }
 
         public static LinkedBossHealthResult ApplyDamage(TrainCombatState source, int targetId, int damage, int sourceCardId = 0) => Combat(source, targetId, damage, false, sourceCardId);

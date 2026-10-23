@@ -2502,16 +2502,26 @@ namespace MonsterTrain2Poju.Model
                         context.WithSpawnPoints(context.SpawnPoints.BeginPreview()), preview: true,
                     activeCompanionBossIds: CompanionBossSnapshot());
                 EnchantmentWorld? originalWorld = context.Enchantments;
+                var temporaryPreviewIds = units.Where(unit => unit.InRoom && !unit.Removed &&
+                    !externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Source.Id).ToHashSet();
+                temporaryPreviewIds.Add(actor.Source.Id);
+                foreach (WorkingUnit local in units.Where(unit => unit.InRoom && !unit.Removed &&
+                    !externalTurnActorIds.Contains(unit.Source.Id) && unit.Source.IsBoss == true && unit.Source.BumpRules?.CompanionBoss == true))
+                {
+                    int pair = local.Source.BumpRules!.PairedBossUnitId;
+                    if (originalWorld?.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == pair &&
+                        (unit.Health > 0 || unit.Status("undying")?.Stacks > 0)) == true)
+                        temporaryPreviewIds.Add(pair);
+                }
                 if (originalWorld?.AutomaticLifecycle == true)
                 {
                     RoomCombatState synced = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom ||
                         externalTurnActorIds.Contains(unit.Source.Id))
                         .Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                     context = synced.Context!; originalWorld = context.Enchantments!;
-                    EnchantmentCombatState prepared = originalWorld.Frame(context);
-                    foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && !unit.Removed &&
-                        !externalTurnActorIds.Contains(unit.Source.Id)))
-                        prepared = EnchantmentCombatModel.PrepareForPreview(prepared, unit.Source.Id);
+                    EnchantmentCombatState prepared = originalWorld.WithTemporaryPreviewUnits(temporaryPreviewIds.OrderBy(id => id).ToArray()).Frame(context);
+                    foreach (int id in temporaryPreviewIds)
+                        prepared = EnchantmentCombatModel.PrepareForPreview(prepared, id);
                     EnchantmentWorld preparedWorld = EnchantmentWorld.From(prepared, true);
                     CombatContext testContext = context.WithEnchantments(preparedWorld);
                     if (testContext.SpawnPoints != null) testContext = testContext.WithSpawnPoints(testContext.SpawnPoints.BeginPreview());
@@ -2599,7 +2609,7 @@ namespace MonsterTrain2Poju.Model
                     if (context.SpawnPoints != null && restoredPoints == null)
                         context = context.WithSpawnPoints(context.SpawnPoints.WithState(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
                             births.Select(actor => new UnitSpawnPointState(actor.Unit.Id, null, null, spawnedInPreview: true))).ToArray()));
-                    var restoredActors = units.Where(unit => unit.InRoom && !unit.Removed).Select(unit => unit.Source.Id).ToHashSet();
+                    var restoredActors = temporaryPreviewIds;
                     CombatUnit Restore(CombatUnit unit, int room) => EnchantmentWorldModel.RestorePreviewEffects(unit, observed,
                         restoredActors.Contains(unit.Id), removedPreviewIds);
                     // Earlier preview births were also outside the collected restore
@@ -2618,7 +2628,8 @@ namespace MonsterTrain2Poju.Model
                     // Remote Tower targets share effect objects with this
                     // preview too, while their numeric primary state survives.
                     foreach (WorkingUnit remote in units.Where(unit => externalTurnActorIds.Contains(unit.Source.Id)))
-                        remote.Apply(EnchantmentWorldModel.RestorePreviewEffects(remote.Freeze(), observed, false, removedPreviewIds));
+                        remote.Apply(EnchantmentWorldModel.RestorePreviewEffects(remote.Freeze(), observed,
+                            temporaryPreviewIds.Contains(remote.Source.Id), removedPreviewIds));
                     // A commanded external actor attacks this room without
                     // moving into it. Restore the aura world from physical units.
                     ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(PhysicalRoom(), context)));
@@ -3157,7 +3168,7 @@ namespace MonsterTrain2Poju.Model
                     world.Movement.Where(rule => !ids.Contains(rule.UnitId)).ToArray(), world.EnemySlotsPerRoom,
                     world.RetainedUnits.Where(actor => !ids.Contains(actor.Unit.Id)).ToArray(),
                     world.EnchanterIds.Where(id => !ids.Contains(id)).ToArray(), world.AllowUpdates, world.Updating,
-                    world.Preview, world.TestRng, world.AutomaticLifecycle));
+                    world.Preview, world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
                 if (context.QueryFrame?.SelectedRoomIndex != null)
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: roster.Last().RoomIndex));
                 Emit("Death", attacker, root, 0);
@@ -3256,7 +3267,8 @@ namespace MonsterTrain2Poju.Model
                             world.RetainedUnits.Select(actor => cleared.Contains(actor.Unit.Id) ? new EnchantmentRetainedUnit(
                                 actor.Unit.WithDeathState((actor.Unit.DeathState ?? new UnitDeathState(false, false, false))
                                     .WithLifecycle(actor.Unit.DeathState?.IsDespawned, true)), -1, actor.Preview) : actor).ToArray(),
-                            world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng, true));
+                            world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng, true,
+                            world.TemporaryPreviewUnitIds));
                         BattleSpawnPoints points = context.SpawnPoints!;
                         context = context.WithSpawnPoints(points.WithState(points.Groups.Select(group => new SpawnPointGroupState(
                             group.RoomIndex, group.Team, group.InnerCount, group.GroupCount,
@@ -4304,6 +4316,23 @@ namespace MonsterTrain2Poju.Model
                     WorkingUnit? current = units.FirstOrDefault(unit => unit.Source.Id == changed.Id);
                     if (current != null) current.Apply(changed);
                 }
+                // Aura effect objects are shared across the train. Publish their
+                // updated caches into borrowed actors before Finish re-syncs them;
+                // their primary numeric state must survive preview restoration.
+                if (context?.Enchantments is EnchantmentWorld world)
+                {
+                    WorkingUnit[] shared = units.Where(unit => externalTurnActorIds.Contains(unit.Source.Id) &&
+                        unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Enchantment != null || effect.Summon != null))).ToArray();
+                    if (shared.Length > 0)
+                    {
+                        var ids = shared.Select(unit => unit.Source.Id).ToHashSet();
+                        var observed = world.Rooms.SelectMany(room => room.Units).Concat(world.RetainedUnits.Select(actor => actor.Unit))
+                            .Where(unit => ids.Contains(unit.Id)).ToDictionary(unit => unit.Id);
+                        foreach (WorkingUnit remote in shared)
+                            if (observed.TryGetValue(remote.Source.Id, out CombatUnit? changed))
+                                remote.Apply(PreviewEffectsModel.Restore(remote.Freeze(), changed, Array.Empty<int>()));
+                    }
+                }
             }
 
             private bool UpdateEnchantments(int? onlySourceId = null)
@@ -5077,7 +5106,7 @@ namespace MonsterTrain2Poju.Model
                         }).ToArray();
                         context = context.WithEnchantments(new EnchantmentWorld(rooms, world.Movement, world.EnemySlotsPerRoom,
                             world.RetainedUnits.Where(unit => !changed.ContainsKey(unit.Unit.Id)).ToArray(), world.EnchanterIds,
-                            world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle));
+                            world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
                     }
                     foreach (QueuedCharacterTrigger callback in applied.PendingCallbacks) QueueCallback(callback);
                     foreach (CombatEvent item in applied.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
@@ -5107,8 +5136,11 @@ namespace MonsterTrain2Poju.Model
                 {
                     string? healthError = TriggeredHealthModel.Validate(effect);
                     if (healthError != null) { unsupportedReason = healthError; return false; }
+                    bool duoIncantHealth = OuterBossDefinitions.IsAngelDuo(actor.Source.AssetKey) &&
+                        action.Type == "BuffHealth" && amount == 30 && action.Target == "Tower" &&
+                        action.Lifetime == "TemporaryUntilEndOfBattle" && action.Filters?.Subtype == "SubtypesData_SavageAngel";
                     if (targets.UnitIds.Any(id => units.All(unit => unit.Source.Id != id) ||
-                        units.Single(unit => unit.Source.Id == id).RoomIndex != source.RoomIndex))
+                        !duoIncantHealth && units.Single(unit => unit.Source.Id == id).RoomIndex != source.RoomIndex))
                     { unsupportedReason = "Cross-floor triggered maximum-health mutation requires native calibration."; return false; }
                     foreach (int id in targets.UnitIds)
                     {
@@ -5123,7 +5155,11 @@ namespace MonsterTrain2Poju.Model
                         }
                         else
                         {
-                            RoomCombatResult changed = UnitHealthModel.Apply(CurrentRoom(), id, amount, lifetime: action.Lifetime);
+                            RoomCombatState healthRoom = target.RoomIndex == source.RoomIndex ? CurrentRoom() :
+                                new RoomCombatState(target.RoomIndex, source.Deployment,
+                                    units.Where(unit => unit.Alive && unit.RoomIndex == target.RoomIndex).Select(unit => unit.Freeze()).ToArray(),
+                                    Array.Empty<string>(), context, source.Preview, CompanionBossSnapshot());
+                            RoomCombatResult changed = UnitHealthModel.Apply(healthRoom, id, amount, lifetime: action.Lifetime);
                             if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
                             context = changed.State!.Context;
                             foreach (CombatUnit unit in changed.State.Units) units.First(current => current.Source.Id == unit.Id).Apply(unit);

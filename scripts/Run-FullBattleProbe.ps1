@@ -72,6 +72,7 @@ param(
     [switch] $TrueFinalBossDeathSpellSource,
     [switch] $OuterBossBirth,
     [switch] $ChosenIncantSpell,
+    [switch] $AngelDuoIncant,
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
     [string] $InputProfile = '',
@@ -701,6 +702,10 @@ if ($ChosenIncantSpell -and ($StartingCovenantLevel -ne 10 -or $BattleDistance -
     throw 'Chosen Incant control requires the original native rank-ten AllyBuffer battle and fixed native spell policy.'
 }
 if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns requires -PhysicalSpawnPoints.' }
+if ($AngelDuoIncant -and (-not $InputProfile -or $BattleDistance -ne 5 -or -not $OuterBossBirth -or
+    -not $OuterBossTurns -or $Policy -ne 'units-spells-and-junk' -or $PlayerAdvisor -or $RollingAdvice -or $Planner -or $RollingInput)) {
+    throw 'Angel Duo Incant control requires an original Ring6 checkpoint and fixed native spell policy.'
+}
 if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or -not $OuterBossTurns)) {
     throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns.'
 }
@@ -1479,6 +1484,7 @@ $environment = @{
     MT2_PROBE_DOTNET_PLANNER = $(if ($DotNetPlanner) { Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll' } else { '' })
     MT2_PROBE_PLANNER_DEPLOYMENT_ROOM = "$PlannerDeploymentRoom"
     MT2_PROBE_CHOSEN_INCANT_SPELL = $(if ($ChosenIncantSpell) { '1' } else { '0' })
+    MT2_PROBE_ANGEL_DUO_INCANT = $(if ($AngelDuoIncant) { '1' } else { '0' })
     MT2_PROBE_PLANNER_TIME_LIMIT_MS = "$PlannerTimeLimitMs"
     MT2_PROBE_PLANNER_INPUT = $(if ($PlannerInput) { (Resolve-Path -LiteralPath $PlannerInput).Path } else { '' })
     MT2_PROBE_DATA_DIR = $profile

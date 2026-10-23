@@ -976,7 +976,8 @@ internal static class BattleActionChecks
             Console.WriteLine("NATIVE-POLICY-CHAIN-SKIPPED: controlled native scenario actions are outside the generic captured policy; recorded plays and turns are checked individually, with the dedicated scenario search run separately.");
             return;
         }
-        if (fixture.TryGetProperty("ChosenIncantSpellControl", out FixtureValue chosenControl) && chosenControl.ValueKind == FixtureKind.Object)
+        if ((fixture.TryGetProperty("ChosenIncantSpellControl", out FixtureValue chosenControl) && chosenControl.ValueKind == FixtureKind.Object) ||
+            (fixture.TryGetProperty("AngelDuoIncantControl", out FixtureValue angelControl) && angelControl.ValueKind == FixtureKind.Object))
         {
             // Replay the explicitly recorded legal control inputs. The native
             // control deliberately overrides the ordinary fixed policy chooser.

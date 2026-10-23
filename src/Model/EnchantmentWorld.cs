@@ -18,14 +18,19 @@ namespace MonsterTrain2Poju.Model
         public bool Preview { get; }
         public UnityRng TestRng { get; }
         public bool AutomaticLifecycle { get; }
+        // Kill previews copy selected actors, including a companion on another
+        // floor; other actors on that floor remain in their primary state.
+        public IReadOnlyList<int>? TemporaryPreviewUnitIds { get; }
         public EnchantmentWorld(IReadOnlyList<RoomCombatState> rooms, IReadOnlyList<EnemyMovement> movement, int enemySlotsPerRoom,
             IReadOnlyList<EnchantmentRetainedUnit> retainedUnits, IReadOnlyList<int> enchanterIds,
-            bool allowUpdates, bool updating, bool preview, UnityRng testRng, bool automaticLifecycle = false)
+            bool allowUpdates, bool updating, bool preview, UnityRng testRng, bool automaticLifecycle = false,
+            IReadOnlyList<int>? temporaryPreviewUnitIds = null)
         {
             Rooms = Array.AsReadOnly(rooms.OrderBy(room => room.RoomIndex).Select(Strip).ToArray());
             Movement = Array.AsReadOnly(movement.ToArray()); EnemySlotsPerRoom = enemySlotsPerRoom;
             RetainedUnits = Array.AsReadOnly((automaticLifecycle ? retainedUnits.OrderBy(actor => actor.Unit.Id) : retainedUnits.AsEnumerable()).ToArray()); EnchanterIds = Array.AsReadOnly(enchanterIds.ToArray());
             AllowUpdates = allowUpdates; Updating = updating; Preview = preview; TestRng = testRng; AutomaticLifecycle = automaticLifecycle;
+            TemporaryPreviewUnitIds = temporaryPreviewUnitIds == null ? null : Array.AsReadOnly(temporaryPreviewUnitIds.ToArray());
         }
         private static RoomCombatState Strip(RoomCombatState room) => new RoomCombatState(room.RoomIndex, room.Deployment,
             room.Units, room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds);
@@ -33,10 +38,12 @@ namespace MonsterTrain2Poju.Model
             Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
                 context.WithEnchantments(null), room.Preview, room.ActiveCompanionBossIds)).ToArray(),
             Movement, EnemySlotsPerRoom, context.WithEnchantments(null)),
-            RetainedUnits, EnchanterIds, AllowUpdates, Updating, Preview, TestRng);
+            RetainedUnits, EnchanterIds, AllowUpdates, Updating, Preview, TestRng, TemporaryPreviewUnitIds);
         internal static EnchantmentWorld From(EnchantmentCombatState frame, bool automaticLifecycle = false) => new EnchantmentWorld(frame.Train.Rooms,
             frame.Train.Movement, frame.Train.EnemySlotsPerRoom, frame.RetainedUnits, frame.EnchanterIds,
-            frame.AllowUpdates, frame.Updating, frame.Preview, frame.TestRng, automaticLifecycle);
+            frame.AllowUpdates, frame.Updating, frame.Preview, frame.TestRng, automaticLifecycle, frame.TemporaryPreviewUnitIds);
+        internal EnchantmentWorld WithTemporaryPreviewUnits(IReadOnlyList<int> ids) => new EnchantmentWorld(Rooms, Movement,
+            EnemySlotsPerRoom, RetainedUnits, EnchanterIds, AllowUpdates, Updating, Preview, TestRng, AutomaticLifecycle, ids);
     }
 
     internal static class EnchantmentWorldModel
@@ -92,7 +99,7 @@ namespace MonsterTrain2Poju.Model
             }
             world = new EnchantmentWorld(rooms,
                 world.Movement.Where(rule => liveIds.Contains(rule.UnitId) || activeRetainedIds.Contains(rule.UnitId)).ToArray(), world.EnemySlotsPerRoom, retained, world.EnchanterIds, world.AllowUpdates, world.Updating,
-                world.Preview, world.TestRng, world.AutomaticLifecycle);
+                world.Preview, world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds);
             return Room(source, source.Context!.WithEnchantments(world));
         }
         internal static RoomCombatState Room(RoomCombatState source, CombatContext? context) => new RoomCombatState(source.RoomIndex,
@@ -110,7 +117,7 @@ namespace MonsterTrain2Poju.Model
                         retained.Add(new EnchantmentRetainedUnit(unit, room.RoomIndex, room.Preview));
             var changed = new EnchantmentWorld(source.Rooms, source.Movement, source.EnemySlotsPerRoom, retained,
                 world.EnchanterIds, allowUpdates ?? world.AllowUpdates, world.Updating, preview ?? world.Preview,
-                testRng ?? world.TestRng, world.AutomaticLifecycle);
+                testRng ?? world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds);
             CombatContext context = source.Context!.WithEnchantments(changed);
             return new TrainCombatState(source.Rooms.Select(room => Room(room, context)).ToArray(), source.Movement,
                 source.EnemySlotsPerRoom, context);
@@ -214,7 +221,8 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = source.Context!;
             EnchantmentWorld world = context.Enchantments!;
             var changed = new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom, world.RetainedUnits,
-                world.EnchanterIds.Concat(new[] { unitId }).Distinct().ToArray(), world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle);
+                world.EnchanterIds.Concat(new[] { unitId }).Distinct().ToArray(), world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle,
+                world.TemporaryPreviewUnitIds);
             return Sync(Room(source, context.WithEnchantments(changed)));
         }
         internal static RoomCombatState Refresh(RoomCombatState source)

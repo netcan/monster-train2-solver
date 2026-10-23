@@ -139,13 +139,19 @@ namespace MonsterTrain2Poju.Model
                 bool targetsPyre = room.RoomIndex != pyreRoomIndex && room.Units.Any(unit =>
                     unit.Triggers.Any(trigger => trigger.Effects.Any(effect =>
                         effect.Type is "CardEffectPyreDamageIfNoPlayerUnits" or "CardEffectHealTrain")));
+                bool targetsTower = room.Units.SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects)
+                    .Any(effect => (effect.Action ?? effect.UnitUpgrade)?.Target is "Tower" or "FrontInAllRooms");
+                if ((targetsTower || previewContext.LifeLinks != null) && previewContext.Enchantments == null)
+                    return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(),
+                        "Tower preview targeting requires its captured complete actor world.");
                 RoomCombatResult preview = RoomCombatModel.Resolve(EnchantmentWorldModel.Refresh(new RoomCombatState(room.RoomIndex, room.Deployment,
                     room.Units, room.ExternalInteractions, previewContext, preview: true,
                     activeCompanionBossIds: room.ActiveCompanionBossIds)),
                     externalPyre: targetsPyre ? previewPyre : null,
                     externalPyreRoomIndex: targetsPyre && previewPyre != null ? pyreRoomIndex : -1,
-                    externalTargets: previewContext.LifeLinks == null || targetsPyre ? null : previewContext.Enchantments!.Rooms
-                        .Where(other => other.RoomIndex != room.RoomIndex).SelectMany(other => other.Units.Select(unit => (other.RoomIndex, unit))).ToArray());
+                    externalTargets: !targetsTower && previewContext.LifeLinks == null ? null : previewContext.Enchantments!.Rooms
+                        .Where(other => other.RoomIndex != room.RoomIndex).SelectMany(other => other.Units
+                            .Where(unit => !targetsPyre || unit.Id != previewPyre?.Id).Select(unit => (other.RoomIndex, unit))).ToArray());
                 if (!preview.Supported)
                     return new TrainCombatResult(null, RoomOutcome.Unsupported,
                         Array.Empty<RoomCombatResult>(), "Battle preview floor " + room.RoomIndex + ": " + preview.UnsupportedReason);

@@ -61,7 +61,7 @@ namespace MonsterTrain2Poju.Model
                     room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
                     world.Movement, world.EnemySlotsPerRoom,
                     world.RetainedUnits, world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview,
-                    world.TestRng, world.AutomaticLifecycle));
+                    world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
             return new RelicPyreAttackRefreshResult(context, pyre);
         }
 
