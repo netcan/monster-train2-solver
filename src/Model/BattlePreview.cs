@@ -48,6 +48,15 @@ namespace MonsterTrain2Poju.Model
                 .Select(unit => unit.Id).ToHashSet();
             void CarryRoomCaches(CombatContext from)
             {
+                // HeroManager keeps preview-born enemies alive after restoring
+                // their primary state. Card cache weak references still resolve
+                // to these actors, including births from earlier previews.
+                if (from.Enchantments is EnchantmentWorld observed)
+                    originalUnits.UnionWith(observed.Rooms.SelectMany(room => room.Units)
+                        .Concat(observed.RetainedUnits.Select(actor => actor.Unit))
+                        .Where(unit => unit.Team == CombatTeam.Enemy &&
+                            (unit.DeathState?.PreviewPrimary ?? unit) is CombatUnit primary &&
+                            primary.Health > 0 && primary.DeathState?.IsDestroyed != true).Select(unit => unit.Id));
                 foreach (RoomEchoState echo in (context.RoomCapacities ?? Array.Empty<RoomCapacityState>())
                     .SelectMany(room => room.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
                     .Where(attachment => attachment.Echo?.CopyCardId > 0).Select(attachment => attachment.Echo!))

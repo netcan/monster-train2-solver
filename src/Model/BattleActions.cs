@@ -363,7 +363,10 @@ namespace MonsterTrain2Poju.Model
                 if (currentRoom >= 0 && currentRoom != action.RoomIndex &&
                     source.PlayRules?.Rooms.Any(room => room.RoomIndex == action.RoomIndex) == true)
                 {
-                    BattleTurnResult selection = BattleTurnModel.SelectRoom(source, action.RoomIndex);
+                    // Native ability activation focuses its room, then refreshes
+                    // combat preview after the play. It does not run a second
+                    // preview merely for this preceding focus change.
+                    BattleTurnResult selection = BattleTurnModel.SelectRoom(source, action.RoomIndex, refreshPreview: false);
                     if (!selection.Supported) return Unsupported(selection.UnsupportedReason!);
                     source = selection.State!;
                 }

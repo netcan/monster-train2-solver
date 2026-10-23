@@ -9,9 +9,9 @@ The gate is an identity filter. Allowed definitions can still reject uncalibrate
 | Level3BattleHeavyHitter_PushAttack | allowed | 4 | 1 |
 | Level3BattleHeavyHitter_PyreDamage | allowed | 3 | 1 |
 | Level3BattleHeavyHitter_SiphonRage | allowed | 4 | 1 |
-| Level3ImmortalMass_Corruption | allowed | 1 | 0 |
-| Level3ImmortalMass_MoreMass | allowed | 1 | 0 |
-| Level3ImmortalMass_Spikes | allowed | 1 | 0 |
+| Level3ImmortalMass_Corruption | allowed | 2 | 0 |
+| Level3ImmortalMass_MoreMass | allowed | 2 | 0 |
+| Level3ImmortalMass_Spikes | allowed | 2 | 0 |
 | Level6AngelDuo_LoopAttackResolveHealth | allowed | 3 | 1 |
 | Level6AngelDuo_RallyAttackIncantHealth | allowed | 7 | 1 |
 | Level6AngelDuo_RevengeAttackHarvestHealth | allowed | 5 | 1 |

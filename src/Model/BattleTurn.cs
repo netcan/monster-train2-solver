@@ -114,6 +114,9 @@ namespace MonsterTrain2Poju.Model
         // Room changes refresh the native combat preview before the selected action.
         // Older captures without a selected room remain explicitly unknown.
         public static BattleTurnResult SelectRoom(BattleTurnState source, int roomIndex)
+            => SelectRoom(source, roomIndex, refreshPreview: true);
+
+        internal static BattleTurnResult SelectRoom(BattleTurnState source, int roomIndex, bool refreshPreview)
         {
             if (source.PlayRules == null || source.Spawn.Train.Context == null)
                 return Unsupported("Missing room-selection rules or battle context.");
@@ -139,7 +142,7 @@ namespace MonsterTrain2Poju.Model
             bool selectionChanged = currentRoom != roomIndex;
             if (framedRoom.HasValue)
                 train = CardSpellModel.WithContext(train, train.Context!.WithQueryFrame(train.Context.QueryFrame!.With(selectedRoomIndex: roomIndex)));
-            if (selectionChanged && currentRoom >= 0 && source.BattlePreviewEnabled)
+            if (refreshPreview && selectionChanged && currentRoom >= 0 && source.BattlePreviewEnabled)
             {
                 TrainCombatResult preview = BattlePreviewModel.Refresh(train, source.PlayRules);
                 if (!preview.Supported) return Unsupported(preview.UnsupportedReason!);

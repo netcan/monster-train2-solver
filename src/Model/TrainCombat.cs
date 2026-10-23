@@ -120,14 +120,20 @@ namespace MonsterTrain2Poju.Model
         private static TrainCombatState ClearRemovedReferences(TrainCombatState source, HashSet<int> activeIds)
         {
             CombatContext? context = source.Context;
+            // Native card caches hold weak references to living retained actors
+            // too. A preview-born enemy can have no room or point and still be
+            // alive after HeroManager restores its primary state.
+            var cacheIds = activeIds.Concat(context?.Enchantments?.RetainedUnits
+                .Where(actor => actor.Unit.Health > 0 && actor.Unit.DeathState?.IsDestroyed != true)
+                .Select(actor => actor.Unit.Id) ?? Array.Empty<int>()).ToHashSet();
             if (context?.LastSpawnedUnitId > 0 && !activeIds.Contains(context.LastSpawnedUnitId.Value)) context = context.WithLastSpawned(0);
             foreach (CardInstanceState card in context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
             {
                 CardInstanceState updated = card;
                 if (card.EquippedUnitId > 0 && !activeIds.Contains(card.EquippedUnitId.Value)) updated = updated.WithEquippedUnit(0);
-                if (card.RawPlayedRoomUnitIds?.Any(id => !activeIds.Contains(id)) == true)
-                    updated = updated.WithRoomCacheState(card.PlayedRoomUnitIds!.Where(activeIds.Contains).ToArray(),
-                        card.RawPlayedRoomUnitIds.Where(activeIds.Contains).ToArray());
+                if (card.RawPlayedRoomUnitIds?.Any(id => !cacheIds.Contains(id)) == true)
+                    updated = updated.WithRoomCacheState(card.PlayedRoomUnitIds!.Where(cacheIds.Contains).ToArray(),
+                        card.RawPlayedRoomUnitIds.Where(cacheIds.Contains).ToArray());
                 if (!ReferenceEquals(updated, card)) context = context!.WithCard(updated);
             }
             if (context?.Enchantments?.AutomaticLifecycle == true)

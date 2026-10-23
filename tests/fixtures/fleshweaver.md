@@ -39,20 +39,35 @@ Exact bytes, hashes and node counts are in `manifest.tsv`. Focused checks:
 `--fleshweaver-birth-only <archive> <Mass|Corruption|Spikes>` and
 `--fleshweaver-baseline-only <archive> <variant>`.
 
-Positive legal-card battles remain diagnostic. Individual native card actions
-have exposed preview birth lifetime, identity registration and shared room-cache
-boundaries; full native acceptance and independent complete chains are still
-required. Those diagnostics are not registered as passing evidence. Actual
-player advice remains guarded until positive mechanics are accepted; the three
-player-source/fresh-replay pairs also remain unverified.
+Positive legal-card battles now pass fresh native acceptance for all three
+variants. Each executes 26 card plays and eight EndTurns and wins without asset,
+HP, damage or RNG edits. Every action, EndTurn, room/train stage, full reference
+inventory and sixteen independent policy branches match complete state/RNG.
+Each native process exits normally, preserves originals and has four zero
+failure counters. The original hit/birth/Mass-removal witnesses are required by
+`--fleshweaver-growth-only <archive> <Mass|Corruption|Spikes>`.
 
-The recorded MoreMass/Spike diagnostics now match all 26 individual card actions,
-eight EndTurns and sixteen independent policy branches. New enemies keep their
-preview status/location after a temporary boss-kill preview while exposing null
-primary spawn pointers. The following complete UI preview restores their raw
-primary state/location without the player-birth destruction flag. Player
-temporary births keep their previously calibrated behavior. Corruption's
-late deployment also exposed a lethal boss status tick: native preview stops
-before later units' post-combat callbacks can overwrite the shared card cache.
-These fixes are undergoing fresh native acceptance; historical diagnostic
-failure counters are not rewritten or accepted retroactively.
+| Variant | Rooms / train phases | Surviving minis / Mass removed | Final Pyre | Native seconds | Accepted source suffix |
+| --- | --- | --- | ---: | ---: | --- |
+| MoreMass | 69 / 15 | 2 / 4 | 27 | 572.32 | `203530-08cb5a67` |
+| Corruption | 72 / 15 | 1 / 2 | 26 | 499.99 | `203530-4660ff28` |
+| Spike | 65 / 15 | 2 / 3 | 47 | 492.90 | `203530-b796c2d8` |
+
+These sources use the prefix `full-battle-units-spells-and-junk-20261023-` and
+are archived as `full-battle-fleshweaver-{mass,corruption,spikes}-native-spells.mt2f`.
+Historical failed diagnostics are not rewritten or accepted retroactively.
+
+New enemies keep preview status/location after a temporary boss-kill preview
+while exposing null primary spawn pointers. The following complete UI preview
+restores their raw primary state/location without the player-birth destruction
+flag. Living retained enemies remain valid card-cache weak references despite
+having no room. A lethal boss status tick stops preview before later units'
+post-combat callbacks. Unit ability activation focuses its room and refreshes
+after the play, avoiding a duplicate preview for the preceding focus change.
+The first player diagnostics exposed these cache/focus combinations; their 23
+actual inputs now pass focused successor checks, as do 73 earlier Arkion/Cael
+player inputs. Original failed plans and incomplete battles remain unaccepted.
+
+Player capture now recognizes exactly the three original Fleshweaver identities;
+payload validation still applies. Actual player-source/fresh-replay pairs remain
+in progress and are not counted as accepted player evidence yet.

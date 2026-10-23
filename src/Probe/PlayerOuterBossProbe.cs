@@ -33,7 +33,8 @@ namespace MonsterTrain2Poju.Probe
                         "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" or
                         "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth" ||
                     OuterBossDefinitions.IsCael(data.GetAssetKey()) || OuterBossDefinitions.IsArkionPyre(data.GetAssetKey()) ||
-                    OuterBossDefinitions.IsArkionRage(data.GetAssetKey()) || OuterBossDefinitions.IsArkionPush(data.GetAssetKey())) &&
+                    OuterBossDefinitions.IsArkionRage(data.GetAssetKey()) || OuterBossDefinitions.IsArkionPush(data.GetAssetKey()) ||
+                    OuterBossDefinitions.IsFleshweaver(data.GetAssetKey())) &&
                     OuterBossPhaseProbe.Supports(data);
             }
         }
