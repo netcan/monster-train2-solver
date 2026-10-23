@@ -64,6 +64,9 @@ namespace MonsterTrain2Poju.Probe
                     {
                         row.NativeReturned = completed;
                         row.Actual = new OuterBossPhaseState(FullBattleTrace.Active!.CaptureDecision(true, true), OuterBossPhaseProbe.CaptureProgress());
+#if DEVELOPMENT_PROBE
+                        AngelDuoForcedRelentlessProbe.Run();
+#endif
                     }
                     catch (Exception error) { Errors.Add(error.ToString()); }
                     pending = null;

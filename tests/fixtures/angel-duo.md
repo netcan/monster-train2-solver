@@ -78,3 +78,28 @@ rank-two final-boss battle and ordinary unplayed lethal Pyre previews pass their
 focused checks. No full catalog regression was run for this batch.
 Companion death forcing the native turn/spawn queue, companion Relentless/Pyre
 phases and actual player advice with a fresh frozen replay remain separate.
+
+## Forced Relentless global transition
+
+`angel-duo-forced-relentless-calibration.mt2f` calls the original native
+`CombatManager.ForceRelentless` at five temporary turn boundaries in this
+original battle. It records complete state/RNG plus the native turn, spawn
+phase and early-Relentless scoring counter. Three early calls set the turn and
+spawn phase to the final wave and replace the scoring counter with the skipped
+turn count. Final/post-final calls retain all counters, including a sentinel.
+Turn zero also leaves deployment immediately, including the shared aura world.
+The model matches all five full snapshots and eighty immutable branches.
+
+The temporary controls restore complete original battle state/RNG before play
+continues. Fresh source `full-battle-no-cards-20261023-151909-e57266e4` completes
+the original no-card loss in64.41 seconds, exits normally, preserves protected
+files and has final persisted acceptance with all four failure counters zero.
+The component archive is33639 bytes/3588 nodes, SHA256
+`7e5df0ef850f6cbf932c514b0802ea2d982f53f52074aed936f6dd03b5deb0b0`.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-forced-relentless-only tests/fixtures/angel-duo-forced-relentless-calibration.mt2f
+```
+
+This calibrates the global primitive. Applying it from companion death and the
+following companion Relentless/Pyre phases remain guarded pending integration.

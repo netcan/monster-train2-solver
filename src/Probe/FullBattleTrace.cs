@@ -762,6 +762,9 @@ namespace MonsterTrain2Poju.Probe
             BossActionControllerProbe.Write(this, log);
             OuterBossPhaseProbe.Write(log);
             OuterBossBirthProbe.Write(log);
+#if DEVELOPMENT_PROBE
+            AngelDuoForcedRelentlessProbe.Write(log);
+#endif
             OuterBossPyreProbe.Write(log);
             CharacterRemovalProbe.Write();
             PhysicalPlaneProbe.Write();

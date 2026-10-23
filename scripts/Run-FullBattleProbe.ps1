@@ -73,6 +73,7 @@ param(
     [switch] $OuterBossBirth,
     [switch] $ChosenIncantSpell,
     [switch] $AngelDuoIncant,
+    [switch] $AngelDuoForceRelentless,
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
     [string] $InputProfile = '',
@@ -705,6 +706,10 @@ if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns req
 if ($AngelDuoIncant -and (-not $InputProfile -or $BattleDistance -ne 5 -or -not $OuterBossBirth -or
     -not $OuterBossTurns -or $Policy -ne 'units-spells-and-junk' -or $PlayerAdvisor -or $RollingAdvice -or $Planner -or $RollingInput)) {
     throw 'Angel Duo Incant control requires an original Ring6 checkpoint and fixed native spell policy.'
+}
+if ($AngelDuoForceRelentless -and (-not $InputProfile -or $BattleDistance -ne 5 -or -not $OuterBossBirth -or
+    -not $OuterBossTurns -or $Policy -ne 'no-cards' -or $PlayerAdvisor -or $RollingAdvice -or $Planner -or $RollingInput)) {
+    throw 'Angel Duo forced Relentless calibration requires an original Ring6 checkpoint and no-card restore control.'
 }
 if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or -not $OuterBossTurns)) {
     throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns.'
@@ -1485,6 +1490,7 @@ $environment = @{
     MT2_PROBE_PLANNER_DEPLOYMENT_ROOM = "$PlannerDeploymentRoom"
     MT2_PROBE_CHOSEN_INCANT_SPELL = $(if ($ChosenIncantSpell) { '1' } else { '0' })
     MT2_PROBE_ANGEL_DUO_INCANT = $(if ($AngelDuoIncant) { '1' } else { '0' })
+    MT2_PROBE_ANGEL_DUO_FORCE_RELENTLESS = $(if ($AngelDuoForceRelentless) { '1' } else { '0' })
     MT2_PROBE_PLANNER_TIME_LIMIT_MS = "$PlannerTimeLimitMs"
     MT2_PROBE_PLANNER_INPUT = $(if ($PlannerInput) { (Resolve-Path -LiteralPath $PlannerInput).Path } else { '' })
     MT2_PROBE_DATA_DIR = $profile

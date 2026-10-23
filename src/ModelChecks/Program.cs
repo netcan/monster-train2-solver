@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--angel-duo-forced-relentless-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AngelDuoForcedRelentlessChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--angel-duo-incant-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4274,6 +4280,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
 {
     using var fixture = ModelJson.ReadFixture(path);
     AngelDuoBirthChecks.Battle(fixture.RootElement, path);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "angel-duo-forced-relentless-calibration.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    AngelDuoForcedRelentlessChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-angel-duo-incant.mt2f"))
 {

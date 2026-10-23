@@ -61,6 +61,8 @@ are kept distinct; no cumulative campaign completion is claimed.
 The same Ring6 input now has accepted original Angel Duo birth and ordinary
 no-card battle coverage, with complete state/RNG and zero native failures.
 Original cross-floor Incant health mutation and Slay attack buffs also now have
-accepted native fixed-policy coverage. Player capture remains guarded until
-death phase switching and companion Relentless phases are independently
-calibrated; see [Angel Duo](angel-duo.md).
+accepted native fixed-policy coverage. The forced-Relentless global primitive
+also matches five native full-state controls, including scoring counters and
+full restoration before the accepted no-card battle continues. Player capture
+remains guarded until death integration and companion Relentless phases are
+independently calibrated; see [Angel Duo](angel-duo.md).
