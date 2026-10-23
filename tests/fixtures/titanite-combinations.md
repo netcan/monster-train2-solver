@@ -38,10 +38,47 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll `
 ```
 
 Scope: pure native status-stage behavior. A combined Titanite/Damage Shield
-unit requires captured status order and at most sixteen active statuses.
-Larger status lists remain guarded because native equal-order sorting changes
-their order. Natural Fragile victory and player entry require separate battle
-acceptance; this matrix alone does not establish either.
+unit requires captured status order. The larger-list limit was subsequently
+extended using the independent calibration below. Natural Fragile victory and
+player entry require separate battle acceptance; these matrices alone do not
+establish either.
+
+## Large native status lists · 2026-10-23
+
+`status-trigger-order-calibration.mt2f` retains 2,080 native dictionary/runtime
+sorts spanning 2–66 active native statuses, thirty-two deterministic orderings
+per size and retained zero-stack controls. Native priorities are regen1,
+corruption2, trample3 and unstable4; all other captured definitions use zero.
+Sorting all active entries before filtering the damage-shield stage reproduces
+the original equal-priority reorder above sixteen entries. Using insertion
+order alone was insufficient.
+
+Another 192 native damage-stage controls cover 16/17/24 active statuses and
+sixty-four orderings each. The complete model damage path agrees on health,
+shield consumption, passive stacks and last-attack accounting: Titanite-first
+blocks eleven of raw21; shield-first blocks twenty-one. Every root stays
+immutable, sixteen concurrent branches agree, and missing captured dictionaries
+or larger lists containing absent native `heal multiplier` / `inedible`
+definitions are rejected. Those two model IDs are recorded as absent; no
+synthetic definitions were installed. The model accepts at most the calibrated
+66 active original statuses, retaining other definition guards.
+
+Source `full-battle-no-cards-20261023-132002-c19c075d` exits normally in 52.07
+seconds with `DEPTH-PASS`, protected originals unchanged and all four native
+failure counters zero. The detached dictionary is restored in `finally`;
+complete live decision, all RNG streams and Unity frame remain unchanged.
+The original 1,536-row smaller matrix and its six native runtime sort controls
+also pass. Failed `131451-0db9895a` only revealed an absent native status and
+is not curated.
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -Policy no-cards -StatusTriggerOrder -BranchCardMasks -PhysicalSpawnPoints -SettleDeathDissolves -SettleCardAnimations -NativeWorker 2 -SkipBuild
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --large-status-damage-only tests/fixtures/status-trigger-order-calibration.mt2f
+```
+
+This establishes pure status dispatch and full model damage, with original
+definitions and no changes to the live unit. It does not claim a natural
+campaign carrying all sixty-six statuses at once.
 
 ## Weakness stage order · 2026-10-23
 

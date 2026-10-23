@@ -204,6 +204,7 @@ namespace MonsterTrain2Poju.Probe
                 PermanentTraitCalibration.Capture(this);
                 TitaniteCalibration.Capture(this);
                 TitaniteCombinationCalibration.Capture(this);
+                StatusTriggerOrderCalibration.Capture(this);
                 TitaniteWeaknessCalibration.Capture(this);
                 RelicCardUpgradeCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_QUERIES") == "1") StatisticQueryCalibration.Capture(this);

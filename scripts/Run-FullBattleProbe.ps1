@@ -19,6 +19,7 @@ param(
     [switch] $PermanentTraits,
     [switch] $TitaniteCalibration,
     [switch] $TitaniteCombinations,
+    [switch] $StatusTriggerOrder,
     [switch] $TitaniteWeakness,
     [switch] $BossPreviewEnchantments,
     [switch] $ConduitMovement,
@@ -1675,6 +1676,7 @@ if ($HoldoverVariants) { $environment['MT2_PROBE_HOLDOVER_VARIANTS'] = '1' }
 if ($PermanentTraits) { $environment['MT2_PROBE_PERMANENT_TRAITS'] = '1' }
 if ($TitaniteCalibration) { $environment['MT2_PROBE_TITANITE'] = '1' }
 if ($TitaniteCombinations) { $environment['MT2_PROBE_TITANITE_COMBINATIONS'] = '1' }
+if ($StatusTriggerOrder) { $environment['MT2_PROBE_STATUS_TRIGGER_ORDER'] = '1' }
 if ($TitaniteWeakness) { $environment['MT2_PROBE_TITANITE_WEAKNESS'] = '1' }
 if ($BossPreviewEnchantments) { $environment['MT2_PROBE_BOSS_PREVIEW_ENCHANTMENTS'] = '1' }
 if ($OriginalOverflowCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-overflow-cards' }
@@ -2109,7 +2111,11 @@ if ($ConduitMovement) {
     return
 }
 $tracePath = Join-Path $profile $(if ($BinaryCapture) { 'full-battle.mt2f' } else { 'full-battle.json' })
-if (-not (Test-Path -LiteralPath $tracePath)) { throw "Missing battle trace (native exit code $($process.ExitCode)); inspect $unityLog" }
+if (-not (Test-Path -LiteralPath $tracePath)) {
+    $nativeFailure = Select-String -LiteralPath $unityLog -Pattern 'DEPTH-FAIL' | Select-Object -First 1
+    $reason = if ($nativeFailure) { ' ' + $nativeFailure.Line.Trim() } else { '' }
+    throw "Missing battle trace (native exit code $($process.ExitCode));$reason Inspect $unityLog"
+}
 $inspectionTimer = [System.Diagnostics.Stopwatch]::StartNew()
 if ($BinaryCapture) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

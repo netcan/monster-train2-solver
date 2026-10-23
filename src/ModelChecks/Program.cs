@@ -2523,6 +2523,12 @@ if (args.Length == 2 && args[0] == "--room-moon-callback-only")
     RoomMoonCallbackChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] is "--status-trigger-order-only" or "--large-status-damage-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    StatusTriggerOrderChecks.Native(fixture.RootElement, damage: args[0] == "--large-status-damage-only");
+    return;
+}
 if (args.Length == 2 && args[0] == "--conduit-movement-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4753,6 +4759,11 @@ foreach (string path in args.Where(path => path.Contains("titanite-calibration",
 {
     using var document = ModelJson.ReadFixture(path);
     TitaniteChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.Contains("status-trigger-order-calibration", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    StatusTriggerOrderChecks.Native(fixture.RootElement, damage: true);
 }
 foreach (string path in args.Where(path => path.Contains("titanite-combinations-calibration", StringComparison.OrdinalIgnoreCase)))
 {

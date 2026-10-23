@@ -1099,8 +1099,9 @@ namespace MonsterTrain2Poju.Model
                         world.Actors.Any(actor => actor.Id == unit.Id && actor.TrueFinalBoss && actor.Initialized && actor.HasLifeLink && actor.Health == unit.Health)))
                         return "Unmodeled status " + status.Id + " on " + unit.AssetKey;
                 if (unit.Status("titanite") != null && unit.Status("damage shield") != null &&
-                    (unit.StatusRegistry == null || unit.Statuses.Count > 16))
-                    return "Titanite with Damage Shield requires captured status order and at most sixteen active statuses.";
+                    (unit.StatusRegistry == null || unit.Statuses.Count > 66 || unit.Statuses.Count > 16 &&
+                        unit.Statuses.Any(status => !KnownStatuses.Contains(status.Id) || status.Id is "heal multiplier" or "inedible")))
+                    return "Titanite with Damage Shield requires captured status order and a calibrated native status list (at most 66 active entries).";
                 if (!state.Deployment && unit.Status("valor") != null &&
                     state.Context?.StatusRules.FirstOrDefault(rule => rule.Id == "armor") == null)
                     return "Valor requires the armor status definition.";
@@ -2668,11 +2669,12 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
                 // Both effects occupy the same native stage with order zero.
-                // For the calibrated <=16 active-status range, native List.Sort
-                // preserves their dictionary order. Shield-first blocks raw
-                // damage; Titanite-first blocks the reduced amount instead.
+                // Small native lists retain dictionary order; larger lists
+                // sort all active statuses before filtering this stage.
+                // Shield-first blocks raw damage; Titanite-first blocks less.
                 bool reduceBeforeShield = target.Has("titanite") && target.Has("damage shield") &&
-                    target.RegisteredStatuses().First(status => status.Stacks > 0 &&
+                    (target.RegisteredStatuses().Count(status => status.Stacks > 0) > 16 ? StatusTriggerOrderModel.Order(target.RegisteredStatuses().ToArray()) :
+                        target.RegisteredStatuses()).First(status => status.Stacks > 0 &&
                         status.Id is "titanite" or "damage shield").Id == "titanite";
                 if (reduceBeforeShield) damage = TitaniteModel.Adjust(damage, cardPiercing);
                 if (damage > 0 && target.Has("damage shield") && !cardPiercing)
