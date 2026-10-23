@@ -1,4 +1,22 @@
-# Original card definition catalog
+# Original definition catalogs
+
+`boss-rule-catalog.mt2f` freezes the complete native rule catalog captured on
+2026-10-23 from `full-battle-no-cards-20261023-172252-3c660349`. It retains all
+original characters and all outer-boss scenarios with their enemy-relic growth
+callbacks. Inspection verified unchanged gameplay RNG and frame; the surrounding
+native run exited normally with protected files unchanged and all four failure
+counters zero. SHA256 is
+`80459451514dde9b2313d31c7c27ca812ce055ea43c8c8c11fbfc0b756526f65`
+(59,983 bytes). It is definition evidence, separate from runtime battle fixtures.
+
+`ModelChecks --angel-duo-catalog-only tests/catalogs/boss-rule-catalog.mt2f`
+checks all three original Angel Duo scenarios. Their six role definitions retain
+identical birth/death payloads within each role. Their growth pairs differ:
+PostCombat health60 / OnTrainRoomLoop attack8; CardSpellPlayed health30 /
+OnKill attack3; OnAnyHeroDeathOnFloor health50 / OnHit attack1. These signatures
+identify runtime work; catalog presence alone does not enable a new player route.
+
+## Card definition catalog
 
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle
 and component fixtures. It does not increase their curated acceptance count.

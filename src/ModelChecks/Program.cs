@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--angel-duo-catalog-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AngelDuoCatalogChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] is "--angel-duo-relentless-entry-only" or "--angel-duo-paired-phases-only" or "--angel-duo-paired-pyre-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

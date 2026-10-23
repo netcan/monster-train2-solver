@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using HarmonyLib;
+using MonsterTrain2Poju.Capture;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -15,6 +16,7 @@ namespace MonsterTrain2Poju.Probe
         internal static void Capture(AllGameManagers managers, bool fullGameDataCatalog = false)
         {
             JObject before = RngStates();
+            int frame = UnityEngine.Time.frameCount;
             SaveManager save = managers.GetSaveManager();
             HeroManager heroes = managers.GetHeroManager()!;
             var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
@@ -59,10 +61,21 @@ namespace MonsterTrain2Poju.Probe
                 if (card.GetSpawnCharacterData() is CharacterData unit) Add(characters, unit);
             var catalog = new
             {
-                Schema = 2,
+                Schema = 3,
                 CardCatalogScope = fullGameDataCatalog ? "AllGameData" : "ObservedAndReachable",
                 CharacterCatalogScope = fullGameDataCatalog ? "AllGameData" : "ObservedAndReachable",
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
+                FrameBefore = frame,
+                RngBefore = before,
+                BossScenarios = fullGameDataCatalog ? save.GetAllGameData().GetAllScenarioDatas()
+                    .Where(scenario => scenario.GetOuterTrainBoss(false) != null)
+                    .OrderBy(scenario => scenario.name, StringComparer.Ordinal).Select(scenario => new
+                    {
+                        AssetKey = scenario.name,
+                        OuterBoss = scenario.GetOuterTrainBoss(false)?.GetAssetKey(),
+                        HarderOuterBoss = scenario.GetOuterTrainBoss(true)?.GetAssetKey(),
+                        EnemyRelics = scenario.GetEnemyRelicData().Select(EnemyRelic).ToArray()
+                    }).ToArray() : null,
                 BossType = pattern.GetBossType().ToString(),
                 Looping = pattern.GetIsLoopingScenario(),
                 Waves = waveDefinitions,
@@ -126,11 +139,36 @@ namespace MonsterTrain2Poju.Probe
                     }).ToArray()
             };
             string json = JsonConvert.SerializeObject(catalog, Formatting.Indented);
-            if (!JToken.DeepEquals(before, RngStates()))
-                throw new InvalidOperationException("Rule catalog capture changed gameplay RNG.");
+            if (frame != UnityEngine.Time.frameCount || !JToken.DeepEquals(before, RngStates()))
+                throw new InvalidOperationException("Rule catalog capture changed gameplay RNG or frame.");
             File.WriteAllText(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
                 "rule-catalog.json"), json);
+            if (fullGameDataCatalog)
+                using (var document = NativeFixtureCapture.Capture(catalog))
+                using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "rule-catalog.mt2f")))
+                    document.Write(stream);
         }
+
+        private static object EnemyRelic(RelicData relic) => new
+        {
+            AssetKey = relic.name, Id = relic.GetID(),
+            Effects = relic.GetEffects().Select(effect => new
+            {
+                Type = effect.GetEffectClassName(), SourceTeam = effect.GetParamSourceTeam().ToString(),
+                RequiredSubtype = effect.GetParamCharacterSubtype()?.Key,
+                Characters = effect.GetParamCharacters().Select(character => character?.GetAssetKey()).ToArray(),
+                Int = effect.GetParamInt(), Int2 = effect.GetParamInt2(), Bool = effect.GetParamBool(),
+                Triggers = effect.GetTriggers().Select(trigger => new
+                {
+                    Kind = trigger.GetTrigger().ToString(), Once = trigger.GetTriggerOnce(),
+                    Threshold = trigger.GetTriggerAtThreshold(), IgnoreSilence = trigger.GetHideVisualAndIgnoreSilence(),
+                    OnlyIfEquipped = trigger.GetOnlyTriggerIfEquipped(),
+                    RequiredStatuses = trigger.GetRequiredStatusEffects(),
+                    RequiredDyingStatuses = trigger.GetRequiredStatusEffectsForDyingCharacter(),
+                    Effects = trigger.GetEffects().Select(Effect).ToArray()
+                }).ToArray()
+            }).ToArray()
+        };
 
         private static string Add(Dictionary<string, CharacterData> characters, CharacterData unit)
         { characters[unit.GetAssetKey()] = unit; return unit.GetAssetKey(); }
