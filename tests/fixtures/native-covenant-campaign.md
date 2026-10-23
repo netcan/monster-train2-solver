@@ -53,9 +53,10 @@ Source: `campaign-ring8-20261023-134854-d165977b-before-ring6`.
 
 The first actual player attempt from that unmodified checkpoint,
 `full-battle-units-spells-and-junk-20261023-135449-65294df5`, stops before its
-first recommendation: `Level6AngelDuo_RallyAttackIncantHealth` is rejected by
-the outer/queued-boss capture guard. This is an open integration gap, not an
-accepted battle archive. The five prior victories and the failed sixth battle
+first recommendation: `Level6AngelDuo_RallyAttackIncantHealth` was rejected by
+the outer/queued-boss capture guard. That guard is now calibrated for the exact
+original definition; the initial failed attempt is not an accepted archive.
+The five prior victories and the failed sixth battle
 are kept distinct; no cumulative campaign completion is claimed.
 
 The same Ring6 input now has accepted original Angel Duo birth and ordinary
@@ -67,4 +68,11 @@ full restoration before the accepted no-card battle continues. The same input
 also has accepted original inner/outer death controls and complete surviving-boss
 continuations. Both-live companion Relentless/Pyre phases now also have an
 accepted full native control, complete branches and dedicated component checks.
-Actual player capture/replay remains a separate gate; see [Angel Duo](angel-duo.md).
+Actual player advice and fresh frozen replay also now pass from that same
+unmodified checkpoint: 44 inputs, 36 card/ability actions, eight EndTurns, 71 room
+and 16 train stages per process. Full forecasts/state/RNG, actual UI and all five
+original prior victories match; both processes exit normally with protected
+files unchanged and all four failure counters zero. The three-turn/three-second
+budget produces two losses, not natural campaign completion. The archives are
+`full-battle-player-angel-duo-search.mt2f` and
+`full-battle-player-angel-duo-replay.mt2f`; see [Angel Duo](angel-duo.md).

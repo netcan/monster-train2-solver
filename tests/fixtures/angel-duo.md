@@ -1,4 +1,4 @@
-# Original Angel Duo: birth and ordinary no-card battle
+# Original Angel Duo: native mechanisms and player advice
 
 The input is the unmodified native cumulative rank-two Ring6 checkpoint in
 `campaign-native-covenant-02-ring6.zip`: seed424242, five preceding original
@@ -175,5 +175,37 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-paired-pyr
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-death-battle-only tests/fixtures/full-battle-angel-duo-paired-relentless.mt2f
 ```
 
-Actual player advice with an independent frozen replay and deployment death
-remain unverified or guarded. Controlled losses do not establish natural victory.
+## Actual player advice and independent native replay
+
+The player capture gate now admits this exact calibrated outer definition.
+Source `full-battle-units-spells-and-junk-20261023-162725-a2525f9c` and fresh
+replay `full-battle-units-spells-and-junk-20261023-164238-a5515fed` resume the
+same unmodified five-win native checkpoint. No health/deck/asset/death/phase
+control is used. The deployment root retains the authored queued outer boss;
+after the first EndTurn both original bosses have native rank-two full-health
+stats and reciprocal pairing. Neither boss exists on a floor during deployment.
+Artificial early placement/death remains guarded.
+
+Both accepted processes exit normally, preserve protected files and persist
+zero capture failures, mismatches, unsupported or pending records. They execute
+the same 44 inputs: 36 card/ability actions and eight EndTurns, with 71 room and
+16 train stages each. All roots, successors, full forecasts, RNG and the actual
+player panel interactions pass the independent frozen-pair check. The source
+performs actual search and publishes 46 times with 458 pure captures; replay
+performs no search. Both are bounded losses with terminal Pyre 0.
+
+The source uses a three-turn/3000ms soft search budget and tactical seed. First
+response is 6.64 seconds; response median/P95 is 6.78/9.67 seconds. Native source
+and replay durations are 910.26/535.90 seconds. These observations establish
+advice correctness for this original encounter, not a natural victory or a
+guarantee that the configured planning horizon completes within its soft budget.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --player-angel-duo-pair-only tests/fixtures/full-battle-player-angel-duo-search.mt2f tests/fixtures/full-battle-player-angel-duo-replay.mt2f
+```
+
+To reproduce from the restored original Ring6 profile, use
+`Run-NativeCovenantPlayerPairs.ps1 -Battle Campaign -Rank 2 -BattleDistance 5
+-AngelDuo -InputProfile <profile> -PlannerHorizon 3 -PlannerTimeLimitMs 3000
+-TimeoutSeconds 1200`. Other campaign pairs retain their victory requirement;
+the scoped Angel Duo checker explicitly records its actual outcome.

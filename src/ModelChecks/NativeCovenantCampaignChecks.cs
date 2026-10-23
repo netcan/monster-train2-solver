@@ -17,13 +17,20 @@ internal static class NativeCovenantCampaignChecks
                 fixture.GetProperty("AngelDuoRelentlessEntry").ValueKind == FixtureKind.Null,
                 "Player Angel Duo evidence requires the unmodified original encounter without native death/phase controls.");
             var initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            var born = fixture.GetProperty("Turns")[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            CombatUnit[] companions = born.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Where(unit => unit.BumpRules?.CompanionBoss == true).ToArray();
             Require(initial.Spawn.QueuedOuterBoss?.Actor.Unit is { Health: 1250, BaseAttack: 11 } outer &&
                 OuterBossDefinitions.IsAngelDuo(outer.AssetKey) &&
-                initial.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
-                    unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" &&
+                born.Spawn.Turn == 1 && born.Spawn.QueuedOuterBoss == null && companions.Length == 2 &&
+                companions.All(unit => !unit.EndsBattleOnDeath && companions.Any(partner =>
+                    partner.Id != unit.Id && partner.Id == unit.BumpRules!.PairedBossUnitId)) &&
+                companions.Any(unit => unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" &&
                     unit.Health == 1350 && unit.MaxHealth == 1350 && unit.BaseAttack == 16) &&
+                companions.Any(unit => OuterBossDefinitions.IsAngelDuo(unit.AssetKey) &&
+                    unit.Health == 1500 && unit.MaxHealth == 1500 && unit.BaseAttack == 14) &&
                 initial.Spawn.Train.Context!.QueryFrame!.ForcedRelentless!.RemainingTurns == 0,
-                "Player Angel Duo input changed its original raw outer boss, native rank-two inner boss or phase counters.");
+                "Player Angel Duo input changed its original queued definition, paired native rank-two births or phase counters.");
         }
         Pair(source, replay, 2, 5, requireVictory: false);
         Console.WriteLine("PLAYER-ANGEL-DUO PASS: original five-win native checkpoint, unmodified paired bosses, actual advice/UI and independent full-state/RNG replay; outcome=" +
