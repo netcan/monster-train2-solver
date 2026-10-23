@@ -72,6 +72,12 @@ namespace MonsterTrain2Poju.Model
         // these phase boundaries independently of whole-EndTurn integration.
         public static OuterBossPhaseResult Apply(OuterBossPhaseState source, bool preCombat)
         {
+            if (source.Battle.Spawn.Train.Context?.QueryFrame?.ForcedRelentless != null)
+            {
+                BattleTurnResult companion = AngelDuoCompanionPhaseModel.Apply(source.Battle, preCombat);
+                if (!companion.Supported) return new OuterBossPhaseResult(null, companion.UnsupportedReason);
+                source = new OuterBossPhaseState(companion.State!, source.Boss, source.TrueFinalBoss);
+            }
             if (source.Boss.AssetKey == "Boss_Level9_Entropy_Top_V2") return TrueFinalBossPhaseModel.Apply(source, preCombat);
             if (source.Boss.Phase == "Relentless" || preCombat && source.Battle.Spawn.Phase >= source.Battle.Spawn.Waves.Count)
                 return OuterBossRelentlessPhaseModel.Apply(source, preCombat);

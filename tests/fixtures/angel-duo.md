@@ -145,5 +145,35 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-death-batt
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-death-battle-only tests/fixtures/full-battle-angel-duo-outer-death.mt2f
 ```
 
-Both-live companion Relentless/Pyre phases, deployment death and actual player
-advice with an independent frozen replay remain guarded or unverified.
+## Both live companions through Relentless and Pyre
+
+Fresh source `full-battle-no-cards-20261023-160056-0c9bc1a3` keeps both original
+bosses at1350/1500 HP, preserves their assets/deck and calls the original native
+`ForceRelentless` during turn1. The entry archive records this explicit control
+and matches the global model in complete state/RNG and sixteen branches.
+
+The accepted no-card loss completes in64.79 seconds, exits normally, preserves
+protected files and has final persisted acceptance with all four counters zero.
+Its five EndTurns, 36 room stages and ten train stages match; sixteen independent
+complete branches execute the native control from model-derived states.
+Both live paired bosses reach the Pyre after all three ordinary floors are
+destroyed. Their arrival waits for the outer boss before fighting, as native
+`DoAscension` suppresses the earlier companion-only tower attack.
+
+Eight complete pre/post boss boundaries match, including the composed companion
+transition. The inner boss destroys each floor during ascension, before the
+outer post phase; the outer phase therefore observes no additional newly
+disabled floors. The separate terminal Pyre archive matches full battle,
+physical, controller, aura and RNG state with sixteen branches. Its cached
+`PlayRules.Cards` are excluded under the existing terminal-card-manager disposal
+contract; room rules and runtime card state remain checked.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-relentless-entry-only tests/fixtures/angel-duo-relentless-entry-calibration.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-paired-phases-only tests/fixtures/angel-duo-paired-phase-calibration.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-paired-pyre-only tests/fixtures/angel-duo-paired-pyre-calibration.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-death-battle-only tests/fixtures/full-battle-angel-duo-paired-relentless.mt2f
+```
+
+Actual player advice with an independent frozen replay and deployment death
+remain unverified or guarded. Controlled losses do not establish natural victory.

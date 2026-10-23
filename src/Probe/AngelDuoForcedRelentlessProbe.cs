@@ -14,6 +14,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class AngelDuoForcedRelentlessProbe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ANGEL_DUO_FORCE_RELENTLESS") == "1";
+        internal static bool EntryEnabled => Environment.GetEnvironmentVariable("MT2_PROBE_ANGEL_DUO_RELENTLESS_ENTRY") == "1";
+        internal static bool EntryCompleted { get; private set; }
+        internal static string? EntryError { get; private set; }
+        internal static object? EntryTransition { get; private set; }
         private sealed class Sample
         {
             public ForcedRelentlessProgress Before { get; set; } = null!;
@@ -26,6 +30,33 @@ namespace MonsterTrain2Poju.Probe
 
         private static int Int(object actor, string name) => (int)AccessTools.Field(actor.GetType(), name).GetValue(actor);
         private static void Set(object actor, string name, int value) => AccessTools.Field(actor.GetType(), name).SetValue(actor, value);
+
+        internal static void EnterNow()
+        {
+            if (!EntryEnabled || EntryCompleted || EntryError != null) return;
+            AllGameManagers managers = AllGameManagers.Instance;
+            CombatManager combat = managers.GetCombatManager();
+            if (combat.GetTurnCount() != 1 || combat.GetCombatPhase() != CombatManager.Phase.MonsterTurn ||
+                !combat.HaveCardsBeenDrawnForCurrentTurn() || combat.IsRunningTriggerQueue || !CardAnimationSettlement.Ready()) return;
+            try
+            {
+                FullBattleTrace trace = FullBattleTrace.Active!;
+                trace.Checkpoint("decision-before-controlled-angel-duo-relentless");
+                BattleTurnState before = trace.CaptureDecision(true, true);
+                if (before.Spawn.Train.Rooms.SelectMany(room => room.Units).Count(unit =>
+                    unit.BumpRules?.CompanionBoss == true && unit.Health > 0) != 2)
+                    throw new InvalidOperationException("Relentless entry requires both original live Angel Duo bosses.");
+                combat.ForceRelentless();
+                EntryTransition = new { Schema = 1, Control = "NativeForceRelentlessKeepingBothOriginalBosses",
+                    Before = before, Actual = trace.CaptureDecision(true, true), HealthAndAssetsUnchanged = true,
+                    CardsDrawnAfter = combat.HaveCardsBeenDrawnForCurrentTurn(), CardsReadyAfter = NativeDecisionReadiness.CardsDrawn(combat) };
+                using (var document = NativeFixtureCapture.Capture(EntryTransition))
+                using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                    "angel-duo-relentless-entry-calibration.mt2f"))) document.Write(output);
+                EntryCompleted = true;
+            }
+            catch (Exception error) { EntryError = error.ToString(); }
+        }
 
         internal static void Run()
         {

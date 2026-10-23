@@ -825,6 +825,7 @@ namespace MonsterTrain2Poju.Probe
                 AngelDuoIncantControl = AngelDuoIncantScenario.Control,
                 AngelDuoDeathControl = AngelDuoDeathScenario.Control,
                 AngelDuoDeathTransition = AngelDuoDeathScenario.Transition,
+                AngelDuoRelentlessEntry = AngelDuoForcedRelentlessProbe.EntryTransition,
                 TrueFinalBossDormantControl = TrueFinalBossDormantScenario.Evidence,
                 TrueFinalBossLethalControl = TrueFinalBossLethalScenario.Evidence,
                 TrueFinalBossAllyUpgradeControl = TrueFinalBossAllyUpgradeScenario.Evidence,

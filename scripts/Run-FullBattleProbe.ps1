@@ -74,6 +74,7 @@ param(
     [switch] $ChosenIncantSpell,
     [switch] $AngelDuoIncant,
     [switch] $AngelDuoForceRelentless,
+    [switch] $AngelDuoRelentless,
     [ValidateSet('', 'Inner', 'Outer')][string] $AngelDuoDeath = '',
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
@@ -715,6 +716,10 @@ if ($AngelDuoForceRelentless -and (-not $InputProfile -or $BattleDistance -ne 5 
 if ($AngelDuoDeath -and (-not $InputProfile -or $BattleDistance -ne 5 -or -not $OuterBossBirth -or
     -not $OuterBossTurns -or $Policy -ne 'no-cards' -or $PlayerAdvisor -or $RollingAdvice -or $Planner -or $RollingInput -or $AngelDuoForceRelentless)) {
     throw 'Angel Duo death control requires an original Ring6 checkpoint, no-card policy and separate death target.'
+}
+if ($AngelDuoRelentless -and (-not $InputProfile -or $BattleDistance -ne 5 -or -not $OuterBossBirth -or
+    -not $OuterBossTurns -or $Policy -ne 'no-cards' -or $PlayerAdvisor -or $RollingAdvice -or $Planner -or $RollingInput -or $AngelDuoForceRelentless -or $AngelDuoDeath)) {
+    throw 'Angel Duo paired Relentless requires an original Ring6 checkpoint, both original live bosses and no-card policy.'
 }
 if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or -not $OuterBossTurns)) {
     throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns.'
@@ -1497,6 +1502,7 @@ $environment = @{
     MT2_PROBE_ANGEL_DUO_INCANT = $(if ($AngelDuoIncant) { '1' } else { '0' })
     MT2_PROBE_ANGEL_DUO_FORCE_RELENTLESS = $(if ($AngelDuoForceRelentless) { '1' } else { '0' })
     MT2_PROBE_ANGEL_DUO_DEATH = $AngelDuoDeath
+    MT2_PROBE_ANGEL_DUO_RELENTLESS_ENTRY = $(if ($AngelDuoRelentless) { '1' } else { '0' })
     MT2_PROBE_PLANNER_TIME_LIMIT_MS = "$PlannerTimeLimitMs"
     MT2_PROBE_PLANNER_INPUT = $(if ($PlannerInput) { (Resolve-Path -LiteralPath $PlannerInput).Path } else { '' })
     MT2_PROBE_DATA_DIR = $profile

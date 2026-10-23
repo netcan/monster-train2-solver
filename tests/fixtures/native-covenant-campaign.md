@@ -65,5 +65,6 @@ accepted native fixed-policy coverage. The forced-Relentless global primitive
 also matches five native full-state controls, including scoring counters and
 full restoration before the accepted no-card battle continues. The same input
 also has accepted original inner/outer death controls and complete surviving-boss
-continuations. Player capture remains guarded for both-live companion
-Relentless/Pyre phases and actual player replay; see [Angel Duo](angel-duo.md).
+continuations. Both-live companion Relentless/Pyre phases now also have an
+accepted full native control, complete branches and dedicated component checks.
+Actual player capture/replay remains a separate gate; see [Angel Duo](angel-duo.md).

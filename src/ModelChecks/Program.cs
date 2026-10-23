@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] is "--angel-duo-relentless-entry-only" or "--angel-duo-paired-phases-only" or "--angel-duo-paired-pyre-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--angel-duo-relentless-entry-only") AngelDuoRelentlessChecks.Entry(fixture.RootElement);
+    else if (args[0] == "--angel-duo-paired-phases-only") AngelDuoRelentlessChecks.Phases(fixture.RootElement);
+    else AngelDuoRelentlessChecks.Pyre(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--angel-duo-companion-phase-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4300,6 +4308,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
 {
     using var fixture = ModelJson.ReadFixture(path);
     AngelDuoBirthChecks.Battle(fixture.RootElement, path);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is "angel-duo-relentless-entry-calibration.mt2f" or
+    "angel-duo-paired-phase-calibration.mt2f" or "angel-duo-paired-pyre-calibration.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    if (Path.GetFileName(path) == "angel-duo-relentless-entry-calibration.mt2f") AngelDuoRelentlessChecks.Entry(fixture.RootElement);
+    else if (Path.GetFileName(path) == "angel-duo-paired-phase-calibration.mt2f") AngelDuoRelentlessChecks.Phases(fixture.RootElement);
+    else AngelDuoRelentlessChecks.Pyre(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "angel-duo-inner-death-calibration.mt2f" or "angel-duo-outer-death-calibration.mt2f"))
 {

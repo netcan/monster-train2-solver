@@ -21,8 +21,12 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState train = battle.Spawn.Train;
             int pyre = train.Rooms.Count - 1;
             CombatUnit? actor = train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == boss.UnitId);
+            bool originalDuoPair = OuterBossDefinitions.IsAngelDuo(boss.AssetKey) && actor != null &&
+                train.Context?.QueryFrame?.ForcedRelentless != null && train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => unit.Id == actor.BumpRules?.PairedBossUnitId && unit.Health > 0 &&
+                        unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack");
             if (!OuterBossDefinitions.Supports(boss.AssetKey) || boss.Phase != "Relentless" || boss.Room != pyre - 1 ||
-                actor?.BumpRules?.OuterBoss != true || actor.BumpRules.PairedBossUnitId != 0 || actor.Health <= 0 ||
+                actor?.BumpRules?.OuterBoss != true || actor.BumpRules.PairedBossUnitId != 0 && !originalDuoPair || actor.Health <= 0 ||
                 actor.Status("rooted") != null || actor.Status("immobile") != null || train.Context?.SpawnPoints == null ||
                 battle.PlayRules == null || battle.PlayRules.Rooms.Any(room => !room.IsPyre && room.Enabled))
                 return Fail("Outer-boss Pyre entry requires the calibrated unpaired relentless boss above three destroyed floors.");

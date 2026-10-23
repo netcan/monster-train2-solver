@@ -38,6 +38,11 @@ internal static class BattleTurnChecks
             AngelDuoDeathChecks.Battle(fixture);
             return;
         }
+        if (fixture.TryGetProperty("AngelDuoRelentlessEntry", out FixtureValue entry) && entry.ValueKind == FixtureKind.Object)
+        {
+            AngelDuoRelentlessChecks.Battle(fixture);
+            return;
+        }
         BattleTurnState terminal = RunIndependentChain(root, turns, compareRoomEnabled);
         Require(JsonSerializer.Serialize(root) == parent, "Full battle simulation mutated its root.");
         string expected = Comparable(terminal, compareRoomEnabled: compareRoomEnabled);

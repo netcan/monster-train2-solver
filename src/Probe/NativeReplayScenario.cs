@@ -161,6 +161,14 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && stage == Stage.Battle && AngelDuoForcedRelentlessProbe.EntryEnabled &&
+                !AngelDuoForcedRelentlessProbe.EntryCompleted && FullBattleTrace.Active != null &&
+                AllGameManagers.Instance?.GetCombatManager()?.GetTurnCount() > 0)
+            {
+                AngelDuoForcedRelentlessProbe.EnterNow();
+                if (AngelDuoForcedRelentlessProbe.EntryError != null) Finish(false, AngelDuoForcedRelentlessProbe.EntryError);
+                return;
+            }
             if (fullBattle && stage == Stage.Battle && AngelDuoDeathScenario.Enabled && !AngelDuoDeathScenario.Completed &&
                 FullBattleTrace.Active != null && AllGameManagers.Instance?.GetCombatManager()?.GetTurnCount() > 0)
             {
