@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1190 archives,
+Current manifest inventory (2026-10-23): 1192 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -19,6 +19,9 @@ complete forecasts/state/RNG with zero failures. See
 The original chosen cleric's tower Incant now passes six actual native spell
 casts, thirty-six remote attack buffs and boss exclusion, including searchable
 successors and immutable branches. See [chosen Incant](chosen-incant-attack.md).
+The repaired rank-ten AllyBuffer also passes actual player advice and fresh
+frozen replay for all nineteen inputs, UI and full forecasts/state/RNG, with
+zero failures. See [cumulative outer bosses](native-covenant-outer-bosses.md).
 
 Native Covenant 1 run initialization now has a complete first-battle control:
 normal run-setup callback/starting conditions, original startup purge/add

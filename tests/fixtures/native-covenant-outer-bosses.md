@@ -55,4 +55,22 @@ legal-input control: six native casts, thirty-six remote attack buffs and
 six excluded bosses; complete native successors are searchable and match
 sixteen immutable branches each. Its queue and remote attack-state repairs
 are documented in [chosen Incant](chosen-incant-attack.md).
-Fresh high-rank player advice/replay remains a separate acceptance target.
+The repaired rank-ten AllyBuffer now also passes a fresh actual player source
+and an independently launched frozen native replay. Both execute nineteen
+inputs (fifteen plays, four EndTurns), thirty-three room stages and eight
+train phases. Every complete forecast, root, actual successor, controller
+reference and RNG matches. Both lose with Pyre0. Source/replay captures are
+239/65, source publications twenty-one, UI interaction and capture purity
+pass, exits are normal, protected files unchanged and all four native failure
+counters zero. Native runtimes are 322.65/151.58 seconds. Profile suffixes
+`124631-bad84ab3` / `125155-1b90c300` have prefix
+`full-battle-units-spells-and-junk-20261023-`.
+
+Archives use `full-battle-player-native-covenant-outer-boss-allybuffer-10`
+with search/replay suffixes. These actual player runs cannot enable the
+separate chosen-floor forced-input control. The curated bundle additionally
+requires that independently validated positive trigger fixture. Run
+`Check-CovenantOuterBosses.ps1 -StartingRank 10 -Variant AllyBuffer -Player
+-SkipBuild`; its manifest checks cover all three artifacts. Other cumulative
+boss player pairs remain separate; this controlled fresh-deck later battle
+does not replace natural campaign history or demonstrate a winning deck.
