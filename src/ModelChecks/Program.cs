@@ -4325,7 +4325,7 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-full-b
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-covenant-outer-boss-", StringComparison.OrdinalIgnoreCase)))
     CovenantOuterBossChecks.CuratedNative(path);
 
-foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-native-covenant-startup-01.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-native-covenant-startup-", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);
     StartingCovenantChecks.Native(fixture.RootElement, path);

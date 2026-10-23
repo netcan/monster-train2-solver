@@ -15,13 +15,14 @@ internal static class StartingCovenantChecks
             "Native Covenant startup acceptance requires the original completed first battle, without post-startup activation.");
         FixtureValue startup = root.GetProperty("StartingCovenantControl");
         FixtureValue selection = startup.GetProperty("Selection");
+        int level = startup.GetProperty("AscensionLevel").GetInt32();
         Require(startup.GetProperty("Kind").GetString() == "NativeCovenantRunStartup" &&
-            startup.GetProperty("AscensionLevel").GetInt32() == 1 && startup.GetProperty("StartingLevel").GetInt32() == 1 &&
+            level is 1 or 2 && startup.GetProperty("StartingLevel").GetInt32() == level &&
             selection.GetProperty("Kind").GetString() == "SelectNativeCovenantAtRunSetup" &&
-            selection.GetProperty("RequestedLevel").GetInt32() == 1 && selection.GetProperty("LevelAfter").GetInt32() == 1 &&
+            selection.GetProperty("RequestedLevel").GetInt32() == level && selection.GetProperty("LevelAfter").GetInt32() == level &&
             !selection.GetProperty("EarnedUnlockClaimed").GetBoolean() && !selection.GetProperty("StartupEffectsInvokedByProbe").GetBoolean() &&
             startup.GetProperty("Owners").ContentEquals(startup.GetProperty("ExpectedOwners")) &&
-            startup.GetProperty("Owners").GetArrayLength() == 1,
+            startup.GetProperty("Owners").GetArrayLength() == level,
             "Covenant startup must use native run setup/starting conditions and native cumulative owners.");
         FixtureValue owner = startup.GetProperty("Owners")[0];
         Require(owner.GetProperty("AssetKey").GetString() == "Covenant01_StrongerEnemiesMoreCards" &&
@@ -44,12 +45,24 @@ internal static class StartingCovenantChecks
             "The native startup callbacks must purge only non-champions, then rebuild the actual starting deck.");
         BattleTurnState before = root.GetProperty("Turns")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         CombatRelicState[] captured = before.Spawn.Train.Context!.Relics!.Where(relic => relic.IsCovenant == true).ToArray();
-        Require(captured.Length == 1 && TrueFinalBossCovenantModel.CalibratedOwners(captured) &&
+        Require(captured.Length == level && TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(captured) &&
+            captured.Select(relic => relic.DataId).SequenceEqual(startup.GetProperty("Owners").EnumerateArray().Select(value => value.GetProperty("Id").GetString())) &&
             captured[0].DataId == owner.GetProperty("Id").GetString() &&
             owner.GetProperty("EffectTypes").EnumerateArray().Select(value => value.GetString()).SequenceEqual(captured[0].EffectTypes),
             "Native startup and actual battle capture disagree on the original Covenant definition.");
         TrueFinalBossBattleChecks.CovenantWaves(root, before, startup.GetProperty("StatQueries"));
-        Console.WriteLine($"NATIVE-COVENANT-STARTUP PASS: native rank-one selection, exact cumulative owner, one original purge/add callback each and {startup.GetProperty("StartingDeck").GetArrayLength()} actual starting cards; original battle waves and stat-query purity match. Earned unlocks remain separate.");
+        if (level == 2)
+        {
+            Require(captured[1].AssetKey == "Covenant02_BattlesNewEnemies" && captured[1].EffectTypes.Count == 0 &&
+                !TrueFinalBossCovenantModel.CalibratedOwners(captured) &&
+                !TrueFinalBossCovenantModel.CalibratedOuterBossOwners(before.Spawn.Train.Context, "Boss_Level8_Corrupter"),
+                "Rank two must retain its original selection-only owner without admitting uncalibrated final/outer bosses.");
+            CombatRelicState[] invalid = captured.Select(relic => relic.AssetKey == "Covenant02_BattlesNewEnemies" ?
+                new CombatRelicState(relic.DataId, relic.AssetKey, new[] { "RelicEffectNull" }, isCovenant: true) : relic).ToArray();
+            Require(!TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(invalid),
+                "The selection-only Covenant must not authorize additional combat callbacks.");
+        }
+        Console.WriteLine($"NATIVE-COVENANT-STARTUP PASS: native rank {level} selection, exact cumulative owners, one original purge/add callback each and {startup.GetProperty("StartingDeck").GetArrayLength()} actual starting cards; original battle waves and stat-query purity match. Earned unlocks remain separate.");
     }
 
     internal static void Native(FixtureValue root, string path)

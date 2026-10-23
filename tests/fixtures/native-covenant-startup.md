@@ -50,3 +50,24 @@ winning quality. Run `scripts/Check-PlayerAdvisor.ps1 -Case NativeCovenantStartu
 The capture also records the original Covenant catalog and effect signatures,
 so subsequent batches can distinguish battle effects from campaign-only
 effects without inferring behavior from display names.
+
+## Native cumulative rank two
+
+The original `Covenant02_BattlesNewEnemies` has ID
+`92c18b99-e4c0-4953-ba2c-4815f570a66e` and no combat-effect callbacks.
+Original spawn selection already runs in the native game before capture.
+Ordinary wave projections now accept the exact original 01+02 owners and
+retain their order. Modified/extra 02 callbacks are rejected. This does not
+broaden the calibrated original Level9 or Ring8 owner sets; their unproven
+rank-two compositions remain guarded.
+
+`full-battle-native-covenant-startup-02.mt2f` comes from
+`full-battle-no-cards-20261023-110732-0d7ec801`. It uses normal native
+rank-two starting conditions and both cumulative owners, performs the original
+rank-one purge/add callbacks once each, and builds twenty starting cards.
+The original first battle wins in seven EndTurns with Pyre8. All fourteen
+train stages, 57 room stages, state/RNG and sixteen immutable full chains
+match. Native runtime is 54.18 seconds, normal exit, protected files unchanged,
+and capture/mismatch/unsupported/pending all zero. Run the same focused
+`--native-covenant-startup-only` checker. Rank-two actual player advice/replay
+remains a separate target.

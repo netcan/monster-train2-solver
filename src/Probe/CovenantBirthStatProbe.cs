@@ -17,9 +17,16 @@ namespace MonsterTrain2Poju.Probe
             return ids.Length > 0 && ids.Distinct().Count() == ids.Length && ids.All(known.Contains);
         }
 
-        internal static bool WavesCalibrated(SaveManager save) => Calibrated(save) &&
-            (PlayerTrueFinalBossProbe.Enabled || save.GetCovenants().Any(owner => owner.GetRelicDataID() == "d3b53481-f26b-4344-ae8e-ec80b28d6004") &&
-                save.GetCovenants().All(owner => owner.GetRelicDataID() is "3cc0272d-c0d7-46dc-9c7a-be9633572f70" or "d3b53481-f26b-4344-ae8e-ec80b28d6004"));
+        internal static bool WavesCalibrated(SaveManager save)
+        {
+            if (Calibrated(save) && PlayerTrueFinalBossProbe.Enabled) return true;
+            var owners = save.GetCovenants();
+            return owners.Any(owner => owner.GetRelicDataID() == "d3b53481-f26b-4344-ae8e-ec80b28d6004") &&
+                owners.Select(owner => owner.GetRelicDataID()).Distinct().Count() == owners.Count &&
+                owners.All(owner => owner.GetRelicDataID() is "3cc0272d-c0d7-46dc-9c7a-be9633572f70" or "d3b53481-f26b-4344-ae8e-ec80b28d6004" ||
+                    owner.GetRelicDataID() == "92c18b99-e4c0-4953-ba2c-4815f570a66e" &&
+                    owner.GetSourceRelicData().name == "Covenant02_BattlesNewEnemies" && owner.GetEffects().Count == 0);
+        }
 
         internal static EnemyBirthStatAdjustment? Capture(CharacterData data)
         {

@@ -14,8 +14,16 @@ namespace MonsterTrain2Poju.Model
         {
             CombatRelicState[] owners = context?.Relics?.Where(relic => relic.IsCovenant == true).ToArray()
                 ?? System.Array.Empty<CombatRelicState>();
-            return CalibratedOwners(owners) && stats.CovenantIds.SequenceEqual(owners.Select(owner => owner.DataId));
+            return (CalibratedOwners(owners) || CalibratedOrdinaryWaveOwners(owners)) &&
+                stats.CovenantIds.SequenceEqual(owners.Select(owner => owner.DataId));
         }
+
+        internal static bool CalibratedOrdinaryWaveOwners(CombatRelicState[] owners) => owners.Length > 0 &&
+            owners.Select(owner => owner.DataId).Distinct().Count() == owners.Length &&
+            owners.Any(owner => owner.AssetKey == "Covenant01_StrongerEnemiesMoreCards" && KnownOwner(owner)) &&
+            owners.All(owner => KnownOwner(owner) && owner.AssetKey is "Covenant00_FTUE" or "Covenant01_StrongerEnemiesMoreCards" ||
+                owner.IsCovenant == true && owner.AssetKey == "Covenant02_BattlesNewEnemies" &&
+                owner.DataId == "92c18b99-e4c0-4953-ba2c-4815f570a66e" && owner.EffectTypes.Count == 0);
 
         internal static bool CalibratedOwners(CombatRelicState[] owners) => owners.Length > 0 &&
             owners.All(KnownOwner) && owners.Select(owner => owner.DataId).Distinct().Count() == owners.Length;

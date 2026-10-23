@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1144 archives,
+Current manifest inventory (2026-10-23): 1145 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -11,6 +11,9 @@ with Pyre10. See [native Covenant startup](native-covenant-startup.md).
 Actual advice/UI and independent frozen native replay also pass this native
 20-card startup: 31 inputs each, 33 source publications, two complete wins
 with Pyre56, exact full forecasts/state/RNG and zero native failure counters.
+Native cumulative rank two (original 01+02) also passes its complete
+seven-turn no-cards first battle with Pyre8. Its selection-only owner has
+no combat callbacks; outer/final-boss combinations retain their guards.
 
 Original Ring8 bosses now have complete native Covenant 01 and 00+01 birth
 and no-cards controls: six full battles, raw creation followed by the native
