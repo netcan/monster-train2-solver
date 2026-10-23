@@ -39,5 +39,21 @@ not curated. The continuation control now verifies the original saved Pyre
 health before detached query controls and records its observed birth value.
 
 Run `scripts/Check-NativeCovenantFinalBoss.ps1 -SkipBuild`; `-Rank 2` or
-`-Rank 10` selects one pair. Actual player advice and independent replay are
-separate acceptance targets.
+`-Rank 10` selects one pair.
+
+Rank ten also passes the actual separately loaded player assembly and a
+fresh frozen native replay. Both execute twenty inputs (fifteen cards, five
+EndTurns), with thirty-nine room stages and nine train phases; every root,
+successor, complete forecast, controller reference and RNG matches. Both
+lose with Pyre0, without unsupported/unfinished predictions. The source has
+twenty-two publications and 253 captures; replay has seventy captures;
+UI interactions and purity checks pass, both native processes exit normally,
+protected files remain unchanged and all four failure counters are zero.
+Runtimes are 353.31/202.37 seconds. Source/replay suffixes are
+`121632-6b70a73e` / `122228-e5559588`, prefixed
+`full-battle-units-spells-and-junk-20261023-`.
+Use `Check-NativeCovenantFinalBoss.ps1 -Player -SkipBuild`; the player default
+selects accepted rank ten, while the baseline default selects ranks two/ten.
+This is advice/replay correctness for the fresh starting deck at the
+disclosed isolated route, not a winning high-rank final-boss deck or earned
+unlock. Rank two's individual player pair remains separate.
