@@ -69,6 +69,7 @@ effects, protected files unchanged and all four failure counters zero.
 | AllyBuffer 00+01 | `104043-a13ed8f0` / `104324-09310096` | 174 / 38 |
 | Fragile 01 | `104439-035298cf` / `104747-fc8dfd19` | 253 / 55 |
 | Fragile 00+01 | `104445-9a78b79d` / `104757-82e441ac` | 255 / 55 |
+| Corrupter 01 | `105819-dc03638c` / `110304-0c84c97b` | 351 / 81 |
 
 The source uses three turns, a 3,000-ms soft budget and tactical candidates.
 Both are complete native losses; neither winning quality nor a hard response
@@ -86,7 +87,29 @@ native sources and both replays lose with every failure counter zero.
 Source runs take 187.38/191.87 seconds and replays 84.88/84.72 seconds.
 Archives use `full-battle-player-covenant-outer-boss-fragile-{context}`
 with the same search/replay suffixes. Select `-Variant Fragile -Player`
-in the focused checker. Corrupter still requires its player/replay evidence.
+in the focused checker.
+
+Corrupter 01 also passes: 24 inputs (eighteen card plays and six EndTurns),
+26 source publications, complete UI/purity/forecast/state/RNG checks and
+independent frozen replay. Both native processes lose with all four failure
+counters zero, taking 283.32/112.84 seconds. Archives use
+`full-battle-player-covenant-outer-boss-corrupter-01-{search,replay}.mt2f`.
+Select `-Variant Corrupter -Covenant 01 -Player` in the focused checker.
+
+This route exposed a real terminal bug: an original
+`AttackerT3_CorruptionAdder` killed the Pyre, and the model continued into
+`OnAttacking` after native combat had stopped. Lethal ordinary attacks now
+stop at the same HP-change boundary as the native coroutine. Each accepted
+source/replay includes the original attacker's positive ordinary-hit callback
+and the suppressed fatal-Pyre callback; all complete forecasts and states
+match. Existing ordinary attack-trigger rooms and an original no-cards
+Fragile full-chain control also pass after the fix.
+
+Earlier Corrupter sources `104913-9fd628c1` and `104923-edae90bf` failed
+terminal forecast acceptance and are not curated. The repaired model matches
+all 57 observed rooms and all 24 observed native inputs in the first diagnostic;
+that diagnostic comparison does not replace the fresh accepted pair above.
+Corrupter 00+01 still requires its repaired player/replay acceptance.
 
 Two earlier AllyBuffer diagnostics (`103410-639eeb30` and `103410-e19c6d4e`)
 retained the creation guard and reported two unsupported boundaries. Their

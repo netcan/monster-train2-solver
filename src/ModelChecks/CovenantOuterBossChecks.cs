@@ -79,6 +79,11 @@ internal static class CovenantOuterBossChecks
         Evidence(source, variant, ftue);
         Evidence(replay, variant, ftue);
         CovenantEnemyStatsChecks.Pair(source, replay, ftue, 7);
+        if (variant == "Corrupter")
+        {
+            PyreAttackTerminalChecks.Native(source);
+            PyreAttackTerminalChecks.Native(replay);
+        }
         Console.WriteLine($"PLAYER-COVENANT-OUTER-BOSS PASS variant={variant} ftue={ftue}: actual advice/UI and independent frozen native replay, complete forecasts/state/RNG and zero native failure counters.");
     }
 

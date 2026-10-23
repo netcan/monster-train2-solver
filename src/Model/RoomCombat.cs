@@ -2768,11 +2768,12 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: target.Alive));
                 // Tower HP changes stop the native combat coroutine immediately. A
-                // remote character-effect hit therefore never reaches CheckForDeath,
-                // its hit callbacks, or the kill camera's card clearing. Played-card
-                // resolution uses a separate queue which StopCombatLoop waits for.
+                // remote character-effect hit or ordinary lethal attack therefore
+                // never reaches post-hit triggers, CheckForDeath or kill-camera
+                // card clearing. Played-card resolution uses a separate queue
+                // which StopCombatLoop waits for.
                 if (!source.Preview && target.Source.IsPyre && !target.Alive &&
-                    !target.InRoom && runningTriggerQueue && !nativeCardDamage)
+                    (!target.InRoom && runningTriggerQueue || target.InRoom && kind == "Attack") && !nativeCardDamage)
                 {
                     stoppedByRemotePyreDamage = true;
                     if (context?.QueryFrame?.SelectedRoomIndex != null)

@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1142 archives,
+Current manifest inventory (2026-10-23): 1144 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -22,6 +22,10 @@ state/RNG, with four zero native failure counters in every process.
 Fragile also passes both original contexts: 32 source inputs and 32 frozen
 replay inputs, 36 advice publications, exact complete forecasts/state/RNG
 and four zero native failure counters in all four processes.
+Corrupter 01 passes 24 native inputs and independent replay after fixing
+lethal Pyre attacks to stop before post-hit triggers. The same original
+corruption attacker supplies positive ordinary-hit and suppressed fatal-hit
+controls, with complete forecasts/state/RNG and zero native failure counters.
 
 Ordinary rank-one enemy birth stats now have native complete-battle controls
 for original 01 and 00+01: seven-turn victories with Pyre10, pure wave-stat
