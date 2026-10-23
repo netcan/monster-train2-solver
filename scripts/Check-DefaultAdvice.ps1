@@ -33,6 +33,7 @@ if ('Strategy' -in $Case) {
     Invoke-Check '--natural-ring7-default-planner-only' @(Get-Archive 'full-battle-player-natural-ring7-ordinary-search.mt2f')
     Invoke-Check '--shorter-advice-budget-only' @(Get-Archive 'player-fragile-budget-boundary.mt2f')
     Invoke-Check '--atomic-advice-budget-only' @(Get-Archive 'advisor-atomic-budget-failure.mt2f')
+    Invoke-Check '--ordinary-advice-budget-only' @(Get-Archive 'advisor-ordinary-budget-failure.mt2f')
 }
 if ('Native' -in $Case) {
     Invoke-Check '--player-natural-ring7-default-win-pair-only' @(

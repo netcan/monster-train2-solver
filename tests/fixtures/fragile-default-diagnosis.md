@@ -72,3 +72,24 @@ read the printed outcome separately. This gap needs a default-budget winning
 model route followed by a fresh native player source/replay pair. The
 accepted Ring7 default victory and Fragile long-budget victory remain
 separate evidence. No full regression or Mac build is required for diagnosis.
+
+## Ordinary-prefix timeout found in native play
+
+The first fresh bottom-preference native run reached turn8/Pyre7 with 48
+matched inputs, then failed to publish advice: five legal card choices used
+the soft deadline before any complete EndTurn (`turns=0 nodes=5`). The failed
+run is `full-battle-units-spells-and-junk-20261023-234552-2c334d45`; it is not
+a completed battle or an accepted winning pair.
+
+`advisor-ordinary-budget-failure.mt2f` preserves that exact unavailable root,
+native error and capture provenance. The ordinary seed now finishes its
+selected prefix with one atomic EndTurn only when the soft deadline expires
+and no complete forecast exists. Shorter windows must be enabled; cancellation
+and the hard node limit still take precedence. This does not turn the soft
+three-second deadline into a bound on total response time.
+
+`--ordinary-advice-budget-only` reproduces expiration after one and two card
+choices and verifies complete forecasts by independent full-state/RNG replay.
+Strict-horizon, hard-node, cancellation and root-immutability controls pass.
+The fixture is diagnostic evidence from an incomplete native run; a fresh
+native run remains necessary to establish end-to-end usability and victory.

@@ -12,7 +12,8 @@ internal static class AdviceBudgetFailure
         FixtureValue overlay = player.GetProperty("Overlay");
         string error = overlay.GetProperty("Error").GetString()!;
         if (player.GetProperty("Assembly").GetString() != "MonsterTrain2Poju.Advisor" ||
-            !error.Contains("turns=0 nodes=1", StringComparison.Ordinal) ||
+            !System.Text.RegularExpressions.Regex.IsMatch(error, @"\bturns=0 nodes=[1-9]\d*\b") ||
+            overlay.GetProperty("UnavailableRoot").ValueKind != FixtureKind.Object ||
             overlay.GetProperty("PurityFailures").GetInt32() != 0 || overlay.GetProperty("Captures").GetInt32() <= 0)
             throw new InvalidOperationException("Missing original zero-turn player budget failure.");
         using var document = NativeFixtureCapture.Capture(new {

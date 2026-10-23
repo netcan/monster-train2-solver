@@ -257,6 +257,14 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
+            // A later turn can spend its entire soft budget choosing cards.
+            // If no complete forecast exists yet, finish that chosen prefix
+            // with one EndTurn. Keep strict callers, cancellation and the hard
+            // node cap binding, as for the initial tactical fallback above.
+            if (options.AllowShorterHorizon && best == null && completedPrefix == null &&
+                strength.Turns == 0 && strength.Actions > 0 && timedOut)
+                Rollout(strength, 1, finishFirstTurn: true);
+
             Rollout(root);
 
             // Seed the existing fixed play policy as well as the no-card path.
