@@ -158,4 +158,51 @@ the complete startup callback chain are checked. Seven EndTurns win with
 Pyre5; fourteen train stages, 57 room stages, four pure native stat queries,
 seven authored wave definitions and sixteen immutable full chains match.
 Native runtime is 59.44 seconds, normal exit, protected files unchanged and
-all four failure counters zero. Player advice/replay remains separate.
+all four failure counters zero.
+
+Actual player advice and fresh replay both win with Pyre42: 33 inputs each
+(26 card plays, seven EndTurns), 35 source publications and pure captures
+426/116. UI interactions, all complete forecasts, roots, successors and RNG
+match. Native runtimes are 359.69/173.48 seconds, normal exits, protected files
+unchanged and all four failure counters zero. Profiles have suffixes
+`113016-6733b758` / `113618-67811406`, prefixed
+`full-battle-units-spells-and-junk-20261023-`; player archive prefix is
+`full-battle-player-native-covenant-startup-05` with `-search.mt2f` /
+`-replay.mt2f`.
+
+## Native cumulative ranks six through ten
+
+All original cumulative definitions now retain their exact identities and
+complete ordered native effect signatures. Rank six only modifies reward
+drafts (`IAddBonusCardToCardDrafts`); the resulting native deck remains
+authoritative. Rank seven's sealed effect marks wave messages; rank-based
+wave selection is captured through original `GetUnlockedWaves` and
+`GetCharacters`, including nine authored definitions instead of seven.
+Rank eight's fourteen original stat effects use the pure native birth query.
+Rank nine executes one original `RelicEffectDamagePyreStartOfRun`: 30 percent
+of 80 is 24, leaving 56 HP and the same 80 max HP, with all sixteen RNG
+streams unchanged. Rank ten has no effect callbacks; its native conditional
+wave definitions are retained. Altered effect signatures remain rejected.
+
+All five complete first battles retain 22 starting cards and the original
+purge/add/add/add callback chain. Each native run has normal exit, protected
+files unchanged and all four failure counters zero; seven complete turns,
+fourteen train stages and sixteen immutable full chains match. Every native
+stat query preserves frame/RNG and rejects spoofed origins. Archives have
+prefix `full-battle-native-covenant-startup-` and two-digit rank suffix.
+Profiles below have prefix `full-battle-no-cards-20261023-`.
+
+| Rank | Profile suffix | Native seconds | Room stages | No-card outcome / Pyre |
+| --- | --- | ---: | ---: | --- |
+| 6 | `113412-6c6ed098` | 60.29 | 57 | win / 5 |
+| 7 | `113520-81327c5b` | 60.96 | 63 | loss / 0 |
+| 8 | `113630-13d6e234` | 62.39 | 63 | loss / 0 |
+| 9 | `113740-ada1ea9b` | 61.13 | 60 | loss / 0 |
+| 10 | `113849-299e686c` | 55.23 | 60 | loss / 0 |
+
+Use `scripts/Check-NativeCovenantStartup.ps1 -Rank 8 -SkipBuild` for one
+baseline, or add `-Player` for an accepted source/replay pair (currently
+ranks 1–5). The default baseline ranks are 1–10; this runs only the selected
+startup acceptance, never the full fixture suite. Higher-rank actual player
+advice, flying-boss compositions, earned unlocks and full campaigns remain
+separate acceptance targets.

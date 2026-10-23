@@ -14,6 +14,7 @@ namespace MonsterTrain2Poju.Probe
         private static object? selection;
         private static readonly List<object> calls = new List<object>();
         private static readonly List<object> queries = new List<object>();
+        private static readonly List<PyreCall> pyreCalls = new List<PyreCall>();
         private static readonly HashSet<string> observed = new HashSet<string>();
         internal static object? Evidence { get; private set; }
 
@@ -41,7 +42,8 @@ namespace MonsterTrain2Poju.Probe
                 Owners = save.GetCovenants().Select(owner => Definition((CovenantData)owner.GetSourceRelicData())).ToArray(),
                 ExpectedOwners = save.GetAllGameData().GetAllCovenantsForLevel(Level).Select(Definition).ToArray(),
                 Catalog = save.GetAllGameData().GetAllCovenantDatas().Select(Definition).ToArray(),
-                StartupCalls = calls, StartingDeck = Deck(save), StatQueries = queries };
+                StartupCalls = calls, StartingDeck = Deck(save), StatQueries = queries,
+                PyreStartupCalls = pyreCalls, StartingPyre = new { Health = save.GetTowerHP(), MaxHealth = save.GetMaxTowerHP() } };
         }
 
         private static object Definition(CovenantData data) => new { AssetKey = data.name, Id = data.GetID(),
@@ -74,6 +76,40 @@ namespace MonsterTrain2Poju.Probe
         }
         private static void After(Call? call, SaveManager save)
         { if (call != null) { call.After = Deck(save); call.RngAfter = Rng(); } }
+
+        private sealed class PyreCall
+        {
+            public string OwnerId { get; set; } = "";
+            public int Amount { get; set; }
+            public bool Percent { get; set; }
+            public int Before { get; set; }
+            public int After { get; set; }
+            public int MaxBefore { get; set; }
+            public int MaxAfter { get; set; }
+            public object? RngBefore { get; set; }
+            public object? RngAfter { get; set; }
+        }
+
+        [HarmonyPatch(typeof(RelicEffectDamagePyreStartOfRun), "ApplyEffect")]
+        private static class PyrePatch
+        {
+            private static void Prefix(RelicEffectDamagePyreStartOfRun __instance, RelicEffectParams relicEffectParams, out PyreCall? __state)
+            {
+                __state = null;
+                if (Level == 0 || selection == null || __instance.SourceRelicData is not CovenantData) return;
+                SaveManager save = relicEffectParams.saveManager;
+                var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(__instance);
+                __state = new PyreCall { OwnerId = __instance.GetRelicDataId(), Amount = data.GetParamInt(), Percent = data.GetParamBool(),
+                    Before = save.GetTowerHP(), MaxBefore = save.GetMaxTowerHP(), RngBefore = Rng() };
+                pyreCalls.Add(__state);
+            }
+            private static void Postfix(RelicEffectParams relicEffectParams, PyreCall? __state)
+            {
+                if (__state == null) return;
+                SaveManager save = relicEffectParams.saveManager;
+                __state.After = save.GetTowerHP(); __state.MaxAfter = save.GetMaxTowerHP(); __state.RngAfter = Rng();
+            }
+        }
 
         [HarmonyPatch(typeof(RelicEffectPurgeStarterDeck), "PurgeStarterDeck")]
         private static class PurgePatch

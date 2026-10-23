@@ -37,7 +37,7 @@ namespace MonsterTrain2Poju.Probe
         {
             var captured = new CombatRelicState(owner.GetRelicDataID(), owner.GetSourceRelicData().name,
                 owner.GetEffects().Select(effect => effect.GetType().Name).ToArray(), isCovenant: true);
-            return TrueFinalBossCovenantModel.StrongerBossOwner(captured) || TrueFinalBossCovenantModel.StartupCardsOwner(captured);
+            return TrueFinalBossCovenantModel.OrdinaryWaveExtensionOwner(captured);
         }
 
         internal static EnemyBirthStatAdjustment? Capture(CharacterData data)

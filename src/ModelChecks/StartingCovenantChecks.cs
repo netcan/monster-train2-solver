@@ -18,7 +18,7 @@ internal static class StartingCovenantChecks
         int level = startup.GetProperty("AscensionLevel").GetInt32();
         Require(!expectedLevel.HasValue || level == expectedLevel, "Native Covenant fixture uses a different declared cumulative rank.");
         Require(startup.GetProperty("Kind").GetString() == "NativeCovenantRunStartup" &&
-            level is >= 1 and <= 5 && startup.GetProperty("StartingLevel").GetInt32() == level &&
+            level is >= 1 and <= 10 && startup.GetProperty("StartingLevel").GetInt32() == level &&
             selection.GetProperty("Kind").GetString() == "SelectNativeCovenantAtRunSetup" &&
             selection.GetProperty("RequestedLevel").GetInt32() == level && selection.GetProperty("LevelAfter").GetInt32() == level &&
             !selection.GetProperty("EarnedUnlockClaimed").GetBoolean() && !selection.GetProperty("StartupEffectsInvokedByProbe").GetBoolean() &&
@@ -50,7 +50,8 @@ internal static class StartingCovenantChecks
         Require(captured.Length == level && TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(captured) &&
             captured.Select(relic => relic.DataId).SequenceEqual(startup.GetProperty("Owners").EnumerateArray().Select(value => value.GetProperty("Id").GetString())) &&
             captured[0].DataId == owner.GetProperty("Id").GetString() &&
-            owner.GetProperty("EffectTypes").EnumerateArray().Select(value => value.GetString()).SequenceEqual(captured[0].EffectTypes),
+            startup.GetProperty("Owners").EnumerateArray().Select((value, index) =>
+                value.GetProperty("EffectTypes").EnumerateArray().Select(effect => effect.GetString()).SequenceEqual(captured[index].EffectTypes)).All(match => match),
             "Native startup and actual battle capture disagree on the original Covenant definition.");
         TrueFinalBossBattleChecks.CovenantWaves(root, before, startup.GetProperty("StatQueries"));
         if (level >= 2)
@@ -97,6 +98,43 @@ internal static class StartingCovenantChecks
                     isCovenant: true) : relic).ToArray();
             Require(!TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(invalid),
                 "The startup-only Covenant must not authorize additional battle callbacks.");
+        }
+        if (level >= 6) Require(TrueFinalBossCovenantModel.DraftOnlyOwner(captured[5]),
+            "Rank six must retain the exact original reward-draft-only Covenant.");
+        if (level >= 7) Require(TrueFinalBossCovenantModel.WaveMessageOwner(captured[6]),
+            "Rank seven must retain the exact original wave-message Covenant.");
+        if (level >= 8) Require(TrueFinalBossCovenantModel.StrongerEnemyOwner(captured[7]),
+            "Rank eight must retain all fourteen original enemy-stat effects.");
+        if (level >= 9)
+        {
+            FixtureValue[] pyreCalls = startup.GetProperty("PyreStartupCalls").EnumerateArray().ToArray();
+            Require(TrueFinalBossCovenantModel.StartingPyreOwner(captured[8]) && pyreCalls.Length == 1,
+                "Rank nine must execute the original startup Pyre callback exactly once.");
+            FixtureValue call = pyreCalls[0];
+            int hp = call.GetProperty("Before").GetInt32(), amount = call.GetProperty("Amount").GetInt32();
+            int damage = call.GetProperty("Percent").GetBoolean() ? (int)Math.Floor((float)hp * amount / 100f) : amount;
+            Require(call.GetProperty("OwnerId").GetString() == captured[8].DataId && damage > 0 &&
+                call.GetProperty("After").GetInt32() == hp - damage &&
+                call.GetProperty("MaxBefore").GetInt32() == call.GetProperty("MaxAfter").GetInt32() &&
+                call.GetProperty("RngBefore").GetArrayLength() == 16 &&
+                call.GetProperty("RngBefore").ContentEquals(call.GetProperty("RngAfter")) &&
+                startup.GetProperty("StartingPyre").GetProperty("Health").GetInt32() == hp - damage &&
+                startup.GetProperty("StartingPyre").GetProperty("MaxHealth").GetInt32() == call.GetProperty("MaxAfter").GetInt32(),
+                "Native startup Pyre damage must match its original parameters without changing max health or RNG.");
+            if (root.GetProperty("Policy").GetString() == "no-cards")
+                Require(before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == hp - damage,
+                    "The battle must retain native startup Pyre health.");
+        }
+        if (level >= 10) Require(TrueFinalBossCovenantModel.FlyingBossSelectionOwner(captured[9]),
+            "Rank ten must retain the original selection-only definition without inventing combat callbacks.");
+        for (int index = 5; index < captured.Length; index++)
+        {
+            CombatRelicState changed = captured[index];
+            CombatRelicState[] invalid = captured.Select(relic => ReferenceEquals(relic, changed) ?
+                new CombatRelicState(relic.DataId, relic.AssetKey, relic.EffectTypes.Concat(new[] { "RelicEffectNull" }).ToArray(),
+                    isCovenant: true) : relic).ToArray();
+            Require(!TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(invalid),
+                "A cumulative Covenant must not authorize extra uncalibrated callbacks: " + changed.AssetKey);
         }
         Console.WriteLine($"NATIVE-COVENANT-STARTUP PASS: native rank {level} selection, exact cumulative owners, one original purge/add callback each and {startup.GetProperty("StartingDeck").GetArrayLength()} actual starting cards; original battle waves and stat-query purity match. Earned unlocks remain separate.");
     }

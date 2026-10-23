@@ -24,7 +24,35 @@ namespace MonsterTrain2Poju.Model
             owners.All(owner => KnownOwner(owner) && owner.AssetKey is "Covenant00_FTUE" or "Covenant01_StrongerEnemiesMoreCards" ||
                 owner.IsCovenant == true && owner.AssetKey == "Covenant02_BattlesNewEnemies" &&
                 owner.DataId == "92c18b99-e4c0-4953-ba2c-4815f570a66e" && owner.EffectTypes.Count == 0 ||
-                MerchantOnlyOwner(owner) || StrongerBossOwner(owner) || StartupCardsOwner(owner));
+                OrdinaryWaveExtensionOwner(owner));
+
+        internal static bool OrdinaryWaveExtensionOwner(CombatRelicState owner) => MerchantOnlyOwner(owner) ||
+            StrongerBossOwner(owner) || StartupCardsOwner(owner) || DraftOnlyOwner(owner) || WaveMessageOwner(owner) ||
+            StrongerEnemyOwner(owner) || StartingPyreOwner(owner) || FlyingBossSelectionOwner(owner);
+
+        internal static bool DraftOnlyOwner(CombatRelicState owner) => owner.IsCovenant == true &&
+            owner.AssetKey == "Covenant06_RandomDudUpgradeOnDraft" && owner.DataId == "2cd816ea-fc0d-4129-ae64-24aa99ef0594" &&
+            owner.EffectTypes.SequenceEqual(new[] { "RelicEffectAddBonusCardToCardDrafts" });
+
+        internal static bool WaveMessageOwner(CombatRelicState owner) => owner.IsCovenant == true &&
+            owner.AssetKey == "Covenant07_NoRespite" && owner.DataId == "06101ac8-9afb-401c-aaa7-7ef2745ce6a9" &&
+            owner.EffectTypes.SequenceEqual(new[] { "RelicEffectNoRespiteWaves" });
+
+        internal static bool StartingPyreOwner(CombatRelicState owner) => owner.IsCovenant == true &&
+            owner.AssetKey == "Covenant09_PyreDamage" && owner.DataId == "222e1727-2480-475c-85e8-d833a1db6e2d" &&
+            owner.EffectTypes.SequenceEqual(new[] { "RelicEffectDamagePyreStartOfRun" });
+
+        internal static bool FlyingBossSelectionOwner(CombatRelicState owner) => owner.IsCovenant == true &&
+            owner.AssetKey == "Covenant10_ChosenEnemiesDuringFlyingBosses" && owner.DataId == "871bec39-7863-4fdd-9919-929d05c92697" &&
+            owner.EffectTypes.Count == 0;
+
+        internal static bool StrongerEnemyOwner(CombatRelicState owner) => KnownOwner(owner) &&
+            owner.AssetKey == "Covenant08_StrongerEnemies" && owner.EffectTypes.SequenceEqual(
+                Enumerable.Repeat("RelicEffectModifyCharacterMaxHealth", 6)
+                    .Concat(Enumerable.Repeat("RelicEffectModifyCharacterAttackDamage", 3))
+                    .Concat(Enumerable.Repeat("RelicEffectModifyCharacterMaxHealth", 2))
+                    .Concat(new[] { "RelicEffectModifyCharacterAttackDamage" })
+                    .Concat(Enumerable.Repeat("RelicEffectModifyCharacterMaxHealth", 2)));
 
         internal static bool StartupCardsOwner(CombatRelicState owner) => owner.IsCovenant == true &&
             owner.AssetKey == "Covenant05_VengefulShards" && owner.DataId == "0310c0f2-f970-4656-9cc6-6d3c457303dd" &&

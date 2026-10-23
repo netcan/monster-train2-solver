@@ -279,6 +279,12 @@ namespace MonsterTrain2Poju.Model
                     // This original Covenant only adds/upgrades starting cards.
                     // Their actual native state is captured before combat.
                     if (TrueFinalBossCovenantModel.StartupCardsOwner(relic)) continue;
+                    // Reward-only draft additions and startup Pyre damage have
+                    // already affected captured deck/health. NoRespite is read
+                    // only for wave messages; native wave selection is captured.
+                    if (TrueFinalBossCovenantModel.DraftOnlyOwner(relic) ||
+                        TrueFinalBossCovenantModel.WaveMessageOwner(relic) ||
+                        TrueFinalBossCovenantModel.StartingPyreOwner(relic)) continue;
                     // ICharacterGeneratingRelicEffect only supplies a tooltip
                     // character. The sealed native type has no combat hooks.
                     if (effect == "RelicEffectOnlyTooltips") continue;
