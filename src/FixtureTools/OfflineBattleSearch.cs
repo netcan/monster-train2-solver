@@ -92,7 +92,8 @@ internal static class OfflineBattleSearch
         using (var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) document.Write(stream);
         Verify(output);
     }
-    internal static void Run(string input, string output, int horizon, int milliseconds, int floor, bool tactical = false)
+    internal static void Run(string input, string output, int horizon, int milliseconds, int floor, bool tactical = false,
+        bool playerContinuation = false)
     {
         if (horizon is < 1 or > 16 || milliseconds is < 1 or > 60000 || floor is < 0 or > 2)
             throw new ArgumentOutOfRangeException(nameof(horizon), "Horizon 1..16, budget 1..60000 ms and room 0..2 required.");
@@ -104,7 +105,9 @@ internal static class OfflineBattleSearch
         Require(root.Spawn.Turn == 0, "Offline whole-battle planning requires the native deployment root.");
         using var rootKeys = new BattleStateKeys();
         string immutable = rootKeys.Key(root);
-        var options = new BattlePlannerOptions(256, horizon, 8, 12, TimeSpan.FromMilliseconds(milliseconds), floor, tactical);
+        var options = new BattlePlannerOptions(256, horizon, 8, 12, TimeSpan.FromMilliseconds(milliseconds), floor, tactical,
+            allowShorterHorizon: playerContinuation);
+        using var advisor = playerContinuation ? new BattleAdviceSession(options) : null;
         var decisions = new List<Decision>();
         var unsupported = new HashSet<string>(StringComparer.Ordinal);
         var timer = Stopwatch.StartNew();
@@ -113,15 +116,31 @@ internal static class OfflineBattleSearch
         while (!Terminal(outcome) && decisions.Count < 256)
         {
             using var keys = new BattleStateKeys();
-            BattlePlanResult plan = BattlePlanner.Plan(current, keys.Key, options);
+            BattleAdvice? advice = null;
+            BattlePlanResult plan;
+            if (advisor == null) plan = BattlePlanner.Plan(current, keys.Key, options);
+            else
+            {
+                advisor.Observe(current, keys.Key(current));
+                var wait = Stopwatch.StartNew();
+                while (advisor.Status == BattleAdviceStatus.Planning && wait.Elapsed < options.TimeLimit + TimeSpan.FromSeconds(30))
+                { Thread.Sleep(1); advisor.Poll(); }
+                Require(advisor.Status == BattleAdviceStatus.Ready && advisor.Current != null,
+                    "Player continuation did not produce verified advice: " + advisor.Error);
+                advice = advisor.Current;
+                plan = advice!.Plan;
+            }
             foreach (UnsupportedActionAttempt attempt in plan.UnsupportedAttempts) unsupported.Add(attempt.Reason);
             Require(plan.Steps.Count > 0, "Planner produced no executable first step.");
             BattleSearchStep step = plan.Steps[0];
             BattleTurnState next = Apply(current, step.Action, step.IsEndTurn, out outcome);
             decisions.Add(new Decision { Root = current, Action = step.Action, IsEndTurn = step.IsEndTurn,
                 Expected = next, Outcome = outcome, PlanSteps = plan.Steps.Select(item => new Step { Action = item.Action, IsEndTurn = item.IsEndTurn }).ToArray(), Planned = plan.State, PlannedOutcome = plan.Outcome,
-                Score = plan.Score, PolicyBaselineScore = plan.PolicyBaselineScore, Nodes = plan.ExpandedNodes, Generation = decisions.Count + 1 });
+                Score = plan.Score, PolicyBaselineScore = plan.PolicyBaselineScore, Nodes = plan.ExpandedNodes, Generation = decisions.Count + 1,
+                ReusedContinuation = advice?.ReusedContinuation == true,
+                ReusedWinningContinuation = advice?.ReusedWinningContinuation == true });
             current = next;
+            advisor?.InvalidateForInput();
             if (step.IsEndTurn) Console.WriteLine($"OFFLINE-TURN turn={current.Spawn.Turn} decisions={decisions.Count} outcome={outcome} " +
                 $"pyre={current.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault()}");
         }
@@ -131,11 +150,14 @@ internal static class OfflineBattleSearch
         using (var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelPrediction",
             SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
             Horizon = horizon, MillisecondsPerDecision = milliseconds, DeploymentRoom = floor, TacticalSeed = tactical,
+            PlayerContinuation = playerContinuation,
             Root = root, Final = current, Outcome = outcome, ElapsedSeconds = timer.Elapsed.TotalSeconds,
             UnsupportedReasons = unsupported.Order(StringComparer.Ordinal).ToArray(), RollingDecisions = decisions }))
         using (var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) document.Write(stream);
         Verify(output);
-        Console.WriteLine($"OFFLINE-PLAN outcome={outcome} decisions={decisions.Count} unsupported={unsupported.Count} seconds={timer.Elapsed.TotalSeconds:F2} output={output}");
+        Console.WriteLine($"OFFLINE-PLAN outcome={outcome} decisions={decisions.Count} searches={decisions.Count(row => row.Nodes > 0)} " +
+            $"ordinaryReuses={decisions.Count(row => row.ReusedContinuation && !row.ReusedWinningContinuation)} winningReuses={decisions.Count(row => row.ReusedWinningContinuation)} " +
+            $"playerContinuation={playerContinuation} unsupported={unsupported.Count} seconds={timer.Elapsed.TotalSeconds:F2} output={output}");
     }
 
     internal static void Verify(string input)
@@ -157,6 +179,22 @@ internal static class OfflineBattleSearch
                 "Frozen model root differs or follows a terminal outcome.");
             bool end = row.GetProperty("IsEndTurn").GetBoolean();
             Require(end == (row.GetProperty("Action").ValueKind == FixtureKind.Null), "Invalid frozen first step.");
+            BattleTurnState forecast = current;
+            RoomOutcome forecastOutcome = RoomOutcome.Exchanged;
+            FixtureValue[] forecastSteps = row.GetProperty("PlanSteps").EnumerateArray().ToArray();
+            Require(forecastSteps.Length > 0 && forecastSteps[0].GetProperty("IsEndTurn").GetBoolean() == end &&
+                forecastSteps[0].GetProperty("Action").ContentEquals(row.GetProperty("Action")),
+                "Frozen first step differs from its forecast.");
+            foreach (FixtureValue step in forecastSteps)
+            {
+                Require(!Terminal(forecastOutcome) && step.GetProperty("IsEndTurn").GetBoolean() ==
+                    (step.GetProperty("Action").ValueKind == FixtureKind.Null), "Invalid frozen forecast step.");
+                forecast = Apply(forecast, step.GetProperty("Action").ValueKind == FixtureKind.Null ? null :
+                    step.GetProperty("Action").Deserialize<PlayCardAction>(), step.GetProperty("IsEndTurn").GetBoolean(), out forecastOutcome);
+            }
+            Require(forecastOutcome == (RoomOutcome)row.GetProperty("PlannedOutcome").GetInt32() &&
+                keys.Key(forecast) == keys.Key(row.GetProperty("Planned").Deserialize<BattleTurnState>()!),
+                "Frozen complete forecast differs.");
             current = Apply(current, end ? null : row.GetProperty("Action").Deserialize<PlayCardAction>(), end, out outcome);
             Require(outcome == (RoomOutcome)row.GetProperty("Outcome").GetInt32() &&
                 keys.Key(current) == keys.Key(row.GetProperty("Expected").Deserialize<BattleTurnState>()!), "Frozen successor differs.");
@@ -165,7 +203,7 @@ internal static class OfflineBattleSearch
             keys.Key(current) == keys.Key(trace.GetProperty("Final").Deserialize<BattleTurnState>()!), "Frozen terminal state differs.");
         using var freshKeys = new BattleStateKeys();
         Require(immutable == freshKeys.Key(root), "Frozen replay mutated its root.");
-        Console.WriteLine($"OFFLINE-VERIFY PASS: {decisions.Length} frozen successors, terminal outcome and complete state/RNG; native validation required.");
+        Console.WriteLine($"OFFLINE-VERIFY PASS: {decisions.Length} frozen successors/full forecasts, terminal outcome and complete state/RNG; native validation required.");
     }
 
     internal static void VerifyNative(string prediction, string native)
@@ -256,6 +294,8 @@ internal static class OfflineBattleSearch
         public double Score { get; set; }
         public double? PolicyBaselineScore { get; set; }
         public int Nodes { get; set; }
+        public bool ReusedContinuation { get; set; }
+        public bool ReusedWinningContinuation { get; set; }
         public long Generation { get; set; }
     }
     private sealed class Step

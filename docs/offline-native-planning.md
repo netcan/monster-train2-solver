@@ -23,6 +23,7 @@ dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll policy-battle <profi
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll policy-battle <profile>/player-deployment.mt2f <floor1.mt2f> 1
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll policy-battle <profile>/player-deployment.mt2f <floor2.mt2f> 2
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-battle <profile>/player-deployment.mt2f <searched.mt2f> 12 3000 1 --tactical
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-battle <profile>/player-deployment.mt2f <player-candidate.mt2f> 3 3000 2 --player-continuation
 ```
 
 Each command uses a new output path. `OFFLINE-VERIFY PASS` establishes complete
@@ -30,6 +31,13 @@ model successors, terminal outcome and state/RNG consistency. Outputs remain
 `ModelPrediction` artifacts: only a fresh original game process can prove native
 acceptance. Preserve `-PlayerAdvisor` when replaying predictions from this
 identity space. A native winning replay may then feed campaign continuation.
+
+The optional `--player-continuation` uses the real player advice session, reusing
+verified current-turn and complete-winning suffixes while reporting searches
+separately. It permits explicitly shorter complete forecasts just as the player
+does. Without it, `plan-battle` retains strict-horizon search after every input.
+Every recorded complete forecast now passes independent full-state/RNG replay,
+including legacy one-step frozen policies. See [offline workflow](../tests/fixtures/offline-planning.md).
 
 The seed42 Corrupter deployment in
 `full-battle-units-spells-and-junk-20261023-055405-e160c30a` provided the first

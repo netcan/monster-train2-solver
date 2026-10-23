@@ -7,9 +7,18 @@ only the first planned step, then replans from its own successor. It records
 complete states/RNG and frozen actions in a separate `ModelPrediction` archive.
 These predictions are not native coverage evidence.
 
+Add `--player-continuation` to use the actual `BattleAdviceSession` instead of
+searching again after every card. This enables the player's verified same-turn
+and winning continuations, explicitly allowed shorter complete windows and
+ordinary adaptive deployment. It keeps the requested horizon, shared search
+limits and the selected tactical/floor settings. Search and continuation counts
+are printed separately; the flag is opt-in so existing strict experiments retain
+their behavior.
+
 ```powershell
 dotnet build src/FixtureTools/FixtureTools.csproj -c Release --no-restore
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-battle <native.mt2f> .probe-runs/candidate.mt2f 3 1000 2
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-battle <native.mt2f> .probe-runs/player-candidate.mt2f 3 3000 2 --player-continuation
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll verify-offline-plan .probe-runs/candidate.mt2f
 # Replay the frozen candidate from the same native input profile, without search:
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -InputProfile <profile> -BattleDistance 7 -RollingAdvice -RollingInput .probe-runs/candidate.mt2f -OuterBossBirth -OuterBossTurns -PhysicalSpawnPoints -SettleDeathDissolves -SkipBuild
@@ -20,6 +29,23 @@ The explicit CLI horizon accepts 1..16 turns, budgets 1..60,000 ms per decision
 and deployment rooms 0..2. Node/beam/action bounds remain 256/8/12, and the whole
 battle stops at 256 decisions. Unsupported candidate reasons remain visible.
 Existing live-advisor defaults are unchanged. Output files must be new.
+
+`verify-offline-plan` independently replays every decision's entire forecast
+as well as its consumed successor. It requires the consumed action to equal
+the first forecast step, valid action/EndTurn pairs, no steps after a terminal
+outcome, matching final states/RNG and an immutable root. This also accepts
+the existing one-step `policy-battle`/`freeze-actions` artifacts. A verified
+model victory still requires fresh native execution; .NET and Unity can select
+different routes under the same soft time budget.
+
+Focused 2026-10-24 validation from the unchanged Fragile adaptive-budget-loss
+root completes a model victory in 54 inputs/Pyre2: seven searches, 31 ordinary
+and sixteen winning continuations, zero unsupported reasons. Planning plus
+full independent verification takes 91.34 seconds on this host. All 54 complete
+forecasts/successors and the immutable root pass; an altered forecast Energy
+is rejected even though the consumed route is unchanged. The old 44-input
+Angel Duo fixed-policy artifact also passes the stronger verifier as a loss.
+These are local observations, not a speed guarantee or new native coverage.
 
 The optional `--tactical` argument adds a deterministic long-horizon seed before
 the existing strength/fixed-policy/beam seeds. It preserves tower attack by
