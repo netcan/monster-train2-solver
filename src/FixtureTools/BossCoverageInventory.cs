@@ -56,7 +56,8 @@ internal static class BossCoverageInventory
                 .SelectMany(effect => effect.GetProperty("Triggers").EnumerateArray())
                 .SelectMany(trigger => trigger.GetProperty("Effects").EnumerateArray().Select(effect =>
                     Text(trigger, "Kind") + ":" + Text(effect, "Type") + ":" + effect.GetProperty("Int").GetInt32())).ToArray();
-            tsv.AppendLine($"{name}\t{boss}\t{gate}\t{string.Join(';', growth)}\t{entry.Battles.Count}\t{entry.Pairs.Count}\t{string.Join(';', entry.Pairs)}");
+            string pairSources = entry.Pairs.Count == 0 ? "-" : string.Join(';', entry.Pairs);
+            tsv.AppendLine($"{name}\t{boss}\t{gate}\t{string.Join(';', growth)}\t{entry.Battles.Count}\t{entry.Pairs.Count}\t{pairSources}");
             table.AppendLine($"| {name} | {gate} | {entry.Battles.Count} | {entry.Pairs.Count} |");
         }
         int allowed = scenarios.Count(row => OuterBossDefinitions.Supports(Text(row, "OuterBoss")));

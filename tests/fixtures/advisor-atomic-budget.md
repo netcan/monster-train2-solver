@@ -24,5 +24,10 @@ controlled delayed evaluator to reproduce the deadline independently of host
 speed. It verifies a complete first-turn forecast, its independent replay,
 unchanged native root, strict rejection, a one-node hard limit and cancellation
 during the first candidate. Existing Fragile shorter-horizon controls are checked
-separately. A fresh complete player run/replay remains required for runtime
-acceptance of this change.
+separately. Runtime acceptance now also passes in fresh complete Loop/Resolve
+player source `full-battle-units-spells-and-junk-20261023-175319-4a01cfb1` and
+frozen replay `full-battle-units-spells-and-junk-20261023-180641-b79a4682`.
+Both complete49 inputs/9 EndTurns with zero final failure counters. The source
+publishes51 recommendations, each with a mandatory fresh-root check; complete
+forecasts/state/RNG and actual UI pass the independent player-pair checker.
+Both are losses, not a victory claim. See `angel-duo-variants.md`.

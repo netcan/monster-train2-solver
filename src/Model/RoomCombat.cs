@@ -1421,10 +1421,13 @@ namespace MonsterTrain2Poju.Model
                             bool duoLoop = unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant1_LoopAttack" && trigger.Kind == "OnTrainRoomLoop" &&
                                 effect.Value == 8 && effect.Action is { Target: "Tower", AllowPlayer: true, AllowEnemy: true } &&
                                 effect.Action.Filters?.Subtype == "SubtypesData_EntropicAngel";
+                            bool duoRevenge = unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant3_RevengeAttack" && trigger.Kind == "OnHit" &&
+                                effect.Value == 1 && effect.Action is { Target: "Tower", AllowPlayer: true, AllowEnemy: true } &&
+                                effect.Action.Filters?.Subtype == "SubtypesData_EntropicAngel";
                             if (unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 || unit.Modifiers == null ||
                                 effect.Action is not { Type: "BuffAttack", Range: null } buff ||
                                 buff.Target is not ("Self" or "Room" or "Tower") || buff.Value != effect.Value || buff.UseCardTraits ||
-                                buff.Target != "Self" && (!buff.AllowEnemy || buff.AllowPlayer && !duoSlay && !duoLoop))
+                                buff.Target != "Self" && (!buff.AllowEnemy || buff.AllowPlayer && !duoSlay && !duoLoop && !duoRevenge))
                                 return "Triggered attack buffs require a captured fixed enemy self/room/tower buff without parent-card traits.";
                             string? buffFilter = buff.Target == "Self" ? null : buff.Filters?.Validate();
                             if (buffFilter != null) return buffFilter;
@@ -5159,7 +5162,8 @@ namespace MonsterTrain2Poju.Model
                     string? healthError = TriggeredHealthModel.Validate(effect);
                     if (healthError != null) { unsupportedReason = healthError; return false; }
                     bool duoHealth = (actor.Source.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" && amount == 30 ||
-                        actor.Source.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" && amount == 60) &&
+                        actor.Source.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" && amount == 60 ||
+                        actor.Source.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth" && amount == 50) &&
                         action.Type == "BuffHealth" && action.Target == "Tower" &&
                         action.Lifetime == "TemporaryUntilEndOfBattle" && action.Filters?.Subtype == "SubtypesData_SavageAngel";
                     if (targets.UnitIds.Any(id => units.All(unit => unit.Source.Id != id) ||

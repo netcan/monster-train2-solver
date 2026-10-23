@@ -40,5 +40,51 @@ Archives:
 | outer-boss-birth-calibration-angel-duo-loop-resolve.mt2f | 33422 | 3580 | c9da87ea4254b86b2e0941ee227400863b3078732ab02dde878460117eceeab5 |
 
 Focused checks: `--angel-duo-loop-resolve-only` and
-`--angel-duo-loop-resolve-birth-only`. Actual player advice and independent frozen
-replay remain separate; the third Revenge/Harvest variant remains guarded.
+`--angel-duo-loop-resolve-birth-only`.
+
+Actual player acceptance now also passes in the same explicitly selected original
+scenario. Source `full-battle-units-spells-and-junk-20261023-175319-4a01cfb1` and
+fresh frozen replay `full-battle-units-spells-and-junk-20261023-180641-b79a4682`
+both exited normally (799.19s/495.95s), retained protected files and finished with
+all four failure counters zero. Both are losses. Each has49 inputs,40 card/ability
+plays,9 EndTurns,81 room stages and18 train stages. The source published51 player
+recommendations with51 mandatory fresh-root checks,428 pure captures and zero
+purity/publication failures. The replay executes those frozen inputs; it does not
+claim new advice publications. Original checkpoint history, every root/successor,
+full forecast/state/RNG and actual player UI pass the dedicated pair checker.
+The2-turn/1500ms soft budget includes the atomic first-turn completion fix.
+
+| Archive | Bytes | Nodes | SHA256 |
+| --- | ---: | ---: | --- |
+| full-battle-player-angel-duo-loop-resolve-search.mt2f | 138751 | 20873 | 4342fa60ebd22faca90e79ed31c3089e16a22a9f7f27635d2c912252c075a4f4 |
+| full-battle-player-angel-duo-loop-resolve-replay.mt2f | 134480 | 20610 | 3c6fe09f52d3b3021ec185b6353dd31c87a48a0d52a68b5dd3bfe8da034b2d33 |
+
+Focused pair: `--player-angel-duo-loop-resolve-pair-only`.
+
+## Revenge Attack / Harvest Health
+
+The same five-win checkpoint explicitly selects the original
+`Level6AngelDuo_RevengeAttackHarvestHealth` scenario without asset/RNG changes.
+Source `full-battle-no-cards-20261023-175329-3091e16d` exited normally in72.67s,
+protected files unchanged, all four failure counters zero. It is a six-EndTurn
+no-card loss with51 room stages and12 train stages. Original paired births,
+full state/RNG and sixteen independent immutable no-card chains pass. It has no
+positive growth callbacks and is not used as growth evidence.
+
+Unmodified fixed-policy source
+`full-battle-units-spells-and-junk-20261023-175953-16a6ea54` exited normally in
+342.32s, protected files unchanged and all four counters zero. Native Revenge
+grants the Entropic companion ten +1 attack increments, four across floors;
+the Savage source is excluded. Full native actions/turns/rooms/train state/RNG
+are checked separately from the no-card full-chain branches. This source has no
+Harvest witness. The third variant's player entry remains guarded pending
+positive Harvest calibration and its own actual advice/replay pair.
+
+| Archive | Bytes | Nodes | SHA256 |
+| --- | ---: | ---: | --- |
+| full-battle-angel-duo-revenge-baseline.mt2f | 57889 | 7573 | 5f54d63ad1dc17d4b2389fca9401a0016da7f7d56d684f667d56eae61f3a33df |
+| outer-boss-birth-calibration-angel-duo-revenge-harvest.mt2f | 33587 | 3574 | 82902be98b33ed0f9a16e8d3ec627fa4825ac6d45db8e92df15359e0c3443d73 |
+| full-battle-angel-duo-revenge-native-spells.mt2f | 101757 | 16413 | 464a03ca70d8e29d4d3773131bc3e6ac602f7b5ca6eede3977e91aad7bb14a2b |
+
+Focused checks: `--angel-duo-revenge-baseline-only`,
+`--angel-duo-revenge-harvest-birth-only`, `--angel-duo-revenge-only`.

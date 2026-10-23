@@ -37,19 +37,22 @@ internal static class NativeCovenantCampaignChecks
             (source.GetProperty("NativeWon").GetBoolean() ? "victory" : "bounded loss") + ".");
     }
 
-    internal static void AngelDuoVariantPair(FixtureValue source, FixtureValue replay)
+    internal static void AngelDuoVariantPair(FixtureValue source, FixtureValue replay, string variant = "LoopResolve")
     {
+        string asset = variant == "LoopResolve" ? "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" :
+            variant == "RevengeHarvest" ? "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth" :
+                throw new InvalidOperationException("Unknown selected Angel Duo player variant.");
         foreach (FixtureValue fixture in new[] { source, replay })
         {
-            AngelDuoVariantChecks.Input(fixture);
+            AngelDuoVariantChecks.Input(fixture, variant);
             var initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
             Require(initial.Spawn.QueuedOuterBoss?.Actor.Unit is { Health: 1250, BaseAttack: 11 } outer &&
-                outer.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" &&
+                outer.AssetKey == asset &&
                 initial.Spawn.Train.Context!.QueryFrame!.ForcedRelentless!.RemainingTurns == 0,
                 "Selected Angel Duo player input changed original queued health, attack or turn counters.");
         }
         Pair(source, replay, 2, 5, requireVictory: false, selectedAngelDuo: true);
-        Console.WriteLine("PLAYER-ANGEL-DUO-LOOP-RESOLVE PASS: explicit original variant selection, prior five-win native history, original bosses, actual player advice/UI and independent full-state/RNG replay.");
+        Console.WriteLine($"PLAYER-ANGEL-DUO-{variant} PASS: explicit original variant selection, prior five-win native history, original bosses, actual player advice/UI and independent full-state/RNG replay.");
     }
 
     private static void Pair(FixtureValue source, FixtureValue replay, int level, int distance, bool requireVictory, bool selectedAngelDuo = false)

@@ -7,7 +7,7 @@ param(
     [string] $InputProfile = '',
     [ValidateRange(1, 7)][int] $BattleDistance = 1,
     [switch] $AngelDuo,
-    [ValidateSet('', 'LoopResolve')][string] $AngelDuoVariant = '',
+    [ValidateSet('', 'LoopResolve', 'RevengeHarvest')][string] $AngelDuoVariant = '',
     [ValidateRange(2, 16)][int] $PlannerHorizon = 3,
     [ValidateRange(100, 30000)][int] $PlannerTimeLimitMs = 3000,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 900,
@@ -96,7 +96,11 @@ foreach ($level in $Rank) {
         $arguments = switch ($Battle) {
             'Campaign' {
                 if ($AngelDuo) {
-                    $check = if ($AngelDuoVariant) { '--player-angel-duo-loop-resolve-pair-only' } else { '--player-angel-duo-pair-only' }
+                    $check = switch ($AngelDuoVariant) {
+                        'LoopResolve' { '--player-angel-duo-loop-resolve-pair-only' }
+                        'RevengeHarvest' { '--player-angel-duo-revenge-harvest-pair-only' }
+                        default { '--player-angel-duo-pair-only' }
+                    }
                     @($check, $source, $replay)
                 } else {
                     @('--player-native-covenant-campaign-pair-only', $source, $replay, "$level", "$BattleDistance")
@@ -123,6 +127,7 @@ foreach ($level in $Rank) {
         }
         if ($Battle -eq 'Campaign') {
             $pair | Add-Member -NotePropertyName InputProfile -NotePropertyValue $InputProfile
+            if ($AngelDuoVariant) { $pair | Add-Member -NotePropertyName AngelDuoVariant -NotePropertyValue $AngelDuoVariant }
             $pair | Add-Member -NotePropertyName InputSaveSHA256 -NotePropertyValue $inputHash
             $pair | Add-Member -NotePropertyName BattleDistance -NotePropertyValue $BattleDistance
         }
