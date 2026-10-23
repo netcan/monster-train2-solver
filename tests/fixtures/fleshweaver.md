@@ -68,6 +68,37 @@ The first player diagnostics exposed these cache/focus combinations; their 23
 actual inputs now pass focused successor checks, as do 73 earlier Arkion/Cael
 player inputs. Original failed plans and incomplete battles remain unaccepted.
 
-Player capture now recognizes exactly the three original Fleshweaver identities;
-payload validation still applies. Actual player-source/fresh-replay pairs remain
-in progress and are not counted as accepted player evidence yet.
+Player capture recognizes exactly the three original Fleshweaver identities;
+payload validation still applies. All three actual player-source/fresh-replay
+pairs now pass their dedicated `--player-fleshweaver-pair-only` checks. All six
+battles win with the same final Pyre health across each independent pair.
+Every executed input, root, successor, complete forecast and RNG matches, and
+the actual player panel/UI checks pass. Every process exits normally, preserves
+protected originals and records zero capture/mismatch/unsupported/pending
+counters. The original checkpoint hash above is verified unchanged afterward.
+
+| Variant | Inputs / plays or abilities / EndTurns | Rooms / train phases per battle | Final Pyre | Source / replay seconds | Source publications / captures |
+| --- | --- | --- | ---: | --- | --- |
+| MoreMass | 43 / 34 / 9 | 73 / 17 | 43 | 654.88 / 412.63 | 45 / 379 |
+| Corruption | 40 / 31 / 9 | 72 / 17 | 29 | 639.17 / 405.73 | 42 / 354 |
+| Spike | 42 / 33 / 9 | 72 / 17 | 32 | 655.33 / 397.30 | 44 / 369 |
+
+All 131 source publications have fresh complete-root checks; all 1,102 captures
+have zero purity/publication failures. The source runs use a two-turn horizon
+and a 1500ms soft search budget with tactical seeding. Fresh replay processes
+execute the frozen advice without searching again. These are selected original
+Covenant2 Ring3 scenarios after two native victories; they do not establish
+natural-route or higher-Covenant victories.
+
+| Variant | Accepted source suffix | Accepted fresh replay suffix |
+| --- | --- | --- |
+| MoreMass | `205625-375449d4` | `210722-aed78e59` |
+| Corruption | `205625-11918303` | `210707-ed49691f` |
+| Spike | `205625-bd5ba4d4` | `210723-6ab23e35` |
+
+All six profiles use the prefix `full-battle-units-spells-and-junk-20261023-`.
+Their registered archives are
+`full-battle-player-fleshweaver-{mass,corruption,spikes}-{search,replay}.mt2f`;
+`manifest.tsv` retains their exact source names, byte counts, hashes and nodes.
+The existing triggered-summon fixture also passes its five focused native
+EndTurn checks after the cache/focus corrections. No full regression is rerun.
