@@ -16,6 +16,12 @@ PostCombat health60 / OnTrainRoomLoop attack8; CardSpellPlayed health30 /
 OnKill attack3; OnAnyHeroDeathOnFloor health50 / OnHit attack1. These signatures
 identify runtime work; catalog presence alone does not enable a new player route.
 
+`scripts/Get-BossCoverageInventory.ps1` compares all fifteen ordinary base-game
+Ring3/6/8 scenarios against the current model identity gate and curated native
+battle/player-pair metadata. It generates `tests/fixtures/boss-coverage.md` and
+`boss-inventory.tsv`; `-Check -SkipBuild` verifies their freshness without native
+games or a battle regression. Other boss systems keep separate denominators.
+
 ## Card definition catalog
 
 `card-catalog.mt2f` is a definition inventory, separate from the curated battle

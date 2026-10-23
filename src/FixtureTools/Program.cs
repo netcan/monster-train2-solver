@@ -39,6 +39,10 @@ else if (args.Length == 3 && args[0] == "verify-offline-native")
 {
     OfflineBattleSearch.VerifyNative(args[1], args[2]);
 }
+else if (args.Length is 2 or 3 && args[0] == "boss-inventory" && (args.Length == 2 || args[2] == "--check"))
+{
+    BossCoverageInventory.Run(args[1], args.Length == 3);
+}
 else if (args.Length is 2 or 3 && args[0] == "card-inventory" && (args.Length == 2 || args[2] == "--check"))
 {
     CardCoverageInventory.Run(args[1], args.Length == 3);
