@@ -40,3 +40,9 @@ seed42 的自然腐化者路线现也完成原生八战 Standard 结算。其
 `campaign-completed-corrupter.zip` 已包含 `AfterEndGame=true` 的快照，
 结果同样为额外薪火之心 0/9、真终局未解锁。该档案的全部 33 个载荷恢复校验
 通过；它与表中 seed424242 分支分别保留，不合并两个隔离分支的进度。
+
+seed424244 的自然 Fragile 路线也已完成原生八战 Standard 结算，最终战使用
+三回合／3000ms、底层偏好的真实玩家建议及独立回放。完成档案
+`campaign-completed-fragile.zip` 的 26 个载荷恢复校验通过；其
+[通关后原生快照](../tests/fixtures/native-story-progression-after-fragile.json)
+仍为额外薪火之心 0/9、剧情索引 0、真终局未解锁。三份标准通关档案独立保留。

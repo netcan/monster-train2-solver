@@ -1,0 +1,12 @@
+{
+  "Schema": 1,
+  "InputProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\restored-campaign-ring8-1627c05d",
+  "InputSaveSHA256": "07884DC51C1354EE4668E277C87E9B733CD8156D49625D7F41848B5D3DA5D449",
+  "SourceProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-000704-1b1412d8",
+  "ReplayProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\campaign-ring9-20261024-001925-f3ae7fc9",
+  "SourceSha256": "bceabe57c20d717ef562f0867f0f75ed3b6657c054e7ebf89dfc448d7e72d246",
+  "ReplaySha256": "2252f48068d9f419e02fdfc63afffcb30885028ac75c7f7e14b38a6613fe3f5d",
+  "NativeCampaignWon": true,
+  "NativeVictoryType": "Standard",
+  "Passed": true
+}

@@ -20,6 +20,6 @@ The gate is an identity filter. Allowed definitions can still reject uncalibrate
 | Level6BattleEaterLifesteal | allowed | 3 | 1 |
 | Level8FinalBossBuffer | allowed | 19 | 7 |
 | Level8FinalBossCorrupter | allowed | 18 | 7 |
-| Level8FinalBossMeleeWeakness | allowed | 18 | 7 |
+| Level8FinalBossMeleeWeakness | allowed | 20 | 8 |
 
 The TSV retains native identities, growth signatures and exact player-source archives. True-final-boss routing, Titan Trial substitutions, Endless/test scenarios and Soul Savior definitions are separate and are not included in this denominator. Card/relic logbook completion does not establish boss advice coverage.

@@ -102,6 +102,13 @@ if (args.Length == 2 && args[0] is "--angel-duo-revenge-harvest-only" or "--ange
     return;
 }
 
+if (args.Length == 3 && args[0] == "--ordinary-advice-budget-recovery-only")
+{
+    using var failure = ModelJson.ReadFixture(args[1]);
+    using var source = ModelJson.ReadFixture(args[2]);
+    OrdinaryAdviceBudgetChecks.NativeRecovery(failure.RootElement, source.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--ordinary-advice-budget-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5095,7 +5102,7 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-stewards-q
         OrdinaryAdviceChecks.NativePair(source.RootElement, replay.RootElement);
     }
 }
-foreach (string prefix in new[] { "natural-ring7-short-budget", "state-key" })
+foreach (string prefix in new[] { "natural-ring7-short-budget", "state-key", "boss-fragile-short-budget" })
 {
     string? sourcePath = args.FirstOrDefault(path => path.EndsWith($"full-battle-player-{prefix}-search.mt2f", StringComparison.OrdinalIgnoreCase));
     string? replayPath = args.FirstOrDefault(path => path.EndsWith($"full-battle-player-{prefix}-replay.mt2f", StringComparison.OrdinalIgnoreCase));
@@ -5103,6 +5110,16 @@ foreach (string prefix in new[] { "natural-ring7-short-budget", "state-key" })
     using var source = ModelJson.ReadFixture(sourcePath);
     using var replay = ModelJson.ReadFixture(replayPath);
     if (prefix == "state-key") BattleStateKeyChecks.NativePair(source.RootElement, replay.RootElement);
+    else if (prefix == "boss-fragile-short-budget")
+    {
+        PlayerOuterBossChecks.FragileShortBudgetPair(source.RootElement, replay.RootElement);
+        string? failurePath = args.FirstOrDefault(path => path.EndsWith("advisor-ordinary-budget-failure.mt2f", StringComparison.OrdinalIgnoreCase));
+        if (failurePath != null)
+        {
+            using var failure = ModelJson.ReadFixture(failurePath);
+            OrdinaryAdviceBudgetChecks.NativeRecovery(failure.RootElement, source.RootElement);
+        }
+    }
     else NaturalRing7TacticsChecks.DefaultWinningPair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-natural-ring7-copy-on-play", StringComparison.OrdinalIgnoreCase)))

@@ -1,5 +1,9 @@
 # Natural Fragile winning player acceptance
 
+The later [three-turn/3000ms native pair](player-fragile-short-budget.md) also
+wins with bottom preference and no extra tactical seed, then completes native
+Standard settlement. This page retains the original longer-budget evidence.
+
 `full-battle-player-boss-fragile-{search,replay}.mt2f` retain source
 `full-battle-units-spells-and-junk-20261023-034629-462214c1` and fresh replay
 `full-battle-units-spells-and-junk-20261023-040317-cc91e0af`.

@@ -66,8 +66,9 @@ search/publication, ordinary continuation and floor browsing in Unity/Mono.
 
 The original default losses remain registered. This closes the default-budget
 native-victory gap for this specific natural Ring7 checkpoint, not every
-advanced deck, boss or Covenant combination. The existing natural Fragile
-victory still uses its explicit longer budget and bottom deployment.
+advanced deck, boss or Covenant combination. Natural Fragile now also has a
+[separate short-budget native victory](player-fragile-short-budget.md) with
+bottom preference; its default top-floor quality remains open.
 
 Focused gate: `--player-natural-ring7-default-win-pair-only` followed by the
 two archives. `Check-DefaultAdvice.ps1` selects Strategy, Keys or Native

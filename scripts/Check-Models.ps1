@@ -33,6 +33,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-player-natural-ring7-ordinary-search.mt2f', 'full-battle-player-natural-ring7-ordinary-replay.mt2f',
     'full-battle-player-state-key-search.mt2f', 'full-battle-player-state-key-replay.mt2f',
     'full-battle-player-natural-ring7-short-budget-search.mt2f', 'full-battle-player-natural-ring7-short-budget-replay.mt2f',
+    'full-battle-player-boss-fragile-short-budget-search.mt2f', 'full-battle-player-boss-fragile-short-budget-replay.mt2f',
     'full-battle-player-arkion-push-search.mt2f',
     'full-battle-player-arkion-push-replay.mt2f',
     'full-battle-player-cael-lifesteal-search.mt2f',

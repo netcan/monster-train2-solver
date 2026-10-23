@@ -1,4 +1,14 @@
-# Player Mod validation · 2026-10-23
+# Player Mod validation · 2026-10-24
+
+Natural Fragile now passes a three-turn/3000ms, bottom-preference actual-player
+source and independent native replay, with the extra tactical option off.
+Both win at Pyre2 after 54 inputs; all complete forecasts/state/RNG and seventeen
+train phases per process match, normal exits and four zero failure counters.
+The ordinary-prefix timeout is fixed at the exact original native failure root.
+Replay also completes original eight-battle Standard settlement; all 26 bundled
+payloads pass fresh isolated restoration. See
+[short-budget Fragile acceptance](../tests/fixtures/player-fragile-short-budget.md).
+The global top-floor default and its remaining Fragile quality gap are unchanged.
 
 Natural Ring7 also has a new actual-default player victory and independent
 native replay: 60 inputs/ten EndTurns, Pyre62, all complete forecasts/state/RNG,

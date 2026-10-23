@@ -2,9 +2,9 @@
 [CmdletBinding()]
 param(
     [ValidateSet('NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
-        'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
+        'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileShortBudget', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
     [string[]] $Case = @('NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
-        'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
+        'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileShortBudget', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -21,6 +21,7 @@ foreach ($name in $Case) {
         'OuterBoss' { 'player-boss' }
         'OuterBossRolling' { 'player-boss-rolling' }
         'Fragile' { 'player-boss-fragile' }
+        'FragileShortBudget' { 'player-boss-fragile-short-budget' }
         'FragileBounded' { 'player-boss-fragile-bounded' }
         'Corrupter' { 'player-boss-corrupter' }
         'CorrupterBounded' { 'player-boss-corrupter-bounded' }
@@ -63,7 +64,10 @@ foreach ($name in $Case) {
     }
     $search = Join-Path $workspace "tests/fixtures/full-battle-$prefix-search.mt2f"
     $replay = Join-Path $workspace "tests/fixtures/full-battle-$prefix-replay.mt2f"
-    foreach ($path in @($search, $replay)) {
+    $archives = @($search, $replay)
+    $budgetFailure = Join-Path $workspace 'tests/fixtures/advisor-ordinary-budget-failure.mt2f'
+    if ($name -eq 'FragileShortBudget') { $archives += $budgetFailure }
+    foreach ($path in $archives) {
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Missing player acceptance archive: $path" }
         $rows = @($manifest | Where-Object archive -CEQ ([IO.Path]::GetFileName($path)))
         if ($rows.Count -ne 1 -or (Get-Item -LiteralPath $path).Length -ne [long]$rows[0].archive_bytes -or
@@ -82,6 +86,10 @@ foreach ($name in $Case) {
     if ($name -eq 'Fragile') {
         dotnet $checker --tactical-shift-only $search
         if ($LASTEXITCODE -ne 0) { throw 'Natural Fragile tactical and budget regression failed.' }
+    }
+    if ($name -eq 'FragileShortBudget') {
+        dotnet $checker --ordinary-advice-budget-recovery-only $budgetFailure $search
+        if ($LASTEXITCODE -ne 0) { throw 'Ordinary advice native timeout recovery failed.' }
     }
 }
 Write-Output "PLAYER-ADVISOR-FOCUSED PASS cases=$($Case -join ','); no full regression executed."

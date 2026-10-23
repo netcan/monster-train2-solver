@@ -49,7 +49,8 @@ preferred room changes to 0: 54 inputs, seven searches and Pyre2. Two runs
 pass independent verification of every forecast and the complete consumed
 route. They use 219/208 nodes (host timing can change the exact count), three
 turns/3000ms, same-turn reuse and no extra tactical seed. This is model
-evidence; its fresh native player source/replay acceptance is separate.
+evidence; its subsequent [native pair and Standard settlement](player-fragile-short-budget.md)
+now pass independently with the same short-budget configuration.
 
 The focused winning gate now rejects a replay-correct loss:
 
@@ -68,9 +69,9 @@ continuation checks. It rejects the old twelve-turn/30000ms winning pair.
 
 These commands diagnose model strategy, not live Unity scheduling or native
 acceptance. A successful diagnostic exit means replay integrity passed;
-read the printed outcome separately. This gap needs a default-budget winning
-model route followed by a fresh native player source/replay pair. The
-accepted Ring7 default victory and Fragile long-budget victory remain
+read the printed outcome separately. The bottom-preference short-budget native
+pair is now accepted separately; default top-preference Fragile quality remains
+open. The accepted Ring7 default victory and Fragile long-budget victory remain
 separate evidence. No full regression or Mac build is required for diagnosis.
 
 ## Ordinary-prefix timeout found in native play
@@ -91,5 +92,9 @@ three-second deadline into a bound on total response time.
 `--ordinary-advice-budget-only` reproduces expiration after one and two card
 choices and verifies complete forecasts by independent full-state/RNG replay.
 Strict-horizon, hard-node, cancellation and root-immutability controls pass.
-The fixture is diagnostic evidence from an incomplete native run; a fresh
-native run remains necessary to establish end-to-end usability and victory.
+The fixture remains diagnostic evidence from an incomplete native run. A fresh
+native source/replay pair subsequently wins at Pyre2 after 54 inputs and
+continues through original eight-battle Standard settlement. Its turn8 root
+equals the failed root in every state field and RNG; the fresh six-node search
+publishes five legal actions plus one complete EndTurn, then retains the exact
+winning suffix. See [short-budget native acceptance](player-fragile-short-budget.md).
