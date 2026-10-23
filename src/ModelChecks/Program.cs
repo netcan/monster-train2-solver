@@ -5014,6 +5014,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss
     using var fixture = ModelJson.ReadFixture(path);
     ArkionPushChecks.Birth(fixture.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-arkion-push-search.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-arkion-push-replay.mt2f"));
+    NativeCovenantCampaignChecks.ArkionPushPair(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-arkion-pyre.mt2f"))
 {
     using var fixture = ModelJson.ReadFixture(path);

@@ -1,5 +1,5 @@
 scenario	outer_boss	definition_gate	growth_signature	curated_battles	curated_player_pairs	player_sources
-Level3BattleHeavyHitter_PushAttack	Boss_Level3_Arkion_PushAttack	allowed		2	0	-
+Level3BattleHeavyHitter_PushAttack	Boss_Level3_Arkion_PushAttack	allowed		4	1	full-battle-player-arkion-push-search.mt2f
 Level3BattleHeavyHitter_PyreDamage	Boss_Level3_Arkion_DamagePyre	allowed		3	1	full-battle-player-arkion-pyre-search.mt2f
 Level3BattleHeavyHitter_SiphonRage	Boss_Level3_Arkion_SiphonRage	allowed	OnAnyHeroDeathOnFloor:CardEffectAddStatusEffect:0	4	1	full-battle-player-arkion-rage-search.mt2f
 Level3ImmortalMass_Corruption	Boss_Level3_Fleshweaver_Corruption	guarded		0	0	-
@@ -10,7 +10,7 @@ Level6AngelDuo_RallyAttackIncantHealth	Boss_Level6_AngelDuo_Entropic_Variant2_In
 Level6AngelDuo_RevengeAttackHarvestHealth	Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth	allowed	OnAnyHeroDeathOnFloor:CardEffectBuffMaxHealth:50;OnHit:CardEffectBuffDamage:1	5	1	full-battle-player-angel-duo-revenge-harvest-search.mt2f
 Level6BattleEaterAtkHP	Boss_Level6_Cael_AtkHP	allowed		3	1	full-battle-player-cael-atkhp-search.mt2f
 Level6BattleEaterDamageShield	Boss_Level6_Cael_DamageShield	allowed		3	1	full-battle-player-cael-damage-shield-search.mt2f
-Level6BattleEaterLifesteal	Boss_Level6_Cael_Lifesteal	allowed		1	0	-
+Level6BattleEaterLifesteal	Boss_Level6_Cael_Lifesteal	allowed		3	1	full-battle-player-cael-lifesteal-search.mt2f
 Level8FinalBossBuffer	Boss_Level8_AllyBuffer	allowed		19	7	full-battle-player-boss-rolling-search.mt2f;full-battle-player-boss-search.mt2f;full-battle-player-boss-trial-allybuffer-bounded-search.mt2f;full-battle-player-covenant-outer-boss-allybuffer-00-01-search.mt2f;full-battle-player-covenant-outer-boss-allybuffer-01-search.mt2f;full-battle-player-native-covenant-outer-boss-allybuffer-02-search.mt2f;full-battle-player-native-covenant-outer-boss-allybuffer-10-search.mt2f
 Level8FinalBossCorrupter	Boss_Level8_Corrupter	allowed		18	7	full-battle-player-boss-corrupter-bounded-search.mt2f;full-battle-player-boss-corrupter-search.mt2f;full-battle-player-boss-trial-corrupter-bounded-search.mt2f;full-battle-player-covenant-outer-boss-corrupter-00-01-search.mt2f;full-battle-player-covenant-outer-boss-corrupter-01-search.mt2f;full-battle-player-native-covenant-outer-boss-corrupter-02-search.mt2f;full-battle-player-native-covenant-outer-boss-corrupter-10-search.mt2f
 Level8FinalBossMeleeWeakness	Boss_Level8_Fragile	allowed		18	7	full-battle-player-boss-fragile-bounded-search.mt2f;full-battle-player-boss-fragile-search.mt2f;full-battle-player-boss-trial-fragile-bounded-search.mt2f;full-battle-player-covenant-outer-boss-fragile-00-01-search.mt2f;full-battle-player-covenant-outer-boss-fragile-01-search.mt2f;full-battle-player-native-covenant-outer-boss-fragile-02-search.mt2f;full-battle-player-native-covenant-outer-boss-fragile-10-search.mt2f

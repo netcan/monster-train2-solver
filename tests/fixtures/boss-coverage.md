@@ -1,12 +1,12 @@
 # Original outer-boss coverage
 
-The frozen complete native catalog contains 15 ordinary base-game outer-boss scenarios at Rings3/6/8. The model definition gate allows 12; 10 scenarios have curated player-source/replay metadata.
+The frozen complete native catalog contains 15 ordinary base-game outer-boss scenarios at Rings3/6/8. The model definition gate allows 12; 12 scenarios have curated player-source/replay metadata.
 
 The gate is an identity filter. Allowed definitions can still reject uncalibrated payloads or owners. Battle counts require settled terminal effects and all four failure counters zero. Pair counts additionally require registered source/replay archives, actual player assembly metadata and a positive source publication count. This inventory reads prior curated evidence; it does not rerun native play or independent forecast checks. Controlled selections and losses retain their original fixture boundaries and do not establish natural victories.
 
 | Original scenario | Model definition gate | Curated battles | Curated player pairs |
 | --- | --- | ---: | ---: |
-| Level3BattleHeavyHitter_PushAttack | allowed | 2 | 0 |
+| Level3BattleHeavyHitter_PushAttack | allowed | 4 | 1 |
 | Level3BattleHeavyHitter_PyreDamage | allowed | 3 | 1 |
 | Level3BattleHeavyHitter_SiphonRage | allowed | 4 | 1 |
 | Level3ImmortalMass_Corruption | guarded | 0 | 0 |
@@ -17,7 +17,7 @@ The gate is an identity filter. Allowed definitions can still reject uncalibrate
 | Level6AngelDuo_RevengeAttackHarvestHealth | allowed | 5 | 1 |
 | Level6BattleEaterAtkHP | allowed | 3 | 1 |
 | Level6BattleEaterDamageShield | allowed | 3 | 1 |
-| Level6BattleEaterLifesteal | allowed | 1 | 0 |
+| Level6BattleEaterLifesteal | allowed | 3 | 1 |
 | Level8FinalBossBuffer | allowed | 19 | 7 |
 | Level8FinalBossCorrupter | allowed | 18 | 7 |
 | Level8FinalBossMeleeWeakness | allowed | 18 | 7 |

@@ -1295,8 +1295,6 @@ namespace MonsterTrain2Poju.Model
                                     AllowEnemy: true, AllowPlayer: true, UseCardTraits: false } && effect.Action.Statuses.Count == 0;
                             if (state.Context?.SpawnPoints == null || !self && !arkion)
                                 return "Triggered rearrangement requires its original self/front or Arkion attacked-target/back payload and physical positions.";
-                            if (state.Units.Any(actor => actor.Triggers.Any(trigger => trigger.Kind is "OnShift" or "OnSentry")))
-                                return "Triggered floor rearrangement with movement callbacks is not calibrated.";
                             continue;
                         }
                         if (effect.Type == "CardEffectDrawType")
@@ -5073,14 +5071,31 @@ namespace MonsterTrain2Poju.Model
                 if (action.Type == "FloorRearrange")
                 {
                     if (targets.UnitIds.Count == 0) return true;
+                    WorkingUnit target = units.Single(unit => unit.Source.Id == targets.UnitIds[0]);
+                    var shifted = units.Where(unit => unit.Alive && unit.InRoom && unit.Source.Team == target.Source.Team &&
+                        context!.SpawnPoints!.Units.Single(point => point.UnitId == unit.Source.Id).OuterBoss != true).ToArray();
+                    int from = Array.FindIndex(shifted, unit => unit == target);
+                    int goal = action.Value == 0 ? 0 : shifted.Length - 1;
                     RoomCombatResult moved = CardSpellModel.ApplyRearrangement(CurrentRoom(), action, targets.UnitIds[0]);
                     if (!moved.Supported) { unsupportedReason = moved.UnsupportedReason; return false; }
                     MergeSummon(moved);
-                    WorkingUnit target = units.Single(unit => unit.Source.Id == targets.UnitIds[0]);
                     // Native centers both teams before returning, including dead
                     // occupants retained by this exchange but absent from CurrentRoom.
-                    if (!target.Has("immobile") && context!.SpawnPoints!.Units.Single(unit => unit.UnitId == target.Source.Id).OuterBoss != true &&
-                        !CenterAfterSummon()) return false;
+                    if (!target.Has("immobile") && context!.SpawnPoints!.Units.Single(unit => unit.UnitId == target.Source.Id).OuterBoss != true)
+                    {
+                        if (!CenterAfterSummon()) return false;
+                        var moving = new List<WorkingUnit> { target };
+                        int direction = from < goal ? 1 : -1;
+                        for (int at = from; from >= 0 && at != goal; at += direction) moving.Add(shifted[at + direction]);
+                        foreach (WorkingUnit entrant in moving)
+                        {
+                            if (entrant != target || from != goal)
+                                QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, entrant.Freeze(), "OnShift"));
+                            foreach (WorkingUnit guard in units.Where(unit => unit.Alive && unit.InRoom && unit.Source.Team != entrant.Source.Team))
+                                QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, guard.Freeze(), "OnSentry",
+                                    overrideTarget: entrant.Freeze(), paramString: ""));
+                        }
+                    }
                     return UpdateEnchantments();
                 }
                 if (AbilityCooldownModel.IsEffect(action.Type) || action.Type is "RemoveStatus" or "RemoveAllStatusEffects" || AbilityLifecycleModel.IsEffect(action.Type))

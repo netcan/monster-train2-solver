@@ -78,7 +78,7 @@ Each process exits normally, preserves protected originals and records four
 zero failure counters. Every native stage, full policy, mid-battle suffix and
 sixteen independent immutable full chains match complete state/RNG.
 Focused checks are `--arkion-{rage,push}-{birth,baseline,growth}-only`.
-The Push actual player-source/replay pair is still being validated separately.
+The Push actual player-source/replay pair now also passes, as recorded below.
 
 Rage player source `full-battle-units-spells-and-junk-20261023-191122-701b1c19`
 and replay `full-battle-units-spells-and-junk-20261023-192114-a474fc70` both win.
@@ -102,5 +102,23 @@ two-win history and disclosed2-turn/1500ms soft search budget.
 | full-battle-arkion-push-baseline.mt2f | 34702 | 4801 | 659322418a2e24d81fc275b6a29a7b01c73a04c727bf7bdd8235a803b34c4965 |
 | outer-boss-birth-calibration-arkion-push.mt2f | 14020 | 1736 | 4e9956402c187410df18ef55e2e32d555256df07cc79d6750f50ce35218f0db1 |
 | full-battle-arkion-push-native-spells.mt2f | 71599 | 11974 | 4df47ab49d4913eb57f122ef0fbbe098a170463573bbe735aae8da26ef23de79 |
+
+Push source `full-battle-units-spells-and-junk-20261023-193227-208b639c` and
+fresh replay `full-battle-units-spells-and-junk-20261023-194020-5463f741` both win.
+Each executes39 inputs,30 plays and9 EndTurns, with71 room stages and17 train
+phases. All41 source publications have fresh full-root checks;342 captures
+have zero purity/publication failures. Actual UI and every forecast/root/
+successor/RNG match across independent processes. Both exit normally
+(469.65s/264.97s), retain protected originals and record four zero counters.
+The pair uses the same two-win checkpoint and2-turn/1500ms soft search budget.
+Triggered rearrangement now dispatches native OnShift/OnSentry callbacks for
+the original victim and displaced actors, in the observed movement order.
+The earlier source `192545-26f1802f` stopped at the uncalibrated callback guard
+and is retained only as a diagnostic, not accepted evidence.
+
+| Archive | Bytes | Nodes | SHA256 |
+| --- | ---: | ---: | --- |
+| full-battle-player-arkion-push-search.mt2f | 91331 | 14330 | a82951d30b3738e855d094ca0c2a3de593bea47331b1814519bebf73ab48a058 |
+| full-battle-player-arkion-push-replay.mt2f | 88143 | 14116 | 513392861bf31cf05578d3d672bbe34388f2436a872b3398e5c167ab21c4508c |
 
 No arbitrary higher-Covenant or natural-victory claim is made.

@@ -48,7 +48,7 @@ Actual advice/UI and a fresh native frozen replay are separately required:
 -BattleDistance 5 -EarlyOuterBossVariant CaelAtkHP -PlannerHorizon 2
 -PlannerTimeLimitMs 1500 -TimeoutSeconds 1200 -SkipBuild`.
 Substitute `CaelDamageShield` or `CaelLifesteal` for the other two variants.
-AtkHP and DamageShield now have accepted pairs below; Lifesteal remains pending.
+All three variants now have accepted pairs below.
 
 ## Actual AtkHP player pair
 
@@ -82,3 +82,19 @@ originals and record four zero counters. Both lose with the same disclosed
 | --- | ---: | ---: | --- |
 | full-battle-player-cael-damage-shield-search.mt2f | 124203 | 19652 | 5bfa7b47b0decf12905cfa55b18a77169cfea1809c1b8ec9f9d7a8b0f6279305 |
 | full-battle-player-cael-damage-shield-replay.mt2f | 119903 | 19381 | 0d2b46b89c633928422c76451a1093a136a3e30f9953dca6fb2582b2e16b5142 |
+
+## Actual Lifesteal player pair
+
+Source `full-battle-units-spells-and-junk-20261023-192844-680d895b` and fresh
+replay `full-battle-units-spells-and-junk-20261023-193725-36c4cb93` each execute
+34 inputs:28 plays and6 EndTurns, with52 room stages and12 train phases. All36
+source publications have fresh full-root checks;299 captures have zero purity
+or publication failures. Actual UI and every forecast/root/successor/RNG match
+across independent processes. Both exit normally (519.29s/325.52s), preserve
+protected originals and record four zero counters. Both lose at the disclosed
+2-turn/1500ms soft budget, without controlled native damage or boss HP changes.
+
+| Archive | Bytes | Nodes | SHA256 |
+| --- | ---: | ---: | --- |
+| full-battle-player-cael-lifesteal-search.mt2f | 92438 | 14935 | 2e307d7ce6d49765efb4cdbe53fc536a778f0b6db1770d8955d9e2d7b3063c4e |
+| full-battle-player-cael-lifesteal-replay.mt2f | 89105 | 14745 | cb4c13d6fd6c23d318b9266d3e0e3eb630648d53b06008e934f01fea77cf0dd1 |
