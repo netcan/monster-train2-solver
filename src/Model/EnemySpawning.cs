@@ -32,7 +32,7 @@ namespace MonsterTrain2Poju.Model
             checked(Unit.BaseAttack + (BirthStats?.Attack ?? 0)), checked(Unit.Health + (BirthStats?.Health ?? 0)),
             checked(Unit.MaxHealth + (BirthStats?.Health ?? 0)), Unit.CanAttack, false, Unit.EndsBattleOnDeath,
             Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes,
-            modifiers: BirthStats?.Attack is > 0 ? Unit.Modifiers!.WithDamageBuff(checked(Unit.Modifiers.DamageBuff + BirthStats.Attack)) : Unit.Modifiers,
+            modifiers: BirthStats != null && BirthStats.Attack != 0 ? Unit.Modifiers!.WithDamageBuff(checked(Unit.Modifiers.DamageBuff + BirthStats.Attack)) : Unit.Modifiers,
             isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards, nextTriggerId: Unit.NextTriggerId, ability: Unit.Ability, statusDictionary: Unit.StatusDictionary, abilityRules: Unit.AbilityRules, hordeDefinition: Unit.HordeDefinition, isSpawning: Unit.IsSpawning, sacrificeCardId: Unit.SacrificeCardId, deathState: Unit.DeathState, bumpRules: Unit.BumpRules, lastFeederId: Unit.LastFeederId, moonPhaseMask: Unit.MoonPhaseMask);
     }
 
@@ -379,6 +379,12 @@ namespace MonsterTrain2Poju.Model
         }
         private static string? Validate(EnemyDefinition definition, CombatContext? context)
         {
+            if (definition.BirthStats is { } stats &&
+                (!TrueFinalBossCovenantModel.MatchesOrigins(context, stats) || definition.Unit.Modifiers == null ||
+                    (long)definition.Unit.BaseAttack + stats.Attack < 0 || (long)definition.Unit.BaseAttack + stats.Attack > int.MaxValue ||
+                    (long)definition.Unit.Health + stats.Health <= 0 || (long)definition.Unit.MaxHealth + stats.Health > int.MaxValue ||
+                    (long)definition.Unit.Modifiers.DamageBuff + stats.Attack is < int.MinValue or > int.MaxValue))
+                return "Enemy birth stats require a matching calibrated original Covenant and bounded native stats.";
             // Hero Setup runs before EnterTower. Native Conduit's stacks-added
             // callback dereferences the physical room even for a starting status.
             if (definition.Unit.Status("conduit")?.Stacks > 0)

@@ -1,5 +1,7 @@
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 internal static class TrueFinalBossBattleChecks
 {
@@ -12,10 +14,65 @@ internal static class TrueFinalBossBattleChecks
         TrueFinalBossChecks.Require(queued != null, "Missing original queued Covenant bosses.");
         TrueFinalBossSpawnChecks.CovenantMetadata(root.GetProperty("OriginalTrueFinalBossRoute").GetProperty("CovenantControl"),
             new TrueFinalBossSpawnState(before, queued!.Definitions, queued.QueuedBosses, 0, new int[4], queued.ExternalInteractions));
-        Native(root);
+        FixtureValue route = root.GetProperty("OriginalTrueFinalBossRoute");
+        string owner = route.GetProperty("CovenantControl").GetProperty("AssetKey").GetString()!;
+        int turns = root.GetProperty("Turns").GetArrayLength();
+        TrueFinalBossChecks.Require(route.GetProperty("Kind").GetString() == "NativeCheatJumpToTFB" &&
+            route.GetProperty("Scenario").GetString() == "Level9TrueFinalBoss_V2" && route.GetProperty("UnlockOverrideAfter").GetBoolean() &&
+            route.GetProperty("ScenarioAssetsUnchanged").GetBoolean() && route.GetProperty("CharacterAssetsUnchanged").GetBoolean() &&
+            route.GetProperty("StartingDeckUnchanged").GetBoolean() && route.GetProperty("PyreHealth").GetInt32() == 80 &&
+            root.GetProperty("BattleDistance").GetInt32() == 8 && root.GetProperty("Policy").GetString() == "no-cards" &&
+            !root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
+            root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" && root.GetProperty("Actions").GetArrayLength() == 0 &&
+            turns == (owner == "Covenant04_StrongerBosses" ? 6 : 5), "Missing unchanged original Covenant no-cards full loss.");
+        CovenantWaves(root, before);
+        BattleTurnChecks.Native(root);
         TrainCombatChecks.Native(root);
         RoomCombatChecks.NativeRoomOnly(path);
-        Console.WriteLine("TRUE-FINAL-BOSS-COVENANT-BATTLE PASS: original single-Covenant activation, exact birth stats, six complete EndTurns, native room/train phases and full state/RNG; native failure counters zero. Controlled route and loss only.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-COVENANT-BATTLE PASS: original {owner}, exact birth stats, {turns} complete EndTurns, native room/train phases and full state/RNG; native failure counters zero. Controlled route and loss only.");
+    }
+
+    private static void CovenantWaves(FixtureValue root, BattleTurnState before)
+    {
+        FixtureValue control = root.GetProperty("OriginalTrueFinalBossRoute").GetProperty("CovenantControl");
+        // The earlier stronger-boss archive predates ordinary wave projections.
+        if (!control.TryGetProperty("WaveStatQueries", out FixtureValue rows)) return;
+        EnemyDefinition[] definitions = before.Spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units).ToArray();
+        FixtureValue[] queries = rows.EnumerateArray().ToArray();
+        // Earlier captures also queried player-card templates without applying
+        // their projections. Every query must be pure; every wave must match.
+        foreach (FixtureValue query in queries)
+            TrueFinalBossChecks.Require(query.GetProperty("FrameBefore").GetInt32() == query.GetProperty("FrameAfter").GetInt32() &&
+                query.GetProperty("RngBefore").GetArrayLength() == 16 && query.GetProperty("RngBefore").ContentEquals(query.GetProperty("RngAfter")),
+                "A native Covenant stat query changed its frame or RNG.");
+        TrueFinalBossChecks.Require(definitions.Length > 0 && queries.Length > 0 &&
+            queries.Select(row => row.GetProperty("AssetKey").GetString()).ToHashSet().IsSupersetOf(definitions.Select(definition => definition.Unit.AssetKey)),
+            "Missing pure previews for the original Covenant wave definitions.");
+        foreach (EnemyDefinition definition in definitions)
+        {
+            FixtureValue query = queries.Single(row => row.GetProperty("AssetKey").GetString() == definition.Unit.AssetKey);
+            EnemyBirthStatAdjustment stats = definition.BirthStats!;
+            TrueFinalBossChecks.Require(stats != null && TrueFinalBossCovenantModel.MatchesOrigins(before.Spawn.Train.Context, stats) &&
+                query.GetProperty("RawAttack").GetInt32() == definition.Unit.BaseAttack && query.GetProperty("RawHealth").GetInt32() == definition.Unit.MaxHealth &&
+                query.GetProperty("Attack").GetInt32() == stats.Attack && query.GetProperty("Health").GetInt32() == stats.Health &&
+                query.GetProperty("FrameBefore").GetInt32() == query.GetProperty("FrameAfter").GetInt32() &&
+                query.GetProperty("RngBefore").GetArrayLength() == 16 && query.GetProperty("RngBefore").ContentEquals(query.GetProperty("RngAfter")),
+                "Wave birth stats must preserve authored bases, Covenant origin, frame and all native RNG streams.");
+        }
+        FixtureValue waveBirth = root.GetProperty("Spawns").EnumerateArray().First(row =>
+        {
+            EnemySpawnState state = row.GetProperty("Before").Deserialize<EnemySpawnState>()!;
+            return state.Waves[state.Phase % state.Waves.Count].Candidates.Any(group => group.Units.Count > 0);
+        });
+        JsonNode invalid = JsonSerializer.SerializeToNode(waveBirth.GetProperty("Before").Deserialize<EnemySpawnState>()!, ModelJson.Options)!;
+        foreach (JsonNode? wave in invalid["Waves"]!.AsArray())
+            foreach (JsonNode? group in wave!["Candidates"]!.AsArray())
+                foreach (JsonNode? definition in group!["Units"]!.AsArray())
+                    definition!["BirthStats"]!["CovenantIds"]![0] = "different-covenant";
+        EnemySpawnResult rejected = EnemySpawningModel.Spawn(invalid.Deserialize<EnemySpawnState>(ModelJson.Options)!, false);
+        TrueFinalBossChecks.Require(!rejected.Supported && rejected.UnsupportedReason!.Contains("Enemy birth stats"),
+            "Ordinary wave births with spoofed Covenant origins must remain guarded.");
+        Console.WriteLine($"TRUE-FINAL-BOSS-COVENANT-WAVES PASS: {queries.Length} pure native stat previews, {definitions.Length} authored wave definitions and rejected spoofed origins.");
     }
 
     internal static void Native(FixtureValue root)

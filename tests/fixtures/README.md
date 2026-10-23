@@ -1,8 +1,13 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1079 archives,
+Current manifest inventory (2026-10-23): 1082 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+Single original Covenants 00/01/04/08 now have complete controlled Level9
+no-cards losses: exact native birth adjustments, ordinary waves, full turns,
+room/train stages and state/RNG pass with zero native failure counters.
+See [Covenant evidence](true-final-boss-covenant-birth.md).
 
 Natural Corrupter now has an actual-player winning source and independent
 fresh native replay: 57 plays/ten EndTurns, Pyre84, all four failure counters

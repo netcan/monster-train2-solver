@@ -1,5 +1,25 @@
 # Original Covenant true-final-boss birth
 
+The `true-final-boss-covenant-battle-{00,01,08}.mt2f` controls also finish
+complete native no-cards losses with zero capture/mismatch/unsupported/pending
+counters, normal exits and protected files unchanged. Each has five EndTurns,
+ten train phases, 41 room phases and sixteen independent immutable full chains.
+Their 26 authored ordinary-wave definitions match pure native stat previews;
+spoofed Covenant origins are rejected. There are thirteen distinct wave
+assets plus three unused player-template control queries; all sixteen queries
+preserve frame and every RNG stream. Capture now queries only actual waves.
+
+| Covenant | Complete native source |
+| --- | --- |
+| 00 | `full-battle-no-cards-20261023-081358-7cbcd476` |
+| 01 | `full-battle-no-cards-20261023-081149-bc5dac5d` |
+| 08 | `full-battle-no-cards-20261023-081149-734c0bf1` |
+
+Ordinary-wave capture retains authored/Horde bases and projects native birth
+adjustments separately. A pure preview reads the exact original active
+Covenant; the model requires matching origins, modifier snapshots and bounded
+attack/health arithmetic. Other ranks and combined ranks retain their guards.
+
 `true-final-boss-covenant-battle-04.mt2f` extends the stronger-boss control
 through a complete original no-cards loss. Source
 `full-battle-no-cards-20261023-080549-fef7e51c` exits normally with protected

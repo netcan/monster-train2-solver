@@ -11,6 +11,8 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static object? Evidence { get; private set; }
         private static readonly List<object> statQueries = new List<object>();
+        private static readonly List<object> waveStatQueries = new List<object>();
+        private static readonly HashSet<string> waveAssets = new HashSet<string>();
 
         internal static void Prepare(SaveManager save)
         {
@@ -32,11 +34,17 @@ namespace MonsterTrain2Poju.Probe
                 Kind = "ControlledOriginalCovenantBeforeTFBBirth", AssetKey = asset, Id = data.GetID(),
                 EffectTypes = data.GetEffects().Select(effect => effect.GetEffectClassName()).ToArray(),
                 ActiveBefore = Array.Empty<string>(), ActiveAfter = new[] { data.GetID() },
-                StartOfRunEffectsApplied = false, RngBefore = before, RngAfter = after, StatQueries = statQueries
+                StartOfRunEffectsApplied = false, RngBefore = before, RngAfter = after, StatQueries = statQueries,
+                WaveStatQueries = waveStatQueries
             };
         }
 
-        internal static EnemyBirthStatAdjustment? CaptureStats(CharacterData data)
+        internal static EnemyBirthStatAdjustment? CaptureStats(CharacterData data) => CaptureStats(data, false);
+
+        internal static EnemyBirthStatAdjustment? CaptureWaveStats(CharacterData data) =>
+            data.name.StartsWith("Boss_Level9_", StringComparison.Ordinal) ? null : CaptureStats(data, true);
+
+        private static EnemyBirthStatAdjustment? CaptureStats(CharacterData data, bool wave)
         {
             if (Evidence == null) return null;
             int frame = UnityEngine.Time.frameCount;
@@ -45,8 +53,10 @@ namespace MonsterTrain2Poju.Probe
             object after = Rng();
             if (frame != UnityEngine.Time.frameCount || JsonConvert.SerializeObject(before) != JsonConvert.SerializeObject(after))
                 throw new InvalidOperationException("Covenant stat preview changed native RNG or frame.");
-            statQueries.Add(new { AssetKey = data.name, Attack = adjustment.attackAdjustment, Health = adjustment.healthAdjustment,
-                FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = before, RngAfter = after });
+            if (!wave || waveAssets.Add(data.name))
+                (wave ? waveStatQueries : statQueries).Add(new { AssetKey = data.name, RawAttack = data.GetAttackDamage(), RawHealth = data.GetHealth(),
+                    Attack = adjustment.attackAdjustment, Health = adjustment.healthAdjustment,
+                    FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = before, RngAfter = after });
             return new EnemyBirthStatAdjustment(adjustment.attackAdjustment, adjustment.healthAdjustment,
                 AllGameManagers.Instance.GetSaveManager().GetCovenants().Select(covenant => covenant.GetRelicDataID()).ToArray());
         }

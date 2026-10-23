@@ -86,7 +86,7 @@ namespace MonsterTrain2Poju.Probe
                 // GetCharacters resolves modeled Covenant spawn definitions before
                 // Definition captures their native stats, statuses and triggers.
                 return new EnemyWave(groups.Select(group => new EnemyGroup(group.GetCharacters(
-                    save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()).Select(Definition).ToArray())).ToArray());
+                    save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()).Select(WaveDefinition).ToArray())).ToArray());
             }).ToArray();
             var bossDefinitions = definitions.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
                 .Where(definition => definition.Unit.IsBoss == true).GroupBy(definition => definition.Unit.AssetKey).Select(group => group.First()).ToArray();
@@ -166,6 +166,13 @@ namespace MonsterTrain2Poju.Probe
                         relentlessAnchorSlots: captureBirthLifecycle && data.IsOuterTrainBoss() ? OuterBossPhaseProbe.AnchorSlots(BossState.AttackPhase.Relentless) : null) : null,
                     lastFeederId: data.GetTriggers().Any(trigger => trigger.GetTrigger() == CharacterTriggerData.Trigger.OnEaten) || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ? 0 : (int?)null, moonPhaseMask: EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)PlayerManager.MoonPhase.None : (int?)null),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());
+        }
+
+        private static EnemyDefinition WaveDefinition(CharacterData data)
+        {
+            EnemyDefinition raw = Definition(data);
+            return new EnemyDefinition(raw.Unit, raw.Ascends, raw.Loops, raw.ExternalInteractions, raw.CompanionBoss,
+                TrueFinalBossCovenantScenario.CaptureWaveStats(data));
         }
 
         internal static CombatTrigger TriggerDefinition(CharacterTriggerData trigger, List<string> interactions)
