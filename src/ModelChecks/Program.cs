@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--atomic-advice-budget-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AtomicAdviceBudgetChecks.Run(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--angel-duo-loop-resolve-birth-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4785,6 +4792,11 @@ foreach (string path in args.Where(path => path.EndsWith("player-fragile-budget-
 {
     using var document = ModelJson.ReadFixture(path);
     ShorterAdviceBudgetChecks.Run(document.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("advisor-atomic-budget-failure.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    AtomicAdviceBudgetChecks.Run(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-original-moon-card-upgrades-room-mask.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-original-moon-card-upgrades-cost-relic.mt2f", StringComparison.OrdinalIgnoreCase) ||

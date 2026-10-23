@@ -152,9 +152,10 @@ namespace MonsterTrain2Poju.Model
             // tactical seed, spend it on deployment first: completing an empty
             // tower's defeat can otherwise displace a useful partial deployment
             // when the game runtime reaches its time limit.
-            void Rollout(Node baseline, int? stopAfterTurns = null)
+            void Rollout(Node baseline, int? stopAfterTurns = null, bool finishFirstTurn = false)
             {
-                while (!Stop() && baseline.Turns < (stopAfterTurns ?? options.MaxTurns) && !Terminal(baseline))
+                while (baseline.Turns < (stopAfterTurns ?? options.MaxTurns) && !Terminal(baseline) &&
+                    (!Stop() || finishFirstTurn && baseline.Turns == 0 && !cancelled && !nodeLimit))
                 {
                     nodes++;
                     BattleTurnResult ended = BattleTurnModel.EndTurn(baseline.State);
@@ -193,7 +194,11 @@ namespace MonsterTrain2Poju.Model
                     // A complete one-turn fallback is sufficient when shorter
                     // windows are allowed. Preserve the remaining budget for
                     // the seed's full card sequence instead of an empty tower.
-                    if (tactical.Steps.Count == 1) Rollout(tactical, options.AllowShorterHorizon ? 1 : options.MaxTurns);
+                    // One atomic candidate can consume the soft time budget.
+                    // Finish its first turn before publishing a shorter window;
+                    // cancellation and the hard node limit still take priority.
+                    if (tactical.Steps.Count == 1) Rollout(tactical, options.AllowShorterHorizon ? 1 : options.MaxTurns,
+                        finishFirstTurn: options.AllowShorterHorizon);
                 }
                 // This opt-in mode accepts the first complete winning seed. It
                 // remains bounded and replayable, without an optimality claim.
