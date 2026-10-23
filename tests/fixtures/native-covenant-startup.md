@@ -204,7 +204,7 @@ Profiles below have prefix `full-battle-no-cards-20261023-`.
 
 Use `scripts/Check-NativeCovenantStartup.ps1 -Rank 8 -SkipBuild` for one
 baseline, or add `-Player` for an accepted source/replay pair (currently
-ranks 1–8 and 10). The default baseline ranks are 1–10; this runs only the selected
+ranks 1–10). The default baseline ranks are 1–10; this runs only the selected
 startup acceptance, never the full fixture suite. Higher-rank actual player
 advice, flying-boss compositions, earned unlocks and full campaigns remain
 separate acceptance targets.
@@ -220,8 +220,8 @@ suffixes are `114040-65f9c3da` / `114617-b144a789`, prefixed
 `full-battle-player-native-covenant-startup-10` with `-search.mt2f` /
 `-replay.mt2f`. Run `Check-NativeCovenantStartup.ps1 -Rank 10 -Player
 -SkipBuild`. This proves all ten original cumulative owners coexist in the
-actual first-battle player path; rank nine's individual player pair, flying
-bosses, full campaigns and earned unlocks remain separate.
+actual first-battle player path. All ten individual player pairs now pass;
+flying bosses, full campaigns and earned unlocks remain separate.
 
 Rank six's actual player advice and independent frozen native replay also
 win with Pyre42: thirty-three inputs each (twenty-six plays, seven EndTurns),
@@ -247,3 +247,15 @@ Both source/replay games win. Profile prefix is the same player prefix above.
 
 Archives use `full-battle-player-native-covenant-startup-07` / `-08`, each
 with search/replay suffixes; select their rank with the same focused script.
+
+Rank nine completes the individual rank 1–10 player matrix. Its actual player
+advice and fresh independent replay both win with Pyre4 after thirty-three
+inputs (twenty-six plays, seven EndTurns). Thirty-five source publications,
+UI interaction, every complete forecast, root, successor and RNG match;
+both have sixty-six room stages and fourteen train phases. Native exits are
+normal, protected files unchanged and all four native/purity failure counters
+zero. Captures are 419/114; native runtimes 337.37/172.89 seconds. Profile
+suffixes are `125059-75b6eb58` / `125637-83426c66`, using the same player
+prefix above. Archives use `full-battle-player-native-covenant-startup-09`
+with search/replay suffixes. Select only this pair using
+`Check-NativeCovenantStartup.ps1 -Rank 9 -Player -SkipBuild`.
