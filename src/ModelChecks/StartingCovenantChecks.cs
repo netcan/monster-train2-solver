@@ -18,7 +18,7 @@ internal static class StartingCovenantChecks
         int level = startup.GetProperty("AscensionLevel").GetInt32();
         Require(!expectedLevel.HasValue || level == expectedLevel, "Native Covenant fixture uses a different declared cumulative rank.");
         Require(startup.GetProperty("Kind").GetString() == "NativeCovenantRunStartup" &&
-            level is 1 or 2 or 3 && startup.GetProperty("StartingLevel").GetInt32() == level &&
+            level is 1 or 2 or 3 or 4 && startup.GetProperty("StartingLevel").GetInt32() == level &&
             selection.GetProperty("Kind").GetString() == "SelectNativeCovenantAtRunSetup" &&
             selection.GetProperty("RequestedLevel").GetInt32() == level && selection.GetProperty("LevelAfter").GetInt32() == level &&
             !selection.GetProperty("EarnedUnlockClaimed").GetBoolean() && !selection.GetProperty("StartupEffectsInvokedByProbe").GetBoolean() &&
@@ -63,8 +63,18 @@ internal static class StartingCovenantChecks
             Require(!TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(invalid),
                 "The selection-only Covenant must not authorize additional combat callbacks.");
         }
-        if (level == 3) Require(TrueFinalBossCovenantModel.MerchantOnlyOwner(captured[2]),
+        if (level >= 3) Require(TrueFinalBossCovenantModel.MerchantOnlyOwner(captured[2]),
             "Rank three must retain its original merchant-only owner and exact native effect signature.");
+        if (level >= 4)
+        {
+            Require(TrueFinalBossCovenantModel.StrongerBossOwner(captured[3]),
+                "Rank four must retain the complete original 25-effect stronger-boss definition.");
+            CombatRelicState[] invalid = captured.Select(relic => relic.AssetKey == "Covenant04_StrongerBosses" ?
+                new CombatRelicState(relic.DataId, relic.AssetKey, relic.EffectTypes.Concat(new[] { "RelicEffectNull" }).ToArray(),
+                    isCovenant: true) : relic).ToArray();
+            Require(!TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(invalid),
+                "The calibrated stronger-boss definition must not authorize additional callbacks.");
+        }
         Console.WriteLine($"NATIVE-COVENANT-STARTUP PASS: native rank {level} selection, exact cumulative owners, one original purge/add callback each and {startup.GetProperty("StartingDeck").GetArrayLength()} actual starting cards; original battle waves and stat-query purity match. Earned unlocks remain separate.");
     }
 

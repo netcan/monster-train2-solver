@@ -112,3 +112,21 @@ all four failure counters zero. Profile suffixes are `111631-90665d4e` /
 Player archive prefix is `full-battle-player-native-covenant-startup-03`, with
 `-search.mt2f` / `-replay.mt2f`. The focused checker is
 `scripts/Check-PlayerAdvisor.ps1 -Case NativeCovenantStartup03 -SkipBuild`.
+
+## Native cumulative rank four
+
+The exact original `Covenant04_StrongerBosses` identity and complete ordered
+25-effect signature are admitted for ordinary waves: eleven added triggers,
+two spawn statuses, ten health and two attack adjustments. Trigger character
+filters and spawn callbacks use the existing native-calibrated models; this
+does not extend outer/final-boss composition scope. A mutated extra effect is
+rejected by the focused checker.
+
+`full-battle-native-covenant-startup-04.mt2f` comes from
+`full-battle-no-cards-20261023-112448-972d8ce8`. Original run setup selects all
+four owners, purges/adds once each and retains twenty cards. The complete
+first battle wins in seven EndTurns with Pyre8: fourteen train stages,
+57 room stages, four pure native stat queries, seven authored wave
+definitions and sixteen immutable full chains match. Native runtime is
+66.83 seconds, normal exit, protected files unchanged and all four failure
+counters zero. Player advice and independent replay remain separate.

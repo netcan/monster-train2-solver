@@ -172,11 +172,11 @@ if (args.Length == 2 && args[0] == "--native-covenant-startup-only")
     return;
 }
 if (args.Length == 3 && args[0] is "--player-native-covenant-startup-pair-only" or "--player-native-covenant-startup-02-pair-only" or
-    "--player-native-covenant-startup-03-pair-only")
+    "--player-native-covenant-startup-03-pair-only" or "--player-native-covenant-startup-04-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
-    StartingCovenantChecks.Pair(source.RootElement, replay.RootElement, args[0].Contains("-03-", StringComparison.Ordinal) ? 3 :
+    StartingCovenantChecks.Pair(source.RootElement, replay.RootElement, args[0].Contains("-04-", StringComparison.Ordinal) ? 4 : args[0].Contains("-03-", StringComparison.Ordinal) ? 3 :
         args[0].Contains("-02-", StringComparison.Ordinal) ? 2 : 1);
     return;
 }
@@ -4334,10 +4334,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("fu
 }
 
 foreach (string path in args.Where(path => Path.GetFileName(path) is "full-battle-player-native-covenant-startup-search.mt2f" or
-    "full-battle-player-native-covenant-startup-02-search.mt2f" or "full-battle-player-native-covenant-startup-03-search.mt2f"))
+    "full-battle-player-native-covenant-startup-02-search.mt2f" or "full-battle-player-native-covenant-startup-03-search.mt2f" or
+    "full-battle-player-native-covenant-startup-04-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    string suffix = Path.GetFileName(path).Contains("-03-", StringComparison.Ordinal) ? "-03" :
+    string suffix = Path.GetFileName(path).Contains("-04-", StringComparison.Ordinal) ? "-04" : Path.GetFileName(path).Contains("-03-", StringComparison.Ordinal) ? "-03" :
         Path.GetFileName(path).Contains("-02-", StringComparison.Ordinal) ? "-02" : "";
     using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-native-covenant-startup" + suffix + "-replay.mt2f"));
     StartingCovenantChecks.Pair(source.RootElement, replay.RootElement, suffix.Length > 0 ? int.Parse(suffix[1..]) : 1);

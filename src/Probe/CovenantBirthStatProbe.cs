@@ -29,7 +29,10 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetRelicDataID() == "dcb31cd7-4293-4b07-b396-5456a0ce0b6e" &&
                     owner.GetSourceRelicData().name == "Covenant03_MerchantCostsIncrease" &&
                     owner.GetEffects().Select(effect => effect.GetType().Name).SequenceEqual(new[] {
-                        "RelicEffectModifyMerchantRerollCosts", "RelicEffectModifyMerchantPurgeCosts" }));
+                        "RelicEffectModifyMerchantRerollCosts", "RelicEffectModifyMerchantPurgeCosts" }) ||
+                    TrueFinalBossCovenantModel.StrongerBossOwner(new CombatRelicState(owner.GetRelicDataID(),
+                        owner.GetSourceRelicData().name, owner.GetEffects().Select(effect => effect.GetType().Name).ToArray(),
+                        isCovenant: true)));
         }
 
         internal static EnemyBirthStatAdjustment? Capture(CharacterData data)

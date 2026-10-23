@@ -23,7 +23,19 @@ namespace MonsterTrain2Poju.Model
             owners.Any(owner => owner.AssetKey == "Covenant01_StrongerEnemiesMoreCards" && KnownOwner(owner)) &&
             owners.All(owner => KnownOwner(owner) && owner.AssetKey is "Covenant00_FTUE" or "Covenant01_StrongerEnemiesMoreCards" ||
                 owner.IsCovenant == true && owner.AssetKey == "Covenant02_BattlesNewEnemies" &&
-                owner.DataId == "92c18b99-e4c0-4953-ba2c-4815f570a66e" && owner.EffectTypes.Count == 0 || MerchantOnlyOwner(owner));
+                owner.DataId == "92c18b99-e4c0-4953-ba2c-4815f570a66e" && owner.EffectTypes.Count == 0 ||
+                MerchantOnlyOwner(owner) || StrongerBossOwner(owner));
+
+        internal static bool StrongerBossOwner(CombatRelicState owner) => KnownOwner(owner) &&
+            owner.AssetKey == "Covenant04_StrongerBosses" && owner.EffectTypes.SequenceEqual(
+                new[] { "RelicEffectAddTrigger" }
+                    .Concat(Enumerable.Repeat("RelicEffectModifyCharacterMaxHealth", 9))
+                    .Concat(Enumerable.Repeat("RelicEffectModifyCharacterAttackDamage", 2))
+                    .Concat(new[] { "RelicEffectAddStatusEffectOnSpawn" })
+                    .Concat(Enumerable.Repeat("RelicEffectAddTrigger", 4))
+                    .Concat(new[] { "RelicEffectAddStatusEffectOnSpawn" })
+                    .Concat(Enumerable.Repeat("RelicEffectAddTrigger", 6))
+                    .Concat(new[] { "RelicEffectModifyCharacterMaxHealth" }));
 
         internal static bool MerchantOnlyOwner(CombatRelicState owner) => owner.IsCovenant == true &&
             owner.AssetKey == "Covenant03_MerchantCostsIncrease" && owner.DataId == "dcb31cd7-4293-4b07-b396-5456a0ce0b6e" &&
