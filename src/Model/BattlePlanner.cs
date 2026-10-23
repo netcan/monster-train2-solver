@@ -152,7 +152,7 @@ namespace MonsterTrain2Poju.Model
             // tactical seed, spend it on deployment first: completing an empty
             // tower's defeat can otherwise displace a useful partial deployment
             // when the game runtime reaches its time limit.
-            void Rollout(Node baseline, int? stopAfterTurns = null, bool finishFirstTurn = false)
+            Node Rollout(Node baseline, int? stopAfterTurns = null, bool finishFirstTurn = false)
             {
                 while (baseline.Turns < (stopAfterTurns ?? options.MaxTurns) && !Terminal(baseline) &&
                     (!Stop() || finishFirstTurn && baseline.Turns == 0 && !cancelled && !nodeLimit))
@@ -163,6 +163,7 @@ namespace MonsterTrain2Poju.Model
                     baseline = Child(baseline, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
                     Consider(baseline);
                 }
+                return baseline;
             }
             if (options.UseTacticalSeed)
             {
@@ -222,6 +223,13 @@ namespace MonsterTrain2Poju.Model
             // the optional seed above still adds the long-horizon rollout.
             // Every candidate shares the same legality, evaluator and budget.
             Node strength = root;
+            bool adaptDeployment = !options.UseTacticalSeed && options.AllowShorterHorizon && options.PreferredDeploymentRoom == 2;
+            // The interactive default can improve its opening preference.
+            // Explicit other-floor and strict-horizon seeds retain theirs.
+            int strengthRoom = adaptDeployment && source.Spawn.Turn > 0
+                ? source.Spawn.Train.Rooms.FirstOrDefault(room => room.Units.Any(unit =>
+                    unit.Team == CombatTeam.Player && unit.Health > 0 && unit.Modifiers?.IsChampion == true))?.RoomIndex ?? options.PreferredDeploymentRoom
+                : options.PreferredDeploymentRoom;
             while (!Stop() && strength.Turns < options.MaxTurns && !Terminal(strength))
             {
                 nodes++;
@@ -229,7 +237,7 @@ namespace MonsterTrain2Poju.Model
                 if (strength.Actions < options.MaxActionsPerTurn)
                 {
                     chosen = BattleTacticalPolicy.Choose(strength.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
-                        options.PreferredDeploymentRoom);
+                        strengthRoom);
                     foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                 }
                 else actionLimit = true;
@@ -253,7 +261,53 @@ namespace MonsterTrain2Poju.Model
                     Consider(strength);
                     // Retain the seed's complete current-turn card sequence
                     // even if its later card choices exhaust the shared budget.
-                    if (strength.Turns == 1) Rollout(strength);
+                    if (strength.Turns == 1)
+                    {
+                        Node forecast = Rollout(strength);
+                        // Compare other deployments only when the ordinary
+                        // opening forecast loses a unit already deployed by
+                        // this seed. Each alternative uses real legal actions
+                        // and the same complete horizon and shared budgets.
+                        // Unthreatened openings keep their existing preference.
+                        if (adaptDeployment && source.Spawn.Turn == 0 && forecast.Turns > 1 &&
+                            strength.State.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                                unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0 && unit.SpawnerCardId > 0 &&
+                                !forecast.State.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                                    .Any(survivor => survivor.Id == unit.Id && survivor.Health > 0)))
+                        {
+                            foreach (int room in source.PlayRules?.Rooms.Select(room => room.RoomIndex)
+                                .Where(room => room != options.PreferredDeploymentRoom).OrderBy(room => room) ?? Enumerable.Empty<int>())
+                            {
+                                if (Stop()) break;
+                                Node alternate = root;
+                                while (!Stop() && alternate.Turns == 0 && !Terminal(alternate))
+                                {
+                                    nodes++;
+                                    SupportedActionCandidate? move = null;
+                                    if (alternate.Actions < options.MaxActionsPerTurn)
+                                    {
+                                        move = BattleTacticalPolicy.Choose(alternate.State, out IReadOnlyList<UnsupportedActionAttempt> omitted, room);
+                                        foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
+                                    }
+                                    else actionLimit = true;
+                                    if (move != null)
+                                        alternate = Child(alternate, move.Result.State!, move.Result.Outcome, new BattleSearchStep(move.Action, false));
+                                    else
+                                    {
+                                        BattleTurnResult nextTurn = BattleTurnModel.EndTurn(alternate.State);
+                                        if (!nextTurn.Supported)
+                                        { Unsupported(new UnsupportedActionAttempt(null, nextTurn.UnsupportedReason ?? "Unsupported alternative deployment EndTurn.")); break; }
+                                        alternate = Child(alternate, nextTurn.State!, nextTurn.Outcome, new BattleSearchStep(null, true));
+                                    }
+                                    Consider(alternate);
+                                }
+                                if (alternate.Turns != 1) continue;
+                                Node alternateForecast = Rollout(alternate);
+                                if (alternateForecast.Turns == forecast.Turns && Better(alternateForecast, forecast))
+                                { strength = alternate; strengthRoom = room; forecast = alternateForecast; }
+                            }
+                        }
+                    }
                 }
             }
 

@@ -3,6 +3,22 @@ using MonsterTrain2Poju.Model;
 
 internal static class PlayerOuterBossChecks
 {
+    internal static void FragileDefaultModel(FixtureValue fixture)
+    {
+        NativeCampaignInputChecks.Native(fixture, 7, 424244, 62, "Level8FinalBossMeleeWeakness");
+        Require(BattleHeuristicChecks.RollingForecast(fixture, 256, preferredDeploymentRoom: 2, retainCurrentTurn: true) == RoomOutcome.BattleWon,
+            "The interactive default must win the captured natural Fragile root with complete state/RNG replay.");
+        BattleTurnState root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        using var keys = new BattleStateKeys();
+        string parent = keys.Key(root);
+        BattlePlanResult limited = BattlePlanner.Plan(root, keys.Key,
+            new BattlePlannerOptions(16, 3, 8, timeLimit: TimeSpan.FromSeconds(30), allowShorterHorizon: true));
+        Require(limited.ReachedNodeLimit && limited.ExpandedNodes == 16 && limited.CompletedHorizon && keys.Key(root) == parent,
+            "Adaptive deployment escaped the hard node budget or lost its complete fallback.");
+        BattleAdviceSession.Verify(root, limited);
+        Console.WriteLine("FRAGILE-DEFAULT-MODEL PASS: three turns/3000ms, configured top preference, extra tactical seed off; adaptive opening and full route verified; native acceptance remains separate.");
+    }
+
     internal static void FragileShortBudgetModel(FixtureValue fixture)
     {
         BattleTurnState root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
@@ -16,13 +32,19 @@ internal static class PlayerOuterBossChecks
     }
 
     internal static void FragileShortBudgetPair(FixtureValue source, FixtureValue replay)
+        => FragileBudgetPair(source, replay, 0);
+
+    internal static void FragileDefaultPair(FixtureValue source, FixtureValue replay)
+        => FragileBudgetPair(source, replay, 2);
+
+    private static void FragileBudgetPair(FixtureValue source, FixtureValue replay, int preferredRoom)
     {
         foreach (FixtureValue fixture in new[] { source, replay })
         {
             FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
             Require(overlay.GetProperty("Horizon").GetInt32() == 3 && overlay.GetProperty("TimeLimitMs").GetInt32() == 3000 &&
-                overlay.GetProperty("PreferredDeploymentRoom").GetInt32() == 0 && !overlay.GetProperty("TacticalSeed").GetBoolean(),
-                "Short-budget Fragile acceptance requires three turns/3000ms, bottom preference and no extra tactical seed.");
+                overlay.GetProperty("PreferredDeploymentRoom").GetInt32() == preferredRoom && !overlay.GetProperty("TacticalSeed").GetBoolean(),
+                "Short-budget Fragile acceptance requires three turns/3000ms, its declared floor preference and no extra tactical seed.");
             Require(fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null &&
                 fixture.GetProperty("StartingCovenantControl").ValueKind == FixtureKind.Null,
                 "Short-budget Fragile must use the unchanged natural checkpoint.");
@@ -33,7 +55,7 @@ internal static class PlayerOuterBossChecks
         CheckPair(source, replay, "Boss_Level8_Fragile", requireVictory: true);
         foreach (FixtureValue fixture in new[] { source, replay }) TrainCombatChecks.Native(fixture);
         OrdinaryAdviceChecks.NativeReuse(source, replay);
-        Console.WriteLine("PLAYER-FRAGILE-SHORT-BUDGET PASS: actual three-turn/3000ms player victories, bottom preference, original seven-win checkpoint, complete forecasts/state/RNG and independent native replay.");
+        Console.WriteLine($"PLAYER-FRAGILE-{(preferredRoom == 2 ? "DEFAULT" : "SHORT-BUDGET")} PASS: actual three-turn/3000ms player victories, configured preference={preferredRoom}, original seven-win checkpoint, complete forecasts/state/RNG and independent native replay.");
     }
 
     internal static void WinningPair(FixtureValue source, FixtureValue replay, string expectedBoss = "Boss_Level8_AllyBuffer")

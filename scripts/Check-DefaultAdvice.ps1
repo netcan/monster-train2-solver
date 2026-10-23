@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Strategy', 'Keys', 'Native')][string[]] $Case = @('Strategy', 'Keys', 'Native'),
+    [ValidateSet('Strategy', 'Keys', 'Native', 'FragileStrategy', 'FragileNative')][string[]] $Case = @('Strategy', 'Keys', 'Native', 'FragileStrategy'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -34,6 +34,14 @@ if ('Strategy' -in $Case) {
     Invoke-Check '--shorter-advice-budget-only' @(Get-Archive 'player-fragile-budget-boundary.mt2f')
     Invoke-Check '--atomic-advice-budget-only' @(Get-Archive 'advisor-atomic-budget-failure.mt2f')
     Invoke-Check '--ordinary-advice-budget-only' @(Get-Archive 'advisor-ordinary-budget-failure.mt2f')
+}
+if ('FragileStrategy' -in $Case) {
+    Invoke-Check '--fragile-default-planner-only' @(Get-Archive 'full-battle-player-boss-fragile-short-budget-search.mt2f')
+}
+if ('FragileNative' -in $Case) {
+    Invoke-Check '--player-boss-fragile-default-pair-only' @(
+        (Get-Archive 'full-battle-player-boss-fragile-default-search.mt2f'),
+        (Get-Archive 'full-battle-player-boss-fragile-default-replay.mt2f'))
 }
 if ('Native' -in $Case) {
     Invoke-Check '--player-natural-ring7-default-win-pair-only' @(

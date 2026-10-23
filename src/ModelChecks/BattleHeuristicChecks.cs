@@ -35,6 +35,7 @@ internal static class BattleHeuristicChecks
                 var step = new BattleSearchStep(null, true);
                 EndTurn(); steps.Add(step);
             }
+            double forecastMs = watch.Elapsed.TotalMilliseconds;
             BattleTurnState replayed = BattlePlannerChecks.Replay(root, steps, out RoomOutcome replayOutcome);
             if (keys.Key(replayed) != keys.Key(state) || replayOutcome != outcome || JsonSerializer.Serialize(root) != original)
                 throw new InvalidOperationException("Deployment forecast replay or source isolation failed.");
@@ -44,13 +45,28 @@ internal static class BattleHeuristicChecks
                 -(Math.Max(0d, unit.Attack) * (1d + Math.Max(0, unit.Status("multistrike")?.Stacks ?? 0)) +
                 unit.Health * .1 + Math.Max(0, unit.Status("armor")?.Stacks ?? 0) * .1));
             Console.WriteLine($"DEPLOYMENT-FORECAST floor={floor} score={BattlePlanner.Evaluate(state, outcome)} " +
-                $"position={position} inputs={steps.Count} outcome={outcome} elapsedMs={watch.Elapsed.TotalMilliseconds:F1}; model only.");
+                $"position={position} inputs={steps.Count} outcome={outcome} forecastMs={forecastMs:F1} elapsedMs={watch.Elapsed.TotalMilliseconds:F1}; model only.");
 
             void EndTurn()
             {
                 BattleTurnResult ended = BattleTurnModel.EndTurn(state);
                 if (!ended.Supported) throw new InvalidOperationException(ended.UnsupportedReason);
                 state = ended.State!; outcome = ended.Outcome;
+                int completed = steps.Count(step => step.IsEndTurn) + 1;
+                if (completed < 3)
+                {
+                    var current = state.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0);
+                    double position = current.Sum(unit => unit.IsPyre ? 0d : unit.Team == CombatTeam.Enemy ?
+                        unit.Health + (double)(unit.Status("armor")?.Stacks ?? 0) :
+                        -(Math.Max(0d, unit.Attack) * (1d + Math.Max(0, unit.Status("multistrike")?.Stacks ?? 0)) +
+                            unit.Health * .1 + Math.Max(0, unit.Status("armor")?.Stacks ?? 0) * .1));
+                    Console.WriteLine($"DEPLOYMENT-PREFIX floor={floor} turns={completed} score={BattlePlanner.Evaluate(state, outcome)} " +
+                        $"position={position} forecastMs={watch.Elapsed.TotalMilliseconds:F1}");
+                    if (completed == 2)
+                        Console.WriteLine("DEPLOYMENT-ALLIES " + string.Join(";", state.Spawn.Train.Rooms.SelectMany(room =>
+                            room.Units.Where(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0)
+                                .Select(unit => $"{room.RoomIndex}:{unit.AssetKey}:{unit.Attack}/{unit.Health}/{unit.MaxHealth}"))));
+                }
             }
         }
         var plan = BattlePlanner.Plan(root, keys.Key, new BattlePlannerOptions(256, 3, 8,
