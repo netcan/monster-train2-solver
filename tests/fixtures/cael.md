@@ -48,4 +48,21 @@ Actual advice/UI and a fresh native frozen replay are separately required:
 -BattleDistance 5 -EarlyOuterBossVariant CaelAtkHP -PlannerHorizon 2
 -PlannerTimeLimitMs 1500 -TimeoutSeconds 1200 -SkipBuild`.
 Substitute `CaelDamageShield` or `CaelLifesteal` for the other two variants.
-These player pairs are still pending and do not contribute to the accepted count.
+AtkHP now has its accepted pair below; the shield/lifesteal pairs remain pending.
+
+## Actual AtkHP player pair
+
+Source `full-battle-units-spells-and-junk-20261023-184123-42b1c109` and fresh frozen
+replay `full-battle-units-spells-and-junk-20261023-185431-c632e73e` each execute
+47 inputs:38 card/ability plays and9 EndTurns, with69 room stages and16 train
+phases. The source publishes49 recommendations, each with a fresh complete-root
+check;408 captures have zero purity/publication failures. Actual player UI and
+every full forecast, root, successor and RNG match the independent replay.
+Both processes exit normally (785.63s/449.22s), preserve protected originals and
+report all four failure counters zero. Both lose at the disclosed2-turn/1500ms
+soft budget. There are no controlled native damage or boss HP changes.
+
+| Archive | Bytes | Nodes | SHA256 |
+| --- | ---: | ---: | --- |
+| full-battle-player-cael-atkhp-search.mt2f | 122671 | 19681 | 2872fba7a33a8b8d969432e13cb1b1300f8e855aa17dcd87bca3d0e788e1b6e4 |
+| full-battle-player-cael-atkhp-replay.mt2f | 118544 | 19431 | ff3cca95b8b4df3d4200cc407b3e55722014a38f7289d712a5e2be5a5e186de0 |

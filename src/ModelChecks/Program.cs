@@ -4964,9 +4964,21 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss
     using var fixture = ModelJson.ReadFixture(path);
     ArkionPyreChecks.Birth(fixture.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-arkion-pyre-search.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-arkion-pyre-replay.mt2f"));
+    NativeCovenantCampaignChecks.ArkionPyrePair(source.RootElement, replay.RootElement);
+}
 foreach (var variant in new[] { (Name: "atkhp", Native: "AtkHP"), (Name: "damage-shield", Native: "DamageShield"),
     (Name: "lifesteal", Native: "Lifesteal") })
 {
+    foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-cael-" + variant.Name + "-search.mt2f"))
+    {
+        using var source = ModelJson.ReadFixture(path);
+        using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-cael-" + variant.Name + "-replay.mt2f"));
+        NativeCovenantCampaignChecks.CaelPair(source.RootElement, replay.RootElement, variant.Native);
+    }
     foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-cael-" + variant.Name + ".mt2f"))
     {
         using var fixture = ModelJson.ReadFixture(path);
