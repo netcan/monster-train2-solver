@@ -333,7 +333,7 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatResult relics = RelicSpawnStatusModel.CharacterAdded(new RoomCombatState(index, original.Deployment,
                     rooms[index], original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds), unitId, 0, false);
                 if (!relics.Supported) return relics.UnsupportedReason;
-                ImportRoom(relics.State!); callbacks.AddRange(relics.PendingCallbacks);
+                ImportRoom(EnchantmentWorldModel.Sync(relics.State!)); callbacks.AddRange(relics.PendingCallbacks);
                 TrainCombatState addedTrain = new TrainCombatState(source.Train.Rooms.Select((room, position) =>
                     new RoomCombatState(position, room.Deployment, rooms[position], room.ExternalInteractions, context,
                         room.Preview, room.ActiveCompanionBossIds)).ToArray(), movement, source.Train.EnemySlotsPerRoom, context);

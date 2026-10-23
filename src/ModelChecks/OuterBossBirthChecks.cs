@@ -43,7 +43,8 @@ internal static class OuterBossBirthChecks
         CombatUnit born = actual.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == actual.Boss.UnitId);
         EnchantmentRule[] auras = born.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
             .Select(effect => effect.Enchantment!).ToArray();
-        bool deferredAura = born.AssetKey is "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial" ? auras.Length == 0 :
+        bool deferredAura = born.AssetKey is "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial" ||
+            OuterBossDefinitions.IsAngelDuo(born.AssetKey) ? auras.Length == 0 :
             auras.Length == 1 && auras[0].Bound && auras[0].State.PrimaryTargets.Count == 0 && auras[0].State.CachedStatus == null;
         Require(deferredAura && born.Triggers.Where(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))
                 .All(trigger => !trigger.HasTriggered) && (occupiedFloors == 0 || chosenPlayers > 0),

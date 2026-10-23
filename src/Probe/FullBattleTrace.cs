@@ -291,14 +291,21 @@ namespace MonsterTrain2Poju.Probe
                 if (!character.IsAlive || character.IsDestroyed) continue;
                 units.Add(CaptureUnit(character, interactions));
             }
-            var activeCompanionBossIds = new List<int>();
+            var companions = new List<CharacterState>();
             for (int index = 0; index < roomManager.GetNumRooms(); index++)
             {
-                var companions = new List<CharacterState>(); roomManager.GetRoom(index).AddCharactersToList(companions, Team.Type.Heroes);
-                activeCompanionBossIds.AddRange(companions.Where(character => !character.IsDestroyed &&
-                    (character.IsAlive || character.HasStatusEffect("undying")) && character.IsMiniboss() && character.IsCompanionBoss())
-                    .Select(UnitId));
+                // AddCharactersToList sorts its entire destination by the local
+                // spawn-point index. Collect each floor separately before joining.
+                var floorCompanions = new List<CharacterState>();
+                roomManager.GetRoom(index).AddCharactersToList(floorCompanions, Team.Type.Heroes);
+                if (outerBoss != null && outerBoss.GetCurrentRoomIndex() == index && !floorCompanions.Contains(outerBoss))
+                    floorCompanions.Add(outerBoss);
+                companions.AddRange(floorCompanions);
             }
+            int[] activeCompanionBossIds = companions.Where(character => !character.IsDestroyed &&
+                (character.IsAlive || character.HasStatusEffect("undying")) &&
+                (character.IsMiniboss() || character.IsOuterTrainBoss()) && character.IsCompanionBoss())
+                .Select(UnitId).Distinct().ToArray();
             var captured = new RoomCombatState(room.GetRoomIndex(), combat.IsPlacementPhase, units,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), captureContext ? CaptureContext() : null,
                 preview: save.PreviewMode, activeCompanionBossIds: activeCompanionBossIds);

@@ -1091,7 +1091,8 @@ namespace MonsterTrain2Poju.Model
                     unit.StatusRegistry.Any(status => status.Stacks < 0 || status.Stacks > 9999)))
                     return "Invalid retained status dictionary on unit " + unit.Id;
                 foreach (CombatStatus status in unit.Statuses)
-                    if (!KnownStatuses.Contains(status.Id) && !(linkedHealthOnly &&
+                    if (!KnownStatuses.Contains(status.Id) && !(status.Id == "pyrebane" &&
+                        unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" && unit.Status("lifelink") == null) && !(linkedHealthOnly &&
                         (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
                             status.Id == "pyrebane" && unit.AssetKey == "Boss_Level9_Savagery_V2") &&
                         state.Context?.LifeLinks is LifeLinkContext world && (linkedCombat || !state.Preview && !world.CalculatingPreview) &&
@@ -1139,6 +1140,14 @@ namespace MonsterTrain2Poju.Model
                     if (countError != null) return countError;
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        if (effect.Type == "CardEffectForceRelentless")
+                        {
+                            if (trigger.Kind != "OnDeath" || effect.Value != 1 || effect.Action != null ||
+                                unit.BumpRules?.CompanionBoss != true || unit.AssetKey is not
+                                    ("Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" or "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth"))
+                                return "Uncalibrated forced-relentless trigger definition.";
+                            continue;
+                        }
                         if (effect.Type == UnitCardCopyModel.Effect)
                         {
                             string? copyError = UnitCardCopyModel.Validate(effect);
@@ -1398,10 +1407,13 @@ namespace MonsterTrain2Poju.Model
                         {
                             // Native enemy Harvest/Incant has no source card traits.
                             // Keep other target modes and parent-card scaling guarded.
+                            bool duoSlay = unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" && trigger.Kind == "OnKill" &&
+                                effect.Value == 3 && effect.Action is { Target: "Tower", AllowPlayer: true, AllowEnemy: true } &&
+                                effect.Action.Filters?.Subtype == "SubtypesData_EntropicAngel";
                             if (unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 || unit.Modifiers == null ||
                                 effect.Action is not { Type: "BuffAttack", Range: null } buff ||
                                 buff.Target is not ("Self" or "Room" or "Tower") || buff.Value != effect.Value || buff.UseCardTraits ||
-                                buff.Target != "Self" && (!buff.AllowEnemy || buff.AllowPlayer))
+                                buff.Target != "Self" && (!buff.AllowEnemy || buff.AllowPlayer && !duoSlay))
                                 return "Triggered attack buffs require a captured fixed enemy self/room/tower buff without parent-card traits.";
                             string? buffFilter = buff.Target == "Self" ? null : buff.Filters?.Validate();
                             if (buffFilter != null) return buffFilter;
@@ -3719,7 +3731,12 @@ namespace MonsterTrain2Poju.Model
                             if (live >= 0) retained = unit.Triggers[live];
                             effects = retained.Effects.ToArray();
                             CombatEffect effect = effects[effectIndex];
-                            if (effect.Type == "CardEffectUnboxJackInTheBoxUnitCard")
+                            if (effect.Type == "CardEffectForceRelentless")
+                            {
+                                if (!source.Preview)
+                                { unsupportedReason = "Companion death forcing the native turn and spawn phase requires separate calibration."; return; }
+                            }
+                            else if (effect.Type == "CardEffectUnboxJackInTheBoxUnitCard")
                             {
                                 if (source.Preview) continue;
                                 if (!ApplyJackInTheBox(unit, effect, out IReadOnlyList<int>? remaining)) break;
@@ -5090,6 +5107,9 @@ namespace MonsterTrain2Poju.Model
                 {
                     string? healthError = TriggeredHealthModel.Validate(effect);
                     if (healthError != null) { unsupportedReason = healthError; return false; }
+                    if (targets.UnitIds.Any(id => units.All(unit => unit.Source.Id != id) ||
+                        units.Single(unit => unit.Source.Id == id).RoomIndex != source.RoomIndex))
+                    { unsupportedReason = "Cross-floor triggered maximum-health mutation requires native calibration."; return false; }
                     foreach (int id in targets.UnitIds)
                     {
                         WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == id);

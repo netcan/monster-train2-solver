@@ -1,6 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--angel-duo-battle-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AngelDuoBirthChecks.Battle(fixture.RootElement, args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--angel-duo-birth-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AngelDuoBirthChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 5 && args[0] == "--player-native-covenant-campaign-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -4243,7 +4256,14 @@ foreach (string path in args.Where(path => path.Contains("outer-boss-birth-calib
     path.Contains("outer-boss-occupied-birth-calibration", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    OuterBossBirthChecks.Native(fixture.RootElement);
+    if (Path.GetFileName(path) == "outer-boss-birth-calibration-angel-duo.mt2f")
+        AngelDuoBirthChecks.Native(fixture.RootElement);
+    else OuterBossBirthChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-native-covenant-02-angel-duo.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    AngelDuoBirthChecks.Battle(fixture.RootElement, path);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-pyrebane-targets-calibration", StringComparison.OrdinalIgnoreCase)))
 {

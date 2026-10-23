@@ -57,3 +57,8 @@ first recommendation: `Level6AngelDuo_RallyAttackIncantHealth` is rejected by
 the outer/queued-boss capture guard. This is an open integration gap, not an
 accepted battle archive. The five prior victories and the failed sixth battle
 are kept distinct; no cumulative campaign completion is claimed.
+
+The same Ring6 input now has accepted original Angel Duo birth and ordinary
+no-card battle coverage, with complete state/RNG and zero native failures.
+Player capture remains guarded until death phase switching and cross-floor
+Incant health mutation are independently calibrated; see [Angel Duo](angel-duo.md).

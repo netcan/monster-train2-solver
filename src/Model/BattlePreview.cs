@@ -198,9 +198,10 @@ namespace MonsterTrain2Poju.Model
                 if (context.SpawnPoints != null && originalPoints?.NextPreviewCopyId.HasValue != true)
                     context = context.WithSpawnPoints(context.SpawnPoints.WithState(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
                         removed.Select(id => new UnitSpawnPointState(id, null, null, spawnedInPreview: true))).ToArray()));
-                // Ordinary bosses restore their preview actions. The separately managed
-                // outer-train boss keeps the aura's pending action across this boundary.
-                int[] previewBossIds = actors.Values.Where(unit => unit.IsBoss == true && unit.BumpRules?.OuterBoss != true)
+                // Ordinary solitary bosses restore their preview actions. The
+                // separately managed outer boss and its companion retain them.
+                int[] previewBossIds = actors.Values.Where(unit => unit.IsBoss == true && unit.BumpRules?.OuterBoss != true &&
+                    unit.BumpRules?.CompanionBoss != true)
                     .Select(unit => unit.Id).ToArray();
                 CombatUnit RestoreEnchantments(CombatUnit original)
                 {

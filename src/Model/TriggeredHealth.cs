@@ -14,7 +14,7 @@ namespace MonsterTrain2Poju.Model
                 return "Upgrade-bound maximum-health adjustments require native attribution calibration.";
             if (action.Type == "BuffHealth" && action.Lifetime is not ("" or "TemporaryUntilEndOfBattle" or "TemporaryUntilUnitDeath"))
                 return "Unmodeled triggered maximum-health buff lifetime.";
-            if (action.Target is not ("Self" or "Room" or "FrontInRoom" or "BackInRoom" or "Weakest"))
+            if (action.Target is not ("Self" or "Room" or "FrontInRoom" or "BackInRoom" or "Weakest" or "Tower"))
                 return "Uncalibrated triggered maximum-health target.";
             return (action.Target == "Self" ? null : action.Filters?.Validate()) ?? action.Range?.Validate();
         }

@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Model
             OuterBossPhaseResult Fail(string reason) => new OuterBossPhaseResult(null, reason);
             BattleTurnState battle = source.Battle; OuterBossProgress boss = source.CreatedBoss; CombatUnit unit = source.CreatedUnit;
             TrainCombatState train = battle.Spawn.Train;
+            bool duo = OuterBossDefinitions.IsAngelDuo(unit.AssetKey);
             if (source.ExternalInteractions.Count > 0) return Fail(string.Join("; ", source.ExternalInteractions));
             if (!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(train.Context, unit.AssetKey))
                 return Fail("Outer-boss Covenant owners require separate calibration.");
@@ -40,8 +41,8 @@ namespace MonsterTrain2Poju.Model
                 return Fail("Outer-boss Covenant birth requires its calibrated native stats.");
             if (!OuterBossDefinitions.Supports(boss.AssetKey) || boss.Phase != "Casting" || boss.Room != -1 || boss.UnitId != unit.Id ||
                 unit.BumpRules?.OuterBoss != true || unit.Health <= 0 || unit.DeathState?.IsDestroyed == true ||
-                unit.BumpRules.PairedBossUnitId != 0 || source.CreatedMovement?.UnitId != unit.Id || source.CreatedMovement.Speed != 1 ||
-                source.CreatedMovement.CompanionBoss || boss.Controller.Groups.Count != 1 || boss.DestroyActions.Count != 1 ||
+                !duo && unit.BumpRules.PairedBossUnitId != 0 || source.CreatedMovement?.UnitId != unit.Id || source.CreatedMovement.Speed != 1 ||
+                source.CreatedMovement.CompanionBoss != duo || unit.BumpRules.CompanionBoss != duo || boss.Controller.Groups.Count != 1 || boss.DestroyActions.Count != 1 ||
                 boss.VisitedRooms.Count != 0 || boss.Controller.InitialAction != null ||
                 boss.Controller.CurrentGroup != null || boss.Actions.Count != 1 || boss.Actions[0].Count != 1 || !boss.Actions[0][0].Empty ||
                 battle.Spawn.OuterBoss != null || battle.PlayRules == null || train.Context?.SpawnPoints == null ||
@@ -85,8 +86,29 @@ namespace MonsterTrain2Poju.Model
             if (source.BirthStats != null) unit = actorDefinition.Create(unit.Id);
             CombatContext context = train.Context.WithSpawnPoints(points);
             var movement = train.Movement.Append(source.CreatedMovement).ToArray();
+            CombatUnit? partner = null;
+            if (duo)
+            {
+                CombatUnit[] companions = train.Rooms.SelectMany(room => room.Units)
+                    .Where(actor => actor.BumpRules?.CompanionBoss == true && actor.Health > 0).ToArray();
+                if (companions.Length != 1 || companions[0].AssetKey != "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" ||
+                    unit.BumpRules!.PairedBossUnitId != companions[0].Id)
+                    return Fail("Angel duo birth requires its original live Savage companion.");
+                partner = companions[0];
+                UnitBumpRules paired = unit.BumpRules!;
+                unit = unit.WithBumpRules(new UnitBumpRules(paired.Loops, true, true, paired.OuterBossRelentlessPhase,
+                    partner.Id, paired.CastingAnchorSlots, paired.RelentlessAnchorSlots)).WithEndsBattleOnDeath(false);
+            }
+            CombatUnit Pair(CombatUnit actor)
+            {
+                if (actor.Id != partner?.Id) return actor;
+                UnitBumpRules prior = actor.BumpRules!;
+                return actor.WithBumpRules(new UnitBumpRules(prior.Loops, prior.CompanionBoss, prior.OuterBoss,
+                    prior.OuterBossRelentlessPhase, unit.Id, prior.CastingAnchorSlots, prior.RelentlessAnchorSlots)).WithEndsBattleOnDeath(false);
+            }
             train = EnchantmentWorldModel.Rebase(new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
-                room.Deployment, BattleSpawnPointModel.Order(points, room.RoomIndex, room.RoomIndex == target ? room.Units.Append(unit).ToArray() : room.Units),
+                room.Deployment, BattleSpawnPointModel.Order(points, room.RoomIndex,
+                    (room.RoomIndex == target ? room.Units.Append(unit) : room.Units).Select(Pair).ToArray()),
                 room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), movement, train.EnemySlotsPerRoom, context));
             RoomCombatResult covenants = RelicSpawnStatusModel.CharacterAdded(train.Rooms[target], unit.Id, 0, true);
             if (!covenants.Supported) return Fail(covenants.UnsupportedReason!);
@@ -96,6 +118,13 @@ namespace MonsterTrain2Poju.Model
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context,
                     room.Preview, room.ActiveCompanionBossIds)).ToArray(), movement, train.EnemySlotsPerRoom, context);
             var pending = covenants.PendingCallbacks.ToList();
+            RelicBirthResult notifications = RelicBirthModel.CharacterAdded(train, unit.Id, 0, false,
+                deferCallbacks: false, pending.Select(UnitCloneCallback.From).ToArray());
+            if (!notifications.Supported) return Fail(notifications.UnsupportedReason!);
+            train = EnchantmentWorldModel.Rebase(notifications.State!);
+            pending.Clear();
+            if (notifications.Queued.Count > 0)
+                return Fail("Initial outer-boss notification queue did not settle.");
             foreach (string phase in new[] { "OnSpawn", "OnUnscaledSpawn", "OnSpawnNotFromCard" })
             {
                 CombatUnit actor = train.Rooms[target].Units.Single(value => value.Id == unit.Id);
