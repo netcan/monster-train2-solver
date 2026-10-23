@@ -14,7 +14,15 @@ internal static class WinningAdviceChecks
             step.GetProperty("IsEndTurn").GetBoolean())).ToArray();
         Require(steps.Length > 2 && native.Length == steps.Length && fixture.GetProperty("NativeWon").GetBoolean(),
             "A complete multi-step native winning fixture is required.");
-        var plan = new BattlePlanResult(record.GetProperty("Planned").Deserialize<BattleTurnState>()!, RoomOutcome.BattleWon,
+        BattleTurnState archivedFinal = record.GetProperty("Planned").Deserialize<BattleTurnState>()!;
+        BattleTurnState planned = BattlePlannerChecks.Replay(root, steps, out RoomOutcome plannedOutcome);
+        // Historical captures may allocate more unused UI previews than an
+        // independent model replay. Calibrate only that allocator, then supply
+        // the exact replayed final state to the strict publication verifier.
+        using (var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true))
+            Require(plannedOutcome == RoomOutcome.BattleWon && keys.Key(planned) == keys.Key(archivedFinal),
+                "Archived winning forecast differs beyond the unused preview allocator.");
+        var plan = new BattlePlanResult(planned, RoomOutcome.BattleWon,
             steps, record.GetProperty("Score").GetDouble(), steps.Count(step => step.IsEndTurn),
             record.GetProperty("Nodes").GetInt32(), 0, 0, TimeSpan.Zero, false, false, false, false, true,
             Array.Empty<UnsupportedActionAttempt>(), null);
@@ -97,7 +105,7 @@ internal static class WinningAdviceChecks
             session.Observe(root, original); Pump(session, BattleAdviceStatus.Ready);
             session.InvalidateForInput();
             session.Observe(following, original); Pump(session, BattleAdviceStatus.Unavailable);
-            Require(session.Current == null && session.Error!.Contains("retained winning continuation"),
+            Require(session.Current == null && session.Error!.Contains("retained continuation"),
                 "A supplied key bypassed independent verification of the captured state.");
         }
         using var entered = new ManualResetEventSlim();

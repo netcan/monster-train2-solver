@@ -46,8 +46,10 @@ reproduction adds `-PlayerAdvisor -RollingAdvice -AdvisorFloorBrowse` to
 `Run-FullBattleProbe.ps1`; the flag requires both player and rolling drivers.
 No full regression or Mac packaging is involved.
 
-An additional historical check,
-`--winning-advice-only full-battle-player-boss-search.mt2f`, fails its initial
-complete-plan reproduction on both this version and an isolated build of
-baseline `74f9272c`. It remains an existing calibration/fixture issue; the new
-browsing tests neither accept that old plan nor weaken full-state verification.
+The historical `--winning-advice-only full-battle-player-boss-search.mt2f`
+initial reproduction failure was traced to the next unused preview-copy
+allocator (1049 versus 1065), including on isolated baseline `74f9272c`.
+Its checker now independently replays the archived steps, requires the same
+final state with only that allocator normalized, then gives the exact replayed
+final state to strict publication verification. All 50 steps / 49 retained
+native successors pass. Production full-state verification remains unchanged.

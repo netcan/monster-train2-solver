@@ -13,6 +13,12 @@ not install every patch in its assembly.
 
 ## Focused results
 
+- Same-turn ordinary continuation passes a default-budget source/frozen native
+  pair: nine ordinary inputs reuse verified suffixes with zero search work,
+  new turns retain the full planning horizon and seven floor switches still
+  add no searches. Both processes win with Pyre 76, all 24 inputs/full
+  forecasts/state/RNG match, normal exit and all four counters zero. See
+  [same-turn advice continuation](../tests/fixtures/player-ordinary-continuation.md).
 - Both Advisor and the existing Probe Release builds succeed. The ordinary
   unsuppressed first build retains existing nullable warnings in reused code.
 - `--battle-advice-only full-battle-planner-starter-search.mt2f` passes stale

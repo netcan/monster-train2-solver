@@ -25,7 +25,7 @@ namespace MonsterTrain2Poju.Model
 
         public BattleStateKeys() { }
         // UI previews can allocate additional copies between settled captures.
-        // Only their next unused number is irrelevant to a retained winning line;
+        // Only their next unused number is irrelevant to a retained verified line;
         // allocator presence, existing copy identities and every RNG remain keyed.
         internal BattleStateKeys(bool ignorePreviewCopyAllocator) : this(ignorePreviewCopyAllocator, false) { }
 

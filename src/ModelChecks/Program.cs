@@ -2853,6 +2853,19 @@ if (args.Length == 2 && args[0] == "--native-advice-only")
     BattleAdviceChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--ordinary-advice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OrdinaryAdviceChecks.Run(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--player-ordinary-advice-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    OrdinaryAdviceChecks.NativePair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--floor-browse-advice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4981,6 +4994,18 @@ foreach (string path in args.Where(path => path.Contains("full-battle-copy-on-pl
 {
     using var document = ModelJson.ReadFixture(path);
     CopyOnPlayChecks.Native(document.RootElement);
+}
+{
+    string? sourcePath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-ordinary-continuation-search.mt2f", StringComparison.OrdinalIgnoreCase));
+    string? replayPath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-ordinary-continuation-replay.mt2f", StringComparison.OrdinalIgnoreCase));
+    if (sourcePath != null && replayPath != null)
+    {
+        using var source = ModelJson.ReadFixture(sourcePath);
+        using var replay = ModelJson.ReadFixture(replayPath);
+        OrdinaryAdviceChecks.Run(source.RootElement);
+        OrdinaryAdviceChecks.NativePair(source.RootElement, replay.RootElement);
+        FloorBrowseAdviceChecks.NativePair(source.RootElement, replay.RootElement);
+    }
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-natural-ring7-copy-on-play", StringComparison.OrdinalIgnoreCase)))
 {

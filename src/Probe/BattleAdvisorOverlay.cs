@@ -63,6 +63,7 @@ namespace MonsterTrain2Poju.Probe
             public double VerificationMs { get; set; }
             public double EndToEndMs { get; set; }
             public bool ReusedWinningContinuation { get; set; }
+            public bool ReusedContinuation { get; set; }
             public bool ReusedSelection { get; set; }
         }
         internal List<Publication> Publications { get; } = new List<Publication>();
@@ -276,11 +277,13 @@ namespace MonsterTrain2Poju.Probe
                     CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,
                     SearchMs = displayed.Plan.Elapsed.TotalMilliseconds, VerificationMs = displayed.VerificationElapsed.TotalMilliseconds,
                     EndToEndMs = displayed.ResponseElapsed.TotalMilliseconds,
-                    ReusedWinningContinuation = displayed.ReusedWinningContinuation, ReusedSelection = displayed.ReusedSelection });
+                    ReusedWinningContinuation = displayed.ReusedWinningContinuation, ReusedSelection = displayed.ReusedSelection,
+                    ReusedContinuation = displayed.ReusedContinuation });
                 if (playerSession && Publications.Count > 128) Publications.RemoveAt(0);
                 log.LogInfo((playerSession ? "POJU-ADVICE" : "ADVISOR-PUBLISHED") + " generation=" + session.Generation + " steps=" + displayed.Plan.Steps.Count +
                     " elapsedMs=" + displayed.Plan.Elapsed.TotalMilliseconds.ToString("F1") + " capturePurityFailures=" + PurityFailures +
-                    " source=" + (displayed.ReusedSelection ? "floor-browse" : displayed.ReusedWinningContinuation ? "verified-continuation" : "search"));
+                    " source=" + (displayed.ReusedSelection ? "floor-browse" : displayed.ReusedWinningContinuation ? "verified-continuation" :
+                        displayed.ReusedContinuation ? "verified-turn" : "search"));
                 if (!playerSession && !screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")
                 {
                     CapturePanel(); screenshotTaken = true;
@@ -387,6 +390,7 @@ namespace MonsterTrain2Poju.Probe
             }
             if (advice.ReusedSelection) text.Append("\n\n沿用当前建议");
             else if (advice.ReusedWinningContinuation) text.Append("\n\n沿用已验证胜局");
+            else if (advice.ReusedContinuation) text.Append("\n\n沿用已验证步骤");
             else text.Append("\n\n搜索 ").Append((plan.Elapsed.TotalMilliseconds / 1000).ToString("F2")).Append(" 秒");
             if (plan.TimedOut) text.Append(" · 使用预算内已验证方案");
             if (plan.UnsupportedAttempts.Count > 0) text.Append("\n部分操作尚未纳入比较");

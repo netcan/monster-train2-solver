@@ -16,24 +16,26 @@ namespace MonsterTrain2Poju.Model
             return keys.Key(left) == keys.Key(right);
         }
 
-        internal static bool TryRebase(BattleAdvice advice, BattleTurnState root, bool retainWinningPlans,
-            CancellationToken token, out BattlePlanResult plan, out WinningAdviceContinuation? proof)
+        internal static bool TryRebase(BattleAdvice advice, BattleTurnState root, bool retainPlans,
+            CancellationToken token, out BattlePlanResult plan, out VerifiedAdviceContinuation? proof)
         {
             plan = advice.Plan; proof = null;
             if (!SameBattle(advice.Root, root)) return false;
             BattleTurnState state = root;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             using var continuationKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
-            var roots = retainWinningPlans && plan.Outcome == RoomOutcome.BattleWon ? new List<string>() : null;
+            var roots = retainPlans && VerifiedAdviceContinuation.CanRetain(plan) ? new List<string>() : null;
+            bool recordRoot = true;
             foreach (BattleSearchStep step in plan.Steps)
             {
                 token.ThrowIfCancellationRequested();
-                roots?.Add(continuationKeys.Key(state));
+                if (recordRoot) roots?.Add(continuationKeys.Key(state));
                 if (step.IsEndTurn)
                 {
                     BattleTurnResult next = BattleTurnModel.EndTurn(state);
                     if (!next.Supported) return false;
                     state = next.State!; outcome = next.Outcome;
+                    if (plan.Outcome != RoomOutcome.BattleWon) recordRoot = false;
                 }
                 else
                 {
@@ -47,7 +49,7 @@ namespace MonsterTrain2Poju.Model
             plan = new BattlePlanResult(state, outcome, plan.Steps, plan.Score, plan.TurnsCompleted,
                 0, 0, 0, TimeSpan.Zero, plan.TimedOut, false, plan.ReachedNodeLimit, plan.ReachedActionLimit,
                 plan.CompletedHorizon, plan.UnsupportedAttempts, null, plan.RequestedTurns, plan.UsedShorterHorizon);
-            if (roots != null) proof = new WinningAdviceContinuation(plan, roots.ToArray());
+            if (roots != null) proof = new VerifiedAdviceContinuation(plan, roots.ToArray());
             return true;
         }
     }
