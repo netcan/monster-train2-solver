@@ -55,7 +55,7 @@ internal static class CovenantEnemyStatsChecks
         Console.WriteLine("COVENANT-ENEMY-STATS PASS: original ordinary first battle, native wave stats, complete victory/state/RNG and sixteen independent immutable chains. Explicit activation after startup only.");
     }
 
-    internal static void Pair(FixtureValue source, FixtureValue replay)
+    internal static void Pair(FixtureValue source, FixtureValue replay, bool ftue = false)
     {
         RollingAdviceChecks.FrozenPair(source, replay);
         BattleAdviceChecks.Native(source);
@@ -63,6 +63,10 @@ internal static class CovenantEnemyStatsChecks
         foreach (FixtureValue root in new[] { source, replay })
         {
             Evidence(root);
+            BattleTurnState before = root.GetProperty("Turns")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            CombatRelicState[] owners = before.Spawn.Train.Context!.Relics!.Where(owner => owner.IsCovenant == true).ToArray();
+            Require(owners.Length == (ftue ? 2 : 1) && owners.Any(owner => owner.AssetKey == "Covenant00_FTUE") == ftue,
+                "Player pair must use its declared single-01 or 00+01 original context.");
             FixtureValue player = root.GetProperty("PlayerAdvisor");
             FixtureValue overlay = player.GetProperty("Overlay");
             Require(player.GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&

@@ -172,11 +172,11 @@ if (args.Length == 2 && args[0] == "--covenant-enemy-stats-only")
     return;
 }
 
-if (args.Length == 3 && args[0] == "--player-covenant-enemy-stats-pair-only")
+if (args.Length == 3 && args[0] is "--player-covenant-enemy-stats-pair-only" or "--player-covenant-enemy-stats-ftue-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
-    CovenantEnemyStatsChecks.Pair(source.RootElement, replay.RootElement);
+    CovenantEnemyStatsChecks.Pair(source.RootElement, replay.RootElement, args[0] == "--player-covenant-enemy-stats-ftue-pair-only");
     return;
 }
 

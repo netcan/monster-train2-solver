@@ -31,5 +31,41 @@ The retained all-four true-final-boss full-battle control also passes the shared
 wave checker after this extension.
 
 Run `ModelChecks --covenant-enemy-stats-only <archive>` for a focused complete
-battle check. Actual player advice/fresh replay and natural cumulative campaign
-acceptance are separate from these controlled wave and full-battle observations.
+battle check.
+
+The actual separate Advisor assembly also passes both original contexts. Each
+source executes 28 inputs (21 card plays and seven EndTurns), publishes thirty
+advice updates and passes UI rendering, pointer routing, pause/resume,
+hide/cancel/show, refresh and drag/clamp interactions. The two fresh native
+processes execute their respective frozen inputs with no searches or advice
+publications. Every input, root, successor, complete forecast, terminal state
+and RNG matches. All four processes exit normally with settled effects,
+protected files unchanged and capture/mismatch/unsupported/pending zero.
+
+| Context | Source pure captures | Replay pure captures | Final Pyre in both processes |
+| --- | --- | --- | --- |
+| 01 | 327 | 94 | 60 |
+| 00+01 | 331 | 98 | 52 |
+
+Source/fresh replay archive prefixes are
+`full-battle-player-covenant-enemy-stats` and
+`full-battle-player-covenant-enemy-stats-ftue`, with `-search.mt2f` and
+`-replay.mt2f` suffixes. Native sources, with prefix
+`full-battle-units-spells-and-junk-`, are:
+
+| Context | Source | Fresh replay |
+| --- | --- | --- |
+| 01 | `20261023-092136-cca51518` | `20261023-092521-537c8d79` |
+| 00+01 | `20261023-092136-7e6f9845` | `20261023-092521-5626a6fb` |
+
+All 56 source inputs and the corresponding 56 frozen replay inputs are checked
+through `scripts/Check-PlayerAdvisor.ps1 -Case CovenantEnemyStats,CovenantEnemyStatsFtue -SkipBuild`.
+Advice uses three turns, a 3,000-ms soft search budget and tactical candidates;
+these victories do not establish a hard response deadline or default-budget
+quality. Native source runs take 203.77/206.47 seconds and fresh replay runs
+101.81/103.26 seconds, including the full game and capture validation.
+
+This acceptance covers the original controlled first battle. Natural Covenant
+initialization, higher-rank cumulative campaigns and later boss signatures
+still require separate evidence; startup deck effects are never replayed by
+the production capture helper.

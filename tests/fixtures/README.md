@@ -1,12 +1,15 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1115 archives,
+Current manifest inventory (2026-10-23): 1119 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 Ordinary rank-one enemy birth stats now have native complete-battle controls
 for original 01 and 00+01: seven-turn victories with Pyre10, pure wave-stat
 projection and guarded spoofed origins. See [ordinary Covenant evidence](covenant-enemy-stats.md).
+Both also pass actual player advice and fresh native frozen replay: 56 source
+inputs, 56 replay inputs, complete forecasts/state/RNG and two full victories
+with Pyre60/Pyre52, with zero native failure counters in all four processes.
 
 Single original Covenants 00/01/04/08 now have complete controlled Level9
 no-cards losses: exact native birth adjustments, ordinary waves, full turns,
