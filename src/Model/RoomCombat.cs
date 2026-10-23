@@ -1866,6 +1866,7 @@ namespace MonsterTrain2Poju.Model
                     RemoveHatch();
                     if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
                     PostCombat();
+                    if (CombatPreviewStopped()) return Finish(RoomOutcome.Exchanged);
                     if (battleWon) return Finish(RoomOutcome.BattleWon);
                     if (!source.Preview && units.Any(unit => unit.Source.IsPyre && !unit.Alive))
                         return Finish(RoomOutcome.PlayerDefeated);
@@ -2595,9 +2596,10 @@ namespace MonsterTrain2Poju.Model
                     EnchantmentWorld observed = preview.context!.Enchantments!;
                     int firstPreviewId = context.NextUnitId ?? int.MaxValue;
                     int firstPreviewCardId = context.NextCardId;
-                    // Temporary previews restore only the characters collected before
-                    // the hit. New actors keep their preview state and copied point;
-                    // switching the room back to its primary list does not destroy them.
+                    // The collected actors restore temporary state. HeroManager also
+                    // disables previews on newly spawned enemies, exposing their raw
+                    // primary state and null primary point. Player births instead keep
+                    // their preview state and copied point outside the collected list.
                     EnchantmentRetainedUnit[] observedActors = observed.Rooms.SelectMany(room => room.Units.Select(unit =>
                         new EnchantmentRetainedUnit(unit, room.RoomIndex, room.Preview)))
                         .Concat(observed.RetainedUnits).ToArray();
@@ -2641,7 +2643,8 @@ namespace MonsterTrain2Poju.Model
                         room.Deployment, room.Units.Select(unit => Restore(unit, room.RoomIndex)).ToArray(), room.ExternalInteractions, null, room.Preview,
                         source.ActiveCompanionBossIds)).ToArray(),
                         originalWorld.Movement, originalWorld.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(Retained)
-                            .Concat(births).ToArray(),
+                            .Concat(births.Select(birth => birth.Unit.Team == CombatTeam.Enemy ?
+                                new EnchantmentRetainedUnit(PreviewBirthModel.Restore(birth.Unit, removedPreviewIds), -1, false) : birth)).ToArray(),
                         originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                         originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
                     // Remote Tower targets share effect objects with this
@@ -3420,6 +3423,10 @@ namespace MonsterTrain2Poju.Model
                             if (!TryRevive(null, unit, 0)) Death(null, unit, 0, sacrifice: true);
                         }
                         else if (status.Id == "stealth") Trigger(unit, "stealth", 1);
+                        // A lethal boss/Pyre status tick stops the native preview
+                        // before the next unit's post-combat callbacks. Those
+                        // callbacks would otherwise overwrite shared card caches.
+                        if (battleWon || CombatPreviewStopped()) return;
                     }
                     if (unit.Alive && unit.Has("ephemeral") && Active(unit.Statuses["ephemeral"]))
                         TriggerEphemeral(unit);
