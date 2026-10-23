@@ -32,7 +32,7 @@ internal static class TrueFinalBossBattleChecks
         Console.WriteLine($"TRUE-FINAL-BOSS-COVENANT-BATTLE PASS: original {owner}, exact birth stats, {turns} complete EndTurns, native room/train phases and full state/RNG; native failure counters zero. Controlled route and loss only.");
     }
 
-    private static void CovenantWaves(FixtureValue root, BattleTurnState before)
+    internal static void CovenantWaves(FixtureValue root, BattleTurnState before)
     {
         FixtureValue control = root.GetProperty("OriginalTrueFinalBossRoute").GetProperty("CovenantControl");
         // The earlier stronger-boss archive predates ordinary wave projections.

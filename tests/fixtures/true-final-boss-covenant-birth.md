@@ -34,8 +34,10 @@ startup; it is neither a natural high-rank campaign nor a win.
 Run `ModelChecks --true-final-boss-covenant-battle-only <archive>` for the
 dedicated native-counter, origin, stat, room/train and full-chain acceptance.
 Missing/spoofed origins and off-by-one stat adjustments are rejected. The
-player Covenant gate, combined Covenants and terminal/relentless extensions
-remain guarded pending separate native evidence.
+single-Covenant04 player gate now also passes actual-player advice and fresh
+native replay, documented in [player evidence](player-true-final-boss-covenant04.md).
+Other player Covenants, combinations and terminal/relentless extensions remain
+guarded pending separate native evidence.
 
 Four `true-final-boss-spawn-calibration-covenant{00,01,04,08}.mt2f` archives
 compare complete native five-actor births with the pure model. Each process
@@ -92,7 +94,7 @@ control also pass. No full regression or Mac build is performed.
 
 The model admits one of these four original Covenant definitions only when
 all five stat projections carry the matching captured origin. The production
-capture's later-combat protection remains; multiple Covenants, natural rank
+capture's other-rank protection remains; multiple Covenants, natural rank
 progression and further Covenant combat signatures require separate evidence.
 Ordinary rank-one wave capture also retains an explicit protection, so the
 startup-interface classification does not silently admit uncalibrated births.

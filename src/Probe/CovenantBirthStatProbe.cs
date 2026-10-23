@@ -1,0 +1,40 @@
+using System;
+using System.Linq;
+using MonsterTrain2Poju.Model;
+using Newtonsoft.Json;
+
+namespace MonsterTrain2Poju.Probe
+{
+    // Read-only stat projection shared by the actual player assembly and the
+    // controlled native observations. This never activates a Covenant.
+    internal static class CovenantBirthStatProbe
+    {
+        internal static bool SingleStrongerBosses(SaveManager save) => save.GetCovenants().Count == 1 &&
+            save.GetCovenants()[0].GetRelicDataID() == "80cfbaca-da9a-4aa8-ac0d-a6563f26fcb8";
+
+        internal static EnemyBirthStatAdjustment? Capture(CharacterData data)
+        {
+            SaveManager save = AllGameManagers.Instance.GetSaveManager();
+            if (!SingleStrongerBosses(save) || !PlayerTrueFinalBossProbe.Enabled) return null;
+            return Query(data, out _);
+        }
+
+        internal static EnemyBirthStatAdjustment Query(CharacterData data, out object evidence)
+        {
+            int frame = UnityEngine.Time.frameCount;
+            object before = Rng();
+            CharacterStatAdjustment adjustment = AllGameManagers.Instance.GetRelicManager().GetEnemyStatAdjustmentsFromAllRelics(data);
+            object after = Rng();
+            if (frame != UnityEngine.Time.frameCount || JsonConvert.SerializeObject(before) != JsonConvert.SerializeObject(after))
+                throw new InvalidOperationException("Covenant stat preview changed native RNG or frame.");
+            evidence = new { AssetKey = data.name, RawAttack = data.GetAttackDamage(), RawHealth = data.GetHealth(),
+                Attack = adjustment.attackAdjustment, Health = adjustment.healthAdjustment,
+                FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = before, RngAfter = after };
+            return new EnemyBirthStatAdjustment(adjustment.attackAdjustment, adjustment.healthAdjustment,
+                AllGameManagers.Instance.GetSaveManager().GetCovenants().Select(covenant => covenant.GetRelicDataID()).ToArray());
+        }
+
+        private static object Rng() => Enum.GetValues(typeof(RngId)).Cast<RngId>().Select(id =>
+            new { Id = id.ToString(), Words = RngCalibration.Words(RandomManager.GetState(id)) }).ToArray();
+    }
+}

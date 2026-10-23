@@ -46,19 +46,11 @@ namespace MonsterTrain2Poju.Probe
 
         private static EnemyBirthStatAdjustment? CaptureStats(CharacterData data, bool wave)
         {
-            if (Evidence == null) return null;
-            int frame = UnityEngine.Time.frameCount;
-            object before = Rng();
-            CharacterStatAdjustment adjustment = AllGameManagers.Instance.GetRelicManager().GetEnemyStatAdjustmentsFromAllRelics(data);
-            object after = Rng();
-            if (frame != UnityEngine.Time.frameCount || JsonConvert.SerializeObject(before) != JsonConvert.SerializeObject(after))
-                throw new InvalidOperationException("Covenant stat preview changed native RNG or frame.");
+            if (Evidence == null) return CovenantBirthStatProbe.Capture(data);
+            EnemyBirthStatAdjustment adjustment = CovenantBirthStatProbe.Query(data, out object evidence);
             if (!wave || waveAssets.Add(data.name))
-                (wave ? waveStatQueries : statQueries).Add(new { AssetKey = data.name, RawAttack = data.GetAttackDamage(), RawHealth = data.GetHealth(),
-                    Attack = adjustment.attackAdjustment, Health = adjustment.healthAdjustment,
-                    FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = before, RngAfter = after });
-            return new EnemyBirthStatAdjustment(adjustment.attackAdjustment, adjustment.healthAdjustment,
-                AllGameManagers.Instance.GetSaveManager().GetCovenants().Select(covenant => covenant.GetRelicDataID()).ToArray());
+                (wave ? waveStatQueries : statQueries).Add(evidence);
+            return adjustment;
         }
 
         private static object Rng() => Enum.GetValues(typeof(RngId)).Cast<RngId>().Select(id =>

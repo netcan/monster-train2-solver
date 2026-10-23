@@ -38,7 +38,8 @@ namespace MonsterTrain2Poju.Probe
         {
             SpawnPatternData pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
             var interactions = new List<string>();
-            if (AllGameManagers.Instance.GetSaveManager().GetCovenantsForSpawnPattern().Count > 0 && TrueFinalBossCovenantScenario.Evidence == null)
+            if (AllGameManagers.Instance.GetSaveManager().GetCovenantsForSpawnPattern().Count > 0 && TrueFinalBossCovenantScenario.Evidence == null &&
+                !CovenantBirthStatProbe.SingleStrongerBosses(AllGameManagers.Instance.GetSaveManager()))
                 interactions.Add("True-final-boss Covenant birth effects require separate calibration.");
             var definitions = pattern.GetTrueFinalBosses().SelectMany(group => group.characters).Select(data =>
             {

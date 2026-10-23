@@ -382,7 +382,8 @@ namespace MonsterTrain2Poju.Model
             if (definition.BirthStats is { } stats &&
                 (!TrueFinalBossCovenantModel.MatchesOrigins(context, stats) || definition.Unit.Modifiers == null ||
                     (long)definition.Unit.BaseAttack + stats.Attack < 0 || (long)definition.Unit.BaseAttack + stats.Attack > int.MaxValue ||
-                    (long)definition.Unit.Health + stats.Health <= 0 || (long)definition.Unit.MaxHealth + stats.Health > int.MaxValue ||
+                    (long)definition.Unit.Health + stats.Health <= 0 || (long)definition.Unit.Health + stats.Health > int.MaxValue ||
+                    (long)definition.Unit.MaxHealth + stats.Health <= 0 || (long)definition.Unit.MaxHealth + stats.Health > int.MaxValue ||
                     (long)definition.Unit.Modifiers.DamageBuff + stats.Attack is < int.MinValue or > int.MaxValue))
                 return "Enemy birth stats require a matching calibrated original Covenant and bounded native stats.";
             // Hero Setup runs before EnterTower. Native Conduit's stacks-added

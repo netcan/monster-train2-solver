@@ -16,7 +16,8 @@ namespace MonsterTrain2Poju.Probe
                 if (!playerCapture) return false;
                 AllGameManagers? managers = AllGameManagers.Instance;
                 HeroManager? heroes = managers?.GetHeroManager();
-                if (heroes == null || managers!.GetSaveManager().GetCovenantsForSpawnPattern().Count != 0) return false;
+                if (heroes == null || managers!.GetSaveManager().GetCovenantsForSpawnPattern().Count != 0 &&
+                    !CovenantBirthStatProbe.SingleStrongerBosses(managers.GetSaveManager())) return false;
                 var pattern = (SpawnPatternData?)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
                 if (pattern == null || pattern.GetBossType() != SpawnPatternData.BossType.TrueFinalBoss ||
                     managers.GetSaveManager().GetCurrentScenarioData()?.name != "Level9TrueFinalBoss_V2") return false;

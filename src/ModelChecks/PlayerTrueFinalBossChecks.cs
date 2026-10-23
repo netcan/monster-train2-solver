@@ -4,7 +4,8 @@ using MonsterTrain2Poju.Model;
 internal static class PlayerTrueFinalBossChecks
 {
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
-    internal static void Pair(FixtureValue source, FixtureValue replay, bool ordinaryAlly = false, bool upgradedAlly = false, bool triggeredAlly = false)
+    internal static void Pair(FixtureValue source, FixtureValue replay, bool ordinaryAlly = false, bool upgradedAlly = false, bool triggeredAlly = false,
+        bool strongerCovenant = false)
     {
         Require(!triggeredAlly || ordinaryAlly, "Triggered player ally requires its declared original source profile.");
         RollingAdviceChecks.FrozenPair(source, replay);
@@ -16,6 +17,19 @@ internal static class PlayerTrueFinalBossChecks
             FixtureValue player = fixture.GetProperty("PlayerAdvisor");
             FixtureValue overlay = player.GetProperty("Overlay");
             FixtureValue route = fixture.GetProperty("OriginalTrueFinalBossRoute");
+            BattleTurnState root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            if (strongerCovenant)
+            {
+                Require(root.Spawn.Train.Context!.Relics!.Count(owner => owner.IsCovenant == true) == 1 &&
+                    root.Spawn.Train.Context.Relics.Any(owner => owner.AssetKey == "Covenant04_StrongerBosses" && TrueFinalBossCovenantModel.KnownOwner(owner)),
+                    "Player Covenant acceptance requires the exact original single stronger-boss definition.");
+                TrueFinalBossSpawnDefinition definition = root.Spawn.QueuedTrueFinalBoss!;
+                TrueFinalBossSpawnChecks.CovenantMetadata(route.GetProperty("CovenantControl"),
+                    new TrueFinalBossSpawnState(root, definition.Definitions, definition.QueuedBosses, 0, new int[4], definition.ExternalInteractions));
+                TrueFinalBossBattleChecks.CovenantWaves(fixture, root);
+            }
+            else Require(root.Spawn.Train.Context!.Relics?.Any(owner => owner.IsCovenant == true) != true,
+                "Baseline player acceptance must not activate a Covenant.");
             Require(player.GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&
                 overlay.GetProperty("Captures").GetInt32() > 0 && overlay.GetProperty("PurityFailures").GetInt32() == 0 &&
                 overlay.GetProperty("Failures").GetInt32() == 0 && overlay.GetProperty("Horizon").GetInt32() == 3 &&
@@ -60,7 +74,8 @@ internal static class PlayerTrueFinalBossChecks
             state.Spawn.OuterBoss?.AssetKey == "Boss_Level9_Entropy_Top_V2" && state.Spawn.OuterBoss.Phase == "Casting" &&
             state.Spawn.Train.Context!.LifeLinks?.Actors.Count == 5), "Player capture omitted the casting controller or five live health owners.");
         BattleTurnState born = live.First();
-        Require(born.Spawn.Train.Context!.LifeLinks!.Actors.Select(actor => actor.Health).SequenceEqual(new[] { 1555, 2750, 3500, 3500, 3500 }),
+        Require(born.Spawn.Train.Context!.LifeLinks!.Actors.Select(actor => actor.Health).SequenceEqual(
+            strongerCovenant ? new[] { 2055, 3250, 4500, 4500, 4500 } : new[] { 1555, 2750, 3500, 3500, 3500 }),
             "Player route changed original true-final-boss starting HP.");
         Require(records.Any(record => record.GetProperty("Nodes").GetInt32() > 0) &&
             records.Any(record => !record.GetProperty("IsEndTurn").GetBoolean()) &&
