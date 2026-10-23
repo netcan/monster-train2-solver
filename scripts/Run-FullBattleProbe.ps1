@@ -73,7 +73,10 @@ param(
     [switch] $OuterBossBirth,
     [switch] $ChosenIncantSpell,
     [switch] $AngelDuoIncant,
+    [switch] $AngelDuoHarvestDeath,
     [ValidateSet('', 'LoopResolve', 'SlayIncant', 'RevengeHarvest')][string] $AngelDuoVariant = '',
+    [ValidateSet('', 'ArkionPush', 'ArkionPyre', 'ArkionRage', 'FleshweaverCorruption', 'FleshweaverMass',
+        'FleshweaverSpikes', 'CaelAtkHP', 'CaelDamageShield', 'CaelLifesteal')][string] $OriginalEarlyOuterBossVariant = '',
     [switch] $AngelDuoForceRelentless,
     [switch] $AngelDuoRelentless,
     [ValidateSet('', 'Inner', 'Outer')][string] $AngelDuoDeath = '',
@@ -711,9 +714,21 @@ if ($AngelDuoVariant -and (-not $InputProfile -or $BattleDistance -ne 5 -or -not
     throw 'AngelDuoVariant requires a Ring6 checkpoint and explicit outer-boss birth/turn capture.'
 }
 if ($AngelDuoVariant) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true }
+if ($OriginalEarlyOuterBossVariant) {
+    $expectedDistance = if ($OriginalEarlyOuterBossVariant.StartsWith('Cael')) { 5 } else { 2 }
+    if (-not $InputProfile -or $BattleDistance -ne $expectedDistance -or -not $OuterBossBirth -or
+        -not $OuterBossTurns -or $AngelDuoVariant -or $OriginalOuterBossVariant -or $OriginalTrueFinalBoss) {
+        throw 'Original early-boss selection requires its native Ring3/Ring6 checkpoint and separate birth/turn capture.'
+    }
+    $SettleCardAnimations = $true; $SettleDeathDissolves = $true
+}
 if ($AngelDuoIncant -and (-not $InputProfile -or $BattleDistance -ne 5 -or -not $OuterBossBirth -or
     -not $OuterBossTurns -or $Policy -ne 'units-spells-and-junk' -or $PlayerAdvisor -or $RollingAdvice -or $Planner -or $RollingInput)) {
     throw 'Angel Duo Incant control requires an original Ring6 checkpoint and fixed native spell policy.'
+}
+if ($AngelDuoHarvestDeath -and ($AngelDuoVariant -ne 'RevengeHarvest' -or $Policy -ne 'no-cards' -or
+    $PlayerAdvisor -or $RollingAdvice -or $Planner -or $RollingInput)) {
+    throw 'Controlled native Harvest death requires the original RevengeHarvest variant and a separate no-card calibration.'
 }
 if ($AngelDuoForceRelentless -and (-not $InputProfile -or $BattleDistance -ne 5 -or -not $OuterBossBirth -or
     -not $OuterBossTurns -or $Policy -ne 'no-cards' -or $PlayerAdvisor -or $RollingAdvice -or $Planner -or $RollingInput)) {
@@ -1506,7 +1521,9 @@ $environment = @{
     MT2_PROBE_PLANNER_DEPLOYMENT_ROOM = "$PlannerDeploymentRoom"
     MT2_PROBE_CHOSEN_INCANT_SPELL = $(if ($ChosenIncantSpell) { '1' } else { '0' })
     MT2_PROBE_ANGEL_DUO_INCANT = $(if ($AngelDuoIncant) { '1' } else { '0' })
+    MT2_PROBE_ANGEL_DUO_HARVEST_DEATH = $(if ($AngelDuoHarvestDeath) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_ANGEL_DUO = $AngelDuoVariant
+    MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS = $OriginalEarlyOuterBossVariant
     MT2_PROBE_ANGEL_DUO_FORCE_RELENTLESS = $(if ($AngelDuoForceRelentless) { '1' } else { '0' })
     MT2_PROBE_ANGEL_DUO_DEATH = $AngelDuoDeath
     MT2_PROBE_ANGEL_DUO_RELENTLESS_ENTRY = $(if ($AngelDuoRelentless) { '1' } else { '0' })

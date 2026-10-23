@@ -69,6 +69,14 @@ namespace MonsterTrain2Poju.Probe
         {
             string? duo = Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_ANGEL_DUO");
             string? variant = Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_OUTER_BOSS");
+            string? early = Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS");
+            if (!string.IsNullOrEmpty(early))
+            {
+                if (!string.IsNullOrEmpty(duo) || !string.IsNullOrEmpty(variant))
+                    throw new InvalidOperationException("Original boss route controls cannot be combined.");
+                SelectEarly(save, distance, early, log);
+                return;
+            }
             if (!string.IsNullOrEmpty(duo))
             {
                 if (!string.IsNullOrEmpty(variant)) throw new InvalidOperationException("Original boss route controls cannot be combined.");
@@ -114,6 +122,45 @@ namespace MonsterTrain2Poju.Probe
                 RngBefore = before, RngAfter = after, ScenarioAssetsUnchanged = true,
                 TitanTrial = trialControl };
             log.LogInfo("ORIGINAL-OUTER-BOSS-ROUTE boss=" + boss + " scenario=" + selected.name + " previous=" + scenarios[previous].name);
+        }
+
+        private static void SelectEarly(SaveManager save, int distance, string variant, ManualLogSource log)
+        {
+            string boss = variant switch
+            {
+                "ArkionPush" => "Boss_Level3_Arkion_PushAttack",
+                "ArkionPyre" => "Boss_Level3_Arkion_DamagePyre",
+                "ArkionRage" => "Boss_Level3_Arkion_SiphonRage",
+                "FleshweaverCorruption" => "Boss_Level3_Fleshweaver_Corruption",
+                "FleshweaverMass" => "Boss_Level3_Fleshweaver_MoreMass",
+                "FleshweaverSpikes" => "Boss_Level3_Fleshweaver_Spike",
+                "CaelAtkHP" => "Boss_Level6_Cael_AtkHP",
+                "CaelDamageShield" => "Boss_Level6_Cael_DamageShield",
+                "CaelLifesteal" => "Boss_Level6_Cael_Lifesteal",
+                _ => throw new InvalidOperationException("Unknown original early outer-boss variant.")
+            };
+            int expected = boss.StartsWith("Boss_Level6_", StringComparison.Ordinal) ? 5 : 2;
+            if (distance != expected || save.GetCurrentDistance() != expected || Control != null ||
+                save.GetGameSequence() != SaveData.GameSequence.BattleIntro)
+                throw new InvalidOperationException("Original early-boss selection requires its progressed native BattleIntro checkpoint.");
+            var scenarios = new List<ScenarioData>();
+            save.GetRunData().GetDistanceData(distance).GetAllScenarioDatas(scenarios);
+            ScenarioData selected = scenarios.Single(scenario => scenario.GetOuterTrainBoss(false)?.GetAssetKey() == boss);
+            NodeState node = save.GetRunState().GetNodeStateAtDistance(distance);
+            int previous = node.scenarioIndex, index = scenarios.IndexOf(selected);
+            string? generatedBefore = node.bossId, generatedAfter = selected.GetBossAtIndex(0)?.GetID();
+            object before = Rng();
+            node.scenarioIndex = index;
+            node.bossId = generatedAfter;
+            object after = Rng();
+            if (!JToken.DeepEquals(JToken.FromObject(before), JToken.FromObject(after)))
+                throw new InvalidOperationException("Original early-boss scenario selection consumed native RNG.");
+            Control = new { Kind = "SelectOriginalEarlyOuterBossScenario", Distance = distance, Boss = boss,
+                PreviousIndex = previous, PreviousScenario = scenarios[previous].name,
+                SelectedIndex = index, SelectedScenario = selected.name,
+                GeneratedWaveBossBefore = generatedBefore, GeneratedWaveBossAfter = generatedAfter,
+                RngBefore = before, RngAfter = after, ScenarioAssetsUnchanged = true };
+            log.LogInfo("ORIGINAL-EARLY-OUTER-BOSS-ROUTE boss=" + boss + " scenario=" + selected.name);
         }
 
         private static void SelectAngelDuo(SaveManager save, int distance, string variant, ManualLogSource log)

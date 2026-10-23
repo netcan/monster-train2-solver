@@ -45,6 +45,8 @@ internal static class NativeCovenantCampaignChecks
         foreach (FixtureValue fixture in new[] { source, replay })
         {
             AngelDuoVariantChecks.Input(fixture, variant);
+            Require(!fixture.TryGetProperty("AngelDuoHarvestTransition", out FixtureValue harvest) ||
+                harvest.ValueKind == FixtureKind.Null, "Player pair must not contain a controlled minion death.");
             var initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
             Require(initial.Spawn.QueuedOuterBoss?.Actor.Unit is { Health: 1250, BaseAttack: 11 } outer &&
                 outer.AssetKey == asset &&

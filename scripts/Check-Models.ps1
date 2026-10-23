@@ -10,6 +10,8 @@ $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
     'full-battle-player-advisor-capture-search.mt2f',
     'advisor-atomic-budget-failure.mt2f',
+    'full-battle-angel-duo-controlled-harvest.mt2f',
+    'angel-duo-harvest-calibration.mt2f',
     'full-battle-player-angel-duo-loop-resolve-search.mt2f',
     'full-battle-player-angel-duo-loop-resolve-replay.mt2f',
     'full-battle-angel-duo-revenge-native-spells.mt2f',

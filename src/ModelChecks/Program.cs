@@ -1,6 +1,18 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] is "--angel-duo-harvest-death-only" or "--angel-duo-harvest-death-battle-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--angel-duo-harvest-death-only") AngelDuoHarvestChecks.Native(fixture.RootElement);
+    else
+    {
+        BattleTurnChecks.Native(fixture.RootElement);
+        RoomCombatChecks.NativeRoomOnly(args[1]);
+    }
+    return;
+}
+
 if (args.Length == 2 && args[0] is "--angel-duo-revenge-harvest-only" or "--angel-duo-revenge-only" or "--angel-duo-revenge-baseline-only" or "--angel-duo-revenge-harvest-birth-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4923,6 +4935,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
     AngelDuoVariantChecks.RevengeHarvest(fixture.RootElement, path,
         Path.GetFileName(path) != "full-battle-angel-duo-revenge-baseline.mt2f",
         Path.GetFileName(path) != "full-battle-angel-duo-revenge-native-spells.mt2f");
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "angel-duo-harvest-calibration.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    AngelDuoHarvestChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-angel-duo-loop-resolve-search.mt2f"))
 {

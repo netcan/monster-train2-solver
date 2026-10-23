@@ -823,6 +823,7 @@ namespace MonsterTrain2Poju.Probe
                 StartingCovenantControl = StartingCovenantScenario.Evidence,
                 ChosenIncantSpellControl = ChosenIncantSpellScenario.Control,
                 AngelDuoIncantControl = AngelDuoIncantScenario.Control,
+                AngelDuoHarvestTransition = AngelDuoHarvestDeathScenario.Transition,
                 AngelDuoDeathControl = AngelDuoDeathScenario.Control,
                 AngelDuoDeathTransition = AngelDuoDeathScenario.Transition,
                 AngelDuoRelentlessEntry = AngelDuoForcedRelentlessProbe.EntryTransition,

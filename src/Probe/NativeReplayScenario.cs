@@ -161,6 +161,13 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && stage == Stage.Battle && AngelDuoHarvestDeathScenario.Enabled &&
+                !AngelDuoHarvestDeathScenario.Completed && FullBattleTrace.Active != null)
+            {
+                AngelDuoHarvestDeathScenario.Tick();
+                if (AngelDuoHarvestDeathScenario.Error != null) { Finish(false, AngelDuoHarvestDeathScenario.Error); return; }
+                if (AngelDuoHarvestDeathScenario.Started) return;
+            }
             if (fullBattle && stage == Stage.Battle && AngelDuoForcedRelentlessProbe.EntryEnabled &&
                 !AngelDuoForcedRelentlessProbe.EntryCompleted && FullBattleTrace.Active != null &&
                 AllGameManagers.Instance?.GetCombatManager()?.GetTurnCount() > 0)
@@ -287,7 +294,8 @@ namespace MonsterTrain2Poju.Probe
                     if (!save.HasRun(RunType.Class) || save.GetCurrentDistance() != targetDistance ||
                         save.GetGameSequence() != SaveData.GameSequence.BattleIntro)
                         throw new InvalidOperationException("A resumed battle requires a matching native BattleIntro checkpoint.");
-                    if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_ANGEL_DUO")))
+                    if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_ANGEL_DUO")) ||
+                        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS")))
                         OriginalOuterBossRoute.ArmResume(save, targetDistance, log);
                     save.ContinueRunWithReplay(RunType.Class);
                     battleRoutePrepared = true;

@@ -33,6 +33,11 @@ internal static class BattleTurnChecks
             policy.GetString() is "units-and-junk" or "units-spells-and-junk") return;
         BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         string parent = JsonSerializer.Serialize(root);
+        if (fixture.TryGetProperty("AngelDuoHarvestTransition", out FixtureValue harvest) && harvest.ValueKind == FixtureKind.Object)
+        {
+            AngelDuoHarvestChecks.Battle(fixture);
+            return;
+        }
         if (fixture.TryGetProperty("AngelDuoDeathTransition", out FixtureValue death) && death.ValueKind == FixtureKind.Object)
         {
             AngelDuoDeathChecks.Battle(fixture);

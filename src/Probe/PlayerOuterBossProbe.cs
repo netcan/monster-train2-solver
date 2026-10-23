@@ -29,7 +29,8 @@ namespace MonsterTrain2Poju.Probe
                 return (data.GetAssetKey() is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" or
                     "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" ||
                     data.GetAssetKey() is "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
-                        "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth") &&
+                        "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" or
+                        "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth") &&
                     OuterBossPhaseProbe.Supports(data);
             }
         }

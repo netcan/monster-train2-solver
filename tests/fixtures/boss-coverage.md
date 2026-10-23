@@ -14,7 +14,7 @@ The gate is an identity filter. Allowed definitions can still reject uncalibrate
 | Level3ImmortalMass_Spikes | guarded | 0 | 0 |
 | Level6AngelDuo_LoopAttackResolveHealth | allowed | 3 | 1 |
 | Level6AngelDuo_RallyAttackIncantHealth | allowed | 7 | 1 |
-| Level6AngelDuo_RevengeAttackHarvestHealth | allowed | 2 | 0 |
+| Level6AngelDuo_RevengeAttackHarvestHealth | allowed | 3 | 0 |
 | Level6BattleEaterAtkHP | guarded | 0 | 0 |
 | Level6BattleEaterDamageShield | guarded | 0 | 0 |
 | Level6BattleEaterLifesteal | guarded | 0 | 0 |

@@ -6,7 +6,7 @@
 新增完整原生首领目录审计：基础第三／六／八环共 15 个原始场景，当前模型
 定义入口允许 6 个，其中 5 个有归档玩家建议／独立回放配对。第三环 Arkion／
 Fleshweaver 六场、第六环 Cael 三场仍受模型保护；双天使 Revenge/Harvest 的
-出生、无卡整场及复仇正向见证已通过，玩家入口继续等待收割见证与实际建议配对。
+出生、无卡整场及复仇／跨层收割正向见证已通过，实际玩家建议配对继续单独验收。
 完整签名与证据来源见 [首领缺口清单](../tests/fixtures/boss-coverage.md)，运行
 `Get-BossCoverageInventory.ps1 -Check -SkipBuild` 可做只读元数据核对。
 这些数量不包括真终局、试炼替换、Endless／测试场景及 Soul Savior，亦不代表

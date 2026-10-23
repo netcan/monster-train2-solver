@@ -77,8 +77,7 @@ Unmodified fixed-policy source
 grants the Entropic companion ten +1 attack increments, four across floors;
 the Savage source is excluded. Full native actions/turns/rooms/train state/RNG
 are checked separately from the no-card full-chain branches. This source has no
-Harvest witness. The third variant's player entry remains guarded pending
-positive Harvest calibration and its own actual advice/replay pair.
+Harvest witness. Its own actual advice/replay pair remains separately required.
 
 | Archive | Bytes | Nodes | SHA256 |
 | --- | ---: | ---: | --- |
@@ -88,3 +87,24 @@ positive Harvest calibration and its own actual advice/replay pair.
 
 Focused checks: `--angel-duo-revenge-baseline-only`,
 `--angel-duo-revenge-harvest-birth-only`, `--angel-duo-revenge-only`.
+
+Positive cross-floor Harvest is now calibrated in source
+`full-battle-no-cards-20261023-182347-a72acb2f`. A disclosed native10000-damage
+call kills one original wave minion on the outer boss's floor while its Savage
+companion is on another floor. No target health setup, boss stat, deck or authored
+asset is edited. Native removal grants only the remote companion +50 current/max
+health. Complete damage/removal state/RNG and sixteen immutable branches pass.
+The same control is explicitly simulated inside six original no-card EndTurns;
+all51 room stages,12 train stages, full battle/RNG and sixteen complete branches
+match. The process exited normally in62.39s, protected files unchanged and all
+four counters zero. It is a controlled loss; ordinary player advice is separate.
+
+| Archive | Bytes | Nodes | SHA256 |
+| --- | ---: | ---: | --- |
+| full-battle-angel-duo-controlled-harvest.mt2f | 58756 | 7634 | e680b94b8dcdc50d329f1902a305a9202958fa158b9063571cbeff59117589c5 |
+| angel-duo-harvest-calibration.mt2f | 33618 | 3622 | 1fed2fb1c548c3675f1381b8eaa4f0717c05106bbf0218e9379d16eaea4e00d1 |
+
+Focused checks: `--angel-duo-harvest-death-only` and
+`--angel-duo-harvest-death-battle-only`. All three exact original Angel Duo
+definitions now reach the player gate; the third's source/replay acceptance is
+still required before counting it as a curated player-pair scenario.
