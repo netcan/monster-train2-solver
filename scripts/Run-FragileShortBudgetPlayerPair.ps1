@@ -2,6 +2,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string] $InputProfile,
+    [ValidateSet('Bottom', 'Default')][string] $Preset = 'Bottom',
     [string] $SourceProfile = '',
     [string] $ReplayProfile = '',
     [ValidateRange(1, 2)][int] $NativeWorker = 2,
@@ -10,6 +11,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
+$preferredRoom = if ($Preset -eq 'Default') { 2 } else { 0 }
 $InputProfile = (Resolve-Path -LiteralPath $InputProfile).Path
 $savePath = Join-Path $InputProfile 'saves/save-singlePlayer.json'
 $inputHash = '07884DC51C1354EE4668E277C87E9B733CD8156D49625D7F41848B5D3DA5D449'
@@ -25,7 +27,7 @@ if (-not $SourceProfile) {
     $result = $null
     & (Join-Path $PSScriptRoot 'Run-FullBattleProbe.ps1') -Policy units-spells-and-junk -InputProfile $InputProfile -BattleDistance 7 -Seed 424244 `
         -PlayerAdvisor -RollingAdvice -BranchCardMasks -PhysicalSpawnPoints -SettleDeathDissolves -SettleCardAnimations `
-        -PlannerHorizon 3 -PlannerTimeLimitMs 3000 -PlannerDeploymentRoom 0 -NativeWorker $NativeWorker `
+        -PlannerHorizon 3 -PlannerTimeLimitMs 3000 -PlannerDeploymentRoom $preferredRoom -NativeWorker $NativeWorker `
         -TimeoutSeconds $TimeoutSeconds -SkipBuild:$SkipBuild | ForEach-Object {
             if ($_.ToString().StartsWith('{')) { $result = $_ | ConvertFrom-Json } else { Write-Output $_ }
         }
@@ -48,14 +50,14 @@ try {
     $overlay = $trace.GetProperty('PlayerAdvisor').GetProperty('Overlay')
     if (-not $trace.GetProperty('NativeWon').GetBoolean() -or
         $overlay.GetProperty('Horizon').GetInt32() -ne 3 -or $overlay.GetProperty('TimeLimitMs').GetInt32() -ne 3000 -or
-        $overlay.GetProperty('PreferredDeploymentRoom').GetInt32() -ne 0 -or $overlay.GetProperty('TacticalSeed').GetBoolean()) {
-        throw 'Source must already be a native three-turn/3000ms Fragile victory with bottom preference and no extra tactical seed.'
+        $overlay.GetProperty('PreferredDeploymentRoom').GetInt32() -ne $preferredRoom -or $overlay.GetProperty('TacticalSeed').GetBoolean()) {
+        throw 'Source must already be a native three-turn/3000ms Fragile victory with the requested preference and no extra tactical seed.'
     }
 } finally { $document.Dispose() }
 if (-not $ReplayProfile) {
     $result = $null
     & (Join-Path $PSScriptRoot 'Run-CampaignProgress.ps1') -InputProfile $InputProfile -BattleReplay $source -StopBeforeRing 9 `
-        -Seed 424244 -DeploymentRoom 0 -NativeWorker $NativeWorker -TimeoutSeconds $TimeoutSeconds -SkipBuild | ForEach-Object {
+        -Seed 424244 -DeploymentRoom $preferredRoom -NativeWorker $NativeWorker -TimeoutSeconds $TimeoutSeconds -SkipBuild | ForEach-Object {
             if ($_.ToString().StartsWith('{')) { $result = $_ | ConvertFrom-Json } else { Write-Output $_ }
         }
     if ($null -eq $result) { throw 'Missing short-budget Fragile campaign replay result.' }
@@ -73,11 +75,12 @@ if ($continued.InputSaveSHA256 -ine $inputHash -or
     $campaign.FinalSaveSHA256 -ine (Get-FileHash -LiteralPath (Join-Path $ReplayProfile 'saves/save-singlePlayer.json') -Algorithm SHA256).Hash) {
     throw 'Fragile campaign replay input, frozen source or settled save changed.'
 }
-dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --player-boss-fragile-short-budget-pair-only $source $replay
+$checkMode = if ($Preset -eq 'Default') { '--player-boss-fragile-default-pair-only' } else { '--player-boss-fragile-short-budget-pair-only' }
+dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') $checkMode $source $replay
 if ($LASTEXITCODE -ne 0) { throw 'Independent short-budget Fragile native pair failed.' }
 if ((Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash -cne $inputHash) { throw 'Original Fragile checkpoint changed.' }
 $pair = [pscustomobject]@{
-    Schema = 1; InputProfile = $InputProfile; InputSaveSHA256 = $inputHash
+    Schema = 1; Preset = $Preset; InputProfile = $InputProfile; InputSaveSHA256 = $inputHash
     SourceProfile = $SourceProfile; ReplayProfile = $ReplayProfile
     SourceSha256 = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant()
     ReplaySha256 = (Get-FileHash -LiteralPath $replay -Algorithm SHA256).Hash.ToLowerInvariant()
