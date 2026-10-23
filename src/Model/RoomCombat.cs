@@ -116,7 +116,7 @@ namespace MonsterTrain2Poju.Model
         public int BaseAttack { get; }
         internal int AttackBeforeStatuses => Modifiers == null ? BaseAttack : unchecked(Modifiers.AttackDamage + Modifiers.DamageBuff);
         internal int AttackFromStatuses => Modifiers?.DamageBuffFromStatusEffects ??
-            unchecked(StatusAmount("buff") + StatusAmount("valor") - StatusAmount("debuff"));
+            unchecked(StatusAmount("buff") + StatusAmount("valor") + StatusAmount("mass") - StatusAmount("debuff"));
         public int Attack => UnitAttackOverrideModel.Resolve(Statuses, MaxHealth) ?? Math.Max(0, unchecked(AttackBeforeStatuses + AttackFromStatuses +
             RelicStatusAttackModel.AdditionalAttack(Modifiers?.StatusAttackModifiers, Team, Statuses)));
         public int Health { get; }
@@ -485,7 +485,7 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "decay", "corruption", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "titanite", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
-            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment"
+            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -1185,7 +1185,7 @@ namespace MonsterTrain2Poju.Model
                                 return "CardEffectEnchant requires a captured automatic lifecycle world and effect definition.";
                             continue;
                         }
-                        if (effect.Type == "CardEffectSpawnMonster")
+                        if (effect.Type is "CardEffectSpawnMonster" or "CardEffectSpawnHero")
                         {
                             string? summonError = TriggeredSummonModel.Validate(state, effect.Summon);
                             if (summonError != null) return summonError;
@@ -1412,7 +1412,7 @@ namespace MonsterTrain2Poju.Model
                                 return "Triggered train healing requires fixed Pyre targeting and captured healing rules without source-trait scaling.";
                             continue;
                         }
-                        if (effect.Type == "CardEffectBuffDamage")
+                        if (effect.Type is "CardEffectBuffDamage" or "CardEffectDebuffDamage")
                         {
                             // Native enemy Harvest/Incant has no source card traits.
                             // Keep other target modes and parent-card scaling guarded.
@@ -1425,8 +1425,12 @@ namespace MonsterTrain2Poju.Model
                             bool duoRevenge = unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant3_RevengeAttack" && trigger.Kind == "OnHit" &&
                                 effect.Value == 1 && effect.Action is { Target: "Tower", AllowPlayer: true, AllowEnemy: true } &&
                                 effect.Action.Filters?.Subtype == "SubtypesData_EntropicAngel";
+                            bool debuff = effect.Type == "CardEffectDebuffDamage";
+                            if (debuff && (unit.AssetKey != "HeavyT1_BigAttackUpFront" || trigger.Kind != "OnDeathwishLost" ||
+                                effect.Action?.Target != "Self"))
+                                return "Triggered attack reduction requires the original self DeathwishLost enemy signature.";
                             if (unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 || unit.Modifiers == null ||
-                                effect.Action is not { Type: "BuffAttack", Range: null } buff ||
+                                effect.Action is not { Range: null } buff || buff.Type != (debuff ? "DebuffAttack" : "BuffAttack") ||
                                 buff.Target is not ("Self" or "Room" or "Tower") || buff.Value != effect.Value || buff.UseCardTraits ||
                                 buff.Target != "Self" && (!buff.AllowEnemy || buff.AllowPlayer && !duoSlay && !duoLoop && !duoRevenge))
                                 return "Triggered attack buffs require a captured fixed enemy self/room/tower buff without parent-card traits.";
@@ -1624,7 +1628,7 @@ namespace MonsterTrain2Poju.Model
                         mageblade = unchecked(coefficient * (power?.Value ?? 0));
                     }
                     return Math.Max(0, unchecked(Source.AttackBeforeStatuses +
-                        (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") - Amount("debuff"))) +
+                        (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") + Amount("mass") - Amount("debuff"))) +
                         RelicStatusAttackModel.AdditionalAttack(Source.Modifiers?.StatusAttackModifiers, Source.Team, Statuses.Values.ToArray()) +
                         UnitSelfAttackModel.Additional(Source, getContext?.Invoke(), Statuses.Values) +
                         (roomStatusModifier?.Invoke(this, "buff") ?? 0) * Count("buff") +
@@ -3788,6 +3792,8 @@ namespace MonsterTrain2Poju.Model
                             {
                                 if (!TriggeredSummonTest(unit, effect.Summon))
                                 { if (effect.Summon.Tests.CancelSubsequent) break; continue; }
+                                if (effect.Summon.EnemyHero)
+                                { if (!ApplyTriggeredHero(effect.Summon)) break; continue; }
                                 if (!ApplyTriggeredSummon(unit, effect.Summon, out int firstId)) break;
                                 if (firstId > 0)
                                 { effects[effectIndex] = effect.WithSummon(effect.Summon.WithFirstSpawned(firstId)); Store(retained.Fired(effects)); }
@@ -4115,9 +4121,37 @@ namespace MonsterTrain2Poju.Model
             }
             private bool TriggeredSummonTest(WorkingUnit actor, TriggeredSummonRule rule)
             {
+                if (rule.EnemyHero) return context!.SpawnPoints!.FirstEmpty(source.RoomIndex, CombatTeam.Enemy) >= 0;
                 RoomPlayRule room = context!.SummonCatalog!.Rooms.First(item => item.RoomIndex == source.RoomIndex);
                 return SummonSourcePoint(actor) != null ? room.Enabled && !room.SummonBlocked :
                     context.SpawnPoints!.FirstEmpty(source.RoomIndex, CombatTeam.Player) >= 0;
+            }
+            private bool ApplyTriggeredHero(TriggeredSummonRule rule)
+            {
+                RoomCombatState room = EnchantmentWorldModel.Sync(CurrentRoom(),
+                    units.Where(unit => !unit.Alive || !unit.InRoom).Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
+                context = room.Context;
+                if (context?.Enchantments is not EnchantmentWorld world)
+                { unsupportedReason = "Triggered enemy birth requires the complete native train lifecycle world."; return false; }
+                string character = rule.CharacterId;
+                if (rule.Pool.Count > 0)
+                {
+                    RngDraw draw = context.BattleRng.Range(0, rule.Pool.Count);
+                    context = context.WithBattleRng(draw.State); character = rule.Pool[draw.Value];
+                }
+                SummonUnitDefinition definition = context.SummonCatalog!.Units.Single(unit => unit.CharacterId == character);
+                room = room.WithContext(context);
+                var train = new TrainCombatState(world.Rooms.Select(other => other.RoomIndex == source.RoomIndex ? room :
+                    new RoomCombatState(other.RoomIndex, other.Deployment, other.Units, other.ExternalInteractions, context,
+                        source.Preview, other.ActiveCompanionBossIds)).ToArray(), world.Movement, world.EnemySlotsPerRoom, context);
+                UnitCloneResult born = HeroUnitBirthModel.Apply(train, 0, source.RoomIndex, null, false,
+                    Array.Empty<QueuedCharacterTrigger>(), definition.HeroDefinition, deferCallbacks: true);
+                if (!born.Supported) { unsupportedReason = born.UnsupportedReason; return false; }
+                TrainCombatState synchronized = EnchantmentWorldModel.Rebase(born.State!);
+                RoomCombatState changed = synchronized.Rooms.Single(other => other.RoomIndex == source.RoomIndex);
+                MergeSummon(new RoomCombatResult(changed, born.Outcome, 0, born.Events.ToList(), pendingCallbacks: born.PendingCallbacks));
+                foreach (QueuedCharacterTrigger callback in born.PendingCallbacks) QueueCallback(callback);
+                return UpdateEnchantments();
             }
             private int summonPivotMoves;
             private bool SummonPhysical(string operation, int unitId = 0, int pivot = -1, CombatTeam team = CombatTeam.Player)
@@ -4629,7 +4663,7 @@ namespace MonsterTrain2Poju.Model
                 action.Type == "PlayUnitTrigger" ? true :
                 action.Type == "AdjustCorruption" ? RoomCorruptionModel.Test(CurrentRoom(), action) :
                 action.Type is "AdjustMaxHealth" or "BuffHealth" ? true :
-                action.Type == "BuffAttack" ? targets.UnitIds.Any(id => units.Any(unit => unit.Source.Id == id && unit.Alive && unit.Source.CanAttack)) :
+                action.Type is "BuffAttack" or "DebuffAttack" ? targets.UnitIds.Any(id => units.Any(unit => unit.Source.Id == id && unit.Alive && unit.Source.CanAttack)) :
                 action.Type == "Null" ? targets.UnitIds.Count > 0 || action.NullTargetless :
                 action.Type == "TransferAllStatusesFromUnit" ? targets.UnitIds.Count > 0 && TriggeredStatusTransferModel.Validate(action) == null :
                 action.Type == "RemoveStatus" ? StatusRemovalModel.Test(CurrentRoom(), action, targets.UnitIds) :
@@ -5157,7 +5191,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 int amount = action.Type == "AdjustCapacity" || action.Type == ForgePointsModel.Effect && source.Preview
                     ? action.Value : SampleActionAmount(action);
-                if (action.Type == "BuffAttack")
+                if (action.Type is "BuffAttack" or "DebuffAttack")
                 {
                     foreach (int id in targets.UnitIds)
                     {
@@ -5167,11 +5201,11 @@ namespace MonsterTrain2Poju.Model
                             new RoomCombatState(target.RoomIndex, source.Deployment,
                                 units.Where(unit => unit.Alive && unit.RoomIndex == target.RoomIndex).Select(unit => unit.Freeze()).ToArray(),
                                 Array.Empty<string>(), context, source.Preview, CompanionBossSnapshot());
-                        RoomCombatResult changed = UnitAttackModel.Apply(attackRoom, id, amount);
+                        RoomCombatResult changed = UnitAttackModel.Apply(attackRoom, id, amount, debuff: action.Type == "DebuffAttack");
                         if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
                         context = changed.State!.Context;
                         foreach (CombatUnit unit in changed.State.Units) units.First(current => current.Source.Id == unit.Id).Apply(unit);
-                        Emit("BuffAttack", actor, target, amount);
+                        Emit(action.Type, actor, target, amount);
                     }
                     return true;
                 }

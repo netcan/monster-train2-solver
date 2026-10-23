@@ -34,7 +34,7 @@ namespace MonsterTrain2Poju.Model
                 statisticsListenerOnce: raw.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null,
                 isDespawned: raw.DeathState.IsDespawned.HasValue ? false : (bool?)null,
                 isDestroyed: raw.DeathState.IsDestroyed.HasValue ? false : (bool?)null);
-            return new CombatUnit(unitId, raw.AssetKey, CombatTeam.Player, raw.BaseAttack, raw.MaxHealth, raw.MaxHealth,
+            return new CombatUnit(unitId, raw.AssetKey, raw.Team, raw.BaseAttack, raw.MaxHealth, raw.MaxHealth,
                 raw.CanAttack, false, false, Array.Empty<CombatStatus>(), resolved.Triggers, sourceCardId,
                 Math.Max(1, Math.Min(6, metadata?.RawSize ?? raw.Size)), Array.Empty<string>(), raw.Subtypes,
                 modifiers, raw.IsBoss, raw.LastAttackerId.HasValue ? 0 : (int?)null,
@@ -68,7 +68,9 @@ namespace MonsterTrain2Poju.Model
                 restored.Modifiers, restored.IsBoss, restored.LastAttackerId, restored.StatusRegistry, restored.EquipmentCards,
                 restored.NextTriggerId, restored.Ability, restored.StatusDictionary, restored.AbilityRules,
                 restored.HordeDefinition, restored.IsSpawning, restored.SacrificeCardId,
-                restored.DeathState!.WithLifecycle(restored.DeathState.IsDespawned, true), bumpRules: restored.BumpRules, lastFeederId: restored.LastFeederId, moonPhaseMask: restored.MoonPhaseMask);
+                restored.DeathState!.WithLifecycle(restored.DeathState.IsDespawned,
+                    restored.Team == CombatTeam.Player ? true : restored.DeathState.IsDestroyed),
+                bumpRules: restored.BumpRules, lastFeederId: restored.LastFeederId, moonPhaseMask: restored.MoonPhaseMask);
         }
 
         internal static EnchantmentRetainedUnit[] Retain(EnchantmentWorld observed, int firstPreviewId, IReadOnlyCollection<int> removedIds,

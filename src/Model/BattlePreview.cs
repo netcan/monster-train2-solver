@@ -71,7 +71,11 @@ namespace MonsterTrain2Poju.Model
             }
             void ObserveSummons(IEnumerable<CombatUnit> units, CombatContext? after)
             {
-                previewBirth |= after?.NextUnitId > firstPreviewId;
+                // HeroManager births do not overwrite MonsterManager's last
+                // spawned player reference; only temporary player births do.
+                previewBirth |= after?.LastSpawnedUnitId >= firstPreviewId ||
+                    units.Concat(after?.Enchantments?.RetainedUnits.Select(actor => actor.Unit) ?? Array.Empty<CombatUnit>())
+                        .Any(unit => unit.Id >= firstPreviewId && unit.Team == CombatTeam.Player);
                 foreach (CombatUnit unit in units)
                 {
                     // SacrificeCard lives outside CharacterState.PrimaryStateInformation.

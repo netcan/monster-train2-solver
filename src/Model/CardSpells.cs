@@ -2073,7 +2073,8 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState[] rooms = removedLinkedGroup ? changed.Context!.Enchantments!.Rooms.ToArray() :
                 source.Rooms.Select(room => room.RoomIndex == changed.RoomIndex ? changed : room).ToArray();
             var alive = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
-            return WithContext(new TrainCombatState(rooms, source.Movement.Where(move => alive.Contains(move.UnitId)).ToArray(),
+            return WithContext(new TrainCombatState(rooms, source.Movement.Concat((changed.Context?.Enchantments?.Movement ?? Array.Empty<EnemyMovement>())
+                .Where(move => !source.Movement.Any(old => old.UnitId == move.UnitId))).Where(move => alive.Contains(move.UnitId)).ToArray(),
                 source.EnemySlotsPerRoom, changed.Context), changed.Context!);
         }
 

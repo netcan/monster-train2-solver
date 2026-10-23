@@ -10,7 +10,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class RoomDeathEffectProbe
     {
         internal static bool RequiresBirthWorld(FullBattleTrace trace) => trace.KnownCards.Any(card =>
-            card.GetCardDataID() == "e1a39d88-4a77-4399-98b2-0b81f44fe6a8");
+            card.GetCardDataID() == "e1a39d88-4a77-4399-98b2-0b81f44fe6a8") || TriggeredSummonProbe.HasEnemyBirths;
         internal sealed class Record
         {
             public CombatUnit Actor { get; set; } = null!;

@@ -39,7 +39,7 @@ namespace MonsterTrain2Poju.Model
                 int coefficient = unchecked(unchecked(status.ParamInt + queried.Stacks) * stacks);
                 return new StatusAttackDamageResult(unit.WithModifiers(unit.Modifiers.WithMagebladeDamage(coefficient)), queried.Context);
             }
-            if (delta <= 0 || status.Id != "buff" && status.Id != "debuff" && status.Id != "valor") return new StatusAttackDamageResult(unit, context);
+            if (delta <= 0 || status.Id != "buff" && status.Id != "debuff" && status.Id != "valor" && status.Id != "mass") return new StatusAttackDamageResult(unit, context);
             if (unit.Modifiers?.DamageBuffFromStatusEffects == null)
                 return context?.Relics?.Any(relic => relic.StatusMagnitudes?.Count > 0) == true
                     ? new StatusAttackDamageResult(null, context, "Missing native status attack accumulator.") : new StatusAttackDamageResult(unit, context);

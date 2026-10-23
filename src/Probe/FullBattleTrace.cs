@@ -1840,7 +1840,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Prefix(ref Action<CharacterState, CharacterData> afterCharacterCreated)
             {
-                if (Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                if (Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode && !TriggeredSummonProbe.HasEnemyBirths) return;
                 Action<CharacterState, CharacterData> callback = afterCharacterCreated;
                 afterCharacterCreated = (unit, data) => { Active?.UnitId(unit); callback?.Invoke(unit, data); };
             }

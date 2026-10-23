@@ -7,7 +7,8 @@ namespace MonsterTrain2Poju.Model
     internal static class HeroUnitBirthModel
     {
         internal static UnitCloneResult Apply(TrainCombatState source, int sourceId, int roomIndex, UnitCopyCatalog? catalog,
-            bool copyStats, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> prior)
+            bool copyStats, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> prior, EnemyDefinition? spawnDefinition = null,
+            bool deferCallbacks = false)
         {
             TrainCombatState state = source; int unitId = 0; RoomOutcome outcome = RoomOutcome.Exchanged;
             var pending = prior.ToList(); var events = new List<CombatEvent>(); var dispatched = new List<UnitCloneCallback>();
@@ -24,11 +25,11 @@ namespace MonsterTrain2Poju.Model
             int point = state.Context!.SpawnPoints!.FirstEmpty(roomIndex, CombatTeam.Enemy);
             if (point < 0) return Result();
             CombatUnit? original = Get(sourceId);
-            if (original == null) return Fail("Missing retained hero-copy source.");
-            UnitCopyBirthDefinition? birth = catalog?.Births.SingleOrDefault(item => item.Unit.AssetKey == original.AssetKey);
-            EnemyDefinition? definition = birth?.HeroDefinition;
+            if (original == null && spawnDefinition == null) return Fail("Missing retained hero-copy source.");
+            UnitCopyBirthDefinition? birth = catalog?.Births.SingleOrDefault(item => item.Unit.AssetKey == original?.AssetKey);
+            EnemyDefinition? definition = spawnDefinition ?? birth?.HeroDefinition;
             if (definition == null) return Fail("Missing raw hero birth definition.");
-            if (birth!.Grafted || definition.ExternalInteractions.Count > 0)
+            if (birth?.Grafted == true || definition.ExternalInteractions.Count > 0)
                 return Fail("Unmodeled hero birth interactions: " + string.Join(", ", definition.ExternalInteractions));
             if (definition.Unit.IsBoss == true || definition.Unit.EndsBattleOnDeath)
                 return Fail("Hero-copy Boss registration and death ownership require their native lifecycle inputs.");
@@ -38,6 +39,9 @@ namespace MonsterTrain2Poju.Model
             if (!allocated.Supported) return Fail(allocated.UnsupportedReason!);
             unitId = allocated.UnitId;
             CombatUnit unit = AbilityLifecycleModel.SuppressAtSpawn(definition.Create(unitId), allocated.Context);
+            if (destination.Preview)
+                unit = unit.WithDeathState((unit.DeathState ?? new UnitDeathState(false, false, false))
+                    .WithPreviewPrimary(PreviewBirthModel.InitialPrimary(definition.Unit, unit, unitId, 0)));
             BattleSpawnPointResult physical = BattleSpawnPointModel.Birth(allocated.Context!.SpawnPoints!, destination, unit, point, shift: false);
             if (!physical.Supported) return Fail(physical.Error!);
             CombatContext context = allocated.Context.WithSpawnPoints(physical.State!);
@@ -99,6 +103,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? FindRoom() => state.Rooms.FirstOrDefault(room => room.Units.Any(actor => actor.Id == unitId));
             bool Drain()
             {
+                if (deferCallbacks) return true;
                 UnitCloneResult drained = UnitCloneModel.Drain(new UnitCloneResult(state, unitId, outcome, null,
                     Array.Empty<CombatEvent>(), Array.Empty<UnitCloneBoundary>(), pending));
                 if (!drained.Supported) { error = drained.UnsupportedReason; return false; }

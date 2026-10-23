@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class TriggeredSummonProbe
     {
         private static readonly Dictionary<string, CharacterData> characters = new Dictionary<string, CharacterData>(StringComparer.Ordinal);
+        private static readonly HashSet<string> enemyCharacters = new HashSet<string>(StringComparer.Ordinal);
         private static TriggeredSummonCatalog? catalog;
         internal sealed class Record
         {
@@ -37,6 +38,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static readonly List<Record> Records = new List<Record>();
         private static Record? current;
+        internal static bool HasEnemyBirths => DiscoverEnemyBirths();
         internal sealed class CacheRecord
         {
             public int Turn { get; set; }
@@ -63,10 +65,25 @@ namespace MonsterTrain2Poju.Probe
             public string? Error { get; set; }
         }
         internal static readonly List<DamageRecord> Damages = new List<DamageRecord>();
-        internal static bool Enabled => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").StartsWith("triggered-summon", StringComparison.Ordinal) ||
+        internal static bool Enabled => DiscoverEnemyBirths() ||
+            (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "").StartsWith("triggered-summon", StringComparison.Ordinal) ||
             SpawnStatusRelicScenario.OriginalEggTransformation || OriginalEggCardScenario.Enabled ||
             EnchantmentBattleScenario.ChildSummons || OriginalSupportUnitsScenario.CapturesTriggeredSummons ||
             OriginalSupportSpellsScenario.CapturesTriggeredSummons || UnitCardCopyProbe.Enabled || JackInTheBoxProbe.Enabled;
+        private static bool DiscoverEnemyBirths()
+        {
+            if (enemyCharacters.Count > 0) return true;
+            HeroManager? heroes = AllGameManagers.Instance?.GetHeroManager();
+            if (heroes == null) return false;
+            var pattern = (SpawnPatternData?)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
+            if (pattern == null) return false;
+            bool harder = (bool)AccessTools.Field(typeof(HeroManager), "harderOuterTrainBossEnabled").GetValue(heroes);
+            CharacterData? data = pattern.GetOuterTrainBossCharacter(harder);
+            if (data == null || !OuterBossDefinitions.IsFleshweaver(data.GetAssetKey())) return false;
+            foreach (CardEffectData effect in data.GetTriggers().SelectMany(trigger => trigger.GetEffects())
+                .Where(effect => effect.GetEffectStateName() == "CardEffectSpawnHero")) Definition(effect);
+            return enemyCharacters.Count > 0;
+        }
         internal static string Register(CharacterData? unit)
         {
             if (unit == null) return "";
@@ -76,6 +93,20 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static TriggeredSummonRule? Definition(CardEffectData effect)
         {
+            if (effect.GetEffectStateName() == "CardEffectSpawnHero")
+            {
+                if (effect.GetTargetMode() != TargetMode.Room || effect.GetTargetTeamType() != Team.Type.None) return null;
+                string Enemy(CharacterData? data)
+                {
+                    string id = Register(data);
+                    if (id.Length > 0 && enemyCharacters.Add(id)) catalog = null;
+                    return id;
+                }
+                return new TriggeredSummonRule(Enemy(effect.GetParamCharacterData()), "",
+                    (effect.GetParamCharacterDataPool() ?? new List<CharacterData>()).Select(Enemy).ToArray(),
+                    1, true, false, null, new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
+                        effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false), enemyHero: true);
+            }
             if (effect.GetEffectStateName() != "CardEffectSpawnMonster") return null;
             CardUpgradeModifier? upgrade = null;
             if (effect.GetParamCardUpgradeData() != null)
@@ -88,6 +119,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static TriggeredSummonRule? Capture(CardEffectState effect)
         {
+            if (effect.GetCardEffect() is CardEffectSpawnHero) return Definition(effect.GetSourceCardEffectData());
             if (!(effect.GetCardEffect() is CardEffectSpawnMonster native)) return null;
             TriggeredSummonRule rule = Definition(effect.GetSourceCardEffectData())!;
             CharacterState? spawned = native.GetSpawnedMonster();
@@ -116,6 +148,14 @@ namespace MonsterTrain2Poju.Probe
             {
                 CharacterData character = characters.Values.First(unit => !seen.Contains(unit.GetID()));
                 seen.Add(character.GetID());
+                if (enemyCharacters.Contains(character.GetID()))
+                {
+                    EnemyDefinition raw = EnemySpawningProbe.Definition(character, true);
+                    var definition = new EnemyDefinition(raw.Unit, raw.Ascends, raw.Loops, raw.ExternalInteractions, raw.CompanionBoss,
+                        CovenantBirthStatProbe.Capture(character));
+                    units.Add(new SummonUnitDefinition(character.GetID(), raw.Unit, null, raw.ExternalInteractions, definition));
+                    continue;
+                }
                 CardData? fallback = all.GetAllCardData().FirstOrDefault(card => card != null && card.IsSpawnerCard() &&
                     card.GetSpawnCharacterData() != null && card.GetSpawnCharacterData()!.GetID() == character.GetID());
                 var interactions = new List<string>();

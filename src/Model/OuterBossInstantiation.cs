@@ -46,6 +46,9 @@ namespace MonsterTrain2Poju.Model
                 (duo ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("titanskin")?.Stacks != 10 :
                     OuterBossDefinitions.IsArkionPyre(actor.Unit.AssetKey)
                         ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("multistrike")?.Stacks != 1
+                        : OuterBossDefinitions.IsFleshweaver(actor.Unit.AssetKey)
+                            ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("mass")?.Stacks !=
+                                (actor.Unit.AssetKey == "Boss_Level3_Fleshweaver_MoreMass" ? 8 : 5) || actor.Unit.Status("mass")?.ParamInt != 2
                         : actor.Unit.Statuses.Count != 0) ||
                 actor.Unit.Ability != null || actor.Unit.Modifiers?.Upgrades.Count != 0 ||
                 actor.CompanionBoss != duo || actor.Unit.BumpRules.CompanionBoss != duo || battle.MoonPhaseTrackingActive == true)

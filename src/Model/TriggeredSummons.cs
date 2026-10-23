@@ -17,14 +17,16 @@ namespace MonsterTrain2Poju.Model
         public CardEffectTests Tests { get; }
         // The native effect retains its first birth even when a later application creates none.
         public int FirstSpawnedUnitId { get; }
+        public bool EnemyHero { get; }
+        public bool ShouldSerializeEnemyHero() => EnemyHero;
         public TriggeredSummonRule(string characterId, string additionalCharacterId, IReadOnlyList<string> pool,
             int count, bool ignoreCardUpgrades, bool hasParentCard, CardUpgradeModifier? upgrade,
-            CardEffectTests tests, int firstSpawnedUnitId = 0)
+            CardEffectTests tests, int firstSpawnedUnitId = 0, bool enemyHero = false)
         { CharacterId = characterId; AdditionalCharacterId = additionalCharacterId;
             Pool = Array.AsReadOnly(pool.ToArray()); Count = count; IgnoreCardUpgrades = ignoreCardUpgrades;
-            HasParentCard = hasParentCard; Upgrade = upgrade; Tests = tests; FirstSpawnedUnitId = firstSpawnedUnitId; }
+            HasParentCard = hasParentCard; Upgrade = upgrade; Tests = tests; FirstSpawnedUnitId = firstSpawnedUnitId; EnemyHero = enemyHero; }
         internal TriggeredSummonRule WithFirstSpawned(int id) => new TriggeredSummonRule(CharacterId,
-            AdditionalCharacterId, Pool, Count, IgnoreCardUpgrades, HasParentCard, Upgrade, Tests, id);
+            AdditionalCharacterId, Pool, Count, IgnoreCardUpgrades, HasParentCard, Upgrade, Tests, id, EnemyHero);
     }
     public sealed class SummonUnitDefinition
     {
@@ -32,10 +34,12 @@ namespace MonsterTrain2Poju.Model
         public CombatUnit Unit { get; }
         public CardCreationRule? Fallback { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
+        public EnemyDefinition? HeroDefinition { get; }
+        public bool ShouldSerializeHeroDefinition() => HeroDefinition != null;
         public SummonUnitDefinition(string characterId, CombatUnit unit, CardCreationRule? fallback,
-            IReadOnlyList<string> externalInteractions)
+            IReadOnlyList<string> externalInteractions, EnemyDefinition? heroDefinition = null)
         { CharacterId = characterId; Unit = unit; Fallback = fallback;
-            ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); }
+            ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); HeroDefinition = heroDefinition; }
     }
     public sealed class SummonCardDefinition
     {
@@ -73,7 +77,21 @@ namespace MonsterTrain2Poju.Model
                 SummonUnitDefinition? unit = catalog.Units.FirstOrDefault(item => item.CharacterId == id);
                 if (unit == null || unit.Unit.IsPyre || unit.ExternalInteractions.Count > 0)
                     return unit == null ? "Missing triggered summon unit definition." : "Unmodeled triggered summon definition: " + string.Join("; ", unit.ExternalInteractions);
+                if (rule.EnemyHero && (unit.HeroDefinition == null || unit.HeroDefinition.Unit.Team != CombatTeam.Enemy ||
+                    unit.HeroDefinition.Unit.IsBoss == true || unit.HeroDefinition.Unit.EndsBattleOnDeath ||
+                    unit.HeroDefinition.Unit.AssetKey is not ("Boss_Level3_MiniFleshweaver_MoreMass" or
+                        "Boss_Level3_MiniFleshweaver_Corruption" or "Boss_Level3_MiniFleshweaver_Spike")))
+                    return "Triggered enemy birth requires its calibrated original Fleshweaver mini definition.";
+                if (rule.EnemyHero)
+                {
+                    string? stats = EnemySpawningModel.ValidateBirthStats(unit.HeroDefinition!, state.Context);
+                    if (stats != null) return stats;
+                }
             }
+            if (rule.EnemyHero && (rule.Count != 1 || rule.Pool.Count != 0 || !rule.IgnoreCardUpgrades || rule.HasParentCard ||
+                rule.AdditionalCharacterId.Length != 0 || rule.Upgrade != null || rule.FirstSpawnedUnitId != 0 ||
+                state.Context.Enchantments?.AutomaticLifecycle != true))
+                return "Triggered enemy birth requires its original single-spawn effect and complete lifecycle world.";
             if (rule.CharacterId.Length == 0 && rule.Pool.Count == 0) return "Triggered summon has no character or pool.";
             if (rule.Upgrade?.ExternalInteractions.Count > 0) return "Unmodeled triggered summon upgrade.";
             if (!catalog.Rooms.Any(room => room.RoomIndex == state.RoomIndex)) return "Missing triggered summon room gates.";

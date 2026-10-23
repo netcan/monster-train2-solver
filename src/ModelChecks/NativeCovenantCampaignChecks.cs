@@ -115,6 +115,24 @@ internal static class NativeCovenantCampaignChecks
         Console.WriteLine("PLAYER-ARKION-PUSH PASS: original selected Ring3 encounter, two prior native victories, player advice/UI and independent full-state/RNG replay.");
     }
 
+    internal static void FleshweaverPair(FixtureValue source, FixtureValue replay, string variant)
+    {
+        string suffix = FleshweaverChecks.Variant(variant);
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            FleshweaverChecks.Input(fixture, variant);
+            var initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            int health = variant == "Mass" ? 600 : 500, mass = variant == "Mass" ? 8 : 5;
+            Require(initial.Spawn.QueuedOuterBoss?.Actor.Unit is { BaseAttack: 6 } outer &&
+                outer.AssetKey == "Boss_Level3_Fleshweaver_" + suffix && outer.Health == health &&
+                outer.Statuses.Single() is { Id: "mass", ParamInt: 2 } status && status.Stacks == mass &&
+                fixture.GetProperty("AngelDuoDeathTransition").ValueKind == FixtureKind.Null,
+                "Fleshweaver player evidence changed the original queued boss/Mass or includes controlled death transitions.");
+        }
+        Pair(source, replay, 2, 2, requireVictory: false, selectedOriginalBoss: true);
+        Console.WriteLine($"PLAYER-FLESHWEAVER PASS {variant}: original selected Ring3 encounter, two prior native victories, player advice/UI and independent full-state/RNG replay.");
+    }
+
     private static void Pair(FixtureValue source, FixtureValue replay, int level, int distance, bool requireVictory, bool selectedOriginalBoss = false)
     {
         Require(level is >= 1 and <= 10 && distance is >= 1 and <= 7,

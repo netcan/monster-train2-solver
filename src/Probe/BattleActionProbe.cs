@@ -866,7 +866,8 @@ namespace MonsterTrain2Poju.Probe
                         string fields = string.Join(",", predictedObject.Properties()
                             .Where(property => !JToken.DeepEquals(property.Value, actualObject[property.Name]))
                             .Select(property => property.Name));
-                        log.LogInfo("ACTION-MODEL-DIFF index=" + record.Index + " fields=" + fields);
+                        log.LogInfo("ACTION-MODEL-DIFF index=" + record.Index + " fields=" + fields + " first=" +
+                            UnitPlayModelProbe.FirstDifference(predicted, actual, "$"));
                         if (OriginalFirstRoomAttachmentScenario.Enabled && fields.Contains("Rooms", StringComparison.Ordinal))
                         {
                             foreach (int roomIndex in record.Predicted.State!.Spawn.Train.Rooms.Select(room => room.RoomIndex)

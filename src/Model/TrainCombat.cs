@@ -827,7 +827,9 @@ namespace MonsterTrain2Poju.Model
             rooms = rooms.Select(room => WithContext(room, context)).ToArray();
             var alive = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             return new TrainCombatState(rooms.Select(room => WithContext(room, context)).ToArray(),
-                source.Movement.Where(rule => alive.Contains(rule.UnitId)).ToArray(), source.EnemySlotsPerRoom, context);
+                source.Movement.Concat((context?.Enchantments?.Movement ?? Array.Empty<EnemyMovement>())
+                    .Where(rule => !source.Movement.Any(old => old.UnitId == rule.UnitId)))
+                    .Where(rule => alive.Contains(rule.UnitId)).ToArray(), source.EnemySlotsPerRoom, context);
         }
 
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||

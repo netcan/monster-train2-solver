@@ -1,6 +1,22 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 4 && args[0] == "--player-fleshweaver-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NativeCovenantCampaignChecks.FleshweaverPair(source.RootElement, replay.RootElement, args[3]);
+    return;
+}
+
+if (args.Length == 3 && args[0] is "--fleshweaver-birth-only" or "--fleshweaver-baseline-only" or "--fleshweaver-growth-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--fleshweaver-birth-only") FleshweaverChecks.Birth(fixture.RootElement, args[2]);
+    else FleshweaverChecks.Battle(fixture.RootElement, args[1], args[2], args[0] == "--fleshweaver-growth-only");
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-arkion-push-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -4984,6 +5000,27 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         using var source = ModelJson.ReadFixture(sourcePath);
         using var replay = ModelJson.ReadFixture(replayPath);
         PlayerOuterBossChecks.CorrupterWinningPair(source.RootElement, replay.RootElement);
+    }
+}
+foreach (var variant in new[] { (Name: "mass", Native: "Mass"), (Name: "corruption", Native: "Corruption"),
+    (Name: "spikes", Native: "Spikes") })
+{
+    foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss-birth-calibration-fleshweaver-" + variant.Name + ".mt2f"))
+    {
+        using var fixture = ModelJson.ReadFixture(path);
+        FleshweaverChecks.Birth(fixture.RootElement, variant.Native);
+    }
+    foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-fleshweaver-" + variant.Name + "-baseline.mt2f" ||
+        Path.GetFileName(path) == "full-battle-fleshweaver-" + variant.Name + "-native-spells.mt2f"))
+    {
+        using var fixture = ModelJson.ReadFixture(path);
+        FleshweaverChecks.Battle(fixture.RootElement, path, variant.Native, Path.GetFileName(path).Contains("native-spells"));
+    }
+    foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-fleshweaver-" + variant.Name + "-search.mt2f"))
+    {
+        using var source = ModelJson.ReadFixture(path);
+        using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-fleshweaver-" + variant.Name + "-replay.mt2f"));
+        NativeCovenantCampaignChecks.FleshweaverPair(source.RootElement, replay.RootElement, variant.Native);
     }
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is

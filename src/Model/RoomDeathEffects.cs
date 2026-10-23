@@ -16,7 +16,8 @@ namespace MonsterTrain2Poju.Model
     public static class RoomDeathEffectModel
     {
         internal static bool RequiresBirthWorld(CombatContext? context) => context?.CardRegistry?.Any(card =>
-            card.DataId == "e1a39d88-4a77-4399-98b2-0b81f44fe6a8") == true;
+            card.DataId == "e1a39d88-4a77-4399-98b2-0b81f44fe6a8") == true ||
+            context?.SummonCatalog?.Units.Any(unit => unit.HeroDefinition != null) == true;
         public static string? Validate(RoomDeathEffectRule rule) => rule.DisallowedInDeployment ||
             RoomCapacityModel.ValidateCharacterFilters(rule.Filters) != null || rule.Effects.Count != 1 ||
             rule.Effects.Any(effect => effect.Type != "SpawnOrStatus" || effect.Target != "Room" ||

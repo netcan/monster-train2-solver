@@ -135,9 +135,14 @@ namespace MonsterTrain2Poju.Probe
                 if (record.Predicted.Supported)
                 {
                     bool terminal = outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+                    JToken predicted = Comparable(record.Predicted.State!, terminal);
+                    JToken actual = Comparable(record.Actual, terminal);
                     record.Difference = record.Predicted.Outcome != outcome ? "EndTurn outcome differs" :
-                        JToken.DeepEquals(Comparable(record.Predicted.State!, terminal), Comparable(record.Actual, terminal))
+                        JToken.DeepEquals(predicted, actual)
                             ? null : "Decision state, resources, card piles or gameplay RNG differ";
+                    if (record.Difference != null && record.Predicted.Outcome == outcome)
+                        log.LogInfo("TURN-MODEL-DIFF index=" + record.Index + " first=" +
+                            UnitPlayModelProbe.FirstDifference(predicted, actual, "$"));
                     log.LogInfo("TURN-MODEL-" + (record.Difference == null ? "MATCH" : "MISMATCH") + " index=" + record.Index);
                 }
                 else log.LogInfo("TURN-MODEL-UNSUPPORTED " + record.Predicted.UnsupportedReason);
