@@ -3,6 +3,39 @@ using MonsterTrain2Poju.Model;
 
 internal static class PlayerOuterBossChecks
 {
+    internal static void FragileShortBudgetModel(FixtureValue fixture)
+    {
+        BattleTurnState root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        Require(root.Spawn.Turn == 0 && root.Spawn.QueuedOuterBoss?.Boss.AssetKey == "Boss_Level8_Fragile" &&
+            root.Spawn.QueuedOuterBoss.Actor.Unit.MaxHealth == 3000 && root.Spawn.QueuedOuterBoss.Actor.Unit.Attack == 30 &&
+            root.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 62,
+            "Short-budget Fragile model acceptance requires the original natural deployment.");
+        Require(BattleHeuristicChecks.RollingForecast(fixture, 256, preferredDeploymentRoom: 0, retainCurrentTurn: true) == RoomOutcome.BattleWon,
+            "The three-turn/3000ms bottom-floor Fragile route must win, not just replay a loss correctly.");
+        Console.WriteLine("FRAGILE-SHORT-BUDGET-MODEL PASS: three turns/3000ms, bottom preference, extra tactical seed off; every forecast and full route replayed; native acceptance remains separate.");
+    }
+
+    internal static void FragileShortBudgetPair(FixtureValue source, FixtureValue replay)
+    {
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
+            Require(overlay.GetProperty("Horizon").GetInt32() == 3 && overlay.GetProperty("TimeLimitMs").GetInt32() == 3000 &&
+                overlay.GetProperty("PreferredDeploymentRoom").GetInt32() == 0 && !overlay.GetProperty("TacticalSeed").GetBoolean(),
+                "Short-budget Fragile acceptance requires three turns/3000ms, bottom preference and no extra tactical seed.");
+            Require(fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null &&
+                fixture.GetProperty("StartingCovenantControl").ValueKind == FixtureKind.Null,
+                "Short-budget Fragile must use the unchanged natural checkpoint.");
+            NativeCampaignInputChecks.Native(fixture, 7, 424244, 62, "Level8FinalBossMeleeWeakness");
+        }
+        Require(source.GetProperty("NativeRunInput").ContentEquals(replay.GetProperty("NativeRunInput")),
+            "Independent short-budget Fragile replay changed its original natural campaign input.");
+        CheckPair(source, replay, "Boss_Level8_Fragile", requireVictory: true);
+        foreach (FixtureValue fixture in new[] { source, replay }) TrainCombatChecks.Native(fixture);
+        OrdinaryAdviceChecks.NativeReuse(source, replay);
+        Console.WriteLine("PLAYER-FRAGILE-SHORT-BUDGET PASS: actual three-turn/3000ms player victories, bottom preference, original seven-win checkpoint, complete forecasts/state/RNG and independent native replay.");
+    }
+
     internal static void WinningPair(FixtureValue source, FixtureValue replay, string expectedBoss = "Boss_Level8_AllyBuffer")
     {
         Pair(source, replay, expectedBoss);

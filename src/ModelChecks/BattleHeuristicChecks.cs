@@ -61,7 +61,7 @@ internal static class BattleHeuristicChecks
             $"score={plan.Score} nodes={plan.ExpandedNodes} ms={plan.Elapsed.TotalMilliseconds:F1}");
     }
 
-    internal static void RollingForecast(FixtureValue fixture, int maxNodes, int preferredDeploymentRoom = 2,
+    internal static RoomOutcome RollingForecast(FixtureValue fixture, int maxNodes, int preferredDeploymentRoom = 2,
         bool retainCurrentTurn = false)
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -78,6 +78,8 @@ internal static class BattleHeuristicChecks
                     preferredDeploymentRoom: preferredDeploymentRoom, allowShorterHorizon: retainCurrentTurn));
             if ((!plan.CompletedHorizon && !plan.UsedShorterHorizon) || plan.Steps.Count == 0)
                 throw new InvalidOperationException("No complete rolling forecast.");
+            if (plan.Cancelled || plan.ExpandedNodes > maxNodes || plan.RequestedTurns != 3 || plan.TurnsCompleted > 3)
+                throw new InvalidOperationException("Rolling forecast exceeded its shared budget or requested horizon.");
             BattleAdviceSession.Verify(state, plan);
             int count = !retainCurrentTurn ? 1 : plan.Outcome == RoomOutcome.BattleWon ? plan.Steps.Count :
                 plan.Outcome == RoomOutcome.Exchanged ? plan.Steps.TakeWhile(step => !step.IsEndTurn).Count() + 1 : 1;
@@ -93,7 +95,7 @@ internal static class BattleHeuristicChecks
                 if (JsonSerializer.Serialize(replayed) != JsonSerializer.Serialize(state) || replayOutcome != outcome ||
                     JsonSerializer.Serialize(root) != original) throw new InvalidOperationException("Rolling forecast replay or source isolation failed.");
                 Console.WriteLine($"ROLLING-FORECAST outcome={outcome} decisions={steps.Count} nodes={nodes} searches={decision + 1} retainCurrentTurn={retainCurrentTurn} elapsedMs={watch.Elapsed.TotalMilliseconds:F1}; model-only diagnosis, native scheduling may choose another bounded path.");
-                return;
+                return outcome;
             }
         }
         throw new InvalidOperationException("Rolling forecast exceeded 200 decisions.");

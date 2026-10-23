@@ -2431,6 +2431,19 @@ if (args.Length == 3 && args[0] == "--outer-boss-corrupter-relentless-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--fragile-short-budget-planner-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PlayerOuterBossChecks.FragileShortBudgetModel(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--player-boss-fragile-short-budget-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PlayerOuterBossChecks.FragileShortBudgetPair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--player-boss-fragile-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

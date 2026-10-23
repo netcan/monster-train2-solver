@@ -42,6 +42,30 @@ also loses after 48 inputs/seventeen searches, with 410 nodes. Soft-budget
 node counts and chosen paths can vary with runtime timing; neither run is
 a native default-budget acceptance or a universal impossibility proof.
 
+## Short budget with bottom preference
+
+The same ordinary planner wins this captured Fragile root when only its
+preferred room changes to 0: 54 inputs, seven searches and Pyre2. Two runs
+pass independent verification of every forecast and the complete consumed
+route. They use 219/208 nodes (host timing can change the exact count), three
+turns/3000ms, same-turn reuse and no extra tactical seed. This is model
+evidence; its fresh native player source/replay acceptance is separate.
+
+The focused winning gate now rejects a replay-correct loss:
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --fragile-short-budget-planner-only tests/fixtures/full-battle-player-boss-fragile-search.mt2f
+```
+
+Changing the global default floor is not justified by this result: the
+accepted natural Ring7 root loses with the same bottom preference (56 inputs,
+25 searches), while its current top preference has an accepted default-budget
+native victory. The shipped preferred-floor default remains top. A dedicated
+native gate, `--player-boss-fragile-short-budget-pair-only`, requires actual
+three-turn/3000ms wins on the original seven-win checkpoint, bottom preference,
+no extra tactical seed, full native state/RNG/forecast replay and ordinary
+continuation checks. It rejects the old twelve-turn/30000ms winning pair.
+
 These commands diagnose model strategy, not live Unity scheduling or native
 acceptance. A successful diagnostic exit means replay integrity passed;
 read the printed outcome separately. This gap needs a default-budget winning
