@@ -20,8 +20,9 @@ the four retained single-definition controls and the four-way control, the
 focused checker requires all fifteen distinct nonempty subsets and 960
 immutable branches. Missing, repeated or unknown subsets fail acceptance.
 
-Run `scripts/Check-TrueFinalBossCovenants.ps1 -SkipBuild` for the exact matrix
-and the combined full battle. It does not run the full repository regression.
+Run `scripts/Check-TrueFinalBossCovenants.ps1 -SkipBuild` for the exact matrix,
+combined full battle and controlled relentless evidence. It does not run the
+full repository regression.
 
 `true-final-boss-covenant-battle-combined.mt2f`, source
 `full-battle-no-cards-20261023-085629-47ceace2`, completes the original native
@@ -48,6 +49,18 @@ capture validation. This does not establish a hard response deadline or wins.
 Player acceptance is available through
 `scripts/Check-PlayerAdvisor.ps1 -Case TrueFinalBossCovenants -SkipBuild`.
 
+Original 04 and the all-four combination additionally pass
+`true-final-boss-relentless-calibration-{covenant04,covenants}.mt2f`, sources
+`full-battle-no-cards-20261023-090520-756c21a4` and
+`full-battle-no-cards-20261023-090634-297fdc26`. Each explicitly exhausts the
+queue and enters the native relentless phase. All three EndTurns, four complete
+phase boundaries, sixteen immutable full chains and 64 phase branches agree.
+The wait latch, three disabled floors, five-body Savagery sacrifice, linked
+health/controller/card cleanup and interrupted terminal coroutine match native
+state/RNG. Both win with Pyre61, normal exits, protected files unchanged and all
+four failure counters zero. This is a controlled phase transition and victory;
+it does not prove a natural transition or surviving-body combat against the Pyre.
+
 This remains the explicitly disclosed native `Cheat_JumpToTFB` route. Natural
 unlock, cumulative high-rank campaigns, winning play, relentless transitions
-and terminal signatures require their own evidence.
+and other terminal signatures require their own evidence.

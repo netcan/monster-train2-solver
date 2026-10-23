@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1104 archives,
+Current manifest inventory (2026-10-23): 1106 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -13,6 +13,8 @@ birth evidence. The four-way combination also has a complete native loss;
 see [combination evidence](true-final-boss-covenant-combinations.md).
 Its actual player advice and independent frozen replay also pass all seventeen
 inputs, complete forecasts and state/RNG, with zero native failure counters.
+Original 04 and the all-four combination also pass controlled relentless
+waiting/destruction, complete three-turn victories and Pyre61 cleanup.
 The actual player assembly also publishes and executes advice against all four
 single definitions: 39 inputs and corresponding fresh frozen native replays
 pass complete plans, state/RNG and zero native failure counters. These controlled

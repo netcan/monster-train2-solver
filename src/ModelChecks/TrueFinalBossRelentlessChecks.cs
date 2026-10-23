@@ -85,6 +85,12 @@ internal static class TrueFinalBossRelentlessChecks
                     BattleTurnChecks.Comparable(expected, terminal, true)) : result.UnsupportedReason));
         }
         BattleTurnState deployment = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        if (route.TryGetProperty("CovenantControl", out FixtureValue covenant) && covenant.ValueKind != FixtureKind.Null)
+        {
+            TrueFinalBossSpawnDefinition definition = deployment.Spawn.QueuedTrueFinalBoss!;
+            TrueFinalBossSpawnChecks.CovenantMetadata(covenant, new TrueFinalBossSpawnState(deployment,
+                definition.Definitions, definition.QueuedBosses, 0, new int[4], definition.ExternalInteractions));
+        }
         string parent = Json(deployment);
         BattleTurnState Replay()
         {

@@ -14,7 +14,8 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState train = battle.Spawn.Train;
             if (battle.PlayRules == null || train.Context?.SpawnPoints == null ||
                 !train.Rooms.All(TrueFinalBossCombatModel.Supports) ||
-                train.Context.Relics?.Any(relic => relic.EffectTypes.Count > 0 || relic.IsCovenant == true) == true ||
+                train.Context.Relics?.Any(relic => relic.IsCovenant == true
+                    ? !TrueFinalBossCovenantModel.KnownOwner(relic) : relic.EffectTypes.Count > 0) == true ||
                 train.Rooms.SelectMany(room => room.Units).Any(unit => !unit.IsPyre &&
                     (!train.Context.LifeLinks!.Actors.Any(actor => actor.Id == unit.Id) || unit.EquipmentCards.Count > 0 ||
                         unit.Modifiers?.Upgrades.Count > 0 || unit.Triggers.Any(trigger => trigger.Kind is not ("OnSpawn" or "PostCombat" or "OnTrainRoomLoop")) ||

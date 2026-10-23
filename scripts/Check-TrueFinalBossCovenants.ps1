@@ -17,4 +17,8 @@ dotnet $checker --true-final-boss-covenants-matrix-only @paths
 if ($LASTEXITCODE -ne 0) { throw 'Original Covenant birth matrix failed.' }
 dotnet $checker --true-final-boss-covenant-battle-only (Join-Path $fixtures 'true-final-boss-covenant-battle-combined.mt2f')
 if ($LASTEXITCODE -ne 0) { throw 'Combined original Covenant full battle failed.' }
+foreach ($name in @('covenant04', 'covenants')) {
+    dotnet $checker --true-final-boss-relentless-only (Join-Path $fixtures "true-final-boss-relentless-calibration-$name.mt2f")
+    if ($LASTEXITCODE -ne 0) { throw "Original Covenant relentless control failed: $name" }
+}
 Write-Output 'TRUE-FINAL-BOSS-COVENANTS-FOCUSED PASS; no full regression executed.'
