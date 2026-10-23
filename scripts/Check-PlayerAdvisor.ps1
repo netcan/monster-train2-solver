@@ -1,9 +1,9 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
+    [ValidateSet('MoonRoomHealingRelic', 'NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
         'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileShortBudget', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
-    [string[]] $Case = @('NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
+    [string[]] $Case = @('MoonRoomHealingRelic', 'NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
         'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileShortBudget', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
@@ -54,6 +54,7 @@ foreach ($name in $Case) {
         'MoonRoomLunacy' { 'player-moon-room-lunacy' }
         'MoonRoomCostRelic' { 'player-moon-room-cost-relic' }
         'MoonRoomAttackRelic' { 'player-moon-room-attack-relic' }
+        'MoonRoomHealingRelic' { 'player-moon-room-healing-relic' }
         'EventGraft' { 'player-event-graft' }
         'NaturalRing7' { 'player-natural-ring7' }
         'CampaignTrialGold' { 'player-campaign-trial-gold' }
@@ -76,7 +77,8 @@ foreach ($name in $Case) {
         }
     }
     $mode = if ($name -eq 'OuterBossRolling') { '--player-boss-winning-pair-only' }
-        elseif ($name -in @('MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic')) { '--player-moon-room-spells-pair-only' }
+        elseif ($name -eq 'MoonRoomHealingRelic') { '--player-moon-room-healing-relic-pair-only' }
+        elseif ($name -in @('MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'MoonRoomHealingRelic')) { '--player-moon-room-spells-pair-only' }
         elseif ($name -in @('TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')) { '--player-terminal-copy-pair-only' }
         else { "--$prefix-pair-only" }
     $modeArguments = if ($name.StartsWith('Trial')) { @('--player-boss-trial-bounded-pair-only', $name.Substring(5), $search, $replay) }

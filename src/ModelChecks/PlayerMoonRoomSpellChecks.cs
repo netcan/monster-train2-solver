@@ -4,15 +4,21 @@ using MonsterTrain2Poju.Model;
 
 internal static class PlayerMoonRoomSpellChecks
 {
-    internal static void Pair(FixtureValue source, FixtureValue replay)
+    internal static void Pair(FixtureValue source, FixtureValue replay, bool requireHealingRelic = false)
     {
+        if (requireHealingRelic)
+            foreach (FixtureValue fixture in new[] { source, replay })
+                Require(fixture.TryGetProperty("OriginalMoonCardUpgradesHealingRelic", out FixtureValue flag) && flag.GetBoolean(),
+                    "Healing composition acceptance requires its explicit original-relic witnesses in both native processes.");
         RollingAdviceChecks.FrozenPair(source, replay, calibration: "original-moon-card-upgrades");
         BattleAdviceChecks.Native(source, requireBoss: false, calibration: "original-moon-card-upgrades");
         bool lunacy = source.TryGetProperty("OriginalMoonCardUpgradesLunacy", out FixtureValue advance) && advance.GetBoolean();
         bool costRelic = source.TryGetProperty("OriginalMoonCardUpgradesCostRelic", out FixtureValue costFlag) && costFlag.GetBoolean();
         bool attackRelic = source.TryGetProperty("OriginalMoonCardUpgradesAttackRelic", out FixtureValue attackFlag) && attackFlag.GetBoolean();
+        bool healingRelic = source.TryGetProperty("OriginalMoonCardUpgradesHealingRelic", out FixtureValue healingFlag) && healingFlag.GetBoolean();
         Require(!costRelic || lunacy, "Cost relic player scene requires Lunacy controls.");
         Require(!attackRelic || lunacy && !costRelic, "Attack relic player scene requires separate Lunacy controls.");
+        Require(!healingRelic || lunacy && !costRelic && !attackRelic, "Healing relic player scene requires separate Lunacy controls.");
         int traits = 0, exclusive = 0, additive = 0, maskedCasts = 0, eclipseCasts = 0, waits = 0, lunacyCasts = 0, paidAdvances = 0, freePurges = 0;
         var spells = new HashSet<string>();
         foreach (FixtureValue fixture in new[] { source, replay })
@@ -25,10 +31,21 @@ internal static class PlayerMoonRoomSpellChecks
                 "Cost relic player scene flags differ between processes.");
             Require((fixture.TryGetProperty("OriginalMoonCardUpgradesAttackRelic", out FixtureValue attack) && attack.GetBoolean()) == attackRelic,
                 "Attack relic player scene flags differ between processes.");
+            Require((fixture.TryGetProperty("OriginalMoonCardUpgradesHealingRelic", out FixtureValue healing) && healing.GetBoolean()) == healingRelic,
+                "Healing relic player scene flags differ between processes.");
             // The player capture owns a different instance registry from the
             // isolation trace. Resolve unchanged control identities in its root.
             CombatContext initialContext = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root")
                 .Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
+            if (healingRelic)
+            {
+                RoomMoonSpellUpgradeChecks.HealingRelic(initialContext);
+                CardInstanceState[] moonSpells = initialContext.Cards.Hand.Select(token => initialContext.FindCard(token.InstanceId)!)
+                    .Where(card => card.MaskDescriptor?.SourceTraits?.Any(trait => trait.Type == CardMoonUpgradeModel.Trait) == true).ToArray();
+                Require(moonSpells.Select(card => card.DataId).Distinct().Count() == 5 &&
+                    moonSpells.All(card => card.Temporary.Offsets.Heal >= 10),
+                    "Player hand lacks positive original healing contributions on all five moon spells.");
+            }
             int[] costIds = costRelic ? new[] { "21038774-c0a4-413c-ab7e-27e458228e5f", "62cc5532-5fa0-4e66-9fec-85be573af359" }
                 .Select(id => initialContext.CardInstances!.Single(card => card.DataId == id).InstanceId).ToArray() : [];
             Require(!costRelic || costIds.All(id => initialContext.Cards.Hand.Any(token => token.InstanceId == id)),
@@ -55,6 +72,7 @@ internal static class PlayerMoonRoomSpellChecks
                     CombatContext context = row.GetProperty(boundary).Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
                     if (costRelic) RoomMoonSpellUpgradeChecks.CostRelic(context, costIds);
                     if (attackRelic) RoomMoonSpellUpgradeChecks.AttackRelic(context, spellIds, attackIds);
+                    if (healingRelic) RoomMoonSpellUpgradeChecks.HealingRelic(context);
                     int phase = context.QueryFrame!.MoonPhase!.Value;
                     int mask = Mask(context, context.QueryFrame.SelectedRoomIndex!.Value);
                     foreach (CardToken token in context.Cards.Hand)
@@ -128,7 +146,7 @@ internal static class PlayerMoonRoomSpellChecks
             }
         });
         Require(JsonSerializer.Serialize(initial, ModelJson.Options) == parent, "Player spell/room branch mutated its parent.");
-        Console.WriteLine($"PLAYER-MOON-ROOM-SPELLS PASS originalSpells={spells.Count} eclipseCasts={eclipseCasts} maskedSpellCasts={maskedCasts} settledTraitSnapshots={traits} exclusiveWitnesses={exclusive} additiveWitnesses={additive} pendingEffectWaits={waits} lunacyCasts={lunacyCasts} paidAdvances={paidAdvances} costRelic={costRelic} attackRelic={attackRelic} freeOriginalPurges={freePurges} immutableBattleBranches=16 exactFrozenReplay=true");
+        Console.WriteLine($"PLAYER-MOON-ROOM-SPELLS PASS originalSpells={spells.Count} eclipseCasts={eclipseCasts} maskedSpellCasts={maskedCasts} settledTraitSnapshots={traits} exclusiveWitnesses={exclusive} additiveWitnesses={additive} pendingEffectWaits={waits} lunacyCasts={lunacyCasts} paidAdvances={paidAdvances} costRelic={costRelic} attackRelic={attackRelic} healingRelic={healingRelic} freeOriginalPurges={freePurges} immutableBattleBranches=16 exactFrozenReplay=true");
     }
     private static int Mask(CombatContext context, int roomIndex) => context.RoomCapacities!
         .Single(room => room.RoomIndex == roomIndex).Attachments?

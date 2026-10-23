@@ -2765,11 +2765,12 @@ if (args.Length == 3 && args[0] == "--player-mixed-conduit-pair-only")
     MixedConduitChecks.PlayerPair(source.RootElement, replay.RootElement);
     return;
 }
-if (args.Length == 3 && args[0] == "--player-moon-room-spells-pair-only")
+if (args.Length == 3 && args[0] is "--player-moon-room-spells-pair-only" or "--player-moon-room-healing-relic-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
-    PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement);
+    PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement,
+        requireHealingRelic: args[0] == "--player-moon-room-healing-relic-pair-only");
     return;
 }
 if (args.Length == 2 && args[0] == "--player-moon-room-turn-only")

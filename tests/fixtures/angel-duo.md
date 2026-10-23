@@ -209,3 +209,18 @@ To reproduce from the restored original Ring6 profile, use
 -AngelDuo -InputProfile <profile> -PlannerHorizon 3 -PlannerTimeLimitMs 3000
 -TimeoutSeconds 1200`. Other campaign pairs retain their victory requirement;
 the scoped Angel Duo checker explicitly records its actual outcome.
+
+### Deployment policy diagnosis · 2026-10-24
+
+Three focused offline runs from that unchanged player deployment root use
+`FixtureTools policy-battle` with preferred rooms 2/0/1. All finish as losses,
+after 44/52/48 inputs respectively; each frozen route independently reproduces
+its terminal outcome and complete state/RNG. The original capture is not
+changed. These are model diagnostics, not new native attempts or proofs that
+the encounter cannot be won. Changing only the global preferred floor is not
+an established solution; no additional native source/replay is run for these
+losing candidates.
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll policy-battle tests/fixtures/full-battle-player-angel-duo-search.mt2f <new-output.mt2f> <room-index>
+```

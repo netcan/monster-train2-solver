@@ -1,9 +1,11 @@
-# Natural Fragile default-budget diagnosis · 2026-10-23
+# Natural Fragile default-budget diagnosis · 2026-10-24
 
-The accepted natural Fragile victory still uses twelve turns/30000ms,
-bottom deployment and the explicit tactical seed; see
-[the native winning pair](player-fragile-winning.md). It does not establish
-a default three-turn/3000ms victory.
+Natural Fragile now has an accepted three-turn/3000ms native player victory,
+independent replay and Standard settlement with bottom preference and the extra
+tactical seed off; see [the short-budget pair](player-fragile-short-budget.md).
+The shipped top-floor preference still loses in the rolling diagnostic below.
+The earlier [twelve-turn/30000ms pair](player-fragile-winning.md) remains
+separate evidence and is not needed to establish the bottom-preference win.
 
 Two focused model diagnostics now work from that unchanged captured root:
 

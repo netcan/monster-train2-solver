@@ -1,5 +1,14 @@
 # Player Mod validation · 2026-10-24
 
+Original moon-upgrade spells now accept the unchanged `IncreaseSpellHealing`
+relic after isolated resource-callback calibration, full controlled battle and
+actual-player source/frozen native replay. Both player processes win at Pyre80
+after 48 inputs; complete forecasts/state/RNG, real UI, normal exit and four
+zero failure counters pass. Fifty source publications have fresh full-root
+checks; 46 continuations reuse verified suffixes. This uses controlled cards,
+six turns/10000ms and tactical seed, with no natural/default-budget claim. See
+[moon/healing relic evidence](../tests/fixtures/moon-healing-relic.md).
+
 Natural Fragile now passes a three-turn/3000ms, bottom-preference actual-player
 source and independent native replay, with the extra tactical option off.
 Both win at Pyre2 after 54 inputs; all complete forecasts/state/RNG and seventeen
