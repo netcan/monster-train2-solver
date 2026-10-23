@@ -39,9 +39,9 @@ internal static class OriginalMoonCardUpgradesChecks
             Require(lunacy && !costRelic && !attackRelic, "Healing relic composition requires separate Lunacy controls.");
             CombatContext context = actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
             RoomMoonSpellUpgradeChecks.HealingRelic(context);
-            Require(ids.Skip(2).All(id => context.FindCard(id)!.Temporary.Offsets.Heal >= 10) &&
-                ids.Take(2).All(id => context.FindCard(id)!.Temporary.Offsets.Heal == 0),
-                "Missing positive original healing contributions and excluded Monster controls.");
+            Require(ids.All(id => context.FindCard(id)!.MaskDescriptor!.Definition.CardType == "Spell"
+                    ? context.FindCard(id)!.Temporary.Offsets.Heal >= 10 : context.FindCard(id)!.Temporary.Offsets.Heal == 0),
+                "Missing positive original healing contributions or excluded Monster/room-attachment controls.");
         }
         if (attackRelic)
         {

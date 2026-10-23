@@ -313,6 +313,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'room-moon-spell-cost-relic-calibration.mt2f',
     'room-moon-spell-attack-relic-calibration.mt2f',
     'room-moon-spell-healing-relic-calibration.mt2f',
+    'full-battle-original-moon-card-upgrades-healing-relic.mt2f',
     'full-battle-original-moon-card-upgrades-attack-relic.mt2f', 'full-battle-original-moon-card-upgrades-attack-relic-replay.mt2f',
     'full-battle-original-moon-card-upgrades-cost-relic.mt2f', 'full-battle-original-moon-card-upgrades-cost-relic-replay.mt2f',
     'full-battle-original-moon-card-upgrades-lunacy.mt2f', 'full-battle-original-moon-card-upgrades-lunacy-replay.mt2f',
