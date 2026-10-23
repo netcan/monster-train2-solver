@@ -8,6 +8,11 @@ internal static class OrdinaryAdviceChecks
         BattleAdviceChecks.Native(source, requireBoss: false);
         RollingAdviceChecks.FrozenPair(source, replay);
         foreach (FixtureValue fixture in new[] { source, replay }) TrainCombatChecks.Native(fixture);
+        NativeReuse(source, replay);
+    }
+
+    internal static void NativeReuse(FixtureValue source, FixtureValue replay)
+    {
         FixtureValue overlay = source.GetProperty("PlayerAdvisor").GetProperty("Overlay");
         Require(overlay.GetProperty("Horizon").GetInt32() == 3 &&
             overlay.GetProperty("TimeLimitMs").GetInt32() == 3000 && !overlay.GetProperty("TacticalSeed").GetBoolean(),

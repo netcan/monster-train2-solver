@@ -1,4 +1,20 @@
-# Player Mod validation · 2026-10-21
+# Player Mod validation · 2026-10-23
+
+Natural Ring7 also has a new actual-default player victory and independent
+native replay: 60 inputs/ten EndTurns, Pyre62, all complete forecasts/state/RNG,
+normal exits and four zero failure counters. It closes that checkpoint's old
+default-budget loss, with requested three-turn/3000ms settings and the tactical
+option off. Explicit shorter windows and atomic soft-budget overruns remain
+visible. See [default strategy acceptance](../tests/fixtures/default-advice-strategy.md).
+
+The complete-state key optimization now has a fresh actual-default player
+source and independent native replay, both winning at Pyre69 after 28 inputs.
+All complete forecasts/state/RNG and fourteen train phases per process match;
+both exit normally, preserve protected files and have four zero failure
+counters. The source's 36 publications each have a fresh full-root check.
+Seven floor switches still add zero searches; twelve ordinary continuations
+and eleven winning continuations skip search. See
+[state-key performance and acceptance](../tests/fixtures/state-key-performance.md).
 
 The player entry point is `src/Advisor/AdvisorPlugin.cs`. The 0.2.0 baseline below
 is followed by the 0.2.1, 0.2.2 and 0.2.3 focused results.

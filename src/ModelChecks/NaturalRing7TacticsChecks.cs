@@ -3,6 +3,23 @@ using MonsterTrain2Poju.Model;
 
 internal static class NaturalRing7TacticsChecks
 {
+    internal static void DefaultWinningPair(FixtureValue source, FixtureValue replay)
+    {
+        RestartPair(source, replay, defaults: true);
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            Require(fixture.GetProperty("NativeWon").GetBoolean(), "Default Ring7 acceptance requires an actual native victory.");
+            FixtureValue[] rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+            BattleTurnState final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            Require(rows.Length == 60 && fixture.GetProperty("Actions").GetArrayLength() == 50 &&
+                fixture.GetProperty("Turns").GetArrayLength() == 10 &&
+                final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 62,
+                "Default Ring7 native victory changed its complete accepted route or final Pyre.");
+        }
+        OrdinaryAdviceChecks.NativeReuse(source, replay);
+        Console.WriteLine("PLAYER-NATURAL-RING7-DEFAULT-WIN PASS: actual three-turn/3000ms player settings, original natural checkpoint, 60 inputs/10 EndTurns, Pyre62 and independent native replay.");
+    }
+
     internal static void DefaultBudget(FixtureValue fixture)
     {
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })

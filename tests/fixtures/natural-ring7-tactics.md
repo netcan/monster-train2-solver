@@ -1,5 +1,13 @@
 # Natural seventh-battle tactics
 
+Latest default-budget follow-up: the original six-win checkpoint now also
+has a native player victory and independent frozen replay with actual defaults
+(three requested turns/3000ms, tactical option off). Both execute 60 inputs,
+win at Pyre62, exit normally and retain zero failure counters. Shorter windows
+and atomic soft-deadline overruns remain explicit. See
+[default strategy acceptance](default-advice-strategy.md); earlier default
+losses and the longer-budget comparisons below remain historical evidence.
+
 Seed 424244 uses the unchanged natural checkpoint
 `.probe-runs/campaign-ring8-20261022-072727-d98c7abf-before-ring7` at distance 6.
 Deck, upgrades, health, enemy definitions and spawn queues are not edited.

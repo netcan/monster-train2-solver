@@ -618,6 +618,20 @@ if (args.Length == 2 && args[0] == "--shorter-advice-budget-only")
     return;
 }
 
+if (args.Length == 3 && args[0] == "--player-state-key-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    BattleStateKeyChecks.NativePair(source.RootElement, replay.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--player-natural-ring7-default-win-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NaturalRing7TacticsChecks.DefaultWinningPair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] is "--player-natural-ring7-clean-pair-only" or "--player-natural-ring7-default-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5050,6 +5064,16 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-stewards-q
         NaturalRing7TacticsChecks.RestartPair(source.RootElement, replay.RootElement, defaults: true);
         OrdinaryAdviceChecks.NativePair(source.RootElement, replay.RootElement);
     }
+}
+foreach (string prefix in new[] { "natural-ring7-short-budget", "state-key" })
+{
+    string? sourcePath = args.FirstOrDefault(path => path.EndsWith($"full-battle-player-{prefix}-search.mt2f", StringComparison.OrdinalIgnoreCase));
+    string? replayPath = args.FirstOrDefault(path => path.EndsWith($"full-battle-player-{prefix}-replay.mt2f", StringComparison.OrdinalIgnoreCase));
+    if (sourcePath == null || replayPath == null) continue;
+    using var source = ModelJson.ReadFixture(sourcePath);
+    using var replay = ModelJson.ReadFixture(replayPath);
+    if (prefix == "state-key") BattleStateKeyChecks.NativePair(source.RootElement, replay.RootElement);
+    else NaturalRing7TacticsChecks.DefaultWinningPair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-natural-ring7-copy-on-play", StringComparison.OrdinalIgnoreCase)))
 {

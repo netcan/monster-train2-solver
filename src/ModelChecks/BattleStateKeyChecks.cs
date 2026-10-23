@@ -4,6 +4,15 @@ using MonsterTrain2Poju.Model;
 
 internal static class BattleStateKeyChecks
 {
+    internal static void NativePair(FixtureValue source, FixtureValue replay)
+    {
+        FloorBrowseAdviceChecks.NativePair(source, replay);
+        OrdinaryAdviceChecks.NativeReuse(source, replay);
+        if (!source.GetProperty("NativeWon").GetBoolean() || !replay.GetProperty("NativeWon").GetBoolean())
+            throw new InvalidOperationException("Optimized state-key acceptance requires complete native victories.");
+        Console.WriteLine("PLAYER-STATE-KEY PASS: optimized Unity/Mono player, complete native forecasts/state/RNG and independent replay; ordinary continuation and floor browsing preserved.");
+    }
+
     internal static void Run(FixtureValue fixture)
     {
         // Frozen with the old .NET 8 implementation, from the accepted original

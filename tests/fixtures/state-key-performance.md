@@ -28,5 +28,30 @@ Initial same-snapshot measurements of twenty fresh key instances were
 659.2ms before / 490.5ms after under .NET 10. Under .NET 8, an old-DLL sample
 took 781.1ms and optimized samples took 615.4/546.8ms. These are local component
 measurements during other work, not a controlled whole-game response claim.
-Native player publication and a fresh independent replay are being captured
-separately. No full regression or Mac package is involved.
+## Native player acceptance
+
+`full-battle-player-state-key-{search,replay}.mt2f` retain fresh source/replay
+profiles `230223-14a573ab` / `230559-88c446e9` under the usual
+`full-battle-units-spells-and-junk-20261023-` prefix. Both load the optimized
+player assembly in Unity/Mono, use actual defaults (three requested turns,
+3000ms, extra tactical seed off), and win at Pyre69 after 28 native inputs:
+21 plays and seven EndTurns. Native times are 182.20/90.22 seconds.
+
+Every input, complete forecast, successor and RNG matches in independent
+processes, including fourteen train phases per process. Both exit normally,
+preserve protected originals, record DEPTH-PASS and have zero capture,
+mismatch, unsupported and pending counters. The source makes 36 publications,
+each guarded by a fresh full root, with 252 pure captures. Seven floor switches,
+including one during search, add zero searches. Twelve ordinary continuations
+and eleven winning continuations have zero search nodes/time.
+
+Ordinary response median/nearest-rank P95 is 723/1544ms (range 550–1544ms),
+including capture and verification. The prior first-battle route had 24 inputs
+and Pyre76; these differing routes are not a controlled speed or strategy
+comparison. The live result establishes compatibility and successful player
+execution of the optimization.
+
+Focused native entry: `--player-state-key-pair-only` followed by the two
+registered archives. `Check-DefaultAdvice.ps1 -Case Keys,Native -SkipBuild`
+also verifies hashes and the separately archived default-budget Ring7 win.
+No full regression or Mac package is involved.

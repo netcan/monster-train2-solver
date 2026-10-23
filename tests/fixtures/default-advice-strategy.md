@@ -33,6 +33,43 @@ deadline controls, the score plateau and both long-horizon natural Ring7 and
 AllyBuffer victories pass focused checks. The old visible-strength-only policy
 still loses the captured root in 54 inputs; it remains a diagnostic baseline.
 
-This section is model evidence only. Actual player publication and independent
-native replay of the new default route are still required before closing the
-Ring7 default-budget victory goal. No full regression or Mac package is used.
+## Native default-budget victory
+
+`full-battle-player-natural-ring7-short-budget-{search,replay}.mt2f` retain
+source `224740-2aad80ab` and independent replay `230338-09b7071d`, with profile
+prefix `full-battle-units-spells-and-junk-20261023-`. Both load the untouched
+seed424244 six-win checkpoint and original Level7BattleHordeSilence. Requested
+settings remain three turns, 3000ms, preferred floor3 and tactical seed off.
+No cards, health, encounter, prior wins or phase controls are authored.
+
+Both complete 60 inputs (50 plays/abilities and ten EndTurns), defeat Rax and
+win at Pyre62. Every root, input, complete published forecast, successor and
+RNG matches between independent native processes, including nineteen train
+phases per process. Native durations are 946.86/584.70 seconds. Both exit
+normally, preserve protected original files, settle terminal effects, record
+DEPTH-PASS and have zero capture/mismatch/unsupported/pending counters.
+
+The source consumes ten searches, with nine fresh new-turn forecasts;
+47 ordinary and three winning continuations skip search. There are 62
+publications, each with a fresh full-root check, and 520 pure captures.
+Eighteen consumed forecasts explicitly use complete shorter windows, with
+one or two turns instead of the requested three. Consumed searches take
+3.00–5.64 seconds: the configured deadline remains soft and a single atomic
+expansion can exceed it. This acceptance does not promise three-second
+end-to-end latency or an unchanged three-turn horizon after a timeout.
+
+The source uses the earlier state-key implementation; replay loads the
+optimized getters/hex encoding and the tiny-node fallback guard. These
+changes preserve this source's complete states/RNG and native replay. The
+separate [optimized player pair](state-key-performance.md) also exercises new
+search/publication, ordinary continuation and floor browsing in Unity/Mono.
+
+The original default losses remain registered. This closes the default-budget
+native-victory gap for this specific natural Ring7 checkpoint, not every
+advanced deck, boss or Covenant combination. The existing natural Fragile
+victory still uses its explicit longer budget and bottom deployment.
+
+Focused gate: `--player-natural-ring7-default-win-pair-only` followed by the
+two archives. `Check-DefaultAdvice.ps1` selects Strategy, Keys or Native
+checks; archive hashes and curated registrations are also checked separately.
+No full regression or Mac package is used.
