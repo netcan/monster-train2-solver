@@ -1,5 +1,8 @@
 # Original single-Covenant player matrix
 
+The all-four combination separately passes seventeen actual player inputs and
+fresh frozen replay; see [combination evidence](true-final-boss-covenant-combinations.md).
+
 All four original single definitions now pass the actual separate Advisor
 assembly, complete native losses and independent fresh-process frozen replay.
 The eight `full-battle-player-true-final-boss-covenant{00,01,04,08}-{search,replay}.mt2f`

@@ -31,6 +31,23 @@ native stat previews cover 26 authored ordinary-wave definitions. The native
 process exits normally with protected files unchanged and all four failure
 counters zero. No encounter, wave, health or phase replacement is used.
 
+The actual separate player assembly also passes the all-four combination:
+`full-battle-player-true-final-boss-covenants-{search,replay}.mt2f`. Source
+`full-battle-units-spells-and-junk-20261023-085858-3b3c10f4` executes seventeen
+inputs (twelve card plays and five EndTurns), with nineteen advice publications,
+238 pure captures and successful UI interactions. Independent fresh replay
+`full-battle-units-spells-and-junk-20261023-090444-0b232ed3` executes the same
+inputs with 59 pure captures, no searches and no advice publications. Every
+input, root, successor, complete forecast, terminal state and RNG matches.
+Both processes exit normally with settled effects, protected files unchanged
+and all four native failure counters zero. Both finish in defeat. The source
+uses a three-turn horizon, 3,000-ms soft search budget and tactical candidates;
+its 306.08 seconds and replay's 165.14 seconds include the full native run and
+capture validation. This does not establish a hard response deadline or wins.
+
+Player acceptance is available through
+`scripts/Check-PlayerAdvisor.ps1 -Case TrueFinalBossCovenants -SkipBuild`.
+
 This remains the explicitly disclosed native `Cheat_JumpToTFB` route. Natural
 unlock, cumulative high-rank campaigns, winning play, relentless transitions
 and terminal signatures require their own evidence.
