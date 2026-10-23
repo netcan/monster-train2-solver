@@ -2955,6 +2955,12 @@ if (args.Length == 4 && args[0] == "--battle-planner-only")
     BattlePlannerChecks.Native(fixture.RootElement, int.Parse(args[2]), int.Parse(args[3]));
     return;
 }
+if (args.Length == 2 && args[0] == "--natural-ring7-default-planner-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    NaturalRing7TacticsChecks.DefaultBudget(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] is "--tactical-planner-only" or "--natural-ring7-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

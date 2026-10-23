@@ -3,6 +3,61 @@ using MonsterTrain2Poju.Model;
 
 internal static class NaturalRing7TacticsChecks
 {
+    internal static void DefaultBudget(FixtureValue fixture)
+    {
+        foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(fixture.GetProperty(counter).GetInt32() == 0, "Default planner requires accepted native input: " + counter);
+        NativeCampaignInputChecks.Native(fixture, 6, 424244, 60, "Level7BattleHordeSilence");
+        BattleTurnState root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        using var keys = new BattleStateKeys();
+        string original = keys.Key(root);
+        var options = new BattlePlannerOptions(256, 3, 8, 12, TimeSpan.FromSeconds(3), 2,
+            allowShorterHorizon: true);
+        BattleTurnState state = root;
+        RoomOutcome outcome = RoomOutcome.Exchanged;
+        var inputs = new List<BattleSearchStep>();
+        int searches = 0, nodes = 0;
+        while (inputs.Count < 256)
+        {
+            BattlePlanResult plan = BattlePlanner.Plan(state, keys.Key, options);
+            Require((plan.CompletedHorizon || plan.UsedShorterHorizon) && plan.Steps.Count > 0 &&
+                plan.RequestedTurns == 3 && plan.TurnsCompleted <= 3 &&
+                plan.ExpandedNodes <= options.MaxNodes && !plan.Cancelled && plan.UnsupportedAttempts.Count == 0,
+                "Default Ring7 planner lost a complete bounded forecast.");
+            BattleAdviceSession.Verify(state, plan);
+            searches++; nodes += plan.ExpandedNodes;
+            // The player retains ordinary suffixes only within this turn;
+            // defeat forecasts do not get reused. Preserve that behavior here.
+            int count = plan.Outcome == RoomOutcome.BattleWon ? plan.Steps.Count :
+                plan.Outcome == RoomOutcome.Exchanged ? plan.Steps.TakeWhile(step => !step.IsEndTurn).Count() + 1 : 1;
+            BattleSearchStep[] prefix = plan.Steps.Take(count).ToArray();
+            state = BattlePlannerChecks.Replay(state, prefix, out outcome);
+            inputs.AddRange(prefix);
+            Console.WriteLine($"DEFAULT-RING7 turn={state.Spawn.Turn} inputs={inputs.Count} searches={searches} " +
+                $"nodes={plan.ExpandedNodes} outcome={outcome} searchMs={plan.Elapsed.TotalMilliseconds:F1}");
+            if (outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate) break;
+        }
+        BattleTurnState replayed = BattlePlannerChecks.Replay(root, inputs, out RoomOutcome replayOutcome);
+        Require(outcome == RoomOutcome.BattleWon && replayOutcome == outcome && Key(replayed) == Key(state) &&
+            Key(root) == original, "Default-budget model route must win with independent full-state/RNG replay and an immutable root.");
+        BattlePlanResult cancelled = BattlePlanner.Plan(root, keys.Key, options, cancellationToken: new CancellationToken(true));
+        BattlePlanResult limited = BattlePlanner.Plan(root, keys.Key,
+            new BattlePlannerOptions(1, 3, 8, 12, TimeSpan.FromSeconds(3), 2, allowShorterHorizon: true));
+        Require(cancelled.Cancelled && cancelled.ExpandedNodes == 0 && cancelled.Steps.Count == 0 &&
+            limited.ReachedNodeLimit && limited.ExpandedNodes == 1 && limited.Steps.Count == 1 &&
+            !limited.Steps[0].IsEndTurn && Key(root) == original,
+            "Default deployment ignored cancellation or exhausted its node budget on an empty-tower forecast.");
+        Console.WriteLine($"DEFAULT-RING7 PASS inputs={inputs.Count} searches={searches} nodes={nodes} " +
+            $"pyre={state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health}: " +
+            "three-turn/3000ms defaults, same-turn reuse, independent complete-state/RNG replay; model evidence only.");
+
+        static string Key(BattleTurnState value)
+        {
+            using var independent = new BattleStateKeys();
+            return independent.Key(value);
+        }
+    }
+
     internal static void RestartPair(FixtureValue source, FixtureValue replay, bool defaults)
     {
         foreach (FixtureValue fixture in new[] { source, replay })

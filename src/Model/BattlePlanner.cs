@@ -211,12 +211,16 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            Rollout(root);
+            // With too few nodes for the requested horizon, retain complete
+            // turn boundaries instead of spending the only node on a card
+            // that cannot be published. Initial deployment still needs a unit.
+            if (source.Spawn.Turn > 0 && options.MaxNodes <= options.MaxTurns) Rollout(root);
 
-            // A visible-strength seed supplies deployment, tank placement and
-            // available unit abilities before the fixed verification policy
-            // consumes the remaining budget. It cannot bypass model legality,
-            // the common evaluator or the shared node/time limits.
+            // Spend the interactive budget on useful card choices before the
+            // no-card baseline. Equipment replacement, tank placement and
+            // ability ownership matter even with a short planning horizon;
+            // the optional seed above still adds the long-horizon rollout.
+            // Every candidate shares the same legality, evaluator and budget.
             Node strength = root;
             while (!Stop() && strength.Turns < options.MaxTurns && !Terminal(strength))
             {
@@ -224,7 +228,7 @@ namespace MonsterTrain2Poju.Model
                 SupportedActionCandidate? chosen = null;
                 if (strength.Actions < options.MaxActionsPerTurn)
                 {
-                    chosen = BattleHeuristicPolicy.Choose(strength.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
+                    chosen = BattleTacticalPolicy.Choose(strength.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
                         options.PreferredDeploymentRoom);
                     foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                 }
@@ -237,7 +241,9 @@ namespace MonsterTrain2Poju.Model
                     // several units. Later turns first finish their card sequence:
                     // forecasting immediately after a free ability/draw can spend
                     // the budget before the seed reaches its damaging or X card.
-                    if (source.Spawn.Turn == 0 && strength.Steps.Count == 1) Rollout(strength);
+                    if (source.Spawn.Turn == 0 && strength.Steps.Count == 1)
+                        Rollout(strength, options.AllowShorterHorizon ? 1 : options.MaxTurns,
+                            finishFirstTurn: options.AllowShorterHorizon);
                 }
                 else
                 {
@@ -250,6 +256,8 @@ namespace MonsterTrain2Poju.Model
                     if (strength.Turns == 1) Rollout(strength);
                 }
             }
+
+            Rollout(root);
 
             // Seed the existing fixed play policy as well as the no-card path.
             // Reuse its cached successors rather than applying a selected card
