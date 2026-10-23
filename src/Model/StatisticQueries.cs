@@ -51,25 +51,29 @@ namespace MonsterTrain2Poju.Model
         public int? GrosMichelCombatRoundCount { get; }
         public bool ActiveBattle { get; }
         public int? SelectedRoomIndex { get; }
+        public ForcedRelentlessCounters? ForcedRelentless { get; }
         public StatisticQueryFrame(int? energy = null, bool? runningCombat = null, int? turn = null, int? forgePoints = null,
             int? dragonsHoard = null, int? moonPhase = null, int? pyreResurrectionCount = null, bool activeBattle = true,
             int? selectedRoomIndex = null, bool? moonPhaseTrackingActive = null,
-            bool? forgeTrackingActive = null, bool? forgeToggleActive = null, int? grosMichelCombatRoundCount = null)
+            bool? forgeTrackingActive = null, bool? forgeToggleActive = null, int? grosMichelCombatRoundCount = null,
+            ForcedRelentlessCounters? forcedRelentless = null)
         { Energy = energy; RunningCombat = runningCombat; Turn = turn; ForgePoints = forgePoints;
             DragonsHoard = dragonsHoard; MoonPhase = moonPhase; PyreResurrectionCount = pyreResurrectionCount; ActiveBattle = activeBattle;
             SelectedRoomIndex = selectedRoomIndex; MoonPhaseTrackingActive = moonPhaseTrackingActive;
             ForgeTrackingActive = forgeTrackingActive; ForgeToggleActive = forgeToggleActive;
-            GrosMichelCombatRoundCount = grosMichelCombatRoundCount; }
+            GrosMichelCombatRoundCount = grosMichelCombatRoundCount; ForcedRelentless = forcedRelentless; }
         public StatisticQueryFrame With(int? energy = null, bool? runningCombat = null, int? turn = null,
             int? forgePoints = null, int? dragonsHoard = null, int? moonPhase = null,
             int? pyreResurrectionCount = null, bool? activeBattle = null, int? selectedRoomIndex = null,
             bool? moonPhaseTrackingActive = null, bool? forgeTrackingActive = null,
-            bool? forgeToggleActive = null, int? grosMichelCombatRoundCount = null) => new StatisticQueryFrame(
+            bool? forgeToggleActive = null, int? grosMichelCombatRoundCount = null,
+            ForcedRelentlessCounters? forcedRelentless = null) => new StatisticQueryFrame(
                 energy ?? Energy, runningCombat ?? RunningCombat, turn ?? Turn, forgePoints ?? ForgePoints,
                 dragonsHoard ?? DragonsHoard, moonPhase ?? MoonPhase, pyreResurrectionCount ?? PyreResurrectionCount,
                 activeBattle ?? ActiveBattle, selectedRoomIndex ?? SelectedRoomIndex,
                 moonPhaseTrackingActive ?? MoonPhaseTrackingActive, forgeTrackingActive ?? ForgeTrackingActive,
-                forgeToggleActive ?? ForgeToggleActive, grosMichelCombatRoundCount ?? GrosMichelCombatRoundCount);
+                forgeToggleActive ?? ForgeToggleActive, grosMichelCombatRoundCount ?? GrosMichelCombatRoundCount,
+                forcedRelentless ?? ForcedRelentless);
 
         internal static string? ValidateDecision(BattleTurnState state)
         {
@@ -83,6 +87,9 @@ namespace MonsterTrain2Poju.Model
             }
             StatisticQueryFrame? frame = context?.QueryFrame;
             if (frame == null) return null; // Old captures retain their explicitly incomplete inputs.
+            if (frame.ForcedRelentless != null && (frame.ForcedRelentless.WaveCount != state.Spawn.Waves.Count ||
+                frame.ForcedRelentless.RemainingTurns < 0))
+                return "Forced-Relentless counters disagree with the native spawn definition.";
             int moon = state.MoonPhase == "New" ? 1 : state.MoonPhase == "Full" ? 2 : 0;
             if (moon == 0 || frame.Energy != state.Energy || frame.Turn != state.Spawn.Turn ||
                 frame.ForgePoints != state.ForgePoints || frame.DragonsHoard != state.DragonsHoard || frame.MoonPhase != moon ||

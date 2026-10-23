@@ -101,5 +101,49 @@ The component archive is33639 bytes/3588 nodes, SHA256
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-forced-relentless-only tests/fixtures/angel-duo-forced-relentless-calibration.mt2f
 ```
 
-This calibrates the global primitive. Applying it from companion death and the
-following companion Relentless/Pyre phases remain guarded pending integration.
+This calibrates the global primitive; integrated original death controls follow.
+
+## Original companion deaths and surviving-boss continuation
+
+Two separate original Ring6 inputs explicitly lower one boss to one HP and
+apply100 native damage. Deck/assets remain original; these controls establish
+mechanics, with no naturally earned victory claim. Inner death grants the
+outer boss its original multistrike1; outer death grants the inner boss its
+original titanskin10. Both clear directed pairing, update terminal-death
+eligibility and apply the native forced-turn/spawn/scoring transition.
+
+The readiness check now recognizes the already drawn hand across the native
+turn jump. Native `HaveCardsBeenDrawnForCurrentTurn` becomes false because its
+counter still belongs to the old turn; the focused original-scenario check uses
+the captured skipped-turn count while retaining other native UI/settlement gates.
+
+| Death control | Accepted source | Seconds | EndTurns | Rooms | Train |
+| --- | --- | --- | --- | --- | --- |
+| Inner | `full-battle-no-cards-20261023-154316-7354ccde` | 71.26 | 5 | 39 | 10 |
+| Outer | `full-battle-no-cards-20261023-155023-0fd66ef4` | 56.61 | 5 | 35 | 10 |
+
+Both native no-card losses exit normally, preserve protected files and have
+final persisted acceptance with all four failure counters zero. Their component
+death archives match complete battle state/RNG and sixteen independent branches.
+The full archives include the disclosed control transition: sixteen full chains
+simulate the health control and native death from model-derived states before
+checking every later EndTurn. Native successor states are never injected.
+
+The surviving inner boss also matches three complete companion-phase boundaries,
+including its original loop, relentless status, trigger removal, selection and
+physical slots. A partial ascension compacts its destination and preserves the
+unrelated source-floor slots. The original pair uses this synchronized phase
+instead of the older companion phase that could restore a removed trigger.
+An absent outer boss after original forced death no longer looks like a queued
+boss awaiting birth, including after its Unity object finishes destruction.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-death-only tests/fixtures/angel-duo-inner-death-calibration.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-death-only tests/fixtures/angel-duo-outer-death-calibration.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-companion-phase-only tests/fixtures/angel-duo-companion-phase-calibration.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-death-battle-only tests/fixtures/full-battle-angel-duo-inner-death.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-death-battle-only tests/fixtures/full-battle-angel-duo-outer-death.mt2f
+```
+
+Both-live companion Relentless/Pyre phases, deployment death and actual player
+advice with an independent frozen replay remain guarded or unverified.

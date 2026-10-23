@@ -262,6 +262,16 @@ namespace MonsterTrain2Poju.Model
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: rules,
             lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
 
+        internal CombatUnit WithoutRemovedCompanion(ISet<int> activeIds)
+        {
+            UnitBumpRules? rules = BumpRules;
+            if (AssetKey is not ("Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" or
+                "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth") || rules == null ||
+                rules.PairedBossUnitId == 0 || activeIds.Contains(rules.PairedBossUnitId)) return this;
+            return WithBumpRules(new UnitBumpRules(rules.Loops, rules.CompanionBoss, rules.OuterBoss,
+                rules.OuterBossRelentlessPhase, 0, rules.CastingAnchorSlots, rules.RelentlessAnchorSlots)).WithEndsBattleOnDeath(true);
+        }
+
         internal CombatUnit WithStatusDamage(int amount) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers!.WithStatusDamage(amount), IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
@@ -3746,7 +3756,18 @@ namespace MonsterTrain2Poju.Model
                             if (effect.Type == "CardEffectForceRelentless")
                             {
                                 if (!source.Preview)
-                                { unsupportedReason = "Companion death forcing the native turn and spawn phase requires separate calibration."; return; }
+                                {
+                                    StatisticQueryFrame? frame = context?.QueryFrame;
+                                    ForcedRelentlessCounters? counters = frame?.ForcedRelentless;
+                                    if (frame?.Turn == null || counters == null)
+                                    { unsupportedReason = "Companion death requires the captured native forced-Relentless counters."; return; }
+                                    if (frame.Turn == 0)
+                                    { unsupportedReason = "Deployment companion death and early boss creation require separate native calibration."; return; }
+                                    var before = new ForcedRelentlessProgress(frame.Turn.Value, counters.WaveCount, 0, counters.RemainingTurns);
+                                    ForcedRelentlessProgress after = ForcedRelentlessModel.Apply(before);
+                                    context = context!.WithQueryFrame(frame.With(turn: after.Turn,
+                                        forcedRelentless: new ForcedRelentlessCounters(counters.WaveCount, after.RemainingTurns)));
+                                }
                             }
                             else if (effect.Type == "CardEffectUnboxJackInTheBoxUnitCard")
                             {

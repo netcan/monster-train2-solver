@@ -548,7 +548,9 @@ namespace MonsterTrain2Poju.Model
             {
                 train = WithContext(train, EnergyModel.SetPhase(context, "BossActionPreCombat"), false);
                 spawn = WithTrain(spawn, train, turn, spawn.Rng);
-                TrainCombatResult bossAction = CompanionBossModel.Resolve(spawn, true);
+                TrainCombatResult bossAction = context.QueryFrame?.ForcedRelentless != null
+                    ? new TrainCombatResult(train, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>())
+                    : CompanionBossModel.Resolve(spawn, true);
                 if (!bossAction.Supported) return Unsupported(bossAction.UnsupportedReason!);
                 if (!RouteDeadUnits(train, bossAction)) return Unsupported("Companion movement requires native death/card routing.");
                 train = bossAction.State!; spawn = WithTrain(spawn, train, turn, spawn.Rng);
@@ -783,7 +785,7 @@ namespace MonsterTrain2Poju.Model
 
             string? ResolveOuterBoss(bool preCombat, string moonPhase)
             {
-                if (spawn.OuterBoss == null) return null;
+                if (spawn.OuterBoss == null && train.Context?.QueryFrame?.ForcedRelentless == null) return null;
                 if (outputPlayRules == null || !outerBossRng.HasValue) return "Missing outer-boss room rules or random stream.";
                 train = WithContext(train, EnergyModel.SetPhase(train.Context!, preCombat ? "BossActionPreCombat" : "BossActionPostCombat"), spawn.Turn == 0);
                 spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
@@ -795,6 +797,10 @@ namespace MonsterTrain2Poju.Model
                     moonPhase, streams, otherPiles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled,
                     source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                     train.Context.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom, source.MoonPhaseTrackingActive);
+                BattleTurnResult companion = AngelDuoCompanionPhaseModel.Apply(boundary, preCombat);
+                if (!companion.Supported) return companion.UnsupportedReason;
+                boundary = companion.State!; spawn = boundary.Spawn; train = spawn.Train;
+                if (spawn.OuterBoss == null) return null;
                 OuterBossPhaseResult action = OuterBossPhaseModel.Apply(new OuterBossPhaseState(boundary, spawn.OuterBoss!, spawn.TrueFinalBoss), preCombat);
                 if (!action.Supported) return action.UnsupportedReason;
                 bossPhaseOutcome = action.Outcome;
@@ -846,12 +852,12 @@ namespace MonsterTrain2Poju.Model
                 room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
                 train.Movement, train.EnemySlotsPerRoom, context);
         private static EnemySpawnState WithTrain(EnemySpawnState spawn, TrainCombatState train, int turn, UnityRng rng) =>
-            new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, rng, train.Context?.NextUnitId ?? spawn.NextUnitId,
+            ForcedRelentlessModel.Synchronize(new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, rng, train.Context?.NextUnitId ?? spawn.NextUnitId,
                 spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
                 spawn.FirstTreasureRoom, turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds,
                 spawn.OuterBoss is { AssetKey: "Boss_Level9_Entropy_Top_V2" } && !train.Rooms.Any(room => room.Units.Any(unit => unit.Id == spawn.OuterBoss.UnitId))
                     ? null : spawn.OuterBoss, spawn.QueuedOuterBoss,
-                spawn.QueuedTrueFinalBoss, spawn.TrueFinalBoss);
+                spawn.QueuedTrueFinalBoss, spawn.TrueFinalBoss));
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
         private static BattleTurnResult Unsupported(string reason) => new BattleTurnResult(null, RoomOutcome.Unsupported, reason);

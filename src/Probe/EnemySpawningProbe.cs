@@ -67,7 +67,11 @@ namespace MonsterTrain2Poju.Probe
                     if (candidate.Actor.ExternalInteractions.Count == 0) queuedOuterBoss = candidate;
                 }
             }
-            if (pattern.GetBossType() != SpawnPatternData.BossType.None && !ignoreOuterBossSpawnInteraction && outerBoss == null && queuedOuterBoss == null && queuedTrueFinalBoss == null)
+            CharacterState? retainedOuter = heroes.GetOuterTrainBossCharacter();
+            bool completedAngelDuoOuter = OuterBossPhaseProbe.TurnsEnabled &&
+                save.GetCurrentScenarioData()?.name == "Level6AngelDuo_RallyAttackIncantHealth" && (retainedOuter == null || !retainedOuter.IsAlive) &&
+                state.Context?.QueryFrame?.ForcedRelentless?.RemainingTurns > 0;
+            if (pattern.GetBossType() != SpawnPatternData.BossType.None && !ignoreOuterBossSpawnInteraction && outerBoss == null && queuedOuterBoss == null && queuedTrueFinalBoss == null && !completedAngelDuoOuter)
                 interactions.Add("Outer or queued final boss spawning");
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) interactions.Add(relicError);

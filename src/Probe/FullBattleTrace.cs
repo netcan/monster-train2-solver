@@ -527,7 +527,10 @@ namespace MonsterTrain2Poju.Probe
                 save.GetGameSequence() == SaveData.GameSequence.InBattle, managers.GetRoomManager()!.GetSelectedRoom(),
                 (bool)AccessTools.Field(typeof(PlayerManager), "isMoonPhaseTrackingActive").GetValue(player),
                 (bool)AccessTools.Field(typeof(PlayerManager), "isForgeTrackingActive").GetValue(player),
-                save.IsForgeToggleActive(), save.GetBalatroGrosMichelCombatRoundCount());
+                save.IsForgeToggleActive(), save.GetBalatroGrosMichelCombatRoundCount(),
+                save.GetCurrentScenarioData()?.name == "Level6AngelDuo_RallyAttackIncantHealth" ?
+                    new ForcedRelentlessCounters((int)AccessTools.Field(typeof(CombatManager), "totalWaves").GetValue(combat),
+                        (int)AccessTools.Field(typeof(CombatManager), "turnsRemainingWhenRelentlessTriggeredEarly").GetValue(combat)) : null);
         }
 
         internal CardPileState[] CaptureOtherPiles()
@@ -764,6 +767,7 @@ namespace MonsterTrain2Poju.Probe
             OuterBossBirthProbe.Write(log);
 #if DEVELOPMENT_PROBE
             AngelDuoForcedRelentlessProbe.Write(log);
+            AngelDuoCompanionPhaseProbe.Write(log);
 #endif
             OuterBossPyreProbe.Write(log);
             CharacterRemovalProbe.Write();
@@ -819,6 +823,8 @@ namespace MonsterTrain2Poju.Probe
                 StartingCovenantControl = StartingCovenantScenario.Evidence,
                 ChosenIncantSpellControl = ChosenIncantSpellScenario.Control,
                 AngelDuoIncantControl = AngelDuoIncantScenario.Control,
+                AngelDuoDeathControl = AngelDuoDeathScenario.Control,
+                AngelDuoDeathTransition = AngelDuoDeathScenario.Transition,
                 TrueFinalBossDormantControl = TrueFinalBossDormantScenario.Evidence,
                 TrueFinalBossLethalControl = TrueFinalBossLethalScenario.Evidence,
                 TrueFinalBossAllyUpgradeControl = TrueFinalBossAllyUpgradeScenario.Evidence,

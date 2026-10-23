@@ -139,7 +139,7 @@ namespace MonsterTrain2Poju.Model
                     world.Preview, world.TestRng, true, world.TemporaryPreviewUnitIds));
             }
             return EnchantmentWorldModel.Rebase(new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                room.Units.Select(unit => unit.WithoutRemovedAttacker(activeIds).WithTriggers(unit.Triggers.Select(trigger =>
+                room.Units.Select(unit => unit.WithoutRemovedCompanion(activeIds).WithoutRemovedAttacker(activeIds).WithTriggers(unit.Triggers.Select(trigger =>
                     trigger.WithEffects(trigger.Effects.Select(effect => effect.Summon?.FirstSpawnedUnitId > 0 &&
                         !activeIds.Contains(effect.Summon.FirstSpawnedUnitId) ? effect.WithSummon(effect.Summon.WithFirstSpawned(0)) : effect).ToArray())).ToArray())).ToArray(),
                 room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
@@ -440,6 +440,9 @@ namespace MonsterTrain2Poju.Model
                 CombatContext compactContext = moving.Context;
                 foreach (RoomCombatState room in moving.Rooms.Reverse())
                 {
+                    // A companion-only DoAscension updates the moved actor's
+                    // destination; unrelated source-floor actors keep their slots.
+                    if (onlyUnitId.HasValue && !room.Units.Any(unit => unit.Id == onlyUnitId.Value)) continue;
                     var compact = BattleSpawnPointModel.Apply(compactContext.SpawnPoints!, WithContext(room, compactContext), "Compact", CombatTeam.Enemy);
                     if (!compact.Supported) return Unsupported(compact.Error!);
                     compactContext = compactContext.WithSpawnPoints(compact.State!);

@@ -1,6 +1,26 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--angel-duo-companion-phase-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AngelDuoCompanionPhaseChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--angel-duo-death-battle-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattleTurnChecks.Native(fixture.RootElement);
+    TrainCombatChecks.Native(fixture.RootElement);
+    RoomCombatChecks.NativeRoomOnly(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--angel-duo-death-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AngelDuoDeathChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--angel-duo-forced-relentless-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4280,6 +4300,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
 {
     using var fixture = ModelJson.ReadFixture(path);
     AngelDuoBirthChecks.Battle(fixture.RootElement, path);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is "angel-duo-inner-death-calibration.mt2f" or "angel-duo-outer-death-calibration.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    AngelDuoDeathChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "angel-duo-companion-phase-calibration.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    AngelDuoCompanionPhaseChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "angel-duo-forced-relentless-calibration.mt2f"))
 {

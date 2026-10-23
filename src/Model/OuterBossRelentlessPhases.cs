@@ -23,7 +23,8 @@ namespace MonsterTrain2Poju.Model
                 return Fail("Missing live outer boss at the relentless phase boundary.");
             if (actor.BumpRules.RelentlessAnchorSlots == null)
                 return Fail("Missing native relentless anchor layout.");
-            if (actor.BumpRules.PairedBossUnitId != 0 || train.Movement.Any(rule => rule.CompanionBoss))
+            if (actor.BumpRules.PairedBossUnitId != 0 || train.Movement.Any(rule => rule.CompanionBoss &&
+                (!OuterBossDefinitions.IsAngelDuo(boss.AssetKey) || rule.UnitId != boss.UnitId)))
                 return Fail("Paired companion and outer-boss phases require native integration calibration.");
             RoomPlayRule[] rules = battle.PlayRules.Rooms.ToArray();
             int room = boss.Room, selectedRoom = battle.SelectedRoom;

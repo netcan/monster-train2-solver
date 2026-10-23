@@ -50,7 +50,7 @@ internal static class AngelDuoForcedRelentlessChecks
         }
         Require(early == 3 && unchanged == 2 && turns.Contains(0) && turns.Contains(1),
             "Calibration must cover three early turns and two native no-op boundaries.");
-        Console.WriteLine("ANGEL-DUO-FORCED-RELENTLESS PASS: five native counter/full-state controls, three early transitions, two no-op boundaries, eighty immutable branches and full native restoration; companion-death integration remains separate.");
+        Console.WriteLine("ANGEL-DUO-FORCED-RELENTLESS PASS: five native counter/full-state controls, three early transitions, two no-op boundaries, eighty immutable branches and full native restoration; this check covers the global primitive.");
     }
 
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);

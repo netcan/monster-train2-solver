@@ -174,7 +174,7 @@ namespace MonsterTrain2Poju.Probe
             return save != null && combat != null && cards != null && !LoadingScreen.IsWorking() && !save.PreviewMode &&
                 !PreviewRngIsolation.Active && save.GetGameSequence() == SaveData.GameSequence.InBattle &&
                 !managers.GetScreenManager().GetScreenActive(ScreenName.Dialog) && CardAnimationSettlement.Ready() &&
-                NativeEffectSettlement.Ready(combat) && combat.ShouldShowEndTurnButton() && combat.HaveCardsBeenDrawnForCurrentTurn() && !combat.IsRunningTriggerQueue &&
+                NativeEffectSettlement.Ready(combat) && combat.ShouldShowEndTurnButton() && NativeDecisionReadiness.CardsDrawn(combat) && !combat.IsRunningTriggerQueue &&
                 (!save.GetBattlePreviewEnabled() || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat)) &&
                 !managers.GetReplayManager().IsCardPlaying() && !(managers.GetHandUI()?.AreAnyCardsAnimating() ?? false);
         }

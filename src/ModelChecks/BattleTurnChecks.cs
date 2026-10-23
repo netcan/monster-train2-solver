@@ -33,6 +33,11 @@ internal static class BattleTurnChecks
             policy.GetString() is "units-and-junk" or "units-spells-and-junk") return;
         BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         string parent = JsonSerializer.Serialize(root);
+        if (fixture.TryGetProperty("AngelDuoDeathTransition", out FixtureValue death) && death.ValueKind == FixtureKind.Object)
+        {
+            AngelDuoDeathChecks.Battle(fixture);
+            return;
+        }
         BattleTurnState terminal = RunIndependentChain(root, turns, compareRoomEnabled);
         Require(JsonSerializer.Serialize(root) == parent, "Full battle simulation mutated its root.");
         string expected = Comparable(terminal, compareRoomEnabled: compareRoomEnabled);

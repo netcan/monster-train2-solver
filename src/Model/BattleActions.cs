@@ -1154,6 +1154,7 @@ namespace MonsterTrain2Poju.Model
                 train.Context?.NextUnitId ?? nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
                 spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, outerBoss: spawn.OuterBoss, queuedOuterBoss: spawn.QueuedOuterBoss,
                 queuedTrueFinalBoss: spawn.QueuedTrueFinalBoss, trueFinalBoss: spawn.TrueFinalBoss);
+            spawn = ForcedRelentlessModel.Synchronize(spawn);
             if (context.RoomCapacities != null) outputPlayRules = outputPlayRules.WithCapacities(context.RoomCapacities);
             return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - energyPaidCost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
                 Math.Max(0, source.DrawPerTurn - UnitRoomResourceModel.Amount(source.Spawn.Train, UnitRoomResourceModel.Draw) +

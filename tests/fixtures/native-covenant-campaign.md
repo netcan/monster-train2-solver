@@ -63,6 +63,7 @@ no-card battle coverage, with complete state/RNG and zero native failures.
 Original cross-floor Incant health mutation and Slay attack buffs also now have
 accepted native fixed-policy coverage. The forced-Relentless global primitive
 also matches five native full-state controls, including scoring counters and
-full restoration before the accepted no-card battle continues. Player capture
-remains guarded until death integration and companion Relentless phases are
-independently calibrated; see [Angel Duo](angel-duo.md).
+full restoration before the accepted no-card battle continues. The same input
+also has accepted original inner/outer death controls and complete surviving-boss
+continuations. Player capture remains guarded for both-live companion
+Relentless/Pyre phases and actual player replay; see [Angel Duo](angel-duo.md).

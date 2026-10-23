@@ -160,6 +160,15 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+#if DEVELOPMENT_PROBE
+            if (fullBattle && stage == Stage.Battle && AngelDuoDeathScenario.Enabled && !AngelDuoDeathScenario.Completed &&
+                FullBattleTrace.Active != null && AllGameManagers.Instance?.GetCombatManager()?.GetTurnCount() > 0)
+            {
+                AngelDuoDeathScenario.Tick();
+                if (AngelDuoDeathScenario.Error != null) Finish(false, AngelDuoDeathScenario.Error);
+                return;
+            }
+#endif
             if (fullBattle && FullBattleTrace.Active?.NativeWon != null)
             {
                 FullBattleTrace trace = FullBattleTrace.Active;
@@ -3469,7 +3478,7 @@ namespace MonsterTrain2Poju.Probe
                 combat != null && cards != null && NativeEffectSettlement.Ready(combat) && combat.ShouldShowEndTurnButton() &&
                 (!save.GetBattlePreviewEnabled() || !(bool)typeof(CombatManager).GetField("combatStateChanged",
                     BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(combat)) &&
-                combat.HaveCardsBeenDrawnForCurrentTurn() && !combat.IsRunningTriggerQueue &&
+                NativeDecisionReadiness.CardsDrawn(combat) && !combat.IsRunningTriggerQueue &&
                 !managers.GetReplayManager().IsCardPlaying() &&
                 !(managers.GetHandUI()?.AreAnyCardsAnimating() ?? false);
         }
