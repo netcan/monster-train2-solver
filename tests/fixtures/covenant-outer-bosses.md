@@ -64,6 +64,8 @@ effects, protected files unchanged and all four failure counters zero.
 | --- | --- | --- |
 | AllyBuffer 01 | `104043-2aeabbc3` / `104319-a56f6d9f` | 168 / 35 |
 | AllyBuffer 00+01 | `104043-a13ed8f0` / `104324-09310096` | 174 / 38 |
+| Fragile 01 | `104439-035298cf` / `104747-fc8dfd19` | 253 / 55 |
+| Fragile 00+01 | `104445-9a78b79d` / `104757-82e441ac` | 255 / 55 |
 
 The source uses three turns, a 3,000-ms soft budget and tactical candidates.
 Both are complete native losses; neither winning quality nor a hard response
@@ -72,7 +74,16 @@ runs 78.56/79.56 seconds. Archives use the prefix
 `full-battle-player-covenant-outer-boss-allybuffer-{context}` with
 `-search.mt2f` / `-replay.mt2f`. Run the focused
 `scripts/Check-CovenantOuterBosses.ps1 -Player -Variant AllyBuffer -SkipBuild`
-pair checker. Other variants require their own player/replay evidence.
+pair checker.
+
+Fragile also passes both contexts with sixteen inputs per pair (twelve card
+plays and four EndTurns), eighteen source publications per context and all
+the same UI, purity, full-forecast/state/RNG and fresh replay checks. Both
+native sources and both replays lose with every failure counter zero.
+Source runs take 187.38/191.87 seconds and replays 84.88/84.72 seconds.
+Archives use `full-battle-player-covenant-outer-boss-fragile-{context}`
+with the same search/replay suffixes. Select `-Variant Fragile -Player`
+in the focused checker. Corrupter still requires its player/replay evidence.
 
 Two earlier AllyBuffer diagnostics (`103410-639eeb30` and `103410-e19c6d4e`)
 retained the creation guard and reported two unsupported boundaries. Their

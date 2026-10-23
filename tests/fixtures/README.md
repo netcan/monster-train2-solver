@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1135 archives,
+Current manifest inventory (2026-10-23): 1139 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -11,6 +11,9 @@ See [Covenant outer-boss evidence](covenant-outer-bosses.md).
 AllyBuffer also passes actual player advice/UI and fresh native replay in
 both contexts: 22 source inputs and 22 replay inputs, complete forecasts and
 state/RNG, with four zero native failure counters in every process.
+Fragile also passes both original contexts: 32 source inputs and 32 frozen
+replay inputs, 36 advice publications, exact complete forecasts/state/RNG
+and four zero native failure counters in all four processes.
 
 Ordinary rank-one enemy birth stats now have native complete-battle controls
 for original 01 and 00+01: seven-turn victories with Pyre10, pure wave-stat
