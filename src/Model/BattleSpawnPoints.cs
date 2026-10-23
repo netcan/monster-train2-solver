@@ -61,11 +61,13 @@ namespace MonsterTrain2Poju.Model
             { ActiveCopies = Array.AsReadOnly(copies.Select(group => group.PreviewCopyId!.Value).ToArray()), BirthPrimaries = BirthPrimaries };
         }
 
-        internal static BattleSpawnPoints EndPreview(BattleSpawnPoints primary, BattleSpawnPoints selected, bool clearBirths)
+        internal static BattleSpawnPoints EndPreview(BattleSpawnPoints primary, BattleSpawnPoints selected, bool clearBirths,
+            IReadOnlyCollection<int>? clearBirthUnitIds = null)
         {
             if (!primary.NextPreviewCopyId.HasValue) return primary;
             var existing = primary.Units.Select(unit => unit.UnitId).ToHashSet();
-            var births = selected.Units.Where(unit => !existing.Contains(unit.UnitId)).Select(unit => clearBirths ?
+            var births = selected.Units.Where(unit => !existing.Contains(unit.UnitId)).Select(unit => clearBirths ||
+                clearBirthUnitIds?.Contains(unit.UnitId) == true ?
                 new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview) :
                 selected.BirthPrimaries.FirstOrDefault(birth => birth.UnitId == unit.UnitId) ?? unit).ToArray();
             UnitSpawnPointState[] units = primary.Units.Concat(births).ToArray();

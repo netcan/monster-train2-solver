@@ -2588,18 +2588,23 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithRelics(context.Relics.Select(owner => owner.EffectTypes.Contains(RelicPyreResurrectionModel.Effect)
                         ? owner.WithResourceEffects(preview.context.Relics!.Single(other => other.DataId == owner.DataId).ResourceEffects!)
                         : owner).ToArray());
+                int firstPreviewId = context.NextUnitId ?? int.MaxValue;
+                EnchantmentWorld? previewWorld = preview.context.Enchantments;
+                int[] enemyBirthIds = previewWorld == null ? Array.Empty<int>() : previewWorld.Rooms.SelectMany(room => room.Units)
+                    .Concat(previewWorld.RetainedUnits.Select(retained => retained.Unit))
+                    .Where(unit => unit.Id >= firstPreviewId && unit.Team == CombatTeam.Enemy).Select(unit => unit.Id).ToArray();
                 BattleSpawnPoints? restoredPoints = context.SpawnPoints?.NextPreviewCopyId.HasValue == true ?
-                    BattleSpawnPoints.EndPreview(context.SpawnPoints, preview.context.SpawnPoints!, clearBirths: false) : null;
+                    BattleSpawnPoints.EndPreview(context.SpawnPoints, preview.context.SpawnPoints!, clearBirths: false,
+                        clearBirthUnitIds: enemyBirthIds) : null;
                 if (restoredPoints != null) context = context.WithSpawnPoints(restoredPoints);
                 if (originalWorld?.AutomaticLifecycle == true)
                 {
                     EnchantmentWorld observed = preview.context!.Enchantments!;
-                    int firstPreviewId = context.NextUnitId ?? int.MaxValue;
                     int firstPreviewCardId = context.NextCardId;
-                    // The collected actors restore temporary state. HeroManager also
-                    // disables previews on newly spawned enemies, exposing their raw
-                    // primary state and null primary point. Player births instead keep
-                    // their preview state and copied point outside the collected list.
+                    // The collected actors restore temporary state. New enemies keep
+                    // their preview state until the next complete UI preview turns
+                    // HeroManager off, but expose null primary spawn pointers now.
+                    // Player births keep both preview state and copied points.
                     EnchantmentRetainedUnit[] observedActors = observed.Rooms.SelectMany(room => room.Units.Select(unit =>
                         new EnchantmentRetainedUnit(unit, room.RoomIndex, room.Preview)))
                         .Concat(observed.RetainedUnits).ToArray();
@@ -2643,8 +2648,7 @@ namespace MonsterTrain2Poju.Model
                         room.Deployment, room.Units.Select(unit => Restore(unit, room.RoomIndex)).ToArray(), room.ExternalInteractions, null, room.Preview,
                         source.ActiveCompanionBossIds)).ToArray(),
                         originalWorld.Movement, originalWorld.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(Retained)
-                            .Concat(births.Select(birth => birth.Unit.Team == CombatTeam.Enemy ?
-                                new EnchantmentRetainedUnit(PreviewBirthModel.Restore(birth.Unit, removedPreviewIds), -1, false) : birth)).ToArray(),
+                            .Concat(births).ToArray(),
                         originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                         originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
                     // Remote Tower targets share effect objects with this

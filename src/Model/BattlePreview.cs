@@ -219,11 +219,16 @@ namespace MonsterTrain2Poju.Model
                     return PreviewEffectsModel.Restore(RestorePrimaryEffects(original), tested, removed,
                         resetPreviewActionsForUnitIds: previewBossIds);
                 }
+                // HeroManager's global preview reset also reaches enemy births
+                // retained by earlier temporary boss-kill previews this turn.
                 context = context.WithEnchantments(new EnchantmentWorld(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                     room.Deployment, room.Units.Select(RestoreEnchantments).ToArray(), room.ExternalInteractions, null, room.Preview,
                     room.ActiveCompanionBossIds)).ToArray(),
-                    source.Movement, source.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
-                        RestoreEnchantments(actor.Unit), actor.RoomIndex, actor.Preview))
+                    source.Movement, source.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor =>
+                        actor.Preview && actor.Unit.Team == CombatTeam.Enemy ? new EnchantmentRetainedUnit(
+                            PreviewBirthModel.Restore(actors.TryGetValue(actor.Unit.Id, out CombatUnit? tested) ? tested : actor.Unit,
+                                removed, resetPreviewActionsForUnitIds: previewBossIds), -1, false) : new EnchantmentRetainedUnit(
+                            RestoreEnchantments(actor.Unit), actor.RoomIndex, actor.Preview))
                         .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removed, previewBossIds)).ToArray(),
                     originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                     originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));

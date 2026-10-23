@@ -47,10 +47,11 @@ player advice remains guarded until positive mechanics are accepted; the three
 player-source/fresh-replay pairs also remain unverified.
 
 The recorded MoreMass/Spike diagnostics now match all 26 individual card actions,
-eight EndTurns and sixteen independent policy branches after restoring enemy
-birth primary state when HeroManager disables temporary previews. New enemies
-lose their preview statuses/location without the player-birth destruction flag;
-player temporary births keep their previously calibrated behavior. Corruption's
+eight EndTurns and sixteen independent policy branches. New enemies keep their
+preview status/location after a temporary boss-kill preview while exposing null
+primary spawn pointers. The following complete UI preview restores their raw
+primary state/location without the player-birth destruction flag. Player
+temporary births keep their previously calibrated behavior. Corruption's
 late deployment also exposed a lethal boss status tick: native preview stops
 before later units' post-combat callbacks can overwrite the shared card cache.
 These fixes are undergoing fresh native acceptance; historical diagnostic
