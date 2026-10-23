@@ -129,7 +129,17 @@ first battle wins in seven EndTurns with Pyre8: fourteen train stages,
 57 room stages, four pure native stat queries, seven authored wave
 definitions and sixteen immutable full chains match. Native runtime is
 66.83 seconds, normal exit, protected files unchanged and all four failure
-counters zero. Player advice and independent replay remain separate.
+counters zero.
+
+Actual player advice and fresh frozen replay both win with Pyre44: each
+executes 31 inputs (24 plays and seven EndTurns). All 33 source publications,
+UI interactions, complete forecasts, roots, successors and RNG match. Pure
+player captures are 395/106, native runtimes 296.15/157.96 seconds; both exit
+normally with protected files unchanged and all four failure counters zero.
+Profile suffixes are `112620-aed191fc` / `113118-028effab`, prefixed
+`full-battle-units-spells-and-junk-20261023-`. Player archive prefix is
+`full-battle-player-native-covenant-startup-04`, with `-search.mt2f` /
+`-replay.mt2f`; focused acceptance case is `NativeCovenantStartup04`.
 
 ## Native cumulative rank five
 
