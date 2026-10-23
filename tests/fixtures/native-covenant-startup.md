@@ -91,7 +91,8 @@ The original `Covenant03_MerchantCostsIncrease` has ID
 implementations expose price data and no combat callbacks. Captured battle
 gold/deck/upgrades remain authoritative. The battle model admits only the
 original identity and complete two-effect signature; this does not claim
-to simulate merchant purchases or broaden outer/final-boss combinations.
+to simulate merchant purchases. Later outer-boss combinations have separate
+[native acceptance](native-covenant-outer-bosses.md); final bosses remain separate.
 
 `full-battle-native-covenant-startup-03.mt2f` comes from
 `full-battle-no-cards-20261023-111541-b0da8023`. All three cumulative
@@ -119,7 +120,8 @@ The exact original `Covenant04_StrongerBosses` identity and complete ordered
 25-effect signature are admitted for ordinary waves: eleven added triggers,
 two spawn statuses, ten health and two attack adjustments. Trigger character
 filters and spawn callbacks use the existing native-calibrated models; this
-does not extend outer/final-boss composition scope. A mutated extra effect is
+has separate [outer-boss acceptance](native-covenant-outer-bosses.md). Final-boss
+composition scope remains separate. A mutated extra effect is
 rejected by the focused checker.
 
 `full-battle-native-covenant-startup-04.mt2f` comes from

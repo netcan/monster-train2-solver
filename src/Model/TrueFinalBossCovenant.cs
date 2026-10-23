@@ -81,9 +81,7 @@ namespace MonsterTrain2Poju.Model
             CombatRelicState[] owners = context?.Relics?.Where(owner => owner.IsCovenant == true).ToArray()
                 ?? System.Array.Empty<CombatRelicState>();
             return owners.Length == 0 || asset is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" &&
-                CalibratedOwners(owners) &&
-                owners.Any(owner => owner.AssetKey == "Covenant01_StrongerEnemiesMoreCards") &&
-                owners.All(owner => owner.AssetKey is "Covenant00_FTUE" or "Covenant01_StrongerEnemiesMoreCards");
+                CalibratedOrdinaryWaveOwners(owners);
         }
 
         // Original additive Covenant controls. Authored stats remain separate

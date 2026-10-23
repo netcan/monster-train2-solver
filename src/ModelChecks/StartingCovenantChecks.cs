@@ -5,11 +5,11 @@ internal static class StartingCovenantChecks
 {
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
 
-    private static void Evidence(FixtureValue root, int? expectedLevel = null)
+    private static void Evidence(FixtureValue root, int? expectedLevel = null, int distance = 0)
     {
         foreach (string name in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(name).GetInt32() == 0, "Native Covenant startup battle has nonzero " + name);
-        Require(root.GetProperty("BattleDistance").GetInt32() == 0 && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
+        Require(root.GetProperty("BattleDistance").GetInt32() == distance && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
             root.GetProperty("CovenantEnemyStatsControl").ValueKind == FixtureKind.Null,
             "Native Covenant startup acceptance requires the original completed first battle, without post-startup activation.");
@@ -57,9 +57,8 @@ internal static class StartingCovenantChecks
         if (level >= 2)
         {
             Require(captured[1].AssetKey == "Covenant02_BattlesNewEnemies" && captured[1].EffectTypes.Count == 0 &&
-                !TrueFinalBossCovenantModel.CalibratedOwners(captured) &&
-                !TrueFinalBossCovenantModel.CalibratedOuterBossOwners(before.Spawn.Train.Context, "Boss_Level8_Corrupter"),
-                "Rank two must retain its original selection-only owner without admitting uncalibrated final/outer bosses.");
+                !TrueFinalBossCovenantModel.CalibratedOwners(captured),
+                "Rank two must retain its original selection-only owner without admitting uncalibrated final bosses.");
             CombatRelicState[] invalid = captured.Select(relic => relic.AssetKey == "Covenant02_BattlesNewEnemies" ?
                 new CombatRelicState(relic.DataId, relic.AssetKey, new[] { "RelicEffectNull" }, isCovenant: true) : relic).ToArray();
             Require(!TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(invalid),
@@ -151,9 +150,80 @@ internal static class StartingCovenantChecks
         RoomCombatChecks.NativeRoomOnly(path);
     }
 
-    internal static void Pair(FixtureValue source, FixtureValue replay, int level = 1)
+    private static void OuterEvidence(FixtureValue root, string variant, int level)
     {
-        Evidence(source, level); Evidence(replay, level);
+        Require(variant is "AllyBuffer" or "Fragile" or "Corrupter", "Uncalibrated native Covenant outer-boss variant.");
+        Evidence(root, level, 7);
+        string boss = "Boss_Level8_" + variant;
+        FixtureValue route = root.GetProperty("OriginalOuterBossRoute");
+        Require(route.GetProperty("Kind").GetString() == "SelectOriginalOuterBossScenario" &&
+            route.GetProperty("Distance").GetInt32() == 7 && route.GetProperty("Boss").GetString() == boss &&
+            route.GetProperty("ScenarioAssetsUnchanged").GetBoolean() && route.GetProperty("TitanTrial").ValueKind == FixtureKind.Null &&
+            route.GetProperty("RngBefore").GetArrayLength() == 16 && route.GetProperty("RngBefore").ContentEquals(route.GetProperty("RngAfter")),
+            "Native Covenant outer-boss acceptance requires its explicitly selected unmodified original route.");
+        BattleTurnState before = root.GetProperty("Turns")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        EnemyDefinition actor = before.Spawn.QueuedOuterBoss!.Actor;
+        FixtureValue query = root.GetProperty("StartingCovenantControl").GetProperty("StatQueries").EnumerateArray()
+            .Single(value => value.GetProperty("AssetKey").GetString() == boss);
+        Require(actor.Unit.AssetKey == boss && actor.BirthStats != null &&
+            actor.Unit.BaseAttack == query.GetProperty("RawAttack").GetInt32() &&
+            actor.Unit.MaxHealth == query.GetProperty("RawHealth").GetInt32() &&
+            actor.BirthStats.Attack == query.GetProperty("Attack").GetInt32() &&
+            actor.BirthStats.Health == query.GetProperty("Health").GetInt32() &&
+            TrueFinalBossCovenantModel.MatchesOrigins(before.Spawn.Train.Context, actor.BirthStats) &&
+            !TrueFinalBossCovenantModel.CalibratedOuterBossOwners(before.Spawn.Train.Context, boss + "_TitanTrial"),
+            "Native cumulative boss birth must retain raw stats, exact pure native adjustments and its separate trial guard.");
+    }
+
+    internal static void OuterNative(FixtureValue root, FixtureValue birth, string path, string variant, int level)
+    {
+        OuterEvidence(root, variant, level);
+        Require(root.GetProperty("Policy").GetString() == "no-cards" && root.GetProperty("Actions").GetArrayLength() == 0,
+            "Native cumulative boss baseline must not play cards.");
+        OuterBossBirthChecks.Native(birth);
+        OuterBossCreationState created = birth.GetProperty("Births")[0].GetProperty("Before").Deserialize<OuterBossCreationState>()!;
+        Require(created.BirthStats != null && created.CreatedUnit.AssetKey == "Boss_Level8_" + variant,
+            "Native cumulative boss creation lacks its pre-Covenant actor and retained birth evidence.");
+        OuterBossTurnChecks.Deployment(root, "Boss_Level8_" + variant, 2);
+        BattleTurnChecks.Native(root);
+        TrainCombatChecks.Native(root);
+        RoomCombatChecks.NativeRoomOnly(path);
+        Console.WriteLine($"NATIVE-COVENANT-OUTER-BOSS PASS rank={level} variant={variant}: original startup, raw creation, post-placement Covenant callbacks and complete native battle/state/RNG.");
+    }
+
+    internal static void OuterPair(FixtureValue source, FixtureValue replay, string variant, int level)
+    {
+        OuterEvidence(source, variant, level); OuterEvidence(replay, variant, level);
+        Pair(source, replay, level, 7);
+        if (variant == "AllyBuffer" && level == 10)
+        {
+            ChosenIncantAttackChecks.Native(source);
+            ChosenIncantAttackChecks.Native(replay);
+        }
+    }
+
+    internal static void CuratedOuter(FixtureValue root, string path, bool player = false)
+    {
+        string prefix = player ? "full-battle-player-native-covenant-outer-boss-" : "full-battle-native-covenant-outer-boss-";
+        string suffix = Path.GetFileNameWithoutExtension(path)[prefix.Length..];
+        if (player) suffix = suffix[..^"-search".Length];
+        int separator = suffix.LastIndexOf('-');
+        int level = int.Parse(suffix[(separator + 1)..]);
+        string variant = suffix[..separator] switch
+        {
+            "allybuffer" => "AllyBuffer", "fragile" => "Fragile", "corrupter" => "Corrupter",
+            _ => throw new InvalidOperationException("Unknown curated cumulative outer-boss variant.")
+        };
+        string other = player ? "full-battle-player-native-covenant-outer-boss-" + suffix + "-replay.mt2f" :
+            "outer-boss-birth-native-covenant-" + suffix + ".mt2f";
+        using var document = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, other));
+        if (player) OuterPair(root, document.RootElement, variant, level);
+        else OuterNative(root, document.RootElement, path, variant, level);
+    }
+
+    internal static void Pair(FixtureValue source, FixtureValue replay, int level = 1, int distance = 0)
+    {
+        Evidence(source, level, distance); Evidence(replay, level, distance);
         RollingAdviceChecks.FrozenPair(source, replay);
         BattleAdviceChecks.Native(source);
         Require(source.GetProperty("StartingCovenantControl").GetProperty("StartingDeck").ContentEquals(

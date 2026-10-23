@@ -780,9 +780,10 @@ if ($TrueFinalBossDeath) {
     if ($TrueFinalBossDamage) { throw 'Controlled terminal capture is separate from original nonterminal damage/healing.' }
     $TrueFinalBossBirth = $true
 }
-if ($StartingCovenantLevel -gt 0 -and ($InputProfile -or $BattleDistance -ne 0 -or $EnemyStatCovenant.Count -gt 0 -or
+if ($StartingCovenantLevel -gt 0 -and ($InputProfile -or ($BattleDistance -ne 0 -and
+    ($BattleDistance -ne 7 -or -not $OriginalOuterBossVariant)) -or $EnemyStatCovenant.Count -gt 0 -or
     $OriginalTrueFinalBoss -or $CovenantCharacterFilter)) {
-    throw 'StartingCovenantLevel requires native run setup in a fresh original first-battle profile, without post-startup Covenant controls.'
+    throw 'StartingCovenantLevel requires fresh native run setup and the original first or explicitly selected Ring8 battle, without post-startup Covenant controls.'
 }
 if ($EnemyStatCovenant.Count -gt 0 -and ($InputProfile -or ($BattleDistance -ne 0 -and
     ($BattleDistance -ne 7 -or -not $OriginalOuterBossVariant)) -or $OriginalTrueFinalBoss -or

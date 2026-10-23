@@ -171,6 +171,15 @@ if (args.Length == 2 && args[0] == "--native-covenant-startup-only")
     StartingCovenantChecks.Native(fixture.RootElement, args[1]);
     return;
 }
+if (args.Length == 5 && args[0] is "--native-covenant-outer-boss-only" or "--player-native-covenant-outer-boss-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var other = ModelJson.ReadFixture(args[2]);
+    if (args[0] == "--native-covenant-outer-boss-only")
+        StartingCovenantChecks.OuterNative(source.RootElement, other.RootElement, args[1], args[3], int.Parse(args[4]));
+    else StartingCovenantChecks.OuterPair(source.RootElement, other.RootElement, args[3], int.Parse(args[4]));
+    return;
+}
 if (args.Length == 3 && args[0].StartsWith("--player-native-covenant-startup-", StringComparison.Ordinal) &&
     args[0].EndsWith("pair-only", StringComparison.Ordinal))
 {
@@ -4327,6 +4336,14 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-full-b
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-covenant-outer-boss-", StringComparison.OrdinalIgnoreCase)))
     CovenantOuterBossChecks.CuratedNative(path);
+
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-native-covenant-outer-boss-", StringComparison.OrdinalIgnoreCase) ||
+    Path.GetFileName(path).StartsWith("full-battle-player-native-covenant-outer-boss-", StringComparison.OrdinalIgnoreCase) &&
+    Path.GetFileName(path).EndsWith("-search.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    StartingCovenantChecks.CuratedOuter(fixture.RootElement, path, Path.GetFileName(path).StartsWith("full-battle-player-", StringComparison.OrdinalIgnoreCase));
+}
 
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-native-covenant-startup-", StringComparison.OrdinalIgnoreCase)))
 {

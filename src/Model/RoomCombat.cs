@@ -1397,9 +1397,9 @@ namespace MonsterTrain2Poju.Model
                             // Keep other target modes and parent-card scaling guarded.
                             if (unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 || unit.Modifiers == null ||
                                 effect.Action is not { Type: "BuffAttack", Range: null } buff ||
-                                buff.Target is not ("Self" or "Room") || buff.Value != effect.Value ||
-                                buff.Target == "Room" && (!buff.AllowEnemy || buff.AllowPlayer))
-                                return "Triggered attack buffs require a captured fixed enemy self/room buff without parent-card traits.";
+                                buff.Target is not ("Self" or "Room" or "Tower") || buff.Value != effect.Value || buff.UseCardTraits ||
+                                buff.Target != "Self" && (!buff.AllowEnemy || buff.AllowPlayer))
+                                return "Triggered attack buffs require a captured fixed enemy self/room/tower buff without parent-card traits.";
                             string? buffFilter = buff.Target == "Self" ? null : buff.Filters?.Validate();
                             if (buffFilter != null) return buffFilter;
                             continue;
@@ -4273,8 +4273,14 @@ namespace MonsterTrain2Poju.Model
             private void ImportEnchantmentRoom(RoomCombatState state)
             {
                 context = state.Context;
-                foreach (CombatUnit changed in state.Units.Concat(context?.Enchantments?.RetainedUnits
-                    .Where(actor => actor.RoomIndex == source.RoomIndex).Select(actor => actor.Unit) ?? Array.Empty<CombatUnit>()))
+                // Tower-target triggers retain remote actors in this engine.
+                // Global aura updates and temporary kill previews also mutate
+                // their shared effect objects, so import those actors as well.
+                var remote = context?.Enchantments?.Rooms.Where(room => room.RoomIndex != source.RoomIndex)
+                    .SelectMany(room => room.Units).Where(unit => externalTurnActorIds.Contains(unit.Id)) ?? Array.Empty<CombatUnit>();
+                foreach (CombatUnit changed in state.Units.Concat(remote).Concat(context?.Enchantments?.RetainedUnits
+                    .Where(actor => actor.RoomIndex == source.RoomIndex || externalTurnActorIds.Contains(actor.Unit.Id))
+                    .Select(actor => actor.Unit) ?? Array.Empty<CombatUnit>()))
                 {
                     WorkingUnit? current = units.FirstOrDefault(unit => unit.Source.Id == changed.Id);
                     if (current != null) current.Apply(changed);

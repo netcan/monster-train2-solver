@@ -88,11 +88,20 @@ namespace MonsterTrain2Poju.Model
             train = EnchantmentWorldModel.Rebase(new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                 room.Deployment, BattleSpawnPointModel.Order(points, room.RoomIndex, room.RoomIndex == target ? room.Units.Append(unit).ToArray() : room.Units),
                 room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), movement, train.EnemySlotsPerRoom, context));
+            RoomCombatResult covenants = RelicSpawnStatusModel.CharacterAdded(train.Rooms[target], unit.Id, 0, true);
+            if (!covenants.Supported) return Fail(covenants.UnsupportedReason!);
+            if (covenants.Outcome != RoomOutcome.Exchanged) return Fail("Terminal initial Covenant callbacks require separate calibration.");
+            context = covenants.State!.Context!;
+            train = new TrainCombatState(train.Rooms.Select(room => room.RoomIndex == target ? covenants.State! :
+                new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context,
+                    room.Preview, room.ActiveCompanionBossIds)).ToArray(), movement, train.EnemySlotsPerRoom, context);
+            var pending = covenants.PendingCallbacks.ToList();
             foreach (string phase in new[] { "OnSpawn", "OnUnscaledSpawn", "OnSpawnNotFromCard" })
             {
                 CombatUnit actor = train.Rooms[target].Units.Single(value => value.Id == unit.Id);
-                TrainCombatResult fired = TrainCombatModel.ApplyCharacterQueue(train,
-                    new List<RoomCombatModel.QueuedCharacterTrigger> { new RoomCombatModel.QueuedCharacterTrigger(target, actor, phase) });
+                pending.Add(new RoomCombatModel.QueuedCharacterTrigger(target, actor, phase));
+                TrainCombatResult fired = TrainCombatModel.ApplyCharacterQueue(train, pending);
+                pending.Clear();
                 if (!fired.Supported) return Fail(fired.UnsupportedReason!);
                 if (fired.Outcome != RoomOutcome.Exchanged) return Fail("Terminal initial outer-boss callbacks require separate calibration.");
                 train = fired.State!;

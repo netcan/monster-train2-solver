@@ -5,6 +5,8 @@ param(
     [string[]] $Variant = @('AllyBuffer', 'Fragile', 'Corrupter'),
     [ValidateSet('01', '00-01')]
     [string[]] $Covenant = @('01', '00-01'),
+    [ValidateRange(0, 10)]
+    [int] $StartingRank = 0,
     [switch] $Player,
     [switch] $SkipBuild
 )
@@ -17,9 +19,14 @@ if (-not $SkipBuild) {
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
 $manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests/fixtures/manifest.tsv') -Delimiter "`t"
 foreach ($boss in $Variant) {
-    foreach ($context in $Covenant) {
+    $contexts = if ($StartingRank -gt 0) { @($StartingRank.ToString('D2', [Globalization.CultureInfo]::InvariantCulture)) } else { $Covenant }
+    foreach ($context in $contexts) {
         $suffix = "$($boss.ToLowerInvariant())-$context"
-        $names = if ($Player) {
+        $names = if ($StartingRank -gt 0 -and $Player) {
+            @("full-battle-player-native-covenant-outer-boss-$suffix-search.mt2f", "full-battle-player-native-covenant-outer-boss-$suffix-replay.mt2f")
+        } elseif ($StartingRank -gt 0) {
+            @("full-battle-native-covenant-outer-boss-$suffix.mt2f", "outer-boss-birth-native-covenant-$suffix.mt2f")
+        } elseif ($Player) {
             @("full-battle-player-covenant-outer-boss-$suffix-search.mt2f", "full-battle-player-covenant-outer-boss-$suffix-replay.mt2f")
         } else {
             @("full-battle-covenant-outer-boss-$suffix.mt2f", "outer-boss-birth-covenant-$suffix.mt2f")
@@ -33,8 +40,12 @@ foreach ($boss in $Variant) {
                 throw "Covenant outer-boss fixture metadata differs: $path"
             }
         }
-        $mode = if ($Player) { '--player-covenant-outer-boss-pair-only' } else { '--covenant-outer-boss-only' }
-        dotnet $checker $mode $paths[0] $paths[1] $boss ($context -eq '00-01').ToString()
+        $mode = if ($StartingRank -gt 0 -and $Player) { '--player-native-covenant-outer-boss-pair-only' }
+            elseif ($StartingRank -gt 0) { '--native-covenant-outer-boss-only' }
+            elseif ($Player) { '--player-covenant-outer-boss-pair-only' } else { '--covenant-outer-boss-only' }
+        $ownerArgument = if ($StartingRank -gt 0) { $StartingRank.ToString([Globalization.CultureInfo]::InvariantCulture) }
+            else { ($context -eq '00-01').ToString() }
+        dotnet $checker $mode $paths[0] $paths[1] $boss $ownerArgument
         if ($LASTEXITCODE -ne 0) { throw "Covenant outer-boss acceptance failed: $boss/$context" }
     }
 }
