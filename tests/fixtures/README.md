@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1186 archives,
+Current manifest inventory (2026-10-23): 1190 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -11,9 +11,10 @@ Rank ten's actual player advice and independent replay also match all twenty
 inputs, UI and complete forecasts/state/RNG; both lose with zero failures.
 See [cumulative final-boss evidence](native-covenant-final-bosses.md).
 
-Native rank six's actual player advice and independent replay also win with
-Pyre42 after thirty-three inputs, matching UI and all complete forecasts,
-state/RNG with zero failures. See [startup evidence](native-covenant-startup.md).
+Native ranks six/seven/eight's actual player advice and independent replays
+also win with Pyre42/32/28 after thirty-three inputs, matching UI and all
+complete forecasts/state/RNG with zero failures. See
+[startup evidence](native-covenant-startup.md).
 
 The original chosen cleric's tower Incant now passes six actual native spell
 casts, thirty-six remote attack buffs and boss exclusion, including searchable

@@ -204,7 +204,7 @@ Profiles below have prefix `full-battle-no-cards-20261023-`.
 
 Use `scripts/Check-NativeCovenantStartup.ps1 -Rank 8 -SkipBuild` for one
 baseline, or add `-Player` for an accepted source/replay pair (currently
-ranks 1–6 and 10). The default baseline ranks are 1–10; this runs only the selected
+ranks 1–8 and 10). The default baseline ranks are 1–10; this runs only the selected
 startup acceptance, never the full fixture suite. Higher-rank actual player
 advice, flying-boss compositions, earned unlocks and full campaigns remain
 separate acceptance targets.
@@ -220,7 +220,7 @@ suffixes are `114040-65f9c3da` / `114617-b144a789`, prefixed
 `full-battle-player-native-covenant-startup-10` with `-search.mt2f` /
 `-replay.mt2f`. Run `Check-NativeCovenantStartup.ps1 -Rank 10 -Player
 -SkipBuild`. This proves all ten original cumulative owners coexist in the
-actual first-battle player path; individual ranks 7–9 player pairs, flying
+actual first-battle player path; rank nine's individual player pair, flying
 bosses, full campaigns and earned unlocks remain separate.
 
 Rank six's actual player advice and independent frozen native replay also
@@ -232,3 +232,18 @@ counters zero. Captures are 428/116; native runtimes are 341.28/159.64 seconds.
 Profile suffixes are `122735-f87b0e95` / `123318-12d495f0` (same player prefix
 above); archive prefix is `full-battle-player-native-covenant-startup-06`.
 Run `Check-NativeCovenantStartup.ps1 -Rank 6 -Player -SkipBuild`.
+
+Ranks seven/eight now also pass individual player source/replay pairs.
+Each performs thirty-three inputs (twenty-six plays, seven EndTurns), with
+thirty-five source publications and fourteen train phases. UI interaction,
+every full forecast, root, successor and RNG matches; native exits are normal,
+protected files unchanged and all four native/purity failure counters zero.
+Both source/replay games win. Profile prefix is the same player prefix above.
+
+| Rank | Source suffix | Replay suffix | Native seconds source/replay | Captures | Room stages | Pyre |
+| --- | --- | --- | --- | --- | ---: | ---: |
+| 7 | `124150-b6d8bfbe` | `124737-3fa94f13` | 344.81/176.53 | 418/114 | 65 | 32 |
+| 8 | `123621-241decd9` | `124200-1973f9fd` | 338.66/175.26 | 424/114 | 66 | 28 |
+
+Archives use `full-battle-player-native-covenant-startup-07` / `-08`, each
+with search/replay suffixes; select their rank with the same focused script.
