@@ -2955,6 +2955,12 @@ if (args.Length == 4 && args[0] == "--battle-planner-only")
     BattlePlannerChecks.Native(fixture.RootElement, int.Parse(args[2]), int.Parse(args[3]));
     return;
 }
+if (args.Length == 2 && args[0] == "--state-key-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattleStateKeyChecks.Run(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--natural-ring7-default-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5040,6 +5046,7 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-stewards-q
     {
         using var source = ModelJson.ReadFixture(sourcePath);
         using var replay = ModelJson.ReadFixture(replayPath);
+        BattleStateKeyChecks.Run(source.RootElement);
         NaturalRing7TacticsChecks.RestartPair(source.RootElement, replay.RootElement, defaults: true);
         OrdinaryAdviceChecks.NativePair(source.RootElement, replay.RootElement);
     }

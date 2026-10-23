@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -18,7 +20,9 @@ namespace MonsterTrain2Poju.Model
     public sealed class BattleStateKeys : IDisposable
     {
         private readonly Dictionary<object, string> objects = new Dictionary<object, string>(new IdentityComparer());
-        private readonly Dictionary<Type, PropertyInfo[]> properties = new Dictionary<Type, PropertyInfo[]>();
+        // Layouts and getters depend only on the model type. Share them across
+        // captures/workers; hashed values remain local to one immutable branch.
+        private static readonly ConcurrentDictionary<Type, Lazy<Field[]>> layouts = new ConcurrentDictionary<Type, Lazy<Field[]>>();
         private readonly SHA256 hash = SHA256.Create();
         private readonly bool ignorePreviewCopyAllocator;
         private readonly bool ignoreRoomSelection;
@@ -54,28 +58,46 @@ namespace MonsterTrain2Poju.Model
             }
             else
             {
-                if (!properties.TryGetValue(type, out PropertyInfo[]? fields))
-                    properties.Add(type, fields = type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                        .Where(field => field.CanRead && field.GetIndexParameters().Length == 0)
-                        .OrderBy(field => field.Name, StringComparer.Ordinal).ToArray());
-                foreach (PropertyInfo field in fields)
+                Field[] fields = layouts.GetOrAdd(type, item => new Lazy<Field[]>(() => item
+                    .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                    .Where(field => field.CanRead && field.GetIndexParameters().Length == 0)
+                    .OrderBy(field => field.Name, StringComparer.Ordinal).Select(field => new Field(field)).ToArray())).Value;
+                foreach (Field field in fields)
                 {
                     Append(field.Name);
                     if (ignoreRoomSelection &&
                         (value is BattleTurnState && field.Name == nameof(BattleTurnState.SelectedRoom) ||
                          value is StatisticQueryFrame && field.Name == nameof(StatisticQueryFrame.SelectedRoomIndex)) &&
-                        field.GetValue(value) is int selected && selected >= 0)
+                        field.Read(value) is int selected && selected >= 0)
                         Append("known-room-selection");
                     else if (ignorePreviewCopyAllocator && value is BattleSpawnPoints points &&
                         field.Name == nameof(BattleSpawnPoints.NextPreviewCopyId) && points.NextPreviewCopyId is int next &&
                         next > 0 && points.Groups.All(group => !group.PreviewCopyId.HasValue || group.PreviewCopyId.Value < next))
                         Append("enabled-preview-copy-allocator");
-                    else Append(Value(field.GetValue(value)));
+                    else Append(Value(field.Read(value)));
                 }
             }
-            string result = BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(data.ToString()))).Replace("-", "");
+            byte[] digest = hash.ComputeHash(Encoding.UTF8.GetBytes(data.ToString()));
+            const string alphabet = "0123456789ABCDEF";
+            var hex = new char[digest.Length * 2];
+            for (int index = 0; index < digest.Length; index++)
+            { hex[index * 2] = alphabet[digest[index] >> 4]; hex[index * 2 + 1] = alphabet[digest[index] & 15]; }
+            string result = new string(hex);
             if (!type.IsValueType) objects.Add(value, result);
             return result;
+        }
+
+        private sealed class Field
+        {
+            internal readonly string Name;
+            internal readonly Func<object, object?> Read;
+            internal Field(PropertyInfo property)
+            {
+                Name = property.Name;
+                var target = Expression.Parameter(typeof(object), "target");
+                Read = Expression.Lambda<Func<object, object?>>(Expression.Convert(Expression.Property(
+                    Expression.Convert(target, property.DeclaringType!), property), typeof(object)), target).Compile();
+            }
         }
 
         private sealed class IdentityComparer : IEqualityComparer<object>
