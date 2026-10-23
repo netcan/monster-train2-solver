@@ -115,3 +115,20 @@ native failure/purity counters. Captures are 269/65 and native runtimes
 `130454-71530897` use the same player prefix; archive prefix is
 `full-battle-player-native-covenant-outer-boss-allybuffer-02` with
 search/replay suffixes. Select `-StartingRank 2 -Variant AllyBuffer -Player`.
+
+The rank-two Fragile and rank-ten Corrupter actual player pairs also pass
+complete forecasts/root/successor/controller/RNG comparison, independent
+native frozen replay and UI. All four native processes exit normally, leave
+protected originals unchanged and record zero native/purity failure counters.
+All lose with Pyre0; their fresh starting decks and explicit map jump remain
+separate from natural campaign victory. Profiles share the player prefix above.
+
+| Rank | Boss | Source suffix | Replay suffix | Native seconds | Inputs / plays / EndTurns | Source publications | Captures | Rooms / train phases |
+| --- | --- | --- | --- | --- | --- | ---: | --- | --- |
+| 2 | Fragile | `130718-7fb6b6b9` | `131145-0dfc03ed` | 266.02/122.25 | 19/15/4 | 21 | 294/68 | 40/8 |
+| 10 | Corrupter | `130358-7267e4a5` | `131043-489fac1b` | 403.67/195.52 | 23/18/5 | 26 | 292/78 | 46/10 |
+
+Archives use `full-battle-player-native-covenant-outer-boss-` followed by
+lowercase variant, two-digit rank and search/replay suffixes. Rank ten's
+three-variant actual player matrix is now complete; rank two only lacks
+Corrupter. Select the variant/rank with the focused checker above.
