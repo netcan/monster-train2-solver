@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1145 archives,
+Current manifest inventory (2026-10-23): 1147 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -29,6 +29,10 @@ Corrupter 01 passes 24 native inputs and independent replay after fixing
 lethal Pyre attacks to stop before post-hit triggers. The same original
 corruption attacker supplies positive ordinary-hit and suppressed fatal-hit
 controls, with complete forecasts/state/RNG and zero native failure counters.
+Corrupter 00+01 also passes after the same fix. All three original Ring8
+variants now pass both calibrated contexts: 102 source inputs, 102 frozen
+replay inputs and 114 publications, with full UI/forecast/state/RNG checks
+and twelve native processes reporting four zero failure counters.
 
 Ordinary rank-one enemy birth stats now have native complete-battle controls
 for original 01 and 00+01: seven-turn victories with Pyre10, pure wave-stat

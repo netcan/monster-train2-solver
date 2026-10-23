@@ -70,6 +70,7 @@ effects, protected files unchanged and all four failure counters zero.
 | Fragile 01 | `104439-035298cf` / `104747-fc8dfd19` | 253 / 55 |
 | Fragile 00+01 | `104445-9a78b79d` / `104757-82e441ac` | 255 / 55 |
 | Corrupter 01 | `105819-dc03638c` / `110304-0c84c97b` | 351 / 81 |
+| Corrupter 00+01 | `110458-b3eb5649` / `110941-5a7020cc` | 341 / 81 |
 
 The source uses three turns, a 3,000-ms soft budget and tactical candidates.
 Both are complete native losses; neither winning quality nor a hard response
@@ -109,7 +110,21 @@ Earlier Corrupter sources `104913-9fd628c1` and `104923-edae90bf` failed
 terminal forecast acceptance and are not curated. The repaired model matches
 all 57 observed rooms and all 24 observed native inputs in the first diagnostic;
 that diagnostic comparison does not replace the fresh accepted pair above.
-Corrupter 00+01 still requires its repaired player/replay acceptance.
+Corrupter 00+01 also passes the repaired full acceptance: 24 inputs,
+26 publications and the same ordinary/fatal attack controls. Its source
+takes 281.85 seconds and fresh replay 128.89 seconds; both processes exit
+normally with settled effects, protected files unchanged and all four
+failure counters zero. Archives use
+`full-battle-player-covenant-outer-boss-corrupter-00-01-{search,replay}.mt2f`.
+
+All six player contexts are now accepted: 102 source inputs (74 card plays
+and 28 EndTurns), the corresponding 102 independent frozen native inputs,
+114 source publications and complete UI/forecast/state/RNG checks. All six
+sources and all six replays are bounded native losses; this establishes
+working advice, not natural winning quality. Run
+`scripts/Check-CovenantOuterBosses.ps1 -Player -SkipBuild` to check the
+six focused pairs. Trial combinations, other Covenant sets and naturally
+initialized higher-rank Ring8 campaigns remain outside this matrix.
 
 Two earlier AllyBuffer diagnostics (`103410-639eeb30` and `103410-e19c6d4e`)
 retained the creation guard and reported two unsupported boundaries. Their
