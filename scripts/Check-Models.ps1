@@ -27,6 +27,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-player-fleshweaver-spikes-replay.mt2f',
     'full-battle-player-floor-browse-search.mt2f', 'full-battle-player-floor-browse-replay.mt2f',
     'full-battle-player-ordinary-continuation-search.mt2f', 'full-battle-player-ordinary-continuation-replay.mt2f',
+    'player-room-attachment-birth-observed.mt2f',
+    'full-battle-stewards-quarters-birth-order.mt2f',
     'full-battle-player-arkion-push-search.mt2f',
     'full-battle-player-arkion-push-replay.mt2f',
     'full-battle-player-cael-lifesteal-search.mt2f',

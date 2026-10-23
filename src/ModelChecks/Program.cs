@@ -2859,6 +2859,12 @@ if (args.Length == 2 && args[0] == "--ordinary-advice-only")
     OrdinaryAdviceChecks.Run(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--room-attachment-birth-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RoomAttachmentBirthChecks.Observed(fixture.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--player-ordinary-advice-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5006,6 +5012,17 @@ foreach (string path in args.Where(path => path.Contains("full-battle-copy-on-pl
         OrdinaryAdviceChecks.NativePair(source.RootElement, replay.RootElement);
         FloorBrowseAdviceChecks.NativePair(source.RootElement, replay.RootElement);
     }
+}
+foreach (string path in args.Where(path => path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    RoomAttachmentBirthChecks.Observed(document.RootElement);
+    RollingAdviceChecks.ObservedSuccessors(document.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-stewards-quarters-birth-order.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    StewardsQuartersChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-natural-ring7-copy-on-play", StringComparison.OrdinalIgnoreCase)))
 {

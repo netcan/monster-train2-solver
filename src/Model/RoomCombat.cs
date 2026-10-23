@@ -825,12 +825,6 @@ namespace MonsterTrain2Poju.Model
             if (error != null || unit == null || fromCard && unit.SpawnerCardId <= 0)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Spawn triggers require a living new unit and its source card identity.");
-            RoomCombatState? synchronized = RoomAttachmentUnitModel.ApplyToNewCharacter(state, unitId, out error);
-            if (error != null || synchronized == null)
-                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
-                    error ?? "Room attachment birth synchronization failed.");
-            state = synchronized;
-            unit = state.Units.First(item => item.Id == unitId);
             return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0,
                 enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre, moonPhase: moonPhase,
                 relicBirthEffect: relicBirthEffect, relicCharacterEffect: relicCharacterEffect).Spawn(unitId, fromCard, startingApplications,
@@ -844,11 +838,6 @@ namespace MonsterTrain2Poju.Model
             string? error = Validate(state);
             if (error != null || !state.Units.Any(unit => unit.Id == unitId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing birth actor.");
-            RoomCombatState? synchronized = RoomAttachmentUnitModel.ApplyToNewCharacter(state, unitId, out error);
-            if (error != null || synchronized == null)
-                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
-                    error ?? "Room attachment birth synchronization failed.");
-            state = synchronized;
             var callbacks = new List<QueuedCharacterTrigger>();
             if (state.Context?.QueryFrame?.MoonPhase is int moon && (moon == 1 || moon == 2))
                 callbacks.Add(new QueuedCharacterTrigger(state.RoomIndex, state.Units.Single(unit => unit.Id == unitId), moon == 1 ? "OnMoonShade" : "OnMoonLit"));
@@ -2168,6 +2157,17 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (spawned.Source.Team == CombatTeam.Player) spawned.Apply(HordeStatusModel.WithSpawning(spawned.Freeze(), true));
                 if (!ApplyBirthRelics(true)) return Finish(RoomOutcome.Unsupported);
+                // Native installs starting statuses and covenant effects before
+                // room attachments. Initializing afterward can erase an
+                // attachment's status while retaining its upgrade/stat record.
+                RoomCombatState? attached = RoomAttachmentUnitModel.ApplyToNewCharacter(CurrentRoom(), unitId,
+                    out string? attachmentError);
+                if (attachmentError != null || attached == null)
+                {
+                    unsupportedReason = attachmentError ?? "Room attachment birth synchronization failed.";
+                    return Finish(RoomOutcome.Unsupported);
+                }
+                ImportEnchantmentRoom(attached);
                 if (context?.QueryFrame?.MoonPhase is int moon &&
                     MoonPhaseStatusModel.IsTracking(context, units.Select(unit => unit.Freeze())))
                 {
