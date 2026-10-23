@@ -49,9 +49,10 @@ namespace MonsterTrain2Poju.Probe
             HeroManager heroes = managers.GetHeroManager()!;
             TrainCombatState state = train.Capture(includeOuterBossForBump: includeOuterBossForBump);
             var interactions = new List<string>();
-            // The isolated TFB component projects its five native birth stats.
-            // Ordinary rank-one waves still need their own stat calibration.
-            if (TrueFinalBossCovenantScenario.Evidence == null && save.GetCovenants().Any(covenant => covenant.AscensionLevel == 1))
+            // Calibrated TFB capture projects both boss and wave birth stats.
+            // Other rank-one encounters retain their separate wave guard.
+            if (TrueFinalBossCovenantScenario.Evidence == null && !PlayerTrueFinalBossProbe.Enabled &&
+                save.GetCovenants().Any(covenant => covenant.AscensionLevel == 1))
                 interactions.Add("Covenant rank-one wave births require separate stat calibration.");
             var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes);
             OuterBossProgress? outerBoss = OuterBossPhaseProbe.ModelsLiveBoss ? OuterBossPhaseProbe.CaptureProgress() : null;

@@ -5,8 +5,9 @@ internal static class PlayerTrueFinalBossChecks
 {
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
     internal static void Pair(FixtureValue source, FixtureValue replay, bool ordinaryAlly = false, bool upgradedAlly = false, bool triggeredAlly = false,
-        bool strongerCovenant = false)
+        string covenantAsset = "")
     {
+        bool strongerCovenant = covenantAsset == "Covenant04_StrongerBosses";
         Require(!triggeredAlly || ordinaryAlly, "Triggered player ally requires its declared original source profile.");
         RollingAdviceChecks.FrozenPair(source, replay);
         BattleAdviceChecks.Native(source);
@@ -18,11 +19,11 @@ internal static class PlayerTrueFinalBossChecks
             FixtureValue overlay = player.GetProperty("Overlay");
             FixtureValue route = fixture.GetProperty("OriginalTrueFinalBossRoute");
             BattleTurnState root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
-            if (strongerCovenant)
+            if (covenantAsset.Length > 0)
             {
                 Require(root.Spawn.Train.Context!.Relics!.Count(owner => owner.IsCovenant == true) == 1 &&
-                    root.Spawn.Train.Context.Relics.Any(owner => owner.AssetKey == "Covenant04_StrongerBosses" && TrueFinalBossCovenantModel.KnownOwner(owner)),
-                    "Player Covenant acceptance requires the exact original single stronger-boss definition.");
+                    root.Spawn.Train.Context.Relics.Any(owner => owner.AssetKey == covenantAsset && TrueFinalBossCovenantModel.KnownOwner(owner)),
+                    "Player Covenant acceptance requires the exact declared original single definition.");
                 TrueFinalBossSpawnDefinition definition = root.Spawn.QueuedTrueFinalBoss!;
                 TrueFinalBossSpawnChecks.CovenantMetadata(route.GetProperty("CovenantControl"),
                     new TrueFinalBossSpawnState(root, definition.Definitions, definition.QueuedBosses, 0, new int[4], definition.ExternalInteractions));

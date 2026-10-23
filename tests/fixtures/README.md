@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1084 archives,
+Current manifest inventory (2026-10-23): 1090 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -8,10 +8,10 @@ Single original Covenants 00/01/04/08 now have complete controlled Level9
 no-cards losses: exact native birth adjustments, ordinary waves, full turns,
 room/train stages and state/RNG pass with zero native failure counters.
 See [Covenant evidence](true-final-boss-covenant-birth.md).
-The actual player assembly also publishes and executes advice against single
-Covenant04: ten inputs and a fresh frozen native replay pass complete plans,
-state/RNG and zero native failure counters. This controlled full loss is
-documented in [player Covenant04 evidence](player-true-final-boss-covenant04.md).
+The actual player assembly also publishes and executes advice against all four
+single definitions: 39 inputs and corresponding fresh frozen native replays
+pass complete plans, state/RNG and zero native failure counters. These controlled
+full losses are documented in [player Covenant evidence](player-true-final-boss-covenants.md).
 
 Natural Corrupter now has an actual-player winning source and independent
 fresh native replay: 57 plays/ten EndTurns, Pyre84, all four failure counters

@@ -27,7 +27,9 @@ and off-by-one boss adjustments are rejected.
 
 Production capture shares only the pure stat query; it neither activates a
 Covenant nor selects the route. The player gate now admits this exact single
-original Covenant and the existing no-Covenant route. Other ranks, combined
+original Covenant and the existing no-Covenant route. The other three calibrated
+single definitions now also pass their own [player pairs](player-true-final-boss-covenants.md).
+Other ranks, combined
 Covenants, uncalibrated birth effects and relentless/terminal signatures retain
 their guards. This is neither natural progression/unlock nor a winning plan.
 

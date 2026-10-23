@@ -2028,11 +2028,19 @@ if (args.Length == 3 && args[0] == "--player-true-final-boss-bounded-pair-only")
     return;
 }
 
-if (args.Length == 3 && args[0] == "--player-true-final-boss-covenant04-pair-only")
+if (args.Length == 3 && args[0] is "--player-true-final-boss-covenant00-pair-only" or "--player-true-final-boss-covenant01-pair-only" or
+    "--player-true-final-boss-covenant04-pair-only" or "--player-true-final-boss-covenant08-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
-    PlayerTrueFinalBossChecks.Pair(source.RootElement, replay.RootElement, strongerCovenant: true);
+    string covenant = args[0] switch
+    {
+        "--player-true-final-boss-covenant00-pair-only" => "Covenant00_FTUE",
+        "--player-true-final-boss-covenant01-pair-only" => "Covenant01_StrongerEnemiesMoreCards",
+        "--player-true-final-boss-covenant08-pair-only" => "Covenant08_StrongerEnemies",
+        _ => "Covenant04_StrongerBosses"
+    };
+    PlayerTrueFinalBossChecks.Pair(source.RootElement, replay.RootElement, covenantAsset: covenant);
     return;
 }
 

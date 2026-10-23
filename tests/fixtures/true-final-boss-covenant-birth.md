@@ -36,8 +36,10 @@ dedicated native-counter, origin, stat, room/train and full-chain acceptance.
 Missing/spoofed origins and off-by-one stat adjustments are rejected. The
 single-Covenant04 player gate now also passes actual-player advice and fresh
 native replay, documented in [player evidence](player-true-final-boss-covenant04.md).
-Other player Covenants, combinations and terminal/relentless extensions remain
-guarded pending separate native evidence.
+The other three single definitions now also pass actual-player advice and
+fresh native replay; see the [four-case player matrix](player-true-final-boss-covenants.md).
+Other ranks, combinations and terminal/relentless extensions remain guarded
+pending separate native evidence.
 
 Four `true-final-boss-spawn-calibration-covenant{00,01,04,08}.mt2f` archives
 compare complete native five-actor births with the pure model. Each process

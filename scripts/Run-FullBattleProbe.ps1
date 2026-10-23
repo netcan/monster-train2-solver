@@ -699,6 +699,9 @@ if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $Or
     $TrueFinalBossBirth -or $TrueFinalBossSpawn -or $TrueFinalBossScheduledSpawn -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossPyreBaneTargets -or $TrueFinalBossDeath)) {
     throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
 }
+if ($OriginalTrueFinalBoss -and $OuterBossBirth) {
+    throw 'OriginalTrueFinalBoss captures its five-body birth automatically; OuterBossBirth observes ordinary single-boss creation.'
+}
 if ($TrueFinalBossLethalCombat) {
     if (-not $OriginalTrueFinalBoss -or $TrueFinalBossLethal -or $TrueFinalBossLethalAlly -or
         $TrueFinalBossLethalSpellTarget -or $TrueFinalBossProtectedSpellTarget -or $TrueFinalBossLethalPreview -or

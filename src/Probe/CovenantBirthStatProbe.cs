@@ -9,13 +9,15 @@ namespace MonsterTrain2Poju.Probe
     // controlled native observations. This never activates a Covenant.
     internal static class CovenantBirthStatProbe
     {
-        internal static bool SingleStrongerBosses(SaveManager save) => save.GetCovenants().Count == 1 &&
-            save.GetCovenants()[0].GetRelicDataID() == "80cfbaca-da9a-4aa8-ac0d-a6563f26fcb8";
+        internal static bool SingleCalibrated(SaveManager save) => save.GetCovenants().Count == 1 &&
+            new[] { "3cc0272d-c0d7-46dc-9c7a-be9633572f70", "d3b53481-f26b-4344-ae8e-ec80b28d6004",
+                "80cfbaca-da9a-4aa8-ac0d-a6563f26fcb8", "ad5c826a-e716-43cc-9c13-df0dd138de71" }
+                .Contains(save.GetCovenants()[0].GetRelicDataID());
 
         internal static EnemyBirthStatAdjustment? Capture(CharacterData data)
         {
             SaveManager save = AllGameManagers.Instance.GetSaveManager();
-            if (!SingleStrongerBosses(save) || !PlayerTrueFinalBossProbe.Enabled) return null;
+            if (!SingleCalibrated(save) || !PlayerTrueFinalBossProbe.Enabled) return null;
             return Query(data, out _);
         }
 

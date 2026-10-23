@@ -1,8 +1,10 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('TrueFinalBossCovenant04', 'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
-    [string[]] $Case = @('TrueFinalBossCovenant04', 'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
+    [ValidateSet('TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
+        'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
+    [string[]] $Case = @('TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
+        'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -24,6 +26,9 @@ foreach ($name in $Case) {
         'CorrupterBounded' { 'player-boss-corrupter-bounded' }
         'TrueFinalBossBounded' { 'player-true-final-boss-bounded' }
         'TrueFinalBossCovenant04' { 'player-true-final-boss-covenant04' }
+        'TrueFinalBossCovenant00' { 'player-true-final-boss-covenant00' }
+        'TrueFinalBossCovenant01' { 'player-true-final-boss-covenant01' }
+        'TrueFinalBossCovenant08' { 'player-true-final-boss-covenant08' }
         'TrueFinalBossOrdinary' { 'player-true-final-boss-ordinary' }
         'TrueFinalBossOrdinaryUpgraded' { 'player-true-final-boss-ordinary-upgraded' }
         'TrueFinalBossAvenger' { 'player-true-final-boss-avenger' }

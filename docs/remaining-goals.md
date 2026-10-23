@@ -200,7 +200,11 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    单独 04 还通过真实玩家整场建议及新进程冻结重放：五次出牌、五次结束回合，
    十个输入/完整预测/状态/RNG 全匹配；两边四项失败计数全零，源局十二次发布、
    一百四十五次纯读取采集且 UI 交互通过。该路线败北，未计自然通关。
-   其余 Covenant 玩家入口及组合仍需分别验收，详见
+   00/01/08 玩家入口随后也已完成各自整场建议与新进程重放：分别六、十七、六个
+   输入；四组共三十九个实际输入，完整预测/状态/RNG 与原生均匹配。四组 UI
+   交互和所有纯读取采集通过，两边四项失败计数均为零，详见
+   [Covenant 玩家矩阵](../tests/fixtures/player-true-final-boss-covenants.md)。
+   其余 Covenant、组合及对应无情/终结签名仍需分别验收，出生与整场边界详见
    [Covenant 出生校准](../tests/fixtures/true-final-boss-covenant-birth.md)。
    玩家入口目前开放已校准的
    `Boss_Level8_AllyBuffer`、`Boss_Level8_Fragile`、`Boss_Level8_Corrupter` 及其三个
