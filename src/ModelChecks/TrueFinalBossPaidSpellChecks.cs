@@ -36,13 +36,15 @@ internal static class TrueFinalBossPaidSpellChecks
             "Allied paid acceptance requires only its explicitly declared original ally.");
         FixtureValue control = root.GetProperty("TrueFinalBossLethalControl");
         string target = control.GetProperty("PaidSpellTarget").GetString()!;
+        BattleTurnState before = control.GetProperty("Before").Deserialize<BattleTurnState>()!;
         Require(!control.TryGetProperty("TargetOwnerOnly", out FixtureValue selectedOwner) || !selectedOwner.GetBoolean(),
             "Paid victory requires the declared three-owner critical-health control.");
         Require(new[] { "Dominion", "Savagery", "EntropyBot", "EntropyMid", "EntropyTop" }.Contains(target) &&
             !control.GetProperty("RefreshPreview").GetBoolean() && control.GetProperty("RemovedSpellShield").GetInt32() == (target == "Dominion" ? 4 : 0) &&
-            control.GetProperty("Debuffs").Deserialize<int[]>()!.SequenceEqual(new[] { 1554, 2749, 3499 }),
+            control.GetProperty("Debuffs").Deserialize<int[]>()!.SequenceEqual(new[] {
+                "Boss_Level9_Dominion_V2", "Boss_Level9_Savagery_V2", "Boss_Level9_Entropy_Bot_V2" }.Select(asset =>
+                    before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.AssetKey == asset).Health - 1)),
             "Missing explicit three-owner HP control and target-specific shield control.");
-        BattleTurnState before = control.GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState controlled = control.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         Require(Json(Prepare(before, target)) == Json(controlled), "Native preparation changed more than its recorded controls.");
         string[] owners = { "Boss_Level9_Dominion_V2", "Boss_Level9_Savagery_V2", "Boss_Level9_Entropy_Bot_V2" };
@@ -74,6 +76,12 @@ internal static class TrueFinalBossPaidSpellChecks
             candidate.Action.RoomIndex == action.RoomIndex && candidate.Result.Outcome == RoomOutcome.BattleWon),
             "The original paid winning spell is missing from the search frontier.");
         BattleTurnState deployment = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        if (route.TryGetProperty("CovenantControl", out FixtureValue covenant) && covenant.ValueKind != FixtureKind.Null)
+        {
+            TrueFinalBossSpawnDefinition definition = deployment.Spawn.QueuedTrueFinalBoss!;
+            TrueFinalBossSpawnChecks.CovenantMetadata(covenant, new TrueFinalBossSpawnState(deployment,
+                definition.Definitions, definition.QueuedBosses, 0, new int[4], definition.ExternalInteractions));
+        }
         BattleTurnState prepared = allied ? addition.GetProperty("Actual").Deserialize<BattleTurnState>()! : deployment;
         if (allied)
         {

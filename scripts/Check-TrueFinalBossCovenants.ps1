@@ -25,4 +25,8 @@ foreach ($name in @('true-final-boss-lethal-calibration-covenant04.mt2f', 'true-
     dotnet $checker --true-final-boss-lethal-only (Join-Path $fixtures $name)
     if ($LASTEXITCODE -ne 0) { throw "Original Covenant terminal control failed: $name" }
 }
+foreach ($target in @('dominion', 'savagery', 'entropybot', 'entropymid', 'entropytop')) {
+    dotnet $checker --true-final-boss-paid-spell-only (Join-Path $fixtures "true-final-boss-paid-spell-covenants-$target.mt2f")
+    if ($LASTEXITCODE -ne 0) { throw "Original Covenant paid-spell target failed: $target" }
+}
 Write-Output 'TRUE-FINAL-BOSS-COVENANTS-FOCUSED PASS; no full regression executed.'

@@ -80,6 +80,24 @@ Diagnostic attempts `full-battle-no-cards-20261023-090830-ea572815` and
 no-Covenant HP assertion and produced no full battle archive. Neither is
 promoted; accepted evidence comes from the fresh processes above.
 
+All five paid-spell terminal targets also pass under the all-four combination:
+`true-final-boss-paid-spell-covenants-{dominion,savagery,entropybot,entropymid,entropytop}.mt2f`.
+Each uses the same explicit three-owner HP debuffs; only Dominion additionally
+removes its four spell-shield stacks. The ordinary original spell costs one
+energy and wins via the original native card path. Complete terminal state/RNG,
+controller/link/group cleanup and sixteen immutable deployment-to-victory
+chains match for every target (eighty total). Every native run exits normally
+with protected files unchanged and capture/mismatch/unsupported/pending zero.
+The retained original no-Covenant Dominion spell control still passes.
+
+| Target | Native source (prefix `full-battle-units-spells-and-junk-`) |
+| --- | --- |
+| Dominion | `20261023-091224-444ee8a2` |
+| Savagery | `20261023-091224-28d28ca4` |
+| Entropy bottom | `20261023-091307-2ef0f4b9` |
+| Entropy middle | `20261023-091307-4dbacb5f` |
+| Entropy top | `20261023-091349-898d744c` |
+
 This remains the explicitly disclosed native `Cheat_JumpToTFB` route. Natural
 unlock, cumulative high-rank campaigns, winning play, natural relentless transitions
 and other terminal signatures require their own evidence.

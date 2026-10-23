@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1108 archives,
+Current manifest inventory (2026-10-23): 1113 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -17,6 +17,8 @@ Original 04 and the all-four combination also pass controlled relentless
 waiting/destruction, complete three-turn victories and Pyre61 cleanup.
 Both also pass explicit critical-health terminal combat with Pyre77; the
 combination additionally passes lethal UI previews and complete live restoration.
+All five all-four-Covenant paid-spell targets also pass native terminal victories,
+one-energy payment and eighty independent immutable full chains.
 The actual player assembly also publishes and executes advice against all four
 single definitions: 39 inputs and corresponding fresh frozen native replays
 pass complete plans, state/RNG and zero native failure counters. These controlled
