@@ -32,6 +32,15 @@ namespace MonsterTrain2Poju.Probe
             return result;
         }
 
+        internal static bool OuterBossCalibrated(SaveManager save)
+        {
+            if (save.GetCovenantsForSpawnPattern().Count == 0) return true;
+            return save.GetCovenantsForSpawnPattern().Select(owner => owner.GetRelicDataID()).SequenceEqual(
+                save.GetCovenants().Select(owner => owner.GetRelicDataID())) &&
+                WavesCalibrated(save) && save.GetCovenants().All(owner =>
+                owner.GetRelicDataID() is "3cc0272d-c0d7-46dc-9c7a-be9633572f70" or "d3b53481-f26b-4344-ae8e-ec80b28d6004");
+        }
+
         internal static EnemyBirthStatAdjustment Query(CharacterData data, out object evidence)
         {
             int frame = UnityEngine.Time.frameCount;

@@ -35,14 +35,15 @@ namespace MonsterTrain2Poju.Probe
             if (!OuterBossPhaseProbe.Supports(data))
                 interactions.Add("Outer-boss definition or action signature requires separate calibration.");
             AllGameManagers managers = AllGameManagers.Instance;
-            if (managers.GetSaveManager().GetCovenantsForSpawnPattern().Count > 0)
+            bool covenantsSupported = CovenantBirthStatProbe.OuterBossCalibrated(managers.GetSaveManager());
+            if (!covenantsSupported)
                 interactions.Add("Outer-boss OnSpawn Covenant effects require separate calibration.");
             if (!substitutionsSupported)
                 interactions.Add("Outer-boss creation substitutions require separate calibration.");
             if (data.GetRoomModifiersData().Count > 0)
                 interactions.Add("Outer-boss creation room modifiers require separate calibration.");
             return new OuterBossSpawnDefinition(new EnemyDefinition(actor.Unit, actor.Ascends, actor.Loops,
-                interactions, actor.CompanionBoss), OuterBossPhaseProbe.Definition(data));
+                interactions, actor.CompanionBoss, covenantsSupported ? CovenantBirthStatProbe.Capture(data) : null), OuterBossPhaseProbe.Definition(data));
         }
         private static bool Capturing => Enabled && FullBattleTrace.Active != null && !AllGameManagers.Instance.GetSaveManager().PreviewMode;
         private static IEnumerator ObserveBirth(IEnumerator native)
@@ -84,13 +85,14 @@ namespace MonsterTrain2Poju.Probe
                 {
                     if (row.Created == null) throw new InvalidOperationException("Native outer-boss creation callback was missing.");
                     var interactions = new List<string>();
-                    if (AllGameManagers.Instance.GetSaveManager().GetCovenantsForSpawnPattern().Count > 0)
+                    if (!CovenantBirthStatProbe.OuterBossCalibrated(AllGameManagers.Instance.GetSaveManager()))
                         interactions.Add("Outer-boss OnSpawn Covenant effects require separate calibration.");
                     CombatUnit unit = FullBattleTrace.Active!.CaptureUnit(row.Created, interactions);
                     row.Definition = unit;
                     row.Before = new OuterBossCreationState(FullBattleTrace.Active.CaptureDecision(true, true), unit,
                         OuterBossPhaseProbe.CaptureProgress(row.Created), interactions,
-                        new EnemyMovement(unit.Id, 1, row.Created.GetAscendsTrainAutomatically(), row.Created.GetLoopsBetweenTrainFloors(), row.Created.IsCompanionBoss()));
+                        new EnemyMovement(unit.Id, 1, row.Created.GetAscendsTrainAutomatically(), row.Created.GetLoopsBetweenTrainFloors(), row.Created.IsCompanionBoss()),
+                        row.Template?.Actor.BirthStats);
                 }
                 catch (Exception error) { Errors.Add(error.ToString()); }
             }

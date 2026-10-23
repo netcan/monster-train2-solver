@@ -20,6 +20,15 @@ namespace MonsterTrain2Poju.Model
         internal static bool CalibratedOwners(CombatRelicState[] owners) => owners.Length > 0 &&
             owners.All(KnownOwner) && owners.Select(owner => owner.DataId).Distinct().Count() == owners.Length;
 
+        internal static bool CalibratedOuterBossOwners(CombatContext? context)
+        {
+            CombatRelicState[] owners = context?.Relics?.Where(owner => owner.IsCovenant == true).ToArray()
+                ?? System.Array.Empty<CombatRelicState>();
+            return owners.Length == 0 || CalibratedOwners(owners) &&
+                owners.Any(owner => owner.AssetKey == "Covenant01_StrongerEnemiesMoreCards") &&
+                owners.All(owner => owner.AssetKey is "Covenant00_FTUE" or "Covenant01_StrongerEnemiesMoreCards");
+        }
+
         // Original additive Covenant controls. Authored stats remain separate
         // from the native birth adjustments; other definitions stay guarded.
         internal static bool Adjustment(CombatContext? context, string asset, out int attack, out int health)

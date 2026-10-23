@@ -33,6 +33,12 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState train = old.Train; OuterBossSpawnDefinition definition = source.Definition;
             EnemyDefinition actor = definition.Actor; OuterBossProgress boss = definition.Boss;
             if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));
+            if (!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(train.Context))
+                return Fail("Outer-boss Covenant owners require separate calibration.");
+            string? statError = EnemySpawningModel.ValidateBirthStats(actor, train.Context);
+            if (statError != null) return Fail(statError);
+            if (train.Context?.Relics?.Any(owner => owner.IsCovenant == true) == true && actor.BirthStats == null)
+                return Fail("Outer-boss Covenant creation requires its calibrated native birth stats.");
             if (!OuterBossDefinitions.Supports(actor.Unit.AssetKey) || actor.Unit.Id != 0 || boss.UnitId != 0 ||
                 boss.AssetKey != actor.Unit.AssetKey || boss.Room != -1 || boss.Phase != "Casting" ||
                 old.OuterBoss != null || train.Context?.SpawnPoints == null || actor.Unit.BumpRules?.OuterBoss != true ||
@@ -56,9 +62,9 @@ namespace MonsterTrain2Poju.Model
                 battle.ForgePoints, battle.DragonsHoard, battle.MoonPhase, battle.RngStreams, battle.OtherPiles,
                 battle.ExternalInteractions, battle.PlayRules, battle.BattlePreviewEnabled, battle.UiRngIsolated,
                 battle.CanonicalDecisionReferences, battle.CanonicalPhysicalReferences, battle.SelectedRoom, battle.MoonPhaseTrackingActive);
-            return new OuterBossInstantiationResult(new OuterBossCreationState(next, actor.Create(allocation.UnitId),
+            return new OuterBossInstantiationResult(new OuterBossCreationState(next, actor.Create(allocation.UnitId, applyBirthStats: false),
                 boss.WithIdentity(allocation.UnitId), actor.ExternalInteractions,
-                new EnemyMovement(allocation.UnitId, 1, actor.Ascends, actor.Loops, actor.CompanionBoss)));
+                new EnemyMovement(allocation.UnitId, 1, actor.Ascends, actor.Loops, actor.CompanionBoss), actor.BirthStats));
         }
     }
 }

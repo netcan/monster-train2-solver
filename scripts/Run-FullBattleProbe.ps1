@@ -779,10 +779,11 @@ if ($TrueFinalBossDeath) {
     if ($TrueFinalBossDamage) { throw 'Controlled terminal capture is separate from original nonterminal damage/healing.' }
     $TrueFinalBossBirth = $true
 }
-if ($EnemyStatCovenant.Count -gt 0 -and ($InputProfile -or $BattleDistance -ne 0 -or $OriginalTrueFinalBoss -or
+if ($EnemyStatCovenant.Count -gt 0 -and ($InputProfile -or ($BattleDistance -ne 0 -and
+    ($BattleDistance -ne 7 -or -not $OriginalOuterBossVariant)) -or $OriginalTrueFinalBoss -or
     $CovenantCharacterFilter -or $EnemyStatCovenant -notcontains 'Covenant01_StrongerEnemiesMoreCards' -or
     @($EnemyStatCovenant | Select-Object -Unique).Count -ne $EnemyStatCovenant.Count)) {
-    throw 'EnemyStatCovenant requires a fresh original first battle and distinct definitions including Covenant01.'
+    throw 'EnemyStatCovenant requires a fresh original first or explicitly selected Ring8 battle and distinct definitions including Covenant01.'
 }
 if (@($TrueFinalBossCovenant | Select-Object -Unique).Count -ne $TrueFinalBossCovenant.Count -or
     ($TrueFinalBossCovenant.Count -gt 1 -and $TrueFinalBossCovenant -contains '')) {

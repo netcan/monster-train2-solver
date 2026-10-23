@@ -17,10 +17,10 @@ namespace MonsterTrain2Poju.Probe
         {
             if (!Enabled || Evidence != null) return;
             string[] assets = Environment.GetEnvironmentVariable("MT2_PROBE_ENEMY_STAT_COVENANTS")!.Split(';');
-            if (save.GetCurrentDistance() != 0 || save.GetCovenants().Count != 0 ||
+            if (save.GetCurrentDistance() is not (0 or 7) || save.GetCovenants().Count != 0 ||
                 !assets.Contains("Covenant01_StrongerEnemiesMoreCards") || assets.Distinct().Count() != assets.Length ||
                 assets.Any(asset => asset is not ("Covenant00_FTUE" or "Covenant01_StrongerEnemiesMoreCards")))
-                throw new InvalidOperationException("Enemy-stat Covenant control requires a fresh original first battle and unique calibrated definitions.");
+                throw new InvalidOperationException("Enemy-stat Covenant control requires a fresh original first or Ring8 battle and unique calibrated definitions.");
             CovenantData[] definitions = assets.Select(asset => save.GetAllGameData().GetAllCovenantDatas().Single(data => data.name == asset)).ToArray();
             string[] deck = save.GetDeckState().Select(card => card.GetCardDataID()).ToArray();
             object before = Rng();

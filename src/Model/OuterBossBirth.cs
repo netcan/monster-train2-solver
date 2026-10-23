@@ -13,11 +13,13 @@ namespace MonsterTrain2Poju.Model
         public OuterBossProgress CreatedBoss { get; }
         public EnemyMovement CreatedMovement { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
+        public EnemyBirthStatAdjustment? BirthStats { get; }
         public OuterBossCreationState(BattleTurnState battle, CombatUnit createdUnit, OuterBossProgress createdBoss,
-            IReadOnlyList<string> externalInteractions, EnemyMovement createdMovement)
+            IReadOnlyList<string> externalInteractions, EnemyMovement createdMovement, EnemyBirthStatAdjustment? birthStats = null)
         {
             Battle = battle; CreatedUnit = createdUnit; CreatedBoss = createdBoss;
             CreatedMovement = createdMovement;
+            BirthStats = birthStats;
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
         }
     }
@@ -29,6 +31,13 @@ namespace MonsterTrain2Poju.Model
             BattleTurnState battle = source.Battle; OuterBossProgress boss = source.CreatedBoss; CombatUnit unit = source.CreatedUnit;
             TrainCombatState train = battle.Spawn.Train;
             if (source.ExternalInteractions.Count > 0) return Fail(string.Join("; ", source.ExternalInteractions));
+            if (!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(train.Context))
+                return Fail("Outer-boss Covenant owners require separate calibration.");
+            var actorDefinition = new EnemyDefinition(unit, false, false, source.ExternalInteractions, false, source.BirthStats);
+            string? statError = EnemySpawningModel.ValidateBirthStats(actorDefinition, train.Context);
+            if (statError != null) return Fail(statError);
+            if (train.Context?.Relics?.Any(owner => owner.IsCovenant == true) == true && source.BirthStats == null)
+                return Fail("Outer-boss Covenant birth requires its calibrated native stats.");
             if (!OuterBossDefinitions.Supports(boss.AssetKey) || boss.Phase != "Casting" || boss.Room != -1 || boss.UnitId != unit.Id ||
                 unit.BumpRules?.OuterBoss != true || unit.Health <= 0 || unit.DeathState?.IsDestroyed == true ||
                 unit.BumpRules.PairedBossUnitId != 0 || source.CreatedMovement?.UnitId != unit.Id || source.CreatedMovement.Speed != 1 ||
@@ -71,6 +80,9 @@ namespace MonsterTrain2Poju.Model
             points = points.WithState(groups, points.Units.Select(prior => prior.UnitId != unit.Id ? prior :
                 new UnitSpawnPointState(unit.Id, new SpawnPointReference(target, CombatTeam.Enemy, 0, outerBossAnchor: true),
                     null, true, prior.SpawnedInPreview)).ToArray());
+            // Native OnSpawnCovenantEffects runs after room placement, before
+            // the ordinary OnSpawn callbacks; creation itself retains raw stats.
+            if (source.BirthStats != null) unit = actorDefinition.Create(unit.Id);
             CombatContext context = train.Context.WithSpawnPoints(points);
             var movement = train.Movement.Append(source.CreatedMovement).ToArray();
             train = EnchantmentWorldModel.Rebase(new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,

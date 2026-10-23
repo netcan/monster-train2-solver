@@ -165,6 +165,16 @@ if (args.Length == 2 && args[0] == "--terminal-death-only")
     return;
 }
 
+if (args.Length == 5 && args[0] is "--covenant-outer-boss-only" or "--player-covenant-outer-boss-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var other = ModelJson.ReadFixture(args[2]);
+    if (args[0] == "--covenant-outer-boss-only")
+        CovenantOuterBossChecks.Native(source.RootElement, other.RootElement, args[3], bool.Parse(args[4]));
+    else CovenantOuterBossChecks.Pair(source.RootElement, other.RootElement, args[3], bool.Parse(args[4]));
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--covenant-enemy-stats-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4298,6 +4308,9 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-full-b
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossBattleChecks.Native(fixture.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-covenant-outer-boss-", StringComparison.OrdinalIgnoreCase)))
+    CovenantOuterBossChecks.CuratedNative(path);
+
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-covenant-enemy-stats-", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);
