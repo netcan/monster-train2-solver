@@ -174,7 +174,16 @@ if ($BattleReplay) {
     $settings.MT2_PROBE_ROLLING_INPUT = $BattleReplay
     $settings.MT2_PROBE_SETTLE_DEATH_DISSOLVES = '1'
     $settings.MT2_PROBE_BINARY_CAPTURE = '1'
-    if ($playerReplay) { $settings.MT2_PROBE_PLAYER_ADVISOR = '1' }
+    if ($playerReplay) {
+        $settings.MT2_PROBE_PLAYER_ADVISOR = '1'
+        # Keep recorded settings consistent with the actual player config copied
+        # from the source. Frozen inputs bypass search; they must not relabel a
+        # bottom-floor or tactical route with the probe's fallback settings.
+        $settings.MT2_PROBE_PLANNER_HORIZON = [string]$playerSettings['Horizon']
+        $settings.MT2_PROBE_PLANNER_TIME_LIMIT_MS = [string]$playerSettings['TimeLimitMs']
+        $settings.MT2_PROBE_PLANNER_DEPLOYMENT_ROOM = [string]$playerSettings['PreferredDeploymentRoom']
+        $settings.MT2_PROBE_PLANNER_TACTICAL_SEED = $(if ($playerSettings['TacticalSeed']) { '1' } else { '0' })
+    }
 }
 foreach ($entry in $settings.GetEnumerator()) { $start.Environment[$entry.Key] = $entry.Value }
 $process = [Diagnostics.Process]::Start($start)
