@@ -42,3 +42,11 @@ branches pass. It is registered as
 `full-battle-stewards-quarters-birth-order.mt2f`; this controlled scenario
 retains its disclosed unit stat modifications and is separate from the
 natural Ring7 observation above.
+
+The fresh natural-default source/replay pair `221919-5f432b65` /
+`222608-79e8cfd6` subsequently completes 25 inputs and 20 train phases per
+process with exact native forecasts/state/RNG, normal exits, protected
+originals unchanged and all four counters zero. Both lose. Its path does not
+resummon the problematic Steward, so it is a natural execution control rather
+than another direct birth-order witness. See
+[the continuation pair](player-ordinary-continuation.md).

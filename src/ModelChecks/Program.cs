@@ -4406,7 +4406,10 @@ foreach (string path in args.Where(path => path.Contains("full-battle-original-c
     using var fixture = ModelJson.ReadFixture(path);
     OriginalConduitChecks.Native(fixture.RootElement);
 }
-RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase)).ToArray());
+// This partial failure archive is checked as observed successors below; it
+// intentionally has no accepted terminal battle or historical forecast.
+RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
+    !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();
 foreach (string variant in new[] { "AllyBuffer", "Fragile", "Corrupter" })
 {
@@ -5023,6 +5026,17 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-stewards-q
 {
     using var document = ModelJson.ReadFixture(path);
     StewardsQuartersChecks.Native(document.RootElement);
+}
+{
+    string? sourcePath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-natural-ring7-ordinary-search.mt2f", StringComparison.OrdinalIgnoreCase));
+    string? replayPath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-natural-ring7-ordinary-replay.mt2f", StringComparison.OrdinalIgnoreCase));
+    if (sourcePath != null && replayPath != null)
+    {
+        using var source = ModelJson.ReadFixture(sourcePath);
+        using var replay = ModelJson.ReadFixture(replayPath);
+        NaturalRing7TacticsChecks.RestartPair(source.RootElement, replay.RootElement, defaults: true);
+        OrdinaryAdviceChecks.NativePair(source.RootElement, replay.RootElement);
+    }
 }
 foreach (string path in args.Where(path => path.Contains("full-battle-natural-ring7-copy-on-play", StringComparison.OrdinalIgnoreCase)))
 {

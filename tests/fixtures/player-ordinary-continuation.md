@@ -55,3 +55,31 @@ A concurrent natural Ring7 default-budget experiment
 Endless TrainSteward resummon and records an action mismatch: the native unit
 receives its StewardsQuarters multistrike, while the modeled unit omits it.
 That partial trace is a diagnostic observation, not accepted native evidence.
+Its [birth-order fix](room-attachment-birth.md) passes the complete observed
+native successor and focused attachment/enchantment controls.
+
+## Natural Ring7 default-budget pair
+
+A fresh pair after the birth-order fix loads the original seed424244 six-win
+checkpoint, with the original Level7BattleHordeSilence encounter and no
+authored cards, health changes or route replacements. Source/replay suffixes
+are `221919-5f432b65` / `222608-79e8cfd6`; native times are 384.49 / 226.51
+seconds. Both processes complete 25 inputs (15 plays/abilities, ten EndTurns)
+and lose. This is supported execution, not a default-budget victory.
+
+Ten ordinary continuations skip search, while nine next-turn boundaries start
+fresh forecasts. Ordinary retained responses take 1352–2679ms, median 1781ms;
+the larger natural deck still incurs capture/verification costs. All 27 source
+publications have fresh full-root checks, with 220 pure captures. All native
+inputs, successors, complete forecasts and RNG agree with the independent
+frozen replay; 20 native train phases per process also match. Both processes
+exit zero, preserve protected originals, record DEPTH-PASS and have zero
+capture/mismatch/unsupported/pending counters.
+
+These archives are registered as
+`full-battle-player-natural-ring7-ordinary-{search,replay}.mt2f`. The focused
+script checks this pair together with the first-battle continuation controls.
+The new natural path does not resummon the problematic Steward; the isolated
+native action observation remains the direct birth-order witness. The prior
+failed trace remains unchanged, and this new loss does not close the remaining
+default-budget strategy-quality goal.

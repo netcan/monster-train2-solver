@@ -178,3 +178,21 @@ The runner verifies the fixed original checkpoint hash, normal exits, zero
 failure counters, unchanged protected files and independent focused gates.
 `-SourceProfile <accepted-source-profile>` reuses an already accepted source
 without repeating its search. No full regression is involved.
+
+## Same-turn continuation follow-up · 2026-10-23
+
+After ordinary advice continuation and the room-attachment birth-order fix,
+another actual-default pair completes 25 inputs (15 plays/abilities, ten
+EndTurns), with both processes losing. Source/replay profiles
+`221919-5f432b65` / `222608-79e8cfd6` exit normally in 384.49 / 226.51 seconds,
+preserve protected originals, record DEPTH-PASS and all four failure counters
+are zero. The same original checkpoint hash and encounter/settings above are
+verified by `Run-NaturalRing7PlayerPair.ps1 -Preset Default`.
+
+Ten ordinary continuations take zero search work; nine post-EndTurn
+boundaries replan. Every full native forecast/root/successor/RNG and all
+20 train phases match in the independent process. The 27 source publications
+all have fresh full-root checks. This is additional continuation correctness
+evidence; the changed route and outcome do not establish strategy quality or
+a controlled performance speedup. See [same-turn advice continuation](player-ordinary-continuation.md).
+Archives use `full-battle-player-natural-ring7-ordinary-{search,replay}.mt2f`.

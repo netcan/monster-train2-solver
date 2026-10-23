@@ -9,20 +9,28 @@ if (-not $SkipBuild) {
 }
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
 $manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests/fixtures/manifest.tsv') -Delimiter "`t"
-$archives = foreach ($mode in @('search', 'replay')) {
-    $name = "full-battle-player-ordinary-continuation-$mode.mt2f"
-    $path = Join-Path $workspace "tests/fixtures/$name"
-    $rows = @($manifest | Where-Object archive -CEQ $name)
-    if ($rows.Count -ne 1 -or (Get-Item -LiteralPath $path).Length -ne [long]$rows[0].archive_bytes -or
-        (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $rows[0].archive_sha256) {
-        throw "Ordinary advice archive bytes/hash mismatch: $name"
+function Get-VerifiedPair([string] $Case) {
+    foreach ($mode in @('search', 'replay')) {
+        $name = "full-battle-player-$Case-$mode.mt2f"
+        $path = Join-Path $workspace "tests/fixtures/$name"
+        $rows = @($manifest | Where-Object archive -CEQ $name)
+        if ($rows.Count -ne 1 -or (Get-Item -LiteralPath $path).Length -ne [long]$rows[0].archive_bytes -or
+            (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $rows[0].archive_sha256) {
+            throw "Ordinary advice archive bytes/hash mismatch: $name"
+        }
+        $path
     }
-    $path
 }
+$archives = @(Get-VerifiedPair 'ordinary-continuation')
 dotnet $checker --ordinary-advice-only $archives[0]
 if ($LASTEXITCODE -ne 0) { throw 'Ordinary advice concurrency/horizon/divergence checks failed.' }
 dotnet $checker --player-ordinary-advice-pair-only @archives
 if ($LASTEXITCODE -ne 0) { throw 'Independent ordinary advice pair checks failed.' }
 dotnet $checker --player-floor-browse-pair-only @archives
 if ($LASTEXITCODE -ne 0) { throw 'Floor browsing no longer retains native advice.' }
+$natural = @(Get-VerifiedPair 'natural-ring7-ordinary')
+dotnet $checker --player-natural-ring7-default-pair-only @natural
+if ($LASTEXITCODE -ne 0) { throw 'Natural Ring7 default-budget native pair checks failed.' }
+dotnet $checker --player-ordinary-advice-pair-only @natural
+if ($LASTEXITCODE -ne 0) { throw 'Natural Ring7 same-turn continuation checks failed.' }
 Write-Output 'ORDINARY-ADVICE-FOCUSED PASS: no full regression executed.'
