@@ -6,8 +6,6 @@ internal static class PlayerOuterBossChecks
     internal static void FragileDefaultModel(FixtureValue fixture)
     {
         NativeCampaignInputChecks.Native(fixture, 7, 424244, 62, "Level8FinalBossMeleeWeakness");
-        Require(BattleHeuristicChecks.RollingForecast(fixture, 256, preferredDeploymentRoom: 2, retainCurrentTurn: true) == RoomOutcome.BattleWon,
-            "The interactive default must win the captured natural Fragile root with complete state/RNG replay.");
         BattleTurnState root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
         using var keys = new BattleStateKeys();
         string parent = keys.Key(root);
@@ -15,7 +13,14 @@ internal static class PlayerOuterBossChecks
             new BattlePlannerOptions(16, 3, 8, timeLimit: TimeSpan.FromSeconds(30), allowShorterHorizon: true));
         Require(limited.ReachedNodeLimit && limited.ExpandedNodes == 16 && limited.CompletedHorizon && keys.Key(root) == parent,
             "Adaptive deployment escaped the hard node budget or lost its complete fallback.");
+        string champion = root.PlayRules!.Cards.Single(rule => rule.SpawnUnit?.Modifiers?.IsChampion == true).DataId;
+        int championId = root.Spawn.Train.Context!.Cards.Hand.Single(card => card.DataId == champion).InstanceId;
+        Require(limited.Steps.TakeWhile(step => !step.IsEndTurn).Any(step =>
+            step.Action?.CardInstanceId == championId && step.Action.RoomIndex == 0),
+            "The native sixteen-node cutoff must retain the safer opening champion placement.");
         BattleAdviceSession.Verify(root, limited);
+        Require(BattleHeuristicChecks.RollingForecast(fixture, 256, preferredDeploymentRoom: 2, retainCurrentTurn: true) == RoomOutcome.BattleWon,
+            "The interactive default must win the captured natural Fragile root with complete state/RNG replay.");
         Console.WriteLine("FRAGILE-DEFAULT-MODEL PASS: three turns/3000ms, configured top preference, extra tactical seed off; adaptive opening and full route verified; native acceptance remains separate.");
     }
 

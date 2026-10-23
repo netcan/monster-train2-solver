@@ -263,13 +263,17 @@ namespace MonsterTrain2Poju.Model
                     // even if its later card choices exhaust the shared budget.
                     if (strength.Turns == 1)
                     {
-                        Node forecast = Rollout(strength);
+                        // Reach the first combat before committing the whole
+                        // budget to later empty turns. A verified two-turn
+                        // prefix can still be published as a shorter window.
+                        Node forecast = Rollout(strength, adaptDeployment && source.Spawn.Turn == 0
+                            ? Math.Min(2, options.MaxTurns) : options.MaxTurns);
                         // Compare other deployments only when the ordinary
                         // opening forecast loses a unit already deployed by
                         // this seed. Each alternative uses real legal actions
                         // and the same complete horizon and shared budgets.
                         // Unthreatened openings keep their existing preference.
-                        if (adaptDeployment && source.Spawn.Turn == 0 && forecast.Turns > 1 &&
+                        if (adaptDeployment && source.Spawn.Turn == 0 && forecast.Turns > 1 && !Terminal(forecast) &&
                             strength.State.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
                                 unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0 && unit.SpawnerCardId > 0 &&
                                 !forecast.State.Spawn.Train.Rooms.SelectMany(room => room.Units)
@@ -302,11 +306,17 @@ namespace MonsterTrain2Poju.Model
                                     Consider(alternate);
                                 }
                                 if (alternate.Turns != 1) continue;
-                                Node alternateForecast = Rollout(alternate);
+                                Node alternateForecast = Rollout(alternate, forecast.Turns);
                                 if (alternateForecast.Turns == forecast.Turns && Better(alternateForecast, forecast))
-                                { strength = alternate; strengthRoom = room; forecast = alternateForecast; }
+                                {
+                                    strength = alternate; strengthRoom = room; forecast = alternateForecast;
+                                    // Keep the first complete improvement and
+                                    // spend the rest on its requested horizon.
+                                    break;
+                                }
                             }
                         }
+                        Rollout(forecast);
                     }
                 }
             }

@@ -36,7 +36,7 @@ if ('Strategy' -in $Case) {
     Invoke-Check '--ordinary-advice-budget-only' @(Get-Archive 'advisor-ordinary-budget-failure.mt2f')
 }
 if ('FragileStrategy' -in $Case) {
-    Invoke-Check '--fragile-default-planner-only' @(Get-Archive 'full-battle-player-boss-fragile-short-budget-search.mt2f')
+    Invoke-Check '--fragile-default-planner-only' @(Get-Archive 'full-battle-player-boss-fragile-adaptive-budget-loss.mt2f')
 }
 if ('FragileNative' -in $Case) {
     Invoke-Check '--player-boss-fragile-default-pair-only' @(
