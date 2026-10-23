@@ -472,6 +472,8 @@ param(
     [switch] $OriginalTriggerRelicBatchStationary,
     [switch] $OriginalFusedPyreshard,
     [switch] $CovenantCharacterFilter,
+    [ValidateSet('Covenant00_FTUE', 'Covenant01_StrongerEnemiesMoreCards')]
+    [string[]] $EnemyStatCovenant = @(),
     [switch] $TitanSkinCombat,
     [switch] $AllUnitsMultistrikeMutator,
     [switch] $OriginalStatusRelicBatch,
@@ -776,6 +778,11 @@ if ($TrueFinalBossDeathSpellSource -and -not $TrueFinalBossDeath) { throw 'TrueF
 if ($TrueFinalBossDeath) {
     if ($TrueFinalBossDamage) { throw 'Controlled terminal capture is separate from original nonterminal damage/healing.' }
     $TrueFinalBossBirth = $true
+}
+if ($EnemyStatCovenant.Count -gt 0 -and ($InputProfile -or $BattleDistance -ne 0 -or $OriginalTrueFinalBoss -or
+    $CovenantCharacterFilter -or $EnemyStatCovenant -notcontains 'Covenant01_StrongerEnemiesMoreCards' -or
+    @($EnemyStatCovenant | Select-Object -Unique).Count -ne $EnemyStatCovenant.Count)) {
+    throw 'EnemyStatCovenant requires a fresh original first battle and distinct definitions including Covenant01.'
 }
 if (@($TrueFinalBossCovenant | Select-Object -Unique).Count -ne $TrueFinalBossCovenant.Count -or
     ($TrueFinalBossCovenant.Count -gt 1 -and $TrueFinalBossCovenant -contains '')) {
@@ -1431,6 +1438,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_FRONT_HEALTH = [string]$TrueFinalBossFrontHealth
     MT2_PROBE_TRUE_FINAL_BOSS_BIRTH = $(if ($TrueFinalBossBirth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_COVENANT = $TrueFinalBossCovenant -join ';'
+    MT2_PROBE_ENEMY_STAT_COVENANTS = $EnemyStatCovenant -join ';'
     MT2_PROBE_TRUE_FINAL_BOSS_SPAWN = $(if ($TrueFinalBossSpawn) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SCHEDULED_SPAWN = $(if ($TrueFinalBossScheduledSpawn) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH = $(if ($TrueFinalBossHealth) { '1' } else { '0' })

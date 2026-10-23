@@ -17,11 +17,19 @@ namespace MonsterTrain2Poju.Probe
             return ids.Length > 0 && ids.Distinct().Count() == ids.Length && ids.All(known.Contains);
         }
 
+        internal static bool WavesCalibrated(SaveManager save) => Calibrated(save) &&
+            (PlayerTrueFinalBossProbe.Enabled || save.GetCovenants().Any(owner => owner.GetRelicDataID() == "d3b53481-f26b-4344-ae8e-ec80b28d6004") &&
+                save.GetCovenants().All(owner => owner.GetRelicDataID() is "3cc0272d-c0d7-46dc-9c7a-be9633572f70" or "d3b53481-f26b-4344-ae8e-ec80b28d6004"));
+
         internal static EnemyBirthStatAdjustment? Capture(CharacterData data)
         {
             SaveManager save = AllGameManagers.Instance.GetSaveManager();
-            if (!Calibrated(save) || !PlayerTrueFinalBossProbe.Enabled) return null;
-            return Query(data, out _);
+            if (!WavesCalibrated(save)) return null;
+            EnemyBirthStatAdjustment result = Query(data, out object evidence);
+#if DEVELOPMENT_PROBE
+            CovenantEnemyStatsScenario.Observe(data, evidence);
+#endif
+            return result;
         }
 
         internal static EnemyBirthStatAdjustment Query(CharacterData data, out object evidence)

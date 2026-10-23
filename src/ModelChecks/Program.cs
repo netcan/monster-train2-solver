@@ -165,6 +165,21 @@ if (args.Length == 2 && args[0] == "--terminal-death-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--covenant-enemy-stats-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CovenantEnemyStatsChecks.Native(fixture.RootElement, args[1]);
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--player-covenant-enemy-stats-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    CovenantEnemyStatsChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-covenant-battle-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4282,6 +4297,11 @@ foreach (string path in args.Where(path => path.Contains("true-final-boss-full-b
 {
     using var fixture = ModelJson.ReadFixture(path);
     TrueFinalBossBattleChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-covenant-enemy-stats-", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    CovenantEnemyStatsChecks.Native(fixture.RootElement, path);
 }
 foreach (string path in args.Where(path => path.Contains("true-final-boss-covenant-battle-", StringComparison.OrdinalIgnoreCase)))
 {

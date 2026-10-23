@@ -387,6 +387,8 @@ namespace MonsterTrain2Poju.Probe
                 int section = save.GetCurrentDistance() + 1;
                 if (map != null && map.TryGetBattleNodeUI(section, out MapBattleNodeUI node))
                 {
+                    if (fullBattle && CovenantEnemyStatsScenario.Enabled)
+                        CovenantEnemyStatsScenario.Prepare(save);
                     if (fullBattle && CovenantCharacterFilterScenario.Enabled && !CovenantCharacterFilterScenario.Prepared)
                         CovenantCharacterFilterScenario.ConfigureBeforeBattle(managers!, log);
                     if (fullBattle && TitanSkinScenario.Enabled && !TitanSkinScenario.Prepared)

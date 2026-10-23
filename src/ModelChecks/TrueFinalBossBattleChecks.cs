@@ -38,6 +38,11 @@ internal static class TrueFinalBossBattleChecks
         FixtureValue control = root.GetProperty("OriginalTrueFinalBossRoute").GetProperty("CovenantControl");
         // The earlier stronger-boss archive predates ordinary wave projections.
         if (!control.TryGetProperty("WaveStatQueries", out FixtureValue rows)) return;
+        CovenantWaves(root, before, rows);
+    }
+
+    internal static void CovenantWaves(FixtureValue root, BattleTurnState before, FixtureValue rows)
+    {
         EnemyDefinition[] definitions = before.Spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units).ToArray();
         FixtureValue[] queries = rows.EnumerateArray().ToArray();
         // Earlier captures also queried player-card templates without applying
