@@ -27,7 +27,8 @@ namespace MonsterTrain2Poju.Probe
                 data = OuterBossSubstitutionProbe.Resolve(data, out bool substitutionsSupported);
                 if (!substitutionsSupported) return false;
                 return data.GetAssetKey() is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" or
-                    "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" &&
+                    "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" or
+                    "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" &&
                     OuterBossPhaseProbe.Supports(data);
             }
         }

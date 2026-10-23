@@ -58,6 +58,14 @@ if (args.Length == 2 && args[0] == "--angel-duo-birth-only")
     return;
 }
 
+if (args.Length == 3 && args[0] == "--player-angel-duo-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NativeCovenantCampaignChecks.AngelDuoPair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 5 && args[0] == "--player-native-covenant-campaign-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -4843,6 +4851,12 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         using var replay = ModelJson.ReadFixture(replayPath);
         PlayerOuterBossChecks.CorrupterWinningPair(source.RootElement, replay.RootElement);
     }
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-player-angel-duo-search.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-angel-duo-replay.mt2f"));
+    NativeCovenantCampaignChecks.AngelDuoPair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-player-native-covenant-campaign-", StringComparison.Ordinal) &&
     path.EndsWith("-search.mt2f", StringComparison.Ordinal)))

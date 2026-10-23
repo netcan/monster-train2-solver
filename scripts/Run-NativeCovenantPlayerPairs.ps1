@@ -6,13 +6,18 @@ param(
     [ValidateSet('AllyBuffer', 'Fragile', 'Corrupter')][string[]] $Variant = @('AllyBuffer'),
     [string] $InputProfile = '',
     [ValidateRange(1, 7)][int] $BattleDistance = 1,
+    [switch] $AngelDuo,
     [ValidateRange(2, 16)][int] $PlannerHorizon = 3,
     [ValidateRange(100, 30000)][int] $PlannerTimeLimitMs = 3000,
+    [ValidateRange(60, 3600)][int] $TimeoutSeconds = 900,
     [ValidateRange(1, 2)][int] $NativeWorker = 1,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
+if ($AngelDuo -and ($Battle -ne 'Campaign' -or $Rank.Count -ne 1 -or $Rank[0] -ne 2 -or $BattleDistance -ne 5)) {
+    throw '-AngelDuo requires the original rank-two Ring6 Campaign input; its checker verifies the exact scenario and unmodified bosses.'
+}
 if ($Battle -ne 'Outer' -and $PSBoundParameters.ContainsKey('Variant')) { throw '-Variant requires -Battle Outer.' }
 if ($Battle -eq 'Campaign') {
     if (-not $InputProfile -or $Rank.Count -ne 1) { throw 'Campaign pairs require one rank and an immutable native InputProfile.' }
@@ -38,7 +43,7 @@ foreach ($level in $Rank) {
     $bosses = if ($Battle -eq 'Outer') { $Variant } else { @('') }
     foreach ($boss in $bosses) {
         $common = @{
-            StartingCovenantLevel = $level; NativeWorker = $NativeWorker; TimeoutSeconds = 900
+            StartingCovenantLevel = $level; NativeWorker = $NativeWorker; TimeoutSeconds = $TimeoutSeconds
             PlayerAdvisor = $true; RollingAdvice = $true; PlannerTacticalSeed = $true
             PlannerHorizon = $PlannerHorizon; PlannerTimeLimitMs = $PlannerTimeLimitMs; BranchCardMasks = $true
             PhysicalSpawnPoints = $true; SettleDeathDissolves = $true; SettleCardAnimations = $true
@@ -83,7 +88,13 @@ foreach ($level in $Rank) {
         $source = Join-Path $profiles.search 'full-battle.mt2f'
         $replay = Join-Path $profiles.replay 'full-battle.mt2f'
         $arguments = switch ($Battle) {
-            'Campaign' { @('--player-native-covenant-campaign-pair-only', $source, $replay, "$level", "$BattleDistance") }
+            'Campaign' {
+                if ($AngelDuo) {
+                    @('--player-angel-duo-pair-only', $source, $replay)
+                } else {
+                    @('--player-native-covenant-campaign-pair-only', $source, $replay, "$level", "$BattleDistance")
+                }
+            }
             'Outer' { @('--player-native-covenant-outer-boss-pair-only', $source, $replay, $boss, "$level") }
             'Final' { @('--player-native-covenant-final-boss-pair-only', $source, $replay, "$level") }
             'Startup' {

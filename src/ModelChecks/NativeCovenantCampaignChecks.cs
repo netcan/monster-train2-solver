@@ -4,17 +4,44 @@ using MonsterTrain2Poju.Model;
 internal static class NativeCovenantCampaignChecks
 {
     internal static void Pair(FixtureValue source, FixtureValue replay, int level, int distance)
+        => Pair(source, replay, level, distance, requireVictory: true);
+
+    internal static void AngelDuoPair(FixtureValue source, FixtureValue replay)
+    {
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            FixtureValue input = fixture.GetProperty("NativeRunInput");
+            Require(input.GetProperty("Scenario").GetString() == "Level6AngelDuo_RallyAttackIncantHealth" &&
+                input.GetProperty("AscensionLevel").GetInt32() == 2 && input.GetProperty("StartingLevel").GetInt32() == 2 &&
+                fixture.GetProperty("AngelDuoDeathTransition").ValueKind == FixtureKind.Null &&
+                fixture.GetProperty("AngelDuoRelentlessEntry").ValueKind == FixtureKind.Null,
+                "Player Angel Duo evidence requires the unmodified original encounter without native death/phase controls.");
+            var initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            Require(initial.Spawn.QueuedOuterBoss?.Actor.Unit is { Health: 1250, BaseAttack: 11 } outer &&
+                OuterBossDefinitions.IsAngelDuo(outer.AssetKey) &&
+                initial.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                    unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" &&
+                    unit.Health == 1350 && unit.MaxHealth == 1350 && unit.BaseAttack == 16) &&
+                initial.Spawn.Train.Context!.QueryFrame!.ForcedRelentless!.RemainingTurns == 0,
+                "Player Angel Duo input changed its original raw outer boss, native rank-two inner boss or phase counters.");
+        }
+        Pair(source, replay, 2, 5, requireVictory: false);
+        Console.WriteLine("PLAYER-ANGEL-DUO PASS: original five-win native checkpoint, unmodified paired bosses, actual advice/UI and independent full-state/RNG replay; outcome=" +
+            (source.GetProperty("NativeWon").GetBoolean() ? "victory" : "bounded loss") + ".");
+    }
+
+    private static void Pair(FixtureValue source, FixtureValue replay, int level, int distance, bool requireVictory)
     {
         Require(level is >= 1 and <= 10 && distance is >= 1 and <= 7,
             "Natural cumulative campaign acceptance requires a declared rank and progressed ordinary battle.");
         foreach (FixtureValue fixture in new[] { source, replay })
         {
-            Require(fixture.GetProperty("NativeWon").GetBoolean() &&
+            Require((!requireVictory || fixture.GetProperty("NativeWon").GetBoolean()) &&
                 fixture.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&
                 fixture.GetProperty("StartingCovenantControl").ValueKind == FixtureKind.Null &&
                 fixture.GetProperty("CovenantEnemyStatsControl").ValueKind == FixtureKind.Null &&
                 fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null,
-                "Natural campaign evidence requires actual player victories from a resumed, unmodified native checkpoint.");
+                "Natural campaign evidence requires the declared outcome and actual player capture from an unmodified native checkpoint.");
             Require(fixture.GetProperty("TerminalEffectsSettled").GetBoolean() &&
                 fixture.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop",
                 "Natural campaign terminal effects did not settle at the native boundary.");
@@ -50,7 +77,7 @@ internal static class NativeCovenantCampaignChecks
         Require(source.GetProperty("Actions").GetArrayLength() > 0 &&
             source.GetProperty("RollingDecisions").EnumerateArray().Any(row => row.GetProperty("Nodes").GetInt32() > 0),
             "Natural campaign source must execute card plays and actual player search.");
-        Console.WriteLine($"PLAYER-NATIVE-COVENANT-CAMPAIGN PASS rank={level} ring={distance + 1}: original cumulative owners, prior native victories, player UI, full forecasts/state/RNG and independent native winning replay.");
+        Console.WriteLine($"PLAYER-NATIVE-COVENANT-CAMPAIGN PASS rank={level} ring={distance + 1}: original cumulative owners, prior native victories, player UI, full forecasts/state/RNG and independent native replay; victory={source.GetProperty("NativeWon").GetBoolean()}.");
     }
 
     private static void Require(bool value, string message)
