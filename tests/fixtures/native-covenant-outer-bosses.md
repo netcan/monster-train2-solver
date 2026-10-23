@@ -74,3 +74,33 @@ requires that independently validated positive trigger fixture. Run
 -SkipBuild`; its manifest checks cover all three artifacts. Other cumulative
 boss player pairs remain separate; this controlled fresh-deck later battle
 does not replace natural campaign history or demonstrate a winning deck.
+
+Rank-ten Fragile also passes actual player advice and fresh independent native
+replay: nineteen inputs (fifteen plays, four EndTurns), twenty-one source
+publications, UI and every complete forecast/root/successor/RNG match. Both
+lose with Pyre0, normal exit, protected files unchanged and all four native
+failure/purity counters zero. Native runtimes are 303.99/141.41 seconds.
+Both include thirty-four room stages and eight train phases; captures are
+250/64. The existing enemy moon callback/conduit player pair also passes
+after the queued tower-target repair, including its eight contributor
+snapshots and sixteen tracked hand upgrades.
+Profile suffixes are `125606-c3b50bd7` / `130112-9ffcf2f1` using the same
+player profile prefix; archives use
+`full-battle-player-native-covenant-outer-boss-fragile-10` and search/replay
+suffixes. Select `-StartingRank 10 -Variant Fragile -Player` for a focused check.
+
+`scripts/Run-NativeCovenantPlayerPairs.ps1` now runs missing controlled player
+pairs sequentially on a selected isolated worker. For example:
+
+```powershell
+./scripts/Run-NativeCovenantPlayerPairs.ps1 -Rank 2 -Battle Outer -Variant AllyBuffer,Fragile,Corrupter -NativeWorker 2 -SkipBuild
+```
+
+Each pair waits for native process exit and protected-file verification,
+checks persisted `native-accepted-summary.json` and the trace SHA-256, then
+launches a new native process for frozen replay. It runs the independent
+focused full-state checker and writes `player-pair-accepted.json` only after
+both runs and the pair check pass. It never registers failed captures or
+automatically curates archives. This full path was exercised first with
+rank-ten Fragile above; `-Battle Startup` and `-Battle Final` select the
+corresponding existing native paths. Use only one batch per worker.
