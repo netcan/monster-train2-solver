@@ -709,3 +709,17 @@ callback. Both controlled losses settle, exit normally, leave protected files
 unchanged and retain four zero native failure counters. Panel interactions
 and 141 source/29 replay pure captures pass; source publishes eleven plans.
 Actual response median/P95 is 5.18/5.57 seconds. See [player evidence](../tests/fixtures/player-true-final-boss-avenger.md).
+
+## Floor-browsing advice reuse · 2026-10-23
+
+Pure floor selection keeps displayed advice and its running search. A background
+replay validates the existing line against the fresh complete native root;
+selection-sensitive costs/results or actual gameplay inputs still update advice.
+Seven actual user floor switches, including one during search, launch zero new
+searches. The default-budget player battle and its independent frozen replay
+both win, matching all 28 inputs and full forecasts/state/RNG. Both exit normally
+with protected originals unchanged and four zero failure counters. Focused
+session and resource/cost/RNG controls pass. The historical boss winning-plan
+check fails identically on baseline `74f9272c` and is recorded separately.
+See [floor-browsing evidence](../tests/fixtures/player-floor-browse.md) and run
+`scripts/Check-FloorBrowseAdvice.ps1`; no full regression is required.

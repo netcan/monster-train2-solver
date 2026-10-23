@@ -35,8 +35,10 @@ namespace MonsterTrain2Poju.Probe
         private bool HiddenPause => pauseWhenHidden && !panelVisible;
         private BattleAdvice? displayed;
         private int displayFrame;
+        private long displayedSearches;
         private float nextCapture;
         private bool paused, wasInBattle, screenshotTaken;
+        private bool selectionPending;
         private string? captureError;
         private string? manualBattleKey;
         private BattleTurnState? lastCapture;
@@ -45,6 +47,8 @@ namespace MonsterTrain2Poju.Probe
         internal int Published { get; private set; }
         internal int PublicationRootChecks { get; private set; }
         internal int Invalidations { get; private set; }
+        internal int SelectionReuses { get; private set; }
+        internal long Searches => session.SearchCount;
         internal int PlanningFrames { get; private set; }
         internal int PanelVertices { get; private set; }
         internal int PanelPixels { get; private set; }
@@ -59,10 +63,11 @@ namespace MonsterTrain2Poju.Probe
             public double VerificationMs { get; set; }
             public double EndToEndMs { get; set; }
             public bool ReusedWinningContinuation { get; set; }
+            public bool ReusedSelection { get; set; }
         }
         internal List<Publication> Publications { get; } = new List<Publication>();
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
-        internal object Evidence => new { Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, PlanningFrames, PanelVertices, PanelPixels, Failures, Publications,
+        internal object Evidence => new { Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, SelectionReuses, Searches, PlanningFrames, PanelVertices, PanelPixels, Failures, Publications,
             Error = session.Error, UnavailableRoot = session.Status == BattleAdviceStatus.Unavailable ? lastCapture : null, Horizon = horizon,
             PreferredDeploymentRoom = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2"),
             TacticalSeed = Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1",
@@ -209,9 +214,11 @@ namespace MonsterTrain2Poju.Probe
             wasInBattle = inBattle;
             if (paused || HiddenPause || managers == null || !Ready(managers))
             {
-                if (session.Status != BattleAdviceStatus.Idle) InvalidateState(inBattle && !paused && !HiddenPause);
+                bool browsing = selectionPending && inBattle && !paused && !HiddenPause;
+                if (!browsing && session.Status != BattleAdviceStatus.Idle) InvalidateState(inBattle && !paused && !HiddenPause);
                 session.Poll();
-                body.text = paused || HiddenPause ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。";
+                if (!browsing || displayed == null)
+                    body.text = paused || HiddenPause ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。";
                 return;
             }
             if (ManualSession)
@@ -225,11 +232,12 @@ namespace MonsterTrain2Poju.Probe
             if (session.Status == BattleAdviceStatus.Planning) PlanningFrames++;
             if (!playerSession && Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR") == "1" &&
                 managers.GetCombatManager().GetTurnCount() < int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "0")) return;
-            // Input hooks invalidate immediately. While a worker runs, wait for
-            // its result; every new publication must first observe the live root.
+            // Gameplay inputs invalidate immediately; browsing keeps the worker
+            // and observes its new UI selection once the preview has settled.
+            // Every new publication still requires the exact live full-state key.
             bool unpublished = session.Current != null && !ReferenceEquals(displayed, session.Current);
             int publicationCaptureFrame = -1;
-            if (captureError == null && (unpublished ||
+            if (captureError == null && (unpublished || selectionPending ||
                 session.Status != BattleAdviceStatus.Planning && Time.realtimeSinceStartup >= nextCapture))
             {
                 try
@@ -240,7 +248,10 @@ namespace MonsterTrain2Poju.Probe
                     using var keys = new BattleStateKeys();
                     string key = keys.Key(root);
                     capture.Stop();
+                    long generation = session.Generation;
                     session.Observe(root, key, capture.Elapsed);
+                    if (session.Generation != generation) displayed = null;
+                    selectionPending = false;
                     publicationCaptureFrame = Time.frameCount;
                     // A slow capture must not make the next one immediately due.
                     nextCapture = Time.realtimeSinceStartup + .5f;
@@ -248,29 +259,34 @@ namespace MonsterTrain2Poju.Probe
                 catch (Exception error)
                 { session.Invalidate(); captureError = error.Message; log.LogError("ADVISOR-CAPTURE-FAIL " + error); }
             }
+            // A selection-sensitive effect can make the retained line diverge.
+            // As soon as replay falls back to search, hide its old forecast.
+            if (session.Current == null && session.SearchCount != displayedSearches) displayed = null;
             if (session.Current != null && !ReferenceEquals(displayed, session.Current))
             {
                 if (publicationCaptureFrame != Time.frameCount)
                     throw new InvalidOperationException("Advice publication requires a fresh full-state observation.");
                 PublicationRootChecks++;
                 displayed = session.Current; Published++;
+                if (displayed.ReusedSelection) SelectionReuses++;
                 displayFrame = Time.frameCount;
+                displayedSearches = session.SearchCount;
                 body.text = Describe(displayed);
                 Publications.Add(new Publication { Generation = session.Generation, Turn = displayed.Root.Spawn.Turn,
                     CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,
                     SearchMs = displayed.Plan.Elapsed.TotalMilliseconds, VerificationMs = displayed.VerificationElapsed.TotalMilliseconds,
                     EndToEndMs = displayed.ResponseElapsed.TotalMilliseconds,
-                    ReusedWinningContinuation = displayed.ReusedWinningContinuation });
+                    ReusedWinningContinuation = displayed.ReusedWinningContinuation, ReusedSelection = displayed.ReusedSelection });
                 if (playerSession && Publications.Count > 128) Publications.RemoveAt(0);
                 log.LogInfo((playerSession ? "POJU-ADVICE" : "ADVISOR-PUBLISHED") + " generation=" + session.Generation + " steps=" + displayed.Plan.Steps.Count +
                     " elapsedMs=" + displayed.Plan.Elapsed.TotalMilliseconds.ToString("F1") + " capturePurityFailures=" + PurityFailures +
-                    " source=" + (displayed.ReusedWinningContinuation ? "verified-continuation" : "search"));
+                    " source=" + (displayed.ReusedSelection ? "floor-browse" : displayed.ReusedWinningContinuation ? "verified-continuation" : "search"));
                 if (!playerSession && !screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")
                 {
                     CapturePanel(); screenshotTaken = true;
                 }
             }
-            else if (session.Current == null)
+            else if (session.Current == null && displayed == null)
                 body.text = captureError != null ? "局面采集失败，请重新计算。" : session.Status == BattleAdviceStatus.Unavailable ?
                     "本局面暂时无法给出完整建议。\n可重新计算或继续手动操作。" : "正在计算…\n你可以继续操作，建议会随局面更新。";
         }
@@ -369,7 +385,8 @@ namespace MonsterTrain2Poju.Probe
                     text.Append(" · 目标：").Append(target.GetName()).Append("（").Append(target.GetHP()).Append(" 血）");
                 }
             }
-            if (advice.ReusedWinningContinuation) text.Append("\n\n沿用已验证胜局");
+            if (advice.ReusedSelection) text.Append("\n\n沿用当前建议");
+            else if (advice.ReusedWinningContinuation) text.Append("\n\n沿用已验证胜局");
             else text.Append("\n\n搜索 ").Append((plan.Elapsed.TotalMilliseconds / 1000).ToString("F2")).Append(" 秒");
             if (plan.TimedOut) text.Append(" · 使用预算内已验证方案");
             if (plan.UnsupportedAttempts.Count > 0) text.Append("\n部分操作尚未纳入比较");
@@ -382,7 +399,7 @@ namespace MonsterTrain2Poju.Probe
         {
             if (session.Status != BattleAdviceStatus.Idle) Invalidations++;
             if (preserveWinningContinuation) session.InvalidateForInput(); else session.Invalidate();
-            displayed = null; captureError = null; nextCapture = 0;
+            displayed = null; captureError = null; nextCapture = 0; selectionPending = false;
             if (body != null) body.text = "局面已更新，等待重新计算…";
         }
         private static void NativeAction(bool preserveWinningContinuation = true)
@@ -404,7 +421,14 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.RestartBattle))]
         private static class RestartPatch { private static void Prefix() { NativeAction(false); if (Active != null) Active.manualBattleKey = null; } }
         [HarmonyPatch(typeof(RoomManager), nameof(RoomManager.RoomSelectionChanged))]
-        private static class SelectionPatch { private static void Prefix() => NativeAction(); }
+        private static class SelectionPatch
+        {
+            private static void Prefix()
+            {
+                if (Active != null && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
+                { Active.selectionPending = true; Active.nextCapture = 0; }
+            }
+        }
 
         public void Dispose()
         {

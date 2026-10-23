@@ -21,13 +21,16 @@ namespace MonsterTrain2Poju.Model
         private readonly Dictionary<Type, PropertyInfo[]> properties = new Dictionary<Type, PropertyInfo[]>();
         private readonly SHA256 hash = SHA256.Create();
         private readonly bool ignorePreviewCopyAllocator;
+        private readonly bool ignoreRoomSelection;
 
         public BattleStateKeys() { }
         // UI previews can allocate additional copies between settled captures.
         // Only their next unused number is irrelevant to a retained winning line;
         // allocator presence, existing copy identities and every RNG remain keyed.
-        internal BattleStateKeys(bool ignorePreviewCopyAllocator)
-        { this.ignorePreviewCopyAllocator = ignorePreviewCopyAllocator; }
+        internal BattleStateKeys(bool ignorePreviewCopyAllocator) : this(ignorePreviewCopyAllocator, false) { }
+
+        internal BattleStateKeys(bool ignorePreviewCopyAllocator, bool ignoreRoomSelection)
+        { this.ignorePreviewCopyAllocator = ignorePreviewCopyAllocator; this.ignoreRoomSelection = ignoreRoomSelection; }
 
         public string Key(BattleTurnState state) => Value(state);
         public string SnapshotKey(object? snapshot) => Value(snapshot);
@@ -58,7 +61,12 @@ namespace MonsterTrain2Poju.Model
                 foreach (PropertyInfo field in fields)
                 {
                     Append(field.Name);
-                    if (ignorePreviewCopyAllocator && value is BattleSpawnPoints points &&
+                    if (ignoreRoomSelection &&
+                        (value is BattleTurnState && field.Name == nameof(BattleTurnState.SelectedRoom) ||
+                         value is StatisticQueryFrame && field.Name == nameof(StatisticQueryFrame.SelectedRoomIndex)) &&
+                        field.GetValue(value) is int selected && selected >= 0)
+                        Append("known-room-selection");
+                    else if (ignorePreviewCopyAllocator && value is BattleSpawnPoints points &&
                         field.Name == nameof(BattleSpawnPoints.NextPreviewCopyId) && points.NextPreviewCopyId is int next &&
                         next > 0 && points.Groups.All(group => !group.PreviewCopyId.HasValue || group.PreviewCopyId.Value < next))
                         Append("enabled-preview-copy-allocator");

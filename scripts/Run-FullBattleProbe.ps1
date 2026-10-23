@@ -12,6 +12,7 @@ param(
     [switch] $DotNetPlanner,
     [switch] $Advisor,
     [switch] $PlayerAdvisor,
+    [switch] $AdvisorFloorBrowse,
     [switch] $RollingAdvice,
     [switch] $PreviewAttackTrace,
     [switch] $HoldoverCalibration,
@@ -671,6 +672,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
+    throw 'AdvisorFloorBrowse requires the real PlayerAdvisor and RollingAdvice driver.'
+}
 if ($RoomMoonSpellAttackRelic) { $RoomMoonSpellAdvance = $true }
 if ($RoomMoonSpellAttackRelic -and $RoomMoonSpellCostRelic) { throw 'Use separate isolated relic controls.' }
 if ($RoomMoonSpellCostRelic) { $RoomMoonSpellAdvance = $true }
@@ -1515,6 +1519,7 @@ $environment = @{
     MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
     MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_PLAYER_ADVISOR = $(if ($PlayerAdvisor) { '1' } else { '0' })
+    MT2_PROBE_ADVISOR_FLOOR_BROWSE = $(if ($AdvisorFloorBrowse) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"

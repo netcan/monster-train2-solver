@@ -5,6 +5,7 @@ using System.Reflection;
 using BepInEx.Logging;
 using HarmonyLib;
 using MonsterTrain2Poju.Model;
+using MonsterTrain2Poju.Fixtures;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -24,6 +25,14 @@ namespace MonsterTrain2Poju.Probe
         private static ManualLogSource? log;
         private static BattleTurnState? terminal;
         private static bool frozenObservation;
+        private static bool BrowseEnabled => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_FLOOR_BROWSE") == "1";
+        private static int browseSwitches;
+        private static long browseGeneration, browseSearches;
+        private static float browseStarted;
+        private static bool browsingDuringSearch;
+        private static readonly List<double> browseMilliseconds = new List<double>();
+        private static int replayBrowseCount = -1, replayBrowseSwitches;
+        internal static bool FloorBrowsePassed { get; private set; }
         internal static bool InteractionsPassed { get; private set; }
         internal static bool CaptureInitialized
         {
@@ -60,6 +69,9 @@ namespace MonsterTrain2Poju.Probe
             Assembly = type?.Assembly.GetName().Name,
             Version = type?.Assembly.GetName().Version?.ToString(),
             InteractionsPassed,
+            FloorBrowse = !BrowseEnabled ? null : new { Passed = FloorBrowsePassed, Switches = browseSwitches,
+                DuringSearch = browsingDuringSearch, SwitchMilliseconds = browseMilliseconds },
+            ReplayedFloorSwitches = replayBrowseSwitches,
             EnchantmentBindings = advisor == null ? null : Bindings(),
             Overlay = advisor == null ? null : Property("Evidence")
         };
@@ -192,9 +204,30 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (!Ready()) return false;
                 Require(GetGeneration() > initialGeneration, "cancelled generation was republished");
+                browseSearches = Get<long>("Searches");
                 initialGeneration = GetGeneration(); Click("重新计算");
                 Require(CurrentIsNull(), "refresh retained a recommendation");
                 phase = 5; return false;
+            }
+            if (BrowseEnabled && phase == 5 && !browsingDuringSearch)
+            {
+                if (!IsPlanning || Get<long>("Searches") <= browseSearches) return false;
+                browseGeneration = GetGeneration(); browseSearches = Get<long>("Searches");
+                BrowseNext(); browsingDuringSearch = true;
+                phase = 6; return false;
+            }
+            if (BrowseEnabled && phase is 6 or 7)
+            {
+                if (Time.frameCount <= boundaryFrame || Field<bool>("selectionPending") || !SettledBrowse()) return false;
+                Require(GetGeneration() == browseGeneration && Get<long>("Searches") == browseSearches,
+                    "browsing restarted or cancelled a search");
+                browseMilliseconds.Add((Time.realtimeSinceStartup - browseStarted) * 1000d);
+                if (browseSwitches < 7) { BrowseNext(); phase = 7; return false; }
+                FloorBrowsePassed = true;
+                log!.LogInfo("PLAYER-ADVISOR-FLOOR-BROWSE-PASS switches=" + browseSwitches +
+                    " duringSearch=true newSearches=0 generation=" + browseGeneration +
+                    " readySwitchMs=" + string.Join(",", browseMilliseconds.Skip(1).Select(value => value.ToString("F1"))));
+                phase = 8;
             }
             if (!Ready()) return false;
             if (!InteractionsPassed)
@@ -204,6 +237,51 @@ namespace MonsterTrain2Poju.Probe
                 log!.LogInfo("PLAYER-ADVISOR-UI-PASS pause/resume hide/cancel/show refresh pointer-raycast drag/clamp generation=" + GetGeneration());
             }
             return true;
+        }
+
+        private static void BrowseNext()
+        {
+            RoomManager rooms = AllGameManagers.Instance.GetRoomManager();
+            int next = (rooms.GetSelectedRoom() + 1) % 3;
+            browseStarted = Time.realtimeSinceStartup; boundaryFrame = Time.frameCount + 2;
+            AccessTools.Method(typeof(RoomUI), "InnerSetSelectedRoom").Invoke(rooms.GetRoomUI(), new object[] { next, true });
+            browseSwitches++;
+        }
+
+        private static bool SettledBrowse()
+        {
+            if (CurrentIsNull()) return false;
+            BattleTurnState root = Capture();
+            using var keys = new BattleStateKeys();
+            if (Advice.RootKey != keys.Key(root)) return false;
+            return (bool)Call("ReadyFor", root)!;
+        }
+
+        internal static bool ReplayFloorBrowsing()
+        {
+            if (replayBrowseCount < 0)
+            {
+                using var fixture = FixtureDocument.Read(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT")!);
+                replayBrowseCount = 0;
+                if (fixture.RootElement.GetProperty("PlayerAdvisor").TryGetProperty("FloorBrowse", out FixtureValue browse) &&
+                    browse.ValueKind != FixtureKind.Null && browse.GetProperty("Passed").GetBoolean())
+                    replayBrowseCount = browse.GetProperty("Switches").GetInt32();
+                Require(replayBrowseCount >= 0 && replayBrowseCount <= 30, "invalid frozen browsing count");
+            }
+            if (replayBrowseCount == 0) return false;
+            PauseForFrozenPlan();
+            if (Time.frameCount <= boundaryFrame) return true;
+            if (replayBrowseSwitches < replayBrowseCount)
+            {
+                RoomManager rooms = AllGameManagers.Instance.GetRoomManager();
+                AccessTools.Method(typeof(RoomUI), "InnerSetSelectedRoom").Invoke(rooms.GetRoomUI(),
+                    new object[] { (rooms.GetSelectedRoom() + 1) % 3, true });
+                replayBrowseSwitches++; boundaryFrame = Time.frameCount + 2;
+                return true;
+            }
+            log!.LogInfo("PLAYER-ADVISOR-FLOOR-BROWSE-REPLAY-PASS switches=" + replayBrowseSwitches);
+            replayBrowseCount = 0;
+            return false;
         }
 
         private static bool Ready()

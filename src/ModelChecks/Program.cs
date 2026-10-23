@@ -2844,6 +2844,19 @@ if (args.Length == 2 && args[0] == "--native-advice-only")
     BattleAdviceChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--floor-browse-advice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    FloorBrowseAdviceChecks.Run(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--player-floor-browse-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    FloorBrowseAdviceChecks.NativePair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--winning-advice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

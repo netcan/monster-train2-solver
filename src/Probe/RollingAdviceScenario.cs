@@ -76,6 +76,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (!PlayerAdvisorProbe.CaptureInitialized) return true;
                 ExportPlayerDeployment();
+                if (Replay && Records.Count == 0 && PlayerAdvisorProbe.ReplayFloorBrowsing()) return true;
                 if (waiting) Observe(PlayerAdvisorProbe.Capture(), false);
                 return !Replay && !PlayerAdvisorProbe.ReadyFor();
             }

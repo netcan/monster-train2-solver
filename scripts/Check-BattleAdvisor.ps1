@@ -11,6 +11,8 @@ try {
     }
     dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --battle-advice-only tests/fixtures/full-battle-planner-starter-search.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Advice session check failed.' }
+    dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --floor-browse-advice-only tests/fixtures/full-battle-player-boss-search.mt2f
+    if ($LASTEXITCODE -ne 0) { throw 'Floor-browsing advice reuse check failed.' }
     $cases = @(Get-ChildItem tests/fixtures -Filter 'full-battle-advisor-*-search.mt2f')
     if ($cases.Count -ne 3) { throw 'Expected three curated natural advisor cases.' }
     foreach ($case in $cases) {
