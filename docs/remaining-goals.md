@@ -4,8 +4,10 @@
 本清单按实际使用影响排序；不以目录覆盖率替代自然对局验证。
 
 新增完整原生首领目录审计：基础第三／六／八环共 15 个原始场景，当前模型
-定义入口允许 6 个，其中 5 个有归档玩家建议／独立回放配对。第三环 Arkion／
-Fleshweaver 六场、第六环 Cael 三场仍受模型保护；双天使 Revenge/Harvest 的
+定义入口允许 9 个，其中 5 个有归档玩家建议／独立回放配对。第三环 Arkion／
+Fleshweaver 六场仍受模型保护；Cael 三场出生与完整无卡战斗现已通过，各有正向
+升级见证和十六条独立整场分支，实际玩家配对继续单独验收，见
+[Cael 原生证据](../tests/fixtures/cael.md)。双天使 Revenge/Harvest 的
 出生、无卡整场及复仇／跨层收割正向见证已通过，实际玩家建议配对继续单独验收。
 完整签名与证据来源见 [首领缺口清单](../tests/fixtures/boss-coverage.md)，运行
 `Get-BossCoverageInventory.ps1 -Check -SkipBuild` 可做只读元数据核对。

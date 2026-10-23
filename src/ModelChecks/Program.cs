@@ -1,6 +1,22 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 4 && args[0] == "--player-cael-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NativeCovenantCampaignChecks.CaelPair(source.RootElement, replay.RootElement, args[3]);
+    return;
+}
+
+if (args.Length == 3 && args[0] is "--cael-birth-only" or "--cael-baseline-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--cael-birth-only") CaelChecks.Birth(fixture.RootElement, args[2]);
+    else CaelChecks.Battle(fixture.RootElement, args[1], args[2]);
+    return;
+}
+
 if (args.Length == 2 && args[0] is "--angel-duo-harvest-death-only" or "--angel-duo-harvest-death-battle-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4920,6 +4936,20 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-natural-ri
         using var source = ModelJson.ReadFixture(sourcePath);
         using var replay = ModelJson.ReadFixture(replayPath);
         PlayerOuterBossChecks.CorrupterWinningPair(source.RootElement, replay.RootElement);
+    }
+}
+foreach (var variant in new[] { (Name: "atkhp", Native: "AtkHP"), (Name: "damage-shield", Native: "DamageShield"),
+    (Name: "lifesteal", Native: "Lifesteal") })
+{
+    foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-cael-" + variant.Name + ".mt2f"))
+    {
+        using var fixture = ModelJson.ReadFixture(path);
+        CaelChecks.Battle(fixture.RootElement, path, variant.Native);
+    }
+    foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss-birth-calibration-cael-" + variant.Name + ".mt2f"))
+    {
+        using var fixture = ModelJson.ReadFixture(path);
+        CaelChecks.Birth(fixture.RootElement, variant.Native);
     }
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-angel-duo-loop-resolve.mt2f", StringComparison.OrdinalIgnoreCase)))

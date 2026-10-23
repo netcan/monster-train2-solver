@@ -1,4 +1,5 @@
 using HarmonyLib;
+using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -30,7 +31,8 @@ namespace MonsterTrain2Poju.Probe
                     "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" ||
                     data.GetAssetKey() is "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
                         "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" or
-                        "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth") &&
+                        "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth" ||
+                    OuterBossDefinitions.IsCael(data.GetAssetKey())) &&
                     OuterBossPhaseProbe.Supports(data);
             }
         }

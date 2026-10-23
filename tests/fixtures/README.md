@@ -1,8 +1,14 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1236 archives,
+Current manifest inventory (2026-10-23): 1242 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+All three original Cael variants now have native rank-two birth and complete
+no-card battle calibrations, including positive original enemy upgrades and
+sixteen immutable full chains each. Exact original encounter selection retains
+the five preceding victories, original assets and route RNG. Player-source/replay
+acceptance remains separate. See [Cael evidence](cael.md).
 
 Native cumulative Covenant 2/10 also pass original true-final-boss birth and
 complete no-card battles, with exact full state/RNG and zero native failures.

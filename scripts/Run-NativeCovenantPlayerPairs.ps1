@@ -8,6 +8,7 @@ param(
     [ValidateRange(1, 7)][int] $BattleDistance = 1,
     [switch] $AngelDuo,
     [ValidateSet('', 'LoopResolve', 'RevengeHarvest')][string] $AngelDuoVariant = '',
+    [ValidateSet('', 'CaelAtkHP', 'CaelDamageShield', 'CaelLifesteal')][string] $EarlyOuterBossVariant = '',
     [ValidateRange(2, 16)][int] $PlannerHorizon = 3,
     [ValidateRange(100, 30000)][int] $PlannerTimeLimitMs = 3000,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 900,
@@ -20,6 +21,10 @@ if ($AngelDuo -and ($Battle -ne 'Campaign' -or $Rank.Count -ne 1 -or $Rank[0] -n
     throw '-AngelDuo requires the original rank-two Ring6 Campaign input; its checker verifies the exact scenario and unmodified bosses.'
 }
 if ($AngelDuoVariant -and -not $AngelDuo) { throw '-AngelDuoVariant requires -AngelDuo and its explicit selected-variant checker.' }
+if ($EarlyOuterBossVariant -and ($AngelDuo -or $Battle -ne 'Campaign' -or $Rank.Count -ne 1 -or
+    $Rank[0] -ne 2 -or $BattleDistance -ne 5)) {
+    throw 'Early outer-boss player pairs require their original rank-two Ring6 checkpoint and dedicated checker.'
+}
 if ($Battle -ne 'Outer' -and $PSBoundParameters.ContainsKey('Variant')) { throw '-Variant requires -Battle Outer.' }
 if ($Battle -eq 'Campaign') {
     if (-not $InputProfile -or $Rank.Count -ne 1) { throw 'Campaign pairs require one rank and an immutable native InputProfile.' }
@@ -55,6 +60,10 @@ foreach ($level in $Rank) {
             $common.InputProfile = $InputProfile; $common.BattleDistance = $BattleDistance
             if ($AngelDuoVariant) {
                 $common.AngelDuoVariant = $AngelDuoVariant
+                $common.OuterBossBirth = $true; $common.OuterBossTurns = $true
+            }
+            if ($EarlyOuterBossVariant) {
+                $common.OriginalEarlyOuterBossVariant = $EarlyOuterBossVariant
                 $common.OuterBossBirth = $true; $common.OuterBossTurns = $true
             }
         } elseif ($Battle -eq 'Outer') {
@@ -102,6 +111,8 @@ foreach ($level in $Rank) {
                         default { '--player-angel-duo-pair-only' }
                     }
                     @($check, $source, $replay)
+                } elseif ($EarlyOuterBossVariant) {
+                    @('--player-cael-pair-only', $source, $replay, $EarlyOuterBossVariant.Substring(4))
                 } else {
                     @('--player-native-covenant-campaign-pair-only', $source, $replay, "$level", "$BattleDistance")
                 }
@@ -128,6 +139,7 @@ foreach ($level in $Rank) {
         if ($Battle -eq 'Campaign') {
             $pair | Add-Member -NotePropertyName InputProfile -NotePropertyValue $InputProfile
             if ($AngelDuoVariant) { $pair | Add-Member -NotePropertyName AngelDuoVariant -NotePropertyValue $AngelDuoVariant }
+            if ($EarlyOuterBossVariant) { $pair | Add-Member -NotePropertyName EarlyOuterBossVariant -NotePropertyValue $EarlyOuterBossVariant }
             $pair | Add-Member -NotePropertyName InputSaveSHA256 -NotePropertyValue $inputHash
             $pair | Add-Member -NotePropertyName BattleDistance -NotePropertyValue $BattleDistance
         }
