@@ -20,6 +20,7 @@ internal static class OriginalMoonCardUpgradesChecks
         bool lunacy = root.TryGetProperty("OriginalMoonCardUpgradesLunacy", out FixtureValue lunacyFlag) && lunacyFlag.GetBoolean();
         bool costRelic = root.TryGetProperty("OriginalMoonCardUpgradesCostRelic", out FixtureValue costFlag) && costFlag.GetBoolean();
         bool attackRelic = root.TryGetProperty("OriginalMoonCardUpgradesAttackRelic", out FixtureValue attackFlag) && attackFlag.GetBoolean();
+        bool healingRelic = root.TryGetProperty("OriginalMoonCardUpgradesHealingRelic", out FixtureValue healingFlag) && healingFlag.GetBoolean();
         Require(root.GetProperty("OriginalMoonCardUpgradesPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing settled original moon upgrade battle.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
@@ -33,6 +34,15 @@ internal static class OriginalMoonCardUpgradesChecks
             Console.WriteLine("MOON-UPGRADE-NEXT-ACTION: " + attempted.Reason);
         }
         Require(ids.Length == (costRelic ? 23 : lunacy ? 21 : roomMask ? 17 : 16) && actions.Length == (costRelic ? 22 : lunacy ? 20 : roomMask ? 16 : 15) && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
+        if (healingRelic)
+        {
+            Require(lunacy && !costRelic && !attackRelic, "Healing relic composition requires separate Lunacy controls.");
+            CombatContext context = actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
+            RoomMoonSpellUpgradeChecks.HealingRelic(context);
+            Require(ids.Skip(2).All(id => context.FindCard(id)!.Temporary.Offsets.Heal >= 10) &&
+                ids.Take(2).All(id => context.FindCard(id)!.Temporary.Offsets.Heal == 0),
+                "Missing positive original healing contributions and excluded Monster controls.");
+        }
         if (attackRelic)
         {
             Require(lunacy && !costRelic, "Attack relic composition requires separate Lunacy controls.");
@@ -121,7 +131,7 @@ internal static class OriginalMoonCardUpgradesChecks
             Require(installed.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Attachments!.Single().MoonPhase != null,
                 "Missing original paid Eclipse installation.");
         }
-        Console.WriteLine($"ORIGINAL-MOON-CARD-UPGRADES PASS: five unchanged spells at both phases, full hand contexts, stronger magic-power refresh, upgraded OnCast, played/unplayed reset/redraw, 16 immutable chains; selectedRoomMask={roomMask} costRelic={costRelic} attackRelic={attackRelic}. Other unit, recast-copy and relic combinations remain separate boundaries.");
+        Console.WriteLine($"ORIGINAL-MOON-CARD-UPGRADES PASS: five unchanged spells at both phases, full hand contexts, stronger magic-power refresh, upgraded OnCast, played/unplayed reset/redraw, 16 immutable chains; selectedRoomMask={roomMask} costRelic={costRelic} attackRelic={attackRelic} healingRelic={healingRelic}. Other unit, recast-copy and relic combinations remain separate boundaries.");
     }
     private static string Json(object? value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string reason) { if (!condition) throw new InvalidOperationException(reason); }

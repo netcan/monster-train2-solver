@@ -33,6 +33,7 @@ param(
     [switch] $RoomMoonSpellAdvance,
     [switch] $RoomMoonSpellCostRelic,
     [switch] $RoomMoonSpellAttackRelic,
+    [switch] $RoomMoonSpellHealingRelic,
     [switch] $BossActionTargets,
     [switch] $BossActionControllers,
     [switch] $OuterBossPhases,
@@ -253,6 +254,7 @@ param(
     [switch] $OriginalMoonCardUpgradesLunacy,
     [switch] $OriginalMoonCardUpgradesCostRelic,
     [switch] $OriginalMoonCardUpgradesAttackRelic,
+    [switch] $OriginalMoonCardUpgradesHealingRelic,
     [switch] $OriginalRoomStatusDamage,
     [switch] $OriginalCorruptionDamage,
     [switch] $OriginalXStatusCards,
@@ -675,6 +677,8 @@ $ErrorActionPreference = 'Stop'
 if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
     throw 'AdvisorFloorBrowse requires the real PlayerAdvisor and RollingAdvice driver.'
 }
+if ($RoomMoonSpellHealingRelic) { $RoomMoonSpellAdvance = $true }
+if ($RoomMoonSpellHealingRelic -and ($RoomMoonSpellAttackRelic -or $RoomMoonSpellCostRelic)) { throw 'Use separate isolated relic controls.' }
 if ($RoomMoonSpellAttackRelic) { $RoomMoonSpellAdvance = $true }
 if ($RoomMoonSpellAttackRelic -and $RoomMoonSpellCostRelic) { throw 'Use separate isolated relic controls.' }
 if ($RoomMoonSpellCostRelic) { $RoomMoonSpellAdvance = $true }
@@ -684,7 +688,7 @@ if ($RoomMoonEnemyMovement) { $RoomMoonMovement = $true }
 if ($RoomMoonMovement) { $RoomMoonCallbacksShade = $true }
 if ($RoomMoonCallbacksShade) { $RoomMoonCallbacks = $true }
 if ($RoomMoonCallbacks) {
-    $allowed = @('RoomMoonCallbacks', 'RoomMoonCallbacksShade', 'RoomMoonMovement', 'RoomMoonEnemyMovement', 'RoomMoonSpellUpgrades', 'RoomMoonSpellAdvance', 'RoomMoonSpellCostRelic', 'RoomMoonSpellAttackRelic', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('RoomMoonCallbacks', 'RoomMoonCallbacksShade', 'RoomMoonMovement', 'RoomMoonEnemyMovement', 'RoomMoonSpellUpgrades', 'RoomMoonSpellAdvance', 'RoomMoonSpellCostRelic', 'RoomMoonSpellAttackRelic', 'RoomMoonSpellHealingRelic', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'RoomMoonCallbacks is an isolated component calibration.' }
     if ($RoomMoonSpellUpgrades -and ($RoomMoonCallbacksShade -or $RoomMoonMovement -or $RoomMoonEnemyMovement)) { throw 'Spell upgrade controls are a separate isolated component.' }
     $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
@@ -1048,6 +1052,8 @@ if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDiscardDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalMoonCardUpgradesHealingRelic -and ($OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesCostRelic)) { throw 'Use separate paid relic composition controls.' }
+if ($OriginalMoonCardUpgradesHealingRelic) { $OriginalMoonCardUpgradesLunacy = $true }
 if ($OriginalMoonCardUpgradesAttackRelic -and $OriginalMoonCardUpgradesCostRelic) { throw 'Use separate paid relic composition controls.' }
 if ($OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesCostRelic) { $OriginalMoonCardUpgradesLunacy = $true }
 if ($OriginalMoonCardUpgradesLunacy) { $OriginalMoonCardUpgradesRoomMask = $true }
@@ -1469,6 +1475,7 @@ $environment = @{
     MT2_PROBE_ROOM_MOON_SPELL_ADVANCE = $(if ($RoomMoonSpellAdvance) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_COST_RELIC = $(if ($RoomMoonSpellCostRelic) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_ATTACK_RELIC = $(if ($RoomMoonSpellAttackRelic) { '1' } else { '0' })
+    MT2_PROBE_ROOM_MOON_SPELL_HEALING_RELIC = $(if ($RoomMoonSpellHealingRelic) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SHADE = $(if ($RoomMoonCallbacksShade) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_MOVEMENT = $(if ($RoomMoonMovement) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_ENEMY = $(if ($RoomMoonEnemyMovement) { '1' } else { '0' })
@@ -1827,6 +1834,7 @@ if ($OriginalMoonCardUpgradesRoomMask) { $environment['MT2_PROBE_MOON_UPGRADE_RO
 if ($OriginalMoonCardUpgradesLunacy) { $environment['MT2_PROBE_MOON_UPGRADE_LUNACY'] = '1' }
 if ($OriginalMoonCardUpgradesCostRelic) { $environment['MT2_PROBE_MOON_UPGRADE_COST_RELIC'] = '1' }
 if ($OriginalMoonCardUpgradesAttackRelic) { $environment['MT2_PROBE_MOON_UPGRADE_ATTACK_RELIC'] = '1' }
+if ($OriginalMoonCardUpgradesHealingRelic) { $environment['MT2_PROBE_MOON_UPGRADE_HEALING_RELIC'] = '1' }
 if ($OriginalRoomStatusDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-status-damage' }
 if ($OriginalCorruptionDamage) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corruption-damage' }
 if ($OriginalXStatusCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-x-status-cards' }
@@ -2128,7 +2136,7 @@ if ($TrueFinalBossBirth) {
     return
 }
 if ($RoomMoonCallbacks) {
-    $componentPath = Join-Path $profile $(if ($RoomMoonSpellAttackRelic) { 'room-moon-spell-attack-relic-calibration.mt2f' } elseif ($RoomMoonSpellCostRelic) { 'room-moon-spell-cost-relic-calibration.mt2f' } elseif ($RoomMoonSpellAdvance) { 'room-moon-spell-advance-calibration.mt2f' } elseif ($RoomMoonSpellUpgrades) { 'room-moon-spell-upgrade-calibration.mt2f' } elseif ($RoomMoonEnemyMovement) { 'room-moon-enemy-movement-calibration.mt2f' } elseif ($RoomMoonMovement) { 'room-moon-movement-calibration.mt2f' } else { 'room-moon-callback-calibration.mt2f' })
+    $componentPath = Join-Path $profile $(if ($RoomMoonSpellHealingRelic) { 'room-moon-spell-healing-relic-calibration.mt2f' } elseif ($RoomMoonSpellAttackRelic) { 'room-moon-spell-attack-relic-calibration.mt2f' } elseif ($RoomMoonSpellCostRelic) { 'room-moon-spell-cost-relic-calibration.mt2f' } elseif ($RoomMoonSpellAdvance) { 'room-moon-spell-advance-calibration.mt2f' } elseif ($RoomMoonSpellUpgrades) { 'room-moon-spell-upgrade-calibration.mt2f' } elseif ($RoomMoonEnemyMovement) { 'room-moon-enemy-movement-calibration.mt2f' } elseif ($RoomMoonMovement) { 'room-moon-movement-calibration.mt2f' } else { 'room-moon-callback-calibration.mt2f' })
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'ROOM-MOON-CALLBACK-NATIVE PASS' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Room moon native calibration failed; inspect $unityLog" }
@@ -2143,6 +2151,7 @@ if ($RoomMoonCallbacks) {
             [bool]$captured.SpellAdvanceControls -ne [bool]$RoomMoonSpellAdvance -or
             [bool]$captured.CostRelicControls -ne [bool]$RoomMoonSpellCostRelic -or
             [bool]$captured.AttackRelicControls -ne [bool]$RoomMoonSpellAttackRelic -or
+            [bool]$captured.HealingRelicControls -ne [bool]$RoomMoonSpellHealingRelic -or
             [bool]$captured.ShadeCallbacks -ne [bool]$RoomMoonCallbacksShade -or
             [bool]$captured.EnemyControls -ne [bool]$RoomMoonEnemyMovement) {
             throw 'Incomplete room moon callback calibration.'
@@ -3181,6 +3190,7 @@ if ($OriginalMoonCardUpgrades -and (-not $trace.OriginalMoonCardUpgradesPrepared
     [bool]$trace.OriginalMoonCardUpgradesLunacy -ne [bool]$OriginalMoonCardUpgradesLunacy -or
     [bool]$trace.OriginalMoonCardUpgradesCostRelic -ne [bool]$OriginalMoonCardUpgradesCostRelic -or
     [bool]$trace.OriginalMoonCardUpgradesAttackRelic -ne [bool]$OriginalMoonCardUpgradesAttackRelic -or
+    [bool]$trace.OriginalMoonCardUpgradesHealingRelic -ne [bool]$OriginalMoonCardUpgradesHealingRelic -or
     (-not $RollingAdvice -and @($trace.Actions).Count -ne $(if ($OriginalMoonCardUpgradesCostRelic) { 22 } elseif ($OriginalMoonCardUpgradesLunacy) { 20 } elseif ($OriginalMoonCardUpgradesRoomMask) { 16 } else { 15 })) -or
     @($trace.OriginalMoonCardUpgradesHands).Count -lt 2 -or @($trace.OriginalMoonCardUpgradesHands | Where-Object { -not $_.Completed }).Count -ne 0)) {
     throw 'Original moon card upgrades require ten original casts, complete hand callbacks and a native win.'

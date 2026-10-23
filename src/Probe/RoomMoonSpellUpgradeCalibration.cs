@@ -93,9 +93,11 @@ namespace MonsterTrain2Poju.Probe
                 SpellUpgradeControls = true, SpellAdvanceControls = RoomMoonCallbackCalibration.SpellAdvance,
                 CostRelicControls = RoomMoonCallbackCalibration.SpellCostRelic, CostControlIds = costIds,
                 AttackRelicControls = RoomMoonCallbackCalibration.SpellAttackRelic, AttackControlIds = attackIds,
+                HealingRelicControls = RoomMoonCallbackCalibration.SpellHealingRelic,
                 ShadeCallbacks = false, MovementControls = false, EnemyControls = false,
                 ActorIds = Array.Empty<int>(), CardIds = ids, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0], Rows = rows }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                RoomMoonCallbackCalibration.SpellHealingRelic ? "room-moon-spell-healing-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellAttackRelic ? "room-moon-spell-attack-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellCostRelic ? "room-moon-spell-cost-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellAdvance ? "room-moon-spell-advance-calibration.mt2f" : "room-moon-spell-upgrade-calibration.mt2f"))) document.Write(output);

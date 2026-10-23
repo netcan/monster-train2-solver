@@ -33,8 +33,9 @@ namespace MonsterTrain2Poju.Model
             {
                 CardInstanceState? card = context.FindCard(token.InstanceId);
                 if (card == null || !Present(card)) continue;
-                // These validated relic modifier signatures do not match the
-                // refreshed spells or receive moon-resource callbacks.
+                // These witnessed modifiers have no moon-resource callback.
+                // Existing healing offsets stay fixed when a moon trait changes;
+                // only the ordinary relic-manager refresh applies them again.
                 if (context.QueryFrame?.MoonPhase is not (1 or 2) || context.QueryFrame.SelectedRoomIndex == null ||
                     context.Relics?.Any(relic => !CompatibleRelic(relic)) == true)
                 { error = "Moon spell upgrades require captured phase/selection; active relic combinations need separate witnesses."; return source; }
@@ -58,9 +59,14 @@ namespace MonsterTrain2Poju.Model
         }
         private static bool CompatibleRelic(CombatRelicState relic) =>
             relic.EffectTypes.All(type => type is RelicModel.ModifyCardTypeCost or RelicModel.ModifyCardAttack) &&
-            (relic.CardAttackModifiers == null || relic.CardAttackModifiers.All(rule =>
-                rule.CardType == "Monster" && rule.CharacterName == "" &&
-                rule.CharacterSubtypeKey == "" && rule.CardFilter == null));
+                (relic.CardAttackModifiers == null || relic.CardAttackModifiers.All(rule =>
+                    rule.CardType == "Monster" && rule.CharacterName == "" &&
+                    rule.CharacterSubtypeKey == "" && rule.CardFilter == null)) ||
+            relic.DataId == "03613302-e55a-4e6c-99a1-c198c8d3175c" && relic.AssetKey == "IncreaseSpellHealing" &&
+                relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+                relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyCardHealingPower }) &&
+                relic.MagicPowerModifiers?.Count == 1 && relic.MagicPowerModifiers[0].EffectIndex == 0 &&
+                relic.MagicPowerModifiers[0].PowerModifier == 10 && relic.MagicPowerModifiers[0].ConditionCount == 0;
         // This boundary covers spell-owned upgrades; living unit callbacks are separate.
         public static CardMoonUpgradeResult Update(CardInstanceState source, int phase, bool reset = false, bool preview = false, int roomMask = 0)
         {

@@ -18,6 +18,8 @@ internal static class RoomMoonSpellUpgradeChecks
         bool attackRelic = root.TryGetProperty("AttackRelicControls", out FixtureValue attackFlag) && attackFlag.GetBoolean();
         int[] attackIds = attackRelic ? root.GetProperty("AttackControlIds").Deserialize<int[]>()! : [];
         Require(!attackRelic || advance && !costRelic && attackIds.Length == 1, "Missing separate monster attack relic controls.");
+        bool healingRelic = root.TryGetProperty("HealingRelicControls", out FixtureValue healingFlag) && healingFlag.GetBoolean();
+        Require(!healingRelic || advance && !attackRelic && !costRelic, "Missing separate healing relic controls.");
         Require(ids.Length == (advance ? 6 : 5) && root.GetProperty("Rows").GetArrayLength() == 15, "Missing original spells or controls.");
         int witnesses = 0, changes = 0, exclusive = 0, additive = 0, selections = 0;
         bool guardsChecked = false, advanceGuardChecked = false;
@@ -65,6 +67,26 @@ internal static class RoomMoonSpellUpgradeChecks
             CombatContext after = actual.Context!;
             if (costRelic) CostRelic(after, costIds);
             if (attackRelic) AttackRelic(after, ids, attackIds);
+            if (healingRelic)
+            {
+                HealingRelic(after);
+                foreach (int id in ids)
+                    Require(after.FindCard(id)!.Temporary.Offsets.Heal == 10 &&
+                        before.Context!.FindCard(id)!.Temporary.Offsets.Heal == 10,
+                        "Moon refresh must preserve the native healing offset without reapplying or rescaling it.");
+                if (operation == "Refresh" && !guardsChecked)
+                    foreach (string field in new[] { "PowerModifier", "ConditionCount" })
+                    {
+                        var malformed = System.Text.Json.Nodes.JsonNode.Parse(parent)!;
+                        var modifier = malformed["Context"]!["Relics"]!.AsArray().Single(node => node!["DataId"]!.GetValue<string>() ==
+                            "03613302-e55a-4e6c-99a1-c198c8d3175c")!["MagicPowerModifiers"]![0]!;
+                        modifier[field] = field == "PowerModifier" ? 11 : 1;
+                        if (field == "ConditionCount") modifier["Conditions"] = null;
+                        TrainCombatState unknown = JsonSerializer.Deserialize<TrainCombatState>(malformed.ToJsonString(), ModelJson.Options)!;
+                        Require(!RoomMoonPhaseModel.Refresh(unknown, false).Supported,
+                            "Uncalibrated healing amount/conditions bypassed the moon guard.");
+                    }
+            }
             if (attackRelic && operation == "Refresh" && !guardsChecked)
             {
                 var malformed = System.Text.Json.Nodes.JsonNode.Parse(parent)!;
@@ -146,7 +168,15 @@ internal static class RoomMoonSpellUpgradeChecks
             if (operation == "Select") selections++;
         }
         Require(changes > 0 && exclusive > 0 && additive > 0 && selections == 6 && guardsChecked && (!advance || advanceGuardChecked), "Missing changed upgrades, both room modes, guard or selection controls.");
-        Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells={ids.Length} lunacyResourceControls={advance} costRelicControls={costRelic} attackRelicControls={attackRelic} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
+        Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells={ids.Length} lunacyResourceControls={advance} costRelicControls={costRelic} attackRelicControls={attackRelic} healingRelicControls={healingRelic} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
+    }
+    internal static void HealingRelic(CombatContext context)
+    {
+        CombatRelicState owner = context.Relics!.Single(relic => relic.DataId == "03613302-e55a-4e6c-99a1-c198c8d3175c");
+        Require(owner.AssetKey == "IncreaseSpellHealing" && owner.IsCovenant == false && owner.DisallowedInPlacementPhase == false &&
+            owner.EffectTypes.SequenceEqual([RelicModel.ModifyCardHealingPower]) && RelicModel.Validate(context) == null &&
+            owner.MagicPowerModifiers!.Select(rule => (rule.EffectIndex, rule.PowerModifier, rule.ConditionCount))
+                .SequenceEqual([(0, 10, 0)]), "Original healing relic signature changed.");
     }
     internal static void AttackRelic(CombatContext context, int[] spells, int[] monsters)
     {
