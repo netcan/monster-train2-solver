@@ -724,7 +724,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RoomCombatResult ApplyQueuedCharacterTrigger(RoomCombatState state, QueuedCharacterTrigger queued, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-            CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1)
+            CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
         {
             if (RelicFloorTransitionDamageModel.TryDefer(state, queued, enqueue, out RoomCombatResult floorDamage))
                 return floorDamage;
@@ -732,7 +733,8 @@ namespace MonsterTrain2Poju.Model
                 return movementStatus;
             RoomCombatResult triggered = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue,
                 resetPreviewTriggers: false, refreshPyre: refreshPyre, externalPyre: externalPyre,
-                externalPyreRoomIndex: externalPyreRoomIndex).TraceAllDispatches(queued.CaptureAllDispatches).QueuedTrigger(queued);
+                externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets)
+                .TraceAllDispatches(queued.CaptureAllDispatches).QueuedTrigger(queued);
             RoomCombatResult relicStatusEffect = RelicStatusAddedEffectModel.ApplyAfterTrigger(triggered, queued);
             RoomCombatResult entered = RelicRoomEntryStatusModel.ApplyAfterEntry(relicStatusEffect, queued, enqueue);
             return RelicAfterSpawnChanceStatusModel.ApplyAfterEntry(entered, queued, enqueue);
@@ -5070,7 +5072,11 @@ namespace MonsterTrain2Poju.Model
                     {
                         WorkingUnit? target = units.FirstOrDefault(unit => unit.Source.Id == id && unit.Alive && unit.Source.CanAttack);
                         if (target == null) continue;
-                        RoomCombatResult changed = UnitAttackModel.Apply(CurrentRoom(), id, amount);
+                        RoomCombatState attackRoom = target.RoomIndex == source.RoomIndex ? CurrentRoom() :
+                            new RoomCombatState(target.RoomIndex, source.Deployment,
+                                units.Where(unit => unit.Alive && unit.RoomIndex == target.RoomIndex).Select(unit => unit.Freeze()).ToArray(),
+                                Array.Empty<string>(), context, source.Preview, CompanionBossSnapshot());
+                        RoomCombatResult changed = UnitAttackModel.Apply(attackRoom, id, amount);
                         if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
                         context = changed.State!.Context;
                         foreach (CombatUnit unit in changed.State.Units) units.First(current => current.Source.Id == unit.Id).Apply(unit);

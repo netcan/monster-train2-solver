@@ -50,5 +50,9 @@ After repair all 43 rooms of the latter match diagnostically, and the fresh
 six runs above provide strict native acceptance. Existing rank-one original
 AllyBuffer creation and full battle also pass the focused regression.
 
-Actual high-rank player advice/replay and positive tower Incant execution
-remain separate acceptance targets.
+Positive tower Incant execution now has a separate unchanged-original
+legal-input control: six native casts, thirty-six remote attack buffs and
+six excluded bosses; complete native successors are searchable and match
+sixteen immutable branches each. Its queue and remote attack-state repairs
+are documented in [chosen Incant](chosen-incant-attack.md).
+Fresh high-rank player advice/replay remains a separate acceptance target.

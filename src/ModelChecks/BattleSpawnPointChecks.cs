@@ -136,7 +136,8 @@ internal static class BattleSpawnPointChecks
         {
             var unit = points.Units.Single(unit => unit.UnitId == actor.Id);
             Require(unit.Current != null && unit.Current.RoomIndex == state.RoomIndex && unit.Current.Team == actor.Team &&
-                points.Group(unit.Current.RoomIndex, unit.Current.Team)!.Occupants[unit.Current.Index] == actor.Id,
+                (unit.Current.OuterBossAnchor ? unit.OuterBoss && actor.IsBoss == true :
+                    points.Group(unit.Current.RoomIndex, unit.Current.Team, unit.Current.PreviewCopyId)!.Occupants[unit.Current.Index] == actor.Id),
                 "A living room actor lost its owned point.");
         }
     }

@@ -31,6 +31,9 @@ foreach ($boss in $Variant) {
         } else {
             @("full-battle-covenant-outer-boss-$suffix.mt2f", "outer-boss-birth-covenant-$suffix.mt2f")
         }
+        if ($StartingRank -eq 10 -and $Player -and $boss -eq 'AllyBuffer') {
+            $names += 'full-battle-chosen-incant-attack.mt2f'
+        }
         $paths = @($names | ForEach-Object { Join-Path $workspace "tests/fixtures/$_" })
         foreach ($path in $paths) {
             $rows = @($manifest | Where-Object archive -CEQ ([IO.Path]::GetFileName($path)))
@@ -47,5 +50,9 @@ foreach ($boss in $Variant) {
             else { ($context -eq '00-01').ToString() }
         dotnet $checker $mode $paths[0] $paths[1] $boss $ownerArgument
         if ($LASTEXITCODE -ne 0) { throw "Covenant outer-boss acceptance failed: $boss/$context" }
+        if ($paths.Count -gt 2) {
+            dotnet $checker --chosen-incant-attack-only $paths[2]
+            if ($LASTEXITCODE -ne 0) { throw 'Positive native chosen Incant acceptance failed.' }
+        }
     }
 }

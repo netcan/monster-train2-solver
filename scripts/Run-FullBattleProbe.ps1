@@ -70,6 +70,7 @@ param(
     [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')][string] $TrueFinalBossDeath = '',
     [switch] $TrueFinalBossDeathSpellSource,
     [switch] $OuterBossBirth,
+    [switch] $ChosenIncantSpell,
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
     [string] $InputProfile = '',
@@ -693,6 +694,11 @@ if ($PlayerAdvisor) {
 if ($OuterBossRelentless -and -not $OuterBossPhases) { throw '-OuterBossRelentless requires -OuterBossPhases.' }
 if ($OuterBossRelentlessHealth -and -not $OuterBossRelentless) { throw '-OuterBossRelentlessHealth requires -OuterBossRelentless.' }
 if ($OuterBossRelentlessPyreHealth -and -not $OuterBossRelentless) { throw '-OuterBossRelentlessPyreHealth requires -OuterBossRelentless.' }
+if ($ChosenIncantSpell -and ($StartingCovenantLevel -ne 10 -or $BattleDistance -ne 7 -or
+    $OriginalOuterBossVariant -ne 'AllyBuffer' -or -not $OuterBossBirth -or $Policy -ne 'units-spells-and-junk' -or
+    $PlayerAdvisor -or $RollingAdvice -or $Planner -or $RollingInput -or $InputProfile)) {
+    throw 'Chosen Incant control requires the original native rank-ten AllyBuffer battle and fixed native spell policy.'
+}
 if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns requires -PhysicalSpawnPoints.' }
 if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or -not $OuterBossTurns)) {
     throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns.'
@@ -1471,6 +1477,7 @@ $environment = @{
     MT2_PROBE_PLANNER_TACTICAL_SEED = $(if ($PlannerTacticalSeed) { '1' } else { '0' })
     MT2_PROBE_DOTNET_PLANNER = $(if ($DotNetPlanner) { Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll' } else { '' })
     MT2_PROBE_PLANNER_DEPLOYMENT_ROOM = "$PlannerDeploymentRoom"
+    MT2_PROBE_CHOSEN_INCANT_SPELL = $(if ($ChosenIncantSpell) { '1' } else { '0' })
     MT2_PROBE_PLANNER_TIME_LIMIT_MS = "$PlannerTimeLimitMs"
     MT2_PROBE_PLANNER_INPUT = $(if ($PlannerInput) { (Resolve-Path -LiteralPath $PlannerInput).Path } else { '' })
     MT2_PROBE_DATA_DIR = $profile
@@ -6926,3 +6933,19 @@ if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePasse
         }
     } finally { $nativeWorkerLease.Dispose() }
 }
+# Persist acceptance only after every requested coverage check and cleanup
+# succeeds. Long-running batches can recover this evidence without console logs.
+[pscustomobject]@{
+    Schema = 1
+    Profile = $profile
+    ExitCode = $process.ExitCode
+    NativePassed = $nativePassed
+    OriginalFilesUnchanged = $originalUnchanged
+    CaptureFailures = $trace.CaptureFailures
+    Mismatches = $trace.Mismatches
+    Unsupported = $trace.Unsupported
+    Pending = $trace.Pending
+    NativeWon = $trace.NativeWon
+    NativeSeconds = $nativeTimer.Elapsed.TotalSeconds
+    TraceSha256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash.ToLowerInvariant()
+} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'native-accepted-summary.json') -Encoding utf8

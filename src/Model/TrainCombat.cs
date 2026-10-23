@@ -191,10 +191,14 @@ namespace MonsterTrain2Poju.Model
             string? queueError = null;
             bool drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
             {
+                bool tower = NeedsTowerTargets(rooms[queued.RoomIndex]) || NeedsTowerTargets(queued.Unit);
+                var targets = tower ? TowerTargets(rooms[queued.RoomIndex], rooms) : Array.Empty<(int RoomIndex, CombatUnit Unit)>();
                 RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterTrigger(WithContext(rooms[queued.RoomIndex], context), queued, queue.Add,
-                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
+                    externalTargets: tower ? targets : null);
                 if (!result.Supported) { queueError = result.UnsupportedReason; return false; }
                 rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
+                if (tower) ApplyTowerUpdates(rooms, targets, result.RetainedUnits);
                 SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome)) outcome = result.Outcome;
                 return true;
@@ -655,9 +659,13 @@ namespace MonsterTrain2Poju.Model
                     trigger.Effects.Any(effect => effect.Type == "CardEffectPermanentlyAdjustMaxPyreHealth"));
                 CombatUnit? externalPyre = adjustsPyre && pyrePosition >= 0 && pyrePosition != roomPosition
                     ? rooms[pyrePosition].Units.Single(unit => unit.IsPyre) : null;
+                bool tower = NeedsTowerTargets(rooms[roomPosition]) || NeedsTowerTargets(queued.Unit);
+                var targets = tower ? TowerTargets(rooms[roomPosition], rooms, externalPyre?.Id ?? 0)
+                    : Array.Empty<(int RoomIndex, CombatUnit Unit)>();
                 RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(WithContext(rooms[roomPosition], context), queued, queue.Add,
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
-                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : rooms[pyrePosition].RoomIndex);
+                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : rooms[pyrePosition].RoomIndex,
+                    externalTargets: tower ? targets : null);
                 if (!fired.Supported) { error = fired.UnsupportedReason; return false; }
                 rooms[roomPosition] = fired.State!; context = fired.State!.Context; results.Add(fired);
                 if (externalPyre != null)
@@ -666,6 +674,7 @@ namespace MonsterTrain2Poju.Model
                     rooms[pyrePosition] = rooms[pyrePosition].WithUnits(rooms[pyrePosition].Units.Select(unit =>
                         unit.Id == changed.Id ? changed : unit).ToArray());
                 }
+                if (tower) ApplyTowerUpdates(rooms, targets, fired.RetainedUnits);
                 SetCompanionBosses(rooms, fired.State!.ActiveCompanionBossIds);
                 if (Terminal(fired.Outcome)) outcome = fired.Outcome;
                 return true;
@@ -782,8 +791,9 @@ namespace MonsterTrain2Poju.Model
             .SelectMany(room => room.Units.Where(unit => unit.Id != excludedUnitId)
                 .Select(unit => (room.RoomIndex, unit))).ToArray();
 
-        private static bool NeedsTowerTargets(RoomCombatState room) => room.Units
-            .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects)
+        private static bool NeedsTowerTargets(RoomCombatState room) => room.Units.Any(NeedsTowerTargets);
+
+        private static bool NeedsTowerTargets(CombatUnit unit) => unit.Triggers.SelectMany(trigger => trigger.Effects)
             .Any(effect => effect.Action?.Target is "Tower" or "FrontInAllRooms" || effect.UnitUpgrade?.Target == "Tower");
 
         private static void ApplyTowerUpdates(RoomCombatState[] rooms,

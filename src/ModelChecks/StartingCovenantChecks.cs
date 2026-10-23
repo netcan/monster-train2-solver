@@ -258,11 +258,20 @@ internal static class StartingCovenantChecks
     {
         OuterEvidence(source, variant, level); OuterEvidence(replay, variant, level);
         Pair(source, replay, level, 7);
-        if (variant == "AllyBuffer" && level == 10)
-        {
-            ChosenIncantAttackChecks.Native(source);
-            ChosenIncantAttackChecks.Native(replay);
-        }
+    }
+
+    internal static void ChosenNative(FixtureValue root, string path)
+    {
+        OuterEvidence(root, "AllyBuffer", 10);
+        FixtureValue control = root.GetProperty("ChosenIncantSpellControl");
+        Require(control.GetProperty("Kind").GetString() == "LegalSpellAtOriginalChosenCleric" &&
+            control.GetProperty("PolicyOverrideOnly").GetBoolean() && control.GetProperty("DeckAndCharacterAssetsUnchanged").GetBoolean(),
+            "Positive chosen Incant acceptance requires the disclosed legal-input-only native control.");
+        ChosenIncantAttackChecks.Native(root);
+        BattleActionChecks.Native(root);
+        BattleTurnChecks.Native(root);
+        TrainCombatChecks.Native(root);
+        RoomCombatChecks.NativeRoomOnly(path);
     }
 
     internal static void CuratedOuter(FixtureValue root, string path, bool player = false)
@@ -280,7 +289,16 @@ internal static class StartingCovenantChecks
         string other = player ? "full-battle-player-native-covenant-outer-boss-" + suffix + "-replay.mt2f" :
             "outer-boss-birth-native-covenant-" + suffix + ".mt2f";
         using var document = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, other));
-        if (player) OuterPair(root, document.RootElement, variant, level);
+        if (player)
+        {
+            OuterPair(root, document.RootElement, variant, level);
+            if (variant == "AllyBuffer" && level == 10)
+            {
+                string positive = Path.Combine(Path.GetDirectoryName(path)!, "full-battle-chosen-incant-attack.mt2f");
+                using var observed = ModelJson.ReadFixture(positive);
+                ChosenNative(observed.RootElement, positive);
+            }
+        }
         else OuterNative(root, document.RootElement, path, variant, level);
     }
 
@@ -297,6 +315,8 @@ internal static class StartingCovenantChecks
             "Native Covenant startup player acceptance must pass UI interactions and execute cards.");
         foreach (FixtureValue root in new[] { source, replay })
         {
+            Require(!root.TryGetProperty("ChosenIncantSpellControl", out FixtureValue control) || control.ValueKind == FixtureKind.Null,
+                "Actual player advice must not use the separate forced native spell control.");
             FixtureValue player = root.GetProperty("PlayerAdvisor"), overlay = player.GetProperty("Overlay");
             Require(player.GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&
                 overlay.GetProperty("Captures").GetInt32() > 0 && overlay.GetProperty("Failures").GetInt32() == 0 &&

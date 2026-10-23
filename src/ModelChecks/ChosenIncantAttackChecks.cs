@@ -1,5 +1,6 @@
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
+using System.Text.Json;
 
 internal static class ChosenIncantAttackChecks
 {
@@ -30,22 +31,39 @@ internal static class ChosenIncantAttackChecks
                 amount += effect.Value * trigger.FireCount;
             }
             var actual = after.Spawn.Train.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
-            foreach (CombatUnit prior in before.Spawn.Train.Rooms.Where(room => room.RoomIndex != play.RoomIndex).SelectMany(room => room.Units))
+            foreach (RoomCombatState room in before.Spawn.Train.Rooms)
+            foreach (CombatUnit prior in room.Units)
             {
                 if (prior.Team != CombatTeam.Enemy || prior.Health <= 0 || prior.Modifiers == null ||
                     !actual.TryGetValue(prior.Id, out CombatUnit? current) || current.Modifiers == null) continue;
                 if (prior.IsBoss == true)
                 {
                     TrueFinalBossChecks.Require(current.Modifiers.DamageBuff == prior.Modifiers.DamageBuff,
-                        "Tower Incant incorrectly buffed an excluded remote boss.");
+                        "Tower Incant incorrectly buffed an excluded boss.");
                     excludedBosses++;
                 }
-                else if (prior.CanAttack && current.Modifiers.DamageBuff == prior.Modifiers.DamageBuff + amount) remoteBuffs++;
+                else if (room.RoomIndex != play.RoomIndex && prior.CanAttack &&
+                    current.Modifiers.DamageBuff == prior.Modifiers.DamageBuff + amount) remoteBuffs++;
             }
+            string parent = JsonSerializer.Serialize(before, ModelJson.Options);
+            string expected = BattleTurnChecks.Comparable(after, compareRoomEnabled: BattleTurnChecks.ShouldCompareRoomEnabled(root));
+            string input = JsonSerializer.Serialize(play, ModelJson.Options);
+            TrueFinalBossChecks.Require(BattleActionModel.EnumerateActions(before).SupportedCandidates.Any(candidate =>
+                JsonSerializer.Serialize(candidate.Action, ModelJson.Options) == input &&
+                BattleTurnChecks.Comparable(candidate.Result.State!, compareRoomEnabled: BattleTurnChecks.ShouldCompareRoomEnabled(root)) == expected),
+                "The actual chosen-floor spell must remain in the searchable frontier with its complete native successor.");
+            Parallel.For(0, 16, _ =>
+            {
+                BattleActionResult branch = BattleActionModel.PlayCard(before, play);
+                TrueFinalBossChecks.Require(branch.Supported &&
+                    BattleTurnChecks.Comparable(branch.State!, compareRoomEnabled: BattleTurnChecks.ShouldCompareRoomEnabled(root)) == expected &&
+                    JsonSerializer.Serialize(before, ModelJson.Options) == parent,
+                    "Chosen-floor spell branches changed their native result or shared input.");
+            });
             casts++;
         }
         TrueFinalBossChecks.Require(casts > 0 && remoteBuffs > 0 && excludedBosses > 0,
-            "Chosen Incant acceptance requires actual spells, positive remote attack buffs and excluded remote bosses.");
-        Console.WriteLine($"CHOSEN-INCANT-ATTACK PASS: {casts} actual spell casts, {remoteBuffs} native remote attack buffs and {excludedBosses} excluded remote bosses.");
+            $"Chosen Incant acceptance requires actual spells, positive remote attack buffs and excluded bosses; observed casts={casts}, remoteBuffs={remoteBuffs}, excludedBosses={excludedBosses}.");
+        Console.WriteLine($"CHOSEN-INCANT-ATTACK PASS: {casts} searchable native casts, {remoteBuffs} remote attack buffs, {excludedBosses} excluded bosses and sixteen immutable branches per cast.");
     }
 }

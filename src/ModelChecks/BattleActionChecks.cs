@@ -976,6 +976,34 @@ internal static class BattleActionChecks
             Console.WriteLine("NATIVE-POLICY-CHAIN-SKIPPED: controlled native scenario actions are outside the generic captured policy; recorded plays and turns are checked individually, with the dedicated scenario search run separately.");
             return;
         }
+        if (fixture.TryGetProperty("ChosenIncantSpellControl", out FixtureValue chosenControl) && chosenControl.ValueKind == FixtureKind.Object)
+        {
+            // Replay the explicitly recorded legal control inputs. The native
+            // control deliberately overrides the ordinary fixed policy chooser.
+            Func<BattleTurnState, PlayCardAction?> ReplayInputs()
+            {
+                int cursor = 0;
+                return state =>
+                {
+                    if (cursor >= policyActions.Length) return null;
+                    FixtureValue row = policyActions[cursor];
+                    int turn = row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32();
+                    Require(turn >= state.Spawn.Turn, "Recorded control input was skipped.");
+                    if (turn != state.Spawn.Turn) return null;
+                    cursor++;
+                    return row.GetProperty("Action").Deserialize<PlayCardAction>();
+                };
+            }
+            string initial = JsonSerializer.Serialize(root);
+            string controlTerminal = BattleTurnChecks.Comparable(RunPolicy(root, policyActions, policyTurns, ReplayInputs(), compareRoomEnabled),
+                compareRoomEnabled: compareRoomEnabled);
+            Parallel.For(0, 16, _ => Require(BattleTurnChecks.Comparable(
+                RunPolicy(root, policyActions, policyTurns, ReplayInputs(), compareRoomEnabled), compareRoomEnabled: compareRoomEnabled) == controlTerminal,
+                "Recorded native control branches diverged."));
+            Require(JsonSerializer.Serialize(root) == initial, "Recorded native control mutated its root.");
+            Console.WriteLine($"NATIVE-RECORDED-CHAIN PASS: {policyActions.Length} inputs, {policyTurns.Length} EndTurns and sixteen immutable native branches.");
+            return;
+        }
         bool relicOneActionPolicy = fixture.TryGetProperty("ModifierScenario", out var addSnackPolicy) &&
             addSnackPolicy.GetString() is "original-add-snack-on-kill" or "original-final-ending-artifact";
         if (relicOneActionPolicy)

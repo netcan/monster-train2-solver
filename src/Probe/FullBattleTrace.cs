@@ -805,6 +805,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalTrueFinalBossRoute = TrueFinalBossBirthProbe.Control,
                 CovenantEnemyStatsControl = CovenantEnemyStatsScenario.Evidence,
                 StartingCovenantControl = StartingCovenantScenario.Evidence,
+                ChosenIncantSpellControl = ChosenIncantSpellScenario.Control,
                 TrueFinalBossDormantControl = TrueFinalBossDormantScenario.Evidence,
                 TrueFinalBossLethalControl = TrueFinalBossLethalScenario.Evidence,
                 TrueFinalBossAllyUpgradeControl = TrueFinalBossAllyUpgradeScenario.Evidence,
