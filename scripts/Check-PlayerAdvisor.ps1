@@ -1,9 +1,9 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('NativeCovenantStartup', 'NativeCovenantStartup02', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
+    [ValidateSet('NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
         'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
-    [string[]] $Case = @('NativeCovenantStartup', 'NativeCovenantStartup02', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
+    [string[]] $Case = @('NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
         'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
@@ -28,6 +28,7 @@ foreach ($name in $Case) {
         'CovenantEnemyStats' { 'player-covenant-enemy-stats' }
         'NativeCovenantStartup' { 'player-native-covenant-startup' }
         'NativeCovenantStartup02' { 'player-native-covenant-startup-02' }
+        'NativeCovenantStartup03' { 'player-native-covenant-startup-03' }
         'CovenantEnemyStatsFtue' { 'player-covenant-enemy-stats-ftue' }
         'TrueFinalBossCovenants' { 'player-true-final-boss-covenants' }
         'TrueFinalBossCovenant04' { 'player-true-final-boss-covenant04' }

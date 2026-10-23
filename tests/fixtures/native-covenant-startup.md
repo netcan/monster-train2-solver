@@ -100,4 +100,15 @@ original purge/add callback each and twenty cards. The original first
 battle wins in seven EndTurns with Pyre8. Fourteen train stages, 57 room
 stages, complete state/RNG and sixteen immutable full chains match. Native
 runtime is 49.90 seconds, normal exit, protected files unchanged, and all
-four failure counters zero. Actual player advice/replay remains separate.
+four failure counters zero.
+
+Actual player advice and a fresh frozen replay also win with Pyre52 in seven
+turns: each executes 31 inputs (24 card plays and seven EndTurns). All 33 source
+publications, UI interactions, complete forecasts, roots, successors and RNG
+match. Player captures are 383/106 with zero purity failures; native runtimes
+are 235.30/113.94 seconds, both normal exits with protected files unchanged and
+all four failure counters zero. Profile suffixes are `111631-90665d4e` /
+`112028-f0fa9d35`, prefixed `full-battle-units-spells-and-junk-20261023-`.
+Player archive prefix is `full-battle-player-native-covenant-startup-03`, with
+`-search.mt2f` / `-replay.mt2f`. The focused checker is
+`scripts/Check-PlayerAdvisor.ps1 -Case NativeCovenantStartup03 -SkipBuild`.
