@@ -25,9 +25,27 @@ and sixteen independent immutable full chains match. Pure native stat
 queries preserve their frames and all sixteen RNG streams; spoofed wave
 origins remain rejected.
 
-Run `ModelChecks --native-covenant-startup-only <archive>`. Real player
-advice and independent frozen replay, higher cumulative ranks, natural
-campaign completion and earned unlocks remain separate acceptance targets.
+Run `ModelChecks --native-covenant-startup-only <archive>`. Higher cumulative
+ranks, natural campaign completion and earned unlocks remain separate
+acceptance targets.
+
+The actual separate Advisor assembly also passes this native rank-one
+startup, including full UI interactions and 31 executed inputs (24 card
+plays and seven EndTurns). The source publishes 33 advice updates. A fresh
+native process independently rebuilds the same twenty-card starting deck,
+executes the same 31 frozen inputs without searches/publications, and wins
+with the same Pyre56. Every complete forecast, root, successor, terminal
+state and RNG matches. Both processes exit normally with protected files
+unchanged, settled effects and all four failure counters zero. Source/replay
+pure captures are 386/106, with no purity failures.
+
+Player archives are `full-battle-player-native-covenant-startup-search.mt2f`
+and `full-battle-player-native-covenant-startup-replay.mt2f`. Source profiles,
+prefixed `full-battle-units-spells-and-junk-20261023-`, are
+`105634-a8426ece` and `110107-4a1ce13e`, taking 258.52/127.50 seconds.
+Advice uses three turns, a 3,000-ms soft budget and tactical candidates;
+this result does not establish a hard response deadline or default-budget
+winning quality. Run `scripts/Check-PlayerAdvisor.ps1 -Case NativeCovenantStartup -SkipBuild`.
 
 The capture also records the original Covenant catalog and effect signatures,
 so subsequent batches can distinguish battle effects from campaign-only

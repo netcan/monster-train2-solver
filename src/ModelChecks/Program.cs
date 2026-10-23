@@ -4331,6 +4331,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
     StartingCovenantChecks.Native(fixture.RootElement, path);
 }
 
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-native-covenant-startup-search.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-native-covenant-startup-replay.mt2f"));
+    StartingCovenantChecks.Pair(source.RootElement, replay.RootElement);
+}
+
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-player-covenant-outer-boss-", StringComparison.OrdinalIgnoreCase) &&
     path.EndsWith("-search.mt2f", StringComparison.OrdinalIgnoreCase)))
     CovenantOuterBossChecks.CuratedPair(path);

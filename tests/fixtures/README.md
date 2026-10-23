@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1140 archives,
+Current manifest inventory (2026-10-23): 1142 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -8,6 +8,9 @@ Native Covenant 1 run initialization now has a complete first-battle control:
 normal run-setup callback/starting conditions, original startup purge/add
 effects exactly once, 20 starting cards and a seven-turn no-cards victory
 with Pyre10. See [native Covenant startup](native-covenant-startup.md).
+Actual advice/UI and independent frozen native replay also pass this native
+20-card startup: 31 inputs each, 33 source publications, two complete wins
+with Pyre56, exact full forecasts/state/RNG and zero native failure counters.
 
 Original Ring8 bosses now have complete native Covenant 01 and 00+01 birth
 and no-cards controls: six full battles, raw creation followed by the native
