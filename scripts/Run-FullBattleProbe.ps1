@@ -5,7 +5,7 @@ param(
     [string] $Policy = 'steward-once',
     [ValidateSet('Normal', 'Fast', 'Ultra', 'SuperUltra', 'Instant')]
     [string] $GameSpeed = 'Instant',
-    [ValidateRange(1, 2)]
+    [ValidateRange(1, 4)]
     [int] $NativeWorker = 1,
     [switch] $Planner,
     [switch] $PlannerTacticalSeed,
@@ -1362,7 +1362,10 @@ if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true
 if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
 if ($DamagePerHpAbility) { $Policy = 'units-spells-and-junk' }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$gameRoot = Join-Path $workspace $(if ($NativeWorker -eq 2) { '.sandbox-game-worker2' } else { '.sandbox-game' })
+$gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-worker$NativeWorker" } else { '.sandbox-game' })
+if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
+    throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
+}
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
 $profile = Join-Path $workspace ('.probe-runs\full-battle-' + $Policy + '-' + $runId)
 $originalLogRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'AppData\LocalLow\Shiny Shoe\MonsterTrain2'

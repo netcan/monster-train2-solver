@@ -12,7 +12,7 @@ param(
     [ValidateRange(2, 16)][int] $PlannerHorizon = 3,
     [ValidateRange(100, 30000)][int] $PlannerTimeLimitMs = 3000,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 900,
-    [ValidateRange(1, 2)][int] $NativeWorker = 1,
+    [ValidateRange(1, 4)][int] $NativeWorker = 1,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'

@@ -1,5 +1,7 @@
 .sandbox-game/
 .sandbox-game-worker2/
+.sandbox-game-worker3/
+.sandbox-game-worker4/
 .probe-baseline/
 .probe-data/
 .probe-runs/
