@@ -273,6 +273,9 @@ namespace MonsterTrain2Poju.Model
                     // is already carried by the captured native spawn pattern.
                     if (relic.IsCovenant == true && relic.AssetKey == "Covenant01_StrongerEnemiesMoreCards" &&
                         effect is "RelicEffectPurgeStarterDeck" or "RelicEffectAddCardSetStartOfRun" or "RelicEffectEnableSpecialCharacters") continue;
+                    // These sealed native IMerchantRelicEffect implementations
+                    // expose merchant price data and have no combat callbacks.
+                    if (TrueFinalBossCovenantModel.MerchantOnlyOwner(relic)) continue;
                     // ICharacterGeneratingRelicEffect only supplies a tooltip
                     // character. The sealed native type has no combat hooks.
                     if (effect == "RelicEffectOnlyTooltips") continue;

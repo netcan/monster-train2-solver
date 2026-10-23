@@ -171,11 +171,13 @@ if (args.Length == 2 && args[0] == "--native-covenant-startup-only")
     StartingCovenantChecks.Native(fixture.RootElement, args[1]);
     return;
 }
-if (args.Length == 3 && args[0] == "--player-native-covenant-startup-pair-only")
+if (args.Length == 3 && args[0] is "--player-native-covenant-startup-pair-only" or "--player-native-covenant-startup-02-pair-only" or
+    "--player-native-covenant-startup-03-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
-    StartingCovenantChecks.Pair(source.RootElement, replay.RootElement);
+    StartingCovenantChecks.Pair(source.RootElement, replay.RootElement, args[0].Contains("-03-", StringComparison.Ordinal) ? 3 :
+        args[0].Contains("-02-", StringComparison.Ordinal) ? 2 : 1);
     return;
 }
 
@@ -4331,11 +4333,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("fu
     StartingCovenantChecks.Native(fixture.RootElement, path);
 }
 
-foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-native-covenant-startup-search.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path) is "full-battle-player-native-covenant-startup-search.mt2f" or
+    "full-battle-player-native-covenant-startup-02-search.mt2f" or "full-battle-player-native-covenant-startup-03-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-native-covenant-startup-replay.mt2f"));
-    StartingCovenantChecks.Pair(source.RootElement, replay.RootElement);
+    string suffix = Path.GetFileName(path).Contains("-03-", StringComparison.Ordinal) ? "-03" :
+        Path.GetFileName(path).Contains("-02-", StringComparison.Ordinal) ? "-02" : "";
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-native-covenant-startup" + suffix + "-replay.mt2f"));
+    StartingCovenantChecks.Pair(source.RootElement, replay.RootElement, suffix.Length > 0 ? int.Parse(suffix[1..]) : 1);
 }
 
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-player-covenant-outer-boss-", StringComparison.OrdinalIgnoreCase) &&

@@ -65,7 +65,10 @@ these victories do not establish a hard response deadline or default-budget
 quality. Native source runs take 203.77/206.47 seconds and fresh replay runs
 101.81/103.26 seconds, including the full game and capture validation.
 
-This acceptance covers the original controlled first battle. Natural Covenant
-initialization, higher-rank cumulative campaigns and later boss signatures
-still require separate evidence; startup deck effects are never replayed by
-the production capture helper.
+This acceptance covers the original controlled first battle. Native rank-one
+startup now has separate complete-battle/player/replay evidence, and native
+cumulative rank two has a no-cards control; see [native startup](native-covenant-startup.md).
+The original three Ring8 variants also have separate Covenant controls;
+see [outer bosses](covenant-outer-bosses.md). Higher cumulative campaigns and
+other boss signatures retain their separate acceptance boundaries. Startup
+deck effects are never replayed by the production capture helper.

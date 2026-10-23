@@ -69,5 +69,35 @@ The original first battle wins in seven EndTurns with Pyre8. All fourteen
 train stages, 57 room stages, state/RNG and sixteen immutable full chains
 match. Native runtime is 54.18 seconds, normal exit, protected files unchanged,
 and capture/mismatch/unsupported/pending all zero. Run the same focused
-`--native-covenant-startup-only` checker. Rank-two actual player advice/replay
-remains a separate target.
+`--native-covenant-startup-only` checker.
+
+Actual rank-two advice and fresh native replay also pass: 31 inputs (24 card
+plays and seven EndTurns), 33 source publications, full UI interactions,
+and every complete forecast/root/successor/state/RNG. Both processes win
+with Pyre52, exit normally with protected files unchanged and all failure
+counters zero. Pure captures are 391/106 with no purity failures. Source
+and replay suffixes are `110827-6b6810c5` / `111251-fbcee1e8`, prefixed
+`full-battle-units-spells-and-junk-20261023-`, taking 262.50/113.51 seconds.
+Player archive prefix is `full-battle-player-native-covenant-startup-02`,
+with `-search.mt2f` / `-replay.mt2f`. Run
+`scripts/Check-PlayerAdvisor.ps1 -Case NativeCovenantStartup02 -SkipBuild`.
+
+## Native cumulative rank three
+
+The original `Covenant03_MerchantCostsIncrease` has ID
+`dcb31cd7-4293-4b07-b396-5456a0ce0b6e`. Its exact two effects are
+`RelicEffectModifyMerchantRerollCosts` and
+`RelicEffectModifyMerchantPurgeCosts`: sealed native `IMerchantRelicEffect`
+implementations expose price data and no combat callbacks. Captured battle
+gold/deck/upgrades remain authoritative. The battle model admits only the
+original identity and complete two-effect signature; this does not claim
+to simulate merchant purchases or broaden outer/final-boss combinations.
+
+`full-battle-native-covenant-startup-03.mt2f` comes from
+`full-battle-no-cards-20261023-111541-b0da8023`. All three cumulative
+original owners and native starting conditions are retained, with one
+original purge/add callback each and twenty cards. The original first
+battle wins in seven EndTurns with Pyre8. Fourteen train stages, 57 room
+stages, complete state/RNG and sixteen immutable full chains match. Native
+runtime is 49.90 seconds, normal exit, protected files unchanged, and all
+four failure counters zero. Actual player advice/replay remains separate.

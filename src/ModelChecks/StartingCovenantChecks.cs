@@ -5,7 +5,7 @@ internal static class StartingCovenantChecks
 {
     private static void Require(bool value, string reason) => TrueFinalBossChecks.Require(value, reason);
 
-    private static void Evidence(FixtureValue root)
+    private static void Evidence(FixtureValue root, int? expectedLevel = null)
     {
         foreach (string name in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(name).GetInt32() == 0, "Native Covenant startup battle has nonzero " + name);
@@ -16,8 +16,9 @@ internal static class StartingCovenantChecks
         FixtureValue startup = root.GetProperty("StartingCovenantControl");
         FixtureValue selection = startup.GetProperty("Selection");
         int level = startup.GetProperty("AscensionLevel").GetInt32();
+        Require(!expectedLevel.HasValue || level == expectedLevel, "Native Covenant fixture uses a different declared cumulative rank.");
         Require(startup.GetProperty("Kind").GetString() == "NativeCovenantRunStartup" &&
-            level is 1 or 2 && startup.GetProperty("StartingLevel").GetInt32() == level &&
+            level is 1 or 2 or 3 && startup.GetProperty("StartingLevel").GetInt32() == level &&
             selection.GetProperty("Kind").GetString() == "SelectNativeCovenantAtRunSetup" &&
             selection.GetProperty("RequestedLevel").GetInt32() == level && selection.GetProperty("LevelAfter").GetInt32() == level &&
             !selection.GetProperty("EarnedUnlockClaimed").GetBoolean() && !selection.GetProperty("StartupEffectsInvokedByProbe").GetBoolean() &&
@@ -51,7 +52,7 @@ internal static class StartingCovenantChecks
             owner.GetProperty("EffectTypes").EnumerateArray().Select(value => value.GetString()).SequenceEqual(captured[0].EffectTypes),
             "Native startup and actual battle capture disagree on the original Covenant definition.");
         TrueFinalBossBattleChecks.CovenantWaves(root, before, startup.GetProperty("StatQueries"));
-        if (level == 2)
+        if (level >= 2)
         {
             Require(captured[1].AssetKey == "Covenant02_BattlesNewEnemies" && captured[1].EffectTypes.Count == 0 &&
                 !TrueFinalBossCovenantModel.CalibratedOwners(captured) &&
@@ -62,12 +63,16 @@ internal static class StartingCovenantChecks
             Require(!TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(invalid),
                 "The selection-only Covenant must not authorize additional combat callbacks.");
         }
+        if (level == 3) Require(TrueFinalBossCovenantModel.MerchantOnlyOwner(captured[2]),
+            "Rank three must retain its original merchant-only owner and exact native effect signature.");
         Console.WriteLine($"NATIVE-COVENANT-STARTUP PASS: native rank {level} selection, exact cumulative owners, one original purge/add callback each and {startup.GetProperty("StartingDeck").GetArrayLength()} actual starting cards; original battle waves and stat-query purity match. Earned unlocks remain separate.");
     }
 
     internal static void Native(FixtureValue root, string path)
     {
-        Evidence(root);
+        string name = Path.GetFileNameWithoutExtension(path);
+        const string prefix = "full-battle-native-covenant-startup-";
+        Evidence(root, name.StartsWith(prefix, StringComparison.Ordinal) ? int.Parse(name[prefix.Length..]) : null);
         Require(root.GetProperty("Policy").GetString() == "no-cards" && root.GetProperty("Actions").GetArrayLength() == 0,
             "The native Covenant startup baseline must not play cards.");
         BattleTurnChecks.Native(root);
@@ -75,9 +80,9 @@ internal static class StartingCovenantChecks
         RoomCombatChecks.NativeRoomOnly(path);
     }
 
-    internal static void Pair(FixtureValue source, FixtureValue replay)
+    internal static void Pair(FixtureValue source, FixtureValue replay, int level = 1)
     {
-        Evidence(source); Evidence(replay);
+        Evidence(source, level); Evidence(replay, level);
         RollingAdviceChecks.FrozenPair(source, replay);
         BattleAdviceChecks.Native(source);
         Require(source.GetProperty("StartingCovenantControl").GetProperty("StartingDeck").ContentEquals(
