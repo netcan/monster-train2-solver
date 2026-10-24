@@ -6,8 +6,10 @@ internal static class PlayerMoonRoomSpellChecks
 {
     internal static void Pair(FixtureValue source, FixtureValue replay, bool requireHealingRelic = false, bool requirePhaseHealRelic = false,
         bool requirePhaseEnergyRelic = false, bool requireHandPowerRelic = false, bool requireStatusRelic = false,
-        bool requireCovenant03 = false)
+        bool requireCovenant03 = false, bool requireThresholdRelic = false)
     {
+        if (requireThresholdRelic)
+            foreach (FixtureValue fixture in new[] { source, replay }) MoonSpellThresholdCompositionChecks.CardPlays(fixture);
         if (requireCovenant03)
             foreach (FixtureValue fixture in new[] { source, replay })
                 MoonCovenantCompositionChecks.Startup(fixture,
@@ -42,6 +44,9 @@ internal static class PlayerMoonRoomSpellChecks
         bool phaseEnergyRelic = source.TryGetProperty("OriginalMoonCardUpgradesPhaseEnergyRelic", out FixtureValue energyFlag) && energyFlag.GetBoolean();
         bool handPowerRelic = source.TryGetProperty("OriginalMoonCardUpgradesHandPowerRelic", out FixtureValue powerFlag) && powerFlag.GetBoolean();
         bool statusRelic = source.TryGetProperty("OriginalMoonCardUpgradesStatusRelic", out FixtureValue statusFlag) && statusFlag.GetBoolean();
+        bool thresholdRelic = source.TryGetProperty("OriginalMoonCardUpgradesThresholdRelic", out FixtureValue thresholdFlag) && thresholdFlag.GetBoolean();
+        Require(!thresholdRelic || lunacy && !statusRelic && !handPowerRelic && !phaseEnergyRelic && !phaseHealRelic && !healingRelic && !attackRelic && !costRelic,
+            "Third-spell player scene requires separate original Lunacy controls.");
         Require(!statusRelic || lunacy && !handPowerRelic && !phaseEnergyRelic && !phaseHealRelic && !healingRelic && !attackRelic && !costRelic,
             "Silent armor scene requires separate original Lunacy controls.");
         Require(!handPowerRelic || lunacy && !costRelic && !attackRelic && !healingRelic && !phaseHealRelic && !phaseEnergyRelic,

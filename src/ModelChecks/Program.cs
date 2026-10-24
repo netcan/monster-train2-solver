@@ -2929,7 +2929,7 @@ if (args.Length == 3 && args[0] == "--moon-covenant-startup-only")
         int.Parse(args[2]), guards: true);
     return;
 }
-if (args.Length == 3 && args[0] is "--player-moon-room-spells-pair-only" or "--player-moon-room-healing-relic-pair-only" or "--player-moon-room-phase-heal-relic-pair-only" or "--player-moon-room-phase-energy-relic-pair-only" or "--player-moon-room-hand-power-relic-pair-only" or "--player-moon-room-status-relic-pair-only" or "--player-moon-room-covenant03-pair-only")
+if (args.Length == 3 && args[0] is "--player-moon-room-spells-pair-only" or "--player-moon-room-healing-relic-pair-only" or "--player-moon-room-phase-heal-relic-pair-only" or "--player-moon-room-phase-energy-relic-pair-only" or "--player-moon-room-hand-power-relic-pair-only" or "--player-moon-room-status-relic-pair-only" or "--player-moon-room-covenant03-pair-only" or "--player-moon-room-threshold-relic-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
@@ -2939,7 +2939,8 @@ if (args.Length == 3 && args[0] is "--player-moon-room-spells-pair-only" or "--p
         requirePhaseEnergyRelic: args[0] == "--player-moon-room-phase-energy-relic-pair-only",
         requireHandPowerRelic: args[0] == "--player-moon-room-hand-power-relic-pair-only",
         requireStatusRelic: args[0] == "--player-moon-room-status-relic-pair-only",
-        requireCovenant03: args[0] == "--player-moon-room-covenant03-pair-only");
+        requireCovenant03: args[0] == "--player-moon-room-covenant03-pair-only",
+        requireThresholdRelic: args[0] == "--player-moon-room-threshold-relic-pair-only");
     return;
 }
 if (args.Length == 2 && args[0] == "--player-moon-room-turn-only")
@@ -2958,6 +2959,11 @@ if (args.Length == 2 && args[0] == "--moon-spell-threshold-component-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     MoonSpellThresholdCompositionChecks.Component(fixture.RootElement);
+    return;
+}
+if (args.Length == 1 && args[0] == "--retained-callbacks-only")
+{
+    RetainedCallbackChecks.Run();
     return;
 }
 if (args.Length == 2 && args[0] == "--moon-spell-threshold-card-plays-only")
@@ -5314,6 +5320,7 @@ foreach (string path in args.Where(path => path.EndsWith("advisor-ordinary-budge
     OrdinaryAdviceBudgetChecks.Run(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-original-moon-card-upgrades-room-mask.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-original-moon-card-upgrades-threshold-relic.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-original-moon-card-upgrades-status-relic.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-original-moon-card-upgrades-covenant03.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-original-moon-card-upgrades-hand-power-relic.mt2f", StringComparison.OrdinalIgnoreCase) ||

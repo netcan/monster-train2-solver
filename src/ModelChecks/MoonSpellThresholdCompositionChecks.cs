@@ -87,7 +87,7 @@ internal static class MoonSpellThresholdCompositionChecks
         Require(Json(source) == parent, "Third-spell negative controls mutated their parent.");
     }
 
-    internal static void CardPlays(FixtureValue root)
+    internal static void CardPlays(FixtureValue root, bool requireFivefold = false)
     {
         Require(root.GetProperty("OriginalMoonCardUpgradesThresholdRelic").GetBoolean(), "Missing third-spell composition battle flag.");
         int fired = 0, suppressed = 0, increments = 0, fivefold = 0, excluded = 0;
@@ -120,6 +120,7 @@ internal static class MoonSpellThresholdCompositionChecks
             }
         }
         Require(fired > 0 && suppressed > 0 && increments > 0 && excluded > 0, "Missing positive, once-per-turn or excluded-card witnesses.");
+        Require(!requireFivefold || fivefold > 0, "Missing actual fivefold native third-spell offsets.");
         Console.WriteLine($"MOON-SPELL-THRESHOLD-CARD-PLAYS PASS: triggers={fired} suppressed={suppressed} increments={increments} fivefold={fivefold} exclusions={excluded}.");
     }
     private static string Json(object value) => JsonSerializer.Serialize(value, ModelJson.Options);

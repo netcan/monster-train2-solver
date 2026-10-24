@@ -10,6 +10,7 @@ $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
     'room-moon-spell-threshold-relic-calibration.mt2f',
+    'full-battle-original-moon-card-upgrades-threshold-relic.mt2f',
     'player-live-arkion-pyre-unavailable.mt2f',
     'full-battle-player-live-arkion-pyre.mt2f',
     'outer-boss-birth-live-arkion-pyre.mt2f',
@@ -1134,6 +1135,24 @@ if ($Fixture.Count -gt 0) {
     Write-Host "FIXTURE-INTEGRITY PASS: $($fixtures.Count) selected of $($fixtureNames.Count) curated archives match the SHA-256 manifest."
 } else {
     Write-Host "FIXTURE-INTEGRITY PASS: $($fixtures.Count) binary archives match the curated inventory and SHA-256 manifest."
+}
+# Explicit selections for this composition have complete dedicated gates.
+# Avoid starting all unrelated pure checks before a component-only request.
+$moonThresholdGates = @{
+    'room-moon-spell-threshold-relic-calibration.mt2f' = '--moon-spell-threshold-component-only'
+    'full-battle-original-moon-card-upgrades-threshold-relic.mt2f' = '--original-moon-card-upgrades-only'
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { -not $moonThresholdGates.ContainsKey($_) }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Moon threshold checker build failed.' }
+    }
+    $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+    foreach ($path in $fixtures) {
+        dotnet $checker $moonThresholdGates[(Split-Path -Leaf $path)] $path
+        if ($LASTEXITCODE -ne 0) { throw 'Focused moon threshold acceptance failed.' }
+    }
+    return
 }
 if ($Workers -gt 1) {
     if (-not $SkipBuild) {

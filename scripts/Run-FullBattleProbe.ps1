@@ -3406,7 +3406,7 @@ if ($OriginalMoonCardUpgrades -and (-not $trace.OriginalMoonCardUpgradesPrepared
     [bool]$trace.OriginalMoonCardUpgradesHandPowerRelic -ne [bool]$OriginalMoonCardUpgradesHandPowerRelic -or
     [bool]$trace.OriginalMoonCardUpgradesStatusRelic -ne [bool]$OriginalMoonCardUpgradesStatusRelic -or
     [bool]$trace.OriginalMoonCardUpgradesLiveRelics -ne [bool]$OriginalMoonCardUpgradesLiveRelics -or
-    (-not $RollingAdvice -and @($trace.Actions).Count -ne $(if ($OriginalMoonCardUpgradesCostRelic) { 22 } elseif ($OriginalMoonCardUpgradesLunacy) { 20 } elseif ($OriginalMoonCardUpgradesRoomMask) { 16 } else { 15 })) -or
+    (-not $RollingAdvice -and @($trace.Actions).Count -ne $(if ($OriginalMoonCardUpgradesCostRelic -or $OriginalMoonCardUpgradesThresholdRelic) { 22 } elseif ($OriginalMoonCardUpgradesLunacy) { 20 } elseif ($OriginalMoonCardUpgradesRoomMask) { 16 } else { 15 })) -or
     @($trace.OriginalMoonCardUpgradesHands).Count -lt 2 -or @($trace.OriginalMoonCardUpgradesHands | Where-Object { -not $_.Completed }).Count -ne 0)) {
     throw 'Original moon card upgrades require ten original casts, complete hand callbacks and a native win.'
 }

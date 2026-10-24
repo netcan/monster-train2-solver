@@ -25,6 +25,7 @@ internal static class OriginalMoonCardUpgradesChecks
         bool phaseEnergyRelic = root.TryGetProperty("OriginalMoonCardUpgradesPhaseEnergyRelic", out FixtureValue energyFlag) && energyFlag.GetBoolean();
         bool handPowerRelic = root.TryGetProperty("OriginalMoonCardUpgradesHandPowerRelic", out FixtureValue powerFlag) && powerFlag.GetBoolean();
         bool statusRelic = root.TryGetProperty("OriginalMoonCardUpgradesStatusRelic", out FixtureValue statusFlag) && statusFlag.GetBoolean();
+        bool thresholdRelic = root.TryGetProperty("OriginalMoonCardUpgradesThresholdRelic", out FixtureValue thresholdFlag) && thresholdFlag.GetBoolean();
         Require(root.GetProperty("OriginalMoonCardUpgradesPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing settled original moon upgrade battle.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
@@ -40,7 +41,13 @@ internal static class OriginalMoonCardUpgradesChecks
             BattleActionResult attempted = BattleActionModel.PlayCard(last, new PlayCardAction(ids[5], 1, targetUnitId: target.Id));
             Console.WriteLine("MOON-UPGRADE-NEXT-ACTION: " + attempted.Reason);
         }
-        Require(ids.Length == (costRelic ? 23 : lunacy ? 21 : roomMask ? 17 : 16) && actions.Length == (costRelic ? 22 : lunacy ? 20 : roomMask ? 16 : 15) && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
+        Require(ids.Length == (costRelic || thresholdRelic ? 23 : lunacy ? 21 : roomMask ? 17 : 16) && actions.Length == (costRelic || thresholdRelic ? 22 : lunacy ? 20 : roomMask ? 16 : 15) && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
+        if (thresholdRelic)
+        {
+            Require(lunacy && !statusRelic && !handPowerRelic && !phaseEnergyRelic && !phaseHealRelic && !healingRelic && !attackRelic && !costRelic,
+                "Third-spell composition requires separate original Lunacy controls.");
+            MoonSpellThresholdCompositionChecks.CardPlays(root, requireFivefold: true);
+        }
         if (statusRelic)
         {
             Require(lunacy && !handPowerRelic && !phaseEnergyRelic && !phaseHealRelic && !healingRelic && !attackRelic && !costRelic,

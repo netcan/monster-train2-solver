@@ -85,6 +85,10 @@ namespace MonsterTrain2Poju.Probe
                     Add("e9fa09e5-13bd-4826-a8e5-969332cbfbbf"), Add("e9fa09e5-13bd-4826-a8e5-969332cbfbbf") });
             }
             if (CostRelic) created.AddRange(new[] { Add(OriginalCardTypeCostScenario.BlightId), Add(OriginalCardTypeCostScenario.JunkId) });
+            // Separate zero-cost phase controls let the third spell fire at
+            // Full, before the unchanged New/Full original spell sequence.
+            // Eclipse is a room card and does not count as a played spell.
+            if (ThresholdRelic) created.AddRange(new[] { Add(fullMoon.GetID()), Add(fullMoon.GetID()) });
             foreach (CardState card in created.Skip(3)) { var freeze = new CardTraitData(); freeze.Setup("CardTraitFreeze"); card.AddTemporaryTrait(freeze, managers.GetCoreManagers()); }
             CardUpgradeData numeric = all.GetAllCardUpgradeData().First(upgrade => upgrade.GetBonusDamage() > 0 && upgrade.GetTraitDataUpgrades().Count == 0 &&
                 upgrade.GetCardTriggerUpgrades().Count == 0 && upgrade.GetStatusEffectUpgrades().Count == 0);
@@ -99,6 +103,12 @@ namespace MonsterTrain2Poju.Probe
         {
             int index = Enumerable.Range(0, ids.Length).Where(i => i != 2 && source.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == 0).DefaultIfEmpty(-1).First();
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
+            if (ThresholdRelic && index == 4)
+            {
+                if (source.Spawn.Train.Context!.Statistics!.Value(ids[21], "TimesPlayed", "ThisBattle") == 0) index = 21;
+                else if (source.Spawn.Train.Context!.Statistics!.Value(ids[22], "TimesPlayed", "ThisBattle") == 0) index = 22;
+                else if (source.Spawn.Train.Context!.Statistics!.Value(ids[16], "TimesPlayed", "ThisBattle") == 0) index = 16;
+            }
             if (RoomMask && index == 5 && source.Spawn.Train.Context!.Statistics!.Value(ids[16], "TimesPlayed", "ThisBattle") == 0) index = 16;
             CombatUnit? target = index is 5 or 11 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[1]) :
                 index is 6 or 12 or 17 or 19 or 20 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == ids[0]) : null;

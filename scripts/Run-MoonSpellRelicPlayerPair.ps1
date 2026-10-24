@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('Cost', 'Attack', 'Healing', 'PhaseHeal', 'PhaseEnergy', 'HandPower', 'Status', 'Covenant03')]
+    [ValidateSet('Cost', 'Attack', 'Healing', 'PhaseHeal', 'PhaseEnergy', 'HandPower', 'Status', 'Threshold', 'Covenant03')]
     [string] $Relic,
     [string] $SourceProfile = '',
     [string] $ReplayProfile = '',
@@ -24,6 +24,7 @@ $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.
 Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
 $flag = if ($Relic -eq 'Covenant03') { 'OriginalMoonCardUpgradesLunacy' } else { 'OriginalMoonCardUpgrades' + $Relic + 'Relic' }
 $gate = switch ($Relic) {
+    'Threshold' { '--player-moon-room-threshold-relic-pair-only' }
     'Healing' { '--player-moon-room-healing-relic-pair-only' }
     'PhaseHeal' { '--player-moon-room-phase-heal-relic-pair-only' }
     'PhaseEnergy' { '--player-moon-room-phase-energy-relic-pair-only' }
@@ -95,6 +96,7 @@ $source = if ($SourceProfile) { Read-AcceptedProfile $SourceProfile $false } els
 if (-not $reusedSource) { $buildNative = $false }
 Write-Output ('MOON-PAIR-SOURCE accepted=true reused=' + $reusedSource + ' profile=' + $source.Profile)
 $callbackGate = switch ($Relic) {
+    'Threshold' { '--moon-spell-threshold-card-plays-only' }
     'Status' { '--moon-status-callbacks-only' }
     'HandPower' { '--moon-hand-power-callbacks-only' }
     default { '' }

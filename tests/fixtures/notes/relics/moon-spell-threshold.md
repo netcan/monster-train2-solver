@@ -35,5 +35,35 @@ rejected without mutating their source.
 ```
 
 This component does not play cards or prove positive third-spell increments.
-Full controlled battles and actual player/frozen replay are separate next
-acceptance stages; the component alone is not a player victory claim.
+
+## Controlled complete battle
+
+`relics/modifiers/full-battle-original-moon-card-upgrades-threshold-relic.mt2f`
+retains isolated profile `full-battle-units-spells-and-junk-20261025-020426-3ca445c6`.
+The original owner and five moon spells, Eclipse and Lunacy remain unchanged.
+As in the existing composition controls, durable units/enemies, frozen hand,
+numeric upgrades and authored energy/phase cards make each boundary visible.
+Two extra zero-cost Full phase controls make the third spell occur at Full;
+Eclipse is a room card and does not contribute to the spell count.
+
+The native battle wins with Pyre80 after 22 plays / five EndTurns in 121.82s,
+with all four failure counters zero, 95 complete native branch contexts and
+the protected real files unchanged. One third-spell activation adds 20
+scalable-card offsets, including three actual fivefold Celestial Storm
+increments. Seventeen later card plays preserve the once-per-turn limit;
+three non-scalable/non-spell exclusions remain unchanged. Subsequent New/Full
+refreshes preserve these fixed offsets. The focused complete-battle checker
+also checks the full hand callbacks, original paid Lunacy at 2/3/0 and
+sixteen immutable full state/RNG chains.
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -OriginalMoonCardUpgradesThresholdRelic -NativeWorker 2 -SkipBuild -TimeoutSeconds 240
+./scripts/Check-Models.ps1 -Fixture full-battle-original-moon-card-upgrades-threshold-relic.mt2f -SkipBuild
+./scripts/Run-MoonSpellRelicPlayerPair.ps1 -Relic Threshold -NativeWorker 2 -SkipBuild
+```
+
+Explicit selections of the two threshold component/battle fixtures now use
+their dedicated gates without starting unrelated public pure checks. The
+normal regression path retains its existing checks. Actual player search and
+fresh frozen replay remain a separate acceptance stage; the controlled
+policy victory alone is not player-search acceptance.
