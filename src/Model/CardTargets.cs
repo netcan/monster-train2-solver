@@ -104,12 +104,13 @@ namespace MonsterTrain2Poju.Model
                 room = new RoomCombatState(roomIndex, room.Deployment, train.Rooms.SelectMany(item => item.Units).ToArray(),
                     Array.Empty<string>(), train.Context, room.Preview, room.ActiveCompanionBossIds);
             return Collect(room, effect, lastTargets, dropTeam, dropPosition, firstEffect, isTesting,
-                ignorePyre: ignorePyre, lastSacrificedUnitId: lastSacrificedUnitId);
+                ignorePyre: ignorePyre, lastSacrificedUnitId: lastSacrificedUnitId, unitPositions: unitPositions);
         }
 
         public static CardTargets Collect(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> lastTargets,
             CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false, int selfUnitId = 0,
-            int lastSpawnedOverrideUnitId = 0, bool ignorePyre = true, int lastSacrificedUnitId = 0, bool inCombat = false)
+            int lastSpawnedOverrideUnitId = 0, bool ignorePyre = true, int lastSacrificedUnitId = 0, bool inCombat = false,
+            IReadOnlyDictionary<int, int>? unitPositions = null)
         {
             if (effect.Target == "LastSpawnedCharacter") return LastSpawned(room, lastSpawnedOverrideUnitId);
             if (effect.Target == "LastSacrificedCharacter") return new CardTargets(lastSacrificedUnitId > 0 ? new[] { lastSacrificedUnitId } : Array.Empty<int>());
@@ -130,7 +131,13 @@ namespace MonsterTrain2Poju.Model
             }
             if (effect.Target == "DropTargetCharacter")
             {
-                CombatUnit? occupant = dropPosition < 0 ? null : room.Units.Where(unit => unit.Team == dropTeam).ElementAtOrDefault(dropPosition);
+                // A damage victim retains its native drop point until the
+                // queued death settles. Removing it from the live list must
+                // not move the next enemy into that point for a second hit.
+                CombatUnit? occupant = dropPosition < 0 ? null : unitPositions == null
+                    ? room.Units.Where(unit => unit.Team == dropTeam).ElementAtOrDefault(dropPosition)
+                    : room.Units.FirstOrDefault(unit => unit.Team == dropTeam &&
+                        unitPositions.TryGetValue(unit.Id, out int position) && position == dropPosition);
                 bool accepted = occupant != null && Allowed(occupant) && MatchesFilters(effect, occupant, true, ref filterError);
                 return new CardTargets(accepted ? new[] { occupant!.Id } : Array.Empty<int>(), filterError);
             }

@@ -49,6 +49,21 @@ The recorded diagnostic prefix
 issue. Its old forecasts/counters remain diagnostic, not accepted native
 plan evidence. Its separate original boss instantiation/birth check passes.
 
+The next diagnostic run (`20261024-224900-db5a16eb`) exposed a second-hit
+targeting error: killing Spearman ID19 compacted the model's unit list, so
+the second piercing hit incorrectly damaged Arkion by 18. Native drop-target
+selection reads the same spawn point while that death is still queued; it
+does not substitute the next enemy. Drop-target collection now uses the
+existing retained positions during the effect sequence. All 23 actual
+inputs of this diagnostic replay exactly, including that lethal first hit.
+The archive is retained as observed-input evidence only; its old forecasts
+and acceptance counters are deliberately not accepted.
+
+The isolated presentation observer also now compares a cleared forecast
+against the displayed publication's search counter. A new search after an
+exhausted partial forecast can start asynchronously between UI ticks, so
+comparing only the current frame's search counter produced a false alarm.
+
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-arkion-pyre-only `
   tests/fixtures/player-live-arkion-pyre-unavailable.mt2f <accepted-native.mt2f>

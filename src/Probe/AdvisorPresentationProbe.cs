@@ -43,6 +43,7 @@ namespace MonsterTrain2Poju.Probe
             internal readonly string Text = Field<Text>("body")?.text ?? "";
             internal readonly float Scroll = Field<ScrollRect>("planScroll")?.verticalNormalizedPosition ?? 1;
             internal readonly long Searches = Field<BattleAdviceSession>("session").SearchCount;
+            internal readonly long PublishedSearches = Field<long>("displayedSearches");
         }
 
         internal static void ExpandAndScroll()
@@ -123,7 +124,10 @@ namespace MonsterTrain2Poju.Probe
         private static void AfterTick(Snapshot __state)
         {
             BattleAdvice? displayed = Field<BattleAdvice?>("displayed");
-            if (__state.Advice != null && displayed == null && Field<BattleAdviceSession>("session").SearchCount == __state.Searches &&
+            // The worker can start a new search between UI ticks after an
+            // exhausted partial plan. Compare with the displayed publication's
+            // search, rather than this frame's already incremented counter.
+            if (__state.Advice != null && displayed == null && Field<BattleAdviceSession>("session").SearchCount == __state.PublishedSearches &&
                 !Field<bool>("paused") && Field<bool>("panelVisible") && Field<string?>("captureError") == null &&
                 Field<BattleAdviceSession>("session").Status != BattleAdviceStatus.Unavailable &&
                 AllGameManagers.Instance?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle)
