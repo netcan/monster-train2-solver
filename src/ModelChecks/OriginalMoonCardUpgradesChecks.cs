@@ -22,6 +22,7 @@ internal static class OriginalMoonCardUpgradesChecks
         bool attackRelic = root.TryGetProperty("OriginalMoonCardUpgradesAttackRelic", out FixtureValue attackFlag) && attackFlag.GetBoolean();
         bool healingRelic = root.TryGetProperty("OriginalMoonCardUpgradesHealingRelic", out FixtureValue healingFlag) && healingFlag.GetBoolean();
         bool phaseHealRelic = root.TryGetProperty("OriginalMoonCardUpgradesPhaseHealRelic", out FixtureValue phaseFlag) && phaseFlag.GetBoolean();
+        bool phaseEnergyRelic = root.TryGetProperty("OriginalMoonCardUpgradesPhaseEnergyRelic", out FixtureValue energyFlag) && energyFlag.GetBoolean();
         Require(root.GetProperty("OriginalMoonCardUpgradesPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing settled original moon upgrade battle.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
@@ -35,6 +36,12 @@ internal static class OriginalMoonCardUpgradesChecks
             Console.WriteLine("MOON-UPGRADE-NEXT-ACTION: " + attempted.Reason);
         }
         Require(ids.Length == (costRelic ? 23 : lunacy ? 21 : roomMask ? 17 : 16) && actions.Length == (costRelic ? 22 : lunacy ? 20 : roomMask ? 16 : 15) && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
+        if (phaseEnergyRelic)
+        {
+            Require(lunacy && !costRelic && !attackRelic && !healingRelic && !phaseHealRelic, "Phase-energy composition requires separate Lunacy controls.");
+            RoomMoonSpellUpgradeChecks.PhaseEnergyRelic(actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!);
+            RoomMoonSpellUpgradeChecks.PhaseEnergyCallbacks(root);
+        }
         if (phaseHealRelic)
         {
             Require(lunacy && !costRelic && !attackRelic && !healingRelic, "Phase-healing composition requires separate Lunacy controls.");
@@ -73,13 +80,13 @@ internal static class OriginalMoonCardUpgradesChecks
         if (lunacy)
         {
             Require(roomMask, "Lunacy composition requires the original room mask.");
-            foreach ((int index, int paid) in new[] { (17, 2), (19, 3), (20, 0) })
+            foreach ((int index, int paid) in new[] { (17, phaseEnergyRelic ? 4 : 2), (19, 3), (20, 0) })
             {
                 FixtureValue row = actions.Single(row => row.GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == ids[index]);
                 BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
                 BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
                 Require(before.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "e9fa09e5-13bd-4826-a8e5-969332cbfbbf" &&
-                    before.Energy == paid && after.Energy == 0 &&
+                    before.Energy == paid && after.Energy == RoomMoonSpellUpgradeChecks.LunacyEnergyAfter(before, paid, phaseEnergyRelic) &&
                     after.MoonPhase == (paid % 2 == 0 ? before.MoonPhase : before.MoonPhase == "New" ? "Full" : "New"),
                     "Original masked Lunacy lost its actual paid cost, zero/even/odd phase progression or native definition.");
                 int target = row.GetProperty("Action").GetProperty("TargetUnitId").GetInt32();
@@ -89,7 +96,7 @@ internal static class OriginalMoonCardUpgradesChecks
                     after.Spawn.Train.Context.Cards.Discard.Any(token => token.InstanceId == ids[index]),
                     "Original Lunacy must grant the actually paid Conduit amount and discard after the phase callbacks.");
             }
-            Console.WriteLine("LUNACY-ROOM-MASK PASS originalPaidCosts=2,3,0 fullNativeStateAndRng=true");
+            Console.WriteLine($"LUNACY-ROOM-MASK PASS originalPaidCosts={(phaseEnergyRelic ? 4 : 2)},3,0 fullNativeStateAndRng=true");
         }
         foreach (FixtureValue row in hands)
         {

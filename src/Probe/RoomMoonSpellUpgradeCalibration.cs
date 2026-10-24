@@ -77,6 +77,13 @@ namespace MonsterTrain2Poju.Probe
             CardUpgradeData upgrade = eclipseData.GetEffects().Single(effect => effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment").GetParamCardUpgradeData();
             CardEffectData resource = upgrade.GetRoomModifierUpgrades().Single(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateNewMoonAlwaysActiveModifier")
                 .GetParamCardData()!.GetEffects().Single();
+            // Isolated new-duration control using the original public callback.
+            // Subsequent phase/selection rows keep this live condition history.
+            if (RoomMoonCallbackCalibration.SpellPhaseEnergyRelic)
+                foreach (RelicEffectBase effect in Managers.GetSaveManager().GetCollectedRelics()
+                    .Single(owner => owner.GetRelicDataID() == OriginalMoonPhaseEnergyRelicScenario.DataId)
+                    .GetEffects().OfType<RelicEffectBase>())
+                    effect.UpdateConditionsOnDurationEnd(CardStatistics.EntryDuration.ThisTurn);
             yield return Select(0);
             yield return Managers.GetCombatManager()!.RunTriggerQueue();
             yield return Record("unmasked-full", "Refresh", 0, Refresh(resource));
@@ -104,11 +111,14 @@ namespace MonsterTrain2Poju.Probe
                 AttackRelicControls = RoomMoonCallbackCalibration.SpellAttackRelic, AttackControlIds = attackIds,
                 HealingRelicControls = RoomMoonCallbackCalibration.SpellHealingRelic,
                 PhaseHealRelicControls = RoomMoonCallbackCalibration.SpellPhaseHealRelic,
+                PhaseEnergyRelicControls = RoomMoonCallbackCalibration.SpellPhaseEnergyRelic,
+                EnergyConditionsResetBeforeRows = RoomMoonCallbackCalibration.SpellPhaseEnergyRelic,
                 AnchorWoundedBeforeEachRow = healAnchor != null,
                 ShadeCallbacks = false, MovementControls = false, EnemyControls = false,
                 ActorIds = healAnchor == null ? Array.Empty<int>() : new[] { Trace.UnitId(healAnchor) },
                 CardIds = ids, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0], Rows = rows }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                RoomMoonCallbackCalibration.SpellPhaseEnergyRelic ? "room-moon-spell-phase-energy-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellPhaseHealRelic ? "room-moon-spell-phase-heal-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellHealingRelic ? "room-moon-spell-healing-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellAttackRelic ? "room-moon-spell-attack-relic-calibration.mt2f" :

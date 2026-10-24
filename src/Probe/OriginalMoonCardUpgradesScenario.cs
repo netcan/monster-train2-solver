@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool AttackRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_ATTACK_RELIC") == "1";
         internal static bool HealingRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_HEALING_RELIC") == "1";
         internal static bool PhaseHealRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_PHASE_HEAL_RELIC") == "1";
+        internal static bool PhaseEnergyRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_PHASE_ENERGY_RELIC") == "1";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static readonly List<HandSample> Hands = new List<HandSample>();

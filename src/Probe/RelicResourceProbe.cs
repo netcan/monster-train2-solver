@@ -629,7 +629,8 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(RelicEffectModifyEnergyOnMoonPhase __instance, ref IEnumerator __result)
             {
-                if (OriginalMoonPhaseEnergyRelicScenario.Prepared)
+                if (OriginalMoonPhaseEnergyRelicScenario.Prepared ||
+                    OriginalMoonCardUpgradesScenario.Prepared && OriginalMoonCardUpgradesScenario.PhaseEnergyRelic)
                     __result = WrapEnergy(__result, __instance, false, "MoonPhaseEnergy");
             }
         }

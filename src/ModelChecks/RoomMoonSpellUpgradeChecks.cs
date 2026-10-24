@@ -25,8 +25,11 @@ internal static class RoomMoonSpellUpgradeChecks
         Require(!phaseHeal || advance && !healingRelic && !attackRelic && !costRelic &&
             root.GetProperty("AnchorWoundedBeforeEachRow").GetBoolean() && root.GetProperty("ActorIds").GetArrayLength() == 1,
             "Missing separate phase-healing anchor controls.");
+        bool phaseEnergy = root.TryGetProperty("PhaseEnergyRelicControls", out FixtureValue energyFlag) && energyFlag.GetBoolean();
+        Require(!phaseEnergy || advance && !phaseHeal && !healingRelic && !attackRelic && !costRelic &&
+            root.GetProperty("EnergyConditionsResetBeforeRows").GetBoolean(), "Missing separate once-per-turn energy controls.");
         Require(ids.Length == (advance ? 6 : 5) && root.GetProperty("Rows").GetArrayLength() == 15, "Missing original spells or controls.");
-        int witnesses = 0, changes = 0, exclusive = 0, additive = 0, selections = 0, heals = 0;
+        int witnesses = 0, changes = 0, exclusive = 0, additive = 0, selections = 0, heals = 0, energyGains = 0, blockedFull = 0;
         bool guardsChecked = false, advanceGuardChecked = false;
         foreach (FixtureValue row in root.GetProperty("Rows").EnumerateArray())
         {
@@ -70,6 +73,28 @@ internal static class RoomMoonSpellUpgradeChecks
             Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Spell room branch mutated its parent.");
             Require(row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")), "Spell room upgrade advanced gameplay RNG.");
             CombatContext after = actual.Context!;
+            if (phaseEnergy)
+            {
+                RelicConditionState prior = PhaseEnergyRelic(before.Context!), next = PhaseEnergyRelic(after);
+                bool fires = operation == "SetMoonPhase" && value == 2 && prior.DurationTriggerCount == 0;
+                int expected = fires ? Math.Min(before.Context!.Resources!.MaxEnergy, before.Context.QueryFrame!.Energy!.Value + 1)
+                    : before.Context!.QueryFrame!.Energy!.Value;
+                Require(after.QueryFrame!.Energy == expected && next.DurationTriggerCount == prior.DurationTriggerCount + (fires ? 1 : 0),
+                    "Original Full must add one energy once per duration; selection/resource refresh must not retrigger.");
+                if (fires) energyGains++;
+                if (operation == "SetMoonPhase" && value == 2 && !fires) blockedFull++;
+                if (operation == "Refresh" && !guardsChecked)
+                    foreach (string field in new[] { "Amount", "ParamInt2", "Value" })
+                    {
+                        var malformed = System.Text.Json.Nodes.JsonNode.Parse(parent)!;
+                        var effect = malformed["Context"]!["Relics"]!.AsArray().Single(node => node!["DataId"]!.GetValue<string>() ==
+                            "70096a91-220a-4ab3-b8d0-b8fe8f3a819c")!["ResourceEffects"]![0]!;
+                        if (field == "Value") effect["Conditions"]![0]![field] = 2;
+                        else effect[field] = field == "Amount" ? 2 : 3;
+                        var unknown = JsonSerializer.Deserialize<TrainCombatState>(malformed.ToJsonString(), ModelJson.Options)!;
+                        Require(!RoomMoonPhaseModel.Refresh(unknown, false).Supported, "Uncalibrated moon energy payload bypassed the guard.");
+                    }
+            }
             if (phaseHeal)
             {
                 PhaseHealRelic(before.Context!); PhaseHealRelic(after);
@@ -195,8 +220,73 @@ internal static class RoomMoonSpellUpgradeChecks
         }
         Require(changes > 0 && exclusive > 0 && additive > 0 && selections == 6 && guardsChecked && (!advance || advanceGuardChecked), "Missing changed upgrades, both room modes, guard or selection controls.");
         Require(!phaseHeal || heals == 4, "Missing four positive native phase-healing boundaries.");
+        Require(!phaseEnergy || energyGains == 1 && blockedFull == 1, "Missing positive Full and repeated-Full once-per-turn controls.");
+        if (phaseEnergy) Console.WriteLine("ROOM-MOON-PHASE-ENERGY PASS: original +1 Full, repeated-Full blocked, 11 room/resource/selection controls and exact guards.");
         if (phaseHeal) Console.WriteLine("ROOM-MOON-PHASE-HEAL PASS: 4 native +10 heals, 11 nonhealing controls and exact original relic guards.");
         Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells={ids.Length} lunacyResourceControls={advance} costRelicControls={costRelic} attackRelicControls={attackRelic} healingRelicControls={healingRelic} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
+    }
+    internal static int LunacyEnergyAfter(BattleTurnState before, int paid, bool phaseEnergy)
+    {
+        if (!phaseEnergy) return 0;
+        RelicConditionState condition = PhaseEnergyRelic(before.Spawn.Train.Context!);
+        bool reachesFull = paid >= (before.MoonPhase == "New" ? 1 : 2);
+        return condition.DurationTriggerCount == 0 && reachesFull ? Math.Min(1, before.Spawn.Train.Context!.Resources!.MaxEnergy) : 0;
+    }
+    internal static RelicConditionState PhaseEnergyRelic(CombatContext context)
+    {
+        Require(RelicModel.Validate(context) == null, "Invalid phase-energy relic context.");
+        CombatRelicState owner = context.Relics!.Single(relic => relic.DataId == "70096a91-220a-4ab3-b8d0-b8fe8f3a819c");
+        return PhaseEnergyOwner(owner);
+    }
+    private static RelicConditionState PhaseEnergyOwner(CombatRelicState owner)
+    {
+        RelicResourceEffect effect = owner.ResourceEffects!.Single();
+        RelicConditionState condition = effect.Conditions.Single();
+        Require(owner.AssetKey == "MoonPhaseModifyEmber" && owner.IsCovenant == false && owner.DisallowedInPlacementPhase == false &&
+            owner.EffectTypes.SequenceEqual([RelicResourceModel.MoonPhaseEnergy]) && effect.EffectIndex == 0 &&
+            effect.Type == RelicResourceModel.MoonPhaseEnergy && effect.ParamInt == 1 && effect.ParamInt2 == 2 && effect.Amount == 1 &&
+            !effect.CanApplyInPreviewMode && effect.RequiredMutatorId == null && condition.Query.Type == "MoonPhase" &&
+            condition.Query.Duration == "ThisTurn" && condition.TrackTriggerCount && condition.Comparator == 6 &&
+            condition.Value == 1 && !condition.AllowMultiple,
+            "Original phase-energy relic signature changed.");
+        return condition;
+    }
+    internal static void PhaseEnergyCallbacks(FixtureValue fixture)
+    {
+        FixtureValue[] rows = fixture.GetProperty("RelicResourceOperations").EnumerateArray()
+            .Where(row => row.GetProperty("Kind").GetString() == "MoonPhaseEnergy").ToArray();
+        int full = 0, newMoon = 0, gains = 0;
+        foreach (FixtureValue row in rows)
+        {
+            Require(row.GetProperty("OwnerDataId").GetString() == "70096a91-220a-4ab3-b8d0-b8fe8f3a819c" &&
+                row.GetProperty("EffectIndex").GetInt32() == 0 && row.GetProperty("After").ValueKind == FixtureKind.Object,
+                "Missing settled original phase-energy callback.");
+            FixtureValue before = row.GetProperty("Before"), after = row.GetProperty("After");
+            Require(!before.GetProperty("Preview").GetBoolean() && !after.GetProperty("Preview").GetBoolean() &&
+                before.GetProperty("Turn").GetInt32() == after.GetProperty("Turn").GetInt32(),
+                "Original phase-energy callback crossed preview or turn boundaries.");
+            RelicConditionState prior = PhaseEnergyOwner(before.GetProperty("Relics").Deserialize<CombatRelicState[]>()!
+                .Single(owner => owner.DataId == "70096a91-220a-4ab3-b8d0-b8fe8f3a819c"));
+            RelicConditionState next = PhaseEnergyOwner(after.GetProperty("Relics").Deserialize<CombatRelicState[]>()!
+                .Single(owner => owner.DataId == "70096a91-220a-4ab3-b8d0-b8fe8f3a819c"));
+            int energy = before.GetProperty("Energy").GetInt32(), actual = after.GetProperty("Energy").GetInt32();
+            if (before.GetProperty("MoonPhase").GetString() == "Full")
+            {
+                Require(actual == Math.Min(before.GetProperty("Resources").GetProperty("MaxEnergy").GetInt32(), energy + 1) &&
+                    prior.DurationTriggerCount == 0 && next.Triggered && next.DurationTriggerCount == 1 && next.ValueAtLastTrigger == 0,
+                    "Full did not apply the original +1/once-per-turn condition.");
+                full++; if (actual > energy) gains++;
+            }
+            else
+            {
+                Require(before.GetProperty("MoonPhase").GetString() == "New" && actual == energy &&
+                    JsonSerializer.Serialize(prior, ModelJson.Options) == JsonSerializer.Serialize(next, ModelJson.Options),
+                    "New incorrectly changed original energy or condition history.");
+                newMoon++;
+            }
+        }
+        Require(full >= 2 && newMoon >= 2 && gains > 0, "Missing repeated native turns, positive Full energy or New controls.");
+        Console.WriteLine($"MOON-PHASE-ENERGY-CALLBACKS PASS: {full} Full/{newMoon} New original callbacks, {gains} positive gains; once-per-turn histories match.");
     }
     internal static void PhaseHealRelic(CombatContext context)
     {

@@ -67,7 +67,26 @@ namespace MonsterTrain2Poju.Model
                 relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyCardHealingPower }) &&
                 relic.MagicPowerModifiers?.Count == 1 && relic.MagicPowerModifiers[0].EffectIndex == 0 &&
                 relic.MagicPowerModifiers[0].PowerModifier == 10 && relic.MagicPowerModifiers[0].ConditionCount == 0 ||
-            CompatiblePhaseHealRelic(relic);
+            CompatiblePhaseHealRelic(relic) || CompatiblePhaseEnergyRelic(relic);
+
+        private static bool CompatiblePhaseEnergyRelic(CombatRelicState relic)
+        {
+            if (relic.DataId != "70096a91-220a-4ab3-b8d0-b8fe8f3a819c" || relic.AssetKey != "MoonPhaseModifyEmber" ||
+                relic.IsCovenant != false || relic.DisallowedInPlacementPhase != false ||
+                !relic.EffectTypes.SequenceEqual(new[] { RelicResourceModel.MoonPhaseEnergy }) || relic.ResourceEffects?.Count != 1)
+                return false;
+            RelicResourceEffect effect = relic.ResourceEffects[0];
+            if (effect.EffectIndex != 0 || effect.Type != RelicResourceModel.MoonPhaseEnergy || effect.ParamInt != 1 ||
+                effect.ParamInt2 != 2 || effect.Amount != 1 || effect.CanApplyInPreviewMode ||
+                effect.RequiredMutatorId != null || effect.Conditions.Count != 1) return false;
+            RelicConditionState condition = effect.Conditions[0];
+            return condition.Query.Type == "MoonPhase" && condition.Query.Duration == "ThisTurn" &&
+                condition.Query.TypeMatchDataIds == null && condition.Query.SubtypeMatchDataIds == null &&
+                condition.Query.SubtypeIsNone && condition.Query.Subtype == null && condition.Query.SpecificCardDataId == null &&
+                condition.Query.SourceRawCost == null && !condition.Query.VariableCost && condition.Query.TargetTeam == "None" &&
+                !condition.Query.CurrentCostCardModifiersOnly && condition.TrackTriggerCount && condition.Comparator == 6 &&
+                condition.Value == 1 && !condition.AllowMultiple;
+        }
 
         private static bool CompatiblePhaseHealRelic(CombatRelicState relic) =>
             relic.DataId == "6d977136-5aac-44fd-9843-54cf2a0bd01d" && relic.AssetKey == "MooncycleRestoreFriendlyHealth" &&
