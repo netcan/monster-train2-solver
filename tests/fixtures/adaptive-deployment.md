@@ -42,7 +42,52 @@ strategy evidence, not a winning default pair. This is why comparison now
 happens at the first combat and the sixteen-node control checks actual
 champion placement as well as forecast completeness.
 
-These results are model strategy evidence. A fresh actual-default player
-source and independent native replay remain required before closing the
-native Fragile quality gap. The time limit remains soft; Unity scheduling can
-select a different bounded route. No full regression or Mac package is used.
+## Actual-default native source
+
+Fresh source `full-battle-units-spells-and-junk-20261024-074031-4cf932a7`
+now wins the unchanged natural seven-win checkpoint at Pyre2 after 54 inputs
+(45 plays/abilities and nine EndTurns). Its actual player settings remain
+three turns/3000ms, configured top preference (room2, third floor counting
+from the bottom) and tactical seed off. The adaptive opening places the
+champion on the bottom floor without changing that configuration. No deck,
+boss health, encounter, Covenant, phase or prior-win controls are applied.
+
+All consumed inputs and complete forecasts match native state/RNG. The source
+exits normally in 801.41 seconds, preserves protected originals, settles all
+terminal effects and records zero capture/mismatch/unsupported/pending counts.
+There are 56 publications with 56 fresh full-root checks and 463 pure captures.
+Eleven consumed searches produce the route; 39 ordinary and four winning
+continuations reuse verified suffixes with zero search work. Twenty-three
+consumed forecasts use explicitly shorter complete windows. The first search
+expands sixteen nodes in 3377.7ms, with 6775.5ms total response; consumed searches
+range from 3072.1 to 4054.9ms. This is a soft search deadline, not a three-second
+total response guarantee.
+
+The source archive is 135209 bytes/21221 unique nodes, SHA256
+`1f8413d938969ab200f76b1c668288e79b91f257064cd096e9e454c48570fd99`.
+Fresh process `campaign-ring9-20261024-075356-46e33e2f` independently executes
+the same 54 inputs and wins at Pyre2. Every input, root, successor, complete
+forecast and RNG matches; both processes have seventeen matched train phases,
+normal exits, protected originals unchanged and four zero failure counters.
+The dedicated actual-default pair gate passes. The source retains eight fresh
+new-turn searches; defeat forecasts still search again after each input.
+
+The replay also completes the original native eight-battle Standard victory,
+with no cheat flag. The runner verifies the unchanged original input, frozen
+source and final settled-save hashes. Final save SHA256 is
+`3b872d16a998ae83dedff349b5bd58c2c897e8624d3f1d121f921a1412179846`.
+See the [accepted pair summary](player-fragile-default-accepted.json).
+
+Curated archives are `full-battle-player-boss-fragile-default-{search,replay}.mt2f`.
+Replay is 131276 bytes/20974 nodes, SHA256
+`f15b1bd4f77b6e6f7473163d50f930b452e141987812c77484b50eef993c611d`.
+
+```powershell
+scripts/Check-DefaultAdvice.ps1 -Case FragileNative -SkipBuild
+```
+
+This closes the default-budget native-victory gap for this natural Fragile
+checkpoint. The earlier accepted Ring7 default victory and its current model
+non-regression control remain separate evidence. Other decks, higher Covenant,
+natural true-final unlock and Mac runtime acceptance remain separate goals.
+No full regression or Mac package is used.

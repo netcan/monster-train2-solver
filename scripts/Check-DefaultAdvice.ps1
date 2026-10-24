@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Strategy', 'Keys', 'Native', 'FragileStrategy', 'FragileNative')][string[]] $Case = @('Strategy', 'Keys', 'Native', 'FragileStrategy'),
+    [ValidateSet('Strategy', 'Keys', 'Native', 'FragileStrategy', 'FragileNative')][string[]] $Case = @('Strategy', 'Keys', 'Native', 'FragileStrategy', 'FragileNative'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'

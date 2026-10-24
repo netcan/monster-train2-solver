@@ -3,7 +3,9 @@
 Natural Fragile now has an accepted three-turn/3000ms native player victory,
 independent replay and Standard settlement with bottom preference and the extra
 tactical seed off; see [the short-budget pair](player-fragile-short-budget.md).
-The shipped top-floor preference still loses in the rolling diagnostic below.
+The later adaptive ordinary deployment now also has an accepted
+[actual-default native victory, independent replay and Standard settlement](adaptive-deployment.md).
+The diagnostic losses below preserve the earlier strategy baseline.
 The earlier [twelve-turn/30000ms pair](player-fragile-winning.md) remains
 separate evidence and is not needed to establish the bottom-preference win.
 
@@ -25,7 +27,7 @@ short-horizon public score is saturated at the same value on all three floors:
 | 1 | -61501 | 3851.5 | 8 |
 | 2 | -61501 | 3873.2 | 8 |
 
-The ordinary default planner still selects room2 in this diagnostic. The
+The earlier ordinary default planner selected room2 in this diagnostic. The
 table compares deployment-only continuations; its lower positional value
 does not prove that changing floors will win a complete rolling battle.
 
@@ -37,7 +39,7 @@ and defeat forecasts consume only their first input. A final independent
 replay checks all consumed inputs, the complete state/RNG and the original
 root. The original per-input `--rolling-forecast-only` mode remains available.
 
-The latest offline run loses during turn7 after 48 inputs and seventeen
+The baseline offline run loses during turn7 after 48 inputs and seventeen
 searches (442 nodes, 66.20 seconds including verification). All seventeen
 forecasts and the full consumed route pass state/RNG replay. An earlier run
 also loses after 48 inputs/seventeen searches, with 410 nodes. Soft-budget
@@ -72,8 +74,8 @@ continuation checks. It rejects the old twelve-turn/30000ms winning pair.
 These commands diagnose model strategy, not live Unity scheduling or native
 acceptance. A successful diagnostic exit means replay integrity passed;
 read the printed outcome separately. The bottom-preference short-budget native
-pair is now accepted separately; default top-preference Fragile quality remains
-open. The accepted Ring7 default victory and Fragile long-budget victory remain
+pair is accepted separately; the later adaptive opening also closes the
+actual-default Fragile victory gap. The accepted Ring7 default victory and Fragile long-budget victory remain
 separate evidence. No full regression or Mac build is required for diagnosis.
 
 ## Ordinary-prefix timeout found in native play

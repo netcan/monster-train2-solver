@@ -17,7 +17,14 @@ The ordinary-prefix timeout is fixed at the exact original native failure root.
 Replay also completes original eight-battle Standard settlement; all 26 bundled
 payloads pass fresh isolated restoration. See
 [short-budget Fragile acceptance](../tests/fixtures/player-fragile-short-budget.md).
-The global top-floor default and its remaining Fragile quality gap are unchanged.
+The configured top-floor default now also passes an actual-default native pair
+after adaptive opening-floor comparison: both processes win at Pyre2 after
+54 inputs, all complete forecasts/state/RNG and seventeen train phases per
+process match, normal exits and four zero failure counters pass. The source
+uses eleven consumed searches, 39 ordinary and four winning continuations;
+all 56 publications have fresh full-root checks. Replay also completes original
+eight-battle Standard settlement. See
+[default Fragile acceptance](../tests/fixtures/adaptive-deployment.md).
 
 Natural Ring7 also has a new actual-default player victory and independent
 native replay: 60 inputs/ten EndTurns, Pyre62, all complete forecasts/state/RNG,

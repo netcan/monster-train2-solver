@@ -74,5 +74,7 @@ their gates rather than another battle. The prior twelve-turn/30000ms Fragile
 win remains separate evidence. This result changes only the configured floor
 preference: the shipped top-floor default remains unchanged, because the
 natural Ring7 default-budget route loses with bottom preference. This does not
-establish default top-floor Fragile victory, arbitrary decks or higher
-Covenant acceptance. No full regression or Mac build is required.
+establish arbitrary decks or higher Covenant acceptance. A later
+[adaptive ordinary deployment pair](adaptive-deployment.md) independently wins
+with the shipped top-floor configuration, keeping this explicit-bottom pair
+as separate evidence. No full regression or Mac build is required.

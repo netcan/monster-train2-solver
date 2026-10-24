@@ -1,14 +1,21 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-23): 1260 archives,
+Current manifest inventory (2026-10-24): 1305 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+The natural Fragile checkpoint now has actual-default three-turn/3000ms player
+and independent native replay victories, both at Pyre2 after 54 inputs, followed
+by original eight-battle Standard settlement. Its configured top preference is
+unchanged; opening-floor selection adapts within the shared budget. See
+[adaptive deployment acceptance](adaptive-deployment.md).
 
 All three original Cael variants now have native rank-two birth and complete
 no-card battle calibrations, including positive original enemy upgrades and
 sixteen immutable full chains each. Exact original encounter selection retains
-the five preceding victories, original assets and route RNG. Player-source/replay
-acceptance remains separate. See [Cael evidence](cael.md).
+the five preceding victories, original assets and route RNG. All three also
+have actual-player source/fresh native replay pairs; those bounded player
+routes lose. See [Cael evidence](cael.md).
 
 Arkion's original Pyre-damage variant also passes its rank-two birth, positive
 remote damage and complete no-card battle with sixteen immutable full chains.
