@@ -294,10 +294,14 @@ namespace MonsterTrain2Poju.Probe
             AllGameManagers? managers = AllGameManagers.Instance;
             if (managers == null || LoadingScreen.IsWorking())
             {
-                session.InvalidateForInput(); displayed = null; session.Poll();
+                session.InvalidateForInput(); session.Poll();
                 observationRevision++;
                 captureNeeded = true; observed = false;
-                ShowMessage("等待场景加载完成…");
+                // Native card/turn animations also use LoadingScreen's work
+                // counter. That does not mean the battle scene was replaced.
+                if (displayed != null && !paused && !HiddenPause &&
+                    managers?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle) SetPending(true);
+                else ShowMessage("等待场景加载完成…");
                 return;
             }
             bool inBattle = managers?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle;
@@ -414,11 +418,15 @@ namespace MonsterTrain2Poju.Probe
                 if (displayed.ReusedSelection) SelectionReuses++;
                 displayFrame = Time.frameCount;
                 displayedSearches = session.SearchCount;
-                body.text = Describe(displayed);
-                // Rebuild only this text's layout before restoring the reading
-                // position; the new suffix can have a different content height.
-                LayoutRebuilder.ForceRebuildLayoutImmediate(body.rectTransform);
-                planScroll.verticalNormalizedPosition = scroll;
+                string description = Describe(displayed);
+                if (body.text != description)
+                {
+                    body.text = description;
+                    // Rebuild only this text's layout before restoring the
+                    // reading position after the suffix changes content height.
+                    LayoutRebuilder.ForceRebuildLayoutImmediate(body.rectTransform);
+                    planScroll.verticalNormalizedPosition = scroll;
+                }
                 SetPending(false);
                 Publications.Add(new Publication { Generation = session.Generation, Turn = displayed.Root.Spawn.Turn,
                     CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,

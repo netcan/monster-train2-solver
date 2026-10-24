@@ -83,6 +83,11 @@ namespace MonsterTrain2Poju.Probe
         private static void AfterTick(Snapshot __state)
         {
             BattleAdvice? displayed = Field<BattleAdvice?>("displayed");
+            if (__state.Advice != null && displayed == null && Field<BattleAdviceSession>("session").SearchCount == __state.Searches &&
+                !Field<bool>("paused") && Field<bool>("panelVisible") && Field<string?>("captureError") == null &&
+                Field<BattleAdviceSession>("session").Status != BattleAdviceStatus.Unavailable &&
+                AllGameManagers.Instance?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle)
+                Require(false, "native loading/animation frame cleared the readable forecast without a new search");
             if (displayed == null) return;
             if (ReferenceEquals(displayed, __state.Advice))
             {
