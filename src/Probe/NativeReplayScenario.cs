@@ -2766,6 +2766,15 @@ namespace MonsterTrain2Poju.Probe
             {
                 BattleTurnState root = FullBattleTrace.Active!.CaptureDecision();
                 if (RollingAdviceScenario.AwaitingAdvice(root)) return;
+#if DEVELOPMENT_PROBE
+                if (UnsupportedBranchObservation.Completed)
+                {
+                    FullBattleTrace.Active.Write();
+                    log.LogInfo("UNSUPPORTED-BRANCH-NATIVE PASS observed candidate boundary; model acceptance pending.");
+                    Finish(true, "Native candidate observation captured; not a complete battle.");
+                    return;
+                }
+#endif
                 RollingAdviceScenario.TryChoose(root, log, out pendingPlay);
                 if (pendingPlay == null) AdvanceTurn(combat);
                 else if (managers.GetRoomManager().GetSelectedRoom() != pendingPlay.RoomIndex)

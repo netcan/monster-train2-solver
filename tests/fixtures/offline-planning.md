@@ -152,3 +152,13 @@ winning full-state/RNG replay, and immutable roots. The full battle now wins in
 55 of 56 allowed nodes; a two-node control retains an explicitly shorter complete
 deployment turn. A separate actual player source and fresh native replay now
 both win at Pyre2 with all four counters zero; see [native winning evidence](player-fragile-winning.md).
+
+`extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-reason>`
+reuses recorded forecast roots to extract a bounded supported prefix and its
+rejected next action. It independently verifies the prefix and immutable root,
+and exports `ModelUnsupportedBranch` without an assumed successor. The scoped
+native `-UnsupportedBranchInput` driver replays that prefix from the original
+checkpoint and stops after observing the rejected candidate. It rejects
+scenario controls and pauses background search. This short observation mode
+closed the [Endless spell routing gap](endless-spell-routing.md) with two native
+processes in 140.08/123.97 seconds; it does not claim terminal battle acceptance.

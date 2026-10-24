@@ -239,6 +239,26 @@ if (args.Length == 2 && args[0] == "--observed-successors-only")
     TrainCombatChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--endless-spell-routing-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EndlessSpellRoutingChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--endless-return-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EndlessReturnChecks.Run();
+    EndlessReturnChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--endless-spell-routing-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    EndlessSpellRoutingChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 
 if (args.Length == 3 && args[0] == "--player-boss-corrupter-pair-only")
 {
@@ -4480,6 +4500,12 @@ foreach (string path in args.Where(path => path.Contains("full-battle-original-c
 }
 // This partial failure archive is checked as observed successors below; it
 // intentionally has no accepted terminal battle or historical forecast.
+foreach (string path in args.Where(path => Path.GetFileName(path) is
+    "player-endless-spell-routing-calibration.mt2f" or "player-endless-spell-routing-replay-calibration.mt2f"))
+{
+    using var observation = ModelJson.ReadFixture(path);
+    EndlessSpellRoutingChecks.Native(observation.RootElement);
+}
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
 CorruptPoisonChecks.Run();

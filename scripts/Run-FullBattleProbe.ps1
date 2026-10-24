@@ -84,6 +84,7 @@ param(
     [ValidateSet('', 'Inner', 'Outer')][string] $AngelDuoDeath = '',
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
+    [string] $UnsupportedBranchInput = '',
     [string] $InputProfile = '',
     [string] $PrimaryClan = '',
     [string] $SecondaryClan = '',
@@ -861,6 +862,14 @@ if ($TrueFinalBossBirth) {
 }
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
+if ($UnsupportedBranchInput) {
+    $allowed = @('UnsupportedBranchInput', 'InputProfile', 'BattleDistance', 'OuterBossTurns', 'PhysicalSpawnPoints',
+        'BranchCardMasks', 'GameSpeed', 'TimeoutSeconds', 'NativeWorker', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'UnsupportedBranchInput observes an original checkpoint without scenario controls.' }
+    if ($RollingInput -or $Planner -or -not $InputProfile) { throw 'UnsupportedBranchInput requires an immutable native InputProfile and its own observation mode.' }
+    $UnsupportedBranchInput = (Resolve-Path -LiteralPath $UnsupportedBranchInput).Path
+    $RollingAdvice = $true; $PlayerAdvisor = $true
+}
 if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
 if (($PrimaryClan -or $SecondaryClan) -and $InputProfile) { throw 'Clan selection requires a fresh native run and cannot be combined with InputProfile.' }
 if ($PrimaryClan -and $SecondaryClan -and $PrimaryClan -ieq $SecondaryClan) { throw 'PrimaryClan and SecondaryClan must be different.' }
@@ -1481,6 +1490,7 @@ $environment = @{
     MT2_PROBE_ROOM_MOON_ENEMY = $(if ($RoomMoonEnemyMovement) { '1' } else { '0' })
     MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
+    MT2_PROBE_UNSUPPORTED_BRANCH = $UnsupportedBranchInput
     MT2_PROBE_PREVIEW_ATTACK_TRACE = $(if ($PreviewAttackTrace) { '1' } else { '0' })
     MT2_PROBE_BOSS_ACTION_TARGETS = $(if ($BossActionTargets) { '1' } else { '0' })
     MT2_PROBE_BOSS_ACTION_CONTROLLERS = $(if ($BossActionControllers) { '1' } else { '0' })
@@ -2173,6 +2183,15 @@ if ($ConduitMovement) {
             @($captured.Previews).Count -ne 3 -or [bool]$captured.EnemyCarrier -ne [bool]$ConduitEnemyMovement) { throw 'Incomplete Conduit movement calibration.' }
     } finally { $component.Dispose() }
     [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; Rows = 38; Previews = 3; OriginalFilesUnchanged = $true; ModelAcceptance = 'Pending independent focused checker'; Trace = $componentPath } | ConvertTo-Json
+    return
+}
+if ($UnsupportedBranchInput) {
+    $componentPath = Join-Path $profile 'unsupported-branch-native.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'UNSUPPORTED-BRANCH-NATIVE PASS' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Native candidate observation failed; inspect $unityLog" }
+    [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
+        ModelAcceptance = 'Pending independent focused checker'; Trace = $componentPath } | ConvertTo-Json
     return
 }
 $tracePath = Join-Path $profile $(if ($BinaryCapture) { 'full-battle.mt2f' } else { 'full-battle.json' })

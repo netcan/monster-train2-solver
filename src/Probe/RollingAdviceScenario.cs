@@ -39,7 +39,11 @@ namespace MonsterTrain2Poju.Probe
             public string? Difference { get; set; }
         }
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_ADVICE") == "1";
-        private static bool Replay => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT"));
+        private static bool Replay => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT"))
+#if DEVELOPMENT_PROBE
+            || UnsupportedBranchObservation.Enabled
+#endif
+            ;
         internal static bool WaitingForWorker => Enabled && !Replay &&
 #if DEVELOPMENT_PROBE
             !PlayerAdvisorProbe.Enabled &&
@@ -76,6 +80,12 @@ namespace MonsterTrain2Poju.Probe
             if (PlayerAdvisorProbe.Enabled)
             {
                 if (!PlayerAdvisorProbe.CaptureInitialized) return true;
+                if (UnsupportedBranchObservation.Enabled)
+                {
+                    PlayerAdvisorProbe.PauseForFrozenPlan();
+                    UnsupportedBranchObservation.Observe(PlayerAdvisorProbe.Capture());
+                    return false;
+                }
                 ExportPlayerDeployment();
                 if (Replay && Records.Count == 0 && PlayerAdvisorProbe.ReplayFloorBrowsing()) return true;
                 if (waiting) Observe(PlayerAdvisorProbe.Capture(), false);
@@ -92,6 +102,11 @@ namespace MonsterTrain2Poju.Probe
             if (!Enabled) return false;
 #if DEVELOPMENT_PROBE
             if (PlayerAdvisorProbe.Enabled) root = PlayerAdvisorProbe.Capture();
+            if (UnsupportedBranchObservation.Enabled)
+            {
+                action = UnsupportedBranchObservation.Choose(root, log);
+                return true;
+            }
 #endif
             if (Records.Count >= 256) throw new InvalidOperationException("Rolling advice exceeded the battle decision limit.");
             Decision decision;

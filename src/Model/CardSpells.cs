@@ -1893,6 +1893,16 @@ namespace MonsterTrain2Poju.Model
                 CardPileState? exhausted = piles!.FirstOrDefault(pile => pile.Name == "Exhausted");
                 CardToken? token = standby?.Cards.FirstOrDefault(card => card.InstanceId == cardId);
                 if (token == null && exhausted?.Cards.Any(card => card.InstanceId == cardId) == true) return;
+                // The settled character queue has already returned an Endless
+                // carrier to Draw. Do not exhaust it again in the spell's
+                // outer death cleanup or increment TimesExhausted.
+                if (token == null && current.Cards.Draw.Any(card => card.InstanceId == cardId) &&
+                    source.Rooms.SelectMany(room => room.Units).Any(unit => unit.SpawnerCardId == cardId &&
+                        unit.Team == CombatTeam.Player && unit.Statuses.Any(status => status.Id == "endless" && status.Stacks > 0)))
+                {
+                    deferredExhaustion.Remove(cardId);
+                    return;
+                }
                 if (standby == null || exhausted == null || token == null)
                 {
                     routingError = "Missing dead spawner routing during the trigger queue.";

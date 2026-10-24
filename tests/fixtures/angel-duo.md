@@ -258,3 +258,19 @@ action and verifies the deployment root is unchanged. Its archive is explicitly
 ```powershell
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll extract-unsupported-branch .probe-runs/angel-tactical-player-floor0-0754.mt2f <new-output.mt2f> 'Missing dead spawner routing during the trigger queue.'
 ```
+
+The isolated original-checkpoint observation and a fresh repaired native replay
+now close this routing gap. All 24 native inputs, complete states/RNG, returned
+draw order, temporary upgrades and unchanged exhaustion statistics match.
+The spell no longer tries to exhaust a carrier already returned by Endless.
+Both component processes exit normally without changing protected originals;
+they take 140.08/123.97 seconds. The accepted full Angel Duo source/replay and
+original Endless combat-death controls still pass. See
+[Endless spell routing](endless-spell-routing.md) for the two curated component
+archives and independent pair gate. This repair alone is not a new boss victory.
+
+Three additional cheap strength-policy scouts use preferred rooms 0/1/2 after
+the routing repair. They lose after 50/51/56 inputs (nine/nine/eleven EndTurns).
+Each frozen route independently verifies full forecasts, successors, terminal
+outcome and state/RNG. They do not justify another native full-battle attempt;
+the remaining issue is strategy quality beyond a fixed floor preference.
