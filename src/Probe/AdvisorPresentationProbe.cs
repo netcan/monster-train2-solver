@@ -106,7 +106,7 @@ namespace MonsterTrain2Poju.Probe
             if (!preserveContinuation)
             {
                 Require(Field<BattleAdvice?>("displayed") == null, "explicit reset kept old advice");
-                Require(!Field<Text>("body").text.Contains("下一步") && !Field<Text>("body").text.Contains("完整方案"),
+                Require(!Field<Text>("body").text.Contains("本回合步骤") && !Field<Text>("body").text.Contains("完整方案"),
                     "explicit reset kept the old forecast text");
                 resets++; return;
             }

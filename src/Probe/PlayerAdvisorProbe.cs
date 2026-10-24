@@ -421,6 +421,7 @@ namespace MonsterTrain2Poju.Probe
         private static void PreviewPlan()
         {
             int captures = Get<int>("Captures"); long searches = Get<long>("Searches");
+            BattleAdvice advice = Advice;
             Click("完整方案"); Canvas.ForceUpdateCanvases();
             Text text = Field<Text>("body");
             Require(Field<bool>("showFullPlan") && text.text.Contains("完整方案") &&
@@ -433,11 +434,17 @@ namespace MonsterTrain2Poju.Probe
             }
             Call("CapturePanel");
             Click("完整方案");
-            Require(!Field<bool>("showFullPlan") && text.text.Contains("下一步") &&
+            int currentTurnSteps = advice.Plan.Steps.TakeWhile(step => !step.IsEndTurn).Count();
+            if (currentTurnSteps < advice.Plan.Steps.Count) currentTurnSteps++;
+            Require(!Field<bool>("showFullPlan") && text.text.Contains("本回合步骤") &&
+                text.text.Contains("\n" + currentTurnSteps + ". ") &&
+                !text.text.Contains("\n" + (currentTurnSteps + 1) + ". ") && !text.text.Contains("后续第") &&
+                ReferenceEquals(Advice, advice) &&
                 Get<int>("Captures") == captures && Get<long>("Searches") == searches,
-                "preview toggling changed planning or did not restore the summary");
+                "collapsed plan omitted current-turn steps, included a later turn, or changed planning");
             PlanPreviewPassed = true;
-            log!.LogInfo("PLAYER-ADVISOR-PLAN-PASS steps=" + Advice.Plan.Steps.Count + " captures=0 searches=0");
+            log!.LogInfo("PLAYER-ADVISOR-PLAN-PASS steps=" + Advice.Plan.Steps.Count +
+                " currentTurnSteps=" + currentTurnSteps + " captures=0 searches=0");
         }
         private static void Drag()
         {

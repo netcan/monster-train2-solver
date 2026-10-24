@@ -654,7 +654,16 @@ namespace MonsterTrain2Poju.Probe
                         text.Append("\n后续第 ").Append(++turns).Append(" 回合\n");
                 }
             }
-            else { text.Append("\n\n下一步：\n"); AppendStep(plan.Steps[0]); }
+            else
+            {
+                text.Append("\n\n本回合步骤：\n");
+                for (int index = 0; index < plan.Steps.Count; index++)
+                {
+                    BattleSearchStep step = plan.Steps[index];
+                    text.Append(index + 1).Append(". "); AppendStep(step); text.Append('\n');
+                    if (step.IsEndTurn) break;
+                }
+            }
             if (advice.ReusedSelection) text.Append("\n\n沿用当前建议");
             else if (advice.ReusedWinningContinuation) text.Append("\n\n沿用已验证胜局");
             else if (advice.ReusedContinuation) text.Append("\n\n沿用已验证步骤");
