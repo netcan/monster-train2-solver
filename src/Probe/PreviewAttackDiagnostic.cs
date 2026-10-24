@@ -9,6 +9,27 @@ namespace MonsterTrain2Poju.Probe
     internal static class PreviewAttackDiagnostic
     {
         internal static readonly List<object> Records = new List<object>();
+#if DEVELOPMENT_PROBE
+        private static bool ObserveCache(CardState? card) =>
+            Environment.GetEnvironmentVariable("MT2_PROBE_PREVIEW_ATTACK_TRACE") == "1" &&
+            FullBattleTrace.Active != null && card?.GetCardDataID() == "7488b439-316c-4a13-8897-90de239b6250" &&
+            AllGameManagers.Instance!.GetCombatManager().GetTurnCount() >= 7;
+        [HarmonyPatch(typeof(CardState), nameof(CardState.CacheRoomStateCharactersAtTimeOfCardPlay))]
+        private static class CachePatch
+        {
+            private static void Postfix(CardState __instance, RoomState roomState)
+            {
+                if (!ObserveCache(__instance)) return;
+                var units = new List<CharacterState>();
+                roomState.AddCharactersToList(units, Team.Type.Heroes | Team.Type.Monsters, allowDead: false, allowIsSpawning: false);
+                Records.Add(new { Event = "RoomCache", Turn = AllGameManagers.Instance!.GetCombatManager().GetTurnCount(),
+                    Preview = AllGameManagers.Instance.GetSaveManager().PreviewMode,
+                    Phase = AllGameManagers.Instance.GetCombatManager().GetCombatPhase().ToString(), Room = roomState.GetRoomIndex(),
+                    Actors = units.Select(unit => new { Name = unit.GetSourceCharacterData().name,
+                        Id = FullBattleTrace.Active!.TryGetUnitId(unit, out int id) ? id : 0, HP = unit.GetHP() }).ToArray() });
+            }
+        }
+#endif
         private static object Units(int roomIndex)
         {
             var units = new List<CharacterState>();

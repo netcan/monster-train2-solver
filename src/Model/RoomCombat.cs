@@ -5481,7 +5481,10 @@ namespace MonsterTrain2Poju.Model
             private void Clear(bool after)
             {
                 if (source.Deployment) return;
-                bool relentless = units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Enemy && unit.Has("relentless"));
+                // RoomManager.RoomIsInRelentlessPhase deliberately returns false
+                // during the player's MonsterTurn, including UI combat previews.
+                bool relentless = context?.EnergyState?.Phase != "MonsterTurn" &&
+                    units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Enemy && unit.Has("relentless"));
                 foreach (WorkingUnit unit in units.Where(unit => unit.Alive && unit.InRoom))
                     foreach (CombatStatus status in unit.RegisteredStatuses().ToArray())
                         if (status.RemoveAfterPostCombat == after)

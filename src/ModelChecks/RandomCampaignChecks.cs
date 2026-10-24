@@ -8,6 +8,11 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.EndsWith("player-random-campaign-02-ring3-relentless-preview-observed.mt2f", StringComparison.Ordinal))
+        {
+            RelentlessPreviewCooldownChecks.Native(source.RootElement);
+            return;
+        }
         if (path.EndsWith("player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f", StringComparison.Ordinal))
         {
             PermafrostCopyObserved(source.RootElement);
@@ -149,7 +154,7 @@ internal static class RandomCampaignChecks
     private static void Require(bool value, string message)
     { if (!value) throw new InvalidOperationException(message); }
 
-    private static void Input(FixtureValue fixture, int seed, int rank, int distance, string primary, string secondary)
+    internal static void Input(FixtureValue fixture, int seed, int rank, int distance, string primary, string secondary)
     {
         Require(seed > 0 && rank is >= 0 and <= 10 && distance is >= 0 and <= 7 && primary != secondary,
             "Invalid declared random campaign configuration.");

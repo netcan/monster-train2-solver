@@ -4742,7 +4742,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("fu
     (path.EndsWith("-search.mt2f", StringComparison.Ordinal) || path.EndsWith("-loss.mt2f", StringComparison.Ordinal))))
     RandomCampaignChecks.Curated(path);
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f" or
-    "player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f"))
+    "player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f" or
+    "player-random-campaign-02-ring3-relentless-preview-observed.mt2f"))
     RandomCampaignChecks.Curated(path);
 
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-native-covenant-campaign-03-ring6-default-loss.mt2f"))
