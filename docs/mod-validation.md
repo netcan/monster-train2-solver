@@ -1282,7 +1282,7 @@ Two randomly sampled Covenant0 campaigns reached actual terminal defeats:
 Banished/Umbra at Ring7 and Pyreborne/Banished at Ring3. Earlier wins have
 independent native frozen replays; neither campaign cleared. See
 [random campaign validation](random-campaign-validation.md) for seeds, exact
-upgrade fixes, immutable archives and the remaining candidate-route cache gap.
+upgrade fixes, immutable archives and the subsequently fixed preview/cooldown cache discrepancy.
 
 The final 0.2.26 player payload separately wins Ring1 in both actual advice and
 independent frozen native replay: nine inputs, matching full state/forecasts/RNG,
@@ -1307,3 +1307,40 @@ Installed Advisor / Model / FixtureArchive SHA-256 values, respectively:
 58eb4d5cd67d5a6d61407e274f8456388cac71df06e33887aa25cb1daae3a72f
 b383a1f48d463787712b8efd23db77604ebb1703a9c7d6e41d9ef94e27941ccc
 ```
+
+## Whole-battle continuation · Windows 0.2.27 · 2026-10-25
+
+The native `MonsterTurn` guard also applies to relentless UI previews. Matching
+that cooldown rule restores the ability-ready room-cache callback;44 observed
+native inputs and the existing cooldown boundaries pass. Whole-battle search
+now continues its policy's future card choices before an empty-hand terminal
+rollout spends the budget. Fixed-window search retains its earlier behavior.
+
+The accepted0.2.27 payload wins the previously failing Pyreborne/Banished Ring3
+at10000ms:48 inputs,39 plays,9 EndTurns and Pyre5. An independent native process
+freezes all inputs, also wins and passes complete state/forecast/RNG comparison.
+The source has50 publications and all four failure counters are zero. This
+resumes the original Ring3 checkpoint; the preceding two battles used3000ms.
+Banished/Umbra Ring7 still loses at10000ms. Neither result establishes a whole
+campaign clear; see [current campaign evidence](random-campaign-validation.md).
+
+Source revision `fd14ed58` was committed and pushed before delivery. The stopped
+real Windows game now has the same three DLLs as both accepted native processes.
+All67 protected save/config/other-mod/loader files remain unchanged, including
+F10,10000ms and two search workers. The next launch loads0.2.27.
+Backup and installation receipt:
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/PojuBackups/RandomCampaign-20261025-075407/`.
+
+Package: `results/mod-dist/PojuAdvisor-0.2.27-Windows-20261025-075407.zip`.
+All five ZIP entries match their staged payloads. SHA-256:
+`6a485e8da4b6262ed2cbdb10932e5dbd1aec942da2b8947d7922ff2104c353c3`.
+Installed Advisor / Model / FixtureArchive hashes:
+
+```text
+7f8facdbf2218e9012429576b70131f4766de2a34d45ade1149084f6e94648e3
+0c3a248fe484259862d4247ea7c17a24bd38a5544d02e208a66c1c45d241340d
+b383a1f48d463787712b8efd23db77604ebb1703a9c7d6e41d9ef94e27941ccc
+```
+
+No Mac package or full regression was run. Focused affected checks and1397
+archive hashes/registrations pass.
