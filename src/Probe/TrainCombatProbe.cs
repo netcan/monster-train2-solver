@@ -28,10 +28,14 @@ namespace MonsterTrain2Poju.Probe
             RoomManager rooms = managers.GetRoomManager()!;
             var states = new List<RoomCombatState>();
             var movement = new List<EnemyMovement>();
+            // Decision snapshots have one global context. Discover every floor's
+            // units before freezing its card/unit registries and identity counters.
+            bool sharedContext = captureContext && trace.CanonicalDecisionCapture;
             for (int index = 0; index < rooms.GetNumRooms(); index++)
             {
                 RoomState room = rooms.GetRoom(index);
-                RoomCombatState state = trace.Capture(room, captureContext, includeOuterBossForBump);
+                RoomCombatState state = trace.Capture(room, captureContext && !sharedContext,
+                    includeOuterBossForBump, observe: !sharedContext);
                 states.Add(state);
                 var enemies = new List<CharacterState>();
                 room.AddCharactersToList(enemies, Team.Type.Heroes);
@@ -42,8 +46,17 @@ namespace MonsterTrain2Poju.Probe
                         enemy.GetAscendsTrainAutomatically(), enemy.GetLoopsBetweenTrainFloors(), enemy.IsCompanionBoss()));
                 }
             }
+            CombatContext? context = captureContext ? trace.CaptureContext() : null;
+            if (sharedContext)
+                for (int index = 0; index < states.Count; index++)
+                {
+                    RoomCombatState room = states[index];
+                    states[index] = new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
+                        room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds);
+                    trace.ObserveRoom(states[index], includeOuterBossForBump);
+                }
             return new TrainCombatState(states, movement,
-                managers.GetCombatManager()!.NumSpawnPointsPerFloor(Team.Type.Heroes), captureContext ? trace.CaptureContext() : null);
+                managers.GetCombatManager()!.NumSpawnPointsPerFloor(Team.Type.Heroes), context);
         }
 
         private IEnumerator Wrap(IEnumerator native, string kind)

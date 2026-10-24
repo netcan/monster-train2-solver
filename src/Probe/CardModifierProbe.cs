@@ -18,14 +18,17 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static readonly List<CacheDecision> DecisionCaches = new List<CacheDecision>();
         [ThreadStatic] private static int upgradeDepth;
-        internal static CardInstanceState[] Capture(CardManager cards, Func<CardState, int> cardId)
-            => Capture(cards.GetAllCards(new List<CardState>()), cardId);
+        internal static CardInstanceState[] Capture(CardManager cards, Func<CardState, int> cardId,
+            Dictionary<CardState, CardInstanceState>? captured = null)
+            => Capture(cards.GetAllCards(new List<CardState>()), cardId, captured);
 
-        internal static CardInstanceState[] Capture(IEnumerable<CardState> cards, Func<CardState, int> cardId)
+        internal static CardInstanceState[] Capture(IEnumerable<CardState> cards, Func<CardState, int> cardId,
+            Dictionary<CardState, CardInstanceState>? captured = null)
         {
             AllGameManagers managers = AllGameManagers.Instance!;
             return cards.Select(card =>
             {
+                if (captured != null && captured.TryGetValue(card, out CardInstanceState cached)) return cached;
                 var interactions = new List<string>();
                 if (card.IsPurified) interactions.Add("Purified card");
                 if (card.IsNonPlayableEnergyCostType()) interactions.Add("Nonplayable card cost type");
@@ -98,9 +101,11 @@ namespace MonsterTrain2Poju.Probe
                             effects[index].GetParamInt() != rule.Effects[index].Value)
                             interactions.Add("Unmodeled spell damage/heal modifier");
                 }
-                return new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
+                var result = new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
                     interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId), state.ForgeCountScalingTraits, state.RawCostOverride, card.CanBeCopied(), state.TrainHealScalingTraits, state.GraftedEquipmentCardId);
+                captured?.Add(card, result);
+                return result;
             }).OrderBy(card => card.InstanceId).ToArray();
         }
 

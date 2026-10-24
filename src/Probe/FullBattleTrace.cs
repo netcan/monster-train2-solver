@@ -282,7 +282,8 @@ namespace MonsterTrain2Poju.Probe
             actions.Begin(action, scenarioAction, includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
         internal void CompleteCardPlay() => actions.Complete();
 
-        internal RoomCombatState Capture(RoomState room, bool captureContext = true, bool includeOuterBossForBump = false)
+        internal RoomCombatState Capture(RoomState room, bool captureContext = true, bool includeOuterBossForBump = false,
+            bool observe = true)
         {
             AllGameManagers managers = AllGameManagers.Instance ?? throw new InvalidOperationException("No game managers.");
             var interactions = new List<string>();
@@ -329,10 +330,32 @@ namespace MonsterTrain2Poju.Probe
             var captured = new RoomCombatState(room.GetRoomIndex(), combat.IsPlacementPhase, units,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), captureContext ? CaptureContext() : null,
                 preview: save.PreviewMode, activeCompanionBossIds: activeCompanionBossIds);
+            if (observe) ObserveRoom(captured, characters);
+            return captured;
+        }
+
+        internal void ObserveRoom(RoomCombatState captured, bool includeOuterBossForBump)
+        {
+#if DEVELOPMENT_PROBE
+            AllGameManagers managers = AllGameManagers.Instance!;
+            RoomState room = managers.GetRoomManager()!.GetRoom(captured.RoomIndex);
+            var characters = new List<CharacterState>();
+            room.AddCharactersToList(characters, Team.Type.Heroes);
+            room.AddCharactersToList(characters, Team.Type.Monsters);
+            CharacterState? outerBoss = managers.GetHeroManager()!.GetOuterTrainBossCharacter();
+            if ((includeOuterBossForBump || OuterBossPhaseProbe.ModelsLiveBoss) && outerBoss != null && outerBoss.IsAlive &&
+                outerBoss.GetCurrentRoomIndex() == captured.RoomIndex && !characters.Contains(outerBoss)) characters.Add(outerBoss);
+            ObserveRoom(captured, characters);
+#endif
+        }
+
+        private void ObserveRoom(RoomCombatState captured, IReadOnlyList<CharacterState> characters)
+        {
+#if DEVELOPMENT_PROBE
             UnitSelfAttackProbe.Observe(captured, characters, this);
             UnitRoomStatusProbe.Observe(captured, characters, this);
             UnitRoomTriggerCountProbe.Observe(captured, characters, this);
-            return captured;
+#endif
         }
 
         internal CombatUnit CaptureUnit(CharacterState character, List<string>? interactions = null)
@@ -435,7 +458,11 @@ namespace MonsterTrain2Poju.Probe
                 managers.GetCombatManager()!, cards);
             uint[] draw = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
             uint[] battle = RngCalibration.Words(RandomManager.GetState(RngId.Battle));
-            CardInstanceState[] instances = CardModifierProbe.Capture(cards, CardId);
+            // Native state cannot change during this synchronous capture. Reuse
+            // each card's projection between live piles and registry closure only;
+            // never retain it across decisions, upgrades or cost changes.
+            var capturedCards = new Dictionary<CardState, CardInstanceState>();
+            CardInstanceState[] instances = CardModifierProbe.Capture(cards, CardId, capturedCards);
             if (RelicProbe.HasReplayHistory(managers)) TranscendImpScenario.CaptureHistory(managers);
             CharacterState lastSpawned = managers.GetMonsterManager()!.GetLastSpawnedCharacterThisTurn();
             int lastSpawnedId = lastSpawned == null || normalizeDestroyedAttacker && (lastSpawned.IsDestroyed || !lastSpawned.IsAlive)
@@ -465,7 +492,7 @@ namespace MonsterTrain2Poju.Probe
                 bonusDraw = BonusDrawProbe.Capture(cards, this);
                 spawnPoints = BattleSpawnPointProbe.Enabled ? BattleSpawnPointProbe.Capture(this) : null;
                 statistics = BattleStatisticsProbe.Capture(managers.GetCardStatistics(), CardId);
-                registry = CardModifierProbe.Capture(projection.KnownCards, CardId);
+                registry = CardModifierProbe.Capture(projection.KnownCards, CardId, capturedCards);
                 if (observedCards != projection.KnownCards.Count() || observedUnits != identities.Count)
                     BattleSpawnPointProbe.Decisions.RemoveRange(decisionStart, BattleSpawnPointProbe.Decisions.Count - decisionStart);
             } while (observedCards != projection.KnownCards.Count() || observedUnits != identities.Count);

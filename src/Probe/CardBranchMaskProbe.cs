@@ -52,12 +52,14 @@ namespace MonsterTrain2Poju.Probe
         private static CardLifecycleTrigger[]? KillTriggers(CardLifecycleTrigger[] triggers) => triggers.Length == 0 ? null : triggers;
         internal static void Observe(FullBattleTrace trace, CombatContext context)
         {
+#if DEVELOPMENT_PROBE
             if (!Enabled || !trace.CanonicalDecisionCapture) return;
             var manager = AllGameManagers.Instance!.GetRelicManager();
             var views = trace.KnownCards.OrderBy(trace.CardId).Select(card => new { CardId = trace.CardId(card),
                 IgnoreTemporaryCost = manager.HasPermanentUpgradeChangeRelicEffects(card, out bool applied) && applied,
                 Actual = CardUpgradeMaskCalibration.Card(card, manager) }).ToArray();
             Records.Add(new { Context = context, Views = views });
+#endif
         }
     }
 }
