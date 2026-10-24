@@ -31,6 +31,8 @@ internal static class FloorBrowseAdviceChecks
             reused.Select(row => row.GetProperty("Generation").GetInt64()).Distinct().Count() == 1 &&
             reused.All(row => row.GetProperty("SearchMs").GetDouble() == 0),
             "Floor switches changed the active generation or searched instead of replaying the existing line.");
+        if (overlay.TryGetProperty("CrossTurnContinuation", out FixtureValue crossTurn) && crossTurn.GetBoolean())
+            Require(browse.GetProperty("WheelInput").GetBoolean(), "New scrolling acceptance bypassed the native wheel path.");
     }
 
     internal static void Run(FixtureValue fixture)

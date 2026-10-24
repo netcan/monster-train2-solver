@@ -28,6 +28,9 @@ dotnet $checker --player-ordinary-advice-pair-only @archives
 if ($LASTEXITCODE -ne 0) { throw 'Independent ordinary advice pair checks failed.' }
 dotnet $checker --player-floor-browse-pair-only @archives
 if ($LASTEXITCODE -ne 0) { throw 'Floor browsing no longer retains native advice.' }
+$crossTurn = @(Get-VerifiedPair 'cross-turn-scroll')
+dotnet $checker --player-ordinary-advice-pair-only @crossTurn
+if ($LASTEXITCODE -ne 0) { throw 'Cross-turn/native wheel continuation pair checks failed.' }
 $natural = @(Get-VerifiedPair 'natural-ring7-ordinary')
 dotnet $checker --terminal-advice-only $natural[0]
 if ($LASTEXITCODE -ne 0) { throw 'Terminal losing-forecast continuation checks failed.' }

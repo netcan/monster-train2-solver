@@ -1,5 +1,42 @@
 # Player Mod validation · 2026-10-24
 
+Windows0.2.10 retains verified ordinary/partial forecasts across EndTurn,
+retains unchanged roots after cosmetic busy boundaries, and preserves current
+advice/search during native floor scrolling. It coalesces wheel events for120ms
+and caches up to eight strict calibrated roots per suffix. Full native state/RNG
+capture and publication checks remain mandatory. See
+[continuation behavior and evidence](advice-continuation.md) for reset/exhaustion
+boundaries and the distinction between search and capture/replay work.
+
+The real0.2.10 source and independent frozen process both win with73 Pyre HP
+after19 plays/seven EndTurns. Every input, root, successor, forecast and RNG
+matches, with all four failure counters zero and originals unchanged. There
+are22 zero-search ordinary continuations, including four nonwinning EndTurns;
+seven actual native wheel switches add no searches, including during search.
+Two exhausted three-turn windows require new route searches. The focused
+source disables whole-battle mode solely to exercise ordinary forecasts; the
+installed whole-battle default remains enabled. Session, floor/cost/RNG,
+50-step winning and seven-step losing-forecast controls pass. The catalog
+passes1354 hashes/registrations; no full regression was run.
+
+The tested0.2.10 three-DLL payload is installed at
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+Build, native source, native frozen replay and installed hashes match:
+
+| DLL | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | `ee045ddc1465880e226c058409bb2a1045034ea2b780923b2b0bc4b5b0c61555` |
+| Model.dll | `3670ba2f3bdb9ed405bd86d4822833925c66a6a84acea4ca027df60dfcbf42e1` |
+| FixtureArchive.dll | `acfe62897c6a5903d9ea0d7028ebc92af9d0c71bea47b1a693280c9d34550fab` |
+
+All28 other loader/plugin/config files are unchanged, including F10,
+WholeBattle=true, two workers and the3000ms budget. The previous0.2.9 payload
+is preserved at `BepInEx/PojuBackups/CrossTurnScroll-20261024-171813/previous`,
+outside the plugins tree. No real game is running at installation; the next
+launch loads0.2.10. No user game was stopped or autoplayed and no Mac package
+was built. The curated native pair is
+`full-battle-player-cross-turn-scroll-{search,replay}.mt2f`.
+
 Windows0.2.9 finishes the allocation/idle follow-up: per-key-session pooled
 encoding buffers and builders, repeated string/scalar reuse, omitted player
 played-room diagnostics and typed idle effect readers. One focused .NET8
@@ -30,9 +67,9 @@ report. Session/cancellation, floor browsing and50-step continuation checks pass
 Full native state/RNG capture and publication guards remain active; GC/JIT spikes
 and long searches are still possible.
 
-The tested0.2.9 three-DLL payload is installed at
+The earlier tested0.2.9 three-DLL payload was installed at
 `F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
-Build, isolated real-player acceptance and installed hashes match:
+Its build, isolated real-player acceptance and then-installed hashes matched:
 
 | DLL | SHA256 |
 | --- | --- |
@@ -40,13 +77,12 @@ Build, isolated real-player acceptance and installed hashes match:
 | Model.dll | `5637d5c9f46300e6462dbd893fcf26a74c295363e1c975b401381319e53e9a8b` |
 | FixtureArchive.dll | `79b96aef10d1caa61c910bd6c7f20a21f5e34dcc756c68d007e0e23582a7f315` |
 
-All28 other loader/plugin/config files are unchanged, including F10 and the
+That installation preserved all28 other loader/plugin/config files, including F10 and the
 3,000ms budget. The previous0.2.8 payload is preserved outside the plugins tree
-at `BepInEx/PojuBackups/PerfFinish-20261024-164444/previous`. The original real
-game process (PID122100, started15:07:55) remains running with its previously
-loaded0.2.5; restarting loads0.2.9. No real game was stopped or autoplayed, and
-no Mac package was built. The fixture catalog passes1352 hashes/registrations;
-no full regression was run.
+at `BepInEx/PojuBackups/PerfFinish-20261024-164444/previous`. A subsequent real
+player launch confirmed0.2.9 in the loader and F10 UI logs. Its fixture catalog
+passed1352 hashes/registrations without a full regression. Current0.2.10
+installation and launch requirements are recorded above.
 
 Windows 0.2.7 adds bounded whole-battle planning and a two-worker background
 portfolio. Workers explore different deployment/policy seeds with independent

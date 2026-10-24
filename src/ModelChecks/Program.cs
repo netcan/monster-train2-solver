@@ -5262,9 +5262,10 @@ foreach (string path in args.Where(path => path.Contains("full-battle-copy-on-pl
     using var document = ModelJson.ReadFixture(path);
     CopyOnPlayChecks.Native(document.RootElement);
 }
+foreach (string prefix in new[] { "ordinary-continuation", "cross-turn-scroll" })
 {
-    string? sourcePath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-ordinary-continuation-search.mt2f", StringComparison.OrdinalIgnoreCase));
-    string? replayPath = args.FirstOrDefault(path => path.EndsWith("full-battle-player-ordinary-continuation-replay.mt2f", StringComparison.OrdinalIgnoreCase));
+    string? sourcePath = args.FirstOrDefault(path => path.EndsWith($"full-battle-player-{prefix}-search.mt2f", StringComparison.OrdinalIgnoreCase));
+    string? replayPath = args.FirstOrDefault(path => path.EndsWith($"full-battle-player-{prefix}-replay.mt2f", StringComparison.OrdinalIgnoreCase));
     if (sourcePath != null && replayPath != null)
     {
         using var source = ModelJson.ReadFixture(sourcePath);

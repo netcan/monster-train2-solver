@@ -1,5 +1,18 @@
 # Native capture profile · 2026-10-24
 
+## Search reuse follow-up · Windows0.2.10
+
+[Advice continuation](advice-continuation.md) now keeps nonwinning forecasts
+across EndTurn and preserves in-flight work during cosmetic preview/scrolling.
+The native source/frozen pair verifies22 ordinary zero-search continuations,
+including four nonwinning EndTurns, and seven actual wheel switches without
+new searches. Exhausted forecast windows still search again. Wheel events
+coalesce for120ms; identical strict calibrated roots reuse cached validation.
+New roots still need capture and background replay, so these changes remove
+redundant search without claiming zero frame cost or instantaneous switches.
+The native pair and focused session/full-state/RNG controls pass; no full
+regression or Mac build was run.
+
 ## Allocation and idle follow-up · Windows0.2.9
 
 State keys now reuse instance-local UTF-8/character buffers and recursive string

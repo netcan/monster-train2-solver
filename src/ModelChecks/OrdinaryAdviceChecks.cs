@@ -9,6 +9,8 @@ internal static class OrdinaryAdviceChecks
         RollingAdviceChecks.FrozenPair(source, replay);
         foreach (FixtureValue fixture in new[] { source, replay }) TrainCombatChecks.Native(fixture);
         NativeReuse(source, replay);
+        if (source.GetProperty("PlayerAdvisor").GetProperty("Overlay").TryGetProperty("CrossTurnContinuation", out FixtureValue flag) && flag.GetBoolean())
+            FloorBrowseAdviceChecks.Selection(source, replay);
     }
 
     internal static void NativeReuse(FixtureValue source, FixtureValue replay)
