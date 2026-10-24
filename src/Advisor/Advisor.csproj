@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>MonsterTrain2Poju.Advisor</AssemblyName>
-    <Version>0.2.11</Version>
+    <Version>0.2.12</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -11,7 +11,7 @@
     <ProjectReference Include="../Model/Model.csproj" />
     <ProjectReference Include="../FixtureArchive/FixtureArchive.csproj" />
     <!-- Reuse the calibrated projections; never include the isolation/autoplay entry points. -->
-    <Compile Include="../Probe/*.cs" Exclude="../Probe/ProbePlugin.cs;../Probe/NativeReplayScenario.cs;../Probe/PlayerAdvisorProbe.cs" Link="Capture/%(Filename)%(Extension)" />
+    <Compile Include="../Probe/*.cs" Exclude="../Probe/ProbePlugin.cs;../Probe/NativeReplayScenario.cs;../Probe/PlayerAdvisorProbe.cs;../Probe/AdvisorPresentationProbe.cs" Link="Capture/%(Filename)%(Extension)" />
   </ItemGroup>
   <Import Project="../Probe/GameReferences.props" />
 </Project>

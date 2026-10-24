@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Probe
         private bool ManualSession => playerSession || Environment.GetEnvironmentVariable("MT2_PROBE_SCENARIO") == "advisor";
         private GameObject canvas = null!;
         private GameObject panel = null!;
-        private Text body = null!, pauseLabel = null!, toggleLabel = null!, planLabel = null!;
+        private Text body = null!, pauseLabel = null!, toggleLabel = null!, planLabel = null!, statusLabel = null!;
         private ScrollRect planScroll = null!;
         private bool showFullPlan;
         private Font? uiFont;
@@ -175,8 +175,8 @@ namespace MonsterTrain2Poju.Probe
             Text titleLabel = Label("Title", "怪物火车 · 战局建议", 14, 34, 23);
             titleLabel.raycastTarget = true;
             titleLabel.gameObject.AddComponent<AdvisorPanelDrag>().Target = rect;
-            Text scope = Label("Scope", "已知牌序 · 未来 " + horizon + " 回合 · " + toggleKey + " 显示/隐藏", 52, 28, 15);
-            scope.color = new Color(.55f, .72f, .84f);
+            statusLabel = Label("Scope", "已知牌序 · 未来 " + horizon + " 回合 · " + toggleKey + " 显示/隐藏", 52, 28, 15);
+            statusLabel.color = new Color(.55f, .72f, .84f);
             body = Label("Recommendation", "进入战斗后自动计算建议。", 92, 208, 18);
             var viewport = new GameObject("Plan viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D), typeof(ScrollRect));
             viewport.transform.SetParent(panel.transform, false);
@@ -246,6 +246,21 @@ namespace MonsterTrain2Poju.Probe
             planScroll.verticalNormalizedPosition = 1;
         }
 
+        private void SetPending(bool pending)
+        {
+            if (statusLabel == null) return;
+            statusLabel.text = pending ? "正在核对后续步骤 · 原方案待确认" :
+                "已知牌序 · 未来 " + horizon + " 回合 · " + toggleKey + " 显示/隐藏";
+            body.color = pending ? new Color(.65f, .72f, .78f) : new Color(.91f, .94f, .98f);
+        }
+
+        private void ShowMessage(string message)
+        {
+            displayed = null;
+            SetPending(false);
+            if (body != null) body.text = message;
+        }
+
         private static bool Ready(AllGameManagers managers)
         {
             SaveManager save = managers.GetSaveManager(); CombatManager combat = managers.GetCombatManager();
@@ -266,7 +281,7 @@ namespace MonsterTrain2Poju.Probe
                 Failures++; paused = true; session.Invalidate(); displayed = null;
                 log.LogError("ADVISOR-FAIL " + error);
                 if (pauseLabel != null) pauseLabel.text = "恢复建议";
-                if (body != null) body.text = "建议暂时停止，可继续手动操作。\n点击重新计算后恢复建议。";
+                ShowMessage("建议暂时停止，可继续手动操作。\n点击重新计算后恢复建议。");
             }
         }
 
@@ -282,7 +297,7 @@ namespace MonsterTrain2Poju.Probe
                 session.InvalidateForInput(); displayed = null; session.Poll();
                 observationRevision++;
                 captureNeeded = true; observed = false;
-                if (body != null) body.text = "等待场景加载完成…";
+                ShowMessage("等待场景加载完成…");
                 return;
             }
             bool inBattle = managers?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle;
@@ -302,7 +317,6 @@ namespace MonsterTrain2Poju.Probe
             if (paused || HiddenPause || managers == null || !Ready(managers))
             {
                 captureNeeded = true;
-                bool browsing = selectionPending && inBattle && !paused && !HiddenPause;
                 if (preparation != null && preparationRevision == observationRevision)
                     observationRevision++;
                 // A native preview/animation is not proof of a gameplay input.
@@ -312,9 +326,10 @@ namespace MonsterTrain2Poju.Probe
                 if ((paused || HiddenPause || !inBattle) && session.Status != BattleAdviceStatus.Idle)
                     InvalidateState(false, "paused-or-outside-battle");
                 session.Poll();
-                if (!browsing) displayed = null;
-                if (!browsing || displayed == null)
-                    body.text = paused || HiddenPause ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。";
+                // Keep the last forecast readable through native input and
+                // animation settlement, without presenting it as current advice.
+                if (inBattle && !paused && !HiddenPause && displayed != null) SetPending(true);
+                else ShowMessage(paused || HiddenPause ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。");
                 return;
             }
             if (ManualSession)
@@ -358,9 +373,7 @@ namespace MonsterTrain2Poju.Probe
                         if (PreparationThreadId == MainThreadId)
                             throw new InvalidOperationException("Snapshot preparation ran on the native main thread.");
                         LastPreparationMs = prepared.Elapsed.TotalMilliseconds; PreparedObservations++;
-                        long generation = session.Generation;
                         session.Observe(prepared, preparationCaptureElapsed);
-                        if (session.Generation != generation) displayed = null;
                         selectionPending = false; captureNeeded = false;
                         publicationChecked = session.Current?.RootKey == prepared.RootKey;
                     }
@@ -394,12 +407,19 @@ namespace MonsterTrain2Poju.Probe
             if (publicationChecked && session.Current != null && !ReferenceEquals(displayed, session.Current))
             {
                 PublicationRootChecks++;
+                bool preserveScroll = displayed != null && session.SearchCount == displayedSearches &&
+                    (session.Current.ReusedContinuation || session.Current.ReusedSelection);
+                float scroll = preserveScroll ? planScroll.verticalNormalizedPosition : 1;
                 displayed = session.Current; Published++;
                 if (displayed.ReusedSelection) SelectionReuses++;
                 displayFrame = Time.frameCount;
                 displayedSearches = session.SearchCount;
                 body.text = Describe(displayed);
-                planScroll.verticalNormalizedPosition = 1;
+                // Rebuild only this text's layout before restoring the reading
+                // position; the new suffix can have a different content height.
+                LayoutRebuilder.ForceRebuildLayoutImmediate(body.rectTransform);
+                planScroll.verticalNormalizedPosition = scroll;
+                SetPending(false);
                 Publications.Add(new Publication { Generation = session.Generation, Turn = displayed.Root.Spawn.Turn,
                     CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,
                     PreparationMs = displayed.PreparationElapsed.TotalMilliseconds,
@@ -427,9 +447,12 @@ namespace MonsterTrain2Poju.Probe
                     CapturePanel(); screenshotTaken = true;
                 }
             }
-            else if (session.Current == null && displayed == null)
-                body.text = captureError != null ? "局面采集失败，请重新计算。" : session.Status == BattleAdviceStatus.Unavailable ?
-                    "本局面暂时无法给出完整建议。\n可重新计算或继续手动操作。" : "正在计算…\n你可以继续操作，建议会随局面更新。";
+            else if (captureError != null || session.Status == BattleAdviceStatus.Unavailable || displayed == null)
+                ShowMessage(captureError != null ? "局面采集失败，请重新计算。" : session.Status == BattleAdviceStatus.Unavailable ?
+                    "本局面暂时无法给出完整建议。\n可重新计算或继续手动操作。" :
+                    session.Status == BattleAdviceStatus.Planning && session.SearchCount != displayedSearches ?
+                    "正在计算新方案…\n你可以继续操作，建议会随局面更新。" : "正在核对局面…");
+            else SetPending(!ReferenceEquals(displayed, session.Current) || captureNeeded || selectionPending || preparation != null);
         }
 
         private BattleTurnState CaptureReadOnly(AllGameManagers managers)
@@ -460,7 +483,8 @@ namespace MonsterTrain2Poju.Probe
             using var keys = new BattleStateKeys();
             string key = keys.Key(root);
             if (session.Status == BattleAdviceStatus.Unavailable) throw new InvalidOperationException(session.Error);
-            return session.Current?.RootKey == key && ReferenceEquals(displayed, session.Current) && Time.frameCount > displayFrame + 1;
+            return !captureNeeded && !selectionPending && preparation == null && observed &&
+                session.Current?.RootKey == key && ReferenceEquals(displayed, session.Current) && Time.frameCount > displayFrame + 1;
         }
         internal BattlePlanResult CurrentPlan => session.Current?.Plan ?? throw new InvalidOperationException("Advice is not ready.");
         internal BattleAdvice CurrentAdvice => session.Current ?? throw new InvalidOperationException("Advice is not ready.");
@@ -579,8 +603,9 @@ namespace MonsterTrain2Poju.Probe
             if (playerSession && session.Status != BattleAdviceStatus.Idle)
                 log.LogInfo("POJU-INVALIDATE reason=" + reason + " generation=" + session.Generation);
             if (preserveContinuation) session.InvalidateForInput(); else session.Invalidate();
-            displayed = null; captureError = null; captureNeeded = true; observed = false; selectionPending = false;
-            if (body != null) body.text = "局面已更新，正在核对后续方案…";
+            captureError = null; captureNeeded = true; observed = false; selectionPending = false;
+            if (preserveContinuation && displayed != null) SetPending(true);
+            else ShowMessage("正在核对局面…");
         }
         private static void NativeAction(bool preserveContinuation = true, string reason = "native-mutation")
         {

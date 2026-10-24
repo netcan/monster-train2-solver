@@ -78,6 +78,7 @@ namespace MonsterTrain2Poju.Probe
             Version = type?.Assembly.GetName().Version?.ToString(),
             InteractionsPassed,
             IdlePassed, PlanPreviewPassed,
+            Presentation = AdvisorPresentationProbe.Enabled ? AdvisorPresentationProbe.Evidence : null,
             FloorBrowse = !BrowseEnabled ? null : new { Passed = FloorBrowsePassed, Switches = browseSwitches,
                 DuringSearch = browsingDuringSearch, WheelInput = true, SwitchMilliseconds = browseMilliseconds },
             ReplayedFloorSwitches = replayBrowseSwitches,
@@ -126,6 +127,7 @@ namespace MonsterTrain2Poju.Probe
             Require(BattleAdvisorOverlay.Active == null, "a development overlay is also active");
             log = BepInEx.Logging.Logger.CreateLogSource("PlayerAdvisorAcceptance");
             AdvisorCaptureProfileProbe.Install(assembly, log);
+            if (AdvisorPresentationProbe.Enabled) AdvisorPresentationProbe.Install(type!, advisor!, log);
         }
 
         internal static BattleTurnState Capture()
@@ -262,6 +264,7 @@ namespace MonsterTrain2Poju.Probe
                 Require(GetGeneration() > initialGeneration, "refresh reused the preceding generation");
                 InteractionsPassed = true;
                 log!.LogInfo("PLAYER-ADVISOR-UI-PASS pause/resume hide/cancel/show refresh pointer-raycast drag/clamp generation=" + GetGeneration());
+                if (AdvisorPresentationProbe.Enabled) AdvisorPresentationProbe.ExpandAndScroll();
             }
             return true;
         }

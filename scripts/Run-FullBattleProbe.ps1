@@ -14,6 +14,7 @@ param(
     [switch] $PlayerAdvisor,
     [switch] $ProfileCapture,
     [switch] $AdvisorFloorBrowse,
+    [switch] $AdvisorPresentation,
     [switch] $RollingAdvice,
     [switch] $PreviewAttackTrace,
     [switch] $HoldoverCalibration,
@@ -690,6 +691,9 @@ $ErrorActionPreference = 'Stop'
 if ($ProfileCapture -and -not $PlayerAdvisor) { throw 'ProfileCapture requires the separately loaded PlayerAdvisor.' }
 if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
     throw 'AdvisorFloorBrowse requires the real PlayerAdvisor and RollingAdvice driver.'
+}
+if ($AdvisorPresentation -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
+    throw 'AdvisorPresentation requires the real PlayerAdvisor and RollingAdvice driver.'
 }
 if ($RoomMoonSpellHealingRelic) { $RoomMoonSpellAdvance = $true }
 if ($RoomMoonSpellStatusRelic) {
@@ -1613,6 +1617,7 @@ $environment = @{
     MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_PLAYER_ADVISOR = $(if ($PlayerAdvisor) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_FLOOR_BROWSE = $(if ($AdvisorFloorBrowse) { '1' } else { '0' })
+    MT2_PROBE_ADVISOR_PRESENTATION = $(if ($AdvisorPresentation) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
@@ -2358,6 +2363,15 @@ if ($AdvisorFloorBrowse -and -not $RollingInput -and ($null -eq $trace.PlayerAdv
     $trace.PlayerAdvisor.FloorBrowse.Switches -ne 7 -or $trace.PlayerAdvisor.Overlay.SelectionReuses -ne 7 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'PLAYER-ADVISOR-FLOOR-BROWSE-PASS .*newSearches=0' -Quiet))) {
     throw 'Real player floor browsing did not preserve its generation and search count through seven switches.'
+}
+if ($AdvisorPresentation -and -not $RollingInput) {
+    $presentation = $trace.PlayerAdvisor.Presentation
+    if ($null -eq $presentation -or $presentation.RetainedInputs -lt 1 -or $presentation.PendingFrames -lt 1 -or
+        $presentation.ReusedPublications -lt 1 -or $presentation.ScrolledPublications -lt 1 -or $presentation.Resets -lt 1 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'PLAYER-ADVISOR-PRESENTATION-PASS' -Quiet)) {
+        throw 'Player UI did not retain pending text and reading position across native inputs and reused publications.'
+    }
+    Write-Output "PLAYER-PRESENTATION-PASS retainedInputs=$($presentation.RetainedInputs) pendingFrames=$($presentation.PendingFrames) reusedPublications=$($presentation.ReusedPublications) scrolledPublications=$($presentation.ScrolledPublications) resets=$($presentation.Resets)"
 }
 if ($PlayerAdvisor -and $RollingInput) {
     $frozen = $trace.PlayerAdvisor.FrozenObservation
