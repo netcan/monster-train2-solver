@@ -841,6 +841,14 @@ if (args.Length == 2 && args[0] == "--parallel-planner-only")
     return;
 }
 
+if (args.Length == 3 && args[0] == "--parallel-planner-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    ParallelPlannerChecks.NativePair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--exact-battle-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

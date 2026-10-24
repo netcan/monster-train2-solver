@@ -3,6 +3,29 @@ using MonsterTrain2Poju.Model;
 
 internal static class ParallelPlannerChecks
 {
+    internal static void NativePair(FixtureValue source, FixtureValue replay)
+    {
+        FloorBrowseAdviceChecks.NativePair(source, replay);
+        var overlay = source.GetProperty("PlayerAdvisor").GetProperty("Overlay");
+        int mainThread = overlay.GetProperty("MainThreadId").GetInt32();
+        Require(overlay.GetProperty("WholeBattle").GetBoolean() && overlay.GetProperty("MaxSteps").GetInt32() == 256,
+            "Native whole-battle mode/step bound is missing.");
+        foreach (var row in overlay.GetProperty("Publications").EnumerateArray())
+        {
+            int[] threads = row.GetProperty("WorkerThreadIds").EnumerateArray().Select(value => value.GetInt32()).ToArray();
+            Require(row.GetProperty("SearchedToBattleEnd").GetBoolean() && threads.Length == 2 &&
+                threads.Distinct().Count() == 2 && !threads.Contains(mainThread),
+                "A native parallel publication used the wrong mode or Unity's thread.");
+        }
+        var decisions = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(decisions[0].GetProperty("TurnsPlanned").GetInt32() > 3 &&
+            decisions.All(row => row.GetProperty("PlannedOutcome").GetInt32() == (int)RoomOutcome.BattleWon) &&
+            decisions.Skip(1).All(row => row.GetProperty("ReusedWinningContinuation").GetBoolean() &&
+                row.GetProperty("Nodes").GetInt32() == 0),
+            "Native execution did not retain its full winning continuation across turns.");
+        Console.WriteLine("WHOLE-BATTLE-NATIVE PASS: two background search threads, terminal forecast, zero searches for subsequent verified steps, independent native replay/state/RNG.");
+    }
+
     internal static void Native(FixtureValue fixture)
     {
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })

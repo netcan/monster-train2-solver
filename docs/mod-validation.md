@@ -1,5 +1,57 @@
 # Player Mod validation · 2026-10-24
 
+Windows 0.2.7 adds bounded whole-battle planning and a two-worker background
+portfolio. Workers explore different deployment/policy seeds with independent
+full-state keys and RNG, split a total256-node budget, and use the same3,000ms
+deadline at below-normal priority. The caller never joins from Unity's thread.
+The whole-battle no-card rollout supplies an early terminal witness; later
+winning seeds remain candidates while the remaining budget seeks higher final
+Pyre HP. Partial forecasts remain explicitly distinguished from terminal ones.
+`MaxSteps` bounds all actions and EndTurns in one route (default256), including
+looping/endless states, without disabling the existing per-turn/action limits.
+
+Focused checks on the accepted152321 native player root find a full seven-EndTurn
+model victory in serial and parallel, both with28 steps and76 remaining Pyre HP.
+The serial run takes3,015ms/66 nodes; the two-thread run2,687ms/256 total nodes.
+These sequential cold/warm samples are not a speedup or FPS benchmark. Both
+selected routes pass independent full-state/RNG replay and advice verification.
+One-node, one-step, expired-budget and pre/in-flight cancellation controls pass;
+the one-step result is a complete partial EndTurn, never a terminal prediction.
+Existing session/coalescing and ready/in-flight floor-browse checks also pass.
+
+Native source `full-battle-units-spells-and-junk-20261024-155017-28a6ef45`
+loads the real0.2.7 player, records two search threads distinct from Unity's
+thread1, and wins after3 plays/seven EndTurns with51 Pyre HP. All18 publications
+use fresh complete roots. Its five searches include deliberate UI pause/refresh
+controls; once the actual route is selected, all nine subsequent decisions reuse
+the verified winning continuation with zero search nodes, including across turns.
+Seven floor switches add no searches; complete-plan controls and the two-second
+settled idle control pass. All four failure counters are zero, native exit is
+normal and protected original files are unchanged. Native runtime/soft-budget
+results can differ from the offline76-HP route; neither is claimed optimal.
+
+Independent frozen replay
+`full-battle-units-spells-and-junk-20261024-155224-b15941f2` wins with the same
+three plays/seven EndTurns and all four counters zero, with originals unchanged.
+The focused pair checker matches every input, root, successor, forecast and RNG,
+and fourteen train phases per process; the paused player performs zero searches
+and publications. Source/frozen durations are101.99s/53.67s, including native
+startup, driver controls and checks, not search-only or FPS measurements.
+
+The curated pair is `full-battle-player-whole-battle-{search,replay}.mt2f`:
+SHA256 `2029dca9560fc145ee7dcf9e4b9b9dc4f748d76d1aa428d5c62f232d06677c88`
+and `8f8e3ad712b3e899031753b2dcc1654ae0c8f4b9c4c7ea51e812807f7ba662e2`.
+Recheck it with `ModelChecks --parallel-planner-pair-only <search> <replay>`;
+`--parallel-planner-only <search>` exercises the bounded search controls.
+
+The three0.2.7 player DLLs are installed in the real Windows Steam game with
+matching build/installed SHA256 hashes. All28 other loader/plugin/config files
+are unchanged, including F10 and the3,000ms budget. The prior0.2.6 payload is
+retained under `BepInEx/PojuBackups/WholeBattleParallel-20261024-155428/previous`.
+The real process remains running with its previously loaded0.2.5; no real game
+was stopped or autoplayed. Restarting loads0.2.7 and creates the new default
+whole-battle/two-worker/256-step settings. No Mac package was built.
+
 Windows 0.2.6 prepares full snapshot keys and floor-normalized comparisons on
 a background worker. The UI thread reads native objects and performs the
 original before/after native state/RNG purity checks, then submits detached

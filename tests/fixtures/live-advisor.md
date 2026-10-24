@@ -1,12 +1,37 @@
 # Live battle advisor
 
+Windows player 0.2.7 defaults to `WholeBattle = true`: search targets battle
+victory/defeat/stalemate, rather than stopping after three EndTurns. Winning
+routes are compared by final Pyre health; finding the first winning seed no
+longer ends the search. The panel shows forecast Pyre loss and explicitly labels
+partial forecasts when the budget cannot reach battle end. These bounded
+heuristic results do not certify global optimality or unknown future randomness.
+
+The player defaults to `SearchWorkers = 2`, capped at two lower-priority search
+threads and at logical processors minus one (minimum one). Their independent
+deployment/policy searches split the same 256-node allowance and share a 3,000ms
+wall-clock budget; an atomic model expansion can overrun that soft deadline.
+Full-state keys and RNG caches are private to each worker. Native capture stays
+on Unity's thread, while verification remains on the coordinator worker.
+`SearchWorkers = 1` selects serial search; `WholeBattle = false` restores the
+configured `Horizon` window. The existing installed hotkey is preserved.
+
+`MaxSteps = 256` bounds each route, including card plays, abilities and EndTurns,
+so looping/endless states cannot create unbounded paths. It is configurable
+from1 to4096; reaching the cap never masquerades as a terminal result. The
+existing twelve-actions-per-turn, node and time limits also remain in effect.
+
 Launch the interactive copied game with:
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-BattleAdvisor.ps1
 ```
 
-Play normally. The panel shows the next card/ability, floor, deployment slot
+For an isolated whole-battle parallel session, add `-WholeBattle -SearchWorkers 2`
+and optionally `-MaxSteps 256`. These modes use the in-process model; the
+separate .NET planner keeps its existing fixed-window protocol.
+
+Play normally. The development launch defaults to a fixed window. Its panel shows the next card/ability, floor, deployment slot
 or target, and the forecast Pyre HP after up to three EndTurns. The complete-plan
 button expands a scrollable sequence grouped by turn; collapsing restores the
 next-step summary. Viewing the plan does not capture or search. Future actions
@@ -47,7 +72,7 @@ cropping. The Canvas uses a GraphicRaycaster and a blocking panel image.
 ## Execution and freshness
 
 `BattleAdviceSession` accepts only immutable model snapshots. One background
-worker runs the bounded planner and independently replays every selected step
+coordinator runs the bounded planner, optionally with one search helper, and independently replays every selected step
 before publishing a complete continuation. Unity/game APIs stay on the main
 thread; detached snapshot keys and floor-equivalence comparisons are also
 prepared on a background worker. The UI polls completed preparations without
