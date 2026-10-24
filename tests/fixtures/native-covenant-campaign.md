@@ -132,3 +132,35 @@ before they can be called default evidence. No full regression or Mac package
 is run for this batch.
 `Check-PlayerAdvisor.ps1 -Case NativeCovenantCampaign03Default -SkipBuild`
 checks both registered archive hashes and this focused pair gate.
+
+## Natural rank-three Ring3 with actual defaults
+
+Original rewards/map progression from the accepted Ring2 replay preserves
+rank3, seed424242, two original wins and27 cards at the unmodified
+`Level3BattleHeavyHitter_SiphonRage` encounter. The first no-advice guard and
+the narrow native birth calibration are documented in [Arkion](arkion.md#natural-cumulative-covenant3-rage-birth).
+`campaign-native-covenant-03-ring3.zip` restores all nine native payloads.
+
+After that repair, source `full-battle-units-spells-and-junk-20261024-084734-c8a4d32b`
+and replay `full-battle-units-spells-and-junk-20261024-085335-04143890` both win
+at Pyre52:36 inputs,27 card/ability plays and nine EndTurns. Native durations
+are359.24/251.35 seconds. Both exit normally, preserve protected originals and
+record four zero failure counters. All inputs, roots, complete forecasts,
+successors, RNG,67 room stages and17 train phases per process match across
+independent native processes. Native campaign input and cumulative owners
+remain unchanged; no selected-route, stat, boss/death or Covenant control is used.
+
+Both use actual three-turn/3000ms/top-floor defaults with tactical seed off
+and no shortened forecast. The source consumes seven searches and reuses24
+ordinary/five winning continuations. All38 publications have fresh full-root
+checks; captures are315/123 with zero purity failures. The replay's36 inputs
+consume zero planning nodes and publish no advice; this historical replay
+still starts36 unused background searches, a test-driver inefficiency distinct
+from input selection. No end-to-end three-second response guarantee is made.
+This is a third natural rank-three victory, not completed campaign acceptance.
+
+Archives use `full-battle-player-native-covenant-campaign-03-ring3-default-`
+with `search.mt2f` and `replay.mt2f`; registered hashes and the pair gate run via
+`Check-PlayerAdvisor.ps1 -Case NativeCovenantCampaign03Ring3Default -SkipBuild`.
+Reproduction uses `Run-NativeCovenantPlayerPairs.ps1 -Rank 3 -Battle Campaign
+-BattleDistance 2 -InputProfile <restored-Ring3-profile> -DefaultAdvice -SkipBuild`.

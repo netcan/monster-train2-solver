@@ -1,5 +1,14 @@
 # Player Mod validation · 2026-10-24
 
+Natural Covenant3 Ring3 now passes actual defaults too: both native processes
+win original Siphon Rage at Pyre52 after36 inputs. Full forecasts/state/RNG,
+67 room stages and17 train phases per process match, with normal exits and
+all four failure counters zero. The exact original merchant-only third
+Covenant no longer rejects the queued boss before the first recommendation.
+Thirty-eight source publications have fresh full-root checks;24 ordinary/five
+winning continuations reuse their verified suffixes without search. See
+[natural Ring3 evidence](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring3-with-actual-defaults).
+
 Natural Covenant3 Ring2 now also passes the actual three-turn/3000ms/top-floor
 defaults with tactical seed off: source and independent native replay both win
 at Pyre52 after 28 inputs. All complete forecasts/state/RNG and thirteen train

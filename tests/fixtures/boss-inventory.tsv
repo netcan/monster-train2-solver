@@ -1,7 +1,7 @@
 scenario	outer_boss	definition_gate	growth_signature	curated_battles	curated_player_pairs	player_sources
 Level3BattleHeavyHitter_PushAttack	Boss_Level3_Arkion_PushAttack	allowed		4	1	full-battle-player-arkion-push-search.mt2f
 Level3BattleHeavyHitter_PyreDamage	Boss_Level3_Arkion_DamagePyre	allowed		3	1	full-battle-player-arkion-pyre-search.mt2f
-Level3BattleHeavyHitter_SiphonRage	Boss_Level3_Arkion_SiphonRage	allowed	OnAnyHeroDeathOnFloor:CardEffectAddStatusEffect:0	5	1	full-battle-player-arkion-rage-search.mt2f
+Level3BattleHeavyHitter_SiphonRage	Boss_Level3_Arkion_SiphonRage	allowed	OnAnyHeroDeathOnFloor:CardEffectAddStatusEffect:0	7	2	full-battle-player-arkion-rage-search.mt2f;full-battle-player-native-covenant-campaign-03-ring3-default-search.mt2f
 Level3ImmortalMass_Corruption	Boss_Level3_Fleshweaver_Corruption	allowed		4	1	full-battle-player-fleshweaver-corruption-search.mt2f
 Level3ImmortalMass_MoreMass	Boss_Level3_Fleshweaver_MoreMass	allowed		4	1	full-battle-player-fleshweaver-mass-search.mt2f
 Level3ImmortalMass_Spikes	Boss_Level3_Fleshweaver_Spike	allowed		4	1	full-battle-player-fleshweaver-spikes-search.mt2f

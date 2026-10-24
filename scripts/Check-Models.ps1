@@ -32,6 +32,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-endless-spell-routing-calibration.mt2f', 'player-endless-spell-routing-replay-calibration.mt2f',
     'full-battle-player-native-covenant-campaign-03-ring2-default-search.mt2f',
     'full-battle-player-native-covenant-campaign-03-ring2-default-replay.mt2f',
+    'full-battle-player-native-covenant-campaign-03-ring3-default-search.mt2f',
+    'full-battle-player-native-covenant-campaign-03-ring3-default-replay.mt2f',
     'full-battle-stewards-quarters-birth-order.mt2f',
     'full-battle-player-natural-ring7-ordinary-search.mt2f', 'full-battle-player-natural-ring7-ordinary-replay.mt2f',
     'full-battle-player-state-key-search.mt2f', 'full-battle-player-state-key-replay.mt2f',

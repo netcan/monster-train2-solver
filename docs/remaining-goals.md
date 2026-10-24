@@ -8,8 +8,12 @@
 更高难度推进到自然第三战时发现并修复出生保护缺口：累计第三项 Covenant 只改
 商店费用，原生 Rage 首领仍为 7 攻／625 血，但原保护只允许累计前两项，因此
 开局没有建议。新增精确签名放行，原生出生、无卡整场及十六条不可变分支均通过，
-四项失败计数全零；改变效果／Covenant 顺序或其他首领仍拒绝。玩家默认胜局尚待
-独立验收，见 [自然累计第三项出生](../tests/fixtures/arkion.md#natural-cumulative-covenant3-rage-birth)。
+四项失败计数全零；改变效果／Covenant 顺序或其他首领仍拒绝。实际默认建议及
+独立回放也均获胜：36 个输入、火炉 52 血，完整预测／状态／RNG、17 个列车阶段、
+正常退出和四项失败计数全零通过；38 次发布均有新鲜完整根局面校验，24 次普通
+续步和 5 次胜局续步不重搜，没有缩短窗口。见
+[自然累计第三项出生](../tests/fixtures/arkion.md#natural-cumulative-covenant3-rage-birth) 与
+[自然第三战默认胜局](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring3-with-actual-defaults)。
 
 更高难度的自然推进已新增 Covenant 3 第二战默认配置胜局配对：两进程均为
 28 个输入、火炉 52 血获胜，完整预测／状态／RNG、13 个列车阶段、正常退出及

@@ -4512,12 +4512,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
-foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-native-covenant-campaign-03-ring2-default-search.mt2f"))
+foreach (int ring in new[] { 2, 3 })
+foreach (string path in args.Where(path => Path.GetFileName(path) == $"full-battle-player-native-covenant-campaign-03-ring{ring}-default-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
-        "full-battle-player-native-covenant-campaign-03-ring2-default-replay.mt2f"));
-    NativeCovenantCampaignChecks.DefaultPair(source.RootElement, replay.RootElement, 3, 1);
+        $"full-battle-player-native-covenant-campaign-03-ring{ring}-default-replay.mt2f"));
+    NativeCovenantCampaignChecks.DefaultPair(source.RootElement, replay.RootElement, 3, ring - 1);
 }
 CorruptPoisonChecks.Run();
 foreach (string variant in new[] { "AllyBuffer", "Fragile", "Corrupter" })
