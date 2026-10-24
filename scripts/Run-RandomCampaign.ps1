@@ -5,6 +5,7 @@ param(
     [Parameter(Mandatory)][ValidateSet('Banished','Pyreborne','LunaCoven','Underlegion','LazarusLeague','Hellhorned','Awoken','Stygian','Umbra','Remnant','Wurmkin')][string] $SecondaryClan,
     [Parameter(Mandatory)][ValidateRange(1, 2147483647)][int] $Seed,
     [ValidateRange(0, 10)][int] $Rank = 0,
+    [ValidateRange(100, 30000)][int] $TimeLimitMs = 3000,
     [string] $InputProfile = '',
     [ValidateRange(1, 2)][int] $NativeWorker = 2,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 1200,
@@ -66,11 +67,11 @@ function Record([object] $Entry) {
     [IO.File]::AppendAllText($journal, ($Entry | ConvertTo-Json -Depth 10 -Compress) + [Environment]::NewLine)
 }
 $receipt = [ordered]@{ Schema=1; PrimaryClan=$PrimaryClan; SecondaryClan=$SecondaryClan; Seed=$Seed; Rank=$Rank
-    WholeBattle=$true; SearchWorkers=2; TimeLimitMs=3000; Journal=$journal; InputProfile=$InputProfile
+    WholeBattle=$true; SearchWorkers=2; TimeLimitMs=$TimeLimitMs; Journal=$journal; InputProfile=$InputProfile
     StartingRing=$resumeDistance+1; LastAcceptedRing=$resumeDistance; NativeCampaignWon=$false; NativeVictoryType=$null
     Outcome='Running'; FailureRing=$null; Failure=$null; SourceProfile=$null; NextInputProfile=$InputProfile }
 Record ([pscustomobject]$receipt)
-Write-Host "RANDOM-CAMPAIGN-START $PrimaryClan/$SecondaryClan seed=$Seed rank=$Rank journal=$journal"
+Write-Host "RANDOM-CAMPAIGN-START $PrimaryClan/$SecondaryClan seed=$Seed rank=$Rank budgetMs=$TimeLimitMs journal=$journal"
 try {
     if (-not $InputProfile) {
         $opening = Invoke-Native 'Run-CampaignProgress.ps1' @{ StopBeforeRing=1; Seed=$Seed; PrimaryClan=$PrimaryClan
@@ -91,7 +92,7 @@ try {
         $inputPath = Join-Path $InputProfile 'saves/save-singlePlayer.json'
         $inputHash = (Get-FileHash -LiteralPath $inputPath -Algorithm SHA256).Hash
         $source = Invoke-Native 'Run-FullBattleProbe.ps1' @{ InputProfile=$InputProfile; BattleDistance=$distance; Seed=$Seed
-            PlayerAdvisor=$true; RollingAdvice=$true; PlannerWholeBattle=$true; PlannerSearchWorkers=2; PlannerTimeLimitMs=3000
+            PlayerAdvisor=$true; RollingAdvice=$true; PlannerWholeBattle=$true; PlannerSearchWorkers=2; PlannerTimeLimitMs=$TimeLimitMs
             PhysicalSpawnPoints=$true; BranchCardMasks=$true; SettleDeathDissolves=$true; SettleCardAnimations=$true
             NativeWorker=$NativeWorker; TimeoutSeconds=$TimeoutSeconds; SkipBuild=$true }
         $receipt.SourceProfile = $source.Profile
@@ -104,7 +105,7 @@ try {
         if ($loaded.SHA256 -ine $inputHash) { throw 'Native source loaded another campaign checkpoint.' }
         if ((Get-FileHash -LiteralPath $inputPath -Algorithm SHA256).Hash -cne $inputHash) { throw 'Original isolated input changed.' }
         if (-not $accepted.NativeWon) {
-            dotnet $checker --random-campaign-source-only $trace $Seed $Rank $distance $PrimaryClan $SecondaryClan
+            dotnet $checker --random-campaign-source-only $trace $Seed $Rank $distance $PrimaryClan $SecondaryClan $TimeLimitMs
             if ($LASTEXITCODE -ne 0) { throw 'Complete defeat failed independent model/UI acceptance.' }
             $receipt.Outcome='Defeat'
             Record @{ Kind='native-defeat'; Ring=$distance+1; Source=$accepted; InputProfile=$InputProfile; InputSaveSHA256=$inputHash }
@@ -117,7 +118,7 @@ try {
         if (-not $progress.NativePassed -or -not $progress.BattleReplayPassed -or -not $progress.PlayerReplay -or
             -not $progress.OriginalFilesUnchanged) { throw 'Frozen native battle and campaign progression failed.' }
         $replay = Join-Path $progress.Profile 'full-battle.mt2f'
-        dotnet $checker --random-campaign-pair-only $trace $replay $Seed $Rank $distance $PrimaryClan $SecondaryClan
+        dotnet $checker --random-campaign-pair-only $trace $replay $Seed $Rank $distance $PrimaryClan $SecondaryClan $TimeLimitMs
         if ($LASTEXITCODE -ne 0) { throw 'Independent random campaign pair check failed.' }
         if ((Get-FileHash -LiteralPath $inputPath -Algorithm SHA256).Hash -cne $inputHash) { throw 'Original isolated input changed.' }
         $pair = @{ Kind='pair-accepted'; Ring=$distance+1; SourceProfile=$source.Profile; ReplayProfile=$progress.Profile

@@ -26,18 +26,19 @@ internal static class RandomCampaignChecks
         FixtureValue input = source.RootElement.GetProperty("NativeRunInput");
         int seed = input.GetProperty("Seed").GetInt32(), rank = input.GetProperty("AscensionLevel").GetInt32();
         int distance = input.GetProperty("Distance").GetInt32();
+        int timeLimitMs = source.RootElement.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("TimeLimitMs").GetInt32();
         string primary = input.GetProperty("PrimaryClan").GetString()!, secondary = input.GetProperty("SecondaryClan").GetString()!;
         if (path.EndsWith("-loss.mt2f", StringComparison.Ordinal))
         {
             Require(!source.RootElement.GetProperty("NativeWon").GetBoolean(), "A curated loss must be an actual terminal defeat.");
-            Source(source.RootElement, seed, rank, distance, primary, secondary);
+            Source(source.RootElement, seed, rank, distance, primary, secondary, timeLimitMs);
         }
         else
         {
             Require(path.EndsWith("-search.mt2f", StringComparison.Ordinal), "A curated pair must start with its source archive.");
             string replayPath = path.Substring(0, path.Length - "-search.mt2f".Length) + "-replay.mt2f";
             using var replay = ModelJson.ReadFixture(replayPath);
-            Pair(source.RootElement, replay.RootElement, seed, rank, distance, primary, secondary);
+            Pair(source.RootElement, replay.RootElement, seed, rank, distance, primary, secondary, timeLimitMs);
             if (Path.GetFileName(path) == "full-battle-random-campaign-02-ring2-search.mt2f")
             {
                 using var before = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!,
@@ -154,9 +155,9 @@ internal static class RandomCampaignChecks
     private static void Require(bool value, string message)
     { if (!value) throw new InvalidOperationException(message); }
 
-    internal static void Input(FixtureValue fixture, int seed, int rank, int distance, string primary, string secondary)
+    internal static void Input(FixtureValue fixture, int seed, int rank, int distance, string primary, string secondary, int timeLimitMs = 3000)
     {
-        Require(seed > 0 && rank is >= 0 and <= 10 && distance is >= 0 and <= 7 && primary != secondary,
+        Require(seed > 0 && rank is >= 0 and <= 10 && distance is >= 0 and <= 7 && primary != secondary && timeLimitMs is >= 100 and <= 30000,
             "Invalid declared random campaign configuration.");
         FixtureValue input = fixture.GetProperty("NativeRunInput");
         Require(input.GetProperty("AscensionLevel").GetInt32() == rank && input.GetProperty("StartingLevel").GetInt32() == rank &&
@@ -174,25 +175,25 @@ internal static class RandomCampaignChecks
         FixtureValue settings = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
         Require(settings.GetProperty("Horizon").GetInt32() == 3 && settings.GetProperty("WholeBattle").GetBoolean() &&
             settings.GetProperty("MaxSteps").GetInt32() == 256 && settings.GetProperty("SearchWorkers").GetInt32() == 2 &&
-            settings.GetProperty("TimeLimitMs").GetInt32() == 3000 &&
+            settings.GetProperty("TimeLimitMs").GetInt32() == timeLimitMs &&
             settings.GetProperty("PreferredDeploymentRoom").GetInt32() == 2 && !settings.GetProperty("TacticalSeed").GetBoolean(),
-            "Random campaign must exercise shipped whole-battle/two-worker/3000ms defaults.");
+            "Random campaign changed whole-battle/two-worker settings or its declared search budget.");
     }
 
-    internal static void Source(FixtureValue fixture, int seed, int rank, int distance, string primary, string secondary)
+    internal static void Source(FixtureValue fixture, int seed, int rank, int distance, string primary, string secondary, int timeLimitMs = 3000)
     {
-        Input(fixture, seed, rank, distance, primary, secondary);
+        Input(fixture, seed, rank, distance, primary, secondary, timeLimitMs);
         RollingAdviceChecks.Native(fixture);
         BattleAdviceChecks.Native(fixture, requireBoss: false);
         TrainCombatChecks.Native(fixture);
         JuiceTraitChecks.Native(fixture);
-        Console.WriteLine($"RANDOM-CAMPAIGN-SOURCE PASS {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1} won={fixture.GetProperty("NativeWon").GetBoolean()}.");
+        Console.WriteLine($"RANDOM-CAMPAIGN-SOURCE PASS {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1} budgetMs={timeLimitMs} won={fixture.GetProperty("NativeWon").GetBoolean()}.");
     }
 
-    internal static void Pair(FixtureValue source, FixtureValue replay, int seed, int rank, int distance, string primary, string secondary)
+    internal static void Pair(FixtureValue source, FixtureValue replay, int seed, int rank, int distance, string primary, string secondary, int timeLimitMs = 3000)
     {
-        Input(source, seed, rank, distance, primary, secondary);
-        Input(replay, seed, rank, distance, primary, secondary);
+        Input(source, seed, rank, distance, primary, secondary, timeLimitMs);
+        Input(replay, seed, rank, distance, primary, secondary, timeLimitMs);
         Require(source.GetProperty("NativeWon").GetBoolean() && replay.GetProperty("NativeWon").GetBoolean(),
             "Accepted random campaign pairs require two native victories.");
         Require(source.GetProperty("NativeRunInput").ContentEquals(replay.GetProperty("NativeRunInput")),
@@ -205,6 +206,6 @@ internal static class RandomCampaignChecks
         JuiceTraitChecks.Native(replay);
         Require(replay.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("Published").GetInt32() == 0,
             "Frozen campaign replay must execute the recorded advice without a new search.");
-        Console.WriteLine($"RANDOM-CAMPAIGN-PAIR PASS {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1}: two native wins, full state/forecast/RNG identity.");
+        Console.WriteLine($"RANDOM-CAMPAIGN-PAIR PASS {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1} budgetMs={timeLimitMs}: two native wins, full state/forecast/RNG identity.");
     }
 }

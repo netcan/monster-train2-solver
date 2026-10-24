@@ -15,18 +15,18 @@ if (args.Length == 2 && args[0] == "--random-campaign-curated-only")
     return;
 }
 
-if (args.Length == 7 && args[0] == "--random-campaign-source-only")
+if (args.Length is 7 or 8 && args[0] == "--random-campaign-source-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
-    RandomCampaignChecks.Source(source.RootElement, int.Parse(args[2]), int.Parse(args[3]), int.Parse(args[4]), args[5], args[6]);
+    RandomCampaignChecks.Source(source.RootElement, int.Parse(args[2]), int.Parse(args[3]), int.Parse(args[4]), args[5], args[6], args.Length == 8 ? int.Parse(args[7]) : 3000);
     return;
 }
 
-if (args.Length == 8 && args[0] == "--random-campaign-pair-only")
+if (args.Length is 8 or 9 && args[0] == "--random-campaign-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
-    RandomCampaignChecks.Pair(source.RootElement, replay.RootElement, int.Parse(args[3]), int.Parse(args[4]), int.Parse(args[5]), args[6], args[7]);
+    RandomCampaignChecks.Pair(source.RootElement, replay.RootElement, int.Parse(args[3]), int.Parse(args[4]), int.Parse(args[5]), args[6], args[7], args.Length == 9 ? int.Parse(args[8]) : 3000);
     return;
 }
 

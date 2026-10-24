@@ -300,7 +300,7 @@ namespace MonsterTrain2Poju.Model
                         // Reach the first combat before committing the whole
                         // budget to later empty turns. A verified two-turn
                         // prefix can still be published as a shorter window.
-                        Node forecast = Rollout(strength, adaptDeployment && source.Spawn.Turn == 0
+                        Node forecast = Rollout(strength, options.SearchToBattleEnd || adaptDeployment && source.Spawn.Turn == 0
                             ? Math.Min(2, maxTurns) : maxTurns);
                         // Compare other deployments only when the ordinary
                         // opening forecast loses a unit already deployed by
@@ -350,7 +350,11 @@ namespace MonsterTrain2Poju.Model
                                 }
                             }
                         }
-                        Rollout(forecast);
+                        // A whole-battle route needs the later turns' card
+                        // choices before an empty-hand terminal forecast spends
+                        // the remaining interactive budget. Keep its complete
+                        // short fallback and continue the same legal policy.
+                        if (!options.SearchToBattleEnd) Rollout(forecast);
                     }
                 }
             }
