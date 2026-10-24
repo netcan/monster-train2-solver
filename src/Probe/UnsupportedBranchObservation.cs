@@ -70,7 +70,7 @@ namespace MonsterTrain2Poju.Probe
                 "Native branch did not reach the recorded failure root.");
             FixtureValue value = boundary ? request : prefix[rows.Count];
             PlayCardAction? action = Read<PlayCardAction?>(value.GetProperty("Action"));
-            bool end = !boundary && value.GetProperty("IsEndTurn").GetBoolean();
+            bool end = value.TryGetProperty("IsEndTurn", out FixtureValue endValue) && endValue.GetBoolean();
             Require(end == (action == null), "Invalid branch input.");
             BattleTurnState? predicted;
             string? reason;
