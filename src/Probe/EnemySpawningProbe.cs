@@ -65,6 +65,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     OuterBossSpawnDefinition candidate = OuterBossBirthProbe.Definition(data);
                     if (candidate.Actor.ExternalInteractions.Count == 0) queuedOuterBoss = candidate;
+                    else interactions.AddRange(candidate.Actor.ExternalInteractions);
                 }
             }
             CharacterState? retainedOuter = heroes.GetOuterTrainBossCharacter();

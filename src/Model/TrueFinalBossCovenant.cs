@@ -86,6 +86,11 @@ namespace MonsterTrain2Poju.Model
         internal static bool CalibratedOuterBossOwners(CombatRelicState[] owners, string asset)
         {
             return owners.Length == 0 || (asset is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" ||
+                // Arkion's conditional Pyre damage uses the same captured
+                // Covenant stats and ordered birth callbacks as ordinary waves.
+                // Owner identities/effect signatures and birth origins remain
+                // validated below; this encounter is not limited to rank two.
+                OuterBossDefinitions.IsArkionPyre(asset) ||
                 (OuterBossDefinitions.IsArkionRage(asset) || asset == "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth") &&
                     NaturalMerchantOwners(owners) ||
                 (OuterBossDefinitions.IsAngelDuo(asset) || OuterBossDefinitions.IsCael(asset) ||

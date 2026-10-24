@@ -4075,16 +4075,19 @@ namespace MonsterTrain2Poju.Model
                     var rule = relic.UnitUpgradeTriggers?.SingleOrDefault(effect => effect.EffectIndex == effectIndex);
                     if (rule == null) continue;
                     bool killAttack = RelicKillAttackModel.IsOwner(relic);
+                    bool trialAttack = ArkionAttackTrial.IsOwner(relic);
+                    bool directAttack = killAttack || trialAttack;
                     if (killAttack && kind == "OnKill" && unit.Source.Modifiers == null)
                     { unsupportedReason = "Kill attack requires captured clone/modifier state."; return false; }
                     if (killAttack && !RelicKillAttackModel.Eligible(unit.Freeze(), kind)) continue;
+                    if (trialAttack && !ArkionAttackTrial.Eligible(unit.Freeze(), kind)) continue;
                     if (rule.Trigger != kind || rule.Upgrade == null || unit.Source.IsPyre && !killAttack ||
                         !(unit.Source.Team == CombatTeam.Player ? rule.SourcePlayer : rule.SourceEnemy) ||
                         !rule.SubtypeIsNone && !unit.Source.Subtypes.Contains(rule.RequiredSubtype!) ||
                         kind == "OnDeath" && unit.Alive && paramInt != 1) continue;
 
                     int fireCount;
-                    if (killAttack) fireCount = 1;
+                    if (directAttack) fireCount = 1;
                     else if (kind == "OnTroopAdded" || kind == "OnTroopRemoved") fireCount = paramInt2;
                     else if (context!.TriggerCounts == null) fireCount = 1;
                     else
@@ -4101,9 +4104,9 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (!ApplyUpgrade(unit, rule.Upgrade, lifetime, rule.ShouldRemove,
                             RoomCapacityModel.Maximum(context, source.RoomIndex, unit.Source.Team),
-                            unit.Source.SpawnerCardId, kind, directApi: true, upgradeId: killAttack ? "" : rule.Upgrade.DataId)) return false;
+                            unit.Source.SpawnerCardId, kind, directApi: true, upgradeId: directAttack ? "" : rule.Upgrade.DataId)) return false;
                         if (rule.UpgradeLifetime != RelicUnitUpgradeTriggerModel.UntilEndOfBattle || source.Preview ||
-                            unit.Source.SpawnerCardId <= 0 || killAttack && unit.Source.Modifiers?.SpawnerMatchesDefinition != true) continue;
+                            unit.Source.SpawnerCardId <= 0 || directAttack && unit.Source.Modifiers?.SpawnerMatchesDefinition != true) continue;
                         CardInstanceState? spawner = context?.FindCard(unit.Source.SpawnerCardId);
                         if (spawner == null) continue;
                         CardModifiers temporary = rule.ShouldRemove

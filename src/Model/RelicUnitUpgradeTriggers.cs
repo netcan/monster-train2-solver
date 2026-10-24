@@ -32,6 +32,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? Validate(CombatRelicState relic)
         {
+            if (ArkionAttackTrial.IsOwner(relic) || relic.AssetKey == ArkionAttackTrial.AssetKey)
+                return ArkionAttackTrial.Validate(relic);
             if (RelicKillAttackModel.IsOwner(relic) || relic.AssetKey == RelicKillAttackModel.AssetKey)
                 return RelicKillAttackModel.Validate(relic);
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))

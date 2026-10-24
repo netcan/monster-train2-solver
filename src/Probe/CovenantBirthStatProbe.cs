@@ -65,9 +65,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool OuterBossCalibrated(SaveManager save, CharacterData data)
         {
             if (save.GetCovenantsForSpawnPattern().Count == 0) return true;
-            // Use the same identity/effect boundary as modeled creation. In
-            // particular, the native rank-three Rage/Incant-Health encounters
-            // retain the exact merchant-only owner without extra birth callbacks.
+            // Projection and modeled creation share the same identity/effect
+            // boundary, including cumulative Arkion Pyre Covenants.
             CombatRelicState[] owners = save.GetCovenants().Select(owner => new CombatRelicState(
                 owner.GetRelicDataID(), owner.GetSourceRelicData().name,
                 owner.GetEffects().Select(effect => effect.GetType().Name).ToArray(), isCovenant: true)).ToArray();
@@ -82,6 +81,17 @@ namespace MonsterTrain2Poju.Probe
             int frame = UnityEngine.Time.frameCount;
             object before = Rng();
             CharacterStatAdjustment adjustment = AllGameManagers.Instance.GetRelicManager().GetEnemyStatAdjustmentsFromAllRelics(data);
+            if (OuterBossDefinitions.IsArkionPyre(data.GetAssetKey()))
+            {
+                // The all-relic preview includes the Titan Trial's later
+                // OnSpawn upgrade. Birth stats cover Covenant callbacks only;
+                // the ordinary trigger engine applies that trial upgrade.
+                AllGameManagers managers = AllGameManagers.Instance;
+                adjustment = new CharacterStatAdjustment();
+                foreach (CovenantState owner in managers.GetSaveManager().GetCovenants())
+                    adjustment.Add(owner.GetCharacterStatAdjustmentsForPreview(data,
+                        managers.GetCardStatistics(), Team.Type.Heroes, managers.GetRelicManager()));
+            }
             object after = Rng();
             if (frame != UnityEngine.Time.frameCount || JsonConvert.SerializeObject(before) != JsonConvert.SerializeObject(after))
                 throw new InvalidOperationException("Covenant stat preview changed native RNG or frame.");

@@ -217,9 +217,11 @@ namespace MonsterTrain2Poju.Probe
                         ? AddedTriggers(item.Effect, item.Index) : StatusAddedTrigger(item.Effect, item.Index)).ToArray();
                 var unitUpgradeTriggers = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddRemoveTempUpgradeOnUnitTrigger ||
-                        item.Effect is RelicEffectModifyCharacterAttackDamage && relic.GetRelicDataID() == RelicKillAttackModel.DataId)
+                        item.Effect is RelicEffectModifyCharacterAttackDamage &&
+                            (relic.GetRelicDataID() == RelicKillAttackModel.DataId || relic.GetRelicDataID() == ArkionAttackTrial.DataId))
                     .Select(item => item.Effect is RelicEffectModifyCharacterAttackDamage
-                        ? KillAttackUpgrade(item.Effect, item.Index) : UnitUpgradeTrigger(item.Effect, item.Index)).ToArray();
+                        ? KillAttackUpgrade(item.Effect, item.Index, relic.GetRelicDataID() == ArkionAttackTrial.DataId ? 5 : 3)
+                        : UnitUpgradeTrigger(item.Effect, item.Index)).ToArray();
                 var soloUnitUpgrades = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect.GetType().Name == RelicSoloUnitUpgradeModel.Effect ||
                         item.Effect.GetType().Name == RelicSoloUnitUpgradeModel.FrontRoomEffect)
@@ -399,10 +401,10 @@ namespace MonsterTrain2Poju.Probe
             return Current(managers).Select(owner => new RelicCountRole(owner.GetRelicDataID(), collected.Contains(owner), owner.IsBossGivenRelic(), owner.IsSoulSaviorScalingRelic(),
                 (save.GetMainClass()?.IsStarterRelic(owner.GetRelicDataID()) ?? false) || (save.GetSubClass()?.IsStarterRelic(owner.GetRelicDataID()) ?? false))).ToArray();
         }
-        private static RelicUnitUpgradeTrigger KillAttackUpgrade(IRelicEffect effect, int index)
+        private static RelicUnitUpgradeTrigger KillAttackUpgrade(IRelicEffect effect, int index, int damage)
         {
             object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
-            if (!(bool)Field("useUpgradeData") || (int)Field("damageAmount") != 3 ||
+            if (!(bool)Field("useUpgradeData") || (int)Field("damageAmount") != damage ||
                 (CardType)Field("cardType") != CardType.Invalid || (MutatorData?)Field("requiredMutator") != null ||
                 ((SubtypeData[])Field("excludeCharacterSubtypes")).Length != 0)
                 throw new InvalidOperationException("Original kill-attack runtime definition changed.");
