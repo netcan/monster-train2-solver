@@ -1,6 +1,18 @@
 # Player Mod validation · 2026-10-24
 
 Original moon spell upgrades/Lunacy/room masks now also support the exact
+original Full-moon energy relic and its once-per-turn condition. The isolated
+component and20-play baseline pass. Actual player source/independent frozen
+replay both win at Pyre80 after45 inputs,with complete forecasts/state/RNG,
+36 room stages and ten train phases per process,normal exits and four zero
+counters. Each has five positive Full gains/four New controls;paid X cost
+remains distinct from any energy refunded afterward. Forty-seven publications
+have fresh full-root checks;44 winning continuations reuse the verified route.
+Frozen replay has no searches/publications after pausing. This controlled
+six-turn/10000ms scene is separate from natural/default campaign victories.
+See [Full-moon energy composition](../tests/fixtures/moon-phase-energy-relic.md).
+
+Original moon spell upgrades/Lunacy/room masks now also support the exact
 original phase-healing relic. The isolated15-boundary component and20-play
 baseline pass,followed by a winning player source/independent frozen replay:
 48 inputs,Pyre80,complete forecasts/state/RNG,47 room stages and13 train

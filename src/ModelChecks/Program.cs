@@ -5094,6 +5094,13 @@ foreach (string path in args.Where(path => path.EndsWith("player-moon-room-turn-
     using var document = ModelJson.ReadFixture(path);
     PlayerMoonRoomSpellChecks.TurnBoundary(document.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-phase-energy-relic-search.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+        "full-battle-player-moon-room-phase-energy-relic-replay.mt2f"));
+    PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requirePhaseEnergyRelic: true);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-phase-heal-relic-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);

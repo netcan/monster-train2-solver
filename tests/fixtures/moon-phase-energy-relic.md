@@ -50,3 +50,33 @@ player gate is `--player-moon-room-phase-energy-relic-pair-only`. That gate
 requires explicit original-relic provenance in both processes and actual
 multi-turn Full gains/New controls with matching condition histories.
 No full regression or new Mac package is used.
+
+## Native player pair
+
+Source `full-battle-units-spells-and-junk-20261024-103737-2f0a5bd4` and
+independent frozen replay `full-battle-units-spells-and-junk-20261024-104339-01a6c138`
+both win at Pyre80 after45 inputs (40 plays/abilities,five EndTurns).
+They exit normally in360.04/164.20 seconds,preserve protected originals and
+have all four failure counters zero. Every input,complete root,forecast,
+successor and RNG matches,including36 room stages and ten train phases in
+each process. Each has five positive Full callbacks and four New controls
+that grant no energy,with the exact original once-per-turn histories.
+The gate checks paid Lunacy costs separately from energy refunded afterward,
+original Conduit amounts,all five spells,both room-mask modes and16 immutable
+complete battle branches. The dedicated player gate passes.
+
+The source has47 publications with47 fresh complete-root checks and374 pure
+captures. One executed input consumes a search;44 winning continuations reuse
+its verified route. The overlay records six searches overall,including work
+not consumed by an executed input. Frozen replay has one initial startup
+search,then zero searches/publications after pausing and91 pure captures.
+These counts are separate from end-to-end response time.
+
+The controlled scene retains original spell/relic definitions but authors
+durable enemies,strong Stewards and harness setup. Six-turn/10000ms/top/
+tactical settings remain separate from natural/default-budget victories.
+Curated files are `full-battle-player-moon-room-phase-energy-relic-{search,replay}.mt2f`
+and `player-moon-room-phase-energy-relic-accepted.json`. The focused wrapper
+is `scripts/Check-PlayerAdvisor.ps1 -Case MoonRoomPhaseEnergyRelic -SkipBuild`;
+the full-suite source hook selects the same pair gate. Hashes/registrations
+are checked separately without running the full regression.

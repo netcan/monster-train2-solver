@@ -1,0 +1,10 @@
+{
+  "Schema": 1,
+  "Composition": "MoonRoomPhaseEnergyRelic",
+  "SourceProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-103737-2f0a5bd4",
+  "ReplayProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-104339-01a6c138",
+  "SourceSha256": "7c3492f886906f86a7618a50e86b4ca88354715a95102fa01fa169a5e29b7541",
+  "ReplaySha256": "f7256c7fea458d22764a88525beff22676b043c4e87129ac3c733463dabf1882",
+  "IndependentFocusedCheck": "--player-moon-room-phase-energy-relic-pair-only",
+  "Passed": true
+}
