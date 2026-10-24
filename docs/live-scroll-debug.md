@@ -1,5 +1,9 @@
 # Live floor scrolling · Windows0.2.11
 
+This records the earlier selection fix. Installed Windows0.2.12 retains it and
+adds [panel continuity](advisor-presentation.md), including a separate temporary
+presentation fix in the same running PID59976.
+
 The0.2.10 isolated starter acceptance missed selection-sensitive contributors:
 it scrolled before any Conduit unit was deployed. In the user's running game,
 scrolling after play still changed generation and launched a3.1-second search.

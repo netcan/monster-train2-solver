@@ -1,5 +1,37 @@
 # Player Mod validation · 2026-10-24
 
+Windows0.2.12 fixes panel clearing and scroll resets while verified steps advance,
+including the native LoadingScreen work used by card/turn animations. Pending
+text stays readable with a separate checking label; the session and fresh-root
+publication checks remain mandatory. See [presentation acceptance](advisor-presentation.md).
+
+The exact release player passes a focused isolated native run:21 cards, seven
+EndTurns,28 decisions, a win with73 Pyre HP, all four failure counters zero and
+protected originals unchanged.111 input notifications retain pending text;33
+verified publications retain the view, including19 non-top scroll checks. Existing
+floor/idle/pause/reset/plan controls pass. No full regression or Mac build ran.
+
+Windows0.2.12 is installed at
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+Build, accepted native payload and installed hashes match:
+
+| DLL | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | `dc9f3a4cd4d56393a79c11f476de6f292f19183c2f6d30b581bb942c5706d49f` |
+| Model.dll | `6977070601007944571098831c2c0cd12149c0d487c765b5ab877ca1d1ca7f5c` |
+| FixtureArchive.dll | `70039ab0903a651d988b8a5d431de511a5ace6b9fa532a729846ac3fbb59c4cf` |
+
+All28 other loader/plugin/config files are unchanged, including F10,
+WholeBattle=true, two workers and3000ms. The previous0.2.11 payload is backed up
+outside plugins at `BepInEx/PojuBackups/ReadableAdvice-20261024-175202/previous`.
+PID59976 keeps its original0.2.10 assembly with both the earlier Conduit fix and
+the temporary presentation fix active. An unchanged-root live smoke check adds
+zero searches, preserves native state/RNG and restores the view. Its observer
+detached; neither the real game nor its save was restarted/autoplayed. The next
+launch loads0.2.12 from disk.
+
+## Earlier Windows0.2.11 acceptance
+
 Windows0.2.11 fixes the live Conduit scrolling case missed by0.2.10's starter
 acceptance. [Direct live debugging](live-scroll-debug.md) identifies temporary
 card upgrades and Conduit tracker callbacks on selection; the model now proves

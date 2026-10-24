@@ -1,4 +1,11 @@
-# Advice continuation · Windows0.2.11
+# Advice continuation · Windows0.2.12
+
+The [panel continuity follow-up](advisor-presentation.md) keeps the old forecast
+readable, dimmed and marked pending through card/turn/native loading work. After
+the full current-root check, a verified suffix updates in place and preserves
+the reading position. Keeping this text does not preserve a valid Current
+publication: outstanding capture, selection or preparation still blocks ReadyFor.
+Genuine new search, errors and explicit reset clear the obsolete forecast.
 
 The [live Conduit follow-up](live-scroll-debug.md) fixes an omitted case in
 the0.2.10 starter acceptance: selecting another room applies/removes hidden
@@ -16,8 +23,9 @@ remain intact. The panel does not claim a partial forecast is a full battle.
 
 Every consumed prefix must match the captured complete state and RNG. Only
 the existing next-unused preview-copy allocator normalization is permitted.
-Inputs immediately hide obsolete publications, but retain the immutable proof
-until a settled capture can check the successor. An unchanged root after an
+Inputs immediately invalidate obsolete publications, but retain the immutable
+proof and clearly marked pending text until a settled capture can check the
+successor. An unchanged root after an
 extra animation boundary also reuses the proof without consuming a step.
 
 Floor scrolling preserves the current candidate and running search while the
