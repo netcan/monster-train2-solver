@@ -2,8 +2,10 @@
 [CmdletBinding()]
 param(
     [ValidateSet('MoonRoomHandPowerRelic', 'MoonRoomPhaseEnergyRelic', 'MoonRoomPhaseHealRelic', 'NativeCovenantCampaign03Ring5Default', 'NativeCovenantCampaign03Ring4Default', 'NativeCovenantCampaign03Ring3Default', 'NativeCovenantCampaign03Default', 'MoonRoomHealingRelic', 'NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
+        'MoonRoomStatusRelic',
         'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileShortBudget', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
     [string[]] $Case = @('MoonRoomHandPowerRelic', 'MoonRoomPhaseEnergyRelic', 'MoonRoomPhaseHealRelic', 'NativeCovenantCampaign03Ring5Default', 'NativeCovenantCampaign03Ring4Default', 'NativeCovenantCampaign03Ring3Default', 'NativeCovenantCampaign03Default', 'MoonRoomHealingRelic', 'NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
+        'MoonRoomStatusRelic',
         'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileShortBudget', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
@@ -62,6 +64,7 @@ foreach ($name in $Case) {
         'MoonRoomPhaseHealRelic' { 'player-moon-room-phase-heal-relic' }
         'MoonRoomPhaseEnergyRelic' { 'player-moon-room-phase-energy-relic' }
         'MoonRoomHandPowerRelic' { 'player-moon-room-hand-power-relic' }
+        'MoonRoomStatusRelic' { 'player-moon-room-status-relic' }
         'EventGraft' { 'player-event-graft' }
         'NaturalRing7' { 'player-natural-ring7' }
         'CampaignTrialGold' { 'player-campaign-trial-gold' }

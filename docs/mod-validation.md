@@ -1,5 +1,19 @@
 # Player Mod validation · 2026-10-24
 
+Original New-moon Silent armor now composes with the five moon spells,
+Lunacy and Eclipse room masks. The 15-boundary component and 20-play native
+baseline pass. Actual player source and independent frozen replay both win
+at Pyre80 after 50 inputs, with complete forecasts/state/RNG, 47 room stages
+and 13 train phases per process, 54 original relic callbacks, two original
+Sentinel ability activations and 16 immutable battle branches. Both exit
+normally with all four failure counters zero. Fifty-two publications have
+fresh full-root checks; nine ordinary and 39 winning continuations reuse
+their plans. Frozen replay has no searches/publications after pausing.
+The reusable pair runner accepts completed source/replay profiles and writes
+its hashed receipt only after independent acceptance. This controlled
+six-turn/10000ms scene remains separate from natural/default-budget victory.
+See [New-moon Silent armor](../tests/fixtures/moon-status-relic.md).
+
 Original moon spell upgrades/Lunacy/room masks now also support the exact
 Full-moon end-turn hand magic-power relic. The 19-boundary component and
 20-play baseline pass, including repeated stacks and immediate Conduit

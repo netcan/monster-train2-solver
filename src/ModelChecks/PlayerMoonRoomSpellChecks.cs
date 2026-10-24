@@ -49,6 +49,7 @@ internal static class PlayerMoonRoomSpellChecks
         Require(!phaseEnergyRelic || lunacy && !costRelic && !attackRelic && !healingRelic && !phaseHealRelic,
             "Phase-energy player scene requires separate Lunacy controls.");
         int traits = 0, exclusive = 0, additive = 0, maskedCasts = 0, eclipseCasts = 0, waits = 0, lunacyCasts = 0, paidAdvances = 0, freePurges = 0;
+        int abilityActivations = 0;
         var spells = new HashSet<string>();
         foreach (FixtureValue fixture in new[] { source, replay })
         {
@@ -140,6 +141,19 @@ internal static class PlayerMoonRoomSpellChecks
                 }
                 if (row.GetProperty("IsEndTurn").GetBoolean()) continue;
                 PlayCardAction action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                if (action.ActivatorUnitId != 0 || action.ActivatorRoomIndex.HasValue)
+                {
+                    CombatUnit? actor = before.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                        .SingleOrDefault(unit => unit.Id == action.ActivatorUnitId);
+                    Require(statusRelic && !action.ActivatorRoomIndex.HasValue && actor?.AssetKey == "MonsterSilentSentinel" &&
+                        actor.Ability?.DataId == "7617850d-a72f-46de-87e4-dbcaa50fe1c2" && !actor.Ability.FromEquipment,
+                        "Unexpected activator in the original moon spell composition.");
+                    // Ability activation creates a transient spell, which is not
+                    // a hand-card instance. Full roots, forecasts and successors
+                    // already pass the shared rolling/pair replay above.
+                    abilityActivations++;
+                    continue;
+                }
                 CardInstanceState played = before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!;
                 CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == played.DataId);
                 if (costIds.Contains(action.CardInstanceId))
@@ -173,6 +187,7 @@ internal static class PlayerMoonRoomSpellChecks
         Require(spells.Count == 5 && eclipseCasts > 0 && maskedCasts > 0 && exclusive > 0 && additive > 0 && waits > 0,
             "Missing original spell casts, both mask modes or pending native effects settlement witnesses.");
         Require(!lunacy || lunacyCasts >= 2 && paidAdvances > 0, "Missing paid original Lunacy casts in the player pair.");
+        Require(!statusRelic || abilityActivations >= 2, "Missing original Silent Sentinel abilities in both exact native processes.");
         var records = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         BattleTurnState initial = records[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
         string parent = JsonSerializer.Serialize(initial, ModelJson.Options);
@@ -191,7 +206,7 @@ internal static class PlayerMoonRoomSpellChecks
             }
         });
         Require(JsonSerializer.Serialize(initial, ModelJson.Options) == parent, "Player spell/room branch mutated its parent.");
-        Console.WriteLine($"PLAYER-MOON-ROOM-SPELLS PASS originalSpells={spells.Count} eclipseCasts={eclipseCasts} maskedSpellCasts={maskedCasts} settledTraitSnapshots={traits} exclusiveWitnesses={exclusive} additiveWitnesses={additive} pendingEffectWaits={waits} lunacyCasts={lunacyCasts} paidAdvances={paidAdvances} costRelic={costRelic} attackRelic={attackRelic} healingRelic={healingRelic} freeOriginalPurges={freePurges} immutableBattleBranches=16 exactFrozenReplay=true");
+        Console.WriteLine($"PLAYER-MOON-ROOM-SPELLS PASS originalSpells={spells.Count} eclipseCasts={eclipseCasts} maskedSpellCasts={maskedCasts} settledTraitSnapshots={traits} exclusiveWitnesses={exclusive} additiveWitnesses={additive} pendingEffectWaits={waits} lunacyCasts={lunacyCasts} paidAdvances={paidAdvances} costRelic={costRelic} attackRelic={attackRelic} healingRelic={healingRelic} freeOriginalPurges={freePurges} nativeAbilityActivations={abilityActivations} immutableBattleBranches=16 exactFrozenReplay=true");
     }
     private static int Mask(CombatContext context, int roomIndex) => context.RoomCapacities!
         .Single(room => room.RoomIndex == roomIndex).Attachments?
