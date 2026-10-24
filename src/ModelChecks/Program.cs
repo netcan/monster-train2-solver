@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--merchant-permafrost-observation-only")
+{
+    using var before = ModelJson.ReadFixture(args[1]);
+    using var source = ModelJson.ReadFixture(args[2]);
+    RandomCampaignChecks.MerchantPermafrost(before.RootElement, source.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--random-campaign-curated-only")
 {
     RandomCampaignChecks.Curated(args[1]);

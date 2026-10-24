@@ -1,5 +1,7 @@
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 internal static class RandomCampaignChecks
 {
@@ -21,7 +23,77 @@ internal static class RandomCampaignChecks
             string replayPath = path.Substring(0, path.Length - "-search.mt2f".Length) + "-replay.mt2f";
             using var replay = ModelJson.ReadFixture(replayPath);
             Pair(source.RootElement, replay.RootElement, seed, rank, distance, primary, secondary);
+            if (Path.GetFileName(path) == "full-battle-random-campaign-02-ring2-search.mt2f")
+            {
+                using var before = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!,
+                    "player-random-campaign-02-ring2-permafrost-unavailable.mt2f"));
+                MerchantPermafrost(before.RootElement, source.RootElement);
+            }
         }
+    }
+
+    internal static void MerchantPermafrost(FixtureValue before, FixtureValue source)
+    {
+        const string upgradeId = "e0af4fe5-75c0-4017-ae5e-5a87099aa6c5";
+        const string cardId = "479ceb1b-fc8c-420f-8fa0-17683cee4511";
+        BattleTurnState observed = before.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        BattleTurnState current = source.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        JsonNode projected = JsonNode.Parse(JsonSerializer.Serialize(observed, ModelJson.Options))!;
+        int upgrades = 0;
+        void Project(JsonNode? node)
+        {
+            if (node is JsonObject row)
+            {
+                string? id = row["DataId"]?.GetValue<string>();
+                if (id == upgradeId && row["AssetKey"]?.GetValue<string>() == "TraitPermafrost" && row["ExternalInteractions"] is JsonArray errors)
+                {
+                    Require(errors.Count == 1 && errors[0]!.GetValue<string>() == "Upgrade traits",
+                        "Before-fix shop upgrade must retain the exact original capture rejection.");
+                    row["ExternalInteractions"] = new JsonArray(); upgrades++;
+                }
+                foreach (var child in row.ToArray()) Project(child.Value);
+            }
+            else if (node is JsonArray list) foreach (JsonNode? child in list) Project(child);
+        }
+        Project(projected);
+        Require(upgrades > 0 && observed.Spawn.Train.Context!.CardInstances!
+            .SelectMany(card => card.Permanent.Upgrades).Count(upgrade => upgrade.DataId == upgradeId) == 1,
+            "Before-fix observation must retain one real shop upgrade and its captured snapshot references.");
+        BattleTurnState expected = projected.Deserialize<BattleTurnState>(ModelJson.Options)!;
+        string expectedKey = BattleTurnChecks.Comparable(expected), currentKey = BattleTurnChecks.Comparable(current);
+        Require(expectedKey == currentKey, "Shop fix changed more than the upgrade capture guard: " + ModelJson.Difference(expectedKey, currentKey));
+        int frozen = 0, retained = 0, thawed = 0;
+        foreach (FixtureValue decision in source.GetProperty("RollingDecisions").EnumerateArray())
+        {
+            BattleTurnState root = decision.GetProperty("Root").Deserialize<BattleTurnState>()!;
+            BattleTurnState after = decision.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            CombatContext context = root.Spawn.Train.Context!;
+            foreach (CardToken token in context.Cards.Hand)
+            {
+                CardInstanceState? card = context.FindCard(token.InstanceId);
+                if (card?.DataId != cardId || !card.Permanent.Upgrades.Any(upgrade => upgrade.DataId == upgradeId)) continue;
+                Require(CardBranchMaskModel.Resolve(card).Traits.Count(trait => trait == "CardTraitFreeze") == 1 &&
+                    card.Permanent.Upgrades.Where(upgrade => upgrade.DataId == upgradeId).All(upgrade => upgrade.ExternalInteractions.Count == 0),
+                    "Shop Permafrost draw must install exactly one Freeze and clear its old capture rejection.");
+                frozen++;
+                CombatContext next = after.Spawn.Train.Context!;
+                if (decision.GetProperty("IsEndTurn").GetBoolean() && decision.GetProperty("Outcome").Deserialize<RoomOutcome>() is not
+                    (RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated))
+                {
+                    Require(next.Cards.Hand.Any(value => value.InstanceId == card.InstanceId), "Unplayed shop Permafrost card was discarded.");
+                    retained++;
+                }
+                else if (!decision.GetProperty("IsEndTurn").GetBoolean() &&
+                    decision.GetProperty("Action").Deserialize<PlayCardAction>()!.CardInstanceId == card.InstanceId)
+                {
+                    CardInstanceState played = next.FindCard(card.InstanceId)!;
+                    Require(!CardBranchMaskModel.Resolve(played).Traits.Contains("CardTraitFreeze"), "Playing shop Permafrost must thaw its temporary Freeze.");
+                    thawed++;
+                }
+            }
+        }
+        Require(frozen > 0, "The accepted player route must actually draw its shop Permafrost card.");
+        Console.WriteLine($"MERCHANT-PERMAFROST PASS: identical native checkpoint/RNG, only the upgrade capture guard removed; frozen hand observations={frozen}, retained turns={retained}, played/thawed={thawed}.");
     }
 
     private static void Require(bool value, string message)
