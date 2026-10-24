@@ -160,6 +160,8 @@ namespace MonsterTrain2Poju.Probe
             pauseLabel = Button(paused ? "恢复建议" : "暂停建议", 242, () => { paused = !paused; Invalidate(); pauseLabel.text = paused ? "恢复建议" : "暂停建议"; });
             toggleLabel = Button(panelVisible ? "隐藏破局建议" : "显示破局建议", 0, () => SetPanelVisible(!panelVisible), launcher: true);
             panel.SetActive(panelVisible);
+            log.LogInfo("ADVISOR-UI ready resolution=" + Screen.width + "x" + Screen.height +
+                " visible=" + panelVisible + " toggle=" + toggleKey);
         }
 
         internal void Keyboard()
@@ -200,6 +202,9 @@ namespace MonsterTrain2Poju.Probe
 
         private void TickCore()
         {
+            // The launcher and waiting state are useful before battle managers
+            // exist and while the game loads. Only state capture must wait.
+            EnsureUi();
             Keyboard();
             AllGameManagers? managers = AllGameManagers.Instance;
             if (managers == null || LoadingScreen.IsWorking())
@@ -208,7 +213,6 @@ namespace MonsterTrain2Poju.Probe
                 if (body != null) body.text = "等待场景加载完成…";
                 return;
             }
-            EnsureUi();
             bool inBattle = managers?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle;
             if (!inBattle && wasInBattle && ManualSession)
             { new FullBattleTrace(log); manualBattleKey = null; Invalidate(); }

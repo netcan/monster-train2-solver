@@ -14,6 +14,7 @@ namespace MonsterTrain2Poju.Advisor
         public const string Version = "0.2.3";
         private Harmony? harmony;
         private BattleAdvisorOverlay? overlay;
+        private bool updateLogged;
 
         private void Awake()
         {
@@ -54,7 +55,17 @@ namespace MonsterTrain2Poju.Advisor
             }
         }
 
-        private void Update() => overlay?.Tick();
+        private void Update()
+        {
+            if (overlay == null) return;
+            if (!updateLogged)
+            {
+                updateLogged = true;
+                Logger.LogInfo("POJU-UPDATE pluginEnabled=" + enabled +
+                    " hostActive=" + gameObject.activeInHierarchy);
+            }
+            overlay.Tick();
+        }
         private void OnDestroy() => Cleanup();
 
         private void Cleanup()

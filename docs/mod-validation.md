@@ -1,5 +1,24 @@
 # Player Mod validation · 2026-10-24
 
+Windows startup now creates the panel and launcher before waiting for battle
+managers or loading completion. Capturing and searching still wait for the
+original stable-state boundary. `POJU-READY` establishes initialization only;
+the new once-per-session `POJU-UPDATE` and per-canvas `ADVISOR-UI ready` markers
+distinguish update delivery from UI creation. The installed local shortcut is
+F10; existing user configuration is preserved.
+
+Isolated bootstrap `player-ui-final-20261024-125840-47c8aa55` loads the real
+player assembly with BepInEx 5.4.21 and the installed Configuration Manager
+and Relic Picker. No scenario/autoplay driver or development overlay runs.
+The native window screenshot visibly retains the left recommendation panel
+and right launcher while loading, and both update/UI markers pass without
+advisor errors. Control bootstraps also confirm the plugin's own Update
+callback works, so no additional game-loop hook is retained. This is UI startup
+acceptance, not a new complete-battle or Mac acceptance. The Windows player
+payload has been replaced with checksummed files, old files retained under
+`BepInEx/PojuBackups/UiFix-20261024-130014/previous`, and configuration unchanged;
+the existing game process needs a full restart to load it.
+
 Moon spell/Lunacy/Eclipse refreshes now accept the original ordered cumulative
 Covenant 1-3 prefix. Each rank has fifteen native component boundaries with
 complete state/RNG and eight immutable branches, retaining original startup
