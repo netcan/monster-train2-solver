@@ -32,6 +32,14 @@ background history counts/drop0 all pass. The accepted trace SHA256 is
 This is a focused player smoke and model/native comparison, not a claim that the
 remaining natural Angel Duo or higher Covenant strategy gaps are closed.
 
+Windows 0.2.24 was installed offline at2026-10-25 01:43:57 from committed
+`ca506ccd`, using the exact three accepted DLLs. All28 other loader/plugin/config
+hashes are unchanged; F10 and the user's10000ms budget are preserved. The next
+game launch loads this version. Backup and installation receipt:
+`BepInEx/PojuBackups/TacticalTargets-20261025-014355`.
+Package: `results/mod-dist/PojuAdvisor-0.2.24-Windows-20261025-014355.zip`, SHA256
+`159388d8c952fca7a68a65637501b7778545f300acae870f5d89bde6687807c3`.
+
 ```powershell
 ./scripts/Check-DefaultAdvice.ps1 -Case Targets -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-ring7-planner-only tests/fixtures/campaign/progression/full-battle-natural-ring7-copy-on-play.mt2f
