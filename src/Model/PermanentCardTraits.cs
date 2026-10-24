@@ -12,7 +12,7 @@ namespace MonsterTrain2Poju.Model
             var lifecycle = upgrade.Lifecycle; prepared = upgrade;
             if (lifecycle == null) return descriptor;
             bool Relevant(string type) => type is CardRetainModel.Trait or CardCorruptStateModel.Trait or
-                "CardTraitExhaustState" or "CardTraitDistinct" or "CardTraitEphemeral";
+                "CardTraitExhaustState" or "CardTraitDistinct" or "CardTraitEphemeral" or "CardTraitPermafrost";
             bool Removal(string type) => type is "CardTraitEphemeral" or "CardTraitCopyOnPlay";
             if (!lifecycle.AddedTraits.Any(trait => Relevant(trait.RuntimeType)) && !lifecycle.RemovedRuntimeTypes.Any(Removal)) return descriptor;
             var bases = CardExhaustModel.RefreshTraits(source.WithMaskDescriptor(descriptor)).BaseTraits.ToList();
@@ -24,6 +24,11 @@ namespace MonsterTrain2Poju.Model
                 bool blocked = source.Permanent.Upgrades.Concat(source.Temporary.Upgrades)
                     .Any(old => old.Lifecycle?.RemovedRuntimeTypes.Contains(data.RuntimeType) == true);
                 bases.Add(blocked ? CardTraitValue.Dummy() : data);
+                // CardState.SetupTraitUpgrades installs the permanent base trait.
+                // Permafrost.OnTraitAdded immediately creates a separate Freeze.
+                if (!blocked && data.RuntimeType == "CardTraitPermafrost" &&
+                    !Active().Any(trait => trait.RuntimeType == "CardTraitFreeze"))
+                    temporary.Add(new CardTraitValue("CardTraitFreeze", "CardTraitFreeze", 0, 0, true, 0));
                 return !blocked;
             }
             bool Remove(string name)

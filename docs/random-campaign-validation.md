@@ -64,6 +64,13 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 专门检查重新执行12个实际输入的完整后继和 RNG，并验证成长序列
 `[1,1,1] -> [1,1,2]`。该原件没有完整战斗结算，不能算胜局。
 
+再推进到第18个输入，开盒首次复制到商店 Permafrost 牌，暴露复制永久升级时
+遗漏 `SetupTraitUpgrades -> OnTraitAdded` 的回调。永久特性安装现在也处理
+Permafrost，并立即、幂等添加独立临时 Freeze；不改变临时升级的安装规则。
+`player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f` 保留原生失败件，
+定向检查重放18个后继及 RNG，并确认新牌同时有一个永久 Permafrost 和一个临时 Freeze。
+既有原生 Permafrost 单卡和盒子复制／并行不可变分支专项也通过。
+
 整局执行器的失败收据现在在原生进程开始时即记录实际源档案路径；
 即使战斗异常退出，也不会误指向上一战，并再次校验败局输入保存文件未变。
 

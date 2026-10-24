@@ -8,6 +8,11 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.EndsWith("player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f", StringComparison.Ordinal))
+        {
+            PermafrostCopyObserved(source.RootElement);
+            return;
+        }
         if (path.EndsWith("player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f", StringComparison.Ordinal))
         {
             GrowthObserved(source.RootElement);
@@ -54,6 +59,27 @@ internal static class RandomCampaignChecks
             fixture.GetProperty("NativeWon").ValueKind == FixtureKind.Null,
             "This archive is a twelve-input observation, not a completed native victory.");
         Console.WriteLine("RANDOM-CAMPAIGN-GROWTH PASS: twelve native successors, cached box IDs and current-spawn permanent growth; no full battle acceptance claimed.");
+    }
+
+    internal static void PermafrostCopyObserved(FixtureValue fixture)
+    {
+        Input(fixture, 1862997127, 0, 2, "Pyreborne", "Banished");
+        RollingAdviceChecks.ObservedSuccessors(fixture);
+        FixtureValue last = fixture.GetProperty("RollingDecisions").EnumerateArray().Last();
+        BattleTurnState before = last.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        BattleTurnState after = last.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        CombatContext original = before.Spawn.Train.Context!, actual = after.Spawn.Train.Context!;
+        const string permafrost = "e0af4fe5-75c0-4017-ae5e-5a87099aa6c5";
+        CardInstanceState copied = actual.CardInstances!.Single(card => original.FindCard(card.InstanceId) == null &&
+            card.Permanent.Upgrades.Any(upgrade => upgrade.DataId == permafrost));
+        Require(copied.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == "CardTraitPermafrost") == 1 &&
+            copied.MaskDescriptor.TemporaryTraits.Count(trait => trait.RuntimeType == "CardTraitFreeze") == 1 &&
+            actual.Cards.Hand.Any(card => card.InstanceId == copied.InstanceId),
+            "A boxed merchant Permafrost copy must install its permanent trait and one immediate temporary Freeze.");
+        Require(fixture.GetProperty("RollingDecisions").GetArrayLength() == 18 &&
+            fixture.GetProperty("NativeWon").ValueKind == FixtureKind.Null,
+            "The Permafrost copy observation is an incomplete native battle.");
+        Console.WriteLine("RANDOM-CAMPAIGN-PERMAFROST-COPY PASS: eighteen native successors and RNG, copied permanent trait and immediate Freeze; no full battle acceptance claimed.");
     }
 
     internal static void MerchantPermafrost(FixtureValue before, FixtureValue source)

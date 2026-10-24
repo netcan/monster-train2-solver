@@ -18,6 +18,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-01-ring4-search.mt2f',
     'full-battle-random-campaign-01-ring4-replay.mt2f',
     'player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f',
+    'player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f',
     'full-battle-random-campaign-02-ring1-search.mt2f',
     'full-battle-random-campaign-02-ring1-replay.mt2f',
     'full-battle-random-campaign-02-ring2-search.mt2f',
@@ -1156,7 +1157,8 @@ if ($Fixture.Count -gt 0) {
 # Avoid starting all unrelated pure checks before a component-only request.
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notlike 'full-battle-random-campaign-*' -and
     $_ -ne 'player-random-campaign-02-ring2-permafrost-unavailable.mt2f' -and
-    $_ -ne 'player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f' }).Count -eq 0) {
+    $_ -ne 'player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f' -and
+    $_ -ne 'player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f' }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Random campaign checker build failed.' }
