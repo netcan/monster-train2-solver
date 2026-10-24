@@ -48,6 +48,10 @@
 
 ## 覆盖与验证方式
 
+“月相法术＋每回合第三张法术加法强”已复现旧保护阻断并补齐 15 个原生组件边界；
+实际触发与玩家对局验收继续独立推进，见
+[组合验收](../tests/fixtures/notes/relics/moon-spell-threshold.md)。
+
 [卡牌清单](../tests/fixtures/inventory/card-coverage.md) 的 559/559 指可直接打出的
 原生日志卡牌均有定义匹配的成功原生出牌；四张原生不可打出的牌保留限制。
 [遗物清单](../tests/fixtures/inventory/relic-coverage.md) 的 224/224 指各原始遗物有

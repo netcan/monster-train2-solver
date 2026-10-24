@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool CostRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_COST_RELIC") == "1";
         internal static bool AttackRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_ATTACK_RELIC") == "1";
         internal static bool HealingRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_HEALING_RELIC") == "1";
+        internal static bool ThresholdRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_THRESHOLD_RELIC") == "1";
         internal static bool PhaseHealRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_PHASE_HEAL_RELIC") == "1";
         internal static bool PhaseEnergyRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_PHASE_ENERGY_RELIC") == "1";
         internal static bool HandPowerRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_HAND_POWER_RELIC") == "1";

@@ -40,7 +40,7 @@ namespace MonsterTrain2Poju.Model
                 { error = "Moon spell upgrades require captured phase and selected room."; return source; }
                 if (!CalibratedCovenants(context.Relics))
                 { error = "Uncalibrated cumulative Covenant signature during moon hand refresh."; return source; }
-                CombatRelicState? incompatible = context.Relics?.FirstOrDefault(relic => !CompatibleRelic(relic));
+                CombatRelicState? incompatible = context.Relics?.FirstOrDefault(relic => !CompatibleRelic(relic, context));
                 if (incompatible != null)
                 { error = "Uncalibrated moon hand-refresh relic: " + incompatible.AssetKey + "."; return source; }
                 if (RelicModel.Validate(context.Relics) is string relicError)
@@ -84,8 +84,9 @@ namespace MonsterTrain2Poju.Model
                     "Covenant10_ChosenEnemiesDuringFlyingBosses" }.Take(Math.Max(0, owners.Length - 3))) &&
                 owners.Skip(3).All(TrueFinalBossCovenantModel.OrdinaryWaveExtensionOwner);
         }
-        private static bool CompatibleRelic(CombatRelicState relic) => relic.IsCovenant == true ||
+        private static bool CompatibleRelic(CombatRelicState relic, CombatContext context) => relic.IsCovenant == true ||
             IndependentRelic(relic) ||
+            CompatibleSpellThresholdRelic(relic, context) ||
             relic.EffectTypes.All(type => type is RelicModel.ModifyCardTypeCost or RelicModel.ModifyCardAttack) &&
                 (relic.CardAttackModifiers == null || relic.CardAttackModifiers.All(rule =>
                     rule.CardType == "Monster" && rule.CharacterName == "" &&
@@ -99,6 +100,29 @@ namespace MonsterTrain2Poju.Model
             RelicMoonPhaseHandUpgradeModel.CompatibleMoonSpells(relic) ||
             relic.DataId == RelicMoonPhaseStatusModel.DataId && relic.EffectTypes.SequenceEqual(new[] { RelicMoonPhaseStatusModel.Effect }) &&
                 RelicMoonPhaseStatusModel.Validate(relic) == null;
+
+        // This original owner updates fixed offsets on card-play callbacks.
+        // Moon/CardUpdated callbacks must retain those offsets, including when
+        // StrongerMagicPower is added or removed. Do not admit other thresholds.
+        private static bool CompatibleSpellThresholdRelic(CombatRelicState relic, CombatContext context)
+        {
+            if (relic.DataId != "76166da7-d9aa-4c68-9a78-64914ec49f81" || relic.AssetKey != "IncreaseMagicPowerOnSpellsPlayed" ||
+                relic.IsCovenant != false || relic.DisallowedInPlacementPhase != false ||
+                !relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyCardMagicPowerOnCardPlayed }) ||
+                relic.CardPlayMagicPowerModifiers?.Count != 1) return false;
+            RelicCardPlayMagicPowerModifier effect = relic.CardPlayMagicPowerModifiers[0];
+            if (effect.EffectIndex != 0 || effect.PowerModifier != 1 || effect.RequiredTraits.Count != 0 ||
+                effect.ConditionCount != 1 || effect.Conditions.Count != 1) return false;
+            RelicConditionState condition = effect.Conditions[0];
+            CardStatisticQuery query = condition.Query;
+            return !condition.TrackTriggerCount && condition.Comparator == 6 && condition.Value == 3 && !condition.AllowMultiple &&
+                query.Type == "AnyCardPlayed" && query.Duration == "ThisTurn" && query.TypeMatchDataIds?.Count > 0 &&
+                query.SubtypeMatchDataIds?.Count == 0 && query.SubtypeIsNone && query.Subtype == "SubtypesData_None" &&
+                query.SpecificCardDataId == null && query.SourceRawCost == 0 && !query.VariableCost && query.TargetTeam == "None" &&
+                !query.CurrentCostCardModifiersOnly && !query.CurrentCostSourceIsSpell && query.StatusIds == null &&
+                context.CardInstances != null && context.CardInstances.All(card => card.MaskDescriptor != null &&
+                    query.TypeMatchDataIds.Contains(card.DataId) == (card.MaskDescriptor.Definition.CardType == "Spell"));
+        }
 
         private static bool IndependentRelic(CombatRelicState relic)
         {

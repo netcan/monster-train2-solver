@@ -1217,6 +1217,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalMoonCardUpgradesCostRelic = OriginalMoonCardUpgradesScenario.CostRelic,
                 OriginalMoonCardUpgradesAttackRelic = OriginalMoonCardUpgradesScenario.AttackRelic,
                 OriginalMoonCardUpgradesHealingRelic = OriginalMoonCardUpgradesScenario.HealingRelic,
+                OriginalMoonCardUpgradesThresholdRelic = OriginalMoonCardUpgradesScenario.ThresholdRelic,
                 OriginalMoonCardUpgradesPhaseHealRelic = OriginalMoonCardUpgradesScenario.PhaseHealRelic,
                 OriginalMoonCardUpgradesPhaseEnergyRelic = OriginalMoonCardUpgradesScenario.PhaseEnergyRelic,
                 OriginalMoonCardUpgradesHandPowerRelic = OriginalMoonCardUpgradesScenario.HandPowerRelic,

@@ -36,6 +36,7 @@ param(
     [switch] $RoomMoonSpellCostRelic,
     [switch] $RoomMoonSpellAttackRelic,
     [switch] $RoomMoonSpellHealingRelic,
+    [switch] $RoomMoonSpellThresholdRelic,
     [switch] $RoomMoonSpellPhaseHealRelic,
     [switch] $RoomMoonSpellPhaseEnergyRelic,
     [switch] $RoomMoonSpellHandPowerRelic,
@@ -266,6 +267,7 @@ param(
     [switch] $OriginalMoonCardUpgradesCostRelic,
     [switch] $OriginalMoonCardUpgradesAttackRelic,
     [switch] $OriginalMoonCardUpgradesHealingRelic,
+    [switch] $OriginalMoonCardUpgradesThresholdRelic,
     [switch] $OriginalMoonCardUpgradesPhaseHealRelic,
     [switch] $OriginalMoonCardUpgradesPhaseEnergyRelic,
     [switch] $OriginalMoonCardUpgradesHandPowerRelic,
@@ -697,6 +699,13 @@ if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
 if ($AdvisorPresentation -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
     throw 'AdvisorPresentation requires the real PlayerAdvisor and RollingAdvice driver.'
 }
+if ($RoomMoonSpellThresholdRelic) {
+    if ($RoomMoonSpellCostRelic -or $RoomMoonSpellAttackRelic -or $RoomMoonSpellHealingRelic -or
+        $RoomMoonSpellPhaseHealRelic -or $RoomMoonSpellPhaseEnergyRelic -or $RoomMoonSpellHandPowerRelic -or $RoomMoonSpellStatusRelic) {
+        throw 'Use separate isolated relic controls.'
+    }
+    $RoomMoonSpellAdvance = $true
+}
 if ($RoomMoonSpellHealingRelic) { $RoomMoonSpellAdvance = $true }
 if ($RoomMoonSpellStatusRelic) {
     if ($RoomMoonSpellHandPowerRelic -or $RoomMoonSpellPhaseEnergyRelic -or $RoomMoonSpellPhaseHealRelic -or $RoomMoonSpellHealingRelic -or $RoomMoonSpellAttackRelic -or $RoomMoonSpellCostRelic) { throw 'Use separate isolated relic controls.' }
@@ -728,11 +737,12 @@ if ($RoomMoonCallbacks) {
     $allowed += 'RoomMoonSpellPhaseEnergyRelic'
     $allowed += 'RoomMoonSpellHandPowerRelic'
     $allowed += 'RoomMoonSpellStatusRelic'
+    $allowed += 'RoomMoonSpellThresholdRelic'
     $allowed += 'StartingCovenantLevel'
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'RoomMoonCallbacks is an isolated component calibration.' }
     if ($StartingCovenantLevel -gt 0 -and (-not $RoomMoonSpellAdvance -or $StartingCovenantLevel -gt 3 -or
         $RoomMoonSpellCostRelic -or $RoomMoonSpellAttackRelic -or $RoomMoonSpellHealingRelic -or
-        $RoomMoonSpellPhaseHealRelic -or $RoomMoonSpellPhaseEnergyRelic -or $RoomMoonSpellHandPowerRelic -or $RoomMoonSpellStatusRelic)) {
+        $RoomMoonSpellPhaseHealRelic -or $RoomMoonSpellPhaseEnergyRelic -or $RoomMoonSpellHandPowerRelic -or $RoomMoonSpellStatusRelic -or $RoomMoonSpellThresholdRelic)) {
         throw 'Moon Covenant controls require separate original spell/Lunacy components at native ranks 1 through 3.'
     }
     if ($RoomMoonSpellUpgrades -and ($RoomMoonCallbacksShade -or $RoomMoonMovement -or $RoomMoonEnemyMovement)) { throw 'Spell upgrade controls are a separate isolated component.' }
@@ -1108,6 +1118,14 @@ if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDiscardDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalMoonCardUpgradesThresholdRelic) {
+    if ($OriginalMoonCardUpgradesCostRelic -or $OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesHealingRelic -or
+        $OriginalMoonCardUpgradesPhaseHealRelic -or $OriginalMoonCardUpgradesPhaseEnergyRelic -or
+        $OriginalMoonCardUpgradesHandPowerRelic -or $OriginalMoonCardUpgradesStatusRelic -or $OriginalMoonCardUpgradesLiveRelics) {
+        throw 'Use separate paid relic composition controls.'
+    }
+    $OriginalMoonCardUpgradesLunacy = $true
+}
 if ($OriginalMoonCardUpgradesHealingRelic -and ($OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesCostRelic)) { throw 'Use separate paid relic composition controls.' }
 if ($OriginalMoonCardUpgradesPhaseEnergyRelic) {
     if ($OriginalMoonCardUpgradesPhaseHealRelic -or $OriginalMoonCardUpgradesHealingRelic -or $OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesCostRelic) { throw 'Use separate paid relic composition controls.' }
@@ -1565,6 +1583,7 @@ $environment = @{
     MT2_PROBE_ROOM_MOON_SPELL_COST_RELIC = $(if ($RoomMoonSpellCostRelic) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_ATTACK_RELIC = $(if ($RoomMoonSpellAttackRelic) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_HEALING_RELIC = $(if ($RoomMoonSpellHealingRelic) { '1' } else { '0' })
+    MT2_PROBE_ROOM_MOON_SPELL_THRESHOLD_RELIC = $(if ($RoomMoonSpellThresholdRelic) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_PHASE_HEAL_RELIC = $(if ($RoomMoonSpellPhaseHealRelic) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_PHASE_ENERGY_RELIC = $(if ($RoomMoonSpellPhaseEnergyRelic) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_HAND_POWER_RELIC = $(if ($RoomMoonSpellHandPowerRelic) { '1' } else { '0' })
@@ -1934,6 +1953,7 @@ if ($OriginalMoonCardUpgradesLunacy) { $environment['MT2_PROBE_MOON_UPGRADE_LUNA
 if ($OriginalMoonCardUpgradesCostRelic) { $environment['MT2_PROBE_MOON_UPGRADE_COST_RELIC'] = '1' }
 if ($OriginalMoonCardUpgradesAttackRelic) { $environment['MT2_PROBE_MOON_UPGRADE_ATTACK_RELIC'] = '1' }
 if ($OriginalMoonCardUpgradesHealingRelic) { $environment['MT2_PROBE_MOON_UPGRADE_HEALING_RELIC'] = '1' }
+if ($OriginalMoonCardUpgradesThresholdRelic) { $environment['MT2_PROBE_MOON_UPGRADE_THRESHOLD_RELIC'] = '1' }
 if ($OriginalMoonCardUpgradesPhaseHealRelic) { $environment['MT2_PROBE_MOON_UPGRADE_PHASE_HEAL_RELIC'] = '1' }
 if ($OriginalMoonCardUpgradesPhaseEnergyRelic) { $environment['MT2_PROBE_MOON_UPGRADE_PHASE_ENERGY_RELIC'] = '1' }
 if ($OriginalMoonCardUpgradesHandPowerRelic) { $environment['MT2_PROBE_MOON_UPGRADE_HAND_POWER_RELIC'] = '1' }
@@ -2247,6 +2267,7 @@ if ($RoomMoonCallbacks) {
     if ($RoomMoonSpellPhaseEnergyRelic) { $componentPath = Join-Path $profile 'room-moon-spell-phase-energy-relic-calibration.mt2f' }
     if ($RoomMoonSpellHandPowerRelic) { $componentPath = Join-Path $profile 'room-moon-spell-hand-power-relic-calibration.mt2f' }
     if ($RoomMoonSpellStatusRelic) { $componentPath = Join-Path $profile 'room-moon-spell-status-relic-calibration.mt2f' }
+    if ($RoomMoonSpellThresholdRelic) { $componentPath = Join-Path $profile 'room-moon-spell-threshold-relic-calibration.mt2f' }
     if ($StartingCovenantLevel -gt 0) { $componentPath = Join-Path $profile ('room-moon-spell-covenant-{0:00}-calibration.mt2f' -f $StartingCovenantLevel) }
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'ROOM-MOON-CALLBACK-NATIVE PASS' -Quiet) -or
@@ -2263,6 +2284,7 @@ if ($RoomMoonCallbacks) {
             [bool]$captured.CostRelicControls -ne [bool]$RoomMoonSpellCostRelic -or
             [bool]$captured.AttackRelicControls -ne [bool]$RoomMoonSpellAttackRelic -or
             [bool]$captured.HealingRelicControls -ne [bool]$RoomMoonSpellHealingRelic -or
+            [bool]$captured.ThresholdRelicControls -ne [bool]$RoomMoonSpellThresholdRelic -or
             [bool]$captured.PhaseHealRelicControls -ne [bool]$RoomMoonSpellPhaseHealRelic -or
             [bool]$captured.PhaseEnergyRelicControls -ne [bool]$RoomMoonSpellPhaseEnergyRelic -or
             [bool]$captured.HandPowerRelicControls -ne [bool]$RoomMoonSpellHandPowerRelic -or
@@ -3378,6 +3400,7 @@ if ($OriginalMoonCardUpgrades -and (-not $trace.OriginalMoonCardUpgradesPrepared
     [bool]$trace.OriginalMoonCardUpgradesCostRelic -ne [bool]$OriginalMoonCardUpgradesCostRelic -or
     [bool]$trace.OriginalMoonCardUpgradesAttackRelic -ne [bool]$OriginalMoonCardUpgradesAttackRelic -or
     [bool]$trace.OriginalMoonCardUpgradesHealingRelic -ne [bool]$OriginalMoonCardUpgradesHealingRelic -or
+    [bool]$trace.OriginalMoonCardUpgradesThresholdRelic -ne [bool]$OriginalMoonCardUpgradesThresholdRelic -or
     [bool]$trace.OriginalMoonCardUpgradesPhaseHealRelic -ne [bool]$OriginalMoonCardUpgradesPhaseHealRelic -or
     [bool]$trace.OriginalMoonCardUpgradesPhaseEnergyRelic -ne [bool]$OriginalMoonCardUpgradesPhaseEnergyRelic -or
     [bool]$trace.OriginalMoonCardUpgradesHandPowerRelic -ne [bool]$OriginalMoonCardUpgradesHandPowerRelic -or

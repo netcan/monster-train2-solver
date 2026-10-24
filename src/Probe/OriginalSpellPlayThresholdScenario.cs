@@ -13,13 +13,14 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
-        internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
+        internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log, bool magicOnly = false)
         {
             var save = managers.GetSaveManager();
             if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
                 throw new InvalidOperationException("Spell-play threshold owners must precede battle.");
             foreach (string id in Ids)
             {
+                if (magicOnly && id != Ids[0]) continue;
                 var relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
                 var effect = relic.GetEffects().Single();
                 var condition = effect.GetEffectConditions().Single();
@@ -39,7 +40,7 @@ namespace MonsterTrain2Poju.Probe
                 save.AddRelic(relic);
             }
             Acquired = true;
-            log.LogInfo("ORIGINAL-SPELL-PLAY-THRESHOLDS-ACQUIRED two unchanged original owners; draw requires Exhaust, magic requires no trait.");
+            log.LogInfo("ORIGINAL-SPELL-PLAY-THRESHOLDS-ACQUIRED " + (magicOnly ? "one" : "two") + " unchanged original owners; magic requires no trait.");
         }
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {

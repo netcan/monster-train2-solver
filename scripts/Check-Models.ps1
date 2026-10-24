@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'room-moon-spell-threshold-relic-calibration.mt2f',
     'player-live-arkion-pyre-unavailable.mt2f',
     'full-battle-player-live-arkion-pyre.mt2f',
     'outer-boss-birth-live-arkion-pyre.mt2f',

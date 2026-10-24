@@ -133,6 +133,7 @@ namespace MonsterTrain2Poju.Probe
                 CostRelicControls = RoomMoonCallbackCalibration.SpellCostRelic, CostControlIds = costIds,
                 AttackRelicControls = RoomMoonCallbackCalibration.SpellAttackRelic, AttackControlIds = attackIds,
                 HealingRelicControls = RoomMoonCallbackCalibration.SpellHealingRelic,
+                ThresholdRelicControls = RoomMoonCallbackCalibration.SpellThresholdRelic,
                 PhaseHealRelicControls = RoomMoonCallbackCalibration.SpellPhaseHealRelic,
                 PhaseEnergyRelicControls = RoomMoonCallbackCalibration.SpellPhaseEnergyRelic,
                 HandPowerRelicControls = RoomMoonCallbackCalibration.SpellHandPowerRelic,
@@ -147,6 +148,7 @@ namespace MonsterTrain2Poju.Probe
                 CardIds = ids, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0], Rows = rows }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
                 CovenantLevel > 0 ? "room-moon-spell-covenant-" + CovenantLevel.ToString("00") + "-calibration.mt2f" :
+                RoomMoonCallbackCalibration.SpellThresholdRelic ? "room-moon-spell-threshold-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellStatusRelic ? "room-moon-spell-status-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellHandPowerRelic ? "room-moon-spell-hand-power-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellPhaseEnergyRelic ? "room-moon-spell-phase-energy-relic-calibration.mt2f" :

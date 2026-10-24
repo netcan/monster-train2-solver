@@ -2954,6 +2954,18 @@ if (args.Length == 2 && args[0] == "--room-moon-spell-upgrades-only")
     RoomMoonSpellUpgradeChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--moon-spell-threshold-component-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    MoonSpellThresholdCompositionChecks.Component(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--moon-spell-threshold-card-plays-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    MoonSpellThresholdCompositionChecks.CardPlays(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--moon-hand-power-callbacks-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5225,6 +5237,7 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-ch
     MixedConduitChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("room-moon-spell-upgrade-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("room-moon-spell-threshold-relic-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
     Path.GetFileName(path).StartsWith("room-moon-spell-covenant-", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("room-moon-spell-status-relic-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("room-moon-spell-hand-power-relic-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
@@ -5236,7 +5249,9 @@ foreach (string path in args.Where(path => path.EndsWith("room-moon-spell-upgrad
     path.EndsWith("room-moon-spell-advance-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var document = ModelJson.ReadFixture(path);
-    RoomMoonSpellUpgradeChecks.Native(document.RootElement);
+    if (Path.GetFileName(path) == "room-moon-spell-threshold-relic-calibration.mt2f")
+        MoonSpellThresholdCompositionChecks.Component(document.RootElement);
+    else RoomMoonSpellUpgradeChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("player-moon-room-turn-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool SpellCostRelic => SpellAdvance && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_COST_RELIC") == "1";
         internal static bool SpellAttackRelic => SpellAdvance && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_ATTACK_RELIC") == "1";
         internal static bool SpellHealingRelic => SpellAdvance && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_HEALING_RELIC") == "1";
+        internal static bool SpellThresholdRelic => SpellAdvance && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_THRESHOLD_RELIC") == "1";
         internal static bool SpellPhaseHealRelic => SpellAdvance && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_PHASE_HEAL_RELIC") == "1";
         internal static bool SpellPhaseEnergyRelic => SpellAdvance && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_PHASE_ENERGY_RELIC") == "1";
         internal static bool SpellHandPowerRelic => SpellAdvance && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SPELL_HAND_POWER_RELIC") == "1";
