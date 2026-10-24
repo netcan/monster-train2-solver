@@ -62,14 +62,14 @@ internal static class FloorBrowseAdviceChecks
         int calls = 0;
         using (var session = new BattleAdviceSession((_, _) => { calls++; return plan; }))
         {
-            session.Observe(root, original); Pump(session);
+            session.Observe(session.PrepareObservationAsync(root).GetAwaiter().GetResult()); Pump(session);
             long generation = session.Generation;
             var watch = Stopwatch.StartNew();
             BattleTurnState selected = root;
             foreach (int floor in new[] { 1, 2, 0, 2, 1, 0 })
             {
                 selected = Select(selected, floor);
-                session.Observe(selected, Key(selected)); Pump(session);
+                session.Observe(session.PrepareObservationAsync(selected).GetAwaiter().GetResult()); Pump(session);
                 Require(calls == 1 && session.SearchCount == 1 && session.Generation == generation &&
                     session.Current!.RootKey == Key(selected) && session.Current.ReusedSelection &&
                     session.Current.Plan.ExpandedNodes == 0 && session.Current.Plan.Elapsed == TimeSpan.Zero,
@@ -93,11 +93,12 @@ internal static class FloorBrowseAdviceChecks
         {
             try
             {
-                session.Observe(root, original); Require(entered.Wait(10000), "Worker did not start.");
+                session.Observe(session.PrepareObservationAsync(root).GetAwaiter().GetResult());
+                Require(entered.Wait(10000), "Worker did not start.");
                 long generation = session.Generation;
                 BattleTurnState selected = root;
                 foreach (int floor in new[] { 1, 2, 0, 1 })
-                { selected = Select(selected, floor); session.Observe(selected, Key(selected)); }
+                { selected = Select(selected, floor); session.Observe(session.PrepareObservationAsync(selected).GetAwaiter().GetResult()); }
                 release.Set(); Pump(session);
                 Require(inFlightCalls == 1 && session.Generation == generation && session.Current!.ReusedSelection &&
                     session.Current.RootKey == Key(selected), "Running search failed to follow the latest floor selection.");

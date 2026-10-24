@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using BepInEx.Logging;
 using HarmonyLib;
 using MonsterTrain2Poju.Model;
@@ -41,6 +43,10 @@ namespace MonsterTrain2Poju.Probe
         private bool captureNeeded = true, observed;
         private bool capturing;
         private AdvisorObservation observation;
+        private Task<PreparedBattleObservation>? preparation;
+        private long observationRevision, preparationRevision;
+        private AdvisorObservation preparationObservation;
+        private TimeSpan preparationCaptureElapsed;
         private int manualBattleDistance = -1;
         private static readonly FieldInfo combatChanged = AccessTools.Field(typeof(CombatManager), "combatStateChanged");
         private bool paused, wasInBattle, screenshotTaken;
@@ -62,11 +68,21 @@ namespace MonsterTrain2Poju.Probe
         internal int Failures { get; private set; }
         internal double LastCaptureMs { get; private set; }
         internal double TotalCaptureMs { get; private set; }
+        internal double LastProjectionMs { get; private set; }
+        internal double LastPurityMs { get; private set; }
+        internal double LastPreparationMs { get; private set; }
+        internal int PreparedObservations { get; private set; }
+        internal int DiscardedPreparations { get; private set; }
+        internal int MainThreadId { get; } = Thread.CurrentThread.ManagedThreadId;
+        internal int PreparationThreadId { get; private set; }
         internal sealed class Publication
         {
             public long Generation { get; set; }
             public int Turn { get; set; }
             public double CaptureMs { get; set; }
+            public double PreparationMs { get; set; }
+            public double PublicationCaptureMs { get; set; }
+            public double PublicationPreparationMs { get; set; }
             public double QueueMs { get; set; }
             public double SearchMs { get; set; }
             public double VerificationMs { get; set; }
@@ -78,6 +94,8 @@ namespace MonsterTrain2Poju.Probe
         internal List<Publication> Publications { get; } = new List<Publication>();
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
         internal object Evidence => new { Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, SelectionReuses, Searches, PlanningFrames, IdleFrames, PanelVertices, PanelPixels, Failures, Publications, LastCaptureMs, TotalCaptureMs,
+            LastProjectionMs, LastPurityMs, LastPreparationMs, PreparedObservations, DiscardedPreparations,
+            MainThreadId, PreparationThreadId,
             Error = session.Error, UnavailableRoot = session.Status == BattleAdviceStatus.Unavailable ? lastCapture : null, Horizon = horizon,
             PreferredDeploymentRoom = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2"),
             TacticalSeed = Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1",
@@ -249,6 +267,7 @@ namespace MonsterTrain2Poju.Probe
             if (managers == null || LoadingScreen.IsWorking())
             {
                 session.InvalidateForInput(); displayed = null; session.Poll();
+                observationRevision++;
                 captureNeeded = true; observed = false;
                 if (body != null) body.text = "等待场景加载完成…";
                 return;
@@ -260,7 +279,7 @@ namespace MonsterTrain2Poju.Probe
             // A settled publication needs no model traversal or animation scan.
             // Input/mutation hooks, cheap resource/pile changes and native busy
             // boundaries wake it; cosmetic previews alone leave it untouched.
-            if (inBattle && !paused && !HiddenPause && observed && !captureNeeded && !selectionPending &&
+            if (inBattle && !paused && !HiddenPause && observed && preparation == null && !captureNeeded && !selectionPending &&
                 ReferenceEquals(displayed, session.Current) &&
                 session.Status is BattleAdviceStatus.Ready or BattleAdviceStatus.Unavailable &&
                 (managers!.GetSaveManager().PreviewMode || observation.Equals(new AdvisorObservation(managers))) &&
@@ -271,7 +290,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 captureNeeded = true;
                 bool browsing = selectionPending && inBattle && !paused && !HiddenPause;
-                if (!browsing && session.Status != BattleAdviceStatus.Idle) InvalidateState(inBattle && !paused && !HiddenPause);
+                if (browsing && preparation != null && preparationRevision == observationRevision)
+                    observationRevision++;
+                if (!browsing && (session.Status != BattleAdviceStatus.Idle ||
+                    preparation != null && preparationRevision == observationRevision))
+                    InvalidateState(inBattle && !paused && !HiddenPause);
                 session.Poll();
                 if (!browsing || displayed == null)
                     body.text = paused || HiddenPause ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。";
@@ -297,10 +320,36 @@ namespace MonsterTrain2Poju.Probe
                 managers.GetCombatManager().GetTurnCount() < int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "0")) return;
             // Gameplay inputs invalidate immediately; browsing keeps the worker
             // and observes its new UI selection once the preview has settled.
-            // Every new publication still requires the exact live full-state key.
+            // Hash detached model values on a worker. A publication still needs
+            // an exact fresh root match, with no input/selection/busy boundary or
+            // cheap observation change between capture and accepting that hash.
+            bool publicationChecked = false;
+            if (preparation?.IsCompleted == true)
+            {
+                Task<PreparedBattleObservation> completed = preparation; preparation = null;
+                try
+                {
+                    PreparedBattleObservation prepared = completed.GetAwaiter().GetResult();
+                    if (preparationRevision != observationRevision || !preparationObservation.Equals(currentObservation))
+                    { DiscardedPreparations++; captureNeeded = true; }
+                    else
+                    {
+                        PreparationThreadId = prepared.ThreadId;
+                        if (PreparationThreadId == MainThreadId)
+                            throw new InvalidOperationException("Snapshot preparation ran on the native main thread.");
+                        LastPreparationMs = prepared.Elapsed.TotalMilliseconds; PreparedObservations++;
+                        long generation = session.Generation;
+                        session.Observe(prepared, preparationCaptureElapsed);
+                        if (session.Generation != generation) displayed = null;
+                        selectionPending = false; captureNeeded = false;
+                        publicationChecked = session.Current?.RootKey == prepared.RootKey;
+                    }
+                }
+                catch (Exception error)
+                { session.Invalidate(); captureError = error.Message; log.LogError("ADVISOR-CAPTURE-FAIL " + error); }
+            }
             bool unpublished = session.Current != null && !ReferenceEquals(displayed, session.Current);
-            int publicationCaptureFrame = -1;
-            if (captureError == null && (unpublished || selectionPending ||
+            if (captureError == null && preparation == null && !publicationChecked && (unpublished || selectionPending ||
                 captureNeeded && session.Status != BattleAdviceStatus.Planning))
             {
                 try
@@ -308,15 +357,11 @@ namespace MonsterTrain2Poju.Probe
                     var capture = Stopwatch.StartNew();
                     BattleTurnState root = CaptureReadOnly(managers);
                     lastCapture = root;
-                    using var keys = new BattleStateKeys();
-                    string key = keys.Key(root);
                     capture.Stop();
                     LastCaptureMs = capture.Elapsed.TotalMilliseconds; TotalCaptureMs += LastCaptureMs;
-                    long generation = session.Generation;
-                    session.Observe(root, key, capture.Elapsed);
-                    if (session.Generation != generation) displayed = null;
-                    selectionPending = false;
-                    publicationCaptureFrame = Time.frameCount;
+                    preparationRevision = observationRevision; preparationObservation = currentObservation;
+                    preparationCaptureElapsed = capture.Elapsed;
+                    preparation = session.PrepareObservationAsync(root);
                     captureNeeded = false;
                 }
                 catch (Exception error)
@@ -325,10 +370,8 @@ namespace MonsterTrain2Poju.Probe
             // A selection-sensitive effect can make the retained line diverge.
             // As soon as replay falls back to search, hide its old forecast.
             if (session.Current == null && session.SearchCount != displayedSearches) displayed = null;
-            if (session.Current != null && !ReferenceEquals(displayed, session.Current))
+            if (publicationChecked && session.Current != null && !ReferenceEquals(displayed, session.Current))
             {
-                if (publicationCaptureFrame != Time.frameCount)
-                    throw new InvalidOperationException("Advice publication requires a fresh full-state observation.");
                 PublicationRootChecks++;
                 displayed = session.Current; Published++;
                 if (displayed.ReusedSelection) SelectionReuses++;
@@ -338,6 +381,8 @@ namespace MonsterTrain2Poju.Probe
                 planScroll.verticalNormalizedPosition = 1;
                 Publications.Add(new Publication { Generation = session.Generation, Turn = displayed.Root.Spawn.Turn,
                     CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,
+                    PreparationMs = displayed.PreparationElapsed.TotalMilliseconds,
+                    PublicationCaptureMs = LastCaptureMs, PublicationPreparationMs = LastPreparationMs,
                     SearchMs = displayed.Plan.Elapsed.TotalMilliseconds, VerificationMs = displayed.VerificationElapsed.TotalMilliseconds,
                     EndToEndMs = displayed.ResponseElapsed.TotalMilliseconds,
                     ReusedWinningContinuation = displayed.ReusedWinningContinuation, ReusedSelection = displayed.ReusedSelection,
@@ -346,6 +391,9 @@ namespace MonsterTrain2Poju.Probe
                 log.LogInfo((playerSession ? "POJU-ADVICE" : "ADVISOR-PUBLISHED") + " generation=" + session.Generation + " steps=" + displayed.Plan.Steps.Count +
                     " elapsedMs=" + displayed.Plan.Elapsed.TotalMilliseconds.ToString("F1") + " capturePurityFailures=" + PurityFailures +
                     " captureMs=" + displayed.CaptureElapsed.TotalMilliseconds.ToString("F1") +
+                    " prepareMs=" + displayed.PreparationElapsed.TotalMilliseconds.ToString("F1") +
+                    " publishCaptureMs=" + LastCaptureMs.ToString("F1") + " publishPrepareMs=" + LastPreparationMs.ToString("F1") +
+                    " projectionMs=" + LastProjectionMs.ToString("F1") + " purityMs=" + LastPurityMs.ToString("F1") +
                     " verifyMs=" + displayed.VerificationElapsed.TotalMilliseconds.ToString("F1") +
                     " source=" + (displayed.ReusedSelection ? "floor-browse" : displayed.ReusedWinningContinuation ? "verified-continuation" :
                         displayed.ReusedContinuation ? "verified-turn" : "search"));
@@ -367,10 +415,15 @@ namespace MonsterTrain2Poju.Probe
             capturing = true;
             try
             {
+                var timer = Stopwatch.StartNew();
                 string before = Stamp(); UnityEngine.Random.State unity = UnityEngine.Random.state; int frame = Time.frameCount;
+                double beforeMs = timer.Elapsed.TotalMilliseconds;
+                timer.Restart();
                 BattleTurnState root = FullBattleTrace.Active!.CaptureDecision();
+                LastProjectionMs = timer.Elapsed.TotalMilliseconds; timer.Restart();
                 if (before != Stamp() || !unity.Equals(UnityEngine.Random.state) || frame != Time.frameCount)
                 { PurityFailures++; throw new InvalidOperationException("Decision capture changed native state, RNG or frame."); }
+                LastPurityMs = beforeMs + timer.Elapsed.TotalMilliseconds;
                 Captures++; return root;
             }
             finally { capturing = false; }
@@ -490,10 +543,11 @@ namespace MonsterTrain2Poju.Probe
 
         private void InvalidateState(bool preserveWinningContinuation)
         {
+            observationRevision++;
             if (session.Status != BattleAdviceStatus.Idle) Invalidations++;
             if (preserveWinningContinuation) session.InvalidateForInput(); else session.Invalidate();
             displayed = null; captureError = null; captureNeeded = true; observed = false; selectionPending = false;
-            if (body != null) body.text = "局面已更新，等待重新计算…";
+            if (body != null) body.text = "局面已更新，正在核对后续方案…";
         }
         private static void NativeAction(bool preserveWinningContinuation = true)
         {
@@ -537,12 +591,13 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix()
             {
                 if (Active != null && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
-                { Active.selectionPending = true; Active.captureNeeded = true; }
+                { Active.observationRevision++; Active.selectionPending = true; Active.captureNeeded = true; }
             }
         }
 
         public void Dispose()
         {
+            if (preparation != null) _ = preparation.ContinueWith(task => { _ = task.Exception; }, TaskScheduler.Default);
             session.Dispose();
             if (canvas != null) UnityEngine.Object.Destroy(canvas);
             if (uiFont != null) UnityEngine.Object.Destroy(uiFont);

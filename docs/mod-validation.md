@@ -1,5 +1,37 @@
 # Player Mod validation · 2026-10-24
 
+Windows 0.2.6 prepares full snapshot keys and floor-normalized comparisons on
+a background worker. The UI thread reads native objects and performs the
+original before/after native state/RNG purity checks, then submits detached
+immutable model values. It neither waits for the worker nor hashes the model.
+Search and continuation/rebase verification remain on background workers.
+
+Every publication still matches a newly captured complete root. While its key
+is being prepared, input, selection or native busy boundaries retire that
+capture's revision; a cheap observation change also prevents acceptance. The
+session separately rejects preparations made against an obsolete prior root.
+Only the latest unchanged capture can publish, preserving floor browsing's
+in-flight search. Response timing includes background preparation, and logs
+separate the initial capture from the final publication capture/preparation.
+
+Focused session and floor-browse checks pass, including background thread
+identity, obsolete preparation rejection, latest observation, ready/in-flight
+browsing, real-input invalidation and resource/card-cost/RNG divergence.
+Source `full-battle-units-spells-and-junk-20261024-152321-2af4d557` wins after
+15 plays/seven EndTurns. It records main thread1, preparation thread7, 63
+accepted preparations, nine discarded preparations and thirty publications,
+all with fresh full-root checks. Complete-plan controls, two-second idle and
+seven floor switches pass, with no additional searches for browsing. All four
+native failure counters are zero, exit is normal and protected originals are
+unchanged. Independent frozen replay is pending.
+
+The thirty initial captures associated with publications range from38.66ms to
+365.13ms, with a median45.25ms; these are isolated native measurements, not an
+FPS benchmark. Early projections are typically38-57ms, with purity checks
+around0.2-0.3ms. Background preparation work in those early observations ranges
+from35ms to193ms. Native projection and occasional main-thread spikes remain;
+the optimization moves pure hashing/comparison work without weakening purity.
+
 Windows 0.2.5 removes the half-second full capture after advice is ready. Native
 input/mutation and settlement boundaries wake the observer; a value-only stamp
 checks resources, floor, turn/phase and pile counts without traversing the model.

@@ -2315,6 +2315,9 @@ if ($PlayerAdvisor -and -not $PlannerInput -and -not $RollingInput) {
     if ($trace.PlayerAdvisor.Assembly -cne 'MonsterTrain2Poju.Advisor' -or -not $trace.PlayerAdvisor.InteractionsPassed -or
         -not $trace.PlayerAdvisor.IdlePassed -or -not $trace.PlayerAdvisor.PlanPreviewPassed -or
         $playerEvidence.Captures -lt 1 -or $playerEvidence.PurityFailures -ne 0 -or $playerEvidence.Failures -ne 0 -or
+        $playerEvidence.PreparedObservations -lt $playerEvidence.Published -or
+        $playerEvidence.MainThreadId -lt 1 -or $playerEvidence.PreparationThreadId -lt 1 -or
+        $playerEvidence.MainThreadId -eq $playerEvidence.PreparationThreadId -or
         $playerEvidence.Published -lt 4 -or $playerEvidence.Invalidations -lt 3 -or $playerEvidence.PlanningFrames -lt 2 -or
         $playerEvidence.PanelVertices -lt 1 -or $playerEvidence.PanelPixels -lt 1000 -or
         -not (Test-Path -LiteralPath (Join-Path $profile 'advisor-ready.png')) -or

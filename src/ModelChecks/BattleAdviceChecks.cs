@@ -56,6 +56,26 @@ internal static class BattleAdviceChecks
         }
 
         string unchanged = JsonSerializer.Serialize(root);
+        using (var preparedSession = new BattleAdviceSession((state, _) => Plan(state)))
+        {
+            int owner = Environment.CurrentManagedThreadId;
+            PreparedBattleObservation prepared = preparedSession.PrepareObservationAsync(root).GetAwaiter().GetResult();
+            Require(prepared.ThreadId != owner && prepared.RootKey == Key(root), "Preparation did not hash the complete snapshot on a worker.");
+            preparedSession.Observe(prepared); Pump(preparedSession, BattleAdviceStatus.Ready);
+            Require(preparedSession.Current!.RootKey == prepared.RootKey, "Prepared advice published a different root.");
+            PreparedBattleObservation obsolete = preparedSession.PrepareObservationAsync(second).GetAwaiter().GetResult();
+            preparedSession.InvalidateForInput();
+            bool rejected = false;
+            try { preparedSession.Observe(obsolete); } catch (InvalidOperationException) { rejected = true; }
+            Require(rejected && preparedSession.Current == null, "Input during preparation admitted an obsolete snapshot.");
+            obsolete = preparedSession.PrepareObservationAsync(root).GetAwaiter().GetResult();
+            preparedSession.Invalidate(); rejected = false;
+            try { preparedSession.Observe(obsolete); } catch (InvalidOperationException) { rejected = true; }
+            Require(rejected, "Invalidating an empty session did not retire its pending preparation.");
+            preparedSession.Observe(preparedSession.PrepareObservationAsync(latest).GetAwaiter().GetResult());
+            Pump(preparedSession, BattleAdviceStatus.Ready);
+            Require(preparedSession.Current!.RootKey == Key(latest), "The latest prepared snapshot was not published.");
+        }
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         int calls = 0, active = 0, peak = 0;
