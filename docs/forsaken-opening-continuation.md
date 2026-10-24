@@ -70,3 +70,35 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-opening-mor
 This repair uses focused fixtures and one native sandbox run; no full regression,
 macOS build, player autoplay, save mutation or player process restart is required
 for the verification work.
+
+## Windows 0.2.14 installation
+
+Built from `a3e7a3f2d2d999aecb6b903f74719fa7172d31ae` and installed at
+2026-10-24 18:47:19 in the current Windows game's
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+The exact production Model.dll passed the native trial's full spawn/EndTurn
+replay, all eleven negative controls, the actual live opening search and both
+previous live moon continuation searches in an isolated checker harness.
+The live trial still returns a verified six-turn terminal line within the
+default budget (45 nodes, 3.045 seconds in the production-model check).
+
+| File | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | 4b9c1675a3c0fa0664e6f62824c31e4968579f19e5370a679b7a59b15ad712ee |
+| Model.dll | 01e0ae587b1938612e76c1dede89d8592d2a1e0394e9b495a7e7b3b8007662fb |
+| FixtureArchive.dll | 40ff5d2c8b36da76daa2cab791eb91dcd8fe356531e207a6d6edd56a7e6a4eaf |
+
+All three installed files match the accepted build. Previous and accepted
+payloads are retained under
+`BepInEx/PojuBackups/ForsakenOpening-20261024-184718/{previous,accepted}`.
+The Windows-only ZIP is
+`results/mod-dist/PojuAdvisor-0.2.14-Windows-20261024-184718.zip`.
+All 28 other loader/plugin/config hashes match, including the other mods and
+the existing F10, whole-battle, two-worker, 3000ms settings. The 1359 archive
+hash/registration catalog passes without running battle simulations.
+
+PID 132388 was still running the already-loaded 0.2.13 assembly at installation.
+Replacing disk files does not reload managed assemblies: a normal complete
+game exit and restart is needed to activate 0.2.14. No player turn, card, save,
+native effect or process lifecycle was changed; one-shot read-only diagnostic
+observers were detached after capture.
