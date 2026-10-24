@@ -3,6 +3,9 @@
 param(
     [ValidateRange(1, 9)] [int] $StopBeforeRing = 5,
     [int] $Seed = 424242,
+    [string] $PrimaryClan = '',
+    [string] $SecondaryClan = '',
+    [ValidateRange(0, 10)] [int] $StartingCovenantLevel = 0,
     [string] $InputProfile = '',
     [string] $BattleReplay = '',
     [string[]] $ExcludeUpgradeTrait = @(),
@@ -17,6 +20,10 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+if (($PrimaryClan -or $SecondaryClan -or $PSBoundParameters.ContainsKey('StartingCovenantLevel')) -and $InputProfile) {
+    throw 'Clan and Covenant selection require a fresh native campaign.'
+}
+if ($PrimaryClan -and $SecondaryClan -and $PrimaryClan -ieq $SecondaryClan) { throw 'Starting clans must differ.' }
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
 if ($StoryProgressionOnly -and (-not $InputProfile -or $BattleReplay)) {
     throw '-StoryProgressionOnly requires an InputProfile and cannot execute BattleReplay.'
@@ -66,11 +73,16 @@ if ($BattleReplay) {
         $playerValue = [MonsterTrain2Poju.Fixtures.FixtureValue]::new()
         if ($sourceDocument.RootElement.TryGetProperty('PlayerAdvisor', [ref]$playerValue) -and
             $playerValue.ValueKind -ne [MonsterTrain2Poju.Fixtures.FixtureKind]::Null) {
-            if ($playerValue.GetProperty('Assembly').GetString() -cne 'MonsterTrain2Poju.Advisor') {
+        if ($playerValue.GetProperty('Assembly').GetString() -cne 'MonsterTrain2Poju.Advisor') {
                 throw 'Unknown player assembly in the frozen battle.'
             }
             $playerReplay = $true
             $playerSettings = $playerValue.GetProperty('Overlay').ToObjectGraph()
+            # Older accepted traces predate these additive settings. Preserve
+            # the original fixed-horizon/single-worker replay in that case.
+            if (-not $playerSettings.ContainsKey('WholeBattle')) { $playerSettings['WholeBattle'] = $false }
+            if (-not $playerSettings.ContainsKey('MaxSteps')) { $playerSettings['MaxSteps'] = 256 }
+            if (-not $playerSettings.ContainsKey('SearchWorkers')) { $playerSettings['SearchWorkers'] = 1 }
         }
     } finally { $sourceDocument.Dispose() }
 }
@@ -102,6 +114,7 @@ if (Test-Path -LiteralPath (Join-Path $source 'campaign-audit.jsonl')) {
 $savePath = Join-Path $profile 'saves/save-singlePlayer.json'
 [pscustomobject]@{ InputProfile = $source; InputSaveSHA256 = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash;
     StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker; ExcludeUpgradeTrait = $ExcludeUpgradeTrait;
+    PrimaryClan = $PrimaryClan; SecondaryClan = $SecondaryClan; StartingCovenantLevel = $StartingCovenantLevel;
     SkipMerchantPurchases = [bool]$SkipMerchantPurchases;
     StoryChoiceOrder = $StoryChoiceOrder;
     DeploymentRoom = $DeploymentRoom;
@@ -137,6 +150,9 @@ Horizon = $($playerSettings['Horizon'])
 TimeLimitMs = $($playerSettings['TimeLimitMs'])
 PreferredFloor = $(1 + [int]$playerSettings['PreferredDeploymentRoom'])
 TacticalSeed = $($playerSettings['TacticalSeed'])
+WholeBattle = $($playerSettings['WholeBattle'])
+MaxSteps = $($playerSettings['MaxSteps'])
+SearchWorkers = $($playerSettings['SearchWorkers'])
 "@ | Set-Content -LiteralPath $playerConfigPath -Encoding utf8
 }
 $start = [Diagnostics.ProcessStartInfo]::new($executable)
@@ -150,6 +166,8 @@ foreach ($name in @($start.Environment.Keys)) {
 }
 $settings = @{
     MT2_PROBE_DATA_DIR = $profile; MT2_PROBE_SCENARIO = 'campaign'; MT2_PROBE_SEED = "$Seed"
+    MT2_PROBE_PRIMARY_CLAN = $PrimaryClan; MT2_PROBE_SECONDARY_CLAN = $SecondaryClan
+    MT2_PROBE_STARTING_COVENANT_LEVEL = "$StartingCovenantLevel"
     MT2_PROBE_CAMPAIGN_STOP_RING = "$StopBeforeRing"; MT2_PROBE_SETTLE_CARD_ANIMATIONS = '1'
     MT2_PROBE_CAMPAIGN_STORY_ONLY = $(if ($StoryProgressionOnly) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
@@ -183,6 +201,9 @@ if ($BattleReplay) {
         $settings.MT2_PROBE_PLANNER_TIME_LIMIT_MS = [string]$playerSettings['TimeLimitMs']
         $settings.MT2_PROBE_PLANNER_DEPLOYMENT_ROOM = [string]$playerSettings['PreferredDeploymentRoom']
         $settings.MT2_PROBE_PLANNER_TACTICAL_SEED = $(if ($playerSettings['TacticalSeed']) { '1' } else { '0' })
+        $settings.MT2_PROBE_PLANNER_WHOLE_BATTLE = $(if ($playerSettings['WholeBattle']) { '1' } else { '0' })
+        $settings.MT2_PROBE_PLANNER_MAX_STEPS = [string]$playerSettings['MaxSteps']
+        $settings.MT2_PROBE_PLANNER_SEARCH_WORKERS = [string]$playerSettings['SearchWorkers']
     }
 }
 foreach ($entry in $settings.GetEnumerator()) { $start.Environment[$entry.Key] = $entry.Value }

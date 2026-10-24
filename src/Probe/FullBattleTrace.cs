@@ -188,6 +188,8 @@ namespace MonsterTrain2Poju.Probe
                 {
                     Schema = 1, Seed = data.GetSeed(), Distance = save.GetCurrentDistance(),
                     AscensionLevel = save.GetAscensionLevel(), StartingLevel = save.GetStartingConditions().AscensionLevel,
+                    PrimaryClan = save.GetMainClass().GetCardStyle().ToString(), PrimaryClanId = save.GetMainClass().GetID(),
+                    SecondaryClan = save.GetSubClass().GetCardStyle().ToString(), SecondaryClanId = save.GetSubClass().GetID(),
                     Scenario = save.GetScenarioData(save.GetCurrentDistance()).name,
                     WasDevCheatUsed = SaveManager.WasDevCheatUsed, BattlesWon = save.GetNumBattlesWon(),
                     Gold = save.GetGold(), PyreHealth = save.GetTowerHP(),

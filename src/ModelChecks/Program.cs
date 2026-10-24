@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 7 && args[0] == "--random-campaign-source-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    RandomCampaignChecks.Source(source.RootElement, int.Parse(args[2]), int.Parse(args[3]), int.Parse(args[4]), args[5], args[6]);
+    return;
+}
+
+if (args.Length == 8 && args[0] == "--random-campaign-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    RandomCampaignChecks.Pair(source.RootElement, replay.RootElement, int.Parse(args[3]), int.Parse(args[4]), int.Parse(args[5]), args[6], args[7]);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--advice-history-only")
 {
     AdviceDiagnosticJournalChecks.Run();

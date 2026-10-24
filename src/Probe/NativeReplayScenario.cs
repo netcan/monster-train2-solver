@@ -322,36 +322,7 @@ namespace MonsterTrain2Poju.Probe
                     screen.GetScreen(ScreenName.RunSetup) is RunSetupScreen setup)
                 {
                     runSetupRequested = true;
-                    foreach (var selection in new[]
-                    {
-                        (Requested: Environment.GetEnvironmentVariable("MT2_PROBE_PRIMARY_CLAN"), IsMain: true),
-                        (Requested: Environment.GetEnvironmentVariable("MT2_PROBE_SECONDARY_CLAN"), IsMain: false)
-                    })
-                    {
-                        if (string.IsNullOrEmpty(selection.Requested)) continue;
-                        ClassData clan = managers.GetAllGameData().GetAllClassDatas().Single(data =>
-                            data.GetCardStyle().ToString().Equals(selection.Requested, StringComparison.OrdinalIgnoreCase));
-                        // Disposable profile only: unlock the selected clan and
-                        // its Crew prerequisite. Keep native starter decks,
-                        // champion levels, relics and encounter generation intact.
-                        if (clan.IsCrew() && save.GetMetagameSave().UnlockFeature(MetagameSaveData.UnlockedFeature.Crew))
-                            log.LogInfo("ISOLATED-PROFILE-CREW-UNLOCK " + clan.GetCardStyle());
-                        if (!save.IsClassUnlockedInMetagame(clan))
-                        {
-                            save.GetMetagameSave().UnlockClass(clan);
-                            log.LogInfo("ISOLATED-PROFILE-CLAN-UNLOCK " + clan.GetCardStyle());
-                        }
-                        if (!save.IsUnlockedAndAvailableWhenStartingRun(clan))
-                            throw new InvalidOperationException("Requested native starting clan is locked: " + selection.Requested +
-                                " crew=" + clan.IsCrew() + " dlc=" + clan.GetRequiredDlc() +
-                                " installed=" + save.IsDlcInstalled(clan.GetRequiredDlc()) +
-                                " enabled=" + save.IsDlcAvailableWhenStartingRun(clan.GetRequiredDlc()));
-                        AccessTools.Method(typeof(RunSetupScreen), "HandleClanOptionsSelected").Invoke(setup,
-                            new object[] { selection.IsMain, new RunSetupClanSelectionLayoutUI.ClanOptionData(clan, false) });
-                        log.LogInfo((selection.IsMain ? "NATIVE-STARTING-CLAN " : "NATIVE-SECONDARY-CLAN ") +
-                            clan.GetCardStyle() + " id=" + clan.GetID());
-                        save.MarkOneTimeMessageComplete(OneTimeMessage.MoonPhase);
-                    }
+                    NativeStartingClans.Select(setup, save, log);
                     StartingCovenantScenario.Select(setup, save);
                     startRunFromSetup.Invoke(setup, null);
                     return;

@@ -151,7 +151,16 @@ namespace MonsterTrain2Poju.Probe
             if (screen is RunOpeningScreen opening) { Click(opening.GetConfirmButton(), "opening"); return; }
             if (screen is RunSetupScreen runSetup)
             {
-                if (!setup) { setup = true; AccessTools.Method(typeof(RunSetupScreen), "StartRun").Invoke(runSetup, null); Record("run-setup", new { }); }
+                if (!setup)
+                {
+                    setup = true;
+                    NativeStartingClans.Select(runSetup, save, log);
+#if DEVELOPMENT_PROBE
+                    StartingCovenantScenario.Select(runSetup, save);
+#endif
+                    AccessTools.Method(typeof(RunSetupScreen), "StartRun").Invoke(runSetup, null);
+                    Record("run-setup", new { });
+                }
                 return;
             }
             if (screen is ChampionUpgradeScreen champion)
