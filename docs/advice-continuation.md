@@ -1,4 +1,12 @@
-# Advice continuation · Windows0.2.10
+# Advice continuation · Windows0.2.11
+
+The [live Conduit follow-up](live-scroll-debug.md) fixes an omitted case in
+the0.2.10 starter acceptance: selecting another room applies/removes hidden
+Conduit upgrades and updates private card trackers. Floor reuse now validates
+that entire modeled selection transition against the native full state/RNG,
+retaining those fields in the comparison. Seven wheel inputs in the user's
+running battle keep search count and generation unchanged; the exact release
+model passes the captured live fixture and complete remaining forecast replay.
 
 Following a verified plan advances to its remaining steps without searching
 again. This includes EndTurn in a nonwinning/partial forecast and a forecast

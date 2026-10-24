@@ -1,5 +1,32 @@
 # Player Mod validation · 2026-10-24
 
+Windows0.2.11 fixes the live Conduit scrolling case missed by0.2.10's starter
+acceptance. [Direct live debugging](live-scroll-debug.md) identifies temporary
+card upgrades and Conduit tracker callbacks on selection; the model now proves
+their complete transition before retaining advice. Seven native wheel inputs
+in the user's existing game keep search count4 and generation6 unchanged,
+with zero native purity/overlay failures. The full native fixture and eight-step
+forecast replay pass with the exact installed production Model.dll. Existing
+floor/cost/RNG and ordinary continuation controls pass; the catalog has1355
+verified registrations. No full regression or Mac package was built.
+
+Windows0.2.11 is installed at
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+Build and installed hashes match:
+
+| DLL | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | `a3d8c1c63ed0c3932197cafa63665a7814b4833754a2096a13a5efdb8fa0e421` |
+| Model.dll | `e184a5d19d088e496382c073d36a675b7fb57e2d150f231b0066ecef236a49a8` |
+| FixtureArchive.dll | `fcb5c54d4c55fcb795011ddf5442b8270133f146625016fd3ffc210e49c4727b` |
+
+All28 other loader/plugin/config files are unchanged, including F10 and search
+settings. The exact previous0.2.10 payload is preserved at
+`BepInEx/PojuBackups/LiveConduitScroll-20261024-173332/previous`, outside plugins.
+PID59976 remains running with0.2.10 and the temporary selection fix already
+active. Observation/command hooks are detached; the fix persists until exit.
+The next launch loads0.2.11. No real game was restarted or autoplayed.
+
 Windows0.2.10 retains verified ordinary/partial forecasts across EndTurn,
 retains unchanged roots after cosmetic busy boundaries, and preserves current
 advice/search during native floor scrolling. It coalesces wheel events for120ms
@@ -19,9 +46,9 @@ installed whole-battle default remains enabled. Session, floor/cost/RNG,
 50-step winning and seven-step losing-forecast controls pass. The catalog
 passes1354 hashes/registrations; no full regression was run.
 
-The tested0.2.10 three-DLL payload is installed at
+The earlier tested0.2.10 three-DLL payload was installed at
 `F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
-Build, native source, native frozen replay and installed hashes match:
+Its build, native source, native frozen replay and then-installed hashes matched:
 
 | DLL | SHA256 |
 | --- | --- |
@@ -32,9 +59,9 @@ Build, native source, native frozen replay and installed hashes match:
 All28 other loader/plugin/config files are unchanged, including F10,
 WholeBattle=true, two workers and the3000ms budget. The previous0.2.9 payload
 is preserved at `BepInEx/PojuBackups/CrossTurnScroll-20261024-171813/previous`,
-outside the plugins tree. No real game is running at installation; the next
-launch loads0.2.10. No user game was stopped or autoplayed and no Mac package
-was built. The curated native pair is
+outside the plugins tree. No real game was running at that installation.
+Its next player launch loaded0.2.10. No user game was stopped or autoplayed
+and no Mac package was built. The curated native pair is
 `full-battle-player-cross-turn-scroll-{search,replay}.mt2f`.
 
 Windows0.2.9 finishes the allocation/idle follow-up: per-key-session pooled

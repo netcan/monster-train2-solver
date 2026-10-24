@@ -1,5 +1,15 @@
 # Native capture profile · 2026-10-24
 
+## Live Conduit scrolling · Windows0.2.11
+
+[Direct live debugging](live-scroll-debug.md) reproduces the0.2.10 scrolling
+failure after deploying a Conduit unit. Selection changes real temporary card
+upgrades/private trackers; proving that complete modeled callback transition
+now permits reuse. Seven wheel inputs in the same running game keep search
+count4/generation6 unchanged with zero purity/overlay failures. The native
+fixture and complete eight-step forecast replay pass using the installed
+release Model.dll. Capture/replay work remains; this is not an FPS benchmark.
+
 ## Search reuse follow-up · Windows0.2.10
 
 [Advice continuation](advice-continuation.md) now keeps nonwinning forecasts
