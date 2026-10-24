@@ -224,3 +224,25 @@ losing candidates.
 ```powershell
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll policy-battle tests/fixtures/full-battle-player-angel-duo-search.mt2f <new-output.mt2f> <room-index>
 ```
+
+The player-continuation workflow also tests six turns/10000ms, configured top
+preference and tactical seed off. It still loses after 44 inputs: 36 searches
+and eight ordinary continuations, with every complete forecast/successor,
+terminal state/RNG and immutable root independently verified. This local run
+takes 468.19 seconds including verification. A speculative candidate is
+rejected with `Missing dead spawner routing during the trigger queue.`; the
+executed route remains supported. That guarded branch needs its own isolated
+native witness before changing routing. More search time alone has not
+established a winning route, and no fresh native run is spent on this loss.
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-battle tests/fixtures/full-battle-player-angel-duo-search.mt2f <new-output.mt2f> 6 10000 2 --player-continuation
+```
+
+A second candidate uses twelve turns/10000ms, bottom preference and tactical
+seed on. It also loses: 55 inputs/eleven EndTurns, 55 searches, no retained
+continuations, 728.68 seconds including independent full-forecast/state/RNG
+verification. Its candidate frontier rejects the same dead-spawner routing
+signature. Defeat forecasts intentionally replan after every input; the player
+continuation option does not retain an already losing route. Neither expanded
+budget establishes a native victory or justifies repeating the native UI test.

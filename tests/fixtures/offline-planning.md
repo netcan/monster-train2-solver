@@ -13,7 +13,8 @@ and winning continuations, explicitly allowed shorter complete windows and
 ordinary adaptive deployment. It keeps the requested horizon, shared search
 limits and the selected tactical/floor settings. Search and continuation counts
 are printed separately; the flag is opt-in so existing strict experiments retain
-their behavior.
+their behavior. Defeat forecasts still search after each input, matching the
+player's existing rule rather than retaining an already losing route.
 
 ```powershell
 dotnet build src/FixtureTools/FixtureTools.csproj -c Release --no-restore
