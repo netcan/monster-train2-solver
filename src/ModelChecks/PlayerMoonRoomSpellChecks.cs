@@ -5,7 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class PlayerMoonRoomSpellChecks
 {
     internal static void Pair(FixtureValue source, FixtureValue replay, bool requireHealingRelic = false, bool requirePhaseHealRelic = false,
-        bool requirePhaseEnergyRelic = false, bool requireHandPowerRelic = false)
+        bool requirePhaseEnergyRelic = false, bool requireHandPowerRelic = false, bool requireStatusRelic = false)
     {
         if (requireHealingRelic)
             foreach (FixtureValue fixture in new[] { source, replay })
@@ -23,6 +23,10 @@ internal static class PlayerMoonRoomSpellChecks
             foreach (FixtureValue fixture in new[] { source, replay })
                 Require(fixture.TryGetProperty("OriginalMoonCardUpgradesHandPowerRelic", out FixtureValue flag) && flag.GetBoolean(),
                     "Hand-power acceptance requires explicit original-relic witnesses in both native processes.");
+        if (requireStatusRelic)
+            foreach (FixtureValue fixture in new[] { source, replay })
+                Require(fixture.TryGetProperty("OriginalMoonCardUpgradesStatusRelic", out FixtureValue flag) && flag.GetBoolean(),
+                    "Silent armor acceptance requires explicit original-relic witnesses in both native processes.");
         RollingAdviceChecks.FrozenPair(source, replay, calibration: "original-moon-card-upgrades");
         BattleAdviceChecks.Native(source, requireBoss: false, calibration: "original-moon-card-upgrades");
         bool lunacy = source.TryGetProperty("OriginalMoonCardUpgradesLunacy", out FixtureValue advance) && advance.GetBoolean();
@@ -32,6 +36,9 @@ internal static class PlayerMoonRoomSpellChecks
         bool phaseHealRelic = source.TryGetProperty("OriginalMoonCardUpgradesPhaseHealRelic", out FixtureValue phaseFlag) && phaseFlag.GetBoolean();
         bool phaseEnergyRelic = source.TryGetProperty("OriginalMoonCardUpgradesPhaseEnergyRelic", out FixtureValue energyFlag) && energyFlag.GetBoolean();
         bool handPowerRelic = source.TryGetProperty("OriginalMoonCardUpgradesHandPowerRelic", out FixtureValue powerFlag) && powerFlag.GetBoolean();
+        bool statusRelic = source.TryGetProperty("OriginalMoonCardUpgradesStatusRelic", out FixtureValue statusFlag) && statusFlag.GetBoolean();
+        Require(!statusRelic || lunacy && !handPowerRelic && !phaseEnergyRelic && !phaseHealRelic && !healingRelic && !attackRelic && !costRelic,
+            "Silent armor scene requires separate original Lunacy controls.");
         Require(!handPowerRelic || lunacy && !costRelic && !attackRelic && !healingRelic && !phaseHealRelic && !phaseEnergyRelic,
             "Hand-power player scene requires separate Lunacy controls.");
         Require(!costRelic || lunacy, "Cost relic player scene requires Lunacy controls.");
@@ -64,6 +71,9 @@ internal static class PlayerMoonRoomSpellChecks
             Require((fixture.TryGetProperty("OriginalMoonCardUpgradesHandPowerRelic", out FixtureValue powerRelicFlag) && powerRelicFlag.GetBoolean()) == handPowerRelic,
                 "Hand-power player scene flags differ between processes.");
             if (handPowerRelic) RoomMoonSpellUpgradeChecks.HandPowerCallbacks(fixture);
+            Require((fixture.TryGetProperty("OriginalMoonCardUpgradesStatusRelic", out FixtureValue armorFlag) && armorFlag.GetBoolean()) == statusRelic,
+                "Silent armor scene flags differ between processes.");
+            if (statusRelic) MoonStatusCompositionChecks.Callbacks(fixture);
             // The player capture owns a different instance registry from the
             // isolation trace. Resolve unchanged control identities in its root.
             CombatContext initialContext = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root")
@@ -107,6 +117,7 @@ internal static class PlayerMoonRoomSpellChecks
                     if (phaseHealRelic) RoomMoonSpellUpgradeChecks.PhaseHealRelic(context);
                     if (phaseEnergyRelic) RoomMoonSpellUpgradeChecks.PhaseEnergyRelic(context);
                     if (handPowerRelic) RoomMoonSpellUpgradeChecks.HandPowerRelic(context);
+                    if (statusRelic) MoonStatusCompositionChecks.Owner(context);
                     int phase = context.QueryFrame!.MoonPhase!.Value;
                     int mask = Mask(context, context.QueryFrame.SelectedRoomIndex!.Value);
                     foreach (CardToken token in context.Cards.Hand)

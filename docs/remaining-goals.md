@@ -5,6 +5,11 @@
 
 ## 最新状态
 
+新月默者护甲遗物 `MoonPhaseAddArmorToSilent` 与月相法术／Lunacy／房间遮罩
+现已补齐15个隔离原生边界：两次新月各加10护甲，其余13个边界及非默者对照
+不加甲。完整状态／RNG、八条不可变分支及精确保护通过；整场与实际玩家配对
+尚待验收，见 [新月默者护甲组合](../tests/fixtures/moon-status-relic.md)。
+
 满月手牌法强遗物 `MoonPhaseRoomsGainMagicPower` 与月相法术／Lunacy／房间遮罩
 现已补齐 19 个隔离原生边界：三次满月共 15 次升级，九个新月／筛选对照，
 重复叠加及随后 5 倍／1 倍缩放，完整状态／RNG 和每处八条分支通过。

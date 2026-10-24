@@ -88,7 +88,9 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(RelicEffectAddStatusEffectOnMoonPhase __instance, ref IEnumerator __result)
             {
-                if (OriginalMoonPhaseStatusRelicScenario.Prepared)
+                if ((OriginalMoonPhaseStatusRelicScenario.Prepared || RoomMoonCallbackCalibration.SpellStatusRelic ||
+                    OriginalMoonCardUpgradesScenario.StatusRelic && OriginalMoonCardUpgradesScenario.Prepared) &&
+                    !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Wrap(__result, __instance);
             }
         }

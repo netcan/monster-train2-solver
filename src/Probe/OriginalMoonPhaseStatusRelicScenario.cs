@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "original-moon-phase-status-relic";
         internal const string DataId = "e013b17d-753b-47b8-a837-02af85addb4b";
         internal const string AssetKey = "MoonPhaseAddArmorToSilent";
+        internal const string SilentId = "4f0f249f-2a0e-4704-b8e2-8395505e6bdb";
         private const string FaeId = "d10e2dac-fa58-4509-b0ee-112b3bf78800";
         private static int step;
 

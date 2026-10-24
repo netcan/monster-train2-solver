@@ -29,12 +29,16 @@ internal static class RoomMoonSpellUpgradeChecks
         Require(!phaseEnergy || advance && !phaseHeal && !healingRelic && !attackRelic && !costRelic &&
             root.GetProperty("EnergyConditionsResetBeforeRows").GetBoolean(), "Missing separate once-per-turn energy controls.");
         bool handPower = root.TryGetProperty("HandPowerRelicControls", out FixtureValue handPowerFlag) && handPowerFlag.GetBoolean();
+        bool statusRelic = root.TryGetProperty("StatusRelicControls", out FixtureValue statusFlag) && statusFlag.GetBoolean();
+        int[] armorActors = statusRelic ? root.GetProperty("ActorIds").Deserialize<int[]>()! : [];
+        Require(!statusRelic || advance && !handPower && !phaseEnergy && !phaseHeal && !healingRelic && !attackRelic && !costRelic &&
+            armorActors.Length == 2, "Missing separate Silent/non-Silent armor controls.");
         Require(!handPower || advance && !phaseEnergy && !phaseHeal && !healingRelic && !attackRelic && !costRelic,
             "Missing separate hand magic-power controls.");
         int boundaries = handPower ? 19 : 15;
         Require(ids.Length == (advance ? 6 : 5) && root.GetProperty("Rows").GetArrayLength() == boundaries, "Missing original spells or controls.");
         int witnesses = 0, changes = 0, exclusive = 0, additive = 0, selections = 0, heals = 0, energyGains = 0, blockedFull = 0;
-        int powerApplications = 0, powerControls = 0;
+        int powerApplications = 0, powerControls = 0, armorGains = 0;
         bool guardsChecked = false, advanceGuardChecked = false;
         foreach (FixtureValue row in root.GetProperty("Rows").EnumerateArray())
         {
@@ -85,6 +89,32 @@ internal static class RoomMoonSpellUpgradeChecks
             Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Spell room branch mutated its parent.");
             Require(row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")), "Spell room upgrade advanced gameplay RNG.");
             CombatContext after = actual.Context!;
+            if (statusRelic)
+            {
+                MoonStatusCompositionChecks.Owner(before.Context!); MoonStatusCompositionChecks.Owner(after);
+                for (int index = 0; index < armorActors.Length; index++)
+                {
+                    CombatUnit prior = before.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == armorActors[index]);
+                    CombatUnit next = actual.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == prior.Id);
+                    bool fires = index == 0 && operation == "SetMoonPhase" && value == 1;
+                    Require(prior.Subtypes.Contains("SubtypesData_Silent") == (index == 0) &&
+                        (next.Status("armor")?.Stacks ?? 0) - (prior.Status("armor")?.Stacks ?? 0) == (fires ? 10 : 0),
+                        "New must add10 only to Silent; Full, room/resource refresh and selections must not add armor.");
+                    if (fires) armorGains++;
+                }
+                if (operation == "Refresh" && !guardsChecked)
+                    foreach (string field in new[] { "MoonPhaseMask", "RequiredSubtype", "Stacks" })
+                    {
+                        var malformed = System.Text.Json.Nodes.JsonNode.Parse(parent)!;
+                        var rule = malformed["Context"]!["Relics"]!.AsArray().Single(node => node!["DataId"]!.GetValue<string>() ==
+                            RelicMoonPhaseStatusModel.DataId)!["ResourceEffects"]![0]!["MoonPhaseStatus"]!;
+                        if (field == "Stacks") rule["Statuses"]![0]![field] = 11;
+                        else if (field == "MoonPhaseMask") rule[field] = 3;
+                        else rule[field] = "SubtypesData_Fae";
+                        var unknown = JsonSerializer.Deserialize<TrainCombatState>(malformed.ToJsonString(), ModelJson.Options)!;
+                        Require(!RoomMoonPhaseModel.Refresh(unknown, false).Supported, "Uncalibrated moon armor payload bypassed the guard.");
+                    }
+            }
             if (handPower)
             {
                 HandPowerRelic(before.Context!); HandPowerRelic(after);
@@ -251,6 +281,8 @@ internal static class RoomMoonSpellUpgradeChecks
         }
         Require(changes > 0 && exclusive > 0 && additive > 0 && selections == 6 && guardsChecked && (!advance || advanceGuardChecked), "Missing changed upgrades, both room modes, guard or selection controls.");
         Require(!phaseHeal || heals == 4, "Missing four positive native phase-healing boundaries.");
+        Require(!statusRelic || armorGains == 2, "Missing two positive original New armor boundaries.");
+        if (statusRelic) Console.WriteLine("ROOM-MOON-STATUS PASS: two New +10 armor witnesses, 13 nontriggering boundaries, non-Silent exclusion and exact guards.");
         Require(!phaseEnergy || energyGains == 1 && blockedFull == 1, "Missing positive Full and repeated-Full once-per-turn controls.");
         if (phaseEnergy) Console.WriteLine("ROOM-MOON-PHASE-ENERGY PASS: original +1 Full, repeated-Full blocked, 11 room/resource/selection controls and exact guards.");
         if (phaseHeal) Console.WriteLine("ROOM-MOON-PHASE-HEAL PASS: 4 native +10 heals, 11 nonhealing controls and exact original relic guards.");

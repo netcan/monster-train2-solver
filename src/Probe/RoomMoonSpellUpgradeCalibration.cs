@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
         private static FullBattleTrace Trace => FullBattleTrace.Active!;
         private static readonly List<object> rows = new List<object>();
         private static CharacterState? healAnchor;
+        private static readonly List<CharacterState> armorActors = new List<CharacterState>();
         private static object Rng() => Enum.GetValues(typeof(RngId)).Cast<RngId>()
             .Where(id => id != RngId.NonDeterministic && id != RngId.Chatter && id != RngId.BattleTest)
             .Select(id => new { Id = id.ToString(), Words = RngCalibration.Words(RandomManager.GetState(id)) }).ToArray();
@@ -47,6 +48,13 @@ namespace MonsterTrain2Poju.Probe
         {
             AllGameData data = Managers.GetAllGameData(); CardManager cards = Managers.GetCardManager()!;
             RoomManager rooms = Managers.GetRoomManager()!; PlayerManager player = Managers.GetPlayerManager();
+            if (RoomMoonCallbackCalibration.SpellStatusRelic)
+                foreach (var actor in new[] { new { Card = OriginalMoonPhaseStatusRelicScenario.SilentId, Room = 1 },
+                    new { Card = MagneticRelayScenario.StewardId, Room = 2 } })
+                    yield return Managers.GetMonsterManager().CreateMonsterState(
+                        data.FindCardData(actor.Card)!.GetSpawnCharacterData(), null!, actor.Room,
+                        unit => { armorActors.Add(unit); Trace.UnitId(unit); }, SpawnMode.SelectedSlot,
+                        rooms.GetRoom(actor.Room).GetMonsterPoint(0), isCardless: true);
             if (RoomMoonCallbackCalibration.SpellPhaseHealRelic)
                 yield return Managers.GetMonsterManager().CreateMonsterState(
                     data.FindCardData(MagneticRelayScenario.StewardId)!.GetSpawnCharacterData(), null!, 1,
@@ -121,12 +129,15 @@ namespace MonsterTrain2Poju.Probe
                 PhaseHealRelicControls = RoomMoonCallbackCalibration.SpellPhaseHealRelic,
                 PhaseEnergyRelicControls = RoomMoonCallbackCalibration.SpellPhaseEnergyRelic,
                 HandPowerRelicControls = RoomMoonCallbackCalibration.SpellHandPowerRelic,
+                StatusRelicControls = RoomMoonCallbackCalibration.SpellStatusRelic,
                 EnergyConditionsResetBeforeRows = RoomMoonCallbackCalibration.SpellPhaseEnergyRelic,
                 AnchorWoundedBeforeEachRow = healAnchor != null,
                 ShadeCallbacks = false, MovementControls = false, EnemyControls = false,
-                ActorIds = healAnchor == null ? Array.Empty<int>() : new[] { Trace.UnitId(healAnchor) },
+                ActorIds = armorActors.Count > 0 ? armorActors.Select(Trace.UnitId).ToArray() :
+                    healAnchor == null ? Array.Empty<int>() : new[] { Trace.UnitId(healAnchor) },
                 CardIds = ids, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0], Rows = rows }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                RoomMoonCallbackCalibration.SpellStatusRelic ? "room-moon-spell-status-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellHandPowerRelic ? "room-moon-spell-hand-power-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellPhaseEnergyRelic ? "room-moon-spell-phase-energy-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellPhaseHealRelic ? "room-moon-spell-phase-heal-relic-calibration.mt2f" :

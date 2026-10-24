@@ -20,6 +20,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool PhaseHealRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_PHASE_HEAL_RELIC") == "1";
         internal static bool PhaseEnergyRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_PHASE_ENERGY_RELIC") == "1";
         internal static bool HandPowerRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_HAND_POWER_RELIC") == "1";
+        internal static bool StatusRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_STATUS_RELIC") == "1";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static readonly List<HandSample> Hands = new List<HandSample>();
@@ -57,10 +58,18 @@ namespace MonsterTrain2Poju.Probe
                 ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(all)).Add(data); return data;
             }
             CardData battery = Authored(1, "CardEffectGainEnergy", 20), newMoon = Authored(2, "CardEffectSetMoonPhase", 1), fullMoon = Authored(3, "CardEffectSetMoonPhase", 2);
+            // Same durable witness controls as the Steward; original Silent
+            // subtype, triggers and ability definitions remain unchanged.
+            CardData secondAnchor = StatusRelic ? all.FindCardData(OriginalMoonPhaseStatusRelicScenario.SilentId)! : steward;
+            if (StatusRelic)
+            {
+                Set(secondAnchor, "cost", 0); CharacterData silent = secondAnchor.GetSpawnCharacterData();
+                Set(silent, "attackDamage", 1000); Set(silent, "health", 2000); Set(silent, "size", 1);
+            }
             string[] originals = { "87e45427-921e-45d3-b4c4-9c156a83cedf", "753f20a2-c625-47b3-be4b-8600b673841e",
                 "108b9153-0236-4ba2-ad20-d03a991bbd57", "cbf4d65d-afdb-4fd8-a7ce-216d58a6b486", "8757357b-c36f-476d-88de-b9a481d89fcb" };
             CardState Add(string id) => cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false);
-            var created = new List<CardState> { Add(steward.GetID()), Add(steward.GetID()), Add(originals[2]), Add(battery.GetID()), Add(newMoon.GetID()) };
+            var created = new List<CardState> { Add(steward.GetID()), Add(secondAnchor.GetID()), Add(originals[2]), Add(battery.GetID()), Add(newMoon.GetID()) };
             created.AddRange(originals.Select(Add)); created.Add(Add(fullMoon.GetID())); created.AddRange(originals.Select(Add));
             if (RoomMask) created.Add(Add(EclipseChamberScenario.DataId));
             if (Lunacy)

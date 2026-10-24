@@ -1183,6 +1183,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalMoonCardUpgradesPhaseHealRelic = OriginalMoonCardUpgradesScenario.PhaseHealRelic,
                 OriginalMoonCardUpgradesPhaseEnergyRelic = OriginalMoonCardUpgradesScenario.PhaseEnergyRelic,
                 OriginalMoonCardUpgradesHandPowerRelic = OriginalMoonCardUpgradesScenario.HandPowerRelic,
+                OriginalMoonCardUpgradesStatusRelic = OriginalMoonCardUpgradesScenario.StatusRelic,
                 MoonHandPowerCallbacks = MoonHandPowerCompositionProbe.Rows,
                 OriginalMoonCardUpgradesIds = OriginalMoonCardUpgradesScenario.CardIds,
                 OriginalMoonCardUpgradesHands = OriginalMoonCardUpgradesScenario.Hands,
