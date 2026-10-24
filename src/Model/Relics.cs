@@ -268,6 +268,9 @@ namespace MonsterTrain2Poju.Model
                     // Native IOverrideDraftRarityRelicEffect is consulted only by
                     // reward drafts. Its acquired deck is already in battle state.
                     if (effect == "RelicEffectOverrideCardDraftRarity") continue;
+                    // Sealed IMerchantRelicEffect supplies a price multiplier only;
+                    // it has no battle callbacks, including for CheaperMerchants.
+                    if (effect == "RelicEffectModifyMerchantAllCosts") continue;
                     // This original Covenant purges/builds its deck only in
                     // ApplyStartOfRunRelicEffects. Special-character selection
                     // is already carried by the captured native spawn pattern.

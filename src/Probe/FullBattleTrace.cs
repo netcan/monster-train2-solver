@@ -958,6 +958,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalWhelpCooldownPrepared = OriginalWhelpCooldownScenario.Prepared,
                 OriginalSpawnRetreatPrepared = OriginalSpawnRetreatScenario.Prepared,
                 OriginalOpeningMorselsPrepared = OriginalOpeningMorselsScenario.Prepared,
+                OriginalOpeningForsakenTrial = OriginalOpeningMorselsScenario.EnemyTrial && OriginalOpeningMorselsScenario.Prepared,
                 CardBackedFeeding = OriginalOpeningMorselsScenario.FoodCardsMode,
                 SoldierOfFortunePrepared = SoldierOfFortuneScenario.Prepared,
                 SoldierOfFortuneGoldTests = SoldierOfFortuneScenario.GoldTests,

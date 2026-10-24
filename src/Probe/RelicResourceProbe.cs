@@ -172,6 +172,15 @@ namespace MonsterTrain2Poju.Probe
             {
                 openingSpawn = new RelicOpeningSpawnRule(data.GetParamSourceTeam().ToString(), data.GetParamCharacters().Select(character =>
                 {
+                    // Native dispatch gives Heroes precedence and calls SpawnHeroInRoom,
+                    // including raw hero creation, Covenant birth stats and callbacks.
+                    if (data.GetParamSourceTeam().HasFlag(Team.Type.Heroes))
+                    {
+                        EnemyDefinition raw = EnemySpawningProbe.Definition(character, true);
+                        var hero = new EnemyDefinition(raw.Unit, raw.Ascends, raw.Loops, raw.ExternalInteractions,
+                            raw.CompanionBoss, CovenantBirthStatProbe.Capture(character));
+                        return new SummonUnitDefinition(character.GetID(), raw.Unit, null, raw.ExternalInteractions, hero);
+                    }
                     var interactions = new List<string>();
                     CombatUnit unit = BattleActionProbe.SpawnTemplate(character, true, interactions);
                     return new SummonUnitDefinition(character.GetID(), unit, null, interactions);

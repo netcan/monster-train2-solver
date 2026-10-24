@@ -596,6 +596,7 @@ param(
     [switch] $OriginalBoneDogRelic,
     [switch] $OriginalDecayDeathRelic,
     [switch] $OriginalOpeningMorselsRelic,
+    [switch] $OriginalOpeningForsakenTrial,
     [switch] $CardBackedFeeding,
     [switch] $ForcedFeeding,
     [switch] $ShroudSpikeFeeding,
@@ -1284,6 +1285,7 @@ if ($ShroudSpikeFeeding) { $ForcedFeeding = $true }
 if ($ForcedFeeding) { $CardBackedFeeding = $true }
 if ($CardBackedFeeding) { $OriginalOpeningMorselsRelic = $true }
 if ($OriginalOpeningMorselsRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalOpeningForsakenTrial) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalOpeningDeckSpawnRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalUnitPhaseUpgradeRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSoloUnitUpgradeRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2125,6 +2127,7 @@ if ($OriginalGrosMichelRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalBoneDogRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-bone-dog' }
 if ($OriginalDecayDeathRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-decay-death' }
 if ($OriginalOpeningMorselsRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-morsels' }
+if ($OriginalOpeningForsakenTrial) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-forsaken-trial' }
 if ($CardBackedFeeding) { $environment['MT2_PROBE_FOOD_CARDS'] = '1' }
 if ($ForcedFeeding) { $environment['MT2_PROBE_FORCED_FEEDING'] = '1' }
 if ($ShroudSpikeFeeding) { $environment['MT2_PROBE_SHROUD_SPIKE'] = '1' }
@@ -3881,6 +3884,11 @@ if ($ShroudSpikeFeeding -and (-not $trace.ShroudSpikeFeeding -or
     @($trace.ForcedFeedingRecords | Where-Object { $_.Meals -gt 0 -and $_.TriggerCount -eq 6 }).Count -eq 0 -or
     @($trace.ForcedFeedingRecords | Where-Object { $_.Meals -gt 0 -and $_.TriggerCount -eq 0 }).Count -eq 0)) {
     throw 'Shroud Spike needs both a paid six-trigger meal and a zero-cost consumed meal.'
+}
+if ($OriginalOpeningForsakenTrial -and (-not $trace.OriginalOpeningForsakenTrial -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    @($trace.RelicOpeningMorselApplications).Count -ne 2)) {
+    throw 'Original Forsaken trial needs both unchanged ordered enemy-spawn effects and a settled native win.'
 }
 if ($OriginalOpeningMorselsRelic -and ($trace.Schema -ne 243 -or -not $trace.OriginalOpeningMorselsPrepared -or
     -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or

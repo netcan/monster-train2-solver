@@ -1,6 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--project-live-forsaken")
+{
+    OpeningForsakenTrialChecks.ProjectLive(args[1], args[2]);
+    return;
+}
+if (args.Length == 2 && args[0] is "--original-opening-forsaken-only" or "--live-forsaken-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args[0] == "--original-opening-forsaken-only") OpeningForsakenTrialChecks.Native(fixture.RootElement);
+    else OpeningForsakenTrialChecks.Live(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--live-moon-continuation-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5310,6 +5323,16 @@ foreach (string path in args.Where(path => path.EndsWith("player-live-moon-conti
 {
     using var fixture = ModelJson.ReadFixture(path);
     LiveMoonContinuationChecks.Run(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("player-live-forsaken-trial.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OpeningForsakenTrialChecks.Live(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-original-opening-forsaken-covenant10.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    OpeningForsakenTrialChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-original-moon-card-upgrades-live-relics-covenant10.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

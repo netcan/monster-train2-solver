@@ -104,7 +104,11 @@ namespace MonsterTrain2Poju.Model
         {
             if (relic.IsCovenant != false) return false;
             // Native balance/draft interfaces have no moon or card-update hook.
-            if (relic.EffectTypes.All(type => type is RelicResourceModel.Draw or "RelicEffectOverrideCardDraftRarity")) return true;
+            if (relic.EffectTypes.All(type => type is RelicResourceModel.Draw or "RelicEffectOverrideCardDraftRarity" or "RelicEffectModifyMerchantAllCosts")) return true;
+            // Opening births run in the ordered battle-start dispatcher. They
+            // have no moon/card-update callback; retain their payload guard.
+            if (relic.EffectTypes.All(type => type == RelicOpeningSpawnModel.Effect))
+                return RelicResourceModel.Validate(relic) == null;
             // End-of-turn cost changes have their own ordered handler and do
             // not dispatch during a phase refresh. Validate the original payload.
             if (relic.CardModifiers?.Count != 1) return false;

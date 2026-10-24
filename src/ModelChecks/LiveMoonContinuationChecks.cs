@@ -73,6 +73,13 @@ internal static class LiveMoonContinuationChecks
         Relic(renamed, "FutureDraftsAreRares")["DataId"] = "another-draft-only-owner";
         CardMoonUpgradeModel.RefreshHand(renamed.Deserialize<CombatContext>(ModelJson.Options)!, out string? passiveError);
         Require(passiveError == null, "A sealed reward-only effect was restricted by relic identity instead of its native callback signature.");
+        JsonNode merchant = JsonNode.Parse(parent)!;
+        Relic(merchant, "FutureDraftsAreRares")["EffectTypes"] = new JsonArray("RelicEffectModifyMerchantAllCosts");
+        CardMoonUpgradeModel.RefreshHand(merchant.Deserialize<CombatContext>(ModelJson.Options)!, out string? merchantError);
+        Require(merchantError == null, "A sealed merchant price interface blocked unrelated spell moon updates.");
+        Relic(merchant, "FutureDraftsAreRares")["EffectTypes"]!.AsArray().Add("RelicEffectNull");
+        CardMoonUpgradeModel.RefreshHand(merchant.Deserialize<CombatContext>(ModelJson.Options)!, out string? mixedError);
+        Require(mixedError != null, "A merchant interface hid an additional uncalibrated callback.");
         Console.WriteLine($"LIVE-MOON-GUARDS PASS mutations={mutations.Count} cumulativeRank=10 originalRelics=4");
         static JsonNode[] Owners(JsonNode node) => node["Relics"]!.AsArray().Where(relic => relic!["IsCovenant"]!.GetValue<bool>()).Select(relic => relic!).ToArray();
         static JsonNode Relic(JsonNode node, string asset) => node["Relics"]!.AsArray().Single(relic => relic!["AssetKey"]!.GetValue<string>() == asset)!;

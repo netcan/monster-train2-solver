@@ -14,7 +14,9 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalOpeningMorselsScenario
     {
         internal const string Name = "original-opening-morsels";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool EnemyTrial => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-opening-forsaken-trial";
+        internal static bool Enabled => EnemyTrial || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        private static string OwnerId => EnemyTrial ? RelicOpeningSpawnModel.HordeDataId : RelicOpeningSpawnModel.DataId;
         internal static bool FoodCardsMode => Environment.GetEnvironmentVariable("MT2_PROBE_FOOD_CARDS") == "1";
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
@@ -113,7 +115,20 @@ namespace MonsterTrain2Poju.Probe
                     ForcedFeedingScenario.Enabled ? new[] { repeated, feast, feast, feast } : new[] { food, repeated, food, gear })
                     save.AddCardToDeck(addition, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
             }
-            CollectableRelicData owner = data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicOpeningSpawnModel.DataId);
+            if (EnemyTrial)
+            {
+                // Select an unchanged native trial in the disposable profile. The
+                // battle setup installs its Sin in the real enemy blessing list.
+                var trials = (List<TrialData>)AccessTools.Field(typeof(AllGameData), "trialDatas").GetValue(data);
+                TrialData trial = trials.First(item => item.Sin?.GetID() == OwnerId);
+                save.SetupTrial(trial.GetID(), save.GetCurrentDistance(), 0);
+                save.SetTrialEnabled(true);
+                save.AddRelic(data.FindCollectableRelicData("ffcb6931-e45e-4e27-bacf-4c649779c2be")!);
+                Acquired = true;
+                log.LogInfo("ORIGINAL-OPENING-FORSAKEN acquired native trial=" + trial.name);
+                return;
+            }
+            CollectableRelicData owner = data.GetAllCollectableRelicData().Single(item => item.GetID() == OwnerId);
             save.AddRelic(owner); Acquired = true;
             CombatRelicState captured = RelicProbe.Capture(managers).Single(item => item.DataId == RelicOpeningSpawnModel.DataId);
             string? error = RelicModel.Validate(new[] { captured }); if (error != null) throw new InvalidOperationException(error);
@@ -126,8 +141,9 @@ namespace MonsterTrain2Poju.Probe
             if (Prepared || !Acquired || managers.GetCombatManager()!.GetTurnCount() != 0) throw new InvalidOperationException("Expected Morsel deployment.");
             Prepared = true;
             if (ForcedFeedingScenario.Enabled) ForcedFeedingScenario.CheckDeployment(managers);
-            RelicState owner = managers.GetSaveManager().GetCollectedRelics().Single(item => item.GetRelicDataID() == RelicOpeningSpawnModel.DataId);
-            CollectableRelicData definition = managers.GetSaveManager().GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == RelicOpeningSpawnModel.DataId);
+            RelicState owner = (EnemyTrial ? managers.GetHeroManager()!.GetHeroBlessings() : managers.GetSaveManager().GetCollectedRelics())
+                .Single(item => item.GetRelicDataID() == OwnerId);
+            RelicData definition = managers.GetSaveManager().GetAllGameData().FindRelicData(OwnerId)!;
             foreach (int floor in new[] { -1, managers.GetRoomManager()!.GetNumRooms() })
             {
                 var isolated = new RelicEffectSpawnUnitStartOfCombat();
@@ -180,7 +196,7 @@ namespace MonsterTrain2Poju.Probe
         private static IEnumerator Observe(IEnumerator native, RelicEffectSpawnUnitStartOfCombat effect)
         {
             var row = new ApplicationRecord { EffectIndex = effect.SourceRelicState.GetEffects().IndexOf(effect) }; Applications.Add(row); observing = true;
-            try { row.Before = FullBattleTrace.Active!.CaptureTrain(); TrainCombatResult result = RelicOpeningSpawnModel.Apply(row.Before, RelicOpeningSpawnModel.DataId, row.EffectIndex);
+            try { row.Before = FullBattleTrace.Active!.CaptureTrain(); TrainCombatResult result = RelicOpeningSpawnModel.Apply(row.Before, OwnerId, row.EffectIndex);
                 row.Predicted = result.State; row.UnsupportedReason = result.UnsupportedReason; current = row; }
             catch (Exception error) { row.Error = error.ToString(); } finally { observing = false; }
             try { while (native.MoveNext()) yield return native.Current; row.Completed = true; }
@@ -193,12 +209,12 @@ namespace MonsterTrain2Poju.Probe
         }
         [HarmonyPatch(typeof(RelicManager), nameof(RelicManager.NotifyRelicTriggered))]
         private static class NotifyPatch
-        { private static void Prefix(RelicState triggeredRelic) { if (current != null && triggeredRelic.GetRelicDataID() == RelicOpeningSpawnModel.DataId) current.Notifications++; } }
+        { private static void Prefix(RelicState triggeredRelic) { if (current != null && triggeredRelic.GetRelicDataID() == OwnerId) current.Notifications++; } }
         [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.DoFeederRules))]
         private static class FoodPatch
         {
             private static void Postfix(RoomState room, Team.Type teamType, ref IEnumerator __result)
-            { if (Active || OriginalMorselEatenScenario.Prepared && FullBattleTrace.Active != null && !observing && !AllGameManagers.Instance!.GetSaveManager().PreviewMode) __result = ObserveFood(__result, room, teamType); }
+            { if (Active && !EnemyTrial || OriginalMorselEatenScenario.Prepared && FullBattleTrace.Active != null && !observing && !AllGameManagers.Instance!.GetSaveManager().PreviewMode) __result = ObserveFood(__result, room, teamType); }
         }
         private static IEnumerator ObserveFood(IEnumerator native, RoomState room, Team.Type team)
         {
