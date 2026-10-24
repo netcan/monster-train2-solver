@@ -1,5 +1,24 @@
 # Player Mod validation · 2026-10-24
 
+Natural Covenant3 Ring2 now also passes the actual three-turn/3000ms/top-floor
+defaults with tactical seed off: source and independent native replay both win
+at Pyre52 after 28 inputs. All complete forecasts/state/RNG and thirteen train
+phases per process match; both exit normally with four zero failure counters.
+Thirty source publications each have a fresh full-root check; sixteen ordinary
+and seven winning continuations skip search. This extends natural higher-rank
+advice beyond startup, not full campaign completion. See
+[native campaign evidence](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring2-with-actual-defaults).
+
+Endless carriers killed by a spell now retain their already completed return
+to Draw during the spell's outer cleanup. An original Angel Duo rejected
+candidate is captured after 23 legal prefix inputs, then independently
+replayed with the repaired model in a fresh process. All 24 inputs and complete
+states/RNG match, including draw order, retained temporary upgrades and unchanged
+exhaustion statistics. Both component processes exit normally and preserve
+protected original files. The existing complete Angel Duo player pair still
+passes; this component repair does not establish a new boss victory. See
+[Endless spell routing](../tests/fixtures/endless-spell-routing.md).
+
 Original moon-upgrade spells now accept the unchanged `IncreaseSpellHealing`
 relic after isolated resource-callback calibration, full controlled battle and
 actual-player source/frozen native replay. Both player processes win at Pyre80

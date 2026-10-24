@@ -12,12 +12,16 @@ param(
         'FleshweaverMass', 'FleshweaverCorruption', 'FleshweaverSpikes')][string] $EarlyOuterBossVariant = '',
     [ValidateRange(2, 16)][int] $PlannerHorizon = 3,
     [ValidateRange(100, 30000)][int] $PlannerTimeLimitMs = 3000,
+    [switch] $DefaultAdvice,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 900,
     [ValidateRange(1, 4)][int] $NativeWorker = 1,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
+if ($DefaultAdvice -and ($Battle -ne 'Campaign' -or $AngelDuo -or $EarlyOuterBossVariant -or $PlannerHorizon -ne 3 -or $PlannerTimeLimitMs -ne 3000)) {
+    throw '-DefaultAdvice requires a natural Campaign input with the actual three-turn/3000ms defaults.'
+}
 if ($AngelDuo -and ($Battle -ne 'Campaign' -or $Rank.Count -ne 1 -or $Rank[0] -ne 2 -or $BattleDistance -ne 5)) {
     throw '-AngelDuo requires the original rank-two Ring6 Campaign input; its checker verifies the exact scenario and unmodified bosses.'
 }
@@ -52,7 +56,7 @@ foreach ($level in $Rank) {
     foreach ($boss in $bosses) {
         $common = @{
             StartingCovenantLevel = $level; NativeWorker = $NativeWorker; TimeoutSeconds = $TimeoutSeconds
-            PlayerAdvisor = $true; RollingAdvice = $true; PlannerTacticalSeed = $true
+            PlayerAdvisor = $true; RollingAdvice = $true; PlannerTacticalSeed = -not $DefaultAdvice
             PlannerHorizon = $PlannerHorizon; PlannerTimeLimitMs = $PlannerTimeLimitMs; BranchCardMasks = $true
             PhysicalSpawnPoints = $true; SettleDeathDissolves = $true; SettleCardAnimations = $true
         }
@@ -93,6 +97,9 @@ foreach ($level in $Rank) {
                 $accepted.Pending -ne 0 -or (Get-FileHash -LiteralPath $trace -Algorithm SHA256).Hash -ine $accepted.TraceSha256) {
                 throw "Native acceptance failed or trace changed: $Battle/$level/$boss/$mode"
             }
+            if ($DefaultAdvice -and -not $accepted.NativeWon) {
+                throw "Default advice lost; retained the complete diagnostic trace without continuing the pair: $trace"
+            }
             if ($Battle -eq 'Campaign') {
                 $loaded = Get-Content -LiteralPath (Join-Path $nativeResult.Profile 'native-checkpoint-input.json') -Raw | ConvertFrom-Json
                 if ($loaded.SHA256 -ine $inputHash) { throw 'A campaign process loaded a different native checkpoint.' }
@@ -121,7 +128,8 @@ foreach ($level in $Rank) {
                     }
                     else { @('--player-cael-pair-only', $source, $replay, $EarlyOuterBossVariant.Substring(4)) }
                 } else {
-                    @('--player-native-covenant-campaign-pair-only', $source, $replay, "$level", "$BattleDistance")
+                    $check = if ($DefaultAdvice) { '--player-native-covenant-campaign-default-pair-only' } else { '--player-native-covenant-campaign-pair-only' }
+                    @($check, $source, $replay, "$level", "$BattleDistance")
                 }
             }
             'Outer' { @('--player-native-covenant-outer-boss-pair-only', $source, $replay, $boss, "$level") }
@@ -138,6 +146,7 @@ foreach ($level in $Rank) {
         }
         $pair = [pscustomobject]@{
             Schema = 1; Battle = $Battle; Rank = $level; Variant = $boss
+            DefaultAdvice = [bool]$DefaultAdvice
             SourceProfile = $profiles.search; ReplayProfile = $profiles.replay
             SourceSha256 = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant()
             ReplaySha256 = (Get-FileHash -LiteralPath $replay -Algorithm SHA256).Hash.ToLowerInvariant()

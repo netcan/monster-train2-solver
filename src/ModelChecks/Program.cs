@@ -224,11 +224,13 @@ if (args.Length == 3 && args[0] == "--player-angel-duo-pair-only")
     return;
 }
 
-if (args.Length == 5 && args[0] == "--player-native-covenant-campaign-pair-only")
+if (args.Length == 5 && args[0] is "--player-native-covenant-campaign-pair-only" or "--player-native-covenant-campaign-default-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
-    NativeCovenantCampaignChecks.Pair(source.RootElement, replay.RootElement, int.Parse(args[3]), int.Parse(args[4]));
+    if (args[0] == "--player-native-covenant-campaign-default-pair-only")
+        NativeCovenantCampaignChecks.DefaultPair(source.RootElement, replay.RootElement, int.Parse(args[3]), int.Parse(args[4]));
+    else NativeCovenantCampaignChecks.Pair(source.RootElement, replay.RootElement, int.Parse(args[3]), int.Parse(args[4]));
     return;
 }
 
@@ -4508,6 +4510,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-native-covenant-campaign-03-ring2-default-search.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+        "full-battle-player-native-covenant-campaign-03-ring2-default-replay.mt2f"));
+    NativeCovenantCampaignChecks.DefaultPair(source.RootElement, replay.RootElement, 3, 1);
+}
 CorruptPoisonChecks.Run();
 foreach (string variant in new[] { "AllyBuffer", "Fragile", "Corrupter" })
 {

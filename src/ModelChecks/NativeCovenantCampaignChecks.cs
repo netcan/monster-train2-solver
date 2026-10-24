@@ -6,6 +6,19 @@ internal static class NativeCovenantCampaignChecks
     internal static void Pair(FixtureValue source, FixtureValue replay, int level, int distance)
         => Pair(source, replay, level, distance, requireVictory: true);
 
+    internal static void DefaultPair(FixtureValue source, FixtureValue replay, int level, int distance)
+    {
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            FixtureValue settings = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
+            Require(settings.GetProperty("Horizon").GetInt32() == 3 && settings.GetProperty("TimeLimitMs").GetInt32() == 3000 &&
+                settings.GetProperty("PreferredDeploymentRoom").GetInt32() == 2 && !settings.GetProperty("TacticalSeed").GetBoolean(),
+                "Natural default acceptance requires actual three-turn/3000ms/top-floor settings with tactical seed off.");
+        }
+        Pair(source, replay, level, distance, requireVictory: true);
+        Console.WriteLine($"PLAYER-NATIVE-COVENANT-DEFAULT PASS rank={level} ring={distance + 1}: actual defaults, two natural victories and independent full-state/RNG replay.");
+    }
+
     internal static void AngelDuoPair(FixtureValue source, FixtureValue replay)
     {
         foreach (FixtureValue fixture in new[] { source, replay })

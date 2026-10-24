@@ -42,6 +42,18 @@ focused checker. Wrong-rank and wrong-ring preflights reject before launching.
 The existing controlled modes retain their defaults. Longer searches use
 `-PlannerHorizon` and `-PlannerTimeLimitMs` explicitly.
 
+`-DefaultAdvice` selects the actual ordinary-campaign defaults: three turns,
+3000ms, top-floor preference and tactical seed off. It rejects other budgets
+and controlled encounter modes, and its separate
+`--player-native-covenant-campaign-default-pair-only` gate verifies the recorded
+settings before accepting the original campaign history, both victories,
+player UI, complete forecasts/state/RNG and independent frozen native replay.
+Wrong-rank inputs reject before launch; older extended-budget/tactical pairs
+reject as default evidence. The soft budget remains distinct from total response
+time and can produce explicitly marked complete shorter windows.
+The default runner retains a losing source as diagnostics and stops before
+spending another native process on its replay.
+
 A separate fixed-policy branch from the same Ring2 input won Rings2–5 with
 Pyre47/47/67/59, then lost Ring6. The driver therefore correctly reports its
 overall checkpoint request failed, despite normal exit and unchanged protected
@@ -76,3 +88,47 @@ files unchanged and all four failure counters zero. The three-turn/three-second
 budget produces two losses, not natural campaign completion. The archives are
 `full-battle-player-angel-duo-search.mt2f` and
 `full-battle-player-angel-duo-replay.mt2f`; see [Angel Duo](angel-duo.md).
+
+## Natural rank-three Ring2 with actual defaults
+
+The native rank-three startup victory resumes through original rewards, draft,
+map and merchant choices to the second battle, without changing difficulty,
+encounters, cards, counters or prior history. This extends the original
+RunSetup-selected difficulty; it makes no earned-unlock claim.
+`campaign-native-covenant-03-ring2.zip` preserves the one-win, 23-card input;
+SHA-256 is `549419999abd1ad1cd620b68a07c637fad2337bcc305b03bd07aac966ee26252`.
+All six payloads verify on restore. The native save SHA-256 is
+`347e208be03388532a524c15a01b74e2de18b21a82330dfe5a5059383a607360`.
+
+Source `full-battle-units-spells-and-junk-20261024-083220-494fd62b` and replay
+`full-battle-units-spells-and-junk-20261024-083618-e4010bd0` both win original
+`Level2BattleJunker` at Pyre52 after 28 inputs: 21 plays/abilities and seven
+EndTurns. Native durations are 236.47/118.49 seconds. Both processes exit
+normally, preserve protected originals and have all four failure counters zero.
+All inputs, roots, complete forecasts, successors, state/RNG, 56 room stages
+and thirteen train phases per process match. All three cumulative original
+Covenant owners and the preceding native victory remain intact.
+
+Settings are the actual three-turn/3000ms/top-floor defaults, tactical seed off;
+every consumed forecast completes all three requested turns or a terminal win,
+without a shortened window. The source consumes five searches and reuses
+sixteen ordinary/seven winning continuations. Thirty publications each have
+a fresh full-root check; captures are 240/96 with no purity failures. Replay
+searches/publishes nothing. The deadline remains soft, not an end-to-end promise.
+This establishes this natural higher-rank battle's default victory, not a
+completed rank-three campaign.
+
+Curated archives use `full-battle-player-native-covenant-campaign-03-ring2-default-`
+with `search.mt2f` and `replay.mt2f`. Their independent gate is:
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --player-native-covenant-campaign-default-pair-only tests/fixtures/full-battle-player-native-covenant-campaign-03-ring2-default-search.mt2f tests/fixtures/full-battle-player-native-covenant-campaign-03-ring2-default-replay.mt2f 3 1
+```
+
+Reproduction uses `Run-NativeCovenantPlayerPairs.ps1 -Rank 3 -Battle Campaign
+-BattleDistance 1 -InputProfile <restored-profile> -DefaultAdvice -SkipBuild`.
+Wrong-rank native input and the older tactical/extended-budget pair both reject
+before they can be called default evidence. No full regression or Mac package
+is run for this batch.
+`Check-PlayerAdvisor.ps1 -Case NativeCovenantCampaign03Default -SkipBuild`
+checks both registered archive hashes and this focused pair gate.

@@ -1,9 +1,9 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('MoonRoomHealingRelic', 'NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
+    [ValidateSet('NativeCovenantCampaign03Default', 'MoonRoomHealingRelic', 'NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
         'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileShortBudget', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')]
-    [string[]] $Case = @('MoonRoomHealingRelic', 'NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
+    [string[]] $Case = @('NativeCovenantCampaign03Default', 'MoonRoomHealingRelic', 'NativeCovenantStartup', 'NativeCovenantStartup02', 'NativeCovenantStartup03', 'NativeCovenantStartup04', 'CovenantEnemyStats', 'CovenantEnemyStatsFtue', 'TrueFinalBossCovenants', 'TrueFinalBossCovenant00', 'TrueFinalBossCovenant01', 'TrueFinalBossCovenant04', 'TrueFinalBossCovenant08',
         'Moon', 'OuterBoss', 'OuterBossRolling', 'Fragile', 'FragileShortBudget', 'FragileBounded', 'Corrupter', 'CorrupterBounded', 'TrueFinalBossBounded', 'TrueFinalBossOrdinary', 'TrueFinalBossOrdinaryUpgraded', 'TrueFinalBossAvenger', 'TrueFinalBossAvengerUpgraded', 'TrialAllyBuffer', 'TrialFragile', 'TrialCorrupter', 'Conduit', 'RoomMoon', 'RoomMoonMovement', 'RoomMoonEnemy', 'RoomMoonEnemyConduit', 'MixedConduit', 'MoonRoomSpells', 'MoonRoomLunacy', 'MoonRoomCostRelic', 'MoonRoomAttackRelic', 'EventGraft', 'NaturalRing7', 'CampaignTrialGold', 'TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy'),
     [switch] $SkipBuild
 )
@@ -17,6 +17,7 @@ $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.
 $manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests/fixtures/manifest.tsv') -Delimiter "`t"
 foreach ($name in $Case) {
     $prefix = switch ($name) {
+        'NativeCovenantCampaign03Default' { 'player-native-covenant-campaign-03-ring2-default' }
         'Moon' { 'player-moon' }
         'OuterBoss' { 'player-boss' }
         'OuterBossRolling' { 'player-boss-rolling' }
@@ -82,6 +83,7 @@ foreach ($name in $Case) {
         elseif ($name -in @('TerminalCopyConsume', 'TerminalPurgeCopyConsume', 'TerminalCopy', 'TerminalPurgeCopy')) { '--player-terminal-copy-pair-only' }
         else { "--$prefix-pair-only" }
     $modeArguments = if ($name.StartsWith('Trial')) { @('--player-boss-trial-bounded-pair-only', $name.Substring(5), $search, $replay) }
+        elseif ($name -eq 'NativeCovenantCampaign03Default') { @('--player-native-covenant-campaign-default-pair-only', $search, $replay, '3', '1') }
         else { @($mode, $search, $replay) }
     dotnet $checker @modeArguments
     if ($LASTEXITCODE -ne 0) { throw "Player $name acceptance failed." }
