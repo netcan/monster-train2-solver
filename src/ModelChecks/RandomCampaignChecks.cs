@@ -8,6 +8,11 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.EndsWith("player-random-campaign-02-ring3-fixed-policy-native-win.mt2f", StringComparison.Ordinal))
+        {
+            FixedPolicyWin(source.RootElement);
+            return;
+        }
         if (path.EndsWith("player-random-campaign-02-ring3-relentless-preview-observed.mt2f", StringComparison.Ordinal))
         {
             RelentlessPreviewCooldownChecks.Native(source.RootElement);
@@ -65,6 +70,24 @@ internal static class RandomCampaignChecks
             fixture.GetProperty("NativeWon").ValueKind == FixtureKind.Null,
             "This archive is a twelve-input observation, not a completed native victory.");
         Console.WriteLine("RANDOM-CAMPAIGN-GROWTH PASS: twelve native successors, cached box IDs and current-spawn permanent growth; no full battle acceptance claimed.");
+    }
+
+    private static void FixedPolicyWin(FixtureValue fixture)
+    {
+        Input(fixture, 1862997127, 0, 2, "Pyreborne", "Banished", 10000);
+        RollingAdviceChecks.Native(fixture);
+        TrainCombatChecks.Native(fixture);
+        FixtureValue[] rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        BattleTurnState final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        Require(fixture.GetProperty("NativeWon").GetBoolean() && rows.Length == 48 &&
+            rows.All(row => row.GetProperty("Mode").GetString() == "replay" && row.GetProperty("Nodes").GetInt32() == 0) &&
+            fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("Published").GetInt32() == 0 &&
+            final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 5,
+            "Fixed policy evidence must remain a native 48-input win with zero search/publications and Pyre5.");
+        BattleTurnState after = rows[43].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        Require(after.Spawn.Train.Context!.FindCard(4)!.PlayedRoomUnitIds!.SequenceEqual([2, 8, 24]),
+            "The previously failing preview/cooldown callback was not exercised.");
+        Console.WriteLine("RANDOM-CAMPAIGN-FIXED-POLICY PASS: 48 native inputs, Pyre5; frozen external policy, not actual-default or campaign-clear acceptance.");
     }
 
     internal static void PermafrostCopyObserved(FixtureValue fixture)

@@ -4743,6 +4743,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("fu
     RandomCampaignChecks.Curated(path);
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f" or
     "player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f" or
+    "player-random-campaign-02-ring3-fixed-policy-native-win.mt2f" or
     "player-random-campaign-02-ring3-relentless-preview-observed.mt2f"))
     RandomCampaignChecks.Curated(path);
 

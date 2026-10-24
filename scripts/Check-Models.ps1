@@ -27,6 +27,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f',
     'player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f',
     'player-random-campaign-02-ring3-relentless-preview-observed.mt2f',
+    'player-random-campaign-02-ring3-fixed-policy-native-win.mt2f',
     'full-battle-random-campaign-02-ring1-search.mt2f',
     'full-battle-random-campaign-02-ring1-replay.mt2f',
     'full-battle-random-campaign-02-ring2-search.mt2f',
@@ -1168,6 +1169,7 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notli
     $_ -ne 'player-random-campaign-02-ring2-permafrost-unavailable.mt2f' -and
     $_ -ne 'player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f' -and
     $_ -ne 'player-random-campaign-02-ring3-relentless-preview-observed.mt2f' -and
+    $_ -ne 'player-random-campaign-02-ring3-fixed-policy-native-win.mt2f' -and
     $_ -ne 'player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f' }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
