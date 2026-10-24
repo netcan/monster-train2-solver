@@ -16,7 +16,7 @@ using UnityEngine.UI;
 
 namespace MonsterTrain2Poju.Probe
 {
-    internal sealed class BattleAdvisorOverlay : IDisposable
+    internal sealed partial class BattleAdvisorOverlay : IDisposable
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_SCENARIO") == "advisor" ||
             Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR") == "1";
@@ -116,7 +116,7 @@ namespace MonsterTrain2Poju.Probe
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
         internal object Evidence => new { CrossTurnContinuation = true, DeferredFloorBrowsing = true, BrowseSelections, BrowseFrames, Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, SelectionReuses, Searches, PlanningFrames, IdleFrames, PanelVertices, PanelPixels, Failures, Publications, LastCaptureMs, TotalCaptureMs,
             LastProjectionMs, LastPurityMs, LastPreparationMs, PreparedObservations, DiscardedPreparations,
-            MainThreadId, PreparationThreadId,
+            MainThreadId, PreparationThreadId, DiagnosticHistory,
             Error = session.Error, UnavailableRoot = session.Status == BattleAdviceStatus.Unavailable ? lastCapture : null, Horizon = horizon,
             PreferredDeploymentRoom = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2"),
             TacticalSeed = Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1",
@@ -159,6 +159,9 @@ namespace MonsterTrain2Poju.Probe
                 var external = new ExternalBattlePlanner(externalTool!, horizon, timeLimitMs, floor, tactical);
                 session = new BattleAdviceSession(external.Search, external.Verify);
             }
+            if (playerSession) journal = new AdviceDiagnosticJournal(Path.Combine(
+                Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR") ?? BepInEx.Paths.BepInExRootPath,
+                "PojuAdvisor", "diagnostics"));
             Active = this;
             if (playerSession) new FullBattleTrace(log);
             log.LogInfo("ADVISOR-READY background model worker; " + toggleKey + " toggles overlay; no automatic plays.");
@@ -194,7 +197,7 @@ namespace MonsterTrain2Poju.Probe
             Text titleLabel = Label("Title", "怪物火车 · 战局建议", 14, 34, 23);
             titleLabel.raycastTarget = true;
             titleLabel.gameObject.AddComponent<AdvisorPanelDrag>().Target = rect;
-            statusLabel = Label("Scope", "已知牌序 · 未来 " + horizon + " 回合 · " + toggleKey + " 显示/隐藏", 52, 28, 15);
+            statusLabel = Label("Scope", SearchScopeLabel, 52, 28, 15);
             statusLabel.color = new Color(.55f, .72f, .84f);
             body = Label("Recommendation", "进入战斗后自动计算建议。", 92, 208, 18);
             var viewport = new GameObject("Plan viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D), typeof(ScrollRect));
@@ -287,6 +290,7 @@ namespace MonsterTrain2Poju.Probe
             planLabel.text = expanded ? "收起方案" : "完整方案";
             if (displayed != null) body.text = Describe(displayed);
             planScroll.verticalNormalizedPosition = 1;
+            if (displayed != null) RecordDiagnosticView("view");
         }
 
         private void SetPending(bool pending)
@@ -294,7 +298,7 @@ namespace MonsterTrain2Poju.Probe
             if (statusLabel == null) return;
             if (pending) cardHover.Clear();
             statusLabel.text = pending ? "正在核对后续步骤 · 原方案待确认" :
-                "已知牌序 · 未来 " + horizon + " 回合 · " + toggleKey + " 显示/隐藏";
+                SearchScopeLabel;
             body.color = pending ? new Color(.65f, .72f, .78f) : new Color(.91f, .94f, .98f);
         }
 
@@ -320,6 +324,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal void Tick()
         {
+            ReportDiagnosticError();
             try { TickCore(); }
             catch (Exception error)
             {
@@ -498,6 +503,8 @@ namespace MonsterTrain2Poju.Probe
                 if (!preserveScroll) planScroll.StopMovement();
                 planScroll.verticalNormalizedPosition = scroll;
                 SetPending(false);
+                publishedGeneration = session.Generation;
+                RecordDiagnosticView("advice");
                 Publications.Add(new Publication { Generation = session.Generation, Turn = displayed.Root.Spawn.Turn,
                     SearchMetrics = displayed.Plan.SearchMetrics, DuplicateStates = displayed.Plan.DuplicateStates,
                     BeamPruned = displayed.Plan.BeamPruned,
@@ -726,6 +733,7 @@ namespace MonsterTrain2Poju.Probe
 
         private void InvalidateState(bool preserveContinuation, string reason = "native-state-change")
         {
+            if (!preserveContinuation) RecordDiagnosticReset(reason);
             observationRevision++;
             if (session.Status != BattleAdviceStatus.Idle) Invalidations++;
             if (playerSession && session.Status != BattleAdviceStatus.Idle)
@@ -742,13 +750,39 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static void InstallAdvisorPatches(Harmony harmony)
         {
-            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch), typeof(MutationPatch) })
+            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(EndTurnRecordedPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch), typeof(MutationPatch) })
                 harmony.CreateClassProcessor(patch).Patch();
         }
         [HarmonyPatch(typeof(CardManager), nameof(CardManager.PlayAnyCard))]
-        private static class CardPlayedPatch { private static void Prefix() => NativeAction(reason: "card-play"); }
+        private static class CardPlayedPatch
+        {
+#if DEVELOPMENT_PROBE
+            // Harmony keys __state by patch type name. The production assembly
+            // owns this input snapshot when both assemblies are loaded.
+            [HarmonyPrepare]
+            private static bool Prepare() => !PlayerAdvisorProbe.Enabled;
+#endif
+            private static void Prefix(CardState cardState, CharacterState selfTarget, SpawnPoint dropLocation,
+                bool fromDirectPlay, CharacterState characterThatActivatedAbility, RoomState roomThatActivatedAbility,
+                int roomIndexOverride, out AdviceDiagnosticEntry? __state)
+            {
+                __state = Active?.DiagnosticCardInput(cardState, selfTarget, dropLocation, fromDirectPlay,
+                    characterThatActivatedAbility, roomThatActivatedAbility, roomIndexOverride);
+                NativeAction(reason: "card-play");
+            }
+            private static void Postfix(bool __result, AdviceDiagnosticEntry? __state)
+            { if (__result && __state != null) Active?.journal?.Record(__state); }
+        }
         [HarmonyPatch(typeof(BattleHud), "EndTurn")]
         private static class EndTurnPatch { private static void Prefix() => NativeAction(reason: "end-turn"); }
+        [HarmonyPatch(typeof(ReplayManager), nameof(ReplayManager.RecordEntry))]
+        private static class EndTurnRecordedPatch
+        {
+            // The native replay entry is issued only after confirmation. A
+            // canceled confirmation or disabled button is not a played turn.
+            private static void Postfix(ReplayEntry replayEntryNew)
+            { if (replayEntryNew is ReplayEntryEndTurn) Active?.RecordDiagnosticEndTurn(); }
+        }
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.UndoTurn))]
         private static class UndoPatch { private static void Prefix() { NativeAction(false, "undo"); if (Active != null) Active.manualBattleKey = null; } }
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.RestartBattle))]
@@ -807,6 +841,7 @@ namespace MonsterTrain2Poju.Probe
         {
             if (preparation != null) _ = preparation.ContinueWith(task => { _ = task.Exception; }, TaskScheduler.Default);
             session.Dispose();
+            journal?.Dispose();
             if (canvas != null) UnityEngine.Object.Destroy(canvas);
             if (uiFont != null) UnityEngine.Object.Destroy(uiFont);
             Active = null;

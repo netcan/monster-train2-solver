@@ -22,6 +22,7 @@ namespace MonsterTrain2Poju.Probe
         private static Type? type;
         private static int phase, boundaryFrame, captureCount, publicationCount;
         private static long initialGeneration;
+        private static long recordedCardInputs;
         private static ManualLogSource? log;
         private static BattleTurnState? terminal;
         private static bool frozenObservation;
@@ -148,6 +149,12 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void CaptureTerminal()
         { if (Enabled) terminal = Capture(); }
+        internal static void CheckInputRecorded()
+        {
+            long count = Get<long>("DiagnosticCardInputs");
+            Require(count > recordedCardInputs, "an accepted native card/ability did not enter the production journal");
+            recordedCardInputs = count;
+        }
         internal static BattleTurnState Terminal => terminal ?? throw new InvalidOperationException("Player terminal capture is missing.");
 
         internal static void PauseForFrozenPlan()

@@ -2389,9 +2389,16 @@ if ($AdvisorPresentation -and -not $RollingInput) {
         $presentation.ReusedPublications -lt 1 -or $presentation.ScrolledPublications -lt 1 -or $presentation.Resets -lt 1 -or
         $presentation.BudgetChanges -lt 4 -or $presentation.CollapsedTurnResets -lt 1 -or
         $presentation.CardIdentityChecks -lt 3 -or $presentation.CardHoverChecks -lt 5 -or
+        $presentation.ForecastScopeChecks -lt 7 -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'PLAYER-ADVISOR-PRESENTATION-PASS' -Quiet)) {
         throw 'Player UI did not retain pending text and reading position across native inputs and reused publications.'
     }
+    & (Join-Path $PSScriptRoot 'Check-AdviceDiagnosticHistory.ps1') `
+        -Directory (Join-Path $profile 'PojuAdvisor/diagnostics') `
+        -CardPlays @($trace.Actions).Count -EndTurns @($trace.Turns).Count `
+        -Publications $trace.PlayerAdvisor.Overlay.Published `
+        -MainThreadId $trace.PlayerAdvisor.Overlay.MainThreadId `
+        -WriterThreadId $trace.PlayerAdvisor.Overlay.DiagnosticHistory.WriterThreadId
     Write-Output "PLAYER-PRESENTATION-PASS retainedInputs=$($presentation.RetainedInputs) pendingFrames=$($presentation.PendingFrames) reusedPublications=$($presentation.ReusedPublications) scrolledPublications=$($presentation.ScrolledPublications) resets=$($presentation.Resets) budgetChanges=$($presentation.BudgetChanges) collapsedTurnResets=$($presentation.CollapsedTurnResets)"
 }
 if ($PlayerAdvisor -and $RollingInput) {

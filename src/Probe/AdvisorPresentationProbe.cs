@@ -77,7 +77,10 @@ namespace MonsterTrain2Poju.Probe
                 new object[] { "吞火龙", "火焰吐息", 1, 0 });
             Require(ability.Contains("【单位技能】吞火龙：火焰吐息") && ability.Contains("当前 0 费") &&
                 ability.Contains("来源：当前第 2 层"), "unit ability lacks an explicit source or free cost");
-            forecastScopeChecks += 5;
+            Require((string)AccessTools.Method(formatter, "SearchScope").Invoke(null, new object[] { true, 3 }) == "整场搜索" &&
+                (string)AccessTools.Method(formatter, "SearchScope").Invoke(null, new object[] { false, 3 }) == "未来 3 回合",
+                "whole-battle search is labeled as a three-turn window");
+            forecastScopeChecks += 7;
             log.LogInfo("PLAYER-ADVISOR-FORECAST-SCOPE-PASS cases=" + forecastScopeChecks);
         }
 
@@ -279,8 +282,16 @@ namespace MonsterTrain2Poju.Probe
             bool newTurn = displayed.Root.Spawn.Turn != __state.Advice.Root.Spawn.Turn;
             if (newTurn && !Field<bool>("showFullPlan"))
             {
-                Require(Math.Abs(scroll.verticalNormalizedPosition - 1) < .005 && scroll.velocity == Vector2.zero,
-                    "collapsed new turn did not return to its first step or kept scroll inertia");
+                // Unity reports normalized position zero for some content
+                // that fits entirely in the viewport. Check its actual top
+                // offset in that case; every step is already visible.
+                bool fits = scroll.content.rect.height <= scroll.viewport.rect.height + 1;
+                bool atTop = fits ? Math.Abs(scroll.content.anchoredPosition.y) < .5f :
+                    Math.Abs(scroll.verticalNormalizedPosition - 1) < .005;
+                Require(atTop && scroll.velocity == Vector2.zero,
+                    "collapsed new turn did not return to its first step or kept scroll inertia" +
+                    " position=" + scroll.verticalNormalizedPosition + " offset=" + scroll.content.anchoredPosition.y +
+                    " height=" + scroll.content.rect.height + "/" + scroll.viewport.rect.height + " velocity=" + scroll.velocity);
                 string text = Field<Text>("body").text;
                 Require(text.Contains("本回合步骤") && text.Contains("\n1. "), "new turn omitted its first current-turn step");
                 collapsedTurnResets++;

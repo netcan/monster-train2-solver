@@ -5,6 +5,9 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class AdvisorForecastPresentation
     {
+        internal static string SearchScope(bool wholeBattle, int horizon) =>
+            wholeBattle ? "整场搜索" : "未来 " + horizon + " 回合";
+
         internal static bool IsTerminal(RoomOutcome outcome) =>
             outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
 
