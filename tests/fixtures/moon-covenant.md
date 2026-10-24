@@ -62,3 +62,30 @@ Archive: `full-battle-original-moon-card-upgrades-covenant03.mt2f`.
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-covenant03.mt2f
 ```
+
+## Retained native Heavenfall focus prefix
+
+The first actual-player attempt, profile
+`full-battle-units-spells-and-junk-20261024-115903-2055cd64`, deliberately
+retains its failed-run counters: nineteen plays, two EndTurns, one model
+mismatch, no terminal result. It is not a passing player battle or pair.
+The mismatch shows original Heavenfall acquired its Full/Tower upgrade before
+its New/Room upgrade. Cast from Eclipse floor 2 at global Full, the first
+upgrade breaks 25 Armor on floor 1. The native notification selects floor 1
+and refreshes both Gravity cards to the unmasked Full/Ascend upgrade; the next
+separate OnCast trigger recaches floor 1's three occupants and deals its
+additional 80 damage there. The previous model pins both triggers to the
+original cast floor and misses the notification hand refresh.
+
+The corrected model matches all nineteen complete native successors and RNG,
+and sixteen immutable branches of the failing action. The focused checker
+requires the original incomplete-run counters and never invokes a scripted
+whole-battle policy for this actual-player prefix. It also checks the precise
+trigger order, remote Armor, final selected floor, final played-room cache and
+both Gravity cards. Other upgrade-trigger layouts remain separate boundaries.
+
+Archive: `heavenfall-focus-native-prefix.mt2f`.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --heavenfall-focus-prefix-only tests/fixtures/heavenfall-focus-native-prefix.mt2f
+```

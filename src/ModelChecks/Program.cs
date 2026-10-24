@@ -4031,6 +4031,12 @@ if (args.Length == 2 && args[0] == "--native-actions-only")
     BattleActionChecks.Native(actionDocument.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--heavenfall-focus-prefix-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    HeavenfallFocusChecks.Prefix(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--recorded-chain-diagnose")
 {
     using var chainDocument = ModelJson.ReadFixture(args[1]);
@@ -5133,6 +5139,18 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
     using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
         "full-battle-player-moon-room-status-relic-replay.mt2f"));
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requireStatusRelic: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-covenant03-search.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+        "full-battle-player-moon-room-covenant03-replay.mt2f"));
+    PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requireCovenant03: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "heavenfall-focus-native-prefix.mt2f"))
+{
+    using var document = ModelJson.ReadFixture(path);
+    HeavenfallFocusChecks.Prefix(document.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-hand-power-relic-search.mt2f"))
 {

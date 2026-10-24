@@ -289,6 +289,9 @@ namespace MonsterTrain2Poju.Model
             var pendingDeadRooms = new Dictionary<int, int>();
             var positions = CardTargetModel.Positions(state);
             int? focusedRoom = roomIndex;
+            bool separateMoonTriggerRooms = onCastEffects && source.Context?.FindCard(sourceCardId) is CardInstanceState moonSpell &&
+                CardMoonUpgradeModel.SeparateCastRooms(moonSpell) &&
+                definitions?.Cards.FirstOrDefault(rule => rule.DataId == moonSpell.DataId)?.OnCastEffects.Count == 0;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             bool bossDead = source.Context!.AllScenarioBossesDead == true;
             CardInstanceState? resolvingCard = source.Context.FindCard(sourceCardId);
@@ -438,7 +441,14 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Target == "FrontInRoomAndRoomAbove" && !focusedRoom.HasValue)
                     return UnsupportedTrain("Room-and-above selection requires uncaptured trigger focus rules.");
-                int collectionRoom = effect.Target == "FrontInRoomAndRoomAbove" ? focusedRoom!.Value : roomIndex;
+                if (separateMoonTriggerRooms && !focusedRoom.HasValue)
+                    return UnsupportedTrain("Separate moon upgrade triggers require known native notification focus.");
+                int collectionRoom = effect.Target == "FrontInRoomAndRoomAbove" || separateMoonTriggerRooms ? focusedRoom!.Value : roomIndex;
+                if (separateMoonTriggerRooms && state.Context!.FindCard(sourceCardId) is CardInstanceState triggerCard &&
+                    triggerCard.PlayedRoomUnitIds != null)
+                    state = WithContext(state, state.Context.WithCard(triggerCard.WithPlayedRoomUnits(
+                        state.Rooms.Single(room => room.RoomIndex == collectionRoom).Units
+                            .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).ToArray())));
                 CardTargets targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions, isTesting: true,
                     pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId,
                     lastSacrificedUnitId: lastSacrificedUnitId, hasPriorTargets: priorTargets != null);

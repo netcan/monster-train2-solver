@@ -5396,8 +5396,7 @@ namespace MonsterTrain2Poju.Model
                             unit.Statuses[id] = status.WithRemoveAllAtEnd(true);
                         else
                         {
-                            if (!source.Preview && context?.QueryFrame?.SelectedRoomIndex != null)
-                                context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
+                            FocusRoomForStatusRemoval(id, fromTrigger: true);
                             RemoveStatus(unit, id, count);
                         }
                     }
@@ -5506,10 +5505,21 @@ namespace MonsterTrain2Poju.Model
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
             }
 
-            private void FocusRoomForStatusRemoval(string statusId)
+            private void FocusRoomForStatusRemoval(string statusId, bool fromTrigger = false)
             {
-                if (statusId != "cooldown" && !source.Preview && context?.QueryFrame?.SelectedRoomIndex != null)
+                if ((fromTrigger || statusId != "cooldown") && !source.Preview && context?.QueryFrame?.SelectedRoomIndex != null)
+                {
+                    int previousRoom = context.QueryFrame.SelectedRoomIndex.Value;
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
+                    // Native status-removal notifications select their room,
+                    // refreshing hand resource traits before the next card
+                    // trigger. The resolving card is already outside the hand.
+                    if (previousRoom != source.RoomIndex)
+                    {
+                        context = CardMoonUpgradeModel.RefreshHand(context, out string? handError);
+                        if (handError != null) unsupportedReason = handError;
+                    }
+                }
             }
 
             private bool BothTeamsPresent() => units.Any(unit => unit.Source.Team == CombatTeam.Player &&

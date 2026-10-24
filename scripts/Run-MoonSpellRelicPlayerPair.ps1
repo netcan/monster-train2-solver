@@ -48,9 +48,11 @@ function Read-AcceptedProfile([string] $Profile, [bool] $Frozen) {
         if (-not $document.RootElement.GetProperty($flag).GetBoolean()) {
             throw "Native profile does not contain the declared original relic: $flag"
         }
-        if ($Relic -eq 'Covenant03' -and
-            $document.RootElement.GetProperty('StartingCovenantControl').GetProperty('AscensionLevel').GetInt32() -ne 3) {
-            throw 'Covenant03 requires original cumulative rank-three startup.'
+        if ($Relic -eq 'Covenant03') {
+            $startup = $document.RootElement.GetProperty('StartingCovenantControl')
+            if ($startup.ValueKind.ToString() -ne 'Object' -or $startup.GetProperty('AscensionLevel').GetInt32() -ne 3) {
+                throw 'Covenant03 requires original cumulative rank-three startup.'
+            }
         }
         $player = $document.RootElement.GetProperty('PlayerAdvisor')
         if ($player.ValueKind.ToString() -ne 'Object' -or

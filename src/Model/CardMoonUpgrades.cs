@@ -92,6 +92,15 @@ namespace MonsterTrain2Poju.Model
             relic.DataId == RelicMoonPhaseStatusModel.DataId && relic.EffectTypes.SequenceEqual(new[] { RelicMoonPhaseStatusModel.Effect }) &&
                 RelicMoonPhaseStatusModel.Validate(relic) == null;
 
+        // Each original Heavenfall upgrade creates one separate OnCast trigger.
+        // Native resolves the selected room again between these triggers.
+        internal static bool SeparateCastRooms(CardInstanceState card) =>
+            card.DataId == "8757357b-c36f-476d-88de-b9a481d89fcb" && Present(card) &&
+            card.Permanent.Upgrades.Concat(card.Temporary.Upgrades)
+                .Where(upgrade => upgrade.Lifecycle?.Triggers.Count > 0)
+                .All(upgrade => KnownPayload(upgrade) && upgrade.Lifecycle!.Triggers.Count == 1 &&
+                    upgrade.Lifecycle.Triggers[0].Actions.Count == 1);
+
         private static bool CompatiblePhaseEnergyRelic(CombatRelicState relic)
         {
             if (relic.DataId != "70096a91-220a-4ab3-b8d0-b8fe8f3a819c" || relic.AssetKey != "MoonPhaseModifyEmber" ||
