@@ -41,8 +41,32 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --room-moon-spell-upgr
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-phase-heal-relic.mt2f
 ```
 
-The dedicated player gate is `--player-moon-room-phase-heal-relic-pair-only`;
-it requires explicit provenance in both native processes and checks settled
-New/Full relic callbacks alongside all existing forecast/state/RNG controls.
-Component/full-battle calibration alone does not establish that player pair.
-No full regression or new Mac package is required.
+## Native player pair
+
+Fresh source `full-battle-units-spells-and-junk-20261024-101935-cb389612`
+and independent frozen replay `full-battle-units-spells-and-junk-20261024-102718-b0131420`
+both win at Pyre80 after48 inputs (41 plays/abilities,seven EndTurns). They
+exit normally in460.38/196.98 seconds,preserve protected originals and have
+all four failure counters zero. Every input,complete root,forecast,successor
+and RNG matches,including47 room stages and13 train phases in each process.
+Both retain54 settled native New/Full callbacks with two positive heals.
+The pair covers five original spells,Lunacy and room masks,with16 immutable
+complete battle branches. Original definitions remain unchanged; the controlled
+scene and six-turn/10000ms/top/tactical settings are separate from natural
+default-budget campaign victories.
+
+The source has50 publications with50 fresh full-root checks and402 pure
+captures. Two inputs consume searched forecasts;nine ordinary and37 winning
+continuations reuse verified plans. The overlay records ten searches overall,
+including work not consumed by an executed input. The frozen process records
+one initial startup search,then zero searches/publications after pausing and
+97 pure captures. This does not establish an end-to-end latency guarantee.
+
+The dedicated `--player-moon-room-phase-heal-relic-pair-only` gate passes and
+requires explicit provenance in both processes alongside all forecast/state/
+RNG controls. Curated files are
+`full-battle-player-moon-room-phase-heal-relic-{search,replay}.mt2f` and
+`player-moon-room-phase-heal-relic-accepted.json`. The same gate is selected by
+`scripts/Check-PlayerAdvisor.ps1 -Case MoonRoomPhaseHealRelic -SkipBuild` and
+the full-suite source hook. Archive hashes/registrations are checked separately;
+the full regression is not run and no new Mac package is built.

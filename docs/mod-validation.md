@@ -1,5 +1,24 @@
 # Player Mod validation · 2026-10-24
 
+Original moon spell upgrades/Lunacy/room masks now also support the exact
+original phase-healing relic. The isolated15-boundary component and20-play
+baseline pass,followed by a winning player source/independent frozen replay:
+48 inputs,Pyre80,complete forecasts/state/RNG,47 room stages and13 train
+phases per process,normal exits and four zero counters. Fifty publications
+have fresh root checks;nine ordinary and37 winning continuations reuse plans.
+The frozen process has zero searches/publications after pausing. This is a
+controlled six-turn/10000ms scene,with unchanged original spell/relic definitions,
+and a separate acceptance from natural/default campaign victories. See
+[phase-healing composition](../tests/fixtures/moon-phase-heal-relic.md).
+
+Natural Covenant3 Ring6 now gives complete actual-default advice,but still
+loses after46 inputs. Its source-only counterexample passes complete forecasts/
+state/RNG,player UI,normal exit and four zero counters;seven floor selections
+add no searches. It is not a victory or independent pair. Four offline scouts
+also lose,so no additional native attempt is spent on them. The continuous
+runner retains structured loss/input diagnostics before stopping progression.
+See [default loss](../tests/fixtures/angel-duo.md#natural-covenant3-default-loss).
+
 Natural Covenant3 Ring6 initially showed no advice because the exact original
 Angel pair rejected its merchant-only third owner. The shared projection/model
 gate now admits that ordered original prefix for Incant-Health only. Fresh

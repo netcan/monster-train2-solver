@@ -1,0 +1,10 @@
+{
+  "Schema": 1,
+  "Composition": "MoonRoomPhaseHealRelic",
+  "SourceProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-101935-cb389612",
+  "ReplayProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-102718-b0131420",
+  "SourceSha256": "77aa917047d3ce5c9126679dc57b1f9d933c6ab234d33f4995934b333152232f",
+  "ReplaySha256": "b5a30e54ad56564a4ed9e441226e48bdb3e7edd524dc5d5a93783f183f260d8a",
+  "IndependentFocusedCheck": "--player-moon-room-phase-heal-relic-pair-only",
+  "Passed": true
+}
