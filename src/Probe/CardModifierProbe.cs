@@ -130,9 +130,11 @@ namespace MonsterTrain2Poju.Probe
             int[] raw = units.Select(trace.UnitId).OrderBy(id => id).ToArray();
             if (!trace.CanonicalDecisionCapture) return raw;
             int[] living = units.Where(unit => card.CharacterInRoomAtTimeOfCardPlay(unit)).Select(trace.UnitId).OrderBy(id => id).ToArray();
+#if DEVELOPMENT_PROBE
             int[] liveIds = trace.KnownUnits.Where(unit => unit != null && unit.IsAlive && !unit.IsDestroyed)
                 .Select(trace.UnitId).OrderBy(id => id).ToArray();
             DecisionCaches.Add(new CacheDecision { CardId = trace.CardId(card), Raw = raw, Captured = living, Living = liveIds });
+#endif
             return living;
         }
 

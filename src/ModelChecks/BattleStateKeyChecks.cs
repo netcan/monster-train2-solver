@@ -37,12 +37,31 @@ internal static class BattleStateKeyChecks
             if (actual != expected[index][mode])
                 throw new InvalidOperationException($"State key changed its frozen format: sample={index}, mode={mode}, actual={actual}.");
         });
+        using (var keys = new BattleStateKeys())
+        {
+            if (keys.SnapshotKey(new EncodingWitness()) != "DAEA4C806CCE2A479A5155D396B8BE8CCD1EF7B83C0509C4E34FE09C2A16E8C6")
+                throw new InvalidOperationException("UTF-8, surrogate fallback or large-buffer key encoding changed.");
+            if (keys.SnapshotKey(1.0m) == keys.SnapshotKey(1.00m) ||
+                keys.SnapshotKey(0d) == keys.SnapshotKey(-0d) || keys.SnapshotKey(0f) == keys.SnapshotKey(-0f))
+                throw new InvalidOperationException("Scalar reuse lost decimal scale or floating-point signed zero.");
+        }
+        long allocated = GC.GetAllocatedBytesForCurrentThread();
+        int collections = GC.CollectionCount(0);
         var watch = Stopwatch.StartNew();
         for (int index = 0; index < 20; index++)
         {
             using var keys = new BattleStateKeys();
             if (keys.Key(states[0]) != expected[0][0]) throw new InvalidOperationException("A repeated capture changed its key.");
         }
-        Console.WriteLine($"STATE-KEY PASS: 12 frozen pre-optimization keys, concurrent independent instances, all three modes; 20 warm fresh-root keys={watch.Elapsed.TotalMilliseconds:F1}ms.");
+        Console.WriteLine($"STATE-KEY PASS: 12 frozen pre-optimization keys, concurrent independent instances, all three modes; " +
+            $"20 warm fresh-root keys={watch.Elapsed.TotalMilliseconds:F1}ms " +
+            $"allocatedBytes={GC.GetAllocatedBytesForCurrentThread() - allocated} gc0={GC.CollectionCount(0) - collections}.");
+    }
+
+    private sealed class EncodingWitness
+    {
+        public string Text => "\u7834\u5c40 \ud83c\udf19 \u0000 \ud800";
+        public string Large { get; } = new string('\u754c', 24000);
+        public string[] Sequence { get; } = ["", "a:b|c", "\udfff", "\u00e9"];
     }
 }

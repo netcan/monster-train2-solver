@@ -1,5 +1,30 @@
 # Native capture profile · 2026-10-24
 
+## Allocation and idle follow-up · Windows0.2.9
+
+State keys now reuse instance-local UTF-8/character buffers and recursive string
+builders, and cache repeated scalar/string encodings within one immutable key
+session. Disposal returns pooled buffers and clears retained references. No
+snapshot fields or key formats are removed. Decimal scale, floating-point signed
+zero, invalid Unicode fallback and independent concurrent workers retain their
+previous behavior. Player played-room cache diagnostics are compiled only in
+the development probe. Idle effect readiness uses cached typed field readers,
+preserving the pending-effect, resolving-effect and external-input guards.
+
+One focused .NET8 measurement of20 warm fresh-root hashes of the accepted Ring7
+fixture changes from641.8ms /498,401,656 allocated bytes /31 generation-zero
+collections to452.0ms /86,647,576 bytes /5 collections:82.6% fewer allocated bytes
+and29.6% less elapsed time in this sample. This measures background key work,
+not Unity allocations or game FPS. All12 frozen pre-optimization keys in strict,
+preview-allocator and floor-browsing modes remain identical; Unicode/large-buffer
+and scalar representation controls also pass.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --state-key-only tests/fixtures/full-battle-player-natural-ring7-ordinary-search.mt2f
+```
+
+## Snapshot-local native reuse · Windows0.2.8
+
 Windows0.2.8 removes the repeated global context/card projections. Replaying
 the same21 captures on Unity thread1 reduces the warm no-GC mean from51.99ms
 to12.92ms (75.2%). Both runs exclude their first instrumented/JIT sample and one

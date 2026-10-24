@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Reflection;
 using HarmonyLib;
 
 namespace MonsterTrain2Poju.Probe
@@ -8,14 +7,18 @@ namespace MonsterTrain2Poju.Probe
     // IsRunningTriggerQueue alone does not cover that pending effects queue.
     internal static class NativeEffectSettlement
     {
-        private static readonly FieldInfo effects = AccessTools.Field(typeof(CombatManager), "effectsQueue");
-        private static readonly FieldInfo resolving = AccessTools.Field(typeof(CombatManager), "cardEffectResolving");
+        // This readiness check runs even on settled idle frames. Resolve typed
+        // readers once so polling does not reflect or box the boolean each frame.
+        private static readonly AccessTools.FieldRef<CombatManager, ICollection> effects =
+            AccessTools.FieldRefAccess<CombatManager, ICollection>("effectsQueue");
+        private static readonly AccessTools.FieldRef<CombatManager, bool> resolving =
+            AccessTools.FieldRefAccess<CombatManager, bool>("cardEffectResolving");
         internal static int PendingEffectWaits, ResolvingEffectWaits, InputWaits;
         internal static object Evidence => new { PendingEffectWaits, ResolvingEffectWaits, InputWaits };
         internal static bool Ready(CombatManager combat)
         {
-            if (((ICollection)effects.GetValue(combat)).Count > 0) { PendingEffectWaits++; return false; }
-            if ((bool)resolving.GetValue(combat)) { ResolvingEffectWaits++; return false; }
+            if (effects(combat).Count > 0) { PendingEffectWaits++; return false; }
+            if (resolving(combat)) { ResolvingEffectWaits++; return false; }
             if (!combat.AllowExternalInput) { InputWaits++; return false; }
             return true;
         }
