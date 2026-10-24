@@ -76,3 +76,33 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --deployment-advice-bu
 ./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Policy units-and-junk -PlayerAdvisor -RollingAdvice -AdvisorPresentation -AdvisorFloorBrowse -PlannerWholeBattle -PlannerSearchWorkers 2 -SkipBuild -TimeoutSeconds 300
 ./scripts/Check-FixtureCatalog.ps1
 ```
+
+## Windows delivery
+
+Implementation commit `b7359d2f4a38b78f36dae3ed0f632628b3198899`
+was pushed to `origin/master`. The exact production Model.dll passed the
+new opening checker: 3-second partial deployment, simulated cold atomic
+deadline, and a replay-verified 26-step/five-turn win at 10 seconds.
+
+Installed at 2026-10-24 19:37:47 in
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+All three installed hashes match the accepted production payload:
+
+| File | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | 811430cd0552803da965721a68a0c135ea8359f38438fece51e0a92e552dd819 |
+| Model.dll | c22719330a844eb61655bf182640cdca27f54c2e56975a43791d18a1cb1e4886 |
+| FixtureArchive.dll | 683a141e719ba5b8bb905bec6913d284959422f4471fade5c83a113fcac2d873 |
+
+Prior and accepted files are backed up in
+`BepInEx/PojuBackups/DeploymentBudget-20261024-193746`.
+Mono-mapped DLLs were retained in that backup before the accepted files
+were copied into their original paths. All 28 other loader/plugin/config
+hashes remain unchanged, including the current F10 binding and 3000ms
+default. No player input, turn, save or process lifecycle was changed.
+
+The Windows ZIP is
+`results/mod-dist/PojuAdvisor-0.2.15-Windows-20261024-193746.zip`.
+PID 134544 was still running the loaded 0.2.14 assembly during installation;
+the user must completely exit and restart the game to load 0.2.15. Duration
+changes then apply live and require only the **重新计算** button.
