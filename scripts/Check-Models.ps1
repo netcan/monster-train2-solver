@@ -58,6 +58,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-player-fleshweaver-spikes-search.mt2f',
     'full-battle-player-fleshweaver-spikes-replay.mt2f',
     'full-battle-player-floor-browse-search.mt2f', 'full-battle-player-floor-browse-replay.mt2f',
+    'full-battle-player-whole-battle-search.mt2f', 'full-battle-player-whole-battle-replay.mt2f',
+    'full-battle-player-capture-reuse-search.mt2f', 'full-battle-player-capture-reuse-replay.mt2f',
     'full-battle-player-ordinary-continuation-search.mt2f', 'full-battle-player-ordinary-continuation-replay.mt2f',
     'player-room-attachment-birth-observed.mt2f',
     'player-endless-spell-routing-calibration.mt2f', 'player-endless-spell-routing-replay-calibration.mt2f',

@@ -1,10 +1,40 @@
 # Player Mod validation · 2026-10-24
 
-[Native capture profiling](capture-performance.md) attributes the remaining
-main-thread latency to five repeated global contexts and repeated card projection,
-with a separate retained calibration-history issue. The optional development
-profiler passes a fresh frozen native replay/full-state/RNG comparison and is
-absent from the player assembly. The installed0.2.7 payload is unchanged.
+[Native capture optimization](capture-performance.md) in Windows0.2.8 reduces
+warm capture from51.99ms to12.92ms in the same frozen native route (19 no-GC
+samples each, approximately75%). Canonical decisions share one immutable global
+context after discovering all rooms, reuse card projections only within that
+context and omit retained development branch-mask/room-query history from the
+player. Dynamic costs/upgrades and native state/RNG purity checks remain active.
+The profiler itself remains absent from the player assembly.
+
+The new real-player search/UI source and independent frozen process both win
+with51 Pyre HP after three plays/seven EndTurns, with all four failure counters
+zero and originals unchanged. Every input, root, successor, forecast and RNG
+matches, including fourteen native train phases per process. Seven floor
+switches add no searches, settled idle adds no captures/publications/searches,
+and all nine later inputs retain the winning continuation. The curated pair is
+`full-battle-player-capture-reuse-{search,replay}.mt2f`; the focused checker and
+fresh native cost/moon component evidence are recorded in the capture report.
+This is a capture improvement, not an FPS or total advice response guarantee.
+
+The tested0.2.8 three-DLL payload is installed at
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+Build, isolated real-player acceptance and installed hashes match:
+
+| DLL | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | `1b20c907a7f39ea0e0899dedda699bec14edaf72550df802b62826b09c9bccc4` |
+| Model.dll | `f1bc4a9515029cd43a7c0091f034b5e1ada209496deac0a600a4b0fd824f5012` |
+| FixtureArchive.dll | `b2972b1631702a10b4663edcf9e3b0577bedc42ca95ce37e6d9808668fa8be4f` |
+
+All28 other loader/plugin/config files are unchanged, including F10 and the
+3,000ms budget. The previous0.2.7 payload is preserved outside the plugins tree
+at `BepInEx/PojuBackups/CaptureReuse-20261024-162123/previous`. The original real
+game process (PID122100, started15:07:55) remains running with its previously
+loaded0.2.5; restarting loads0.2.8. No real game was stopped or autoplayed, and
+no Mac package was built. The fixture catalog passes1350 hashes/registrations;
+no full regression was run.
 
 Windows 0.2.7 adds bounded whole-battle planning and a two-worker background
 portfolio. Workers explore different deployment/policy seeds with independent
@@ -50,13 +80,11 @@ and `8f8e3ad712b3e899031753b2dcc1654ae0c8f4b9c4c7ea51e812807f7ba662e2`.
 Recheck it with `ModelChecks --parallel-planner-pair-only <search> <replay>`;
 `--parallel-planner-only <search>` exercises the bounded search controls.
 
-The three0.2.7 player DLLs are installed in the real Windows Steam game with
-matching build/installed SHA256 hashes. All28 other loader/plugin/config files
-are unchanged, including F10 and the3,000ms budget. The prior0.2.6 payload is
-retained under `BepInEx/PojuBackups/WholeBattleParallel-20261024-155428/previous`.
-The real process remains running with its previously loaded0.2.5; no real game
-was stopped or autoplayed. Restarting loads0.2.7 and creates the new default
-whole-battle/two-worker/256-step settings. No Mac package was built.
+The earlier0.2.7 installation preserved all28 other loader/plugin/config files
+and the prior0.2.6 payload under
+`BepInEx/PojuBackups/WholeBattleParallel-20261024-155428/previous`. It introduced
+the whole-battle/two-worker/256-step defaults. The current installation and its
+restart requirement are recorded above.
 
 Windows 0.2.6 prepares full snapshot keys and floor-normalized comparisons on
 a background worker. The UI thread reads native objects and performs the

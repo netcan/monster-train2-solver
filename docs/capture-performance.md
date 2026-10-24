@@ -41,6 +41,31 @@ including startup/driver checks. All21 profiled captures have zero retained
 player branch-mask history and zero capture errors. A later GC-overlapping
 capture still takes77.85ms; no zero-allocation or stutter-free claim is made.
 
+Real0.2.8 search/UI acceptance in
+`full-battle-units-spells-and-junk-20261024-161444-35fe90b5` also wins with51 Pyre
+HP after three plays/seven EndTurns. All18 publications use complete fresh
+roots, all nine later decisions reuse their verified winning continuation,
+seven floor switches add no searches and the two-second idle control adds no
+captures/publications/searches. Its independent full-state/RNG pair check with
+the optimized frozen process passes. The complete archives are curated as
+`full-battle-player-capture-reuse-{search,replay}.mt2f`; their hashes are in the
+fixture manifest. This also registers the previously unregistered0.2.7
+whole-battle pair. Recheck the optimized pair without a full regression:
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --parallel-planner-pair-only tests/fixtures/full-battle-player-capture-reuse-search.mt2f tests/fixtures/full-battle-player-capture-reuse-replay.mt2f
+```
+
+Fresh native cost/moon component
+`full-battle-no-cards-20261024-161841-a5c0442f` and its independent
+`--room-moon-spell-upgrades-only` checker pass15 boundaries,105 trait snapshots,
+40 active changes, original cost-relic controls and eight immutable branches per
+boundary, with originals unchanged. An attempted replay of the older October22
+player cost-relic fixture is rejected at decision0 because its mask definition
+lacks `UnmodifiedSpawnHealth`, added in `dab254e8` before this optimization.
+That rejected run is not acceptance evidence; no state/schema comparison is
+relaxed to admit it, and no fresh full player cost-relic victory is claimed.
+
 The original diagnosis follows. An isolated frozen replay of the real0.2.7
 player records21 captures on Unity thread1. After excluding
 the first instrumented/JIT warmup sample and one sample with GC, the remaining19
