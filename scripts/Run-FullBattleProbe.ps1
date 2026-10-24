@@ -100,6 +100,9 @@ param(
     [int] $PlannerTurn = 2,
     [ValidateRange(2, 16)]
     [int] $PlannerHorizon = 3,
+    [switch] $PlannerWholeBattle,
+    [ValidateRange(1, 4096)] [int] $PlannerMaxSteps = 256,
+    [ValidateRange(1, 2)] [int] $PlannerSearchWorkers = 1,
     [ValidateRange(0, 2)] [int] $PlannerDeploymentRoom = 2,
     [ValidateRange(100, 30000)] [int] $PlannerTimeLimitMs = 3000,
     [string] $PlannerInput = '',
@@ -904,6 +907,9 @@ if ($UnsupportedBranchInput) {
     $RollingAdvice = $true; $PlayerAdvisor = $true
 }
 if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
+if (($PlannerWholeBattle -or $PlannerSearchWorkers -gt 1) -and ($DotNetPlanner -or -not ($PlayerAdvisor -or $Advisor))) {
+    throw 'Whole-battle/parallel search requires an in-process player or development advisor.'
+}
 if (($PrimaryClan -or $SecondaryClan) -and $InputProfile) { throw 'Clan selection requires a fresh native run and cannot be combined with InputProfile.' }
 if ($PrimaryClan -and $SecondaryClan -and $PrimaryClan -ieq $SecondaryClan) { throw 'PrimaryClan and SecondaryClan must be different.' }
 if ($RollingAdvice) {
@@ -1608,6 +1614,9 @@ $environment = @{
     MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
     MT2_PROBE_PLANNER_HORIZON = "$PlannerHorizon"
+    MT2_PROBE_PLANNER_WHOLE_BATTLE = $(if ($PlannerWholeBattle) { '1' } else { '0' })
+    MT2_PROBE_PLANNER_MAX_STEPS = "$PlannerMaxSteps"
+    MT2_PROBE_PLANNER_SEARCH_WORKERS = "$PlannerSearchWorkers"
     MT2_PROBE_PLANNER_TACTICAL_SEED = $(if ($PlannerTacticalSeed) { '1' } else { '0' })
     MT2_PROBE_DOTNET_PLANNER = $(if ($DotNetPlanner) { Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll' } else { '' })
     MT2_PROBE_PLANNER_DEPLOYMENT_ROOM = "$PlannerDeploymentRoom"
@@ -2181,6 +2190,9 @@ Enabled = true
 PauseWhenHidden = true
 [Search]
 Horizon = $PlannerHorizon
+WholeBattle = $([bool]$PlannerWholeBattle)
+MaxSteps = $PlannerMaxSteps
+SearchWorkers = $PlannerSearchWorkers
 TimeLimitMs = $PlannerTimeLimitMs
 PreferredFloor = $($PlannerDeploymentRoom + 1)
 TacticalSeed = $([bool]$PlannerTacticalSeed)
@@ -2326,6 +2338,17 @@ if ($PlayerAdvisor -and -not $PlannerInput -and -not $RollingInput) {
         throw 'Real player advisor did not pass isolated recommendation and pointer/state acceptance.'
     }
     Write-Output "PLAYER-ADVISOR-PASS version=$($trace.PlayerAdvisor.Version) publications=$($playerEvidence.Published)"
+    if ($PlannerWholeBattle -and (-not $playerEvidence.WholeBattle -or $playerEvidence.MaxSteps -ne $PlannerMaxSteps -or
+        @($playerEvidence.Publications | Where-Object { -not $_.SearchedToBattleEnd }).Count -ne 0)) {
+        throw 'Whole-battle mode was not used for every native publication.'
+    }
+    $expectedSearchWorkers = [Math]::Min($PlannerSearchWorkers, [Math]::Max(1, [Environment]::ProcessorCount - 1))
+    if (@($playerEvidence.Publications | Where-Object {
+        $_.SearchWorkers -ne $expectedSearchWorkers -or
+        @($_.WorkerThreadIds).Count -ne $expectedSearchWorkers -or
+        $playerEvidence.MainThreadId -in $_.WorkerThreadIds }).Count -ne 0) {
+        throw 'Search workers did not remain independent of the Unity thread.'
+    }
 }
 if ($AdvisorFloorBrowse -and -not $RollingInput -and ($null -eq $trace.PlayerAdvisor.FloorBrowse -or
     -not $trace.PlayerAdvisor.FloorBrowse.Passed -or -not $trace.PlayerAdvisor.FloorBrowse.DuringSearch -or

@@ -25,6 +25,8 @@ namespace MonsterTrain2Poju.Probe
         private readonly BattleAdviceSession session;
         private readonly int horizon;
         private readonly int timeLimitMs;
+        private readonly bool wholeBattle;
+        private readonly int maxSteps, searchWorkers;
         private readonly bool playerSession;
         private readonly bool pauseWhenHidden;
         private readonly KeyCode toggleKey;
@@ -87,6 +89,10 @@ namespace MonsterTrain2Poju.Probe
             public double SearchMs { get; set; }
             public double VerificationMs { get; set; }
             public double EndToEndMs { get; set; }
+            public int SearchWorkers { get; set; }
+            public int[] WorkerThreadIds { get; set; } = Array.Empty<int>();
+            public bool SearchedToBattleEnd { get; set; }
+            public bool ReachedStepLimit { get; set; }
             public bool ReusedWinningContinuation { get; set; }
             public bool ReusedContinuation { get; set; }
             public bool ReusedSelection { get; set; }
@@ -101,6 +107,7 @@ namespace MonsterTrain2Poju.Probe
             TacticalSeed = Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1",
             PlannerBackend = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_DOTNET_PLANNER")) ? "in-process" : "dotnet",
             TimeLimitMs = timeLimitMs,
+            WholeBattle = wholeBattle, MaxSteps = maxSteps, SearchWorkers = searchWorkers,
             Scenario = AllGameManagers.Instance?.GetSaveManager()?.GetCurrentScenarioData()?.name,
             InTestScenario = AllGameManagers.Instance?.GetSaveManager()?.InTestScenario,
             Seed = Environment.GetEnvironmentVariable("MT2_PROBE_SEED"),
@@ -115,15 +122,20 @@ namespace MonsterTrain2Poju.Probe
             toggleKey = settings?.ToggleKey ?? KeyCode.F8;
             horizon = settings?.Horizon ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_HORIZON") ?? "3");
             timeLimitMs = settings?.TimeLimitMs ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TIME_LIMIT_MS") ?? "3000");
+            wholeBattle = settings?.WholeBattle ?? Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_WHOLE_BATTLE") == "1";
+            maxSteps = settings?.MaxSteps ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_MAX_STEPS") ?? "256");
+            searchWorkers = settings?.SearchWorkers ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_SEARCH_WORKERS") ?? "1");
             if (timeLimitMs < 100 || timeLimitMs > 30000) throw new ArgumentOutOfRangeException(nameof(timeLimitMs));
             int floor = settings?.DeploymentRoom ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2");
             bool tactical = settings?.TacticalSeed ?? Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1";
             string? externalTool = playerSession ? null : Environment.GetEnvironmentVariable("MT2_PROBE_DOTNET_PLANNER");
             if (string.IsNullOrEmpty(externalTool))
                 session = new BattleAdviceSession(new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromMilliseconds(timeLimitMs),
-                    preferredDeploymentRoom: floor, useTacticalSeed: tactical, allowShorterHorizon: playerSession));
+                    preferredDeploymentRoom: floor, useTacticalSeed: tactical, allowShorterHorizon: playerSession || wholeBattle,
+                    searchToBattleEnd: wholeBattle, maxSteps: maxSteps), searchWorkers);
             else
             {
+                if (wholeBattle || searchWorkers != 1) throw new InvalidOperationException("Whole-battle/parallel search requires the in-process planner.");
                 var external = new ExternalBattlePlanner(externalTool!, horizon, timeLimitMs, floor, tactical);
                 session = new BattleAdviceSession(external.Search, external.Verify);
             }
@@ -385,6 +397,8 @@ namespace MonsterTrain2Poju.Probe
                     PublicationCaptureMs = LastCaptureMs, PublicationPreparationMs = LastPreparationMs,
                     SearchMs = displayed.Plan.Elapsed.TotalMilliseconds, VerificationMs = displayed.VerificationElapsed.TotalMilliseconds,
                     EndToEndMs = displayed.ResponseElapsed.TotalMilliseconds,
+                    SearchWorkers = displayed.Plan.SearchWorkers, WorkerThreadIds = displayed.Plan.WorkerThreadIds.ToArray(),
+                    SearchedToBattleEnd = displayed.Plan.SearchedToBattleEnd, ReachedStepLimit = displayed.Plan.ReachedStepLimit,
                     ReusedWinningContinuation = displayed.ReusedWinningContinuation, ReusedSelection = displayed.ReusedSelection,
                     ReusedContinuation = displayed.ReusedContinuation });
                 if (playerSession && Publications.Count > 128) Publications.RemoveAt(0);
@@ -395,6 +409,8 @@ namespace MonsterTrain2Poju.Probe
                     " publishCaptureMs=" + LastCaptureMs.ToString("F1") + " publishPrepareMs=" + LastPreparationMs.ToString("F1") +
                     " projectionMs=" + LastProjectionMs.ToString("F1") + " purityMs=" + LastPurityMs.ToString("F1") +
                     " verifyMs=" + displayed.VerificationElapsed.TotalMilliseconds.ToString("F1") +
+                    " wholeBattle=" + displayed.Plan.SearchedToBattleEnd + " workers=" + displayed.Plan.SearchWorkers +
+                    " workerThreads=" + string.Join(",", displayed.Plan.WorkerThreadIds) +
                     " source=" + (displayed.ReusedSelection ? "floor-browse" : displayed.ReusedWinningContinuation ? "verified-continuation" :
                         displayed.ReusedContinuation ? "verified-turn" : "search"));
                 if (!playerSession && !screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")
@@ -482,12 +498,17 @@ namespace MonsterTrain2Poju.Probe
         {
             BattlePlanResult plan = advice.Plan;
             int hp = plan.State.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
+            int initialHp = advice.Root.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
             var text = new StringBuilder();
             text.Append(plan.Outcome == RoomOutcome.BattleWon ? "预计获胜" : plan.Outcome == RoomOutcome.PlayerDefeated ? "预计战败" :
                 plan.Outcome == RoomOutcome.Stalemate ? "预计僵持" : "规划窗口结束")
-                .Append(" · 火炉 ").Append(hp).Append(" 血");
+                .Append(" · 薪火 ").Append(hp).Append(" 血")
+                .Append(" · 预计损失 ").Append(Math.Max(0, initialHp - hp));
             if (plan.UsedShorterHorizon)
-                text.Append(" · 已完成 ").Append(plan.TurnsCompleted).Append('/').Append(plan.RequestedTurns).Append(" 回合（预算内缩短）");
+            {
+                if (plan.SearchedToBattleEnd) text.Append("\n整场目标 · 部分方案 · 已预测 ").Append(plan.TurnsCompleted).Append(" 回合");
+                else text.Append(" · 已完成 ").Append(plan.TurnsCompleted).Append('/').Append(plan.RequestedTurns).Append(" 回合（预算内缩短）");
+            }
             FullBattleTrace trace = FullBattleTrace.Active!;
             var cards = trace.KnownCards.ToDictionary(card => trace.CardId(card));
             var units = trace.KnownUnits.Where(unit => unit != null).ToDictionary(unit => trace.UnitId(unit));
@@ -535,6 +556,7 @@ namespace MonsterTrain2Poju.Probe
             else if (advice.ReusedContinuation) text.Append("\n\n沿用已验证步骤");
             else text.Append("\n\n搜索 ").Append((plan.Elapsed.TotalMilliseconds / 1000).ToString("F2")).Append(" 秒");
             if (plan.TimedOut) text.Append(" · 使用预算内已验证方案");
+            if (plan.ReachedStepLimit) text.Append("\n部分路线已达 ").Append(plan.MaxSteps).Append(" 步上限");
             if (plan.UnsupportedAttempts.Count > 0) text.Append("\n部分操作尚未纳入比较");
             return text.ToString();
         }

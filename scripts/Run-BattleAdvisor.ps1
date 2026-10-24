@@ -4,6 +4,9 @@ param(
     [string] $Profile = '',
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
     [ValidateRange(2, 16)] [int] $Horizon = 3,
+    [switch] $WholeBattle,
+    [ValidateRange(1, 4096)] [int] $MaxSteps = 256,
+    [ValidateRange(1, 2)] [int] $SearchWorkers = 1,
     [ValidateRange(100, 30000)] [int] $TimeLimitMs = 3000,
     [switch] $TacticalSeed,
     [switch] $OuterBoss,
@@ -11,6 +14,9 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+if ($DotNetPlanner -and ($WholeBattle -or $SearchWorkers -gt 1)) {
+    throw 'Whole-battle/parallel search requires the in-process planner.'
+}
 $workspace = Split-Path $PSScriptRoot -Parent
 $gameRoot = Join-Path $workspace $(if ($NativeWorker -eq 1) { '.sandbox-game' } else { '.sandbox-game-worker2' })
 $executable = Join-Path $gameRoot 'MonsterTrain2.exe'
@@ -52,6 +58,9 @@ foreach ($name in @($start.Environment.Keys)) {
 $settings = @{
     MT2_PROBE_DATA_DIR = $Profile; MT2_PROBE_SCENARIO = 'advisor'
     MT2_PROBE_PLANNER_HORIZON = "$Horizon"
+    MT2_PROBE_PLANNER_WHOLE_BATTLE = $(if ($WholeBattle) { '1' } else { '0' })
+    MT2_PROBE_PLANNER_MAX_STEPS = "$MaxSteps"
+    MT2_PROBE_PLANNER_SEARCH_WORKERS = "$SearchWorkers"
     MT2_PROBE_PLANNER_TIME_LIMIT_MS = "$TimeLimitMs"
     MT2_PROBE_PLANNER_TACTICAL_SEED = $(if ($TacticalSeed) { '1' } else { '0' })
     MT2_PROBE_DOTNET_PLANNER = $(if ($DotNetPlanner) { Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll' } else { '' })
@@ -65,5 +74,6 @@ foreach ($entry in $settings.GetEnumerator()) { $start.Environment[$entry.Key] =
 $process = [Diagnostics.Process]::Start($start)
 [pscustomobject]@{ ProcessId = $process.Id; Profile = $Profile; Worker = $NativeWorker; Horizon = $Horizon;
     TimeLimitMs = $TimeLimitMs; TacticalSeed = $TacticalSeed.IsPresent; OuterBoss = $OuterBoss.IsPresent;
+    WholeBattle = $WholeBattle.IsPresent; MaxSteps = $MaxSteps; SearchWorkers = $SearchWorkers;
     PlannerBackend = $(if ($DotNetPlanner) { 'dotnet' } else { 'in-process' });
     Controls = 'F8: show/hide; panel: refresh/pause' } | ConvertTo-Json -Compress

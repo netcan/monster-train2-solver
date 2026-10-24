@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Advisor
     public sealed class AdvisorPlugin : BaseUnityPlugin
     {
         public const string PluginId = "netcan.monstertrain2.advisor";
-        public const string Version = "0.2.6";
+        public const string Version = "0.2.7";
         private Harmony? harmony;
         private BattleAdvisorOverlay? overlay;
         private bool updateLogged;
@@ -28,7 +28,12 @@ namespace MonsterTrain2Poju.Advisor
                 var settings = new PlayerAdvisorSettings
                 {
                     Horizon = Config.Bind("Search", "Horizon", 3,
-                        new ConfigDescription("规划未来回合数。", new AcceptableValueRange<int>(2, 16))).Value,
+                        new ConfigDescription("关闭 WholeBattle 后规划的未来回合数。", new AcceptableValueRange<int>(2, 16))).Value,
+                    WholeBattle = Config.Bind("Search", "WholeBattle", true, "以整场战斗结束为目标；预算不足时显示明确标记的部分方案。").Value,
+                    MaxSteps = Config.Bind("Search", "MaxSteps", 256,
+                        new ConfigDescription("每条路线的总步数上限，包含出牌、技能和结束回合；限制无尽或循环局面。", new AcceptableValueRange<int>(1, 4096))).Value,
+                    SearchWorkers = Config.Bind("Search", "SearchWorkers", 2,
+                        new ConfigDescription("后台搜索线程上限；共用节点与时间预算，最多两个并自动给游戏留一个逻辑核心。1 为单线程。", new AcceptableValueRange<int>(1, 2))).Value,
                     TimeLimitMs = Config.Bind("Search", "TimeLimitMs", 3000,
                         new ConfigDescription("每次后台搜索的毫秒预算。", new AcceptableValueRange<int>(100, 30000))).Value,
                     DeploymentRoom = Config.Bind("Search", "PreferredFloor", 3,
@@ -51,6 +56,7 @@ namespace MonsterTrain2Poju.Advisor
                 Logger.LogInfo("POJU-READY version=" + Version + " platform=" + Application.platform +
                     " game=" + Application.version + " module=" + typeof(CardState).Assembly.ManifestModule.ModuleVersionId +
                     " horizon=" + settings.Horizon + " budgetMs=" + settings.TimeLimitMs +
+                    " wholeBattle=" + settings.WholeBattle + " maxSteps=" + settings.MaxSteps + " searchWorkers=" + settings.SearchWorkers +
                     " hostFlags=" + gameObject.hideFlags);
             }
             catch (Exception error)
