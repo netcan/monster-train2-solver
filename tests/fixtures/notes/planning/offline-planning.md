@@ -1,5 +1,40 @@
 # Offline candidates and native replay
 
+## One decision with current player defaults
+
+`plan-root` directly searches one recorded `RollingDecisions[index].Root`, or
+the `Root` of a single-position capture. The index defaults to zero. It uses the
+Windows player's whole-battle settings: 256 shared nodes, beam8, 12 actions per
+turn, top preference, tactical option off, 256 steps, early stopping and honest
+shorter complete windows. Workers default to two (one is optional), and the
+explicit 100..30000ms budget can reproduce the user's setting. No native game
+or intermediate request export is needed. `plan-battle` below remains an
+explicit fixed-horizon experiment; it does not reproduce whole-battle defaults.
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-root <capture.mt2f> .probe-runs/root-candidate.mt2f 3000
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-root <capture.mt2f> .probe-runs/later-root.mt2f 10000 12 2
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll verify-root-plan .probe-runs/root-candidate.mt2f
+```
+
+Each result records its source archive and model DLL hashes, selected decision,
+exact options, full root, plan, worker metrics and limit flags. Before creating
+the file, it independently replays all steps, complete state/RNG, score and
+terminal/partial labeling and checks the immutable parent. `verify-root-plan`
+repeats that verification in a new process. Existing outputs and invalid input
+bounds are rejected; these artifacts explicitly require native validation and
+are not added to the native evidence inventory. Search time excludes capture,
+archive serialization and independent replay, and remains a soft budget.
+
+Focused checks on2026-10-25 reproduced a partial Angel Duo deployment and a
+nonzero recorded decision, plus the live moon root's terminal defeat with one
+and two workers. Every result passed a second process's full replay. Altered
+scores, invalid time/index/worker requests and attempted output overwrites were
+rejected; the existing result hash was unchanged. These runs did not establish
+an Angel Duo or moon victory, and no extra native battle was spent on them.
+
+## Whole-battle rolling experiments
+
 `FixtureTools plan-battle` runs the existing bounded rolling planner entirely
 in the model, starting from one deployment snapshot in a settled native trace
 with zero capture/mismatch/unsupported/pending counters. Each decision applies
@@ -13,8 +48,9 @@ and winning continuations, explicitly allowed shorter complete windows and
 ordinary adaptive deployment. It keeps the requested horizon, shared search
 limits and the selected tactical/floor settings. Search and continuation counts
 are printed separately; the flag is opt-in so existing strict experiments retain
-their behavior. Defeat forecasts still search after each input, matching the
-player's existing rule rather than retaining an already losing route.
+their behavior. The current session retains any verified forecast suffix across
+turns, including partial and defeat forecasts, until the actual state diverges
+or the suffix is exhausted. Older archives can predate this reuse behavior.
 
 ```powershell
 dotnet build src/FixtureTools/FixtureTools.csproj -c Release --no-restore
@@ -90,8 +126,10 @@ For native rolling acceptance, `Run-FullBattleProbe.ps1` and
 `-TacticalSeed -Horizon 12 -TimeLimitMs 30000`. Outer-boss benchmarks also require
 `-OuterBossBirth -OuterBossTurns`; the interactive launcher combines these as
 `-OuterBoss`. Manual and automated defaults
-remain a three-turn horizon and 3,000 ms; the native benchmark may explicitly
-allow 30,000 ms for its longer continuation. Evidence records this setting.
+for fixed-horizon experiments request three turns and 3,000 ms; the Windows
+player defaults to whole-battle search, and these launchers require explicit
+whole-battle/worker flags to select that mode. The native benchmark may allow
+30,000 ms for a longer continuation. Evidence records the actual setting.
 
 `-DotNetPlanner` on the full-battle, rolling-benchmark and interactive launchers
 optionally moves search plus independent full-path replay into a .NET 8 process.
