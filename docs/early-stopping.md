@@ -46,3 +46,55 @@ healing from 70/80 to 74/80, future-wave maximum growth, resurrection, missing
 resource limits, custom evaluation, expiry, user cancellation, sibling success,
 continuation metadata and root immutability. These are targeted checks; no full
 fixture regression is required for this delivery.
+
+## Native Windows acceptance
+
+Actual player 0.2.20 in isolated profile
+`.probe-runs/full-battle-units-spells-and-junk-20261024-221343-553b1e0d`
+searches the native turn-four position. Three searches (initial and UI refresh
+controls) stop in 388.4, 379.6 and 369.9 ms under a 3000-ms budget, each with two
+worker IDs distinct from Unity's thread. Its two-step route is executed by the
+native game and wins at the 80-HP bound. The remaining one-step publication
+retains early-stop metadata and performs zero search work.
+
+The process exits normally after 73.39 seconds: 19 total plays, five EndTurns,
+42 compared stages, all four failure counters zero, terminal effects settled
+and protected original files unchanged. This scenario authors Steward/equipment
+carriers while retaining original relics, waves and boss; it is a focused
+functional acceptance rather than a natural-deck performance benchmark.
+
+The permanent archive is `full-battle-player-early-stop-search.mt2f`. Its dedicated
+checker independently replays every frozen step against complete native states
+and RNG, and checks the player entry point, bound, worker identities, below-budget
+searches and zero-search continuation. It is registered in `Check-Models.ps1`;
+the catalog gate validates all 1361 archive hashes/registrations without battle
+simulation.
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Policy units-spells-and-junk `
+  -OriginalConduitRelics -PhysicalSpawnPoints -PlayerAdvisor -Planner `
+  -PlannerTurn 4 -PlannerWholeBattle -PlannerSearchWorkers 2 -SkipBuild `
+  -TimeoutSeconds 300
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --early-stop-native-only `
+  tests/fixtures/full-battle-player-early-stop-search.mt2f
+```
+
+Two earlier complete player runs with bottom/middle deployment
+(`20261024-221002-e515edbd`, `20261024-221154-a2c48c3f`) win at 79/80 and 74/80.
+Neither falsely reports early stopping. Both exit normally with zero native
+failure counters and unchanged protected originals. The existing parallel
+planner and rapid-input/floor-selection checks also pass. The exact installed
+Model DLL passes the focused objective-bound checker through the offline harness.
+No full fixture simulation regression was run.
+
+## Windows delivery
+
+Installed at 2026-10-24 22:16:44 from `d11e2b65` to
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+All three installed DLL hashes match the native-accepted build; 28 other loader,
+plugin and configuration files remain unchanged. Previous and accepted payloads
+plus `installation.json` are under `BepInEx/PojuBackups/EarlyStop-20261024-221643`.
+The Windows package is
+`results/mod-dist/PojuAdvisor-0.2.20-Windows-20261024-221643.zip`.
+No Mac build or real player input/restart was performed. The running real player
+PID74796 loaded 0.2.19 and requires a user restart to load 0.2.20.

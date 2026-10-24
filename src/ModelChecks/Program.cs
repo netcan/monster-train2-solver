@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--early-stop-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EarlyStopChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 4 && args[0] == "--early-stop-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

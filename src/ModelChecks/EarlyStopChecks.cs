@@ -5,6 +5,33 @@ using MonsterTrain2Poju.Model;
 
 internal static class EarlyStopChecks
 {
+    internal static void Native(FixtureValue fixture)
+    {
+        BattlePlannerChecks.NativePlan(fixture);
+        var player = fixture.GetProperty("PlayerAdvisor");
+        var overlay = player.GetProperty("Overlay");
+        Require(fixture.GetProperty("NativeWon").GetBoolean() &&
+            player.GetProperty("Version").GetString() == "0.2.20.0" && overlay.GetProperty("StopAtBestPyreHealth").GetBoolean(),
+            "The real native player did not enable early stopping.");
+        int mainThread = overlay.GetProperty("MainThreadId").GetInt32();
+        var publications = overlay.GetProperty("Publications").EnumerateArray().ToArray();
+        Require(publications.Length >= 4 && publications.All(row => row.GetProperty("StoppedEarly").GetBoolean() &&
+            row.GetProperty("PyreHealthUpperBound").GetInt32() == 80 && row.GetProperty("SearchedToBattleEnd").GetBoolean() &&
+            row.GetProperty("WorkerThreadIds").GetArrayLength() == 2 &&
+            row.GetProperty("WorkerThreadIds").EnumerateArray().All(id => id.GetInt32() != mainThread)),
+            "Native early stopping lost its bound, background workers or continuation provenance.");
+        var searches = publications.Where(row => row.GetProperty("SearchMs").GetDouble() > 0).ToArray();
+        Require(searches.Length == 3 && searches.All(row => row.GetProperty("SearchMs").GetDouble() <
+                overlay.GetProperty("TimeLimitMs").GetInt32()) &&
+            publications[^1].GetProperty("ReusedWinningContinuation").GetBoolean() &&
+            publications[^1].GetProperty("SearchMs").GetDouble() == 0,
+            "Native early stop exhausted its budget or failed to reuse the winning suffix.");
+        var planned = fixture.GetProperty("PlannerRuns")[0].GetProperty("Planned").Deserialize<BattleTurnState>()!;
+        Require(Health(planned) == 80, "Native early stopping returned a winning line below the bound.");
+        Console.WriteLine("NATIVE-EARLY-STOP PASS: actual 0.2.20 player, three searches below budget, two background workers, " +
+            "80-HP native victory, exact full-state/RNG replay and zero-search winning continuation.");
+    }
+
     internal static void Run(FixtureValue fixture, FixtureValue healingFixture, FixtureValue lossFixture)
     {
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })

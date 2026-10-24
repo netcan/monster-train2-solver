@@ -8,6 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'full-battle-player-early-stop-search.mt2f',
     'room-moon-spell-covenant-01-calibration.mt2f',
     'room-moon-spell-covenant-02-calibration.mt2f',
     'room-moon-spell-covenant-03-calibration.mt2f',
@@ -3790,6 +3791,10 @@ foreach ($fixturePath in $originalGrosMichelFixtures) {
     }
 }
 $plannerFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -like 'full-battle-planner-*.mt2f' -or (Split-Path -Leaf $_) -like 'full-battle-advisor-*.mt2f' })
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-player-early-stop-search.mt2f' })) {
+    dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- --early-stop-native-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Native early stopping checks failed: $fixturePath" }
+}
 foreach ($fixturePath in $plannerFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --planner-replay-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Native planner checks failed: $fixturePath" }
