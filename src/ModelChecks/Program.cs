@@ -2844,6 +2844,12 @@ if (args.Length == 2 && args[0] == "--room-moon-spell-upgrades-only")
     RoomMoonSpellUpgradeChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--moon-hand-power-callbacks-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RoomMoonSpellUpgradeChecks.HandPowerCallbacks(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--room-moon-callback-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5102,6 +5108,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
     using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
         "full-battle-player-moon-room-phase-energy-relic-replay.mt2f"));
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requirePhaseEnergyRelic: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-hand-power-relic-search.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+        "full-battle-player-moon-room-hand-power-relic-replay.mt2f"));
+    PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requireHandPowerRelic: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-phase-heal-relic-search.mt2f"))
 {

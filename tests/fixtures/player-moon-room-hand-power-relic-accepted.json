@@ -1,0 +1,10 @@
+{
+  "Schema": 1,
+  "Composition": "MoonRoomHandPowerRelic",
+  "SourceProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-110007-3c6ed95e",
+  "ReplayProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-110833-0c405e5e",
+  "SourceSha256": "ea57a0604cc3a72760386785bfb1e8308f6561edbcf961b9280e98a9b04208fd",
+  "ReplaySha256": "bd67a8d07e019e8eb94831e560870993358a052b2b92b158713e70ce5983a7a3",
+  "IndependentFocusedCheck": "--player-moon-room-hand-power-relic-pair-only",
+  "Passed": true
+}

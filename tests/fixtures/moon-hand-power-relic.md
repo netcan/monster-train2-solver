@@ -37,8 +37,8 @@ fix evidence.
 
 The scene authors durable enemies, strong Stewards and setup controls; original
 spell and relic definitions remain unchanged. This is controlled composition
-acceptance, separate from natural/default-budget victory and actual player-pair
-acceptance. No full regression or new Mac package is built.
+acceptance, separate from natural/default-budget victory. No full regression or
+new Mac package is built.
 
 ```powershell
 scripts/Run-FullBattleProbe.ps1 -RoomMoonSpellHandPowerRelic -NativeWorker 1 -SkipBuild
@@ -48,3 +48,39 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-u
 
 The full scene flag is `-OriginalMoonCardUpgradesHandPowerRelic`; the dedicated
 player gate is `--player-moon-room-hand-power-relic-pair-only`.
+
+## Actual player source and independent native replay
+
+Source `full-battle-units-spells-and-junk-20261024-110007-3c6ed95e` and
+frozen replay `full-battle-units-spells-and-junk-20261024-110833-0c405e5e`
+both win at Pyre80 after 48 inputs: 41 plays/abilities and seven EndTurns.
+They exit normally in 460.03/199.90 seconds, preserve protected originals and
+have all four failure counters zero. Every input, complete root, forecast,
+successor and RNG matches, including 47 room stages and 13 train phases in
+each process. The pair gate also checks both room-mask modes, all five spells,
+paid Lunacy/Conduit and 16 immutable complete-battle branches.
+
+Each process retains two Full and five New original pre-discard callbacks,
+with two positive moon-spell upgrades and complete native before/after contexts.
+Source started before the intermediate Conduit-order fix landed. Its complete
+forecasts/successors and callback contexts are independently checked through
+the corrected model; the fresh frozen process loads the corrected assemblies.
+The paired full states remain exact without another redundant source run.
+
+The source has 50 publications with 50 fresh complete-root checks and 400 pure
+captures. Two executed decisions consume searches; nine ordinary and 37 winning
+continuations reuse their verified plans. The overlay records ten searches in
+total, including searches not consumed by an input. Frozen replay performs one
+initial startup search, then zero searches/publications after pausing, with
+97 pure captures. These counts are separate from response latency.
+
+This uses six-turn/10000ms/top/tactical settings and the controlled scene above;
+it is separate from a natural/default-budget victory. Curated files are
+`full-battle-player-moon-room-hand-power-relic-{search,replay}.mt2f` and
+`player-moon-room-hand-power-relic-accepted.json`. The focused wrapper is
+`scripts/Check-PlayerAdvisor.ps1 -Case MoonRoomHandPowerRelic -SkipBuild`.
+`--moon-hand-power-callbacks-only <native.mt2f>` isolates the original callback
+check before spending time on another native replay. The existing owner-only
+baseline's 16 recorded actions and six captured EndTurns still match; its
+generic fixed-policy whole-battle gate cannot reproduce the harness adding
+new witness cards between turns, so that policy result is not an acceptance.

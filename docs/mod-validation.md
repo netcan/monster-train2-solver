@@ -1,6 +1,18 @@
 # Player Mod validation · 2026-10-24
 
 Original moon spell upgrades/Lunacy/room masks now also support the exact
+Full-moon end-turn hand magic-power relic. The 19-boundary component and
+20-play baseline pass, including repeated stacks and immediate Conduit
+CardUpdated ordering. Actual player source/independent frozen replay both
+win at Pyre80 after 48 inputs, with complete forecasts/state/RNG, 47 room
+stages and 13 train phases per process, normal exits and four zero counters.
+Fifty publications have fresh full-root checks; nine ordinary and 37 winning
+continuations reuse their verified plans. Frozen replay has no searches or
+publications after pausing. This controlled six-turn/10000ms scene remains
+separate from natural/default-budget victory. See
+[end-turn hand magic power](../tests/fixtures/moon-hand-power-relic.md).
+
+Original moon spell upgrades/Lunacy/room masks now also support the exact
 original Full-moon energy relic and its once-per-turn condition. The isolated
 component and20-play baseline pass. Actual player source/independent frozen
 replay both win at Pyre80 after45 inputs,with complete forecasts/state/RNG,
