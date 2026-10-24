@@ -4,10 +4,10 @@ using System.Threading;
 
 namespace MonsterTrain2Poju.Model
 {
-    // Browsing a floor is not a gameplay input. Keep all costs, histories,
-    // existing preview identities and RNG keyed; only the known UI selection
-    // and its next unused preview-copy number can differ. A retained line must
-    // still reproduce its complete outcome from the newly captured live root.
+    // Browsing a floor is not a gameplay input. Keep costs, histories, existing
+    // preview identities and RNG keyed; prove any captured selection callbacks
+    // through the model. A retained line must still reproduce its complete
+    // outcome from the newly captured live root.
     internal static class SelectionAdviceReuse
     {
         // One cache belongs to one verified suffix and is only accessed by its

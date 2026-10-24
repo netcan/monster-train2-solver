@@ -6,6 +6,37 @@ using MonsterTrain2Poju.Model;
 
 internal static class FloorBrowseAdviceChecks
 {
+    internal static void LiveScroll(FixtureValue fixture)
+    {
+        SelectionBoundary(fixture);
+        FixtureValue accepted = fixture.GetProperty("LiveAcceptance"), overlay = accepted.GetProperty("Overlay");
+        FixtureValue[] observations = fixture.GetProperty("Observations").EnumerateArray().ToArray();
+        long searches = observations[0].GetProperty("Observation").GetProperty("Searches").GetInt64();
+        long generation = observations[0].GetProperty("Observation").GetProperty("Generation").GetInt64();
+        Require(observations.Length == 7 && accepted.GetProperty("SessionSearches").GetInt64() == searches &&
+            accepted.GetProperty("Generation").GetInt64() == generation && overlay.GetProperty("PurityFailures").GetInt32() == 0 &&
+            overlay.GetProperty("Failures").GetInt32() == 0, "Live scrolling changed search work/generation or failed native purity checks.");
+        using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+        foreach (FixtureValue observation in observations)
+        {
+            BattleTurnState before = observation.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState after = observation.GetProperty("After").Deserialize<BattleTurnState>()!;
+            BattleTurnResult selected = BattleTurnModel.SelectRoom(before, after.SelectedRoom);
+            Require(selected.Supported && keys.Key(selected.State!) == keys.Key(after) &&
+                observation.GetProperty("Observation").GetProperty("Searches").GetInt64() == searches &&
+                observation.GetProperty("Observation").GetProperty("Generation").GetInt64() == generation,
+                "A live wheel transition differs from complete modeled callbacks/state/RNG or starts a new search.");
+        }
+        FixtureValue[] reused = overlay.GetProperty("Publications").EnumerateArray()
+            .Where(row => row.GetProperty("ReusedSelection").GetBoolean()).ToArray();
+        Require(reused.Length == 7 && reused.All(row => row.GetProperty("Generation").GetInt64() == generation &&
+            row.GetProperty("SearchMs").GetDouble() == 0), "Missing seven zero-search publications from the real game.");
+        BattleTurnState last = observations.Last().GetProperty("After").Deserialize<BattleTurnState>()!;
+        Require(keys.Key(last) == keys.Key(accepted.GetProperty("Root").Deserialize<BattleTurnState>()!),
+            "The settled live game changed after its final verified scroll.");
+        Console.WriteLine($"LIVE-FLOOR-SCROLL PASS: seven native wheel inputs after play, searches={searches} generation={generation} unchanged, exact full native callbacks/state/RNG and zero purity failures.");
+    }
+
     internal static void SelectionBoundary(FixtureValue fixture)
     {
         BattleTurnState before = fixture.GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -23,6 +54,21 @@ internal static class FloorBrowseAdviceChecks
         var plan = new BattlePlanResult(ended.State!, ended.Outcome, [new BattleSearchStep(null, true)],
             BattlePlanner.Evaluate(ended.State!, ended.Outcome), 1, 1, 0, 0, TimeSpan.FromSeconds(3),
             false, false, false, false, true, [], null, 1);
+        if (fixture.TryGetProperty("Advice", out FixtureValue advice) && advice.ValueKind != FixtureKind.Null)
+        {
+            FixtureValue native = advice.GetProperty("Plan");
+            BattleSearchStep[] steps = native.GetProperty("Steps").EnumerateArray().Select(step => new BattleSearchStep(
+                step.GetProperty("Action").ValueKind == FixtureKind.Null ? null : step.GetProperty("Action").Deserialize<PlayCardAction>(),
+                step.GetProperty("IsEndTurn").GetBoolean())).ToArray();
+            plan = new BattlePlanResult(native.GetProperty("State").Deserialize<BattleTurnState>()!,
+                native.GetProperty("Outcome").Deserialize<RoomOutcome>(), steps, native.GetProperty("Score").GetDouble(),
+                native.GetProperty("TurnsCompleted").GetInt32(), 1, 0, 0, TimeSpan.FromSeconds(3),
+                native.GetProperty("TimedOut").GetBoolean(), false, native.GetProperty("ReachedNodeLimit").GetBoolean(),
+                native.GetProperty("ReachedActionLimit").GetBoolean(), native.GetProperty("CompletedHorizon").GetBoolean(),
+                [], null, native.GetProperty("RequestedTurns").GetInt32(), native.GetProperty("UsedShorterHorizon").GetBoolean(),
+                native.GetProperty("SearchedToBattleEnd").GetBoolean(), native.GetProperty("ReachedStepLimit").GetBoolean(),
+                native.GetProperty("MaxSteps").GetInt32());
+        }
         int searches = 0;
         using var session = new BattleAdviceSession((_, _) =>
         {
@@ -44,7 +90,7 @@ internal static class FloorBrowseAdviceChecks
             new BattleRngStream(stream.Name, stream.Seed, new UnityRng(stream.State.S0 ^ 1, stream.State.S1,
                 stream.State.S2, stream.State.S3)) : stream).ToArray();
         Require(!SelectionAdviceReuse.SameBattle(before, Copy(after, rng: rng)), "Selection projection hid native RNG divergence.");
-        Console.WriteLine("FLOOR-SELECTION PASS: live Conduit/card trackers, exact full native selection transition, three switches with one search, full forecast replay and energy/RNG divergence rejection.");
+        Console.WriteLine($"FLOOR-SELECTION PASS: live Conduit/card trackers, exact full native selection transition, three switches with one search, {plan.Steps.Count}-step forecast replay and energy/RNG divergence rejection.");
     }
 
     internal static void NativePair(FixtureValue source, FixtureValue replay)

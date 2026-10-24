@@ -31,6 +31,15 @@ if ($LASTEXITCODE -ne 0) { throw 'Floor browsing no longer retains native advice
 $crossTurn = @(Get-VerifiedPair 'cross-turn-scroll')
 dotnet $checker --player-ordinary-advice-pair-only @crossTurn
 if ($LASTEXITCODE -ne 0) { throw 'Cross-turn/native wheel continuation pair checks failed.' }
+$liveName = 'player-live-conduit-floor-scroll.mt2f'
+$livePath = Join-Path $workspace "tests/fixtures/$liveName"
+$liveRows = @($manifest | Where-Object archive -CEQ $liveName)
+if ($liveRows.Count -ne 1 -or (Get-Item -LiteralPath $livePath).Length -ne [long]$liveRows[0].archive_bytes -or
+    (Get-FileHash -LiteralPath $livePath -Algorithm SHA256).Hash -ine $liveRows[0].archive_sha256) {
+    throw 'Live Conduit scrolling archive bytes/hash mismatch.'
+}
+dotnet $checker --live-floor-scroll-only $livePath
+if ($LASTEXITCODE -ne 0) { throw 'Live Conduit selection callback regression failed.' }
 $natural = @(Get-VerifiedPair 'natural-ring7-ordinary')
 dotnet $checker --terminal-advice-only $natural[0]
 if ($LASTEXITCODE -ne 0) { throw 'Terminal losing-forecast continuation checks failed.' }

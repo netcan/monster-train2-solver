@@ -3027,6 +3027,12 @@ if (args.Length == 2 && args[0] == "--floor-browse-selection-only")
     FloorBrowseAdviceChecks.SelectionBoundary(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--live-floor-scroll-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    FloorBrowseAdviceChecks.LiveScroll(fixture.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--player-floor-browse-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5280,6 +5286,11 @@ foreach (string prefix in new[] { "ordinary-continuation", "cross-turn-scroll" }
         OrdinaryAdviceChecks.NativePair(source.RootElement, replay.RootElement);
         FloorBrowseAdviceChecks.NativePair(source.RootElement, replay.RootElement);
     }
+}
+foreach (string path in args.Where(path => path.EndsWith("player-live-conduit-floor-scroll.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    FloorBrowseAdviceChecks.LiveScroll(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
