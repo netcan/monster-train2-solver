@@ -246,3 +246,15 @@ verification. Its candidate frontier rejects the same dead-spawner routing
 signature. Defeat forecasts intentionally replan after every input; the player
 continuation option does not retain an already losing route. Neither expanded
 budget establishes a native victory or justifies repeating the native UI test.
+
+The recorded twelve-turn scout now yields a concrete rejected branch without
+another search: 23 supported inputs reach turn four, where card 14 targets
+unit 10 in room zero. The target is the original Endless carrier (spawner
+card 2). `extract-unsupported-branch` scans unique recorded forecast roots,
+independently replays the entire prefix, reproduces the exact unsupported
+action and verifies the deployment root is unchanged. Its archive is explicitly
+`ModelUnsupportedBranch`; it contains no assumed native successor.
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll extract-unsupported-branch .probe-runs/angel-tactical-player-floor0-0754.mt2f <new-output.mt2f> 'Missing dead spawner routing during the trigger queue.'
+```

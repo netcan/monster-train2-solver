@@ -8,6 +8,70 @@ using MonsterTrain2Poju.Model;
 // model predictions; only a fresh game process can establish native acceptance.
 internal static class OfflineBattleSearch
 {
+    // Reuse recorded forecasts before spending another search/native battle.
+    // This exports a replayable failure boundary, never a native successor.
+    internal static void ExtractUnsupported(string input, string output, string reason)
+    {
+        if (File.Exists(output)) throw new IOException("Output already exists: " + output);
+        Require(!string.IsNullOrWhiteSpace(reason), "An exact rejection reason is required.");
+        using var source = FixtureDocument.Read(input);
+        FixtureValue[] rows = source.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(rows.Length is > 0 and <= 256, "Expected bounded recorded decisions.");
+        BattleTurnState root = rows[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        using var keys = new BattleStateKeys();
+        string immutable = keys.Key(root);
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        var prefix = new List<Step>();
+        foreach (FixtureValue row in rows)
+        {
+            BattleTurnState current = row.GetProperty("Root").Deserialize<BattleTurnState>()!;
+            var forecastPrefix = new List<Step>(prefix);
+            RoomOutcome outcome = RoomOutcome.Exchanged;
+            foreach (FixtureValue stepValue in row.GetProperty("PlanSteps").EnumerateArray())
+            {
+                if (visited.Add(keys.Key(current)))
+                {
+                    UnsupportedActionAttempt? failure = BattleActionModel.EnumerateActions(current).UnsupportedAttempts
+                        .FirstOrDefault(attempt => attempt.Reason == reason);
+                    if (failure != null)
+                    {
+                        Require(failure.Action != null && forecastPrefix.Count <= 256, "Failure boundary exceeds the native input bound.");
+                        BattleTurnState replay = root;
+                        outcome = RoomOutcome.Exchanged;
+                        foreach (Step step in forecastPrefix)
+                        {
+                            Require(!Terminal(outcome), "Failure prefix follows a terminal result.");
+                            replay = Apply(replay, step.Action, step.IsEndTurn, out outcome);
+                        }
+                        using var independent = new BattleStateKeys();
+                        Require(independent.Key(replay) == independent.Key(current) && independent.Key(root) == immutable,
+                            "Failure prefix differs or mutated its deployment root.");
+                        BattleActionResult reproduced = BattleActionModel.PlayCard(replay, failure.Action!);
+                        Require(!reproduced.Supported && reproduced.Rejection == ActionRejection.Unsupported && reproduced.Reason == reason,
+                            "The extracted action does not reproduce its unsupported boundary.");
+                        using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
+                            SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+                            Root = root, Prefix = forecastPrefix, FailedRoot = current, failure.Action, failure.Reason,
+                            NativeValidationRequired = true });
+                        using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
+                        document.Write(stream);
+                        Console.WriteLine($"UNSUPPORTED-BRANCH prefix={forecastPrefix.Count} turn={current.Spawn.Turn} roots={visited.Count} action=" +
+                            System.Text.Json.JsonSerializer.Serialize(failure.Action) + " reason=" + reason);
+                        return;
+                    }
+                }
+                Require(!Terminal(outcome), "Recorded forecast follows a terminal result.");
+                Step next = new Step { Action = stepValue.GetProperty("Action").Deserialize<PlayCardAction>(),
+                    IsEndTurn = stepValue.GetProperty("IsEndTurn").GetBoolean() };
+                current = Apply(current, next.Action, next.IsEndTurn, out outcome);
+                forecastPrefix.Add(next);
+            }
+            prefix.Add(new Step { Action = row.GetProperty("Action").Deserialize<PlayCardAction>(),
+                IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() });
+        }
+        throw new InvalidDataException($"No matching unsupported action in {visited.Count} recorded forecast roots: {reason}");
+    }
+
     internal static void Single(string input, string output)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
