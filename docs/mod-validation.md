@@ -1,5 +1,13 @@
 # Player Mod validation · 2026-10-24
 
+Windows0.2.9 finishes the allocation/idle follow-up: per-key-session pooled
+encoding buffers and builders, repeated string/scalar reuse, omitted player
+played-room diagnostics and typed idle effect readers. One focused .NET8
+20-root sample allocates86.65MB instead of498.40MB (82.6% less), takes452.0ms
+instead of641.8ms and records5 instead of31 generation-zero collections. All12
+frozen state keys and Unicode/scalar/concurrent-instance controls pass. These
+are offline key measurements, not native allocation or FPS guarantees.
+
 [Native capture optimization](capture-performance.md) in Windows0.2.8 reduces
 warm capture from51.99ms to12.92ms in the same frozen native route (19 no-GC
 samples each, approximately75%). Canonical decisions share one immutable global
@@ -8,32 +16,36 @@ context and omit retained development branch-mask/room-query history from the
 player. Dynamic costs/upgrades and native state/RNG purity checks remain active.
 The profiler itself remains absent from the player assembly.
 
-The new real-player search/UI source and independent frozen process both win
-with51 Pyre HP after three plays/seven EndTurns, with all four failure counters
+The new0.2.9 real-player search/UI source and independent frozen process both win
+with73 Pyre HP after21 plays/seven EndTurns, with all four failure counters
 zero and originals unchanged. Every input, root, successor, forecast and RNG
 matches, including fourteen native train phases per process. Seven floor
 switches add no searches, settled idle adds no captures/publications/searches,
-and all nine later inputs retain the winning continuation. The curated pair is
-`full-battle-player-capture-reuse-{search,replay}.mt2f`; the focused checker and
-fresh native cost/moon component evidence are recorded in the capture report.
-This is a capture improvement, not an FPS or total advice response guarantee.
+and all27 later inputs retain the winning continuation. Source publishes36 plans
+with278 pure captures; frozen replay has57 pure captures, zero publications and
+zero searches after pause. The curated pair is
+`full-battle-player-performance-finish-{search,replay}.mt2f`; the focused checker,
+previous0.2.8 capture pair and native cost/moon evidence are in the capture
+report. Session/cancellation, floor browsing and50-step continuation checks pass.
+Full native state/RNG capture and publication guards remain active; GC/JIT spikes
+and long searches are still possible.
 
-The tested0.2.8 three-DLL payload is installed at
+The tested0.2.9 three-DLL payload is installed at
 `F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
 Build, isolated real-player acceptance and installed hashes match:
 
 | DLL | SHA256 |
 | --- | --- |
-| MonsterTrain2Poju.Advisor.dll | `1b20c907a7f39ea0e0899dedda699bec14edaf72550df802b62826b09c9bccc4` |
-| Model.dll | `f1bc4a9515029cd43a7c0091f034b5e1ada209496deac0a600a4b0fd824f5012` |
-| FixtureArchive.dll | `b2972b1631702a10b4663edcf9e3b0577bedc42ca95ce37e6d9808668fa8be4f` |
+| MonsterTrain2Poju.Advisor.dll | `f4eaea7a837f9337cd900d95295093cf8ef2756da91000cb7c395accb3369f8b` |
+| Model.dll | `5637d5c9f46300e6462dbd893fcf26a74c295363e1c975b401381319e53e9a8b` |
+| FixtureArchive.dll | `79b96aef10d1caa61c910bd6c7f20a21f5e34dcc756c68d007e0e23582a7f315` |
 
 All28 other loader/plugin/config files are unchanged, including F10 and the
-3,000ms budget. The previous0.2.7 payload is preserved outside the plugins tree
-at `BepInEx/PojuBackups/CaptureReuse-20261024-162123/previous`. The original real
+3,000ms budget. The previous0.2.8 payload is preserved outside the plugins tree
+at `BepInEx/PojuBackups/PerfFinish-20261024-164444/previous`. The original real
 game process (PID122100, started15:07:55) remains running with its previously
-loaded0.2.5; restarting loads0.2.8. No real game was stopped or autoplayed, and
-no Mac package was built. The fixture catalog passes1350 hashes/registrations;
+loaded0.2.5; restarting loads0.2.9. No real game was stopped or autoplayed, and
+no Mac package was built. The fixture catalog passes1352 hashes/registrations;
 no full regression was run.
 
 Windows 0.2.7 adds bounded whole-battle planning and a two-worker background

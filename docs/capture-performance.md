@@ -23,6 +23,33 @@ and scalar representation controls also pass.
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --state-key-only tests/fixtures/full-battle-player-natural-ring7-ordinary-search.mt2f
 ```
 
+The real0.2.9 player and a fresh native frozen process both win with73 Pyre HP:
+21 plays/seven EndTurns,28 decisions,14 train phases each, all four failure
+counters zero, normal exits and protected originals unchanged. Every input,
+root, successor, complete forecast and RNG matches. The source publishes36
+plans with278 pure captures, seven floor switches add zero searches, and the
+two-second idle control adds zero captures/publications/searches. All27 later
+inputs retain the verified winning suffix with zero search nodes. Frozen replay
+pauses background advice and performs57 pure captures, zero publications and
+zero searches after pause. Panel, complete-plan preview, pause/hide/refresh and
+drag interactions pass. Both isolated processes run below normal priority;
+their total runtimes are96.41s/57.52s including startup and driver checks.
+
+Evidence profiles are
+`full-battle-units-spells-and-junk-20261024-164029-d1dabe81` and
+`full-battle-units-spells-and-junk-20261024-164223-251f2bb1` under `.probe-runs`.
+Complete archives are curated as
+`full-battle-player-performance-finish-{search,replay}.mt2f` and registered in
+the fixture manifest. Session/cancellation, frozen keys, ready/in-flight floor
+browsing and50-step winning-continuation controls pass without a full regression.
+The main-thread capture and publication still perform complete native state/RNG
+checks; GC/JIT latency spikes remain possible. No native allocation/FPS claim
+is inferred from the .NET8 benchmark.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --parallel-planner-pair-only tests/fixtures/full-battle-player-performance-finish-search.mt2f tests/fixtures/full-battle-player-performance-finish-replay.mt2f
+```
+
 ## Snapshot-local native reuse · Windows0.2.8
 
 Windows0.2.8 removes the repeated global context/card projections. Replaying
