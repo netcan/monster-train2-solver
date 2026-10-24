@@ -19,11 +19,11 @@ namespace MonsterTrain2Poju.Probe
         private static ManualLogSource log = null!;
         private static bool expanded;
         private static int retainedInputs, pendingFrames, reusedPublications, scrolledPublications, resets, budgetChanges, collapsedTurnResets;
-        private static int cardIdentityChecks, cardHoverChecks;
+        private static int cardIdentityChecks, cardHoverChecks, forecastScopeChecks;
         internal static object Evidence => new { RetainedInputs = retainedInputs, PendingFrames = pendingFrames,
             ReusedPublications = reusedPublications, ScrolledPublications = scrolledPublications, Resets = resets,
             BudgetChanges = budgetChanges, CollapsedTurnResets = collapsedTurnResets,
-            CardIdentityChecks = cardIdentityChecks, CardHoverChecks = cardHoverChecks };
+            CardIdentityChecks = cardIdentityChecks, CardHoverChecks = cardHoverChecks, ForecastScopeChecks = forecastScopeChecks };
 
         private static T Field<T>(string name) => (T)AccessTools.Field(type, name).GetValue(overlay);
         private static void Require(bool condition, string message)
@@ -56,7 +56,29 @@ namespace MonsterTrain2Poju.Probe
             expanded = true;
             ScrollForNextInput();
             CheckSearchBudget();
+            CheckForecastScope();
             CheckCardIdentity();
+        }
+
+        private static void CheckForecastScope()
+        {
+            Type formatter = type.Assembly.GetType(typeof(AdvisorForecastPresentation).FullName!, true)!;
+            string Header(RoomOutcome outcome, int turns, int current, int final) =>
+                (string)AccessTools.Method(formatter, "Describe").Invoke(null, new object[] { outcome, turns, current, final });
+            string partial = Header(RoomOutcome.Exchanged, 2, 23, 23);
+            Require(partial.Contains("部分方案") && partial.Contains("仅预测 2 回合") && partial.Contains("窗口内预计损失 0") &&
+                partial.Contains("整场战损尚未确定") && !partial.Contains("预计获胜"), "partial zero-loss forecast looks like a complete victory");
+            string victory = Header(RoomOutcome.BattleWon, 2, 22, 4);
+            Require(victory.Contains("整场预计获胜") && victory.Contains("22 → 4") && victory.Contains("后续预计损失 18") &&
+                !victory.Contains("尚未确定"), "complete forecast hides current versus final Pyre health");
+            Require(Header(RoomOutcome.PlayerDefeated, 1, 22, 0).Contains("整场预计战败") &&
+                Header(RoomOutcome.Stalemate, 1, 22, 22).Contains("预计僵持"), "terminal loss/stalemate scope changed");
+            string ability = (string)AccessTools.Method(formatter, "Ability").Invoke(null,
+                new object[] { "吞火龙", "火焰吐息", 1, 0 });
+            Require(ability.Contains("【单位技能】吞火龙：火焰吐息") && ability.Contains("当前 0 费") &&
+                ability.Contains("来源：当前第 2 层"), "unit ability lacks an explicit source or free cost");
+            forecastScopeChecks += 5;
+            log.LogInfo("PLAYER-ADVISOR-FORECAST-SCOPE-PASS cases=" + forecastScopeChecks);
         }
 
         private static void CheckCardIdentity()

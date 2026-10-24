@@ -630,15 +630,9 @@ namespace MonsterTrain2Poju.Probe
             int hp = plan.State.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
             int initialHp = advice.Root.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
             var text = new StringBuilder();
-            text.Append(plan.Outcome == RoomOutcome.BattleWon ? "预计获胜" : plan.Outcome == RoomOutcome.PlayerDefeated ? "预计战败" :
-                plan.Outcome == RoomOutcome.Stalemate ? "预计僵持" : "规划窗口结束")
-                .Append(" · 薪火 ").Append(hp).Append(" 血")
-                .Append(" · 预计损失 ").Append(Math.Max(0, initialHp - hp));
-            if (plan.UsedShorterHorizon)
-            {
-                if (plan.SearchedToBattleEnd) text.Append("\n整场目标 · 部分方案 · 已预测 ").Append(plan.TurnsCompleted).Append(" 回合");
-                else text.Append(" · 已完成 ").Append(plan.TurnsCompleted).Append('/').Append(plan.RequestedTurns).Append(" 回合（预算内缩短）");
-            }
+            text.Append(AdvisorForecastPresentation.Describe(plan.Outcome, plan.TurnsCompleted, initialHp, hp));
+            if (plan.UsedShorterHorizon && !plan.SearchedToBattleEnd)
+                text.Append("\n目标 ").Append(plan.RequestedTurns).Append(" 回合，预算内完成 ").Append(plan.TurnsCompleted).Append(" 回合");
             FullBattleTrace trace = FullBattleTrace.Active!;
             var cards = trace.KnownCards.ToDictionary(card => trace.CardId(card));
             var units = trace.KnownUnits.Where(unit => unit != null).ToDictionary(unit => trace.UnitId(unit));
@@ -668,8 +662,14 @@ namespace MonsterTrain2Poju.Probe
                 PlayCardAction action = step.Action!;
                 int start = text.Length;
                 if (action.ActivatorUnitId > 0 && units.TryGetValue(action.ActivatorUnitId, out CharacterState actor))
-                    text.Append(actor.GetName()).Append("：").Append(actor.GetUnitAbilityCardState()?.GetTitle() ?? "单位技能");
-                else if (action.ActivatorUnitId > 0) text.Append(UnitName(action.ActivatorUnitId)).Append("：单位技能");
+                {
+                    CardState? ability = actor.GetUnitAbilityCardState();
+                    int? cost = ability?.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(),
+                        managers.GetRelicManager(), managers.GetRoomManager().GetRoom(action.RoomIndex));
+                    text.Append(AdvisorForecastPresentation.Ability(actor.GetName(), ability?.GetTitle() ?? "单位技能",
+                        actor.GetCurrentRoomIndex(), cost));
+                }
+                else if (action.ActivatorUnitId > 0) text.Append("【单位技能】").Append(UnitName(action.ActivatorUnitId));
                 else text.Append(action.CardInstanceId > 0 ? CardName(action.CardInstanceId) : "房间技能");
                 text.Append(showFullPlan ? " → 第 " : "\n第 ").Append(action.RoomIndex + 1).Append(" 层");
                 if (action.PlayerPosition >= 0) text.Append(" · 部署位 ").Append(action.PlayerPosition + 1);
@@ -686,7 +686,8 @@ namespace MonsterTrain2Poju.Probe
             }
             if (showFullPlan)
             {
-                text.Append(plan.UsedShorterHorizon ? "\n部分方案 · " : "\n完整方案 · ").Append(plan.Steps.Count).Append(" 步\n按当前局面预测，操作后更新。\n\n当前回合\n");
+                text.Append(AdvisorForecastPresentation.IsTerminal(plan.Outcome) ? "\n完整方案 · " : "\n部分方案 · ")
+                    .Append(plan.Steps.Count).Append(" 步\n按当前局面预测，操作后更新。\n\n当前回合\n");
                 int turns = 0;
                 for (int index = 0; index < plan.Steps.Count; index++)
                 {
@@ -697,7 +698,11 @@ namespace MonsterTrain2Poju.Probe
             }
             else
             {
-                text.Append("\n\n本回合步骤：\n");
+                int skills = plan.Steps.TakeWhile(step => !step.IsEndTurn).Count(step =>
+                    step.Action?.ActivatorUnitId > 0 || step.Action?.ActivatorRoomIndex.HasValue == true);
+                text.Append("\n\n本回合步骤");
+                if (skills > 0) text.Append("（含 ").Append(skills).Append(" 次技能）");
+                text.Append("：\n");
                 for (int index = 0; index < plan.Steps.Count; index++)
                 {
                     BattleSearchStep step = plan.Steps[index];

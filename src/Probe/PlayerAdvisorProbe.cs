@@ -424,7 +424,7 @@ namespace MonsterTrain2Poju.Probe
             BattleAdvice advice = Advice;
             Click("完整方案"); Canvas.ForceUpdateCanvases();
             Text text = Field<Text>("body");
-            Require(Field<bool>("showFullPlan") && text.text.Contains(advice.Plan.UsedShorterHorizon ? "部分方案" : "完整方案") &&
+            Require(Field<bool>("showFullPlan") && text.text.Contains(AdvisorForecastPresentation.IsTerminal(advice.Plan.Outcome) ? "完整方案" : "部分方案") &&
                 text.text.Contains(Advice.Plan.Steps.Count + ". "), "complete plan omitted its final step");
             ScrollRect scroll = Field<ScrollRect>("planScroll");
             if (scroll.content.rect.height > scroll.viewport.rect.height)
