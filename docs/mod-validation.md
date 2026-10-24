@@ -1,5 +1,17 @@
 # Player Mod validation · 2026-10-24
 
+Moon spell/Lunacy/Eclipse refreshes now accept the original ordered cumulative
+Covenant 1-3 prefix. Each rank has fifteen native component boundaries with
+complete state/RNG and eight immutable branches, retaining original startup
+callbacks and the actual twenty-card starting deck. The rank-three controlled
+full battle wins at Pyre80 after 20 plays/five EndTurns; all 34 room stages,
+nine train phases and sixteen immutable battle chains match. All four counters
+are zero, exit is normal and protected originals are unchanged. The component
+also exposed and fixed stale enchantment-world moon understanding after global
+phase changes. Actual player-pair acceptance is still pending. Additional
+active relics and later Covenants retain their separate guards. See
+[Moon Covenant composition](../tests/fixtures/moon-covenant.md).
+
 Original New-moon Silent armor now composes with the five moon spells,
 Lunacy and Eclipse room masks. The 15-boundary component and 20-play native
 baseline pass. Actual player source and independent frozen replay both win

@@ -29,9 +29,7 @@ that world even when there are no character callbacks to drain.
 | 2 | `full-battle-no-cards-20261024-115747-5cddf29b` | 56.55 s | `room-moon-spell-covenant-02-calibration.mt2f` |
 | 3 | `full-battle-no-cards-20261024-115303-c65543bf` | 32.90 s | `room-moon-spell-covenant-03-calibration.mt2f` |
 
-All processes exit normally with protected originals unchanged. These are
-component captures; full native battles and actual player pairs are tracked
-separately below when completed.
+All processes exit normally with protected originals unchanged.
 
 ```powershell
 scripts/Run-FullBattleProbe.ps1 -RoomMoonSpellAdvance -StartingCovenantLevel 3 -SkipBuild
@@ -45,3 +43,22 @@ hashed receipt only after the dedicated `--player-moon-room-covenant03-pair-only
 gate passes. Existing source/replay reuse has the same original-rank check.
 The scene uses durable controlled actors and a six-turn/10000-ms tactical
 budget; it does not establish default-budget or natural campaign quality.
+
+## Complete native battle
+
+`full-battle-units-spells-and-junk-20261024-115616-e43cbbe2` wins at Pyre80
+after 20 plays and five EndTurns in 228.40 seconds. It retains the original
+rank-three native startup and all three ordered owners, original five moon
+spells/Lunacy/Eclipse definitions and explicit durable controlled actors.
+Capture, mismatch, unsupported and pending counters are zero, exit is normal
+and protected originals are unchanged. The dedicated original-moon gate
+matches every complete native action/turn successor and RNG, all 34 room
+stages, nine train phases and sixteen immutable full-battle chains. Original
+Lunacy retains its paid 2/3/0 controls. This is separate from actual player
+advice and independent replay acceptance.
+
+Archive: `full-battle-original-moon-card-upgrades-covenant03.mt2f`.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-covenant03.mt2f
+```

@@ -11,6 +11,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'room-moon-spell-covenant-01-calibration.mt2f',
     'room-moon-spell-covenant-02-calibration.mt2f',
     'room-moon-spell-covenant-03-calibration.mt2f',
+    'full-battle-original-moon-card-upgrades-covenant03.mt2f',
     'room-moon-spell-status-relic-calibration.mt2f',
     'full-battle-player-moon-room-status-relic-search.mt2f',
     'full-battle-player-moon-room-status-relic-replay.mt2f',
