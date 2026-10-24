@@ -5,6 +5,33 @@ using MonsterTrain2Poju.Model;
 
 internal static class LiveArkionPyreChecks
 {
+    internal static void Native(FixtureValue fixture, FixtureValue birth)
+    {
+        FixtureValue input = fixture.GetProperty("NativeRunInput");
+        Require(input.GetProperty("Scenario").GetString() == "Level3BattleHeavyHitter_PyreDamage" &&
+            input.GetProperty("AscensionLevel").GetInt32() == 10 && input.GetProperty("Distance").GetInt32() == 2 &&
+            !input.GetProperty("WasDevCheatUsed").GetBoolean() &&
+            fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null,
+            "Expected the original unchanged live rank-ten Ring3 encounter.");
+        FixtureValue player = fixture.GetProperty("PlayerAdvisor"), overlay = player.GetProperty("Overlay");
+        Require(player.GetProperty("Version").GetString() == "0.2.21.0" &&
+            player.GetProperty("PlanPreviewPassed").GetBoolean() &&
+            player.GetProperty("Presentation").GetProperty("CollapsedTurnResets").GetInt32() > 0 &&
+            new[] { "Failures", "PurityFailures" }.All(name => overlay.GetProperty(name).GetInt32() == 0),
+            "Actual player UI, collapsed turn reset or capture/publication validation failed.");
+        OuterBossBirthChecks.Native(birth);
+        FixtureValue row = birth.GetProperty("Births")[0];
+        OuterBossCreationState created = row.GetProperty("Before").Deserialize<OuterBossCreationState>()!;
+        OuterBossPhaseState actual = row.GetProperty("Actual").Deserialize<OuterBossPhaseState>()!;
+        CombatUnit boss = actual.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == actual.Boss.UnitId);
+        Require(created.BirthStats is { Attack: 0, Health: 400 } && created.CreatedUnit.BaseAttack == 4 &&
+            boss.BaseAttack == 9 && boss.MaxHealth == 825 && boss.Modifiers is { AttackDamage: 9, AttackDamageAdded: 5, DamageBuff: 0 } &&
+            boss.Modifiers.Upgrades.Count == 1 && boss.Modifiers.Upgrades[0].Stats.Damage == 5,
+            "Trial attack was duplicated, applied as a buff or lost its native upgrade record.");
+        RollingAdviceChecks.Native(fixture);
+        Console.WriteLine("NATIVE-LIVE-ARKION-PYRE PASS: actual 0.2.21 UI, exact original Covenant10/trial birth, collapsed turn resets and complete native forecast/successor/RNG replay.");
+    }
+
     internal static void Run(FixtureValue live, FixtureValue native)
     {
         bool completeNative = native.TryGetProperty("Turns", out FixtureValue turns);

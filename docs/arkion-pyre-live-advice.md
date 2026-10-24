@@ -38,6 +38,17 @@ The player UI acceptance now accepts a correctly labelled partial forecast
 when expanding it. Previously that assertion required the complete-forecast
 label even when all available steps were displayed.
 
+The original Pyre Heart also carries permanent same-ID growth records from
+earlier battles. Its scaled upgrade must update the fresh record shared with
+the current spawned unit, preserving older card records. The original relic's
+spawn appends this record, so its scaling now selects the last matching card
+entry. Other upgrade IDs retain their existing matching behavior.
+The recorded diagnostic prefix
+`full-battle-units-spells-and-junk-20261024-224211-2da0b60e` now replays all
+20 actual inputs exactly, including the turn-four boundary that exposed this
+issue. Its old forecasts/counters remain diagnostic, not accepted native
+plan evidence. Its separate original boss instantiation/birth check passes.
+
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-arkion-pyre-only `
   tests/fixtures/player-live-arkion-pyre-unavailable.mt2f <accepted-native.mt2f>
