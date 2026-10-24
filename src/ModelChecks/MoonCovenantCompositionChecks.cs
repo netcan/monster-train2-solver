@@ -7,8 +7,8 @@ internal static class MoonCovenantCompositionChecks
 {
     internal static void Startup(FixtureValue root, CombatContext context, int level, bool guards = false)
     {
-        Require(level is >= 1 and <= 3 && CardMoonUpgradeModel.CalibratedCovenants(context.Relics),
-            "Moon spell startup requires the calibrated cumulative Covenant prefix without additional active relics.");
+        Require(level is >= 1 and <= 10 && CardMoonUpgradeModel.CalibratedCovenants(context.Relics),
+            "Moon spell startup requires the calibrated cumulative Covenant prefix.");
         CombatRelicState[] owners = context.Relics!.Where(owner => owner.IsCovenant == true).ToArray();
         FixtureValue startup = root.GetProperty("StartingCovenantControl"), selection = startup.GetProperty("Selection");
         Require(owners.Length == level && startup.GetProperty("Kind").GetString() == "NativeCovenantRunStartup" &&
@@ -24,17 +24,20 @@ internal static class MoonCovenantCompositionChecks
                 pair.owner.EffectTypes.SequenceEqual(pair.raw.GetProperty("EffectTypes").EnumerateArray().Select(effect => effect.GetString()!)),
                 "Covenant startup and live moon hand disagree on original identities or complete effect signatures.");
         FixtureValue[] calls = startup.GetProperty("StartupCalls").EnumerateArray().ToArray();
-        Require(calls.Length == 2 && calls[0].GetProperty("Effect").GetString() == "RelicEffectPurgeStarterDeck" &&
+        Require(calls.Length == (level >= 5 ? 4 : 2) && calls[0].GetProperty("Effect").GetString() == "RelicEffectPurgeStarterDeck" &&
             calls[1].GetProperty("Effect").GetString() == "RelicEffectAddCardSetStartOfRun" &&
-            calls.All(call => call.GetProperty("OwnerId").GetString() == owners[0].DataId &&
-                call.GetProperty("RngBefore").GetArrayLength() == 16 && call.GetProperty("RngAfter").GetArrayLength() == 16) &&
+            calls.Take(2).All(call => call.GetProperty("OwnerId").GetString() == owners[0].DataId) &&
+            calls.Skip(2).All(call => call.GetProperty("OwnerId").GetString() == owners[4].DataId &&
+                call.GetProperty("Effect").GetString() == "RelicEffectAddCardsStartOfRun") &&
+            calls.All(call => call.GetProperty("RngBefore").GetArrayLength() == 16 && call.GetProperty("RngAfter").GetArrayLength() == 16) &&
             calls[0].GetProperty("Before").GetArrayLength() > 1 && calls[0].GetProperty("After").GetArrayLength() == 1 &&
             calls[0].GetProperty("After")[0].GetProperty("IsChampion").GetBoolean() &&
             calls[0].GetProperty("RngBefore").ContentEquals(calls[0].GetProperty("RngAfter")) &&
             calls[0].GetProperty("After").ContentEquals(calls[1].GetProperty("Before")) &&
             calls[1].GetProperty("After").GetArrayLength() == 20 &&
-            calls[1].GetProperty("After").ContentEquals(startup.GetProperty("StartingDeck")),
-            "Original startup must execute one purge/add pair and retain its native twenty-card result.");
+            calls.Zip(calls.Skip(1), (before, after) => before.GetProperty("After").ContentEquals(after.GetProperty("Before"))).All(equal => equal) &&
+            calls[^1].GetProperty("After").ContentEquals(startup.GetProperty("StartingDeck")),
+            "Original startup must execute its complete purge/add chain and retain its native starting deck.");
         if (!guards) return;
         string parent = JsonSerializer.Serialize(context, ModelJson.Options);
         var mutations = new List<Action<JsonNode>> {
@@ -58,7 +61,7 @@ internal static class MoonCovenantCompositionChecks
             Require(error != null, "Unknown, reordered, duplicate or additionally active Covenant moon composition bypassed its guard.");
         }
         Require(JsonSerializer.Serialize(context, ModelJson.Options) == parent, "Covenant guard checks mutated the native parent.");
-        Console.WriteLine($"MOON-COVENANT PASS rank={level} nativeStartup=true originalDeck=20 guardMutations={mutations.Count} earnedUnlockClaimed=false");
+        Console.WriteLine($"MOON-COVENANT PASS rank={level} nativeStartup=true originalDeck={startup.GetProperty("StartingDeck").GetArrayLength()} guardMutations={mutations.Count} earnedUnlockClaimed=false");
     }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

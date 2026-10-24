@@ -251,6 +251,23 @@ namespace MonsterTrain2Poju.Model
                     changed => rooms[index][rooms[index].FindIndex(actor => actor.Id == unit.Id)] = changed,
                     ImportRoom);
                 if (error != null) return error;
+                // CharacterState.Setup updates moon understanding before
+                // PlayerManager.OnCharacterSpawned dispatches relic effects.
+                // Preserve status registration order (e.g. relentless, moon,
+                // Covenant boss buff), as well as the off-train callback order.
+                if (context?.QueryFrame?.MoonPhase is int moon &&
+                    MoonPhaseStatusModel.IsTracking(context, rooms.SelectMany(room => room)))
+                {
+                    int liveIndex = rooms[index].FindIndex(actor => actor.Id == unit.Id);
+                    if (liveIndex >= 0)
+                    {
+                        CombatUnit initialized = MoonPhaseStatusModel.WithPhase(rooms[index][liveIndex], moon).WithMoonPhaseMask(moon);
+                        rooms[index][liveIndex] = initialized;
+                        string gained = moon == 2 ? "OnMoonLit" : "OnMoonShade";
+                        if (moon is 1 or 2 && initialized.Triggers.Any(trigger => trigger.Kind == gained))
+                            callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(index, initialized, gained));
+                    }
+                }
                 RoomCombatResult relics = RelicSpawnStatusModel.CharacterAdded(new RoomCombatState(index, original.Deployment,
                     rooms[index], original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds), unit.Id, 0, true);
                 if (!relics.Supported) return relics.UnsupportedReason;
@@ -261,24 +278,6 @@ namespace MonsterTrain2Poju.Model
                 if (error != null || attached == null) return error ?? "Room attachment enemy-birth synchronization failed.";
                 attached = EnchantmentWorldModel.Sync(attached);
                 context = attached.Context; rooms[index] = attached.Units.ToList();
-                if (context?.QueryFrame?.MoonPhase is int moon &&
-                    MoonPhaseStatusModel.IsTracking(context, rooms.SelectMany(room => room)))
-                {
-                    int liveIndex = rooms[index].FindIndex(actor => actor.Id == unit.Id);
-                    // Native heroes initialize off-train, before their physical
-                    // placement. Room overrides enter understanding only during
-                    // the later global/resource refresh, not this spawn boundary.
-                    if (liveIndex >= 0)
-                    {
-                        CombatUnit initialized = MoonPhaseStatusModel.WithPhase(rooms[index][liveIndex], moon).WithMoonPhaseMask(moon);
-                        rooms[index][liveIndex] = initialized;
-                        // Setup queues understanding callbacks off-train. They
-                        // join the shared queue before any group OnSpawn runs.
-                        string gained = moon == 2 ? "OnMoonLit" : "OnMoonShade";
-                        if (moon is 1 or 2 && initialized.Triggers.Any(trigger => trigger.Kind == gained))
-                            callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(index, initialized, gained));
-                    }
-                }
                 return null;
             }
 

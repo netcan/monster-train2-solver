@@ -36,9 +36,13 @@ namespace MonsterTrain2Poju.Model
                 // Refreshing traits does not dispatch phase-change callbacks.
                 // Existing healing-power offsets stay fixed; phase healing is
                 // dispatched separately by the ordered global moon pipeline.
-                if (context.QueryFrame?.MoonPhase is not (1 or 2) || context.QueryFrame.SelectedRoomIndex == null ||
-                    !CalibratedCovenants(context.Relics) || context.Relics?.Any(relic => !CompatibleRelic(relic)) == true)
-                { error = "Moon spell upgrades require captured phase/selection; active relic combinations need separate witnesses."; return source; }
+                if (context.QueryFrame?.MoonPhase is not (1 or 2) || context.QueryFrame.SelectedRoomIndex == null)
+                { error = "Moon spell upgrades require captured phase and selected room."; return source; }
+                if (!CalibratedCovenants(context.Relics))
+                { error = "Uncalibrated cumulative Covenant signature during moon hand refresh."; return source; }
+                CombatRelicState? incompatible = context.Relics?.FirstOrDefault(relic => !CompatibleRelic(relic));
+                if (incompatible != null)
+                { error = "Uncalibrated moon hand-refresh relic: " + incompatible.AssetKey + "."; return source; }
                 if (RelicModel.Validate(context.Relics) is string relicError)
                 { error = relicError; return source; }
                 foreach (RoomMoonPhaseRule rule in context.RoomCapacities?.SelectMany(room => room.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
@@ -57,15 +61,14 @@ namespace MonsterTrain2Poju.Model
             }
             return context;
         }
-        // Native cumulative ranks 1-3 have no moon/hand callbacks. Startup,
-        // wave selection and merchant prices have already affected captured
-        // state. Later ranks and additional active relic compositions need
-        // independent witnesses; preserve the native cumulative owner order.
+        // Preserve the native cumulative prefix and complete effect signatures.
+        // Later ranks supply captured startup/wave data and separately modeled
+        // enemy birth modifiers, rather than moon hand-refresh callbacks.
         internal static bool CalibratedCovenants(IReadOnlyList<CombatRelicState>? relics)
         {
             CombatRelicState[] owners = relics?.Where(relic => relic.IsCovenant == true).ToArray() ?? Array.Empty<CombatRelicState>();
             if (owners.Length == 0) return true;
-            return owners.Length <= 3 && owners.Select(owner => owner.DataId).SequenceEqual(new[] {
+            return owners.Length <= 10 && owners.Take(3).Select(owner => owner.DataId).SequenceEqual(new[] {
                 "d3b53481-f26b-4344-ae8e-ec80b28d6004", "92c18b99-e4c0-4953-ba2c-4815f570a66e",
                 "dcb31cd7-4293-4b07-b396-5456a0ce0b6e" }.Take(owners.Length)) &&
                 owners[0].AssetKey == "Covenant01_StrongerEnemiesMoreCards" && owners[0].EffectTypes.SequenceEqual(
@@ -75,9 +78,14 @@ namespace MonsterTrain2Poju.Model
                         .Concat(Enumerable.Repeat("RelicEffectModifyCharacterMaxHealth", 3))) &&
                 (owners.Length < 2 || owners[1].AssetKey == "Covenant02_BattlesNewEnemies" && owners[1].EffectTypes.Count == 0) &&
                 (owners.Length < 3 || TrueFinalBossCovenantModel.MerchantOnlyOwner(owners[2])) &&
-                relics!.Where(relic => relic.IsCovenant != true).All(relic => relic.EffectTypes.Count == 0);
+                owners.Skip(3).Select(owner => owner.AssetKey).SequenceEqual(new[] {
+                    "Covenant04_StrongerBosses", "Covenant05_VengefulShards", "Covenant06_RandomDudUpgradeOnDraft",
+                    "Covenant07_NoRespite", "Covenant08_StrongerEnemies", "Covenant09_PyreDamage",
+                    "Covenant10_ChosenEnemiesDuringFlyingBosses" }.Take(Math.Max(0, owners.Length - 3))) &&
+                owners.Skip(3).All(TrueFinalBossCovenantModel.OrdinaryWaveExtensionOwner);
         }
         private static bool CompatibleRelic(CombatRelicState relic) => relic.IsCovenant == true ||
+            IndependentRelic(relic) ||
             relic.EffectTypes.All(type => type is RelicModel.ModifyCardTypeCost or RelicModel.ModifyCardAttack) &&
                 (relic.CardAttackModifiers == null || relic.CardAttackModifiers.All(rule =>
                     rule.CardType == "Monster" && rule.CharacterName == "" &&
@@ -91,6 +99,24 @@ namespace MonsterTrain2Poju.Model
             RelicMoonPhaseHandUpgradeModel.CompatibleMoonSpells(relic) ||
             relic.DataId == RelicMoonPhaseStatusModel.DataId && relic.EffectTypes.SequenceEqual(new[] { RelicMoonPhaseStatusModel.Effect }) &&
                 RelicMoonPhaseStatusModel.Validate(relic) == null;
+
+        private static bool IndependentRelic(CombatRelicState relic)
+        {
+            if (relic.IsCovenant != false) return false;
+            // Native balance/draft interfaces have no moon or card-update hook.
+            if (relic.EffectTypes.All(type => type is RelicResourceModel.Draw or "RelicEffectOverrideCardDraftRarity")) return true;
+            // End-of-turn cost changes have their own ordered handler and do
+            // not dispatch during a phase refresh. Validate the original payload.
+            if (relic.CardModifiers?.Count != 1) return false;
+            RelicCardModifier modifier = relic.CardModifiers[0];
+            if (relic.DataId == RelicFreezeHandUpgradeModel.DataId)
+                return RelicFreezeHandUpgradeModel.Validate(relic, modifier) == null;
+            // Acquisition modifiers such as Savagery only target Monster cards.
+            // Spell moon upgrades cannot reapply it or change its filter result.
+            return relic.EffectTypes.SequenceEqual(new[] { RelicModel.AddTempUpgrade }) &&
+                modifier.Rule?.Filters.Any(filter => filter.CardType == "Monster" && filter.AdditionalCardTypes.Count == 0) == true &&
+                RelicCardModifierModel.Validate(relic) == null;
+        }
 
         // Each original Heavenfall upgrade creates one separate OnCast trigger.
         // Native resolves the selected room again between these triggers.

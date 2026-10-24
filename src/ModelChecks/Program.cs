@@ -1,6 +1,20 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--live-moon-continuation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    LiveMoonContinuationChecks.Run(fixture.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--live-moon-composition-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    LiveMoonContinuationChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 4 && args[0] == "--player-fleshweaver-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5291,6 +5305,16 @@ foreach (string path in args.Where(path => path.EndsWith("player-live-conduit-fl
 {
     using var fixture = ModelJson.ReadFixture(path);
     FloorBrowseAdviceChecks.LiveScroll(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("player-live-moon-continuation.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    LiveMoonContinuationChecks.Run(fixture.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-original-moon-card-upgrades-live-relics-covenant10.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    LiveMoonContinuationChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

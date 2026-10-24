@@ -63,6 +63,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-player-performance-finish-search.mt2f', 'full-battle-player-performance-finish-replay.mt2f',
     'full-battle-player-cross-turn-scroll-search.mt2f', 'full-battle-player-cross-turn-scroll-replay.mt2f',
     'player-live-conduit-floor-scroll.mt2f',
+    'player-live-moon-continuation.mt2f',
+    'full-battle-original-moon-card-upgrades-live-relics-covenant10.mt2f',
     'full-battle-player-ordinary-continuation-search.mt2f', 'full-battle-player-ordinary-continuation-replay.mt2f',
     'player-room-attachment-birth-observed.mt2f',
     'player-endless-spell-routing-calibration.mt2f', 'player-endless-spell-routing-replay-calibration.mt2f',
@@ -2408,6 +2410,14 @@ foreach ($fixturePath in $soldierFixtures) {
     }
 }
 $originalMoonCardUpgradeFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-moon-card-upgrades.mt2f' })
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-live-moon-continuation.mt2f' })) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --live-moon-continuation-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Live moon continuation checks failed: $fixturePath" }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-moon-card-upgrades-live-relics-covenant10.mt2f' })) {
+    dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --live-moon-composition-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Native live moon composition checks failed: $fixturePath" }
+}
 foreach ($fixturePath in $originalMoonCardUpgradeFixtures) {
     foreach ($mode in @('--original-moon-card-upgrades-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath

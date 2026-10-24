@@ -60,8 +60,28 @@ internal static class FloorBrowseAdviceChecks
             BattleSearchStep[] steps = native.GetProperty("Steps").EnumerateArray().Select(step => new BattleSearchStep(
                 step.GetProperty("Action").ValueKind == FixtureKind.Null ? null : step.GetProperty("Action").Deserialize<PlayCardAction>(),
                 step.GetProperty("IsEndTurn").GetBoolean())).ToArray();
-            plan = new BattlePlanResult(native.GetProperty("State").Deserialize<BattleTurnState>()!,
-                native.GetProperty("Outcome").Deserialize<RoomOutcome>(), steps, native.GetProperty("Score").GetDouble(),
+            // The archived advice is an older model prediction, not a future
+            // native capture. Replay its exact inputs with the current model;
+            // the real native wheel transitions above remain authoritative.
+            BattleTurnState forecast = before;
+            RoomOutcome outcome = RoomOutcome.Exchanged;
+            foreach (BattleSearchStep step in steps)
+            {
+                if (step.IsEndTurn)
+                {
+                    BattleTurnResult next = BattleTurnModel.EndTurn(forecast);
+                    Require(next.Supported, next.UnsupportedReason!);
+                    forecast = next.State!; outcome = next.Outcome;
+                }
+                else
+                {
+                    BattleActionResult next = BattleActionModel.PlayCard(forecast, step.Action!);
+                    Require(next.Supported, next.Reason!);
+                    forecast = next.State!; outcome = next.Outcome;
+                }
+            }
+            Require(outcome == native.GetProperty("Outcome").Deserialize<RoomOutcome>(), "Archived floor-scroll inputs changed their forecast outcome.");
+            plan = new BattlePlanResult(forecast, outcome, steps, BattlePlanner.Evaluate(forecast, outcome),
                 native.GetProperty("TurnsCompleted").GetInt32(), 1, 0, 0, TimeSpan.FromSeconds(3),
                 native.GetProperty("TimedOut").GetBoolean(), false, native.GetProperty("ReachedNodeLimit").GetBoolean(),
                 native.GetProperty("ReachedActionLimit").GetBoolean(), native.GetProperty("CompletedHorizon").GetBoolean(),

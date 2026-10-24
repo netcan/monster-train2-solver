@@ -1,4 +1,9 @@
-# Moon spells with cumulative native Covenant 1-3
+# Moon spells with cumulative native Covenant
+
+Update 2026-10-24: Covenant 1-10 prefixes and the original live four-relic
+composition now pass focused native acceptance; see
+[live moon continuation](../../docs/moon-continuation.md). The following
+records describe the earlier, narrower 1-3 witnesses.
 
 The previous moon-hand composition guard rejects the first resource refresh
 with original cumulative Covenant owners. Native ranks 1, 2 and 3 now each

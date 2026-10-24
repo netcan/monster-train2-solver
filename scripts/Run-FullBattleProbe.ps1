@@ -260,6 +260,7 @@ param(
     [switch] $OriginalSpellCompositions,
     [switch] $OriginalDiscardDraw,
     [switch] $OriginalMoonCardUpgrades,
+    [switch] $OriginalMoonCardUpgradesLiveRelics,
     [switch] $OriginalMoonCardUpgradesRoomMask,
     [switch] $OriginalMoonCardUpgradesLunacy,
     [switch] $OriginalMoonCardUpgradesCostRelic,
@@ -1128,6 +1129,7 @@ if ($OriginalMoonCardUpgradesAttackRelic -and $OriginalMoonCardUpgradesCostRelic
 if ($OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesCostRelic) { $OriginalMoonCardUpgradesLunacy = $true }
 if ($OriginalMoonCardUpgradesLunacy) { $OriginalMoonCardUpgradesRoomMask = $true }
 if ($OriginalMoonCardUpgradesRoomMask) { $OriginalMoonCardUpgrades = $true }
+if ($OriginalMoonCardUpgradesLiveRelics) { $OriginalMoonCardUpgrades = $true }
 if ($OriginalMoonCardUpgrades) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomStatusDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCorruptionDamage) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1924,6 +1926,7 @@ if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-p
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
 if ($OriginalDiscardDraw) { $environment['MT2_PROBE_MODIFIERS'] = 'original-discard-draw' }
 if ($OriginalMoonCardUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-card-upgrades' }
+if ($OriginalMoonCardUpgradesLiveRelics) { $environment['MT2_PROBE_MOON_UPGRADE_LIVE_RELICS'] = '1' }
 if ($OriginalMoonCardUpgradesRoomMask) { $environment['MT2_PROBE_MOON_UPGRADE_ROOM_MASK'] = '1' }
 if ($OriginalMoonCardUpgradesLunacy) { $environment['MT2_PROBE_MOON_UPGRADE_LUNACY'] = '1' }
 if ($OriginalMoonCardUpgradesCostRelic) { $environment['MT2_PROBE_MOON_UPGRADE_COST_RELIC'] = '1' }
@@ -3354,6 +3357,7 @@ if ($OriginalMoonCardUpgrades -and (-not $trace.OriginalMoonCardUpgradesPrepared
     [bool]$trace.OriginalMoonCardUpgradesPhaseEnergyRelic -ne [bool]$OriginalMoonCardUpgradesPhaseEnergyRelic -or
     [bool]$trace.OriginalMoonCardUpgradesHandPowerRelic -ne [bool]$OriginalMoonCardUpgradesHandPowerRelic -or
     [bool]$trace.OriginalMoonCardUpgradesStatusRelic -ne [bool]$OriginalMoonCardUpgradesStatusRelic -or
+    [bool]$trace.OriginalMoonCardUpgradesLiveRelics -ne [bool]$OriginalMoonCardUpgradesLiveRelics -or
     (-not $RollingAdvice -and @($trace.Actions).Count -ne $(if ($OriginalMoonCardUpgradesCostRelic) { 22 } elseif ($OriginalMoonCardUpgradesLunacy) { 20 } elseif ($OriginalMoonCardUpgradesRoomMask) { 16 } else { 15 })) -or
     @($trace.OriginalMoonCardUpgradesHands).Count -lt 2 -or @($trace.OriginalMoonCardUpgradesHands | Where-Object { -not $_.Completed }).Count -ne 0)) {
     throw 'Original moon card upgrades require ten original casts, complete hand callbacks and a native win.'

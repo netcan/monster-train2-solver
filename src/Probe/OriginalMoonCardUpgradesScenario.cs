@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "original-moon-card-upgrades";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool LiveRelics => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_LIVE_RELICS") == "1";
         internal static bool RoomMask => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_ROOM_MASK") == "1";
         internal static bool Lunacy => RoomMask && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_LUNACY") == "1";
         internal static bool CostRelic => Lunacy && Environment.GetEnvironmentVariable("MT2_PROBE_MOON_UPGRADE_COST_RELIC") == "1";
@@ -36,6 +37,10 @@ namespace MonsterTrain2Poju.Probe
         {
             logger = log;
             SaveManager save = managers.GetSaveManager(); AllGameData all = save.GetAllGameData(); CardManager cards = managers.GetCardManager()!;
+            if (LiveRelics)
+                foreach (string id in new[] { "674526dc-1c96-407e-802e-6c16434c48db", "8f46fde9-0c75-49ba-9f58-3063864f81bf",
+                    "d2de397e-6fce-442f-a9e4-c3f3ee7bdbcf", "cc6a381e-0723-490a-af72-78cc82978094" })
+                    save.AddRelic(all.FindRelicData(id) ?? throw new InvalidOperationException("Missing original live composition relic " + id));
             Set(all.GetBalanceData(), "maxHandSize", 30);
             // Durable enemies keep all ten offensive casts observable before combat.
             foreach (CharacterData character in all.GetAllCharacterData()) Set(character, "health", 500);
