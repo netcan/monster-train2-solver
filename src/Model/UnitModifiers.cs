@@ -424,11 +424,13 @@ namespace MonsterTrain2Poju.Model
         private static CardModifiers AccumulateExisting(CardModifiers modifiers, CardUpgradeModifier upgrade)
         {
             var values = modifiers.Upgrades.ToList();
-            // This original Pyre Heart appends a fresh permanent record when
-            // the unit spawns. Scaling reuses that live record; earlier battles'
-            // same-ID records belong to the card, not this unit's applied list.
+            // These original growth effects append a fresh permanent record
+            // on each spawn. Native scaling mutates that live unit's record;
+            // earlier battles' same-ID card records are not applied upgrades.
             bool currentSpawn = upgrade.DataId == "fd0c0215-eab1-42f3-8d77-0ced9406aa06" &&
-                upgrade.AssetKey == "PyreHeartSavagery_BonusStats_UpgradeData";
+                upgrade.AssetKey == "PyreHeartSavagery_BonusStats_UpgradeData" ||
+                upgrade.DataId == "995b9c12-c816-4960-9905-cd6e1a29d362" &&
+                upgrade.AssetKey == "Plus1AttackScalable";
             int index = currentSpawn ? values.FindLastIndex(item => item.DataId == upgrade.DataId)
                 : values.FindIndex(item => item.DataId == upgrade.DataId);
             if (index < 0) return modifiers;

@@ -93,16 +93,6 @@ namespace MonsterTrain2Poju.Probe
                     __result = Observe(__result, cardEffectState, cardEffectParams);
             }
         }
-        [HarmonyPatch(typeof(CardManager), nameof(CardManager.TryAddCachedTemporaryCardToHand))]
-        private static class CachedCardPatch
-        {
-            private static void Prefix(CardState cardState)
-            {
-                // Observe each actual copied card before the next front insertion.
-                // Saved boxed templates and definition projections get no battle ID.
-                if (Enabled && FullBattleTrace.Active != null) FullBattleTrace.Active.CardId(cardState);
-            }
-        }
         private static IEnumerator Observe(IEnumerator native, CardEffectState effect, CardEffectParams parameters)
         {
             FullBattleTrace trace = FullBattleTrace.Active!; AllGameManagers managers = AllGameManagers.Instance!;

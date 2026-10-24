@@ -8,6 +8,11 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.EndsWith("player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f", StringComparison.Ordinal))
+        {
+            GrowthObserved(source.RootElement);
+            return;
+        }
         FixtureValue input = source.RootElement.GetProperty("NativeRunInput");
         int seed = input.GetProperty("Seed").GetInt32(), rank = input.GetProperty("AscensionLevel").GetInt32();
         int distance = input.GetProperty("Distance").GetInt32();
@@ -30,6 +35,25 @@ internal static class RandomCampaignChecks
                 MerchantPermafrost(before.RootElement, source.RootElement);
             }
         }
+    }
+
+    internal static void GrowthObserved(FixtureValue fixture)
+    {
+        Input(fixture, 1862997127, 0, 2, "Pyreborne", "Banished");
+        RollingAdviceChecks.ObservedSuccessors(fixture);
+        FixtureValue last = fixture.GetProperty("RollingDecisions").EnumerateArray().Last();
+        BattleTurnState before = last.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        BattleTurnState after = last.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        const string growthId = "995b9c12-c816-4960-9905-cd6e1a29d362";
+        CardInstanceState owner = before.Spawn.Train.Context!.CardInstances!.Single(card => card.InstanceId == 4);
+        CardInstanceState changed = after.Spawn.Train.Context!.FindCard(4)!;
+        Require(owner.Permanent.Upgrades.Where(upgrade => upgrade.DataId == growthId).Select(upgrade => upgrade.Stats.Damage).SequenceEqual([1, 1, 1]) &&
+            changed.Permanent.Upgrades.Where(upgrade => upgrade.DataId == growthId).Select(upgrade => upgrade.Stats.Damage).SequenceEqual([1, 1, 2]),
+            "Native champion growth must update its current spawn record and retain both preceding battles' records.");
+        Require(fixture.GetProperty("RollingDecisions").GetArrayLength() == 12 &&
+            fixture.GetProperty("NativeWon").ValueKind == FixtureKind.Null,
+            "This archive is a twelve-input observation, not a completed native victory.");
+        Console.WriteLine("RANDOM-CAMPAIGN-GROWTH PASS: twelve native successors, cached box IDs and current-spawn permanent growth; no full battle acceptance claimed.");
     }
 
     internal static void MerchantPermafrost(FixtureValue before, FixtureValue source)

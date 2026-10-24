@@ -99,8 +99,7 @@ namespace MonsterTrain2Poju.Probe
                 foreach (CharacterData data in projection.KnownCards.SelectMany(card => card.GetEffects())
                     .Select(effect => effect.GetParamCharacterData()).Concat(identities.Keys.Select(unit => unit.GetSourceCharacterData()))
                     .Where(data => data != null))
-                    if (checkedEnchantmentDefinitions.Add(data) && data.GetTriggers().Any(trigger =>
-                        trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectEnchant")))
+                    if (checkedEnchantmentDefinitions.Add(data) && EnemySpawningProbe.RequiresActorWorld(data))
                         return playerEnchantmentWorld = true;
                 return false;
             }
@@ -167,6 +166,7 @@ namespace MonsterTrain2Poju.Probe
         internal static void InstallAdvisorPatches(Harmony harmony)
         {
             harmony.CreateClassProcessor(typeof(CardIdentityPatch)).Patch();
+            harmony.CreateClassProcessor(typeof(CachedCardIdentityPatch)).Patch();
             harmony.CreateClassProcessor(typeof(MonsterIdentityPatch)).Patch();
             harmony.CreateClassProcessor(typeof(HeroIdentityPatch)).Patch();
         }
@@ -1884,6 +1884,18 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (__result != null && Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     Active.CardId(__result);
+            }
+        }
+
+        [HarmonyPatch(typeof(CardManager), nameof(CardManager.TryAddCachedTemporaryCardToHand))]
+        private static class CachedCardIdentityPatch
+        {
+            private static void Prefix(CardState cardState)
+            {
+                // Cached copies bypass AddCardImpl. Observe creation order before
+                // successive front insertions reverse their visible hand order.
+                if (Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                    Active.CardId(cardState);
             }
         }
 

@@ -38,8 +38,12 @@ namespace MonsterTrain2Poju.Probe
             return waves.SelectMany(wave => ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
                     .GetValue(wave)).Cast<SpawnGroupData>())
                 .SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()))
-                .Any(character => character.GetTriggers().Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectEnchant")));
+                .Any(RequiresActorWorld);
         }
+
+        internal static bool RequiresActorWorld(CharacterData character) => character.GetTriggers().Any(trigger =>
+            trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectEnchant" ||
+                effect.GetTargetMode() is TargetMode.Tower or TargetMode.FrontInAllRooms));
 
         private EnemySpawnState CaptureState(bool canonicalReferences, bool includeOuterBossForBump,
             bool ignoreOuterBossSpawnInteraction)

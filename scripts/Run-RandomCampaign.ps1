@@ -28,7 +28,13 @@ function Invoke-Native([string] $Script, [hashtable] $Parameters) {
         if ($line.StartsWith('{')) {
             $result = $line | ConvertFrom-Json
             Write-Host "NATIVE-RESULT script=$Script passed=$($result.NativePassed) won=$($result.NativeWon) profile=$($result.Profile)"
-        } else { Write-Output $line }
+        } else {
+            if ($Script -eq 'Run-FullBattleProbe.ps1' -and $line -match '^FULL-BATTLE-RUN .* profile=(.+)$') {
+                $receipt.SourceProfile = $Matches[1]
+                Record @{ Kind='source-started'; Ring=$receipt.FailureRing; Profile=$receipt.SourceProfile; InputProfile=$receipt.NextInputProfile }
+            }
+            Write-Output $line
+        }
     } | Out-Host
     if ($null -eq $result) { throw "Missing native result from $Script." }
     return $result
@@ -96,6 +102,7 @@ try {
             (Get-FileHash -LiteralPath $trace -Algorithm SHA256).Hash -ine $accepted.TraceSha256) { throw 'Source native acceptance failed.' }
         $loaded = Get-Content -LiteralPath (Join-Path $source.Profile 'native-checkpoint-input.json') -Raw | ConvertFrom-Json
         if ($loaded.SHA256 -ine $inputHash) { throw 'Native source loaded another campaign checkpoint.' }
+        if ((Get-FileHash -LiteralPath $inputPath -Algorithm SHA256).Hash -cne $inputHash) { throw 'Original isolated input changed.' }
         if (-not $accepted.NativeWon) {
             dotnet $checker --random-campaign-source-only $trace $Seed $Rank $distance $PrimaryClan $SecondaryClan
             if ($LASTEXITCODE -ne 0) { throw 'Complete defeat failed independent model/UI acceptance.' }
