@@ -799,3 +799,15 @@ session and resource/cost/RNG controls pass. The historical boss winning-plan
 check fails identically on baseline `74f9272c` and is recorded separately.
 See [floor-browsing evidence](../tests/fixtures/player-floor-browse.md) and run
 `scripts/Check-FloorBrowseAdvice.ps1`; no full regression is required.
+
+## Natural covenant-three Ring4 defaults · 2026-10-24
+
+Both actual-default player advice and the independent native frozen replay win
+with35 inputs and Pyre72. Full forecasts/state/RNG,68 room stages and15 train
+phases match, with normal exits, unchanged protected originals and four zero
+failure counters. This closes the natural player aura-capture and original
+Harvester birth-movement guards; cross-floor movement has its separate27-input
+native component. Frozen replay pauses after one initial search, starts zero
+further searches and publishes no advice. See [Ring4 evidence](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring4-with-actual-defaults)
+and [birth calibration](../tests/fixtures/harvester-birth.md). No full regression
+or Mac package is built.

@@ -164,3 +164,37 @@ with `search.mt2f` and `replay.mt2f`; registered hashes and the pair gate run vi
 `Check-PlayerAdvisor.ps1 -Case NativeCovenantCampaign03Ring3Default -SkipBuild`.
 Reproduction uses `Run-NativeCovenantPlayerPairs.ps1 -Rank 3 -Battle Campaign
 -BattleDistance 2 -InputProfile <restored-Ring3-profile> -DefaultAdvice -SkipBuild`.
+
+## Natural rank-three Ring4 with actual defaults
+
+Original rewards/map continuation from the accepted Ring3 replay reaches
+`Level4BattleHunterAttackers` at seed424242/distance3, three preceding wins,
+all three cumulative native owners and Pyre72. The input checkpoint restores
+all12 payloads. Its aura/birth rejection and separate27-input native component
+are documented in [Harvester birth](harvester-birth.md).
+
+Source `full-battle-units-spells-and-junk-20261024-092829-f142671b` and replay
+`full-battle-units-spells-and-junk-20261024-093534-c7fa900f` both win at Pyre72:
+35 inputs,27 card/ability plays and eight EndTurns. Native durations are
+422.38/167.91 seconds. Both exit normally, preserve protected originals and
+record all four failure counters zero. Complete independent inputs, roots,
+forecasts, successors, RNG,68 room stages and15 train phases per process match.
+This is the fourth natural rank-three victory, not completed campaign acceptance.
+
+Actual defaults remain three turns/3000ms/top-floor preference, tactical seed
+off, with no shortened forecasts. The source consumes six searches and reuses
+21 ordinary/eight winning continuations; all37 publications have fresh complete
+root checks. Captures are306/71 with zero purity failures. The frozen replay
+starts one initial search before pausing, then starts zero further searches,
+publishes zero advice and has no final background advice. Every replay input
+consumes zero planning nodes. The deadline remains soft, not an end-to-end
+response-time guarantee. The full player victories have no surviving enemy on
+an upper floor at the birth boundary; actual cross-floor movement is established
+by the separate seven-target native component, not inferred from these wins.
+
+Archives use `full-battle-player-native-covenant-campaign-03-ring4-default-`
+with `search.mt2f` and `replay.mt2f`, plus the accepted pair receipt.
+`Check-PlayerAdvisor.ps1 -Case NativeCovenantCampaign03Ring4Default -SkipBuild`
+checks registered hashes and the independent default pair gate. Reproduction
+uses `Run-NativeCovenantPlayerPairs.ps1 -Rank 3 -Battle Campaign -BattleDistance 3
+-InputProfile <restored-Ring4-profile> -DefaultAdvice -SkipBuild`.

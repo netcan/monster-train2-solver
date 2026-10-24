@@ -2257,6 +2257,16 @@ if ($PlayerAdvisor -and -not $PlannerInput -and -not $RollingInput) {
     }
     Write-Output "PLAYER-ADVISOR-PASS version=$($trace.PlayerAdvisor.Version) publications=$($playerEvidence.Published)"
 }
+if ($PlayerAdvisor -and $RollingInput) {
+    $frozen = $trace.PlayerAdvisor.FrozenObservation
+    $overlay = $trace.PlayerAdvisor.Overlay
+    if ($null -eq $frozen -or -not $frozen.Paused -or -not $frozen.FinalAdviceAbsent -or
+        $frozen.SearchesAfterPause -ne 0 -or $overlay.Searches -ne $frozen.SearchesAtPause -or
+        $overlay.Published -ne 0 -or $overlay.PurityFailures -ne 0 -or $overlay.Failures -ne 0) {
+        throw 'Frozen player replay started background advice after pausing or failed projection purity.'
+    }
+    Write-Output "PLAYER-FROZEN-REPLAY PASS: searchesAfterPause=0 publications=0 captures=$($overlay.Captures)."
+}
 if ($TitanSkinCombat -and ($trace.ModifierScenario -ne 'titan-skin-combat' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'TITAN-SKIN-COMBAT-PREPARED .*starting titanskin stacks=2' -Quiet))) {
     throw 'Titan Skin native combat setup did not run.'

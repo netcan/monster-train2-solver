@@ -1,0 +1,16 @@
+{
+  "Schema": 1,
+  "Battle": "Campaign",
+  "Rank": 3,
+  "Variant": "",
+  "DefaultAdvice": true,
+  "SourceProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-092829-f142671b",
+  "ReplayProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-093534-c7fa900f",
+  "SourceSha256": "c16552a6268706849293387f1fd4c63ac270297609b6ba4454b9ff7124449f64",
+  "ReplaySha256": "11e4341b851c8afac406739d12d0457d05f83e3cd58b5f80883eab5fbdf35e3c",
+  "IndependentFocusedCheck": "--player-native-covenant-campaign-default-pair-only",
+  "Passed": true,
+  "InputProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\campaign-ring4-20261024-085840-bc8cd9cf",
+  "InputSaveSHA256": "6658E98DC5558FD12F8694F5C405D0EE297A211039A6C8D8E011E89321306301",
+  "BattleDistance": 3
+}

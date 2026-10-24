@@ -4532,7 +4532,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-har
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
-foreach (int ring in new[] { 2, 3 })
+foreach (int ring in new[] { 2, 3, 4 })
 foreach (string path in args.Where(path => Path.GetFileName(path) == $"full-battle-player-native-covenant-campaign-03-ring{ring}-default-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
