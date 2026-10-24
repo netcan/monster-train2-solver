@@ -105,3 +105,25 @@ changes without starting the game again:
 ```
 
 The verified receipt is `player-pair-accepted.json` in the source profile.
+
+## Windows delivery
+
+The exact accepted0.2.25 payload was installed offline at2026-10-25 02:18:17
+from committed source `2c0792e3c456b94923d5c1cc9604519e72d4788c` in
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+Build, accepted native source, ZIP and installed hashes match:
+
+| DLL | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | `768d7c0c9cd58db6f9f9d56e09698af3c3881a56d64bf167e72dd648f9806d58` |
+| Model.dll | `291536be9335f14d17d780d20f954f407aa5493ed17fcbe8009825d63645846e` |
+| FixtureArchive.dll | `25561f56fb3733e8e592079366de56c4317dc228d878df29f7eaf620ec214955` |
+
+The previous0.2.24 DLLs, accepted DLLs, protected-file signatures and install
+receipt are retained in `BepInEx/PojuBackups/MoonThreshold-20261025-021815`.
+All28 other loader/plugin/config files are unchanged, preserving F10 and the
+user's10000ms budget. The real game was closed; the next launch loads0.2.25.
+Package: `results/mod-dist/PojuAdvisor-0.2.25-Windows-20261025-021815.zip`,
+SHA256 `a04a855fe8f2098f26037ee5b9c8b6a1737e27312cc5e140c98ea45d023275dc`.
+The package contains three DLLs, build/pair provenance and the relevant
+acceptance notes. No Mac package was built.

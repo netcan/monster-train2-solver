@@ -14,6 +14,13 @@ and combat calibrations, Angel Duo Incant/Slay and sweep-preview stage replay
 pass. See [retained actor evidence](../tests/fixtures/notes/combat/retained-preview-mode.md).
 No full curated native regression or Mac package was built.
 
+The exact accepted Windows0.2.25 DLLs are installed offline at
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+All28 other loader/plugin/config files stay unchanged; F10 and10000ms are
+preserved. Previous0.2.24 payload and installation receipt are recoverable at
+`BepInEx/PojuBackups/MoonThreshold-20261025-021815`. The next launch loads0.2.25.
+Exact hashes and ZIP are recorded in the composition acceptance above.
+
 ## Earlier Windows0.2.12 acceptance
 
 Windows0.2.12 fixes panel clearing and scroll resets while verified steps advance,
