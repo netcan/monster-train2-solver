@@ -8,6 +8,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-live-arkion-pyre-unavailable.mt2f',
+    'full-battle-player-live-arkion-pyre.mt2f',
+    'outer-boss-birth-live-arkion-pyre.mt2f',
+    'player-live-arkion-pyre-observed-prefix.mt2f',
     'full-battle-player-early-stop-search.mt2f',
     'room-moon-spell-covenant-01-calibration.mt2f',
     'room-moon-spell-covenant-02-calibration.mt2f',
@@ -3791,6 +3795,20 @@ foreach ($fixturePath in $originalGrosMichelFixtures) {
     }
 }
 $plannerFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -like 'full-battle-planner-*.mt2f' -or (Split-Path -Leaf $_) -like 'full-battle-advisor-*.mt2f' })
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-live-arkion-pyre-observed-prefix.mt2f' })) {
+    dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- --live-arkion-pyre-observed-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Observed Arkion Pyre native inputs failed: $fixturePath" }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-live-arkion-pyre-unavailable.mt2f' })) {
+    $nativePath = Join-Path (Split-Path $fixturePath -Parent) 'full-battle-player-live-arkion-pyre.mt2f'
+    dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- --live-arkion-pyre-only $fixturePath $nativePath
+    if ($LASTEXITCODE -ne 0) { throw "Live Arkion Pyre advice checks failed: $fixturePath" }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-player-live-arkion-pyre.mt2f' })) {
+    $birthPath = Join-Path (Split-Path $fixturePath -Parent) 'outer-boss-birth-live-arkion-pyre.mt2f'
+    dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- --live-arkion-pyre-native-only $fixturePath $birthPath
+    if ($LASTEXITCODE -ne 0) { throw "Native Arkion Pyre advice checks failed: $fixturePath" }
+}
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-player-early-stop-search.mt2f' })) {
     dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- --early-stop-native-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Native early stopping checks failed: $fixturePath" }

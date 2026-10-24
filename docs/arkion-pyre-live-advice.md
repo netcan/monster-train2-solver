@@ -28,9 +28,11 @@ edits. Diagnostics never played a card, ended a turn or restarted the real game.
 
 Focused model checks restore only the omitted boss/trial definitions from the
 independent process into the original live capture. No native successor,
-hand, board or RNG is injected. The 10-second two-worker search reaches a
-45-step, nine-turn modeled victory and passes independent full-state/RNG
-replay. Missing definitions, changed birth origins, changed trial attack,
+hand, board or RNG is injected. After the lethal-target correction, the
+10-second two-worker check supplies 40 verified steps across eight turns,
+correctly labelled as a partial forecast, with independent full-state/RNG
+replay. It is not evidence of a proven victory or optimum. Missing definitions,
+changed birth origins, changed trial attack,
 changed merchant effects, duplicate owners and unknown bosses are rejected.
 The existing rank-two native birth checker also passes.
 
@@ -63,6 +65,45 @@ The isolated presentation observer also now compares a cleared forecast
 against the displayed publication's search counter. A new search after an
 exhausted partial forecast can start asynchronously between UI ticks, so
 comparing only the current frame's search counter produced a false alarm.
+
+## Final native acceptance
+
+The unchanged original checkpoint run
+`full-battle-units-spells-and-junk-20261024-225650-11a47d14` passes with the
+production 0.2.21 DLLs built from `b3fa480d`: 36 plays (including three unit
+ability activations), nine EndTurns, 70 room stages and a native victory with
+22 Pyre health. All 45 actual inputs follow published rolling advice.
+Capture failures, mismatches, unsupported and pending counters are zero;
+terminal effects settle, original player files remain unchanged and the
+isolated game exits normally in 450.50 seconds.
+
+The actual player panel passes 47 publications, 42 reused publications,
+25 preserved scrolled publications, six collapsed turn resets, 237 retained
+input callbacks, 4599 pending frames, two explicit resets and four live budget
+changes. Idle and plan expansion checks add no captures or searches.
+
+Curated fixtures retain the original unavailable live capture, this complete
+native run, its exact boss instantiation/birth boundary and the separate
+23-input diagnostic prefix. The last archive verifies observed successors
+only. Focused original rearrangement and spell-composition immutable replay
+checks pass; no full fixture regression was run for this change.
+The final curated live-root check with the accepted native definitions also
+finds a complete 45-step, nine-turn modeled victory in 10082.2ms and passes
+independent full-state/RNG replay. Search scheduling can still return the
+correctly labelled verified partial forecast described above.
+
+## Windows delivery
+
+Installed at 2026-10-24 23:05:38 to
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+All three DLL hashes match the accepted production build from `b3fa480d`;
+28 other loader/plugin/configuration files remain unchanged. Previous and
+accepted payloads plus the installation receipt are under
+`BepInEx/PojuBackups/AdviceTurnFix-20261024-230537`.
+The package is
+`results/mod-dist/PojuAdvisor-0.2.21-Windows-20261024-230537.zip`.
+The real player PID74796 remains running with 0.2.19 loaded and requires a
+user restart to load 0.2.21. No real player inputs/restart or Mac build occurred.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-arkion-pyre-only `

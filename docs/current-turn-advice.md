@@ -57,3 +57,11 @@ after four plays/seven EndTurns with 53 room stages, all four failure counters
 zero, original player files unchanged and normal exit in 89.12 seconds.
 The command above adds `-AdvisorPresentation`. The accepted initial scroll
 build still identifies as 0.2.20; combined Windows delivery follows in 0.2.21.
+
+The combined 0.2.21 production build also passes the player's original
+Arkion Pyre Covenant10/trial checkpoint: 36 plays and nine EndTurns to native
+victory, six collapsed turn resets, 42 reused publications and zero failure
+counters. Installed at 2026-10-24 23:05:38 with all three DLL hashes verified
+and 28 other plugin/loader/config files unchanged. PID74796 still has 0.2.19
+loaded and needs a user restart. Full evidence and Windows backup/package
+locations are in [arkion-pyre-live-advice.md](arkion-pyre-live-advice.md).

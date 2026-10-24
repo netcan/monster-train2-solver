@@ -5376,6 +5376,23 @@ foreach (string path in args.Where(path => path.EndsWith("player-live-moon-conti
     using var fixture = ModelJson.ReadFixture(path);
     LiveMoonContinuationChecks.Run(fixture.RootElement);
 }
+foreach (string path in args.Where(path => path.EndsWith("player-live-arkion-pyre-unavailable.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var live = ModelJson.ReadFixture(path);
+    using var native = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-live-arkion-pyre.mt2f"));
+    LiveArkionPyreChecks.Run(live.RootElement, native.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("full-battle-player-live-arkion-pyre.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var native = ModelJson.ReadFixture(path);
+    using var birth = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "outer-boss-birth-live-arkion-pyre.mt2f"));
+    LiveArkionPyreChecks.Native(native.RootElement, birth.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("player-live-arkion-pyre-observed-prefix.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    RollingAdviceChecks.ObservedSuccessors(fixture.RootElement);
+}
 foreach (string path in args.Where(path => path.EndsWith("player-live-empty-deployment-advice.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);
