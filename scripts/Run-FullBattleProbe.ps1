@@ -717,7 +717,13 @@ if ($RoomMoonCallbacks) {
     $allowed += 'RoomMoonSpellPhaseEnergyRelic'
     $allowed += 'RoomMoonSpellHandPowerRelic'
     $allowed += 'RoomMoonSpellStatusRelic'
+    $allowed += 'StartingCovenantLevel'
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'RoomMoonCallbacks is an isolated component calibration.' }
+    if ($StartingCovenantLevel -gt 0 -and (-not $RoomMoonSpellAdvance -or $StartingCovenantLevel -gt 3 -or
+        $RoomMoonSpellCostRelic -or $RoomMoonSpellAttackRelic -or $RoomMoonSpellHealingRelic -or
+        $RoomMoonSpellPhaseHealRelic -or $RoomMoonSpellPhaseEnergyRelic -or $RoomMoonSpellHandPowerRelic -or $RoomMoonSpellStatusRelic)) {
+        throw 'Moon Covenant controls require separate original spell/Lunacy components at native ranks 1 through 3.'
+    }
     if ($RoomMoonSpellUpgrades -and ($RoomMoonCallbacksShade -or $RoomMoonMovement -or $RoomMoonEnemyMovement)) { throw 'Spell upgrade controls are a separate isolated component.' }
     $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -2215,6 +2221,7 @@ if ($RoomMoonCallbacks) {
     if ($RoomMoonSpellPhaseEnergyRelic) { $componentPath = Join-Path $profile 'room-moon-spell-phase-energy-relic-calibration.mt2f' }
     if ($RoomMoonSpellHandPowerRelic) { $componentPath = Join-Path $profile 'room-moon-spell-hand-power-relic-calibration.mt2f' }
     if ($RoomMoonSpellStatusRelic) { $componentPath = Join-Path $profile 'room-moon-spell-status-relic-calibration.mt2f' }
+    if ($StartingCovenantLevel -gt 0) { $componentPath = Join-Path $profile ('room-moon-spell-covenant-{0:00}-calibration.mt2f' -f $StartingCovenantLevel) }
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'ROOM-MOON-CALLBACK-NATIVE PASS' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Room moon native calibration failed; inspect $unityLog" }
@@ -2234,6 +2241,7 @@ if ($RoomMoonCallbacks) {
             [bool]$captured.PhaseEnergyRelicControls -ne [bool]$RoomMoonSpellPhaseEnergyRelic -or
             [bool]$captured.HandPowerRelicControls -ne [bool]$RoomMoonSpellHandPowerRelic -or
             [bool]$captured.StatusRelicControls -ne [bool]$RoomMoonSpellStatusRelic -or
+            [int]$captured.StartingCovenantLevel -ne $StartingCovenantLevel -or
             [bool]$captured.ShadeCallbacks -ne [bool]$RoomMoonCallbacksShade -or
             [bool]$captured.EnemyControls -ne [bool]$RoomMoonEnemyMovement) {
             throw 'Incomplete room moon callback calibration.'

@@ -12,6 +12,13 @@ internal static class RoomMoonSpellUpgradeChecks
             root.GetProperty("Boundary").GetString() == "AfterOriginalCoroutineAndTriggerQueue", "Missing native room spell upgrade controls.");
         int[] ids = root.GetProperty("CardIds").Deserialize<int[]>()!;
         bool advance = root.TryGetProperty("SpellAdvanceControls", out FixtureValue flag) && flag.GetBoolean();
+        int covenantLevel = root.TryGetProperty("StartingCovenantLevel", out FixtureValue covenant) ? covenant.GetInt32() : 0;
+        if (covenantLevel > 0)
+        {
+            Require(advance, "Covenant spell controls require original Lunacy.");
+            MoonCovenantCompositionChecks.Startup(root,
+                root.GetProperty("Rows")[0].GetProperty("Before").GetProperty("Train").Deserialize<TrainCombatState>()!.Context!, covenantLevel, guards: true);
+        }
         bool costRelic = root.TryGetProperty("CostRelicControls", out FixtureValue costFlag) && costFlag.GetBoolean();
         int[] costIds = costRelic ? root.GetProperty("CostControlIds").Deserialize<int[]>()! : [];
         Require(!costRelic || advance && costIds.Length == 2, "Missing cost-relic spell composition controls.");

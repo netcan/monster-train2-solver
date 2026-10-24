@@ -27,8 +27,11 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Select(unit => WithPhase(unit, phase)
                     .WithMoonPhaseMask(RoomMoonPhaseModel.Effective(source.Context, room.RoomIndex, phase))).ToArray(), room.ExternalInteractions,
                 room.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
-            return CardSpellModel.WithContext(new TrainCombatState(rooms, source.Movement,
-                source.EnemySlotsPerRoom, source.Context), source.Context!);
+            // Native enchantment targeting reads the same live characters.
+            // Rebase its retained world after changing understanding masks,
+            // even when this phase has no character callbacks to drain.
+            return EnchantmentWorldModel.Rebase(CardSpellModel.WithContext(new TrainCombatState(rooms, source.Movement,
+                source.EnemySlotsPerRoom, source.Context), source.Context!));
         }
     }
 }

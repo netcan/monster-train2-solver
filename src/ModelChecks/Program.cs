@@ -2821,7 +2821,15 @@ if (args.Length == 3 && args[0] == "--player-mixed-conduit-pair-only")
     MixedConduitChecks.PlayerPair(source.RootElement, replay.RootElement);
     return;
 }
-if (args.Length == 3 && args[0] is "--player-moon-room-spells-pair-only" or "--player-moon-room-healing-relic-pair-only" or "--player-moon-room-phase-heal-relic-pair-only" or "--player-moon-room-phase-energy-relic-pair-only" or "--player-moon-room-hand-power-relic-pair-only" or "--player-moon-room-status-relic-pair-only")
+if (args.Length == 3 && args[0] == "--moon-covenant-startup-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    MoonCovenantCompositionChecks.Startup(fixture.RootElement,
+        fixture.RootElement.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!.Spawn.Train.Context!,
+        int.Parse(args[2]), guards: true);
+    return;
+}
+if (args.Length == 3 && args[0] is "--player-moon-room-spells-pair-only" or "--player-moon-room-healing-relic-pair-only" or "--player-moon-room-phase-heal-relic-pair-only" or "--player-moon-room-phase-energy-relic-pair-only" or "--player-moon-room-hand-power-relic-pair-only" or "--player-moon-room-status-relic-pair-only" or "--player-moon-room-covenant03-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
@@ -2830,7 +2838,8 @@ if (args.Length == 3 && args[0] is "--player-moon-room-spells-pair-only" or "--p
         requirePhaseHealRelic: args[0] == "--player-moon-room-phase-heal-relic-pair-only",
         requirePhaseEnergyRelic: args[0] == "--player-moon-room-phase-energy-relic-pair-only",
         requireHandPowerRelic: args[0] == "--player-moon-room-hand-power-relic-pair-only",
-        requireStatusRelic: args[0] == "--player-moon-room-status-relic-pair-only");
+        requireStatusRelic: args[0] == "--player-moon-room-status-relic-pair-only",
+        requireCovenant03: args[0] == "--player-moon-room-covenant03-pair-only");
     return;
 }
 if (args.Length == 2 && args[0] == "--player-moon-room-turn-only")
@@ -5093,6 +5102,7 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-ch
     MixedConduitChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("room-moon-spell-upgrade-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    Path.GetFileName(path).StartsWith("room-moon-spell-covenant-", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("room-moon-spell-status-relic-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("room-moon-spell-hand-power-relic-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("room-moon-spell-phase-heal-relic-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||

@@ -37,7 +37,7 @@ namespace MonsterTrain2Poju.Model
                 // Existing healing-power offsets stay fixed; phase healing is
                 // dispatched separately by the ordered global moon pipeline.
                 if (context.QueryFrame?.MoonPhase is not (1 or 2) || context.QueryFrame.SelectedRoomIndex == null ||
-                    context.Relics?.Any(relic => !CompatibleRelic(relic)) == true)
+                    !CalibratedCovenants(context.Relics) || context.Relics?.Any(relic => !CompatibleRelic(relic)) == true)
                 { error = "Moon spell upgrades require captured phase/selection; active relic combinations need separate witnesses."; return source; }
                 if (RelicModel.Validate(context.Relics) is string relicError)
                 { error = relicError; return source; }
@@ -57,7 +57,27 @@ namespace MonsterTrain2Poju.Model
             }
             return context;
         }
-        private static bool CompatibleRelic(CombatRelicState relic) =>
+        // Native cumulative ranks 1-3 have no moon/hand callbacks. Startup,
+        // wave selection and merchant prices have already affected captured
+        // state. Later ranks and additional active relic compositions need
+        // independent witnesses; preserve the native cumulative owner order.
+        internal static bool CalibratedCovenants(IReadOnlyList<CombatRelicState>? relics)
+        {
+            CombatRelicState[] owners = relics?.Where(relic => relic.IsCovenant == true).ToArray() ?? Array.Empty<CombatRelicState>();
+            if (owners.Length == 0) return true;
+            return owners.Length <= 3 && owners.Select(owner => owner.DataId).SequenceEqual(new[] {
+                "d3b53481-f26b-4344-ae8e-ec80b28d6004", "92c18b99-e4c0-4953-ba2c-4815f570a66e",
+                "dcb31cd7-4293-4b07-b396-5456a0ce0b6e" }.Take(owners.Length)) &&
+                owners[0].AssetKey == "Covenant01_StrongerEnemiesMoreCards" && owners[0].EffectTypes.SequenceEqual(
+                    new[] { "RelicEffectPurgeStarterDeck", "RelicEffectAddCardSetStartOfRun", "RelicEffectEnableSpecialCharacters" }
+                        .Concat(Enumerable.Repeat("RelicEffectModifyCharacterMaxHealth", 6))
+                        .Concat(Enumerable.Repeat("RelicEffectModifyCharacterAttackDamage", 5))
+                        .Concat(Enumerable.Repeat("RelicEffectModifyCharacterMaxHealth", 3))) &&
+                (owners.Length < 2 || owners[1].AssetKey == "Covenant02_BattlesNewEnemies" && owners[1].EffectTypes.Count == 0) &&
+                (owners.Length < 3 || TrueFinalBossCovenantModel.MerchantOnlyOwner(owners[2])) &&
+                relics!.Where(relic => relic.IsCovenant != true).All(relic => relic.EffectTypes.Count == 0);
+        }
+        private static bool CompatibleRelic(CombatRelicState relic) => relic.IsCovenant == true ||
             relic.EffectTypes.All(type => type is RelicModel.ModifyCardTypeCost or RelicModel.ModifyCardAttack) &&
                 (relic.CardAttackModifiers == null || relic.CardAttackModifiers.All(rule =>
                     rule.CardType == "Monster" && rule.CharacterName == "" &&

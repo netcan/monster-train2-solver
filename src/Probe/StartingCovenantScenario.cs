@@ -10,7 +10,7 @@ namespace MonsterTrain2Poju.Probe
     // RunSetup/StartRun path; the hooks below only observe its deck effects.
     internal static class StartingCovenantScenario
     {
-        private static int Level => int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_STARTING_COVENANT_LEVEL") ?? "0");
+        internal static int Level => int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_STARTING_COVENANT_LEVEL") ?? "0");
         private static object? selection;
         private static readonly List<object> calls = new List<object>();
         private static readonly List<object> queries = new List<object>();

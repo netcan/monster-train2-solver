@@ -5,8 +5,13 @@ using MonsterTrain2Poju.Model;
 internal static class PlayerMoonRoomSpellChecks
 {
     internal static void Pair(FixtureValue source, FixtureValue replay, bool requireHealingRelic = false, bool requirePhaseHealRelic = false,
-        bool requirePhaseEnergyRelic = false, bool requireHandPowerRelic = false, bool requireStatusRelic = false)
+        bool requirePhaseEnergyRelic = false, bool requireHandPowerRelic = false, bool requireStatusRelic = false,
+        bool requireCovenant03 = false)
     {
+        if (requireCovenant03)
+            foreach (FixtureValue fixture in new[] { source, replay })
+                MoonCovenantCompositionChecks.Startup(fixture,
+                    fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!.Spawn.Train.Context!, 3);
         if (requireHealingRelic)
             foreach (FixtureValue fixture in new[] { source, replay })
                 Require(fixture.TryGetProperty("OriginalMoonCardUpgradesHealingRelic", out FixtureValue flag) && flag.GetBoolean(),

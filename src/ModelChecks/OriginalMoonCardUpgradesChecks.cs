@@ -30,6 +30,9 @@ internal static class OriginalMoonCardUpgradesChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] ids = root.GetProperty("OriginalMoonCardUpgradesIds").Deserialize<int[]>()!;
         FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray(), hands = root.GetProperty("OriginalMoonCardUpgradesHands").EnumerateArray().ToArray();
+        if (root.TryGetProperty("StartingCovenantControl", out FixtureValue covenant) && covenant.ValueKind == FixtureKind.Object)
+            MoonCovenantCompositionChecks.Startup(root, actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!,
+                covenant.GetProperty("AscensionLevel").GetInt32());
         if (actions.Length < 15)
         {
             BattleTurnState last = actions[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;

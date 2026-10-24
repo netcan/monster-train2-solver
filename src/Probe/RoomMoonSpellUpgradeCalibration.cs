@@ -16,6 +16,13 @@ namespace MonsterTrain2Poju.Probe
     {
         private static AllGameManagers Managers => AllGameManagers.Instance!;
         private static FullBattleTrace Trace => FullBattleTrace.Active!;
+#if DEVELOPMENT_PROBE
+        private static int CovenantLevel => StartingCovenantScenario.Level;
+        private static object? CovenantStartup => StartingCovenantScenario.Evidence;
+#else
+        private static int CovenantLevel => 0;
+        private static object? CovenantStartup => null;
+#endif
         private static readonly List<object> rows = new List<object>();
         private static CharacterState? healAnchor;
         private static readonly List<CharacterState> armorActors = new List<CharacterState>();
@@ -130,6 +137,8 @@ namespace MonsterTrain2Poju.Probe
                 PhaseEnergyRelicControls = RoomMoonCallbackCalibration.SpellPhaseEnergyRelic,
                 HandPowerRelicControls = RoomMoonCallbackCalibration.SpellHandPowerRelic,
                 StatusRelicControls = RoomMoonCallbackCalibration.SpellStatusRelic,
+                StartingCovenantLevel = CovenantLevel,
+                StartingCovenantControl = CovenantStartup,
                 EnergyConditionsResetBeforeRows = RoomMoonCallbackCalibration.SpellPhaseEnergyRelic,
                 AnchorWoundedBeforeEachRow = healAnchor != null,
                 ShadeCallbacks = false, MovementControls = false, EnemyControls = false,
@@ -137,6 +146,7 @@ namespace MonsterTrain2Poju.Probe
                     healAnchor == null ? Array.Empty<int>() : new[] { Trace.UnitId(healAnchor) },
                 CardIds = ids, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0], Rows = rows }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                CovenantLevel > 0 ? "room-moon-spell-covenant-" + CovenantLevel.ToString("00") + "-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellStatusRelic ? "room-moon-spell-status-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellHandPowerRelic ? "room-moon-spell-hand-power-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellPhaseEnergyRelic ? "room-moon-spell-phase-energy-relic-calibration.mt2f" :
