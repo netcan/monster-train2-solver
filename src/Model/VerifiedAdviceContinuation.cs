@@ -3,9 +3,10 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
-    // Created only after replaying a complete forecast. Ordinary plans can
-    // advance within this turn, preserving their original lookahead; wins can
-    // continue across turns. Only the unused preview allocator is normalized.
+    // Created only after replaying the complete available forecast. Every plan
+    // can continue across turns while its full state/RNG matches, including an
+    // unchanged root after a cosmetic busy boundary. Only the unused preview
+    // allocator is normalized; an exhausted or backward prefix cannot match.
     internal sealed class VerifiedAdviceContinuation
     {
         private readonly BattlePlanResult original;
@@ -13,7 +14,10 @@ namespace MonsterTrain2Poju.Model
         private readonly int offset;
 
         internal bool IsWinning => original.Outcome == RoomOutcome.BattleWon;
-        internal static bool CanRetain(BattlePlanResult plan) => plan.Outcome is RoomOutcome.BattleWon or RoomOutcome.Exchanged;
+        internal bool SamePosition(VerifiedAdviceContinuation other) =>
+            ReferenceEquals(original, other.original) && offset == other.offset;
+        internal static bool CanRetain(BattlePlanResult plan) => plan.Steps.Count > 0 &&
+            plan.Outcome is RoomOutcome.Exchanged or RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
 
         internal VerifiedAdviceContinuation(BattlePlanResult original, string[] roots)
             : this(original, roots, 0) { }
@@ -25,7 +29,7 @@ namespace MonsterTrain2Poju.Model
         {
             using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             string key = keys.Key(state);
-            for (int index = IsWinning ? offset : offset + 1; index < roots.Length; index++)
+            for (int index = offset; index < roots.Length; index++)
                 if (roots[index] == key) return new VerifiedAdviceContinuation(original, roots, index);
             return null;
         }
@@ -37,7 +41,7 @@ namespace MonsterTrain2Poju.Model
                 steps.Count(step => step.IsEndTurn), 0, 0, 0, TimeSpan.Zero,
                 original.TimedOut, false, original.ReachedNodeLimit, original.ReachedActionLimit,
                 original.CompletedHorizon, IsWinning ? Array.Empty<UnsupportedActionAttempt>() : original.UnsupportedAttempts,
-                null, original.RequestedTurns,
+                null, Math.Max(0, original.RequestedTurns - original.Steps.Take(offset).Count(step => step.IsEndTurn)),
                 original.UsedShorterHorizon, original.SearchedToBattleEnd, original.ReachedStepLimit,
                 original.MaxSteps, original.WorkerThreadIds);
         }

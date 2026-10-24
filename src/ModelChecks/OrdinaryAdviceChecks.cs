@@ -101,23 +101,28 @@ internal static class OrdinaryAdviceChecks
         {
             session.Observe(root, original); Pump(session);
             Require(!session.Current!.ReusedContinuation, "Initial publication bypassed search.");
-            for (int index = 1; index <= endTurn; index++)
+            for (int index = 1; index < steps.Length; index++)
             {
                 state = following[index - 1]; long generation = session.Generation;
                 session.InvalidateForInput(); Require(session.Current == null, "A play retained visible stale advice.");
                 session.Observe(state, Key(state)); Pump(session);
                 BattleAdvice advice = session.Current!;
+                int consumedTurns = steps.Take(index).Count(step => step.IsEndTurn);
                 Require(calls == 1 && session.SearchCount == 1 && session.Generation > generation &&
                     advice.ReusedContinuation && !advice.ReusedWinningContinuation && !advice.ReusedSelection &&
                     advice.RootKey == Key(state) && advice.Plan.ExpandedNodes == 0 && advice.Plan.Elapsed == TimeSpan.Zero &&
-                    advice.Plan.Steps.Count == steps.Length - index && advice.Plan.TurnsCompleted == plan.TurnsCompleted &&
-                    advice.Plan.RequestedTurns == plan.RequestedTurns && advice.Plan.UsedShorterHorizon == shorter,
-                    "A verified ordinary input restarted search, lost its lookahead or claimed victory.");
+                    advice.Plan.Steps.Count == steps.Length - index && advice.Plan.TurnsCompleted == plan.TurnsCompleted - consumedTurns &&
+                    advice.Plan.RequestedTurns == Math.Max(0, plan.RequestedTurns - consumedTurns) && advice.Plan.UsedShorterHorizon == shorter,
+                    "A verified input or EndTurn restarted search, lost its remaining forecast or claimed victory.");
                 BattleAdviceSession.Verify(state, advice.Plan);
+                session.InvalidateForInput(); session.Observe(state, Key(state)); Pump(session);
+                Require(calls == 1 && session.Current!.ReusedContinuation &&
+                    session.Current.Plan.Steps.Count == steps.Length - index,
+                    "A cosmetic busy boundary with an unchanged root restarted search or advanced the plan.");
             }
-            session.InvalidateForInput(); session.Observe(following[endTurn], Key(following[endTurn]));
+            session.InvalidateForInput(); session.Observe(following.Last(), Key(following.Last()));
             Pump(session, BattleAdviceStatus.Unavailable);
-            Require(calls == 2 && session.Current == null, "A new turn reused a shrinking ordinary lookahead.");
+            Require(calls == 2 && session.Current == null, "An exhausted forecast exposed an empty cached plan.");
         }
         foreach (bool explicitReset in new[] { false, true })
         {
@@ -172,16 +177,50 @@ internal static class OrdinaryAdviceChecks
         using (var session = new BattleAdviceSession((_, _) => { shorterCalls++; return shorterPlan; }))
         {
             session.Observe(root, original); Pump(session);
-            session.InvalidateForInput(); session.Observe(following[0], Key(following[0])); Pump(session);
+            session.InvalidateForInput(); session.Observe(following[endTurn], Key(following[endTurn])); Pump(session);
             BattlePlanResult retained = session.Current!.Plan;
             Require(shorterCalls == 1 && session.Current.ReusedContinuation && retained.UsedShorterHorizon &&
                 !retained.CompletedHorizon && retained.TimedOut && retained.ReachedNodeLimit && retained.ReachedActionLimit &&
-                retained.RequestedTurns == shorterPlan.RequestedTurns && retained.TurnsCompleted == shorterPlan.TurnsCompleted,
+                retained.RequestedTurns == shorterPlan.RequestedTurns - 1 && retained.TurnsCompleted == shorterPlan.TurnsCompleted - 1,
                 "Retained shorter advice lost its actual horizon or budget limitations.");
-            BattleAdviceSession.Verify(following[0], retained);
+            BattleAdviceSession.Verify(following[endTurn], retained);
         }
         Require(Key(root) == original, "Ordinary continuation mutated its native root.");
-        Console.WriteLine($"ORDINARY-ADVICE PASS: {endTurn} native-forecast plays, one search, exact roots/full replay, original {plan.TurnsCompleted}-turn lookahead, new-turn replan, shorter-horizon flags, reset/resources/RNG/backward/cancellation rejection.");
+        Console.WriteLine($"ORDINARY-ADVICE PASS: {steps.Length - 1} verified inputs across {plan.TurnsCompleted} turns, one search, unchanged busy roots, exact replay, exhausted-window replan, shorter-horizon flags, reset/resources/RNG/backward/cancellation rejection.");
+    }
+
+    internal static void TerminalLoss(FixtureValue fixture)
+    {
+        FixtureValue row = fixture.GetProperty("RollingDecisions").EnumerateArray().First(item =>
+            item.GetProperty("PlannedOutcome").Deserialize<RoomOutcome>() == RoomOutcome.PlayerDefeated &&
+            item.GetProperty("PlanSteps").GetArrayLength() > 1);
+        BattleTurnState root = row.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        BattleSearchStep[] steps = row.GetProperty("PlanSteps").EnumerateArray().Select(item => new BattleSearchStep(
+            item.GetProperty("Action").ValueKind == FixtureKind.Null ? null : item.GetProperty("Action").Deserialize<PlayCardAction>(),
+            item.GetProperty("IsEndTurn").GetBoolean())).ToArray();
+        BattleTurnState final = BattlePlannerChecks.Replay(root, steps, out RoomOutcome outcome);
+        Require(outcome == RoomOutcome.PlayerDefeated, "Missing a complete original losing forecast.");
+        using (var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true))
+            Require(keys.Key(final) == keys.Key(row.GetProperty("Planned").Deserialize<BattleTurnState>()!),
+                "The original terminal forecast changed beyond the unused preview allocator.");
+        var plan = new BattlePlanResult(final, outcome, steps, BattlePlanner.Evaluate(final, outcome),
+            steps.Count(step => step.IsEndTurn), 1, 0, 0, TimeSpan.FromSeconds(3), false, false, false, false, true,
+            [], null, row.GetProperty("RequestedHorizon").GetInt32());
+        int searches = 0;
+        using var session = new BattleAdviceSession((_, _) => { searches++; return plan; });
+        session.Observe(root, Key(root)); Pump(session);
+        BattleTurnState state = root;
+        for (int index = 0; index < steps.Length - 1; index++)
+        {
+            state = steps[index].IsEndTurn ? BattleTurnModel.EndTurn(state).State! :
+                BattleActionModel.PlayCard(state, steps[index].Action!).State!;
+            session.InvalidateForInput(); session.Observe(state, Key(state)); Pump(session);
+            Require(searches == 1 && session.Current!.ReusedContinuation && !session.Current.ReusedWinningContinuation &&
+                session.Current.Plan.Outcome == RoomOutcome.PlayerDefeated && session.Current.Plan.Steps.Count == steps.Length - index - 1,
+                "A followed terminal loss restarted search or claimed a winning forecast.");
+            BattleAdviceSession.Verify(state, session.Current.Plan);
+        }
+        Console.WriteLine($"TERMINAL-ADVICE PASS: {steps.Length - 1} followed losing-forecast steps, one search, exact full-state/RNG replay and honest outcome.");
     }
 
     private static BattleTurnState Copy(BattleTurnState state, int? energy = null, BattleRngStream[]? rng = null) =>

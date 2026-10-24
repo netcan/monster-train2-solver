@@ -2996,6 +2996,12 @@ if (args.Length == 2 && args[0] == "--ordinary-advice-only")
     OrdinaryAdviceChecks.Run(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--terminal-advice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OrdinaryAdviceChecks.TerminalLoss(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--room-attachment-birth-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

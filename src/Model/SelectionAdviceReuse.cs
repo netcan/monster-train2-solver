@@ -10,6 +10,17 @@ namespace MonsterTrain2Poju.Model
     // still reproduce its complete outcome from the newly captured live root.
     internal static class SelectionAdviceReuse
     {
+        // One cache belongs to one verified suffix and is only accessed by its
+        // session worker. Every root field, including the allocator, is keyed:
+        // a different allocator may change the strict replayed final snapshot.
+        internal sealed class Result
+        {
+            internal readonly BattlePlanResult Plan;
+            internal readonly VerifiedAdviceContinuation? Proof;
+            internal Result(BattlePlanResult plan, VerifiedAdviceContinuation? proof)
+            { Plan = plan; Proof = proof; }
+        }
+
         internal static bool SameBattle(BattleTurnState left, BattleTurnState right)
         {
             using var keys = new BattleStateKeys(true, ignoreRoomSelection: true);
@@ -20,22 +31,28 @@ namespace MonsterTrain2Poju.Model
             CancellationToken token, out BattlePlanResult plan, out VerifiedAdviceContinuation? proof)
         {
             plan = advice.Plan; proof = null;
+            using var selectionKeys = new BattleStateKeys();
+            string key = selectionKeys.Key(root);
+            if (advice.SelectionCache.TryGetValue(key, out Result? cached))
+            { plan = Reused(cached.Plan, cached.Plan.State); proof = cached.Proof; return true; }
+            string originalKey = selectionKeys.Key(advice.Root);
+            advice.SelectionCache[originalKey] = new Result(advice.Plan, advice.Continuation);
+            if (key == originalKey)
+            { plan = Reused(advice.Plan, advice.Plan.State); proof = advice.Continuation; return true; }
             if (!SameBattle(advice.Root, root)) return false;
             BattleTurnState state = root;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             using var continuationKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             var roots = retainPlans && VerifiedAdviceContinuation.CanRetain(plan) ? new List<string>() : null;
-            bool recordRoot = true;
             foreach (BattleSearchStep step in plan.Steps)
             {
                 token.ThrowIfCancellationRequested();
-                if (recordRoot) roots?.Add(continuationKeys.Key(state));
+                roots?.Add(continuationKeys.Key(state));
                 if (step.IsEndTurn)
                 {
                     BattleTurnResult next = BattleTurnModel.EndTurn(state);
                     if (!next.Supported) return false;
                     state = next.State!; outcome = next.Outcome;
-                    if (plan.Outcome != RoomOutcome.BattleWon) recordRoot = false;
                 }
                 else
                 {
@@ -46,12 +63,19 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             if (outcome != plan.Outcome || !SameBattle(state, plan.State)) return false;
-            plan = new BattlePlanResult(state, outcome, plan.Steps, plan.Score, plan.TurnsCompleted,
+            plan = Reused(plan, state);
+            if (roots != null) proof = new VerifiedAdviceContinuation(plan, roots.ToArray());
+            // Preview allocators can advance on every browse. Bound retained
+            // calibration graphs even if none of those exact roots repeat.
+            if (advice.SelectionCache.Count >= 8) advice.SelectionCache.Clear();
+            advice.SelectionCache[key] = new Result(plan, proof);
+            return true;
+        }
+
+        private static BattlePlanResult Reused(BattlePlanResult plan, BattleTurnState state) =>
+            new BattlePlanResult(state, plan.Outcome, plan.Steps, plan.Score, plan.TurnsCompleted,
                 0, 0, 0, TimeSpan.Zero, plan.TimedOut, false, plan.ReachedNodeLimit, plan.ReachedActionLimit,
                 plan.CompletedHorizon, plan.UnsupportedAttempts, null, plan.RequestedTurns, plan.UsedShorterHorizon,
                 plan.SearchedToBattleEnd, plan.ReachedStepLimit, plan.MaxSteps, plan.WorkerThreadIds);
-            if (roots != null) proof = new VerifiedAdviceContinuation(plan, roots.ToArray());
-            return true;
-        }
     }
 }

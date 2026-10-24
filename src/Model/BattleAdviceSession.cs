@@ -22,6 +22,7 @@ namespace MonsterTrain2Poju.Model
         public bool ReusedContinuation { get; }
         public bool ReusedSelection { get; }
         internal VerifiedAdviceContinuation? Continuation { get; }
+        internal Dictionary<string, SelectionAdviceReuse.Result> SelectionCache { get; }
         private readonly long requestedAt;
         public TimeSpan ResponseElapsed => CaptureElapsed + PreparationElapsed + Since(requestedAt);
         internal static TimeSpan Since(long timestamp) => TimeSpan.FromSeconds(
@@ -29,7 +30,8 @@ namespace MonsterTrain2Poju.Model
         internal BattleAdvice(BattleTurnState root, string key, BattlePlanResult plan,
             TimeSpan captureElapsed, TimeSpan queueElapsed, TimeSpan verificationElapsed, long requestedAt,
             VerifiedAdviceContinuation? continuation = null, bool reusedWinningContinuation = false, bool reusedSelection = false,
-            bool reusedContinuation = false, TimeSpan preparationElapsed = default)
+            bool reusedContinuation = false, TimeSpan preparationElapsed = default,
+            Dictionary<string, SelectionAdviceReuse.Result>? selectionCache = null)
         {
             Root = root; RootKey = key; Plan = plan; CaptureElapsed = captureElapsed;
             PreparationElapsed = preparationElapsed;
@@ -37,6 +39,7 @@ namespace MonsterTrain2Poju.Model
             Continuation = continuation; ReusedWinningContinuation = reusedWinningContinuation;
             ReusedContinuation = reusedContinuation;
             ReusedSelection = reusedSelection;
+            SelectionCache = selectionCache ?? new Dictionary<string, SelectionAdviceReuse.Result>(StringComparer.Ordinal);
         }
     }
 
@@ -118,7 +121,7 @@ namespace MonsterTrain2Poju.Model
                 observationVersion++;
                 bool browsing = sameBattle ?? (observed != null && SelectionAdviceReuse.SameBattle(observed, state));
                 if (browsing) reusable = Current ?? reusable;
-                else { generation++; reusable = null; cancellation?.Cancel(); }
+                else { generation++; if (observed != null) reusable = null; cancellation?.Cancel(); }
                 currentKey = fullStateKey; observed = state;
                 Current = null; Error = null;
                 // A floor change must not cancel an in-flight search. Rebase
@@ -142,10 +145,11 @@ namespace MonsterTrain2Poju.Model
         {
             if (disposed) return;
             observationVersion++;
-            if (!preserveContinuation) continuation = null;
+            if (!preserveContinuation) { continuation = null; reusable = null; }
+            else reusable = Current ?? reusable;
             if (currentKey != null) generation++;
             currentKey = pendingKey = null; pending = null;
-            observed = null; reusable = null;
+            observed = null;
             Current = null; Error = null; Status = BattleAdviceStatus.Idle;
             cancellation?.Cancel();
         }
@@ -200,9 +204,9 @@ namespace MonsterTrain2Poju.Model
                     if (fullKeys.Key(root) != key)
                         throw new InvalidOperationException(retained == null ? "Captured state differs from its full-state key." :
                             "Captured state differs from the retained continuation.");
-                    bool reusedSelection = candidate != null && SelectionAdviceReuse.TryRebase(candidate, root,
+                    VerifiedAdviceContinuation? matched = retained?.Match(root);
+                    bool reusedSelection = matched == null && candidate != null && SelectionAdviceReuse.TryRebase(candidate, root,
                         retainPlans, token, out plan, out proof);
-                    VerifiedAdviceContinuation? matched = reusedSelection ? null : retained?.Match(root);
                     verification.Stop();
                     if (reusedSelection)
                     {
@@ -227,7 +231,9 @@ namespace MonsterTrain2Poju.Model
                     token.ThrowIfCancellationRequested();
                     return new BattleAdvice(root, key, plan, captureElapsed, queued, verification.Elapsed, requestedAt,
                         proof, reusedWinningContinuation: matched?.IsWinning == true, reusedSelection: reusedSelection,
-                        reusedContinuation: matched != null, preparationElapsed: preparationElapsed);
+                        reusedContinuation: matched != null, preparationElapsed: preparationElapsed,
+                        selectionCache: reusedSelection || matched != null && matched.SamePosition(retained!)
+                            ? candidate?.SelectionCache : null);
                 });
             }
         }
@@ -255,17 +261,15 @@ namespace MonsterTrain2Poju.Model
             using var keys = new BattleStateKeys();
             using var continuationKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             var roots = retain && VerifiedAdviceContinuation.CanRetain(plan) ? new List<string>() : null;
-            bool recordRoot = true;
             foreach (BattleSearchStep step in plan.Steps)
             {
                 token.ThrowIfCancellationRequested();
-                if (recordRoot) roots?.Add(continuationKeys.Key(replayed));
+                roots?.Add(continuationKeys.Key(replayed));
                 if (step.IsEndTurn)
                 {
                     BattleTurnResult next = BattleTurnModel.EndTurn(replayed);
                     if (!next.Supported) throw new InvalidOperationException(next.UnsupportedReason);
                     replayed = next.State!; outcome = next.Outcome;
-                    if (plan.Outcome != RoomOutcome.BattleWon) recordRoot = false;
                 }
                 else
                 {

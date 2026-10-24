@@ -66,6 +66,7 @@ internal static class FloorBrowseAdviceChecks
             long generation = session.Generation;
             var watch = Stopwatch.StartNew();
             BattleTurnState selected = root;
+            var calibrated = new Dictionary<int, (BattleTurnState Root, BattleTurnState Final)>();
             foreach (int floor in new[] { 1, 2, 0, 2, 1, 0 })
             {
                 selected = Select(selected, floor);
@@ -75,10 +76,22 @@ internal static class FloorBrowseAdviceChecks
                     session.Current.Plan.ExpandedNodes == 0 && session.Current.Plan.Elapsed == TimeSpan.Zero,
                     "Browsing restarted search, changed generation, or published an obsolete native root.");
                 BattleAdviceSession.Verify(selected, session.Current.Plan);
+                calibrated[floor] = (selected, session.Current.Plan.State);
+            }
+            foreach (int floor in new[] { 2, 1, 0 })
+            {
+                var prior = calibrated[floor];
+                session.Observe(session.PrepareObservationAsync(prior.Root).GetAwaiter().GetResult()); Pump(session);
+                Require(calls == 1 && ReferenceEquals(prior.Final, session.Current!.Plan.State),
+                    "Returning to an identical calibrated snapshot replayed the whole forecast.");
+                BattleAdviceSession.Verify(prior.Root, session.Current.Plan);
             }
             Console.WriteLine($"FLOOR-BROWSE ready: 6 switches, searches=1, rebaseTotalMs={watch.Elapsed.TotalMilliseconds:F1}.");
             session.InvalidateForInput(); session.Observe(root, original); Pump(session);
-            Require(calls == 2 && session.Generation > generation, "A real input reused browsing advice.");
+            Require(calls == 1 && session.Generation > generation && session.Current!.ReusedContinuation,
+                "A settlement boundary with the same full root discarded verified advice.");
+            session.Invalidate(); session.Observe(root, original); Pump(session);
+            Require(calls == 2, "Explicit refresh reused the cached browsing forecast.");
         }
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
