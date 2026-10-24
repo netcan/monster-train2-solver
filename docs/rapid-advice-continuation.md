@@ -77,3 +77,17 @@ Accepted production SHA256 values:
 
 Later checker builds may produce different assembly informational commit
 metadata; delivery uses the exact accepted player payload above.
+
+## Windows delivery
+
+Installed at 2026-10-24 21:42:57 from `8af71be3`, with equality of all three
+accepted/installed SHA256 values, to
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+Previous and accepted payloads plus installation.json are backed up in
+`BepInEx/PojuBackups/RapidAdviceContinuation-20261024-214256`.
+The package is `results/mod-dist/PojuAdvisor-0.2.18-Windows-20261024-214256.zip`.
+Twenty-eight other loader/plugin/configuration files retain their hashes.
+No real player inputs, process restart or Mac build were performed.
+
+At delivery PID142908, started at 21:22:45, still runs 0.2.17. The installed
+0.2.18 takes effect when the user restarts the game.
