@@ -123,6 +123,7 @@ namespace MonsterTrain2Poju.Probe
             Require(advisor != null, "the real player entry point has not created an overlay");
             Require(BattleAdvisorOverlay.Active == null, "a development overlay is also active");
             log = BepInEx.Logging.Logger.CreateLogSource("PlayerAdvisorAcceptance");
+            AdvisorCaptureProfileProbe.Install(assembly, log);
         }
 
         internal static BattleTurnState Capture()

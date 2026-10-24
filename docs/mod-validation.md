@@ -1,5 +1,11 @@
 # Player Mod validation · 2026-10-24
 
+[Native capture profiling](capture-performance.md) attributes the remaining
+main-thread latency to five repeated global contexts and repeated card projection,
+with a separate retained calibration-history issue. The optional development
+profiler passes a fresh frozen native replay/full-state/RNG comparison and is
+absent from the player assembly. The installed0.2.7 payload is unchanged.
+
 Windows 0.2.7 adds bounded whole-battle planning and a two-worker background
 portfolio. Workers explore different deployment/policy seeds with independent
 full-state keys and RNG, split a total256-node budget, and use the same3,000ms

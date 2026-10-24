@@ -12,6 +12,7 @@ param(
     [switch] $DotNetPlanner,
     [switch] $Advisor,
     [switch] $PlayerAdvisor,
+    [switch] $ProfileCapture,
     [switch] $AdvisorFloorBrowse,
     [switch] $RollingAdvice,
     [switch] $PreviewAttackTrace,
@@ -686,6 +687,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($ProfileCapture -and -not $PlayerAdvisor) { throw 'ProfileCapture requires the separately loaded PlayerAdvisor.' }
 if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
     throw 'AdvisorFloorBrowse requires the real PlayerAdvisor and RollingAdvice driver.'
 }
@@ -1543,6 +1545,7 @@ if (Test-Path -LiteralPath $preferencesPath) {
     $preferences | ConvertTo-Json -Depth 32 -Compress | Set-Content -LiteralPath $preferencesPath -NoNewline -Encoding utf8
 }
 $environment = @{
+    MT2_PROBE_CAPTURE_PROFILE = $(if ($ProfileCapture) { '1' } else { '0' })
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
     MT2_PROBE_SECONDARY_CLAN = $SecondaryClan
