@@ -3021,6 +3021,12 @@ if (args.Length == 2 && args[0] == "--floor-browse-advice-only")
     FloorBrowseAdviceChecks.Run(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--floor-browse-selection-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    FloorBrowseAdviceChecks.SelectionBoundary(fixture.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--player-floor-browse-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

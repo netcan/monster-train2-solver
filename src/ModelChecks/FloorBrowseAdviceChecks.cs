@@ -6,6 +6,47 @@ using MonsterTrain2Poju.Model;
 
 internal static class FloorBrowseAdviceChecks
 {
+    internal static void SelectionBoundary(FixtureValue fixture)
+    {
+        BattleTurnState before = fixture.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState after = fixture.GetProperty("After").Deserialize<BattleTurnState>()!;
+        using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+        BattleTurnResult selected = BattleTurnModel.SelectRoom(before, after.SelectedRoom);
+        Require(selected.Supported, "Native selection is unsupported: " + selected.UnsupportedReason);
+        Require(keys.Key(selected.State!) == keys.Key(after), "Modeled selection differs from the full native state/RNG.");
+        Require(keys.SnapshotKey(before.Spawn.Train.Context!.CardInstances) !=
+            keys.SnapshotKey(after.Spawn.Train.Context!.CardInstances), "Missing native selection-sensitive card upgrades.");
+        Require(SelectionAdviceReuse.SameBattle(before, after) && SelectionAdviceReuse.SameBattle(after, before),
+            "Native selection callbacks are still classified as a fresh gameplay input.");
+        BattleTurnResult ended = BattleTurnModel.EndTurn(before);
+        Require(ended.Supported, ended.UnsupportedReason!);
+        var plan = new BattlePlanResult(ended.State!, ended.Outcome, [new BattleSearchStep(null, true)],
+            BattlePlanner.Evaluate(ended.State!, ended.Outcome), 1, 1, 0, 0, TimeSpan.FromSeconds(3),
+            false, false, false, false, true, [], null, 1);
+        int searches = 0;
+        using var session = new BattleAdviceSession((_, _) =>
+        {
+            if (++searches != 1) throw new InvalidOperationException("Native floor selection restarted search.");
+            return plan;
+        });
+        session.Observe(before, Key(before)); Pump(session);
+        long generation = session.Generation;
+        foreach (BattleTurnState root in new[] { after, before, after })
+        {
+            session.Observe(session.PrepareObservationAsync(root).GetAwaiter().GetResult()); Pump(session);
+            Require(searches == 1 && session.Generation == generation && session.Current!.ReusedSelection,
+                "Native selection-sensitive browsing restarted or cancelled the existing forecast.");
+            BattleAdviceSession.Verify(root, session.Current.Plan);
+        }
+        Require(!SelectionAdviceReuse.SameBattle(before, Copy(after, energy: after.Energy + 1)),
+            "Selection projection hid an unrelated energy change.");
+        BattleRngStream[] rng = after.RngStreams.Select((stream, i) => i == 0 ?
+            new BattleRngStream(stream.Name, stream.Seed, new UnityRng(stream.State.S0 ^ 1, stream.State.S1,
+                stream.State.S2, stream.State.S3)) : stream).ToArray();
+        Require(!SelectionAdviceReuse.SameBattle(before, Copy(after, rng: rng)), "Selection projection hid native RNG divergence.");
+        Console.WriteLine("FLOOR-SELECTION PASS: live Conduit/card trackers, exact full native selection transition, three switches with one search, full forecast replay and energy/RNG divergence rejection.");
+    }
+
     internal static void NativePair(FixtureValue source, FixtureValue replay)
     {
         Selection(source, replay);

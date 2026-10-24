@@ -24,7 +24,16 @@ namespace MonsterTrain2Poju.Model
         internal static bool SameBattle(BattleTurnState left, BattleTurnState right)
         {
             using var keys = new BattleStateKeys(true, ignoreRoomSelection: true);
-            return keys.Key(left) == keys.Key(right);
+            if (keys.Key(left) == keys.Key(right)) return true;
+            if (left.SelectedRoom < 0 || right.SelectedRoom < 0 || left.SelectedRoom == right.SelectedRoom)
+                return false;
+            // Native selection callbacks update Conduit/room spell upgrades and
+            // their private trackers. Prove that complete transition instead of
+            // ignoring these gameplay fields or treating them as a new input.
+            BattleTurnResult selected = BattleTurnModel.SelectRoom(left, right.SelectedRoom);
+            if (!selected.Supported) return false;
+            using var selectedKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+            return selectedKeys.Key(selected.State!) == selectedKeys.Key(right);
         }
 
         internal static bool TryRebase(BattleAdvice advice, BattleTurnState root, bool retainPlans,
