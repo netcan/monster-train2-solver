@@ -1,5 +1,10 @@
 # Live battle advisor
 
+Windows 0.2.22 identifies each ordinary card step by its current hand position,
+cost and upgrades. Hovering a step outlines the exact native hand card without
+selecting it or requesting capture/search; see
+[card identification and focused acceptance](../../../../docs/advisor-card-identity.md).
+
 Windows player 0.2.7 defaults to `WholeBattle = true`: search targets battle
 victory/defeat/stalemate, rather than stopping after three EndTurns. Winning
 routes are compared by final Pyre health; finding the first winning seed no

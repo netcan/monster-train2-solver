@@ -39,6 +39,7 @@ namespace MonsterTrain2Poju.Probe
         private Text body = null!, pauseLabel = null!, toggleLabel = null!, planLabel = null!, statusLabel = null!;
         private Text? budgetLabel;
         private ScrollRect planScroll = null!;
+        private AdvisorCardHover cardHover = null!;
         private bool showFullPlan;
         private Font? uiFont;
         private bool panelVisible = true;
@@ -208,6 +209,12 @@ namespace MonsterTrain2Poju.Probe
             planScroll = viewport.GetComponent<ScrollRect>(); planScroll.viewport = viewRect; planScroll.content = content;
             planScroll.horizontal = false; planScroll.vertical = true; planScroll.scrollSensitivity = 35;
             planScroll.movementType = ScrollRect.MovementType.Clamped;
+            body.supportRichText = false;
+            cardHover = body.gameObject.AddComponent<AdvisorCardHover>();
+            cardHover.Body = body; cardHover.Viewport = viewRect; cardHover.Layer = (RectTransform)canvas.transform;
+            cardHover.CanHover = () => displayed != null && ReferenceEquals(displayed, session.Current) &&
+                !paused && panelVisible && !captureNeeded && !selectionPending && preparation == null &&
+                AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active;
             Text Button(string title, float x, Action click, bool launcher = false, float y = 315)
             {
                 var button = new GameObject(title, typeof(RectTransform), typeof(Image), typeof(Button));
@@ -285,6 +292,7 @@ namespace MonsterTrain2Poju.Probe
         private void SetPending(bool pending)
         {
             if (statusLabel == null) return;
+            if (pending) cardHover.Clear();
             statusLabel.text = pending ? "正在核对后续步骤 · 原方案待确认" :
                 "已知牌序 · 未来 " + horizon + " 回合 · " + toggleKey + " 显示/隐藏";
             body.color = pending ? new Color(.65f, .72f, .78f) : new Color(.91f, .94f, .98f);
@@ -293,6 +301,7 @@ namespace MonsterTrain2Poju.Probe
         private void ShowMessage(string message)
         {
             displayed = null;
+            cardHover.Entries.Clear(); cardHover.Clear();
             SetPending(false);
             if (body != null) body.text = message;
         }
@@ -633,9 +642,21 @@ namespace MonsterTrain2Poju.Probe
             FullBattleTrace trace = FullBattleTrace.Active!;
             var cards = trace.KnownCards.ToDictionary(card => trace.CardId(card));
             var units = trace.KnownUnits.Where(unit => unit != null).ToDictionary(unit => trace.UnitId(unit));
+            AllGameManagers managers = AllGameManagers.Instance;
+            List<CardState> hand = managers.GetCardManager().GetHand();
+            var descriptions = new Dictionary<int, string>();
+            cardHover.Clear(); cardHover.Entries.Clear();
             string CardName(int id)
             {
-                if (cards.TryGetValue(id, out CardState known)) return known.GetTitle();
+                if (descriptions.TryGetValue(id, out string description)) return description;
+                if (cards.TryGetValue(id, out CardState known))
+                {
+                    int index = hand.IndexOf(known);
+                    int room = managers.GetRoomManager().GetSelectedRoom();
+                    int? cost = index < 0 ? null : known.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(),
+                        managers.GetRelicManager(), room < 0 ? null : managers.GetRoomManager().GetRoom(room));
+                    return descriptions[id] = AdvisorCardPresentation.Describe(known, index, cost);
+                }
                 string? dataId = advice.Root.Spawn.Train.Context?.FindCard(id)?.DataId ?? plan.State.Spawn.Train.Context?.FindCard(id)?.DataId;
                 return dataId == null ? "生成的卡牌 #" + id :
                     AllGameManagers.Instance.GetSaveManager().GetAllGameData().FindCardData(dataId)?.GetName() ?? "卡牌 #" + id;
@@ -645,6 +666,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (step.IsEndTurn) { text.Append("结束回合"); return; }
                 PlayCardAction action = step.Action!;
+                int start = text.Length;
                 if (action.ActivatorUnitId > 0 && units.TryGetValue(action.ActivatorUnitId, out CharacterState actor))
                     text.Append(actor.GetName()).Append("：").Append(actor.GetUnitAbilityCardState()?.GetTitle() ?? "单位技能");
                 else if (action.ActivatorUnitId > 0) text.Append(UnitName(action.ActivatorUnitId)).Append("：单位技能");
@@ -659,6 +681,8 @@ namespace MonsterTrain2Poju.Probe
                     if (!showFullPlan && units.TryGetValue(action.TargetUnitId, out CharacterState target))
                         text.Append("（").Append(target.GetHP()).Append(" 血）");
                 }
+                if (action.ActivatorUnitId == 0 && cards.TryGetValue(action.CardInstanceId, out CardState hovered))
+                    cardHover.AddEntry(start, text.Length, hovered);
             }
             if (showFullPlan)
             {

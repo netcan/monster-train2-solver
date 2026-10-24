@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Linq;
 using HarmonyLib;
 using BepInEx.Logging;
 using MonsterTrain2Poju.Model;
@@ -17,9 +19,11 @@ namespace MonsterTrain2Poju.Probe
         private static ManualLogSource log = null!;
         private static bool expanded;
         private static int retainedInputs, pendingFrames, reusedPublications, scrolledPublications, resets, budgetChanges, collapsedTurnResets;
+        private static int cardIdentityChecks, cardHoverChecks;
         internal static object Evidence => new { RetainedInputs = retainedInputs, PendingFrames = pendingFrames,
             ReusedPublications = reusedPublications, ScrolledPublications = scrolledPublications, Resets = resets,
-            BudgetChanges = budgetChanges, CollapsedTurnResets = collapsedTurnResets };
+            BudgetChanges = budgetChanges, CollapsedTurnResets = collapsedTurnResets,
+            CardIdentityChecks = cardIdentityChecks, CardHoverChecks = cardHoverChecks };
 
         private static T Field<T>(string name) => (T)AccessTools.Field(type, name).GetValue(overlay);
         private static void Require(bool condition, string message)
@@ -52,6 +56,114 @@ namespace MonsterTrain2Poju.Probe
             expanded = true;
             ScrollForNextInput();
             CheckSearchBudget();
+            CheckCardIdentity();
+        }
+
+        private static void CheckCardIdentity()
+        {
+            AllGameManagers managers = AllGameManagers.Instance;
+            var hand = managers.GetCardManager().GetHand();
+            CardState original = hand.First();
+            Type formatter = type.Assembly.GetType(typeof(AdvisorCardPresentation).FullName!, true)!;
+            string Describe(CardState card, int index, int? cost) =>
+                (string)AccessTools.Method(formatter, "Describe").Invoke(null, new object?[] { card, index, cost });
+            // Detached native objects with the same localized title. Do not
+            // install upgrades on, reorder, or otherwise mutate the real hand.
+            var plain = new CardState(); var upgraded = new CardState();
+            foreach (CardState card in new[] { plain, upgraded })
+            {
+                AccessTools.Field(typeof(CardState), "titleKey").SetValue(card, original.GetTitleKey());
+                AccessTools.Field(typeof(CardState), "cardType").SetValue(card, CardType.Spell);
+            }
+            var damage = new CardUpgradeState(); damage.SetAttackDamage(10); damage.SetCostReduction(1);
+            upgraded.GetCardStateModifiers().GetCardUpgrades().Add(damage);
+            var heal = new CardUpgradeState(); heal.SetAdditionalHeal(5);
+            upgraded.GetTemporaryCardStateModifiers().GetCardUpgrades().Add(heal);
+            string first = Describe(plain, 0, 2), second = Describe(upgraded, 2, 1);
+            Require(plain.GetTitle() == upgraded.GetTitle() && first != second &&
+                first.Contains("当前手牌左起第 1 张") && first.Contains("当前 2 费") && first.Contains("当前升级：无") &&
+                second.Contains("当前手牌左起第 3 张") && second.Contains("当前 1 费") &&
+                second.Contains("法强+10") && second.Contains("费用-1") && second.Contains("临时：治疗+5"),
+                "same-title upgraded cards lack distinct location, current cost or upgrade details");
+            string future = Describe(upgraded, -1, null);
+            Require(future.Contains("当前不在手牌") && !future.Contains("左起") && !future.Contains(" 费"),
+                "a future card was assigned a current hand slot or cost");
+            cardIdentityChecks += 3;
+
+            var before = new Snapshot();
+            int captures = (int)AccessTools.Property(type, "Captures").GetValue(overlay);
+            string Stamp() => TwoTurnScenario.CaptureSnapshot("card-hover", managers, managers.GetSaveManager(),
+                managers.GetCombatManager(), managers.GetCardManager(), log, writeLog: false, includePresentationRng: true);
+            string native = Stamp(); UnityEngine.Random.State rng = UnityEngine.Random.state;
+            object hover = Field<object>("cardHover"); Type hoverType = hover.GetType();
+            var entries = (IList)AccessTools.Field(hoverType, "Entries").GetValue(hover);
+            var body = Field<Text>("body"); var scroll = Field<ScrollRect>("planScroll");
+            CardState? Highlighted() => (CardState?)AccessTools.Property(hoverType, "HighlightedCard").GetValue(hover);
+            void Update(Vector2 point) => AccessTools.Method(hoverType, "UpdateHover").Invoke(hover, new object[] { point });
+            // Exercise actual native hand instances, including duplicate names
+            // when present, wrapped rows, clipped rows and the collapsed view.
+            CardState[] selected = hand.GroupBy(card => card.GetTitle()).Where(group => group.Count() >= 2)
+                .Select(group => group.Take(2).ToArray()).FirstOrDefault() ?? hand.Take(2).ToArray();
+            Require(selected.Length == 2, "hover acceptance needs two native hand cards");
+            try
+            {
+                foreach (bool expandedView in new[] { true, false })
+                {
+                    AccessTools.Method(type, "SetFullPlan").Invoke(overlay, new object[] { expandedView });
+                    entries.Clear();
+                    body.text = "\n" + string.Join("\n", selected.Select((card, index) =>
+                        (index + 1) + ". " + Describe(card, hand.IndexOf(card), 1) + "\n第 3 层")) + "\n结束回合";
+                    int start = body.text.IndexOf("1. ", StringComparison.Ordinal);
+                    int split = body.text.IndexOf("2. ", StringComparison.Ordinal);
+                    int end = body.text.IndexOf("结束回合", StringComparison.Ordinal);
+                    AccessTools.Method(hoverType, "AddEntry").Invoke(hover, new object[] { start, split - 1, selected[0] });
+                    AccessTools.Method(hoverType, "AddEntry").Invoke(hover, new object[] { split, end - 1, selected[1] });
+                    Canvas.ForceUpdateCanvases(); scroll.verticalNormalizedPosition = 1;
+                    foreach (var row in new[] { (Start: start, Card: selected[0]), (Start: split, Card: selected[1]) })
+                    {
+                        UILineInfo line = body.cachedTextGenerator.lines.Last(item => item.startCharIdx <= row.Start);
+                        Vector2 Point() => RectTransformUtility.WorldToScreenPoint(null,
+                            body.rectTransform.TransformPoint(new Vector3(10, (line.topY - line.height * .5f) / body.pixelsPerUnit)));
+                        Vector2 point = Point();
+                        if (!RectTransformUtility.RectangleContainsScreenPoint(scroll.viewport, point))
+                        {
+                            Update(point); Require(Highlighted() == null, "clipped recommendation highlighted a card");
+                            scroll.verticalNormalizedPosition = 0; Canvas.ForceUpdateCanvases(); point = Point();
+                        }
+                        Require(RectTransformUtility.RectangleContainsScreenPoint(scroll.viewport, point), "test row is outside viewport");
+                        Update(point);
+                        Require(ReferenceEquals(Highlighted(), row.Card), "hover highlighted a different native card instance");
+                        Require(Field<GameObject>("canvas").GetComponentsInChildren<Image>(true)
+                            .Where(image => image.transform.parent.name == "Suggested hand card").All(image => !image.raycastTarget),
+                            "card highlight blocks native input");
+                        Update(new Vector2(-100, -100)); Require(Highlighted() == null, "leaving advice retained its highlight");
+                        cardHoverChecks++;
+                    }
+                }
+                var gate = AccessTools.Field(hoverType, "CanHover");
+                object originalGate = gate.GetValue(hover);
+                try
+                {
+                    gate.SetValue(hover, (Func<bool>)(() => false));
+                    Update(RectTransformUtility.WorldToScreenPoint(null, body.rectTransform.position));
+                    Require(Highlighted() == null, "pending advice kept a hand highlight");
+                    cardHoverChecks++;
+                }
+                finally { gate.SetValue(hover, originalGate); }
+            }
+            finally
+            {
+                AccessTools.Method(type, "SetFullPlan").Invoke(overlay, new object[] { true });
+                body.text = (string)AccessTools.Method(type, "Describe").Invoke(overlay, new object[] { before.Advice! });
+                Canvas.ForceUpdateCanvases(); scroll.verticalNormalizedPosition = before.Scroll;
+                AccessTools.Method(hoverType, "Clear").Invoke(hover, Array.Empty<object>());
+            }
+            Require(native == Stamp() && rng.Equals(UnityEngine.Random.state) &&
+                captures == (int)AccessTools.Property(type, "Captures").GetValue(overlay) && Field<BattleAdviceSession>("session").SearchCount == before.Searches &&
+                ReferenceEquals(Field<BattleAdvice?>("displayed"), before.Advice),
+                "card descriptions/hover changed native state, RNG, capture/search counts or published advice");
+            log.LogInfo("PLAYER-ADVISOR-CARD-IDENTITY-PASS descriptions=" + cardIdentityChecks + " hovers=" + cardHoverChecks +
+                " duplicateNativeTitles=" + (selected[0].GetTitle() == selected[1].GetTitle()) + " captures=0 searches=0");
         }
 
         private static void CheckSearchBudget()
