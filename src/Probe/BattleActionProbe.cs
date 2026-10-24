@@ -44,6 +44,21 @@ namespace MonsterTrain2Poju.Probe
         internal BattleActionProbe(FullBattleTrace trace, UnitPlayModelProbe projection, ManualLogSource log)
         { this.trace = trace; this.projection = projection; this.log = log; }
 
+        internal static IReadOnlyList<RoomPlayRule> CaptureRoomRules()
+        {
+            AllGameManagers managers = AllGameManagers.Instance!;
+            RoomManager rooms = managers.GetRoomManager()!;
+            var rules = new List<RoomPlayRule>();
+            for (int index = 0; index < rooms.GetNumRooms(); index++)
+            {
+                RoomState room = rooms.GetRoom(index);
+                CapacityInfo capacity = room.GetCapacityInfo(Team.Type.Monsters);
+                rules.Add(new RoomPlayRule(index, capacity.max, capacity.numSpawnPoints, room.IsRoomEnabled(),
+                    room.IsRoomSummonBlocked(managers.GetRelicManager()), room.GetIsPyreRoom(), room.GetCapacityInfo(Team.Type.Heroes).max));
+            }
+            return rules;
+        }
+
         internal BattlePlayRules CaptureRules(EnemySpawnState spawn)
         {
             if (rules != null) return rules;
@@ -120,15 +135,7 @@ namespace MonsterTrain2Poju.Probe
                 if (card != null && !unplayedOrder.ContainsKey(card.GetID())) unplayedOrder.Add(card.GetID(), index);
             }
             RoomManager rooms = managers.GetRoomManager()!;
-            var roomRules = new List<RoomPlayRule>();
-            for (int index = 0; index < rooms.GetNumRooms(); index++)
-            {
-                RoomState room = rooms.GetRoom(index);
-                CapacityInfo capacity = room.GetCapacityInfo(Team.Type.Monsters);
-                roomRules.Add(new RoomPlayRule(index, capacity.max, capacity.numSpawnPoints,
-                    room.IsRoomEnabled(), room.IsRoomSummonBlocked(managers.GetRelicManager()), room.GetIsPyreRoom(),
-                    room.GetCapacityInfo(Team.Type.Heroes).max));
-            }
+            IReadOnlyList<RoomPlayRule> roomRules = CaptureRoomRules();
             bool hasMix = definitions.Any(id => save.GetAllGameData().FindCardData(id)?.GetEffects().Any(effect =>
                 effect.GetEffectStateName() is "CardEffectMix" or "CardEffectMixRandom") == true);
             ElixirCatalog? elixirs = hasMix ? ElixirCatalogProbe.Capture(AllGameManagers.Instance!) : null;

@@ -30,6 +30,8 @@ namespace MonsterTrain2Poju.Probe
             public string Label { get; set; } = "";
             public int Amount { get; set; }
             public int SourceCardId { get; set; }
+            public CardActionEffect? EffectDefinition { get; set; }
+            public string? AuthoredUpgradeId { get; set; }
             public int[] Targets { get; set; } = Array.Empty<int>();
             public RoomPlayRule[] Rooms { get; set; } = Array.Empty<RoomPlayRule>();
             public bool[]? RoomEnabledAfter { get; set; }
@@ -404,12 +406,22 @@ namespace MonsterTrain2Poju.Probe
         private static class EffectPatch
         {
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
-            { if (Enabled && label != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode) __result = Observe(__result, cardEffectState, cardEffectParams); }
+            {
+                bool originalBirth = false;
+#if DEVELOPMENT_PROBE
+                originalBirth = cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == "Boss_Level4_Harvester";
+#endif
+                if (FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode &&
+                    (Enabled && label != null || originalBirth))
+                    __result = Observe(__result, cardEffectState, cardEffectParams);
+            }
             private static IEnumerator Observe(IEnumerator native, CardEffectState effect, CardEffectParams parameters)
             {
                 FullBattleTrace trace = FullBattleTrace.Active!;
                 CharacterState[] actors = parameters.targets.ToArray();
-                var record = new Record { Label = label!, Amount = effect.GetSourceCardEffectData().GetParamInt(),
+                var record = new Record { Label = label ?? "OriginalHarvesterBirth", Amount = effect.GetSourceCardEffectData().GetParamInt(),
+                    EffectDefinition = BattleActionProbe.DescribeTriggerEffect(effect.GetSourceCardEffectData(), new List<string>()),
+                    AuthoredUpgradeId = effect.GetSourceCardEffectData().GetParamCardUpgradeData()?.GetID(),
                     SourceCardId = parameters.playedCard == null ? 0 : trace.CardId(parameters.playedCard), Targets = actors.Select(trace.UnitId).ToArray(),
                     Before = trace.CaptureTrain(includeOuterBossForBump: true), Rooms = trace.CaptureDecision().PlayRules!.Rooms.ToArray() };
                 Records.Add(record); current = record;

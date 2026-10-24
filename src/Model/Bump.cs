@@ -52,7 +52,7 @@ namespace MonsterTrain2Poju.Model
         internal static BumpResult Apply(TrainCombatState source, IReadOnlyList<int> targets, int amount,
             IReadOnlyList<RoomPlayRule> roomRules, int sourceCardId,
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pending, SpawnPointReference? teleportGoal = null,
-            bool outerBossActionMovement = false)
+            bool outerBossActionMovement = false, bool deferCharacterCallbacks = false)
         {
             string? error = TrainCombatModel.Validate(source);
             var events = new List<CombatEvent>(); var retained = new Dictionary<int, CombatUnit>();
@@ -263,6 +263,12 @@ namespace MonsterTrain2Poju.Model
             }
             // Native room-order handling always runs the remaining queue, including rooted
             // player status notifications when nothing moved.
+            if (deferCharacterCallbacks)
+            {
+                TrainCombatResult ordered = EnchantmentWorldModel.UpdateAll(state, queue.Add);
+                if (!ordered.Supported) return Fail(ordered.UnsupportedReason!);
+                state = ordered.State!;
+            }
             if (!Drain()) return Fail(error!);
             TrainCombatResult sentries = SentryAttackModel.UpdateAll(state);
             if (!sentries.Supported) return Fail(sentries.UnsupportedReason!);
@@ -296,6 +302,9 @@ namespace MonsterTrain2Poju.Model
             }
             bool Drain()
             {
+                // Native RunTriggerQueue is reentrant-safe: effects already
+                // executing inside that queue append children for their caller.
+                if (deferCharacterCallbacks) return true;
                 for (int index = 0; index < queue.Count; index++)
                 {
                     RoomCombatState? current = FindRoom(queue[index].Unit.Id);

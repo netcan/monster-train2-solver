@@ -111,7 +111,9 @@ namespace MonsterTrain2Poju.Model
 
     public static class EnemySpawningModel
     {
-        public static EnemySpawnResult Spawn(EnemySpawnState source, bool includeTreasure)
+        public static EnemySpawnResult Spawn(EnemySpawnState source, bool includeTreasure) => Spawn(source, includeTreasure, null);
+
+        public static EnemySpawnResult Spawn(EnemySpawnState source, bool includeTreasure, IReadOnlyList<RoomPlayRule>? roomRules)
         {
             if (source.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", source.ExternalInteractions));
             if (source.Phase < 0 || source.Waves.Count == 0 || source.SelectedGroups.Count != source.Waves.Count)
@@ -298,7 +300,37 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState original = source.Train.Rooms[queued.RoomIndex];
                     var room = EnchantmentWorldModel.Refresh(new RoomCombatState(queued.RoomIndex, original.Deployment, rooms[queued.RoomIndex],
                         original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds));
-                    RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, callbacks.Add);
+                    bool tower = queued.Unit.Triggers.Where(trigger => trigger.Kind == queued.Kind)
+                        .Any(trigger => trigger.Effects.Any(effect => effect.Action?.Target is "Tower" or "FrontInAllRooms"));
+                    var targets = tower ? source.Train.Rooms.Where(other => other.RoomIndex != room.RoomIndex)
+                        .SelectMany(other => rooms[other.RoomIndex].Select(unit => (other.RoomIndex, Unit: unit))).ToArray()
+                        : Array.Empty<(int RoomIndex, CombatUnit Unit)>();
+                    RoomCombatResult result = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, callbacks.Add,
+                        externalTargets: tower ? targets : null,
+                        birthBump: (frame, action, actorId) =>
+                        {
+                            var train = EnchantmentWorldModel.Rebase(new TrainCombatState(source.Train.Rooms.Select((originalRoom, at) =>
+                                at == frame.RoomIndex ? frame : new RoomCombatState(at, originalRoom.Deployment, rooms[at],
+                                    originalRoom.ExternalInteractions, frame.Context, originalRoom.Preview, originalRoom.ActiveCompanionBossIds))
+                                .ToArray(), movement, source.Train.EnemySlotsPerRoom, frame.Context));
+                            if (roomRules == null)
+                                return new BumpResult(null, RoomOutcome.Unsupported, "Harvester birth requires captured room rules.",
+                                    Array.Empty<CombatEvent>(), Array.Empty<CombatUnit>(), Array.Empty<RoomCombatModel.QueuedCharacterTrigger>(),
+                                    Array.Empty<RoomCombatModel.QueuedCharacterTrigger>());
+                            CardTargets targets = CardTargetModel.Collect(train, frame.RoomIndex, action, Array.Empty<int>(), selfUnitId: actorId);
+                            if (!targets.Supported)
+                                return new BumpResult(null, RoomOutcome.Unsupported, targets.UnsupportedReason, Array.Empty<CombatEvent>(),
+                                    Array.Empty<CombatUnit>(), Array.Empty<RoomCombatModel.QueuedCharacterTrigger>(),
+                                    Array.Empty<RoomCombatModel.QueuedCharacterTrigger>());
+                            BumpResult moved = BumpModel.Apply(train, targets.UnitIds, action.Value, roomRules, 0, null,
+                                deferCharacterCallbacks: true);
+                            if (moved.Supported)
+                            {
+                                foreach (RoomCombatState changed in moved.State!.Rooms) rooms[changed.RoomIndex] = changed.Units.ToList();
+                                context = moved.State.Context; movement = moved.State.Movement.ToList(); roomRules = moved.RoomRules;
+                            }
+                            return moved;
+                        });
                     if (!result.Supported) { error = result.UnsupportedReason; return false; }
                     ImportRoom(result.State!);
                     if (Terminal(result.Outcome)) outcome = result.Outcome;

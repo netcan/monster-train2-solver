@@ -28,7 +28,7 @@ namespace MonsterTrain2Poju.Probe
                 return HoardPerStatus(state.GetSourceCardEffectData());
             if (state.GetCardEffect() is CardEffectRemoveEquipment)
                 return BattleActionProbe.DescribeTriggerEffect(state.GetSourceCardEffectData(), interactions ?? new List<string>());
-            if (state.GetCardEffect() is CardEffectAdjustAllStatusEffects or CardEffectAdjustCorruption or CardEffectPlayUnitTrigger or CardEffectDamagePerHp or CardEffectHealTrain or CardEffectAddTempCardUpgradeToSpellsInDeck or CardEffectDamagePerSourceAttack or CardEffectRecursion or CardEffectAddTempCardUpgradeToNextDrawnCard or CardEffectFloorRearrange)
+            if (state.GetCardEffect() is CardEffectBump or CardEffectAdjustAllStatusEffects or CardEffectAdjustCorruption or CardEffectPlayUnitTrigger or CardEffectDamagePerHp or CardEffectHealTrain or CardEffectAddTempCardUpgradeToSpellsInDeck or CardEffectDamagePerSourceAttack or CardEffectRecursion or CardEffectAddTempCardUpgradeToNextDrawnCard or CardEffectFloorRearrange)
                 return BattleActionProbe.DescribeTriggerEffect(state.GetSourceCardEffectData(), interactions ?? new List<string>());
             if (state.GetCardEffect() is CardEffectDrawType) return TypedDraw(state.GetSourceCardEffectData(), state.GetParamInt());
             if (AbilityLifecycleProbe.Known(state.GetCardEffect().GetType().Name)) return AbilityLifecycleProbe.Capture(state);
@@ -59,7 +59,7 @@ namespace MonsterTrain2Poju.Probe
             effect.GetEffectStateName() == "CardEffectFeederRules" ? Feeding(effect) :
             effect.GetEffectStateName() == "CardEffectAdjustDragonsHoardPerStatusEffect" ? HoardPerStatus(effect) :
             effect.GetEffectStateName() == "CardEffectRemoveEquipment" ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
-            effect.GetEffectStateName() is "CardEffectAdjustAllStatusEffects" or "CardEffectAdjustCorruption" or "CardEffectPlayUnitTrigger" or "CardEffectDamagePerHp" or "CardEffectHealTrain" or "CardEffectAddTempCardUpgradeToSpellsInDeck" or "CardEffectDamagePerSourceAttack" or "CardEffectRecursion" or "CardEffectAddTempCardUpgradeToNextDrawnCard" or "CardEffectFloorRearrange" ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
+            effect.GetEffectStateName() is "CardEffectBump" or "CardEffectAdjustAllStatusEffects" or "CardEffectAdjustCorruption" or "CardEffectPlayUnitTrigger" or "CardEffectDamagePerHp" or "CardEffectHealTrain" or "CardEffectAddTempCardUpgradeToSpellsInDeck" or "CardEffectDamagePerSourceAttack" or "CardEffectRecursion" or "CardEffectAddTempCardUpgradeToNextDrawnCard" or "CardEffectFloorRearrange" ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
             effect.GetEffectStateName() == "CardEffectDrawType" ? TypedDraw(effect, effect.GetParamInt()) :
             AbilityLifecycleProbe.Known(effect.GetEffectStateName()) ? AbilityLifecycleProbe.Describe(effect) :
             AbilityCooldownProbe.Known(effect.GetEffectStateName()) ? AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool()) :

@@ -17,6 +17,8 @@ internal static class BumpChecks
     {
         if (!fixture.TryGetProperty("BumpOperations", out var values) || values.GetArrayLength() == 0) return;
         var records = values.EnumerateArray().ToArray();
+        if (records.All(record => record.GetProperty("Label").GetString() == "OriginalHarvesterBirth"))
+        { HarvesterBirthChecks.Movement(fixture); return; }
         const string pairedRelentlessLabel = "enemy-companion-relentless-up-refuses-ascension";
         const string outerBossLabel = "enemy-outer-boss-move";
         const string pairedOuterBossLabel = "enemy-outer-boss-paired-relentless-move";

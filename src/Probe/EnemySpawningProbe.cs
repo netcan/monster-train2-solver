@@ -196,7 +196,7 @@ namespace MonsterTrain2Poju.Probe
                 // These native iterators do not read shared copy/filter/upgrade
                 // fields, except generation, which captures them independently.
                 if (effect.GetEffectStateName() is not ("CardEffectBuffDamage" or "CardEffectDebuffDamage" or "CardEffectHeal" or "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" or "CardEffectAddBattleCard" or "CardEffectAddRunCard" or "CardEffectAddUnitCard" or "CardEffectAddStatusEffect" or
-                    "CardEffectAdjustForgePoints" or "CardEffectResetCooldown" or "CardEffectAddTempCardUpgradeToSpellsInDeck" or "CardEffectDamagePerSourceAttack" or "CardEffectRecursion" or "CardEffectDrawType" or "CardEffectAddTempCardUpgradeToNextDrawnCard" or "CardEffectFloorRearrange" or "CardEffectSpawnHero") && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
+                    "CardEffectAdjustForgePoints" or "CardEffectResetCooldown" or "CardEffectAddTempCardUpgradeToSpellsInDeck" or "CardEffectDamagePerSourceAttack" or "CardEffectRecursion" or "CardEffectDrawType" or "CardEffectAddTempCardUpgradeToNextDrawnCard" or "CardEffectFloorRearrange" or "CardEffectBump" or "CardEffectSpawnHero") && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
                     effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectSpawnMonster")) interactions.Add("Spawned effect modifiers");
                 var pool = new List<CardData>();
                 if (effect.GetEffectStateName() is "CardEffectAddBattleCard" or "CardEffectAddRunCard")
@@ -236,8 +236,9 @@ namespace MonsterTrain2Poju.Probe
                 if (trace.NativeWon == null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                 {
                     EnemySpawnState before = Capture();
+                    IReadOnlyList<RoomPlayRule> roomRules = BattleActionProbe.CaptureRoomRules();
                     record = new Record { Index = records.Count, IncludeTreasure = includeTreasure, Before = before,
-                        Predicted = EnemySpawningModel.Spawn(before, includeTreasure) };
+                        Rooms = roomRules, Predicted = EnemySpawningModel.Spawn(before, includeTreasure, roomRules) };
                     records.Add(record);
                 }
             }
@@ -278,6 +279,7 @@ namespace MonsterTrain2Poju.Probe
         {
             public int Index { get; set; }
             public bool IncludeTreasure { get; set; }
+            public IReadOnlyList<RoomPlayRule>? Rooms { get; set; }
             public EnemySpawnState Before { get; set; } = null!;
             public EnemySpawnResult Predicted { get; set; } = null!;
             public EnemySpawnState? Actual { get; set; }

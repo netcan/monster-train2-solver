@@ -1437,6 +1437,20 @@ if (-not $SkipBuild) {
 if ($DotNetPlanner -and -not (Test-Path -LiteralPath (Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll'))) {
     throw 'External planner is not built; build FixtureTools or omit -SkipBuild.'
 }
+if ($PlayerAdvisor) {
+    # The player payload owns the loaded shared assemblies. Reject stale outputs
+    # before launch instead of discovering a MissingMethodException mid-battle.
+    foreach ($dependency in @('Model', 'FixtureArchive')) {
+        $expectedDependency = Join-Path $workspace "src/$dependency/bin/Release/netstandard2.1/$dependency.dll"
+        $expectedHash = (Get-FileHash -LiteralPath $expectedDependency -Algorithm SHA256).Hash
+        foreach ($consumer in @('Advisor', 'Probe')) {
+            $consumerDependency = Join-Path $workspace "src/$consumer/bin/Release/netstandard2.1/$dependency.dll"
+            if ((Get-FileHash -LiteralPath $consumerDependency -Algorithm SHA256).Hash -ne $expectedHash) {
+                throw "Stale $consumer dependency: $dependency.dll; rebuild Advisor and Probe or omit -SkipBuild."
+            }
+        }
+    }
+}
 $pluginDir = Join-Path $gameRoot 'BepInEx\plugins'
 Copy-Item -LiteralPath (Join-Path $workspace 'src\Probe\bin\Release\netstandard2.1\Probe.dll') -Destination $pluginDir -Force
 foreach ($dependency in @('Model', 'FixtureArchive')) {

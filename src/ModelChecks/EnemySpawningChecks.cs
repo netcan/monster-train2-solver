@@ -105,7 +105,9 @@ internal static class EnemySpawningChecks
         foreach (FixtureValue spawn in spawns.EnumerateArray())
         {
             EnemySpawnState before = spawn.GetProperty("Before").Deserialize<EnemySpawnState>()!;
-            EnemySpawnResult predicted = EnemySpawningModel.Spawn(before, spawn.GetProperty("IncludeTreasure").GetBoolean());
+            EnemySpawnResult predicted = EnemySpawningModel.Spawn(before, spawn.GetProperty("IncludeTreasure").GetBoolean(),
+                spawn.TryGetProperty("Rooms", out FixtureValue roomRules) && roomRules.ValueKind == FixtureKind.Array
+                    ? roomRules.Deserialize<RoomPlayRule[]>() : null);
             if (!predicted.Supported) { unsupported++; continue; }
             EnemySpawnState actual = spawn.GetProperty("Actual").Deserialize<EnemySpawnState>()!;
             string expectedState = Comparable(predicted.State!), actualState = Comparable(actual);

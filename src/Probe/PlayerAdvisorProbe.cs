@@ -25,6 +25,7 @@ namespace MonsterTrain2Poju.Probe
         private static ManualLogSource? log;
         private static BattleTurnState? terminal;
         private static bool frozenObservation;
+        private static long frozenSearches;
         private static bool BrowseEnabled => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_FLOOR_BROWSE") == "1";
         private static int browseSwitches;
         private static long browseGeneration, browseSearches;
@@ -72,6 +73,9 @@ namespace MonsterTrain2Poju.Probe
             FloorBrowse = !BrowseEnabled ? null : new { Passed = FloorBrowsePassed, Switches = browseSwitches,
                 DuringSearch = browsingDuringSearch, SwitchMilliseconds = browseMilliseconds },
             ReplayedFloorSwitches = replayBrowseSwitches,
+            FrozenObservation = !frozenObservation ? null : new { Paused = Field<bool>("paused"),
+                SearchesAtPause = frozenSearches, SearchesAfterPause = Get<long>("Searches") - frozenSearches,
+                FinalAdviceAbsent = CurrentIsNull() },
             EnchantmentBindings = advisor == null ? null : Bindings(),
             Overlay = advisor == null ? null : Property("Evidence")
         };
@@ -132,6 +136,7 @@ namespace MonsterTrain2Poju.Probe
             if (!Field<bool>("paused")) Click("暂停建议");
             Require(Field<bool>("paused") && CurrentIsNull(), "frozen plan retained background advice");
             frozenObservation = true;
+            frozenSearches = Get<long>("Searches");
             log!.LogInfo("PLAYER-ADVISOR-FROZEN-OBSERVATION pausedBackground=true; native observation remains active");
         }
 
@@ -268,8 +273,8 @@ namespace MonsterTrain2Poju.Probe
                     replayBrowseCount = browse.GetProperty("Switches").GetInt32();
                 Require(replayBrowseCount >= 0 && replayBrowseCount <= 30, "invalid frozen browsing count");
             }
-            if (replayBrowseCount == 0) return false;
             PauseForFrozenPlan();
+            if (replayBrowseCount == 0) return false;
             if (Time.frameCount <= boundaryFrame) return true;
             if (replayBrowseSwitches < replayBrowseCount)
             {

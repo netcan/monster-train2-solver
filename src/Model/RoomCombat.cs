@@ -734,7 +734,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static RoomCombatResult ApplyQueuedCharacterTrigger(RoomCombatState state, QueuedCharacterTrigger queued, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
-            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
+            Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null)
         {
             if (RelicFloorTransitionDamageModel.TryDefer(state, queued, enqueue, out RoomCombatResult floorDamage))
                 return floorDamage;
@@ -742,7 +743,7 @@ namespace MonsterTrain2Poju.Model
                 return movementStatus;
             RoomCombatResult triggered = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue,
                 resetPreviewTriggers: false, refreshPyre: refreshPyre, externalPyre: externalPyre,
-                externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets)
+                externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets, birthBump: birthBump)
                 .TraceAllDispatches(queued.CaptureAllDispatches).QueuedTrigger(queued);
             RoomCombatResult relicStatusEffect = RelicStatusAddedEffectModel.ApplyAfterTrigger(triggered, queued);
             RoomCombatResult entered = RelicRoomEntryStatusModel.ApplyAfterEntry(relicStatusEffect, queued, enqueue);
@@ -1276,13 +1277,19 @@ namespace MonsterTrain2Poju.Model
                                 return string.Join("; ", nextDraw.NextDrawUpgrade.Upgrade.ExternalInteractions);
                             continue;
                         }
+                        if (effect.Type == "CardEffectBump")
+                        {
+                            if (state.Context?.SpawnPoints == null || !HarvesterBirthModel.IsTrigger(unit, trigger))
+                                return "Triggered Bump requires the original Harvester tower birth payload and physical positions.";
+                            continue;
+                        }
                         if (effect.Type == "CardEffectFloorRearrange")
                         {
                             bool self = effect.Action is { Type: "FloorRearrange", Target: "Self", Value: 0, Range: null };
                             bool arkion = OuterBossDefinitions.IsArkionPush(unit.AssetKey) && trigger.Kind == "OnAttackingBeforeDamage" &&
                                 effect.Action is { Type: "FloorRearrange", Target: "LastAttackedCharacter", Value: 1, Range: null,
                                     AllowEnemy: true, AllowPlayer: true, UseCardTraits: false } && effect.Action.Statuses.Count == 0;
-                            if (state.Context?.SpawnPoints == null || !self && !arkion)
+                            if (state.Context?.SpawnPoints == null || !self && !arkion && !HarvesterBirthModel.IsTrigger(unit, trigger))
                                 return "Triggered rearrangement requires its original self/front or Arkion attacked-target/back payload and physical positions.";
                             continue;
                         }
@@ -1712,6 +1719,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Func<RoomCombatState, RoomCombatResult>? finishDamageQueue;
             private readonly Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre;
             private readonly Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase;
+            private readonly Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump;
             private readonly Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect;
             private readonly Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect;
             private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId, int? ExclusiveTriggerStateId)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int, int?)>();
@@ -1741,7 +1749,8 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
                 Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null,
                 IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
-                Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null)
+                Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null,
+                Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1752,6 +1761,7 @@ namespace MonsterTrain2Poju.Model
                 this.finishDamageQueue = finishDamageQueue;
                 this.refreshPyre = refreshPyre;
                 this.moonPhase = moonPhase;
+                this.birthBump = birthBump;
                 this.relicBirthEffect = relicBirthEffect;
                 this.relicCharacterEffect = relicCharacterEffect;
                 context = source.Context;
@@ -4818,6 +4828,39 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId, bool hiddenTrigger)
             {
                 CardActionEffect action = effect.Action!;
+                if (action.Type == "Bump")
+                {
+                    if (birthBump == null || source.Preview || source.RoomIndex != 0 || triggerKind != "OnSpawnNotFromCard")
+                    { unsupportedReason = "Harvester birth movement requires the complete native spawn train and room rules."; return false; }
+                    BumpResult moved = birthBump(CurrentRoom(), action, actor.Source.Id);
+                    if (!moved.Supported) { unsupportedReason = moved.UnsupportedReason; return false; }
+                    RoomCombatState changed = moved.State!.Rooms.Single(room => room.RoomIndex == source.RoomIndex);
+                    foreach (WorkingUnit borrowed in units.Where(unit => externalTurnActorIds.Contains(unit.Source.Id)).ToArray())
+                    {
+                        RoomCombatState? location = moved.State.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == borrowed.Source.Id));
+                        CombatUnit? current = location?.Units.First(unit => unit.Id == borrowed.Source.Id) ??
+                            moved.RetainedUnits.FirstOrDefault(unit => unit.Id == borrowed.Source.Id);
+                        if (current != null && location != null && location.RoomIndex != borrowed.RoomIndex)
+                        {
+                            units.Remove(borrowed);
+                            units.Add(NewUnit(current, location.RoomIndex == source.RoomIndex, location.RoomIndex));
+                            if (location.RoomIndex == source.RoomIndex) externalTurnActorIds.Remove(borrowed.Source.Id);
+                        }
+                        else if (current != null) borrowed.Apply(current);
+                    }
+                    // The original caster remains on the bottom floor. New arrivals
+                    // must enter this engine before the following rearrangement.
+                    foreach (WorkingUnit prior in units.Where(unit => unit.Alive && unit.InRoom &&
+                        changed.Units.All(current => current.Id != unit.Source.Id)))
+                    {
+                        CombatUnit? retained = moved.RetainedUnits.FirstOrDefault(unit => unit.Id == prior.Source.Id);
+                        if (retained != null) prior.Apply(retained);
+                        prior.InRoom = false;
+                    }
+                    MergeSummon(new RoomCombatResult(changed, moved.Outcome, 0, moved.Events.ToList()));
+                    foreach (QueuedCharacterTrigger callback in moved.PendingCallbacks) QueueCallback(callback);
+                    return true;
+                }
                 if (action.Type == "ScheduleNextDrawUpgrade")
                 {
                     if (!source.Preview && !battleWon && context?.AllScenarioBossesDead != true)

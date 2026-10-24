@@ -86,7 +86,25 @@ namespace MonsterTrain2Poju.Probe
         }
         private bool calibrated;
         private bool? nativeEnchantmentWorld;
-        internal bool CapturesNativeEnchantments => OuterBossPhaseProbe.TurnsEnabled || (nativeEnchantmentWorld ??= EnemySpawningProbe.RequiresEnchantmentWorld());
+        private bool playerEnchantmentWorld;
+        private readonly HashSet<CharacterData> checkedEnchantmentDefinitions = new HashSet<CharacterData>();
+        internal bool CapturesNativeEnchantments
+        {
+            get
+            {
+                if (OuterBossPhaseProbe.TurnsEnabled || playerEnchantmentWorld ||
+                    (nativeEnchantmentWorld ??= EnemySpawningProbe.RequiresEnchantmentWorld())) return true;
+                // A player unit can introduce an aura even when every enemy wave
+                // is aura-free. Revisit newly discovered/generated definitions.
+                foreach (CharacterData data in projection.KnownCards.SelectMany(card => card.GetEffects())
+                    .Select(effect => effect.GetParamCharacterData()).Concat(identities.Keys.Select(unit => unit.GetSourceCharacterData()))
+                    .Where(data => data != null))
+                    if (checkedEnchantmentDefinitions.Add(data) && data.GetTriggers().Any(trigger =>
+                        trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectEnchant")))
+                        return playerEnchantmentWorld = true;
+                return false;
+            }
+        }
         internal static FullBattleTrace? Active { get; private set; }
         internal void Detach() { if (Active == this) Active = null; }
         internal bool? NativeWon { get; private set; }

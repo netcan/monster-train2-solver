@@ -411,7 +411,7 @@ namespace MonsterTrain2Poju.Model
             spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
             if (spawn.Turn > 0)
             {
-                EnemySpawnResult spawned = EnemySpawningModel.Spawn(spawn, true);
+                EnemySpawnResult spawned = EnemySpawningModel.Spawn(spawn, true, outputPlayRules?.Rooms);
                 if (!spawned.Supported) return Unsupported(spawned.UnsupportedReason!);
                 spawn = spawned.State!; train = spawn.Train;
                 if (Terminal(spawned.Outcome)) return Finish(spawned.Outcome, 0, source.MoonPhase);
@@ -470,7 +470,7 @@ namespace MonsterTrain2Poju.Model
             if (turn == 1)
             {
                 spawn = WithTrain(spawn, train, turn, spawn.Rng);
-                EnemySpawnResult initial = EnemySpawningModel.Spawn(spawn, false);
+                EnemySpawnResult initial = EnemySpawningModel.Spawn(spawn, false, outputPlayRules?.Rooms);
                 if (!initial.Supported) return Unsupported(initial.UnsupportedReason!);
                 spawn = initial.State!; train = spawn.Train;
                 if (Terminal(initial.Outcome)) return Finish(initial.Outcome, 0, moon);

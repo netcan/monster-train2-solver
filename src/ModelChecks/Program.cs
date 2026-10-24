@@ -243,6 +243,19 @@ if (args.Length == 2 && args[0] == "--observed-successors-only")
     TrainCombatChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--harvester-component-only")
+{
+    using var observation = ModelJson.ReadFixture(args[1]);
+    using var fixture = ModelJson.ReadFixture(args[2]);
+    HarvesterBirthChecks.Component(observation.RootElement, fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--harvester-birth-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HarvesterBirthChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--endless-spell-routing-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4509,6 +4522,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
 {
     using var observation = ModelJson.ReadFixture(path);
     EndlessSpellRoutingChecks.Native(observation.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-harvester-birth-calibration.mt2f"))
+{
+    using var observation = ModelJson.ReadFixture(path);
+    using var fixture = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+        "full-battle-harvester-birth-calibration.mt2f"));
+    HarvesterBirthChecks.Component(observation.RootElement, fixture.RootElement);
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
