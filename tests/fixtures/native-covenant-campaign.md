@@ -198,3 +198,44 @@ with `search.mt2f` and `replay.mt2f`, plus the accepted pair receipt.
 checks registered hashes and the independent default pair gate. Reproduction
 uses `Run-NativeCovenantPlayerPairs.ps1 -Rank 3 -Battle Campaign -BattleDistance 3
 -InputProfile <restored-Ring4-profile> -DefaultAdvice -SkipBuild`.
+
+## Natural rank-three Ring5 with actual defaults
+
+Original rewards/map continuation reaches `Level5BattleHeavyHarvester` with
+rank3,seed424242,four prior native wins and Pyre72. The immutable input save
+SHA256 is `fdd901bbf0860bd7430493cbba99fe25d8ee0b56264a4b2fc4a0a25cc4b72390`.
+`campaign-native-covenant-03-ring5.zip` has SHA256
+`61e38ca09213d825a0a66d09a60401607b87f8d4ff7523daa185193aaa0f6192`;
+all15 native payloads verify on restore.
+
+Source `full-battle-units-spells-and-junk-20261024-094028-17a7824d` and replay
+`full-battle-units-spells-and-junk-20261024-094856-87d8b344` both win at Pyre72:
+43 inputs,34 card/ability plays and nine EndTurns. Native durations are
+506.08/227.70 seconds. Both exit normally,preserve protected originals and
+record all four failure counters zero. All independent inputs,roots,complete
+forecasts,successors,RNG,74 room stages and17 train phases per process match.
+This is the fifth natural rank-three victory,not completed campaign acceptance.
+
+Actual defaults remain three turns/3000ms/top-floor preference,tactical seed
+off. Fifteen inputs use explicitly marked shorter complete forecasts; a
+three-second end-to-end response is not guaranteed. Eight consumed searches
+serve43 inputs,with30 ordinary/five winning continuations avoiding search.
+All45 publications have fresh full-root checks; captures are373/87 with no
+purity failures. Frozen replay starts one initial search before pausing,then
+starts zero further searches,publishes zero advice and has no final advice.
+This pair started before seven-switch browsing was added to future default
+sources; it establishes no additional browsing observation.
+
+The continuous runner journals the accepted pair before progression,restores
+its checkpoint and advances the replay through original rewards,shops and
+map choices to native Ring6 with five prior wins. This is the first accepted
+pair/restore/continuation integration of that runner; later failures retain it.
+Continuation exits normally,protects originals and records69 native events.
+
+Archives use `full-battle-player-native-covenant-campaign-03-ring5-default-`
+with `search.mt2f` and `replay.mt2f`,plus its accepted receipt.
+`Check-PlayerAdvisor.ps1 -Case NativeCovenantCampaign03Ring5Default -SkipBuild`
+checks registered hashes and the independent default pair gate. Reproduction
+uses `Run-NativeCovenantPlayerPairs.ps1 -Rank 3 -Battle Campaign -BattleDistance 4
+-InputProfile <restored-Ring5-profile> -DefaultAdvice -SkipBuild`; new source
+runs additionally exercise seven floor switches,which the frozen run repeats.

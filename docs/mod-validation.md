@@ -1,5 +1,14 @@
 # Player Mod validation · 2026-10-24
 
+Natural Covenant3 Ring5 now passes actual-default source and independent native
+replay:43 inputs,Pyre72 wins,74 room stages and17 train phases per process,
+complete forecasts/state/RNG,normal exits and four zero failure counters.
+Thirty ordinary/five winning continuations avoid search; fifteen inputs use
+explicitly marked shorter complete forecasts. The frozen process pauses after
+one initial search and starts none afterward. The continuous runner restores
+all15 input payloads and advances original rewards/map to Ring6; later battles
+are not yet accepted. See [Ring5 evidence](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring5-with-actual-defaults).
+
 Natural Covenant3 Ring3 now passes actual defaults too: both native processes
 win original Siphon Rage at Pyre52 after36 inputs. Full forecasts/state/RNG,
 67 room stages and17 train phases per process match, with normal exits and

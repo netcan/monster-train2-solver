@@ -27,3 +27,9 @@ This runner adds no encounter/deck authoring, full regression or Mac build.
 Input preflight rejects wrong difficulty and an already completed target range
 before creating a journal or launching the game. Actual campaign acceptance
 is recorded separately in [native campaign evidence](../tests/fixtures/native-covenant-campaign.md).
+
+The first positive integration is natural Covenant3 Ring5: both actual-default
+native processes win with43 inputs and Pyre72; independent full-state/RNG
+pair acceptance passes,all15 checkpoint payloads restore,and original
+reward/map progression reaches Ring6 with five native victories. This is
+recorded in the Ring5 fixture section; it does not establish later ring wins.
