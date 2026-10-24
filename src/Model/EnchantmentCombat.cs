@@ -176,9 +176,14 @@ namespace MonsterTrain2Poju.Model
             private EnchantmentCombatResult Finish() => new EnchantmentCombatResult(error == null ? state : null, requests, callbacks, error);
 
             private IEnumerable<EnchantmentRetainedUnit> Actors => state.Train.Rooms.SelectMany(room => room.Units.Select(unit =>
-                new EnchantmentRetainedUnit(unit, room.RoomIndex, room.Preview))).Concat(state.RetainedUnits)
-                .Select(actor => state.TemporaryPreviewUnitIds == null ? actor : new EnchantmentRetainedUnit(actor.Unit,
-                    actor.RoomIndex, state.TemporaryPreviewUnitIds.Contains(actor.Unit.Id)));
+                new EnchantmentRetainedUnit(unit, room.RoomIndex, state.TemporaryPreviewUnitIds == null ? room.Preview :
+                    state.TemporaryPreviewUnitIds.Contains(unit.Id))))
+                // SetTemporaryStateEnabled changes PreviewMode only for its
+                // collected actors. Earlier retained preview births keep their
+                // existing mode even when absent from that temporary list.
+                .Concat(state.RetainedUnits.Select(actor => state.TemporaryPreviewUnitIds == null ? actor :
+                    new EnchantmentRetainedUnit(actor.Unit, actor.RoomIndex,
+                        actor.Preview || state.TemporaryPreviewUnitIds.Contains(actor.Unit.Id))));
             private EnchantmentRetainedUnit Find(int id) => Actors.Single(actor => actor.Unit.Id == id);
             private EnchantmentActor Actor(EnchantmentRetainedUnit item)
             {

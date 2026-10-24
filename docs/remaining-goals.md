@@ -48,6 +48,10 @@
 
 ## 覆盖与验证方式
 
+临时 Boss 预览误覆盖保留角色的预览身份已修复；原失败用例、双天使原生完整复演
+以及光环世界／战斗校准均通过，见
+[保留角色预览身份](../tests/fixtures/notes/combat/retained-preview-mode.md)。
+
 “月相法术＋每回合第三张法术加法强”已补齐 15 个组件边界及 22 次出牌的原生胜局，
 包括 3 次真实 5 倍加成和跨月相保留；玩家搜索与独立回放继续推进，见
 [组合验收](../tests/fixtures/notes/relics/moon-spell-threshold.md)。
