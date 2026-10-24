@@ -67,12 +67,11 @@ namespace MonsterTrain2Poju.Model
         public long Generation => generation;
         public long SearchCount => Interlocked.Read(ref searchCount);
 
-        public BattleAdviceSession(BattlePlannerOptions? options = null)
+        public BattleAdviceSession(BattlePlannerOptions? options = null, int maxSearchWorkers = 1)
             : this((root, token) =>
             {
-                using var keys = new BattleStateKeys();
-                return BattlePlanner.Plan(root, keys.Key, options ?? new BattlePlannerOptions(
-                    256, 3, 8, timeLimit: TimeSpan.FromSeconds(3)), cancellationToken: token);
+                return ParallelBattlePlanner.Plan(root, options ?? new BattlePlannerOptions(
+                    256, 3, 8, timeLimit: TimeSpan.FromSeconds(3)), maxSearchWorkers, token);
             }) { }
 
         internal BattleAdviceSession(Func<BattleTurnState, CancellationToken, BattlePlanResult> search)
@@ -243,11 +242,14 @@ namespace MonsterTrain2Poju.Model
                     plan.TurnsCompleted + " nodes=" + plan.ExpandedNodes + " elapsedMs=" + plan.Elapsed.TotalMilliseconds +
                     " reasons=" + string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));
             if (plan.UsedShorterHorizon && (plan.CompletedHorizon || plan.TurnsCompleted < 1 ||
-                plan.TurnsCompleted >= plan.RequestedTurns || (!plan.TimedOut && !plan.ReachedNodeLimit) ||
+                plan.TurnsCompleted >= plan.RequestedTurns || (!plan.TimedOut && !plan.ReachedNodeLimit && !plan.ReachedStepLimit) ||
                 plan.PolicyBaselineScore.HasValue || !plan.Steps[plan.Steps.Count - 1].IsEndTurn ||
                 plan.Steps.Count(step => step.IsEndTurn) != plan.TurnsCompleted ||
                 plan.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate))
                 throw new InvalidOperationException("Invalid shorter planning window.");
+            if (plan.Steps.Count > plan.MaxSteps || plan.SearchedToBattleEnd && plan.CompletedHorizon &&
+                plan.Outcome is not (RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate))
+                throw new InvalidOperationException("Whole-battle advice must reach a terminal outcome within its step limit.");
             BattleTurnState replayed = root;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             using var keys = new BattleStateKeys();

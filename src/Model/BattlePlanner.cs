@@ -15,13 +15,15 @@ namespace MonsterTrain2Poju.Model
         public int PreferredDeploymentRoom { get; }
         public bool UseTacticalSeed { get; }
         public bool AllowShorterHorizon { get; }
+        public bool SearchToBattleEnd { get; }
+        public int MaxSteps { get; }
         public TimeSpan TimeLimit { get; }
 
         public BattlePlannerOptions(int maxNodes = 2048, int maxTurns = 3, int beamWidth = 16,
             int maxActionsPerTurn = 12, TimeSpan? timeLimit = null, int preferredDeploymentRoom = 2, bool useTacticalSeed = false,
-            bool allowShorterHorizon = false)
+            bool allowShorterHorizon = false, bool searchToBattleEnd = false, int maxSteps = 256)
         {
-            if (maxNodes < 1 || maxTurns < 1 || beamWidth < 1 || maxActionsPerTurn < 1 || preferredDeploymentRoom < 0)
+            if (maxNodes < 1 || maxTurns < 1 || beamWidth < 1 || maxActionsPerTurn < 1 || preferredDeploymentRoom < 0 || maxSteps < 1 || maxSteps == int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(maxNodes));
             TimeLimit = timeLimit ?? TimeSpan.FromSeconds(2);
             if (TimeLimit <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timeLimit));
@@ -29,6 +31,7 @@ namespace MonsterTrain2Poju.Model
             PreferredDeploymentRoom = preferredDeploymentRoom;
             UseTacticalSeed = useTacticalSeed;
             AllowShorterHorizon = allowShorterHorizon;
+            SearchToBattleEnd = searchToBattleEnd; MaxSteps = maxSteps;
         }
     }
 
@@ -52,6 +55,11 @@ namespace MonsterTrain2Poju.Model
         public bool CompletedHorizon { get; }
         public int RequestedTurns { get; }
         public bool UsedShorterHorizon { get; }
+        public bool SearchedToBattleEnd { get; }
+        public bool ReachedStepLimit { get; }
+        public int MaxSteps { get; }
+        public IReadOnlyList<int> WorkerThreadIds { get; }
+        public int SearchWorkers => WorkerThreadIds.Count;
         public double? PolicyBaselineScore { get; }
         public IReadOnlyList<UnsupportedActionAttempt> UnsupportedAttempts { get; }
 
@@ -59,7 +67,8 @@ namespace MonsterTrain2Poju.Model
             double score, int turns, int nodes, int duplicates, int beamPruned, TimeSpan elapsed,
             bool timedOut, bool cancelled, bool nodeLimit, bool actionLimit, bool completed,
             IReadOnlyList<UnsupportedActionAttempt> unsupported, double? policyBaselineScore,
-            int requestedTurns = 0, bool usedShorterHorizon = false)
+            int requestedTurns = 0, bool usedShorterHorizon = false, bool searchedToBattleEnd = false,
+            bool stepLimit = false, int maxSteps = 256, IReadOnlyList<int>? workerThreadIds = null)
         {
             State = state; Outcome = outcome; Steps = Array.AsReadOnly(steps.ToArray()); Score = score;
             TurnsCompleted = turns; ExpandedNodes = nodes; DuplicateStates = duplicates; BeamPruned = beamPruned;
@@ -68,6 +77,8 @@ namespace MonsterTrain2Poju.Model
             UnsupportedAttempts = Array.AsReadOnly(unsupported.ToArray());
             PolicyBaselineScore = policyBaselineScore;
             RequestedTurns = requestedTurns; UsedShorterHorizon = usedShorterHorizon;
+            SearchedToBattleEnd = searchedToBattleEnd; ReachedStepLimit = stepLimit; MaxSteps = maxSteps;
+            WorkerThreadIds = Array.AsReadOnly((workerThreadIds ?? new[] { Thread.CurrentThread.ManagedThreadId }).ToArray());
         }
     }
 
@@ -97,8 +108,9 @@ namespace MonsterTrain2Poju.Model
             if (stateKey == null) throw new ArgumentNullException(nameof(stateKey));
             options ??= new BattlePlannerOptions(); evaluate ??= Evaluate;
             var watch = Stopwatch.StartNew();
+            int maxTurns = options.SearchToBattleEnd ? options.MaxSteps + 1 : options.MaxTurns;
             int nodes = 0, duplicates = 0, pruned = 0;
-            bool timedOut = false, cancelled = false, nodeLimit = false, actionLimit = false;
+            bool timedOut = false, cancelled = false, nodeLimit = false, actionLimit = false, stepLimit = false;
             var seen = new HashSet<string>(StringComparer.Ordinal);
             var unsupported = new List<UnsupportedActionAttempt>();
             var unsupportedKeys = new HashSet<string>(StringComparer.Ordinal);
@@ -129,10 +141,15 @@ namespace MonsterTrain2Poju.Model
                 if (unsupportedKeys.Add(key)) unsupported.Add(attempt);
             }
             bool Terminal(Node node) => node.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
+            bool CanExpand(Node node)
+            {
+                if (node.Steps.Count < options.MaxSteps) return true;
+                stepLimit = true; return false;
+            }
             void Consider(Node node)
             {
                 if (node.Turns > fallback.Turns || node.Turns == fallback.Turns && Better(node, fallback)) fallback = node;
-                if ((Terminal(node) || node.Turns >= options.MaxTurns) && (best == null || Better(node, best))) best = node;
+                if ((Terminal(node) || node.Turns >= maxTurns) && (best == null || Better(node, best))) best = node;
                 // A usable shorter window ends after a complete EndTurn. Do
                 // not publish an arbitrary truncated action sequence.
                 if (node.Turns > 0 && node.Actions == 0 && node.Steps[node.Steps.Count - 1].IsEndTurn &&
@@ -154,7 +171,7 @@ namespace MonsterTrain2Poju.Model
             // when the game runtime reaches its time limit.
             Node Rollout(Node baseline, int? stopAfterTurns = null, bool finishFirstTurn = false)
             {
-                while (baseline.Turns < (stopAfterTurns ?? options.MaxTurns) && !Terminal(baseline) &&
+                while (baseline.Turns < (stopAfterTurns ?? maxTurns) && !Terminal(baseline) && CanExpand(baseline) &&
                     (!Stop() || finishFirstTurn && baseline.Turns == 0 && !cancelled && !nodeLimit))
                 {
                     nodes++;
@@ -165,10 +182,13 @@ namespace MonsterTrain2Poju.Model
                 }
                 return baseline;
             }
+            // Whole-battle mode first obtains a cheap terminal witness. Later
+            // seeds and branches still compete on final Pyre HP within budget.
+            if (options.SearchToBattleEnd) Rollout(root);
             if (options.UseTacticalSeed)
             {
                 Node tactical = root;
-                while (!Stop() && tactical.Turns < options.MaxTurns && !Terminal(tactical))
+                while (!Stop() && tactical.Turns < maxTurns && !Terminal(tactical) && CanExpand(tactical))
                 {
                     nodes++;
                     SupportedActionCandidate? chosen = null;
@@ -198,24 +218,17 @@ namespace MonsterTrain2Poju.Model
                     // One atomic candidate can consume the soft time budget.
                     // Finish its first turn before publishing a shorter window;
                     // cancellation and the hard node limit still take priority.
-                    if (tactical.Steps.Count == 1) Rollout(tactical, options.AllowShorterHorizon ? 1 : options.MaxTurns,
+                    if (tactical.Steps.Count == 1) Rollout(tactical, options.AllowShorterHorizon ? 1 : maxTurns,
                         finishFirstTurn: options.AllowShorterHorizon);
                 }
-                // This opt-in mode accepts the first complete winning seed. It
-                // remains bounded and replayable, without an optimality claim.
-                if (tactical.Outcome == RoomOutcome.BattleWon)
-                {
-                    Stop();
-                    return new BattlePlanResult(tactical.State, tactical.Outcome, tactical.Steps, tactical.Score, tactical.Turns,
-                        nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, true, unsupported, null,
-                        options.MaxTurns);
-                }
+                // A winning seed remains an incumbent; use the remaining budget
+                // to seek a win that preserves more Pyre health.
             }
 
             // With too few nodes for the requested horizon, retain complete
             // turn boundaries instead of spending the only node on a card
             // that cannot be published. Initial deployment still needs a unit.
-            if (source.Spawn.Turn > 0 && options.MaxNodes <= options.MaxTurns) Rollout(root);
+            if (!options.SearchToBattleEnd && source.Spawn.Turn > 0 && options.MaxNodes <= maxTurns) Rollout(root);
 
             // Spend the interactive budget on useful card choices before the
             // no-card baseline. Equipment replacement, tank placement and
@@ -230,7 +243,7 @@ namespace MonsterTrain2Poju.Model
                 ? source.Spawn.Train.Rooms.FirstOrDefault(room => room.Units.Any(unit =>
                     unit.Team == CombatTeam.Player && unit.Health > 0 && unit.Modifiers?.IsChampion == true))?.RoomIndex ?? options.PreferredDeploymentRoom
                 : options.PreferredDeploymentRoom;
-            while (!Stop() && strength.Turns < options.MaxTurns && !Terminal(strength))
+            while (!Stop() && strength.Turns < maxTurns && !Terminal(strength) && CanExpand(strength))
             {
                 nodes++;
                 SupportedActionCandidate? chosen = null;
@@ -250,7 +263,7 @@ namespace MonsterTrain2Poju.Model
                     // forecasting immediately after a free ability/draw can spend
                     // the budget before the seed reaches its damaging or X card.
                     if (source.Spawn.Turn == 0 && strength.Steps.Count == 1)
-                        Rollout(strength, options.AllowShorterHorizon ? 1 : options.MaxTurns,
+                        Rollout(strength, options.AllowShorterHorizon ? 1 : maxTurns,
                             finishFirstTurn: options.AllowShorterHorizon);
                 }
                 else
@@ -267,7 +280,7 @@ namespace MonsterTrain2Poju.Model
                         // budget to later empty turns. A verified two-turn
                         // prefix can still be published as a shorter window.
                         Node forecast = Rollout(strength, adaptDeployment && source.Spawn.Turn == 0
-                            ? Math.Min(2, options.MaxTurns) : options.MaxTurns);
+                            ? Math.Min(2, maxTurns) : maxTurns);
                         // Compare other deployments only when the ordinary
                         // opening forecast loses a unit already deployed by
                         // this seed. Each alternative uses real legal actions
@@ -284,7 +297,7 @@ namespace MonsterTrain2Poju.Model
                             {
                                 if (Stop()) break;
                                 Node alternate = root;
-                                while (!Stop() && alternate.Turns == 0 && !Terminal(alternate))
+                                while (!Stop() && alternate.Turns == 0 && !Terminal(alternate) && CanExpand(alternate))
                                 {
                                     nodes++;
                                     SupportedActionCandidate? move = null;
@@ -329,7 +342,7 @@ namespace MonsterTrain2Poju.Model
                 strength.Turns == 0 && strength.Actions > 0 && timedOut)
                 Rollout(strength, 1, finishFirstTurn: true);
 
-            Rollout(root);
+            if (!options.SearchToBattleEnd) Rollout(root);
 
             // Seed the existing fixed play policy as well as the no-card path.
             // Reuse its cached successors rather than applying a selected card
@@ -338,7 +351,7 @@ namespace MonsterTrain2Poju.Model
             // after every card. The no-card horizon remains an executable
             // fallback if either seed cannot finish in time.
             Node policy = root;
-            while (!Stop() && policy.Turns < options.MaxTurns && !Terminal(policy))
+            while (!Stop() && policy.Turns < maxTurns && !Terminal(policy) && CanExpand(policy))
             {
                 nodes++;
                 SupportedActionCandidate? chosen = null;
@@ -362,7 +375,7 @@ namespace MonsterTrain2Poju.Model
                     Consider(policy);
                 }
             }
-            if (policy.Turns >= options.MaxTurns || Terminal(policy)) policyBaselineScore = policy.Score;
+            if (policy.Turns >= maxTurns || Terminal(policy)) policyBaselineScore = policy.Score;
 
             var frontier = new List<Node> { root };
             if (!Stop()) seen.Add("0|" + stateKey(source));
@@ -372,6 +385,7 @@ namespace MonsterTrain2Poju.Model
                 foreach (Node node in frontier)
                 {
                     if (Stop()) break;
+                    if (!CanExpand(node)) continue;
                     nodes++;
                     if (node.Actions < options.MaxActionsPerTurn)
                     {
@@ -402,7 +416,7 @@ namespace MonsterTrain2Poju.Model
                 void Add(Node child)
                 {
                     Consider(child);
-                    if (Terminal(child) || child.Turns >= options.MaxTurns) return;
+                    if (Terminal(child) || child.Turns >= maxTurns || !CanExpand(child)) return;
                     string key = child.Turns + "|" + stateKey(child.State);
                     if (!seen.Add(key)) { duplicates++; return; }
                     next.Add(child);
@@ -412,11 +426,11 @@ namespace MonsterTrain2Poju.Model
             cancelled |= cancellationToken.IsCancellationRequested;
             timedOut |= watch.Elapsed >= options.TimeLimit;
             bool shorter = best == null && options.AllowShorterHorizon && completedPrefix != null &&
-                !cancelled && (timedOut || nodeLimit);
+                !cancelled && (timedOut || nodeLimit || stepLimit);
             Node selected = best ?? (shorter ? completedPrefix! : fallback);
             return new BattlePlanResult(selected.State, selected.Outcome, selected.Steps, selected.Score, selected.Turns,
                 nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null, unsupported, policyBaselineScore,
-                options.MaxTurns, shorter);
+                maxTurns, shorter, options.SearchToBattleEnd, stepLimit, options.MaxSteps);
         }
 
         private sealed class Node

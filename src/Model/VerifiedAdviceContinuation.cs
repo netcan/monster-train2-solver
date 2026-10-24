@@ -38,7 +38,8 @@ namespace MonsterTrain2Poju.Model
                 original.TimedOut, false, original.ReachedNodeLimit, original.ReachedActionLimit,
                 original.CompletedHorizon, IsWinning ? Array.Empty<UnsupportedActionAttempt>() : original.UnsupportedAttempts,
                 null, original.RequestedTurns,
-                original.UsedShorterHorizon);
+                original.UsedShorterHorizon, original.SearchedToBattleEnd, original.ReachedStepLimit,
+                original.MaxSteps, original.WorkerThreadIds);
         }
     }
 }

@@ -834,6 +834,13 @@ if (args.Length == 2 && args[0] == "--belief-battle-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--parallel-planner-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    ParallelPlannerChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--exact-battle-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
