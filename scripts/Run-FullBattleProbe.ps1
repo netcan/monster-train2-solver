@@ -2374,10 +2374,11 @@ if ($AdvisorPresentation -and -not $RollingInput) {
     $presentation = $trace.PlayerAdvisor.Presentation
     if ($null -eq $presentation -or $presentation.RetainedInputs -lt 1 -or $presentation.PendingFrames -lt 1 -or
         $presentation.ReusedPublications -lt 1 -or $presentation.ScrolledPublications -lt 1 -or $presentation.Resets -lt 1 -or
+        $presentation.BudgetChanges -lt 4 -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'PLAYER-ADVISOR-PRESENTATION-PASS' -Quiet)) {
         throw 'Player UI did not retain pending text and reading position across native inputs and reused publications.'
     }
-    Write-Output "PLAYER-PRESENTATION-PASS retainedInputs=$($presentation.RetainedInputs) pendingFrames=$($presentation.PendingFrames) reusedPublications=$($presentation.ReusedPublications) scrolledPublications=$($presentation.ScrolledPublications) resets=$($presentation.Resets)"
+    Write-Output "PLAYER-PRESENTATION-PASS retainedInputs=$($presentation.RetainedInputs) pendingFrames=$($presentation.PendingFrames) reusedPublications=$($presentation.ReusedPublications) scrolledPublications=$($presentation.ScrolledPublications) resets=$($presentation.Resets) budgetChanges=$($presentation.BudgetChanges)"
 }
 if ($PlayerAdvisor -and $RollingInput) {
     $frozen = $trace.PlayerAdvisor.FrozenObservation

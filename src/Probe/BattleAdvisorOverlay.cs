@@ -24,7 +24,9 @@ namespace MonsterTrain2Poju.Probe
         private readonly ManualLogSource log;
         private readonly BattleAdviceSession session;
         private readonly int horizon;
-        private readonly int timeLimitMs;
+        private int timeLimitMs;
+        private readonly Func<int>? readTimeLimitMs;
+        private readonly Action<int>? saveTimeLimitMs;
         private readonly bool wholeBattle;
         private readonly int maxSteps, searchWorkers;
         private readonly bool playerSession;
@@ -34,6 +36,7 @@ namespace MonsterTrain2Poju.Probe
         private GameObject canvas = null!;
         private GameObject panel = null!;
         private Text body = null!, pauseLabel = null!, toggleLabel = null!, planLabel = null!, statusLabel = null!;
+        private Text? budgetLabel;
         private ScrollRect planScroll = null!;
         private bool showFullPlan;
         private Font? uiFont;
@@ -123,6 +126,8 @@ namespace MonsterTrain2Poju.Probe
             toggleKey = settings?.ToggleKey ?? KeyCode.F8;
             horizon = settings?.Horizon ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_HORIZON") ?? "3");
             timeLimitMs = settings?.TimeLimitMs ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TIME_LIMIT_MS") ?? "3000");
+            readTimeLimitMs = settings?.ReadTimeLimitMs;
+            saveTimeLimitMs = settings?.SaveTimeLimitMs;
             wholeBattle = settings?.WholeBattle ?? Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_WHOLE_BATTLE") == "1";
             maxSteps = settings?.MaxSteps ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_MAX_STEPS") ?? "256");
             searchWorkers = settings?.SearchWorkers ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_SEARCH_WORKERS") ?? "1");
@@ -131,9 +136,10 @@ namespace MonsterTrain2Poju.Probe
             bool tactical = settings?.TacticalSeed ?? Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1";
             string? externalTool = playerSession ? null : Environment.GetEnvironmentVariable("MT2_PROBE_DOTNET_PLANNER");
             if (string.IsNullOrEmpty(externalTool))
-                session = new BattleAdviceSession(new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromMilliseconds(timeLimitMs),
+                session = new BattleAdviceSession((root, token) => ParallelBattlePlanner.Plan(root,
+                    new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromMilliseconds(Volatile.Read(ref timeLimitMs)),
                     preferredDeploymentRoom: floor, useTacticalSeed: tactical, allowShorterHorizon: playerSession || wholeBattle,
-                    searchToBattleEnd: wholeBattle, maxSteps: maxSteps), searchWorkers);
+                    searchToBattleEnd: wholeBattle, maxSteps: maxSteps), searchWorkers, token));
             else
             {
                 if (wholeBattle || searchWorkers != 1) throw new InvalidOperationException("Whole-battle/parallel search requires the in-process planner.");
@@ -190,13 +196,13 @@ namespace MonsterTrain2Poju.Probe
             planScroll = viewport.GetComponent<ScrollRect>(); planScroll.viewport = viewRect; planScroll.content = content;
             planScroll.horizontal = false; planScroll.vertical = true; planScroll.scrollSensitivity = 35;
             planScroll.movementType = ScrollRect.MovementType.Clamped;
-            Text Button(string title, float x, Action click, bool launcher = false)
+            Text Button(string title, float x, Action click, bool launcher = false, float y = 315)
             {
                 var button = new GameObject(title, typeof(RectTransform), typeof(Image), typeof(Button));
                 button.transform.SetParent(launcher ? canvas.transform : panel.transform, false);
                 RectTransform place = button.GetComponent<RectTransform>();
                 place.anchorMin = place.anchorMax = place.pivot = new Vector2(launcher ? 1 : 0, 1);
-                place.anchoredPosition = launcher ? new Vector2(-20, -20) : new Vector2(x, -315);
+                place.anchoredPosition = launcher ? new Vector2(-20, -20) : new Vector2(x, -y);
                 place.sizeDelta = launcher ? new Vector2(160, 34) : new Vector2(132, 32);
                 button.GetComponent<Image>().color = new Color(.12f, .22f, .29f);
                 button.GetComponent<Button>().onClick.AddListener(() => click());
@@ -210,6 +216,17 @@ namespace MonsterTrain2Poju.Probe
             Button("重新计算", 18, () => { paused = false; pauseLabel.text = "暂停建议"; Invalidate(); });
             pauseLabel = Button(paused ? "恢复建议" : "暂停建议", 164, () => { paused = !paused; Invalidate(); pauseLabel.text = paused ? "恢复建议" : "暂停建议"; });
             planLabel = Button("完整方案", 310, () => SetFullPlan(!showFullPlan));
+            if (playerSession)
+            {
+                titleLabel.rectTransform.sizeDelta = new Vector2(292, 34);
+                budgetLabel = Button("", 310, () =>
+                {
+                    int next = timeLimitMs < 3000 ? 3000 : timeLimitMs < 10000 ? 10000 : timeLimitMs < 30000 ? 30000 : 3000;
+                    SetSearchTimeLimit(next);
+                    saveTimeLimitMs?.Invoke(next);
+                }, y: 16);
+                SetSearchTimeLimit(timeLimitMs);
+            }
             toggleLabel = Button(panelVisible ? "隐藏破局建议" : "显示破局建议", 0, () => SetPanelVisible(!panelVisible), launcher: true);
             SetFullPlan(showFullPlan);
             panel.SetActive(panelVisible);
@@ -219,6 +236,13 @@ namespace MonsterTrain2Poju.Probe
 
         internal void Keyboard()
         { if (canvas != null && Input.GetKeyDown(toggleKey)) SetPanelVisible(!panelVisible); }
+
+        private void SetSearchTimeLimit(int value)
+        {
+            if (value < 100 || value > 30000) throw new ArgumentOutOfRangeException(nameof(value));
+            Volatile.Write(ref timeLimitMs, value);
+            if (budgetLabel != null) budgetLabel.text = "时长 " + (value / 1000d).ToString("0.###") + " 秒";
+        }
 
         private void SetPanelVisible(bool visible)
         {
@@ -290,6 +314,11 @@ namespace MonsterTrain2Poju.Probe
             // The launcher and waiting state are useful before battle managers
             // exist and while the game loads. Only state capture must wait.
             EnsureUi();
+            if (readTimeLimitMs != null)
+            {
+                int configured = readTimeLimitMs();
+                if (configured != timeLimitMs) SetSearchTimeLimit(configured);
+            }
             Keyboard();
             AllGameManagers? managers = AllGameManagers.Instance;
             if (managers == null || LoadingScreen.IsWorking())
@@ -582,7 +611,7 @@ namespace MonsterTrain2Poju.Probe
             }
             if (showFullPlan)
             {
-                text.Append("\n完整方案 · ").Append(plan.Steps.Count).Append(" 步\n按当前局面预测，操作后更新。\n\n当前回合\n");
+                text.Append(plan.UsedShorterHorizon ? "\n部分方案 · " : "\n完整方案 · ").Append(plan.Steps.Count).Append(" 步\n按当前局面预测，操作后更新。\n\n当前回合\n");
                 int turns = 0;
                 for (int index = 0; index < plan.Steps.Count; index++)
                 {
@@ -597,6 +626,7 @@ namespace MonsterTrain2Poju.Probe
             else if (advice.ReusedContinuation) text.Append("\n\n沿用已验证步骤");
             else text.Append("\n\n搜索 ").Append((plan.Elapsed.TotalMilliseconds / 1000).ToString("F2")).Append(" 秒");
             if (plan.TimedOut) text.Append(" · 使用预算内已验证方案");
+            if (plan.TimedOut && playerSession) text.Append("\n可增加时长后点击重新计算");
             if (plan.ReachedStepLimit) text.Append("\n部分路线已达 ").Append(plan.MaxSteps).Append(" 步上限");
             if (plan.UnsupportedAttempts.Count > 0) text.Append("\n部分操作尚未纳入比较");
             return text.ToString();

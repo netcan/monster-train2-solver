@@ -136,11 +136,12 @@ internal static class OpeningForsakenTrialChecks
         Require(end.Supported, "Actual first EndTurn unsupported: " + end.UnsupportedReason);
         var plan = ParallelBattlePlanner.Plan(root, new BattlePlannerOptions(256, beamWidth: 8, timeLimit: TimeSpan.FromSeconds(3),
             allowShorterHorizon: true, searchToBattleEnd: true), 2);
-        Require(plan.CompletedHorizon && plan.SearchedToBattleEnd && !plan.UsedShorterHorizon, "Actual position still lacks a complete continuation: " +
+        Require(plan.SearchedToBattleEnd && (plan.CompletedHorizon || plan.UsedShorterHorizon) &&
+            plan.Steps.Count >= 2 && !plan.Steps[0].IsEndTurn, "Actual position still lacks a usable deployed continuation: " +
             JsonSerializer.Serialize(plan.UnsupportedAttempts, ModelJson.Options));
         BattleAdviceSession.Verify(root, plan);
         Require(keys.Key(root) == parent, "Live-root search/replay mutated captured input.");
-        Console.WriteLine($"LIVE-FORSAKEN PASS turn=0 complete=true outcome={plan.Outcome} steps={plan.Steps.Count} turns={plan.TurnsCompleted} nodes={plan.ExpandedNodes} elapsedMs={plan.Elapsed.TotalMilliseconds:F0} fullReplay=true");
+        Console.WriteLine($"LIVE-FORSAKEN PASS turn=0 complete={plan.CompletedHorizon} partial={plan.UsedShorterHorizon} first=play outcome={plan.Outcome} steps={plan.Steps.Count} turns={plan.TurnsCompleted} nodes={plan.ExpandedNodes} elapsedMs={plan.Elapsed.TotalMilliseconds:F0} fullReplay=true");
     }
 
     private static IEnumerable<JsonObject> Objects(JsonNode node)

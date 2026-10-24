@@ -16,9 +16,10 @@ namespace MonsterTrain2Poju.Probe
         private static object overlay = null!;
         private static ManualLogSource log = null!;
         private static bool expanded;
-        private static int retainedInputs, pendingFrames, reusedPublications, scrolledPublications, resets;
+        private static int retainedInputs, pendingFrames, reusedPublications, scrolledPublications, resets, budgetChanges;
         internal static object Evidence => new { RetainedInputs = retainedInputs, PendingFrames = pendingFrames,
-            ReusedPublications = reusedPublications, ScrolledPublications = scrolledPublications, Resets = resets };
+            ReusedPublications = reusedPublications, ScrolledPublications = scrolledPublications, Resets = resets,
+            BudgetChanges = budgetChanges };
 
         private static T Field<T>(string name) => (T)AccessTools.Field(type, name).GetValue(overlay);
         private static void Require(bool condition, string message)
@@ -49,6 +50,45 @@ namespace MonsterTrain2Poju.Probe
             AccessTools.Method(type, "SetFullPlan").Invoke(overlay, new object[] { true });
             expanded = true;
             ScrollForNextInput();
+            CheckSearchBudget();
+        }
+
+        private static void CheckSearchBudget()
+        {
+            var before = new Snapshot();
+            long generation = Field<BattleAdviceSession>("session").Generation;
+            int original = Field<int>("timeLimitMs");
+            var label = Field<Text>("budgetLabel");
+            var read = Field<Func<int>>("readTimeLimitMs");
+            var save = Field<Action<int>>("saveTimeLimitMs");
+            for (int index = 0; index < 3; index++)
+            {
+                int current = Field<int>("timeLimitMs");
+                int expected = current < 3000 ? 3000 : current < 10000 ? 10000 : current < 30000 ? 30000 : 3000;
+                label.transform.parent.GetComponent<Button>().onClick.Invoke();
+                Require(Field<int>("timeLimitMs") == expected && read() == expected &&
+                    label.text == "时长 " + (expected / 1000) + " 秒", "search budget button did not persist its displayed value");
+                Require(Field<BattleAdviceSession>("session").SearchCount == before.Searches &&
+                    Field<BattleAdviceSession>("session").Generation == generation &&
+                    ReferenceEquals(Field<BattleAdvice?>("displayed"), before.Advice) &&
+                    Field<Text>("body").text == before.Text &&
+                    Math.Abs(Field<ScrollRect>("planScroll").verticalNormalizedPosition - before.Scroll) < .005,
+                    "changing search duration restarted search or changed the readable advice");
+                budgetChanges++;
+            }
+            // The configuration manager writes the same provider. Observe it
+            // on the normal UI tick, preserving the existing publication.
+            save(5000);
+            AccessTools.Method(type, "Tick").Invoke(overlay, Array.Empty<object>());
+            Require(Field<int>("timeLimitMs") == 5000 && label.text == "时长 5 秒" &&
+                Field<BattleAdviceSession>("session").SearchCount == before.Searches &&
+                Field<BattleAdviceSession>("session").Generation == generation &&
+                ReferenceEquals(Field<BattleAdvice?>("displayed"), before.Advice),
+                "configuration duration was not applied live or restarted search");
+            budgetChanges++;
+            save(original);
+            AccessTools.Method(type, "SetSearchTimeLimit").Invoke(overlay, new object[] { original });
+            log.LogInfo("PLAYER-ADVISOR-BUDGET-PASS changes=" + budgetChanges + " newSearches=0 persisted=true");
         }
 
         private static void ScrollForNextInput()

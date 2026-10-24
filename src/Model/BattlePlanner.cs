@@ -182,9 +182,12 @@ namespace MonsterTrain2Poju.Model
                 }
                 return baseline;
             }
-            // Whole-battle mode first obtains a cheap terminal witness. Later
-            // seeds and branches still compete on final Pyre HP within budget.
-            if (options.SearchToBattleEnd) Rollout(root);
+            // Build a useful current-turn route before the no-card forecast.
+            // Native cold-start EndTurns can consume the whole soft budget;
+            // an empty-tower defeat must not prevent trying a legal deployment.
+            // With only one available expansion/step, a card cannot reach a
+            // publishable turn boundary. Preserve the bounded EndTurn fallback.
+            if (options.SearchToBattleEnd && (options.MaxSteps == 1 || options.MaxNodes == 1)) Rollout(root);
             if (options.UseTacticalSeed)
             {
                 Node tactical = root;
@@ -342,7 +345,7 @@ namespace MonsterTrain2Poju.Model
                 strength.Turns == 0 && strength.Actions > 0 && timedOut)
                 Rollout(strength, 1, finishFirstTurn: true);
 
-            if (!options.SearchToBattleEnd) Rollout(root);
+            Rollout(root);
 
             // Seed the existing fixed play policy as well as the no-card path.
             // Reuse its cached successors rather than applying a selected card

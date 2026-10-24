@@ -65,6 +65,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-live-conduit-floor-scroll.mt2f',
     'player-live-moon-continuation.mt2f',
     'player-live-forsaken-trial.mt2f',
+    'player-live-empty-deployment-advice.mt2f',
     'full-battle-original-opening-forsaken-covenant10.mt2f',
     'full-battle-original-moon-card-upgrades-live-relics-covenant10.mt2f',
     'full-battle-player-ordinary-continuation-search.mt2f', 'full-battle-player-ordinary-continuation-replay.mt2f',
@@ -2412,6 +2413,10 @@ foreach ($fixturePath in $soldierFixtures) {
     }
 }
 $originalMoonCardUpgradeFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-moon-card-upgrades.mt2f' })
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-live-empty-deployment-advice.mt2f' })) {
+    dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- --deployment-advice-budget-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw "Deployment advice budget checks failed: $fixturePath" }
+}
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-live-forsaken-trial.mt2f' })) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --live-forsaken-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw "Live Forsaken opening checks failed: $fixturePath" }

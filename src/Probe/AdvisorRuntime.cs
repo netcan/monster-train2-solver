@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace MonsterTrain2Poju.Probe
@@ -11,6 +12,8 @@ namespace MonsterTrain2Poju.Probe
     {
         internal int Horizon { get; set; } = 3;
         internal int TimeLimitMs { get; set; } = 3000;
+        internal Func<int>? ReadTimeLimitMs { get; set; }
+        internal Action<int>? SaveTimeLimitMs { get; set; }
         internal bool WholeBattle { get; set; } = true;
         internal int MaxSteps { get; set; } = 256;
         internal int SearchWorkers { get; set; } = 2;

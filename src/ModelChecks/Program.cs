@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--deployment-advice-budget-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    DeploymentAdviceBudgetChecks.Run(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--project-live-forsaken")
 {
     OpeningForsakenTrialChecks.ProjectLive(args[1], args[2]);
@@ -5324,6 +5331,12 @@ foreach (string path in args.Where(path => path.EndsWith("player-live-moon-conti
     using var fixture = ModelJson.ReadFixture(path);
     LiveMoonContinuationChecks.Run(fixture.RootElement);
 }
+foreach (string path in args.Where(path => path.EndsWith("player-live-empty-deployment-advice.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    DeploymentAdviceBudgetChecks.Run(fixture.RootElement);
+}
+
 foreach (string path in args.Where(path => path.EndsWith("player-live-forsaken-trial.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);

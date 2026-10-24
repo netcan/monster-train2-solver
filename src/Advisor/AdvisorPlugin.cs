@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Advisor
     public sealed class AdvisorPlugin : BaseUnityPlugin
     {
         public const string PluginId = "netcan.monstertrain2.advisor";
-        public const string Version = "0.2.14";
+        public const string Version = "0.2.15";
         private Harmony? harmony;
         private BattleAdvisorOverlay? overlay;
         private bool updateLogged;
@@ -25,6 +25,8 @@ namespace MonsterTrain2Poju.Advisor
                 // at frame zero. Match BepInEx's hidden-manager protection so
                 // this component survives even with its default loader config.
                 gameObject.hideFlags |= HideFlags.HideAndDontSave;
+                var searchTimeLimit = Config.Bind("Search", "TimeLimitMs", 3000,
+                    new ConfigDescription("每次后台搜索的毫秒预算；修改后点击重新计算生效，也可用建议面板的时长按钮切换。", new AcceptableValueRange<int>(100, 30000)));
                 var settings = new PlayerAdvisorSettings
                 {
                     Horizon = Config.Bind("Search", "Horizon", 3,
@@ -34,8 +36,9 @@ namespace MonsterTrain2Poju.Advisor
                         new ConfigDescription("每条路线的总步数上限，包含出牌、技能和结束回合；限制无尽或循环局面。", new AcceptableValueRange<int>(1, 4096))).Value,
                     SearchWorkers = Config.Bind("Search", "SearchWorkers", 2,
                         new ConfigDescription("后台搜索线程上限；共用节点与时间预算，最多两个并自动给游戏留一个逻辑核心。1 为单线程。", new AcceptableValueRange<int>(1, 2))).Value,
-                    TimeLimitMs = Config.Bind("Search", "TimeLimitMs", 3000,
-                        new ConfigDescription("每次后台搜索的毫秒预算。", new AcceptableValueRange<int>(100, 30000))).Value,
+                    TimeLimitMs = searchTimeLimit.Value,
+                    ReadTimeLimitMs = () => searchTimeLimit.Value,
+                    SaveTimeLimitMs = value => searchTimeLimit.Value = value,
                     DeploymentRoom = Config.Bind("Search", "PreferredFloor", 3,
                         new ConfigDescription("优先部署层（1 为底层）。", new AcceptableValueRange<int>(1, 3))).Value - 1,
                     TacticalSeed = Config.Bind("Search", "TacticalSeed", false, "启用额外战术候选，可能增加计算时间。").Value,
