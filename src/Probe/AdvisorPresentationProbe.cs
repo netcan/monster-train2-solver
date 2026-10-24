@@ -16,10 +16,10 @@ namespace MonsterTrain2Poju.Probe
         private static object overlay = null!;
         private static ManualLogSource log = null!;
         private static bool expanded;
-        private static int retainedInputs, pendingFrames, reusedPublications, scrolledPublications, resets, budgetChanges;
+        private static int retainedInputs, pendingFrames, reusedPublications, scrolledPublications, resets, budgetChanges, collapsedTurnResets;
         internal static object Evidence => new { RetainedInputs = retainedInputs, PendingFrames = pendingFrames,
             ReusedPublications = reusedPublications, ScrolledPublications = scrolledPublications, Resets = resets,
-            BudgetChanges = budgetChanges };
+            BudgetChanges = budgetChanges, CollapsedTurnResets = collapsedTurnResets };
 
         private static T Field<T>(string name) => (T)AccessTools.Field(type, name).GetValue(overlay);
         private static void Require(bool condition, string message)
@@ -138,7 +138,16 @@ namespace MonsterTrain2Poju.Probe
             if (__state.Advice == null || Field<BattleAdviceSession>("session").SearchCount != __state.Searches ||
                 !(displayed.ReusedContinuation || displayed.ReusedSelection)) return;
             ScrollRect scroll = Field<ScrollRect>("planScroll");
-            if (scroll.content.rect.height > scroll.viewport.rect.height + 10)
+            bool newTurn = displayed.Root.Spawn.Turn != __state.Advice.Root.Spawn.Turn;
+            if (newTurn && !Field<bool>("showFullPlan"))
+            {
+                Require(Math.Abs(scroll.verticalNormalizedPosition - 1) < .005 && scroll.velocity == Vector2.zero,
+                    "collapsed new turn did not return to its first step or kept scroll inertia");
+                string text = Field<Text>("body").text;
+                Require(text.Contains("本回合步骤") && text.Contains("\n1. "), "new turn omitted its first current-turn step");
+                collapsedTurnResets++;
+            }
+            else if (scroll.content.rect.height > scroll.viewport.rect.height + 10)
             {
                 Require(Math.Abs(scroll.verticalNormalizedPosition - __state.Scroll) < .005,
                     "reused publication reset the reading position");
@@ -148,7 +157,14 @@ namespace MonsterTrain2Poju.Probe
             reusedPublications++;
             log.LogInfo("PLAYER-ADVISOR-PRESENTATION-PASS reuse=" + reusedPublications +
                 " retainedInputs=" + retainedInputs + " pendingFrames=" + pendingFrames + " scroll=" + scroll.verticalNormalizedPosition);
-            if (expanded) ScrollForNextInput();
+            // First exercise the existing expanded reading position, then keep
+            // the panel collapsed through actual native turn transitions.
+            if (expanded && scrolledPublications > 0)
+            {
+                AccessTools.Method(type, "SetFullPlan").Invoke(overlay, new object[] { false });
+                expanded = false;
+            }
+            ScrollForNextInput();
         }
     }
 }

@@ -40,3 +40,20 @@ and installation.json are saved under
 The package is `results/mod-dist/PojuAdvisor-0.2.19-Windows-20261024-214923.zip`.
 No Mac build or real player input/restart was performed. The running player
 PID4972 still has 0.2.18 loaded and needs a user restart to load 0.2.19.
+
+## Collapsed turn-boundary scroll fix
+
+Collapsed verified continuations now stop scroll inertia and reset to the top
+when the root turn changes. Same-turn continuation and expanded-plan reading
+positions remain preserved. Resetting also applies when the rendered text is
+identical, such as consecutive EndTurn-only turns. This adds no capture/search.
+Unavailable publications now log their actual reason once per generation.
+
+Isolated player acceptance
+`.probe-runs/full-battle-units-spells-and-junk-20261024-222503-d61fa23d`
+passes six collapsed native turn transitions, three preserved scrolled
+publications, ten reused publications and four live budget changes. It wins
+after four plays/seven EndTurns with 53 room stages, all four failure counters
+zero, original player files unchanged and normal exit in 89.12 seconds.
+The command above adds `-AdvisorPresentation`. The accepted initial scroll
+build still identifies as 0.2.20; combined Windows delivery follows in 0.2.21.

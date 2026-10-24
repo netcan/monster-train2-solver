@@ -46,6 +46,7 @@ namespace MonsterTrain2Poju.Probe
         private BattleAdvice? displayed;
         private int displayFrame;
         private long displayedSearches;
+        private long unavailableGeneration = -1;
         private bool captureNeeded = true, observed;
         private bool capturing;
         private AdvisorObservation observation;
@@ -470,7 +471,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 PublicationRootChecks++;
                 bool preserveScroll = displayed != null && session.SearchCount == displayedSearches &&
-                    (session.Current.ReusedContinuation || session.Current.ReusedSelection);
+                    (session.Current.ReusedContinuation || session.Current.ReusedSelection) &&
+                    (showFullPlan || displayed.Root.Spawn.Turn == session.Current.Root.Spawn.Turn);
                 float scroll = preserveScroll ? planScroll.verticalNormalizedPosition : 1;
                 displayed = session.Current; Published++;
                 if (displayed.ReusedSelection) SelectionReuses++;
@@ -483,8 +485,9 @@ namespace MonsterTrain2Poju.Probe
                     // Rebuild only this text's layout before restoring the
                     // reading position after the suffix changes content height.
                     LayoutRebuilder.ForceRebuildLayoutImmediate(body.rectTransform);
-                    planScroll.verticalNormalizedPosition = scroll;
                 }
+                if (!preserveScroll) planScroll.StopMovement();
+                planScroll.verticalNormalizedPosition = scroll;
                 SetPending(false);
                 Publications.Add(new Publication { Generation = session.Generation, Turn = displayed.Root.Spawn.Turn,
                     SearchMetrics = displayed.Plan.SearchMetrics, DuplicateStates = displayed.Plan.DuplicateStates,
@@ -525,10 +528,17 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             else if (captureError != null || session.Status == BattleAdviceStatus.Unavailable || displayed == null)
+            {
+                if (session.Status == BattleAdviceStatus.Unavailable && unavailableGeneration != session.Generation)
+                {
+                    unavailableGeneration = session.Generation;
+                    log.LogWarning("POJU-ADVICE-UNAVAILABLE generation=" + session.Generation + " reason=" + session.Error);
+                }
                 ShowMessage(captureError != null ? "局面采集失败，请重新计算。" : session.Status == BattleAdviceStatus.Unavailable ?
                     "本局面暂时无法给出完整建议。\n可重新计算或继续手动操作。" :
                     session.Status == BattleAdviceStatus.Planning && session.SearchCount != displayedSearches ?
                     "正在计算新方案…\n你可以继续操作，建议会随局面更新。" : "正在核对局面…");
+            }
             else SetPending(!ReferenceEquals(displayed, session.Current) || captureNeeded || selectionPending || preparation != null);
         }
 
