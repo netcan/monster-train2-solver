@@ -1,5 +1,14 @@
 # Player Mod validation · 2026-10-24
 
+Natural Covenant3 Ring6 initially showed no advice because the exact original
+Angel pair rejected its merchant-only third owner. The shared projection/model
+gate now admits that ordered original prefix for Incant-Health only. Fresh
+native birth,16 immutable branches and a seven-EndTurn no-card loss match
+complete state/RNG,61 room stages and14 train phases; normal exit,protected
+originals and four zero counters pass. Other variants remain guarded. This
+mechanism calibration is separate from player-victory acceptance. See
+[natural Angel birth](../tests/fixtures/angel-duo.md#natural-cumulative-covenant3-birth).
+
 Natural Covenant3 Ring5 now passes actual-default source and independent native
 replay:43 inputs,Pyre72 wins,74 room stages and17 train phases per process,
 complete forecasts/state/RNG,normal exits and four zero failure counters.

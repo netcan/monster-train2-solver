@@ -205,16 +205,16 @@ if (args.Length == 2 && args[0] == "--angel-duo-incant-only")
     RoomCombatChecks.NativeRoomOnly(args[1]);
     return;
 }
-if (args.Length == 2 && args[0] == "--angel-duo-battle-only")
+if (args.Length == 2 && args[0] is "--angel-duo-battle-only" or "--angel-duo-natural-battle-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    AngelDuoBirthChecks.Battle(fixture.RootElement, args[1]);
+    AngelDuoBirthChecks.Battle(fixture.RootElement, args[1], args[0] == "--angel-duo-natural-battle-only");
     return;
 }
-if (args.Length == 2 && args[0] == "--angel-duo-birth-only")
+if (args.Length == 2 && args[0] is "--angel-duo-birth-only" or "--angel-duo-natural-birth-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    AngelDuoBirthChecks.Native(fixture.RootElement);
+    AngelDuoBirthChecks.Native(fixture.RootElement, args[0] == "--angel-duo-natural-birth-only");
     return;
 }
 
@@ -4629,12 +4629,19 @@ foreach (string path in args.Where(path => path.Contains("outer-boss-birth-calib
     using var fixture = ModelJson.ReadFixture(path);
     if (Path.GetFileName(path) == "outer-boss-birth-calibration-angel-duo.mt2f")
         AngelDuoBirthChecks.Native(fixture.RootElement);
+    else if (Path.GetFileName(path) == "outer-boss-birth-calibration-angel-duo-natural-covenant03.mt2f")
+        AngelDuoBirthChecks.Native(fixture.RootElement, natural: true);
     else OuterBossBirthChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-native-covenant-02-angel-duo.mt2f"))
 {
     using var fixture = ModelJson.ReadFixture(path);
     AngelDuoBirthChecks.Battle(fixture.RootElement, path);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-angel-duo-natural-covenant03.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    AngelDuoBirthChecks.Battle(fixture.RootElement, path, natural: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "angel-duo-relentless-entry-calibration.mt2f" or
     "angel-duo-paired-phase-calibration.mt2f" or "angel-duo-paired-pyre-calibration.mt2f"))

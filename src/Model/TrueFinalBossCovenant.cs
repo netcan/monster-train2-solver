@@ -86,7 +86,8 @@ namespace MonsterTrain2Poju.Model
         internal static bool CalibratedOuterBossOwners(CombatRelicState[] owners, string asset)
         {
             return owners.Length == 0 || (asset is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" ||
-                OuterBossDefinitions.IsArkionRage(asset) && NaturalArkionRageOwners(owners) ||
+                (OuterBossDefinitions.IsArkionRage(asset) || asset == "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth") &&
+                    NaturalMerchantOwners(owners) ||
                 (OuterBossDefinitions.IsAngelDuo(asset) || OuterBossDefinitions.IsCael(asset) ||
                     OuterBossDefinitions.IsArkionPyre(asset) || OuterBossDefinitions.IsArkionRage(asset) || OuterBossDefinitions.IsArkionPush(asset) ||
                     OuterBossDefinitions.IsFleshweaver(asset)) &&
@@ -94,7 +95,7 @@ namespace MonsterTrain2Poju.Model
                 CalibratedOrdinaryWaveOwners(owners);
         }
 
-        private static bool NaturalArkionRageOwners(CombatRelicState[] owners) => owners.Length == 3 &&
+        private static bool NaturalMerchantOwners(CombatRelicState[] owners) => owners.Length == 3 &&
             owners.Select(owner => owner.DataId).SequenceEqual(new[] {
                 "d3b53481-f26b-4344-ae8e-ec80b28d6004", "92c18b99-e4c0-4953-ba2c-4815f570a66e",
                 "dcb31cd7-4293-4b07-b396-5456a0ce0b6e" }) && MerchantOnlyOwner(owners[2]);

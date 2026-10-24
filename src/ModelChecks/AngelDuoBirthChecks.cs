@@ -4,19 +4,23 @@ using MonsterTrain2Poju.Model;
 
 internal static class AngelDuoBirthChecks
 {
-    internal static void Battle(FixtureValue fixture, string path)
+    internal static void Battle(FixtureValue fixture, string path, bool natural = false)
     {
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(fixture.GetProperty(counter).GetInt32() == 0, "Angel duo native battle failed: " + counter);
         FixtureValue input = fixture.GetProperty("NativeRunInput");
         Require(input.GetProperty("Seed").GetInt32() == 424242 && input.GetProperty("Distance").GetInt32() == 5 &&
-            input.GetProperty("AscensionLevel").GetInt32() == 2 && input.GetProperty("StartingLevel").GetInt32() == 2 &&
+            input.GetProperty("AscensionLevel").GetInt32() == (natural ? 3 : 2) &&
+            input.GetProperty("StartingLevel").GetInt32() == (natural ? 3 : 2) &&
             input.GetProperty("BattlesWon").GetInt32() == 5 && !input.GetProperty("WasDevCheatUsed").GetBoolean() &&
             input.GetProperty("Scenario").GetString() == "Level6AngelDuo_RallyAttackIncantHealth" &&
             input.GetProperty("CompletedBattles").GetArrayLength() == 5 &&
             input.GetProperty("CompletedBattles").EnumerateArray().All(row => row.GetProperty("Won").GetBoolean()) &&
+            (!natural || fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null &&
+                fixture.GetProperty("StartingCovenantControl").ValueKind == FixtureKind.Null &&
+                fixture.GetProperty("CovenantEnemyStatsControl").ValueKind == FixtureKind.Null) &&
             !fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("TerminalEffectsSettled").GetBoolean(),
-            "Angel duo baseline must retain the original rank-two five-win checkpoint and its native no-card loss.");
+            "Angel duo baseline must retain its declared original five-win checkpoint and native no-card loss.");
         BattleTurnChecks.Native(fixture);
         TrainCombatChecks.Native(fixture);
         RoomCombatChecks.NativeRoomOnly(path);
@@ -35,7 +39,7 @@ internal static class AngelDuoBirthChecks
         Console.WriteLine("ANGEL-DUO-BATTLE PASS: original progressed input, paired bosses, full rooms/train/turns and sixteen independent complete no-card branches; death phase and player victory remain separate.");
     }
 
-    internal static void Native(FixtureValue fixture)
+    internal static void Native(FixtureValue fixture, bool natural = false)
     {
         OuterBossBirthChecks.Native(fixture);
         FixtureValue row = fixture.GetProperty("Births")[0];
@@ -51,8 +55,9 @@ internal static class AngelDuoBirthChecks
             input.Definition.Actor.Unit.BaseAttack == 11 && born.Health == 1500 && born.BaseAttack == 14 &&
             born.Status("titanskin")?.Stacks == 10 && created.BirthStats?.Attack == 3 && created.BirthStats.Health == 250 &&
             created.BirthStats.CovenantIds.SequenceEqual(new[] {
-                "d3b53481-f26b-4344-ae8e-ec80b28d6004", "92c18b99-e4c0-4953-ba2c-4815f570a66e" }),
-            "Angel duo birth must retain its original authored definition and native rank-two Covenant adjustments.");
+                "d3b53481-f26b-4344-ae8e-ec80b28d6004", "92c18b99-e4c0-4953-ba2c-4815f570a66e" }
+                .Concat(natural ? new[] { "dcb31cd7-4293-4b07-b396-5456a0ce0b6e" } : Array.Empty<string>())),
+            "Angel duo birth must retain its original authored definition and native Covenant adjustments.");
         Require(created.CreatedUnit.BumpRules!.PairedBossUnitId == partner.Id &&
             !created.CreatedUnit.EndsBattleOnDeath && !created.CreatedUnit.Triggers.Any(trigger => trigger.Kind == "CardSpellPlayed") &&
             !born.EndsBattleOnDeath && !partner.EndsBattleOnDeath &&
@@ -65,6 +70,23 @@ internal static class AngelDuoBirthChecks
             health.Action.Filters?.Subtype == "SubtypesData_SavageAngel" &&
             born.Triggers.Single(trigger => trigger.Kind == "OnDeath").Effects.Any(effect => effect.Type == "CardEffectForceRelentless"),
             "Original battle relic must install the native Incant trigger after creation; death phase switching remains separately guarded.");
+        if (natural)
+        {
+            const string boss = "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth";
+            CombatRelicState[] owners = actual.Battle.Spawn.Train.Context!.Relics!.Where(owner => owner.IsCovenant == true).ToArray();
+            Require(born.AssetKey == boss && TrueFinalBossCovenantModel.CalibratedOuterBossOwners(owners, boss),
+                "Natural Incant-Health owner gate rejected its native input.");
+            CombatRelicState merchant = owners[2];
+            var changed = new CombatRelicState(merchant.DataId, merchant.AssetKey,
+                merchant.EffectTypes.Append("RelicEffectAddStatusEffectOnSpawn").ToArray(), isCovenant: true);
+            Require(!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(owners.Take(2).Append(changed).ToArray(), boss) &&
+                !TrueFinalBossCovenantModel.CalibratedOuterBossOwners(owners.Reverse().ToArray(), boss) &&
+                !TrueFinalBossCovenantModel.CalibratedOuterBossOwners(owners.Append(merchant).ToArray(), boss) &&
+                !TrueFinalBossCovenantModel.CalibratedOuterBossOwners(owners, "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth") &&
+                !TrueFinalBossCovenantModel.CalibratedOuterBossOwners(owners, "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth") &&
+                !TrueFinalBossCovenantModel.CalibratedOuterBossOwners(owners, "Boss_Level6_Cael_AtkHP"),
+                "Natural Incant-Health admitted changed combat effects, owner order/duplicates or uncalibrated bosses.");
+        }
         string immutableInput = JsonSerializer.Serialize(input, ModelJson.Options);
         string immutableCreated = JsonSerializer.Serialize(created, ModelJson.Options);
         string expectedCreated = immutableCreated;
@@ -79,7 +101,7 @@ internal static class AngelDuoBirthChecks
                 JsonSerializer.Serialize(created, ModelJson.Options) == immutableCreated,
                 "Angel duo birth branches changed full native state/RNG or their shared roots.");
         });
-        Console.WriteLine("ANGEL-DUO-BIRTH PASS: original rank-two raw/adjusted stats, titanskin, directed companion registration, native battle-relic trigger installation and sixteen immutable creation/placement branches.");
+        Console.WriteLine($"ANGEL-DUO-BIRTH PASS: original rank{(natural ? 3 : 2)} raw/adjusted stats, titanskin, directed companion registration, native battle-relic trigger installation and sixteen immutable creation/placement branches.");
     }
 
     private static void Require(bool value, string message)

@@ -66,8 +66,8 @@ namespace MonsterTrain2Poju.Probe
         {
             if (save.GetCovenantsForSpawnPattern().Count == 0) return true;
             // Use the same identity/effect boundary as modeled creation. In
-            // particular, the natural rank-three Rage encounter retains the
-            // exact merchant-only owner without changing its birth callbacks.
+            // particular, the native rank-three Rage/Incant-Health encounters
+            // retain the exact merchant-only owner without extra birth callbacks.
             CombatRelicState[] owners = save.GetCovenants().Select(owner => new CombatRelicState(
                 owner.GetRelicDataID(), owner.GetSourceRelicData().name,
                 owner.GetEffects().Select(effect => effect.GetType().Name).ToArray(), isCovenant: true)).ToArray();

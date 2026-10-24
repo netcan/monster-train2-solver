@@ -13,7 +13,7 @@ The gate is an identity filter. Allowed definitions can still reject uncalibrate
 | Level3ImmortalMass_MoreMass | allowed | 4 | 1 |
 | Level3ImmortalMass_Spikes | allowed | 4 | 1 |
 | Level6AngelDuo_LoopAttackResolveHealth | allowed | 3 | 1 |
-| Level6AngelDuo_RallyAttackIncantHealth | allowed | 7 | 1 |
+| Level6AngelDuo_RallyAttackIncantHealth | allowed | 8 | 1 |
 | Level6AngelDuo_RevengeAttackHarvestHealth | allowed | 5 | 1 |
 | Level6BattleEaterAtkHP | allowed | 3 | 1 |
 | Level6BattleEaterDamageShield | allowed | 3 | 1 |

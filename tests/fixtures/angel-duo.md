@@ -274,3 +274,44 @@ the routing repair. They lose after 50/51/56 inputs (nine/nine/eleven EndTurns).
 Each frozen route independently verifies full forecasts, successors, terminal
 outcome and state/RNG. They do not justify another native full-battle attempt;
 the remaining issue is strategy quality beyond a fixed floor preference.
+
+## Natural cumulative Covenant3 birth
+
+The original rank-three route now reaches this same Incant-Health/Slay-Attack
+encounter after five native victories. Input save SHA256 is
+`ce146df48e0ba6082af5edd7684a00944939d1f524a6cd76064557e06304b6de`.
+`campaign-native-covenant-03-ring6.zip` has SHA256
+`a6a8b81a663d49fc856d11ff44859f8d3b412f2851003fb3b8d3fe6feff1bda7`;
+all18 payloads verify on restore. Difficulty,seed424242,original encounter,
+cards and preceding history remain unchanged,without a cheat flag.
+
+First actual-default source `full-battle-units-spells-and-junk-20261024-095402-92b51a01`
+rejects before its first recommendation: the outer-boss gate still allowed
+only owners01+02 for this exact pair. Unchanged native observation
+`full-battle-no-cards-20261024-095528-edbf3794` confirms the same original birth
+stats; its two unsupported counters remain diagnostic,not accepted evidence.
+The additional original03 owner has only merchant reroll/purge effects.
+
+Projection and modeled birth now admit the exact ordered01+02+03 owner prefix
+for `Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth`. The previously
+calibrated Rage identity keeps its separate acceptance. Other uncalibrated
+Angel variants/Cael,changed merchant combat effects and reordered/duplicated
+owners still reject. Existing rank-two Angel and rank-three Rage birth gates
+also pass. No general higher-Covenant allowance is introduced.
+
+Fresh native `full-battle-no-cards-20261024-095745-83a13ca9` exits normally in
+74.18 seconds,preserves protected originals and records all four counters zero.
+The original11/1250 definition becomes14/1500 with titanskin10; directed
+companion registration,battle-relic installation,complete creation/placement/
+controller/RNG and sixteen immutable birth branches match. The seven-EndTurn
+no-card loss also matches61 room stages,14 train phases,full successors/RNG
+and sixteen independent complete chains. This calibration restores supported
+planning; it does not establish a player victory or completed rank-three run.
+
+Curated archives are `full-battle-angel-duo-natural-covenant03.mt2f` and
+`outer-boss-birth-calibration-angel-duo-natural-covenant03.mt2f`. Focused gates:
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-natural-birth-only tests/fixtures/outer-boss-birth-calibration-angel-duo-natural-covenant03.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-natural-battle-only tests/fixtures/full-battle-angel-duo-natural-covenant03.mt2f
+```
