@@ -1212,3 +1212,24 @@ native component. Frozen replay pauses after one initial search, starts zero
 further searches and publishes no advice. See [Ring4 evidence](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring4-with-actual-defaults)
 and [birth calibration](../tests/fixtures/harvester-birth.md). No full regression
 or Mac package is built.
+
+## Deferred floor browsing · Windows 0.2.17 · 2026-10-24
+
+Floor view events now record their callback order without capturing native
+state, replaying the forecast or replacing the current publication. The next
+real input replays those callbacks and verifies the remaining forecast against
+its complete actual decision/RNG. This supersedes the capture/rebase behavior
+described in the historical floor-browsing entries above.
+
+The isolated native acceptance covers seven wheel inputs including one during
+search, then four more with an already deployed Conduit contributor. The latter
+add zero captures, publications and searches and retain text/status/color/scroll.
+The battle wins after four plays and seven EndTurns, with all four native failure
+counters zero and protected player files unchanged. The focused captured Conduit,
+ordinary floor concurrency/divergence, live moon continuation and 1360-fixture
+catalog checks pass without a full regression.
+
+Windows 0.2.17 is installed with three source/installed hash matches and a previous
+payload backup. PID33172 still runs 0.2.16 until the user restarts the game.
+See [acceptance and delivery](deferred-floor-browsing.md) for exact evidence,
+payload hashes, backup and package locations. No Mac package was built.

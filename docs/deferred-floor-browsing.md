@@ -72,3 +72,25 @@ moon continuation controls pass. The 1360-fixture catalog hash/registration
 check is separate from these focused behavior checks; no full regression or
 Mac build is required for this change. These counters establish removal of the
 player's browsing work in the covered native cases, not an FPS benchmark.
+
+## Windows delivery
+
+Installed at 2026-10-24 21:20:59 from `2ec8eb5a`, with source/installed SHA256
+equality for all three DLLs:
+
+| File | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | 2565149E84D533720B80A8210EB9818022E3E37D7865F5E9F70F0F88EA623804 |
+| Model.dll | C359515E6444775197322A5017C6059CF8624BEB49EBA896526425853270E519 |
+| FixtureArchive.dll | B7E5CC6BE4849FE21CCB001D10C1D5519E134FA2C71365C4645749EED12CE4A6 |
+
+The target is `F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+Previous and accepted payloads plus installation.json are backed up under
+`BepInEx/PojuBackups/DeferredFloorBrowsing-20261024-212058`.
+The distributable is
+`results/mod-dist/PojuAdvisor-0.2.17-Windows-20261024-212058.zip`.
+Twenty-eight other loader/plugin/configuration files retain their original
+hashes. No real player input, process restart or Mac build was performed.
+
+The current player PID33172, started at 20:52:47, still has 0.2.16 loaded.
+Installed 0.2.17 takes effect after the user restarts the game.
