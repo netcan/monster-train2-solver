@@ -54,6 +54,12 @@ namespace MonsterTrain2Poju.Model
                 if (!additional.Supported) return additional;
                 context = additional.Context; stacks = unchecked(stacks + additional.Stacks);
             }
+            if (CardJuiceModel.Present(owner))
+            {
+                string? error = CardJuiceModel.Validate(owner);
+                if (error != null) return Unsupported(error);
+                stacks = CardJuiceModel.Apply(stacks);
+            }
             StatusScalingResult pile = CardPileStatusModel.Bonus(context, sourceCardId, statusId);
             return pile.Supported ? new StatusScalingResult(pile.Context, unchecked(stacks + pile.Stacks)) : pile;
         }

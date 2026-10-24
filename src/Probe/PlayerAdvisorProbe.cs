@@ -359,7 +359,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 using var fixture = FixtureDocument.Read(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT")!);
                 replayBrowseCount = 0;
-                if (fixture.RootElement.GetProperty("PlayerAdvisor").TryGetProperty("FloorBrowse", out FixtureValue browse) &&
+                if (fixture.RootElement.TryGetProperty("PlayerAdvisor", out FixtureValue player) && player.ValueKind != FixtureKind.Null &&
+                    player.TryGetProperty("FloorBrowse", out FixtureValue browse) &&
                     browse.ValueKind != FixtureKind.Null && browse.GetProperty("Passed").GetBoolean())
                 {
                     replayBrowseCount = browse.GetProperty("Switches").GetInt32();

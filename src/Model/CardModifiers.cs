@@ -392,6 +392,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? UnsupportedReason(CardInstanceState instance)
         {
+            string? juiceError = CardJuiceModel.Validate(instance);
+            if (juiceError != null) return juiceError;
             string? retainError = CardRetainModel.Validate(instance);
             if (retainError != null) return retainError;
             string? killError = CardKillTriggerModel.Validate(instance);

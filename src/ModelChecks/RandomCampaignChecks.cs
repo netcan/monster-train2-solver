@@ -180,6 +180,7 @@ internal static class RandomCampaignChecks
         RollingAdviceChecks.Native(fixture);
         BattleAdviceChecks.Native(fixture, requireBoss: false);
         TrainCombatChecks.Native(fixture);
+        JuiceTraitChecks.Native(fixture);
         Console.WriteLine($"RANDOM-CAMPAIGN-SOURCE PASS {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1} won={fixture.GetProperty("NativeWon").GetBoolean()}.");
     }
 
@@ -195,6 +196,8 @@ internal static class RandomCampaignChecks
         BattleAdviceChecks.Native(source, requireBoss: false);
         TrainCombatChecks.Native(source);
         TrainCombatChecks.Native(replay);
+        JuiceTraitChecks.Native(source);
+        JuiceTraitChecks.Native(replay);
         Require(replay.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("Published").GetInt32() == 0,
             "Frozen campaign replay must execute the recorded advice without a new search.");
         Console.WriteLine($"RANDOM-CAMPAIGN-PAIR PASS {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1}: two native wins, full state/forecast/RNG identity.");

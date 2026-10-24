@@ -1704,6 +1704,7 @@ namespace MonsterTrain2Poju.Probe
                 DamageScaling = DamageScalingScenario.Samples,
                 StatusScaling = StatusScalingScenario.Samples,
                 StatusApplications = StatusScalingScenario.Applications,
+                JuiceTraitCalibration = JuiceTraitProbe.Samples,
                 UnitUpgradeScaling = UnitUpgradeScalingScenario.Samples,
                 DirectUnitUpgrades = DirectUnitUpgradeScenario.Records,
                 EquipmentOperations = EquipmentProbe.Records,

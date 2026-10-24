@@ -223,6 +223,7 @@ namespace MonsterTrain2Poju.Probe
             bool refresh = source != null && !source.GetUpgradeWillBeScaledByNonMagicPowerTrait();
             if (!roomAttachmentUnitUpgrade && upgrade.GetRoomAbilityUpgrade() != null) interactions.Add("Upgrade room ability");
             CardLifecycleUpgrade lifecycle = CardUpgradeLifecycleProbe.Definition(upgrade);
+            JuiceTraitProbe.Calibrate(upgrade);
             bool discardCleanup = CardBranchMaskProbe.Enabled && upgrade.GetAssetName() is
                 "CopyOnPlayTraitUpgrade" or "CopyOnPlayTraitUpgradeNoEphemeral" or "RemoveEphemeral" or "StardustInvocation_Upgrade_NoEphemeral";
             bool supportedTraitLifecycle = (lifecycle.AddedTraits.Count > 0 || lifecycle.RemovedRuntimeTypes.Count > 0) && lifecycle.AddedTraits.All(trait =>
@@ -234,6 +235,9 @@ namespace MonsterTrain2Poju.Probe
                     trait.RuntimeType == "CardTraitDrawInDeploymentPhase" ||
                     trait.RuntimeType == "CardTraitIntrinsicState" && CardBranchMaskProbe.Enabled ||
                     trait.RuntimeType == CardRetainModel.Trait && trait.StackMode == 0 && CardBranchMaskProbe.Enabled ||
+                    trait.RuntimeType == CardJuiceModel.Trait && CardBranchMaskProbe.Enabled &&
+                        upgrade.GetCardUpgradeDataId() == CardJuiceModel.Upgrade && upgrade.GetAssetName() == "TraitJuice" &&
+                        trait.StackMode == 0 && trait.DefinitionParamInt == 2 && trait.ParamInt == 2 ||
                     trait.RuntimeType == "CardTraitPermafrost" && (upgrade.GetCardUpgradeDataId() == RelicExpensiveCardUpgradeModel.Effect ||
                         CardBranchMaskProbe.Enabled && upgrade.GetCardUpgradeDataId() == "e0af4fe5-75c0-4017-ae5e-5a87099aa6c5" &&
                         upgrade.GetAssetName() == "TraitPermafrost" && trait.StackMode == 0) ||
