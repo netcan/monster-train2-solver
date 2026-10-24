@@ -10,6 +10,10 @@ namespace MonsterTrain2Poju.Model
     {
         public static SupportedActionCandidate? Choose(BattleTurnState source,
             out IReadOnlyList<UnsupportedActionAttempt> unsupported, int preferredDeploymentRoom = 2)
+            => Choose(source, out unsupported, preferredDeploymentRoom, null);
+
+        internal static SupportedActionCandidate? Choose(BattleTurnState source,
+            out IReadOnlyList<UnsupportedActionAttempt> unsupported, int preferredDeploymentRoom, BattleSearchWorkspace? workspace)
         {
             var omitted = new List<UnsupportedActionAttempt>(); unsupported = omitted;
             CombatContext? context = source.Spawn.Train.Context;
@@ -44,7 +48,7 @@ namespace MonsterTrain2Poju.Model
                         RoomCombatState room = source.Spawn.Train.Rooms.Single(item =>
                             item.Units.Any(unit => unit.Id == ability.Action.ActivatorUnitId));
                         CombatUnit tank = room.Units.First(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0);
-                        BattleActionResult restored = BattleActionModel.PlayCard(ability.Result.State!,
+                        BattleActionResult restored = Play(ability.Result.State!,
                             new PlayCardAction(choice.token.InstanceId, room.RoomIndex, targetUnitId: tank.Id));
                         if (restored.Supported && restored.State!.Spawn.Train.Rooms.Single(item => item.RoomIndex == room.RoomIndex)
                             .Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0)?.Id == tank.Id)
@@ -54,7 +58,7 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Recursion != null || effect.SpikeRecipe != null ||
                     effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" or "MergeEquipment" or "Mix"))
                 {
-                    BattleActionEnumeration actions = BattleActionModel.EnumerateActions(source, choice.token.InstanceId, includeAbilities: false);
+                    BattleActionEnumeration actions = workspace?.Enumerate(source, choice.token.InstanceId, false) ?? BattleActionModel.EnumerateActions(source, choice.token.InstanceId, includeAbilities: false);
                     omitted.AddRange(actions.UnsupportedAttempts);
                     SupportedActionCandidate? selected = actions.SupportedCandidates.OrderByDescending(candidate => Rank(candidate.Action, rule))
                         .ThenBy(candidate => candidate.Action.TargetUnitId).FirstOrDefault();
@@ -63,7 +67,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 foreach (PlayCardAction action in Inputs(choice.token, rule).OrderByDescending(action => Rank(action, rule)).ThenBy(action => action.TargetUnitId))
                 {
-                    BattleActionResult result = BattleActionModel.PlayCard(source, action);
+                    BattleActionResult result = Play(source, action);
                     if (result.Supported) return new SupportedActionCandidate(action, result);
                     if (result.Rejection == ActionRejection.Unsupported)
                         omitted.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported tactical-seed action."));
@@ -76,11 +80,13 @@ namespace MonsterTrain2Poju.Model
             {
                 if (cachedAbilities == null)
                 {
-                    cachedAbilities = UnitAbilityModel.EnumerateActivations(source);
+                    cachedAbilities = workspace?.Abilities(source) ?? UnitAbilityModel.EnumerateActivations(source);
                     omitted.AddRange(cachedAbilities.UnsupportedAttempts);
                 }
                 return cachedAbilities;
             }
+
+            BattleActionResult Play(BattleTurnState state, PlayCardAction action) => workspace?.Play(state, action) ?? BattleActionModel.PlayCard(state, action);
 
             bool EmptyGoldReward(SupportedActionCandidate candidate)
             {

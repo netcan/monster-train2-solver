@@ -62,13 +62,15 @@ namespace MonsterTrain2Poju.Model
         public int SearchWorkers => WorkerThreadIds.Count;
         public double? PolicyBaselineScore { get; }
         public IReadOnlyList<UnsupportedActionAttempt> UnsupportedAttempts { get; }
+        public BattleSearchMetrics SearchMetrics { get; }
 
         internal BattlePlanResult(BattleTurnState state, RoomOutcome outcome, IReadOnlyList<BattleSearchStep> steps,
             double score, int turns, int nodes, int duplicates, int beamPruned, TimeSpan elapsed,
             bool timedOut, bool cancelled, bool nodeLimit, bool actionLimit, bool completed,
             IReadOnlyList<UnsupportedActionAttempt> unsupported, double? policyBaselineScore,
             int requestedTurns = 0, bool usedShorterHorizon = false, bool searchedToBattleEnd = false,
-            bool stepLimit = false, int maxSteps = 256, IReadOnlyList<int>? workerThreadIds = null)
+            bool stepLimit = false, int maxSteps = 256, IReadOnlyList<int>? workerThreadIds = null,
+            BattleSearchMetrics? searchMetrics = null)
         {
             State = state; Outcome = outcome; Steps = Array.AsReadOnly(steps.ToArray()); Score = score;
             TurnsCompleted = turns; ExpandedNodes = nodes; DuplicateStates = duplicates; BeamPruned = beamPruned;
@@ -79,6 +81,7 @@ namespace MonsterTrain2Poju.Model
             RequestedTurns = requestedTurns; UsedShorterHorizon = usedShorterHorizon;
             SearchedToBattleEnd = searchedToBattleEnd; ReachedStepLimit = stepLimit; MaxSteps = maxSteps;
             WorkerThreadIds = Array.AsReadOnly((workerThreadIds ?? new[] { Thread.CurrentThread.ManagedThreadId }).ToArray());
+            SearchMetrics = searchMetrics ?? new BattleSearchMetrics();
         }
     }
 
@@ -103,11 +106,17 @@ namespace MonsterTrain2Poju.Model
         public static BattlePlanResult Plan(BattleTurnState source, Func<BattleTurnState, string> stateKey,
             BattlePlannerOptions? options = null, Func<BattleTurnState, RoomOutcome, double>? evaluate = null,
             CancellationToken cancellationToken = default)
+            => PlanCore(source, stateKey, options, evaluate, cancellationToken, true);
+
+        internal static BattlePlanResult PlanCore(BattleTurnState source, Func<BattleTurnState, string> stateKey,
+            BattlePlannerOptions? options, Func<BattleTurnState, RoomOutcome, double>? evaluate,
+            CancellationToken cancellationToken, bool optimizeTransitions)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (stateKey == null) throw new ArgumentNullException(nameof(stateKey));
             options ??= new BattlePlannerOptions(); evaluate ??= Evaluate;
             var watch = Stopwatch.StartNew();
+            var workspace = new BattleSearchWorkspace(optimizeTransitions);
             int maxTurns = options.SearchToBattleEnd ? options.MaxSteps + 1 : options.MaxTurns;
             int nodes = 0, duplicates = 0, pruned = 0;
             bool timedOut = false, cancelled = false, nodeLimit = false, actionLimit = false, stepLimit = false;
@@ -175,7 +184,7 @@ namespace MonsterTrain2Poju.Model
                     (!Stop() || finishFirstTurn && baseline.Turns == 0 && !cancelled && !nodeLimit))
                 {
                     nodes++;
-                    BattleTurnResult ended = BattleTurnModel.EndTurn(baseline.State);
+                    BattleTurnResult ended = workspace.EndTurn(baseline.State);
                     if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported EndTurn.")); break; }
                     baseline = Child(baseline, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
                     Consider(baseline);
@@ -197,7 +206,7 @@ namespace MonsterTrain2Poju.Model
                     SupportedActionCandidate? chosen = null;
                     if (tactical.Actions < options.MaxActionsPerTurn)
                     {
-                        chosen = BattleTacticalPolicy.Choose(tactical.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
+                        chosen = workspace.Choose(tactical.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
                             options.PreferredDeploymentRoom);
                         foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                     }
@@ -206,7 +215,7 @@ namespace MonsterTrain2Poju.Model
                         tactical = Child(tactical, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(chosen.Action, false));
                     else
                     {
-                        BattleTurnResult ended = BattleTurnModel.EndTurn(tactical.State);
+                        BattleTurnResult ended = workspace.EndTurn(tactical.State);
                         if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported tactical-seed EndTurn.")); break; }
                         tactical = Child(tactical, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
                     }
@@ -252,7 +261,7 @@ namespace MonsterTrain2Poju.Model
                 SupportedActionCandidate? chosen = null;
                 if (strength.Actions < options.MaxActionsPerTurn)
                 {
-                    chosen = BattleTacticalPolicy.Choose(strength.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
+                    chosen = workspace.Choose(strength.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
                         strengthRoom);
                     foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                 }
@@ -271,7 +280,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else
                 {
-                    BattleTurnResult ended = BattleTurnModel.EndTurn(strength.State);
+                    BattleTurnResult ended = workspace.EndTurn(strength.State);
                     if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported strength-seed EndTurn.")); break; }
                     strength = Child(strength, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
                     Consider(strength);
@@ -306,7 +315,7 @@ namespace MonsterTrain2Poju.Model
                                     SupportedActionCandidate? move = null;
                                     if (alternate.Actions < options.MaxActionsPerTurn)
                                     {
-                                        move = BattleTacticalPolicy.Choose(alternate.State, out IReadOnlyList<UnsupportedActionAttempt> omitted, room);
+                                        move = workspace.Choose(alternate.State, out IReadOnlyList<UnsupportedActionAttempt> omitted, room);
                                         foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                                     }
                                     else actionLimit = true;
@@ -314,7 +323,7 @@ namespace MonsterTrain2Poju.Model
                                         alternate = Child(alternate, move.Result.State!, move.Result.Outcome, new BattleSearchStep(move.Action, false));
                                     else
                                     {
-                                        BattleTurnResult nextTurn = BattleTurnModel.EndTurn(alternate.State);
+                                        BattleTurnResult nextTurn = workspace.EndTurn(alternate.State);
                                         if (!nextTurn.Supported)
                                         { Unsupported(new UnsupportedActionAttempt(null, nextTurn.UnsupportedReason ?? "Unsupported alternative deployment EndTurn.")); break; }
                                         alternate = Child(alternate, nextTurn.State!, nextTurn.Outcome, new BattleSearchStep(null, true));
@@ -360,7 +369,7 @@ namespace MonsterTrain2Poju.Model
                 SupportedActionCandidate? chosen = null;
                 if (policy.Actions < options.MaxActionsPerTurn)
                 {
-                    chosen = BattleActionModel.ChooseUnitSpellAndJunkCandidate(policy.State, out IReadOnlyList<UnsupportedActionAttempt> omitted);
+                    chosen = workspace.ChoosePolicy(policy.State, out IReadOnlyList<UnsupportedActionAttempt> omitted);
                     foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                 }
                 else actionLimit = true;
@@ -372,7 +381,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else
                 {
-                    BattleTurnResult ended = BattleTurnModel.EndTurn(policy.State);
+                    BattleTurnResult ended = workspace.EndTurn(policy.State);
                     if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported policy EndTurn.")); break; }
                     policy = Child(policy, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
                     Consider(policy);
@@ -392,7 +401,7 @@ namespace MonsterTrain2Poju.Model
                     nodes++;
                     if (node.Actions < options.MaxActionsPerTurn)
                     {
-                        BattleActionEnumeration actions = BattleActionModel.EnumerateActions(node.State);
+                        BattleActionEnumeration actions = workspace.Enumerate(node.State);
                         foreach (UnsupportedActionAttempt attempt in actions.UnsupportedAttempts) Unsupported(attempt);
                         var children = new List<Node>();
                         foreach (SupportedActionCandidate candidate in actions.SupportedCandidates)
@@ -407,7 +416,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     else actionLimit = true;
                     if (watch.Elapsed >= options.TimeLimit || cancellationToken.IsCancellationRequested) break;
-                    BattleTurnResult ended = BattleTurnModel.EndTurn(node.State);
+                    BattleTurnResult ended = workspace.EndTurn(node.State);
                     if (ended.Supported) Add(Child(node, ended.State!, ended.Outcome, new BattleSearchStep(null, true)));
                     else Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported EndTurn."));
                 }
@@ -433,7 +442,7 @@ namespace MonsterTrain2Poju.Model
             Node selected = best ?? (shorter ? completedPrefix! : fallback);
             return new BattlePlanResult(selected.State, selected.Outcome, selected.Steps, selected.Score, selected.Turns,
                 nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null, unsupported, policyBaselineScore,
-                maxTurns, shorter, options.SearchToBattleEnd, stepLimit, options.MaxSteps);
+                maxTurns, shorter, options.SearchToBattleEnd, stepLimit, options.MaxSteps, searchMetrics: workspace.Metrics);
         }
 
         private sealed class Node

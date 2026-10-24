@@ -40,7 +40,8 @@ namespace MonsterTrain2Poju.Model
                     room.MaxCorruption, room.PermanentCorruption, room.AttachmentsAddedFromCards);
             }).ToArray());
         }
-        internal static BattleActionEnumeration EnumerateActivations(BattleTurnState source)
+        internal static BattleActionEnumeration EnumerateActivations(BattleTurnState source,
+            Func<BattleTurnState, PlayCardAction, BattleActionResult>? play = null)
         {
             var actions = new List<SupportedActionCandidate>();
             var unsupported = new List<UnsupportedActionAttempt>();
@@ -60,7 +61,7 @@ namespace MonsterTrain2Poju.Model
                     : new[] { 0 })
                 {
                     var action = new PlayCardAction(cache.Card!.InstanceId, target.RoomIndex, targetUnitId: id, activatorRoomIndex: room.RoomIndex);
-                    BattleActionResult result = BattleActionModel.PlayCard(source, action);
+                    BattleActionResult result = play?.Invoke(source, action) ?? BattleActionModel.PlayCard(source, action);
                     if (result.Supported) actions.Add(new SupportedActionCandidate(action, result));
                     else if (result.Rejection == ActionRejection.Unsupported) unsupported.Add(new UnsupportedActionAttempt(action, result.Reason!));
                 }

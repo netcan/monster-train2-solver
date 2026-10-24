@@ -191,7 +191,8 @@ namespace MonsterTrain2Poju.Model
         public static IReadOnlyList<PlayCardAction> EnumerateSupportedActivations(BattleTurnState source) =>
             EnumerateActivations(source).SupportedActions;
 
-        internal static BattleActionEnumeration EnumerateActivations(BattleTurnState source)
+        internal static BattleActionEnumeration EnumerateActivations(BattleTurnState source,
+            Func<BattleTurnState, PlayCardAction, BattleActionResult>? play = null)
         {
             var actions = new List<SupportedActionCandidate>();
             var unsupported = new List<UnsupportedActionAttempt>();
@@ -239,7 +240,7 @@ namespace MonsterTrain2Poju.Model
                             targetUnitId: targetId, activatorUnitId: actor.Id, targetSpawnPointIndex: hasTeleport ? targetIndex : -1);
                         foreach (PlayCardAction choice in abilityRule == null ? new[] { action } : SpikeCraftModel.Actions(abilityRule, action))
                         {
-                            BattleActionResult attempt = BattleActionModel.PlayCard(source, choice);
+                            BattleActionResult attempt = play?.Invoke(source, choice) ?? BattleActionModel.PlayCard(source, choice);
                             if (attempt.Supported) actions.Add(new SupportedActionCandidate(choice, attempt));
                             else if (attempt.Rejection == ActionRejection.Unsupported)
                                 unsupported.Add(new UnsupportedActionAttempt(choice, attempt.Reason ?? "Unsupported unit ability action."));

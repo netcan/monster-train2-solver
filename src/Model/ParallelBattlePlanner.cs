@@ -67,7 +67,8 @@ namespace MonsterTrain2Poju.Model
                     .GroupBy(attempt => attempt.Reason, StringComparer.Ordinal).Select(group => group.First()).ToArray(),
                 best.PolicyBaselineScore, best.RequestedTurns, best.UsedShorterHorizon, best.SearchedToBattleEnd,
                 results.Any(result => result.ReachedStepLimit), best.MaxSteps,
-                results.SelectMany(result => result.WorkerThreadIds).Distinct().ToArray());
+                results.SelectMany(result => result.WorkerThreadIds).Distinct().ToArray(),
+                BattleSearchMetrics.Sum(results.Select(result => result.SearchMetrics)));
         }
     }
 }

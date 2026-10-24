@@ -2352,6 +2352,13 @@ if ($PlayerAdvisor -and -not $PlannerInput -and -not $RollingInput) {
         throw 'Real player advisor did not pass isolated recommendation and pointer/state acceptance.'
     }
     Write-Output "PLAYER-ADVISOR-PASS version=$($trace.PlayerAdvisor.Version) publications=$($playerEvidence.Published)"
+    $searchSamples = @($playerEvidence.Publications | Where-Object { $_.SearchMs -gt 0 })
+    if ($searchSamples.Count -eq 0 -or @($searchSamples | Where-Object {
+        $null -eq $_.SearchMetrics -or $_.SearchMetrics.SimulatedCandidates -lt 1 -or
+        $_.SearchMetrics.CandidateRequests -ne ($_.SearchMetrics.SimulatedCandidates + $_.SearchMetrics.CachedCandidates + $_.SearchMetrics.PrefilteredCandidates) -or
+        $_.SearchMetrics.EndTurnRequests -ne ($_.SearchMetrics.SimulatedEndTurns + $_.SearchMetrics.CachedEndTurns)
+    }).Count -ne 0) { throw 'Native search transition counters are absent or inconsistent.' }
+    Write-Output "PLAYER-SEARCH-METRICS-PASS samples=$($searchSamples.Count)"
     if ($PlannerWholeBattle -and (-not $playerEvidence.WholeBattle -or $playerEvidence.MaxSteps -ne $PlannerMaxSteps -or
         @($playerEvidence.Publications | Where-Object { -not $_.SearchedToBattleEnd }).Count -ne 0)) {
         throw 'Whole-battle mode was not used for every native publication.'

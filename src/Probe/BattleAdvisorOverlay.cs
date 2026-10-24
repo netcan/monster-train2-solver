@@ -83,6 +83,9 @@ namespace MonsterTrain2Poju.Probe
         internal int PreparationThreadId { get; private set; }
         internal sealed class Publication
         {
+            public BattleSearchMetrics SearchMetrics { get; set; } = new BattleSearchMetrics();
+            public int DuplicateStates { get; set; }
+            public int BeamPruned { get; set; }
             public long Generation { get; set; }
             public int Turn { get; set; }
             public double CaptureMs { get; set; }
@@ -458,6 +461,8 @@ namespace MonsterTrain2Poju.Probe
                 }
                 SetPending(false);
                 Publications.Add(new Publication { Generation = session.Generation, Turn = displayed.Root.Spawn.Turn,
+                    SearchMetrics = displayed.Plan.SearchMetrics, DuplicateStates = displayed.Plan.DuplicateStates,
+                    BeamPruned = displayed.Plan.BeamPruned,
                     CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,
                     PreparationMs = displayed.PreparationElapsed.TotalMilliseconds,
                     PublicationCaptureMs = LastCaptureMs, PublicationPreparationMs = LastPreparationMs,
@@ -477,6 +482,13 @@ namespace MonsterTrain2Poju.Probe
                     " verifyMs=" + displayed.VerificationElapsed.TotalMilliseconds.ToString("F1") +
                     " wholeBattle=" + displayed.Plan.SearchedToBattleEnd + " workers=" + displayed.Plan.SearchWorkers +
                     " workerThreads=" + string.Join(",", displayed.Plan.WorkerThreadIds) +
+                    " candidates=" + displayed.Plan.SearchMetrics.CandidateRequests +
+                    " simulated=" + displayed.Plan.SearchMetrics.SimulatedCandidates +
+                    " cached=" + displayed.Plan.SearchMetrics.CachedCandidates +
+                    " filtered=" + displayed.Plan.SearchMetrics.PrefilteredCandidates +
+                    " cachedEndTurns=" + displayed.Plan.SearchMetrics.CachedEndTurns +
+                    " cachedPolicies=" + displayed.Plan.SearchMetrics.CachedPolicies +
+                    " duplicates=" + displayed.Plan.DuplicateStates + " beamPruned=" + displayed.Plan.BeamPruned +
                     " source=" + (displayed.ReusedSelection ? "floor-browse" : displayed.ReusedWinningContinuation ? "verified-continuation" :
                         displayed.ReusedContinuation ? "verified-plan" : "search"));
                 if (!playerSession && !screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")

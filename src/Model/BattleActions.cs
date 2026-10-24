@@ -1174,6 +1174,9 @@ namespace MonsterTrain2Poju.Model
 
         // Unsupported attempts are kept separate from legal actions so callers can detect an incomplete search frontier.
         public static BattleActionEnumeration EnumerateActions(BattleTurnState source, int? onlyCardId = null, bool includeAbilities = true)
+            => EnumerateActions(source, onlyCardId, includeAbilities, null);
+
+        internal static BattleActionEnumeration EnumerateActions(BattleTurnState source, int? onlyCardId, bool includeAbilities, BattleSearchWorkspace? workspace)
         {
             var actions = new List<SupportedActionCandidate>();
             var unsupported = new List<UnsupportedActionAttempt>();
@@ -1229,10 +1232,10 @@ namespace MonsterTrain2Poju.Model
             }
             if (includeAbilities)
             {
-                BattleActionEnumeration abilities = UnitAbilityModel.EnumerateActivations(source);
+                BattleActionEnumeration abilities = workspace?.Abilities(source) ?? UnitAbilityModel.EnumerateActivations(source);
                 actions.AddRange(abilities.SupportedCandidates);
                 unsupported.AddRange(abilities.UnsupportedAttempts);
-                BattleActionEnumeration roomAbilities = RoomAbilityModel.EnumerateActivations(source);
+                BattleActionEnumeration roomAbilities = RoomAbilityModel.EnumerateActivations(source, workspace == null ? null : workspace.Play);
                 actions.AddRange(roomAbilities.SupportedCandidates);
                 unsupported.AddRange(roomAbilities.UnsupportedAttempts);
             }
@@ -1240,7 +1243,7 @@ namespace MonsterTrain2Poju.Model
 
             void Attempt(PlayCardAction action)
             {
-                BattleActionResult result = PlayCard(source, action);
+                BattleActionResult result = workspace?.Play(source, action) ?? PlayCard(source, action);
                 if (result.Supported) actions.Add(new SupportedActionCandidate(action, result));
                 else if (result.Rejection == ActionRejection.Unsupported)
                     unsupported.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported card action."));
@@ -1463,13 +1466,13 @@ namespace MonsterTrain2Poju.Model
             return ChooseUnitSpellAndJunkPlay(source);
         }
         internal static SupportedActionCandidate? ChooseUnitSpellAndJunkCandidate(BattleTurnState source,
-            out IReadOnlyList<UnsupportedActionAttempt> unsupported)
+            out IReadOnlyList<UnsupportedActionAttempt> unsupported, BattleSearchWorkspace? workspace = null)
         {
             var queried = new Dictionary<int, BattleActionEnumeration>();
             IReadOnlyList<PlayCardAction> Choices(CardToken card)
             {
                 if (!queried.TryGetValue(card.InstanceId, out BattleActionEnumeration frontier))
-                    queried.Add(card.InstanceId, frontier = EnumerateActions(source, card.InstanceId, includeAbilities: false));
+                    queried.Add(card.InstanceId, frontier = workspace?.Enumerate(source, card.InstanceId, false) ?? EnumerateActions(source, card.InstanceId, includeAbilities: false));
                 return frontier.SupportedActions;
             }
             PlayCardAction? selected = ChoosePlay(source, true, cardPlays: Choices);

@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length >= 2 && args[0] == "--search-pruning-only")
+{
+    SearchPruningChecks.Run(args.Skip(1).ToArray());
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--deployment-advice-budget-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

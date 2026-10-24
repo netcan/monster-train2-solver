@@ -47,6 +47,11 @@ internal static class ParallelPlannerChecks
             Require(keys.Key(replay) == keys.Key(result.State) && outcome == result.Outcome &&
                 result.Score == BattlePlanner.Evaluate(replay, outcome), "Returned plan/state/RNG failed independent replay.");
             BattleAdviceSession.Verify(root, result);
+            var metrics = result.SearchMetrics;
+            Require(metrics.CandidateRequests > 0 && metrics.SimulatedCandidates > 0 &&
+                metrics.CandidateRequests == metrics.SimulatedCandidates + metrics.CachedCandidates + metrics.PrefilteredCandidates &&
+                metrics.EndTurnRequests == metrics.SimulatedEndTurns + metrics.CachedEndTurns,
+                "Parallel transition counters lost or duplicated a worker's simulations.");
             Console.WriteLine($"WHOLE-BATTLE workers={result.SearchWorkers} threads={string.Join(',', result.WorkerThreadIds)} " +
                 $"nodes={result.ExpandedNodes} elapsedMs={result.Elapsed.TotalMilliseconds:F1} turns={result.TurnsCompleted} " +
                 $"steps={result.Steps.Count} score={result.Score} timeout={result.TimedOut}");
