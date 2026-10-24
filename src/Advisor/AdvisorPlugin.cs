@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Advisor
     public sealed class AdvisorPlugin : BaseUnityPlugin
     {
         public const string PluginId = "netcan.monstertrain2.advisor";
-        public const string Version = "0.2.3";
+        public const string Version = "0.2.4";
         private Harmony? harmony;
         private BattleAdvisorOverlay? overlay;
         private bool updateLogged;
@@ -21,6 +21,10 @@ namespace MonsterTrain2Poju.Advisor
             if (!Config.Bind("General", "Enabled", true, "是否启用战局建议；更改后重启游戏。").Value) return;
             try
             {
+                // The initial scene destroys the default visible BepInEx host
+                // at frame zero. Match BepInEx's hidden-manager protection so
+                // this component survives even with its default loader config.
+                gameObject.hideFlags |= HideFlags.HideAndDontSave;
                 var settings = new PlayerAdvisorSettings
                 {
                     Horizon = Config.Bind("Search", "Horizon", 3,
@@ -46,7 +50,8 @@ namespace MonsterTrain2Poju.Advisor
                 overlay = new BattleAdvisorOverlay(Logger, settings);
                 Logger.LogInfo("POJU-READY version=" + Version + " platform=" + Application.platform +
                     " game=" + Application.version + " module=" + typeof(CardState).Assembly.ManifestModule.ModuleVersionId +
-                    " horizon=" + settings.Horizon + " budgetMs=" + settings.TimeLimitMs);
+                    " horizon=" + settings.Horizon + " budgetMs=" + settings.TimeLimitMs +
+                    " hostFlags=" + gameObject.hideFlags);
             }
             catch (Exception error)
             {
@@ -66,7 +71,13 @@ namespace MonsterTrain2Poju.Advisor
             }
             overlay.Tick();
         }
-        private void OnDestroy() => Cleanup();
+        private void OnDisable() => Logger.LogInfo("POJU-HOST disabled frame=" + Time.frameCount);
+
+        private void OnDestroy()
+        {
+            Logger.LogInfo("POJU-HOST destroyed frame=" + Time.frameCount);
+            Cleanup();
+        }
 
         private void Cleanup()
         {

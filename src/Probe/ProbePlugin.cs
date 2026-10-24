@@ -55,7 +55,16 @@ namespace MonsterTrain2Poju.Probe
             }
             try
             {
-                new Harmony(PluginId).PatchAll(typeof(ProbePlugin).Assembly);
+                var isolation = new Harmony(PluginId);
+                if (Environment.GetEnvironmentVariable(ScenarioVariable) == "player-ui")
+                {
+                    // Test the actual player entry point without supplying a
+                    // probe update driver or any development observation hooks.
+                    isolation.CreateClassProcessor(typeof(AppStartupPatch)).Patch();
+                    isolation.CreateClassProcessor(typeof(SaveRootPatch)).Patch();
+                    isolation.CreateClassProcessor(typeof(GameLogRootPatch)).Patch();
+                }
+                else isolation.PatchAll(typeof(ProbePlugin).Assembly);
                 patchInstalled = true;
             }
             catch (Exception ex)
@@ -86,6 +95,10 @@ namespace MonsterTrain2Poju.Probe
             else if (scenarioName == "campaign")
             {
                 campaignScenario = new CampaignProgressScenario(Logger);
+            }
+            else if (scenarioName == "player-ui")
+            {
+                Logger.LogInfo("Player UI bootstrap: save/log isolation only; probe update driver disabled.");
             }
             else if (!string.IsNullOrEmpty(scenarioName))
             {
