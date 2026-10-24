@@ -54,3 +54,18 @@ the isolated native run
 
 This is a focused UI/native continuation acceptance, not a full model regression
 or a claim about untested upgrade combinations. No Mac build is required.
+
+## Windows delivery
+
+Installed at 2026-10-24 23:39:00 from `e4137b42` to
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+All three installed DLL hashes match the accepted build and checked ZIP;
+28 other loader/plugin/configuration files, including F10 and the user's
+10-second search budget, remain unchanged.
+
+The previous and accepted payloads, retained in-use DLLs and installation
+receipt are under `BepInEx/PojuBackups/CardIdentity-20261024-233751`.
+The Windows package is
+`results/mod-dist/PojuAdvisor-0.2.22-Windows-20261024-233751.zip`.
+The running player PID46732 retains its loaded 0.2.21 assembly and needs a user
+restart to load 0.2.22. No real player input/restart or Mac build occurred.
