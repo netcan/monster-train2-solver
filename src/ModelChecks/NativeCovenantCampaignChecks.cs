@@ -6,6 +6,40 @@ internal static class NativeCovenantCampaignChecks
     internal static void Pair(FixtureValue source, FixtureValue replay, int level, int distance)
         => Pair(source, replay, level, distance, requireVictory: true);
 
+    internal static void DefaultLoss(FixtureValue fixture, int level, int distance)
+    {
+        Require(level is >= 1 and <= 10 && distance is >= 1 and <= 7 &&
+            !fixture.GetProperty("NativeWon").GetBoolean() &&
+            fixture.GetProperty("StartingCovenantControl").ValueKind == FixtureKind.Null &&
+            fixture.GetProperty("CovenantEnemyStatsControl").ValueKind == FixtureKind.Null &&
+            fixture.GetProperty("OriginalOuterBossRoute").ValueKind == FixtureKind.Null &&
+            fixture.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop",
+            "Default-loss evidence requires a complete natural defeat without controlled scenario changes.");
+        FixtureValue input = fixture.GetProperty("NativeRunInput");
+        Require(input.GetProperty("AscensionLevel").GetInt32() == level && input.GetProperty("StartingLevel").GetInt32() == level,
+            "Default-loss evidence changed native difficulty.");
+        FixtureValue settings = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
+        Require(settings.GetProperty("Horizon").GetInt32() == 3 && settings.GetProperty("TimeLimitMs").GetInt32() == 3000 &&
+            settings.GetProperty("PreferredDeploymentRoom").GetInt32() == 2 && !settings.GetProperty("TacticalSeed").GetBoolean(),
+            "Default-loss evidence changed actual player defaults.");
+        BattleTurnState initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        int pyre = initial.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health;
+        NativeCampaignInputChecks.Native(fixture, distance, 424242, pyre, input.GetProperty("Scenario").GetString()!);
+        foreach (FixtureValue row in fixture.GetProperty("RollingDecisions").EnumerateArray())
+        foreach (string field in new[] { "Root", "Actual" })
+        {
+            CombatRelicState[] owners = row.GetProperty(field).Deserialize<BattleTurnState>()!.Spawn.Train.Context!
+                .Relics!.Where(owner => owner.IsCovenant == true).ToArray();
+            Require(owners.Length == level && TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(owners) &&
+                owners.Select((owner, index) => owner.AssetKey!.StartsWith($"Covenant{index + 1:D2}_", StringComparison.Ordinal)).All(match => match),
+                "Default-loss evidence changed cumulative native owners.");
+        }
+        RollingAdviceChecks.Native(fixture);
+        BattleAdviceChecks.Native(fixture, requireBoss: false);
+        TrainCombatChecks.Native(fixture);
+        Console.WriteLine($"PLAYER-NATIVE-COVENANT-DEFAULT-LOSS PASS rank={level} ring={distance + 1}: complete native defeat, forecasts/state/RNG and player UI; no victory or independent native pair claimed.");
+    }
+
     internal static void DefaultPair(FixtureValue source, FixtureValue replay, int level, int distance)
     {
         foreach (FixtureValue fixture in new[] { source, replay })

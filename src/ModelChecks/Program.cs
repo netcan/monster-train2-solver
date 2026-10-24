@@ -2781,6 +2781,12 @@ if (args.Length == 2 && args[0] == "--rolling-advice-only")
     RollingAdviceChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 4 && args[0] == "--player-native-covenant-default-loss-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    NativeCovenantCampaignChecks.DefaultLoss(fixture.RootElement, int.Parse(args[2]), int.Parse(args[3]));
+    return;
+}
 if (args.Length == 2 && args[0] == "--eclipse-enemy-movement-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4533,6 +4539,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-har
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-native-covenant-campaign-03-ring6-default-loss.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    NativeCovenantCampaignChecks.DefaultLoss(fixture.RootElement, 3, 5);
+}
 foreach (int ring in new[] { 2, 3, 4, 5 })
 foreach (string path in args.Where(path => Path.GetFileName(path) == $"full-battle-player-native-covenant-campaign-03-ring{ring}-default-search.mt2f"))
 {

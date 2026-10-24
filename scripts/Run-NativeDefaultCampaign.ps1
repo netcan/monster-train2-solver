@@ -36,16 +36,25 @@ while ($distance -lt $StopAfterRing) {
     # Each ring must independently pass actual-default advice and a fresh
     # native frozen replay before original rewards/map progression can run.
     $pair = $null
-    & (Join-Path $PSScriptRoot 'Run-NativeCovenantPlayerPairs.ps1') -Rank $Rank -Battle Campaign -BattleDistance $distance `
-        -InputProfile $nextInput -DefaultAdvice -NativeWorker $NativeWorker -TimeoutSeconds $TimeoutSeconds -SkipBuild:(-not $build) |
-        ForEach-Object {
-            $line = $_.ToString()
-            if ($line.StartsWith('{')) {
-                $record = $line | ConvertFrom-Json
-                if ($record.Passed -eq $true) { $pair = $record }
+    try {
+        & (Join-Path $PSScriptRoot 'Run-NativeCovenantPlayerPairs.ps1') -Rank $Rank -Battle Campaign -BattleDistance $distance `
+            -InputProfile $nextInput -DefaultAdvice -NativeWorker $NativeWorker -TimeoutSeconds $TimeoutSeconds -SkipBuild:(-not $build) |
+            ForEach-Object {
+                $line = $_.ToString()
+                if ($line.StartsWith('{')) {
+                    $record = $line | ConvertFrom-Json
+                    if ($record.Passed -eq $true) { $pair = $record }
+                }
+                Write-Output $line
             }
-            Write-Output $line
+    } catch {
+        if ($_.Exception.Data.Contains('DefaultLossReceipt')) {
+            $entry = [pscustomobject]@{ Schema = 1; Kind = 'default-loss'; Rank = $Rank; Ring = $distance + 1
+                Receipt = $_.Exception.Data['DefaultLossReceipt']; NextInputProfile = $nextInput }
+            [IO.File]::AppendAllText($journal, ($entry | ConvertTo-Json -Compress) + [Environment]::NewLine)
         }
+        throw
+    }
     $build = $false
     if ($null -eq $pair -or -not $pair.DefaultAdvice -or $pair.Rank -ne $Rank -or $pair.BattleDistance -ne $distance) {
         throw "Missing accepted default pair for ring $($distance + 1); journal: $journal"

@@ -100,12 +100,20 @@ foreach ($level in $Rank) {
                 $accepted.Pending -ne 0 -or (Get-FileHash -LiteralPath $trace -Algorithm SHA256).Hash -ine $accepted.TraceSha256) {
                 throw "Native acceptance failed or trace changed: $Battle/$level/$boss/$mode"
             }
-            if ($DefaultAdvice -and -not $accepted.NativeWon) {
-                throw "Default advice lost; retained the complete diagnostic trace without continuing the pair: $trace"
-            }
             if ($Battle -eq 'Campaign') {
                 $loaded = Get-Content -LiteralPath (Join-Path $nativeResult.Profile 'native-checkpoint-input.json') -Raw | ConvertFrom-Json
                 if ($loaded.SHA256 -ine $inputHash) { throw 'A campaign process loaded a different native checkpoint.' }
+            }
+            if ($DefaultAdvice -and -not $accepted.NativeWon) {
+                $lossPath = Join-Path $nativeResult.Profile 'player-default-loss.json'
+                [pscustomobject]@{ Schema = 1; Kind = 'default-loss'; Rank = $level; Battle = $Battle; Variant = $boss
+                    Mode = $mode; BattleDistance = $BattleDistance; InputProfile = $InputProfile; InputSaveSHA256 = $inputHash
+                    Profile = $nativeResult.Profile; TraceSha256 = $accepted.TraceSha256; NativeSeconds = $accepted.NativeSeconds
+                    NativePassed = $true; NativeWon = $false; IndependentPairAccepted = $false } |
+                    ConvertTo-Json | Set-Content -LiteralPath $lossPath -Encoding utf8
+                $failure = [InvalidOperationException]::new("Default advice lost; retained the complete diagnostic trace without continuing the pair: $trace")
+                $failure.Data['DefaultLossReceipt'] = $lossPath
+                throw $failure
             }
             $profiles[$mode] = $nativeResult.Profile
             [pscustomobject]@{ Rank = $level; Battle = $Battle; Variant = $boss; Mode = $mode

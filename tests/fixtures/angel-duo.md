@@ -315,3 +315,39 @@ Curated archives are `full-battle-angel-duo-natural-covenant03.mt2f` and
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-natural-birth-only tests/fixtures/outer-boss-birth-calibration-angel-duo-natural-covenant03.mt2f
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --angel-duo-natural-battle-only tests/fixtures/full-battle-angel-duo-natural-covenant03.mt2f
 ```
+
+## Natural Covenant3 default loss
+
+Fresh player source `full-battle-units-spells-and-junk-20261024-095906-0093a502`
+loads the unchanged five-win input above and now publishes actual default
+advice (three turns/3000ms/top preference/tactical off). It completes46 inputs,
+37 plays/abilities and nine EndTurns,then loses at Pyre0. Normal exit takes
+782.72 seconds; protected originals are unchanged and all four counters are
+zero. Complete native successors,all published forecasts and RNG match.
+There are82 room stages,18 train phases,54 publications with54 fresh root
+checks,437 pure captures and seven floor selections with no additional search.
+
+The curated `full-battle-player-native-covenant-campaign-03-ring6-default-loss.mt2f`
+and `player-native-covenant-campaign-03-ring6-default-loss-native.json` preserve
+this counterexample. Its dedicated source-only gate verifies natural input,
+unchanged cumulative owners,actual defaults,complete defeat,player UI and
+state/RNG. It claims neither a victory nor an independent native pair.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --player-native-covenant-default-loss-only tests/fixtures/full-battle-player-native-covenant-campaign-03-ring6-default-loss.mt2f 3 5
+```
+
+Three strength-policy candidates at floors0/1/2 lose after53/55/56 inputs.
+A six-turn/10000ms bottom/tactical player-continuation candidate also loses
+after57 inputs (33 searches,24 ordinary reuses,446.48 seconds). Each offline
+candidate independently reproduces all frozen successors/full forecasts,
+terminal outcome and complete state/RNG. These are model diagnostics; no
+extra native attempts are spent on them. More time or a fixed floor has not
+established a solution for this deck.
+
+The continuous default driver stops before replay/rewards on defeat. Future
+runs additionally emit `player-default-loss.json` with the checked input and
+trace hashes,then append a `default-loss` journal entry retaining the next
+input profile. Only accepted victory pairs can advance the campaign. These
+receipt changes are syntax-checked; the archived loss predates them and is
+not described as a newly generated receipt.

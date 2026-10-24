@@ -1,0 +1,14 @@
+{
+  "Schema": 1,
+  "Profile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-095906-0093a502",
+  "ExitCode": 0,
+  "NativePassed": true,
+  "OriginalFilesUnchanged": true,
+  "CaptureFailures": 0,
+  "Mismatches": 0,
+  "Unsupported": 0,
+  "Pending": 0,
+  "NativeWon": false,
+  "NativeSeconds": 782.7176278,
+  "TraceSha256": "7d0824b3d67c9f3146811f60d73b2f3bdad4e19102bf11b5f31eaff0c97c224e"
+}

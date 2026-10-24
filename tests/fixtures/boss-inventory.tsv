@@ -6,7 +6,7 @@ Level3ImmortalMass_Corruption	Boss_Level3_Fleshweaver_Corruption	allowed		4	1	fu
 Level3ImmortalMass_MoreMass	Boss_Level3_Fleshweaver_MoreMass	allowed		4	1	full-battle-player-fleshweaver-mass-search.mt2f
 Level3ImmortalMass_Spikes	Boss_Level3_Fleshweaver_Spike	allowed		4	1	full-battle-player-fleshweaver-spikes-search.mt2f
 Level6AngelDuo_LoopAttackResolveHealth	Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth	allowed	PostCombat:CardEffectBuffMaxHealth:60;OnTrainRoomLoop:CardEffectBuffDamage:8	3	1	full-battle-player-angel-duo-loop-resolve-search.mt2f
-Level6AngelDuo_RallyAttackIncantHealth	Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth	allowed	CardSpellPlayed:CardEffectBuffMaxHealth:30;OnKill:CardEffectBuffDamage:3	8	1	full-battle-player-angel-duo-search.mt2f
+Level6AngelDuo_RallyAttackIncantHealth	Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth	allowed	CardSpellPlayed:CardEffectBuffMaxHealth:30;OnKill:CardEffectBuffDamage:3	9	1	full-battle-player-angel-duo-search.mt2f
 Level6AngelDuo_RevengeAttackHarvestHealth	Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth	allowed	OnAnyHeroDeathOnFloor:CardEffectBuffMaxHealth:50;OnHit:CardEffectBuffDamage:1	5	1	full-battle-player-angel-duo-revenge-harvest-search.mt2f
 Level6BattleEaterAtkHP	Boss_Level6_Cael_AtkHP	allowed		3	1	full-battle-player-cael-atkhp-search.mt2f
 Level6BattleEaterDamageShield	Boss_Level6_Cael_DamageShield	allowed		3	1	full-battle-player-cael-damage-shield-search.mt2f
