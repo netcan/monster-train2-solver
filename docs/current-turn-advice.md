@@ -28,3 +28,15 @@ This is one targeted native case, not a full model regression.
   -OriginalConduitRelics -PlayerAdvisor -RollingAdvice -PlannerWholeBattle `
   -PlannerSearchWorkers 2 -SkipBuild -TimeoutSeconds 300
 ```
+
+## Windows delivery
+
+Installed at 2026-10-24 21:49:24 from `a5a45b39` to
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+All three installed DLL hashes match the accepted build; 28 other loader,
+plugin and configuration files remain unchanged. Previous/accepted payloads
+and installation.json are saved under
+`BepInEx/PojuBackups/CurrentTurnAdvice-20261024-214923`.
+The package is `results/mod-dist/PojuAdvisor-0.2.19-Windows-20261024-214923.zip`.
+No Mac build or real player input/restart was performed. The running player
+PID4972 still has 0.2.18 loaded and needs a user restart to load 0.2.19.
