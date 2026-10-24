@@ -1,4 +1,20 @@
-# Player Mod validation · 2026-10-24
+# Player Mod validation · 2026-10-25
+
+Windows0.2.25 passes the original third-spell magic-power / moon spell
+composition with a 15-boundary component, a 22-play complete controlled win,
+and actual player / fresh frozen replay victories at Pyre80. All 19 player
+inputs, complete forecasts, state and RNG match; 80 native hand callbacks and
+three actual fivefold offsets per battle pass. The exact release payload is
+retained in the accepted source profile. See
+[composition acceptance](../tests/fixtures/notes/relics/moon-spell-threshold.md).
+
+It also fixes retained preview-born actor mode outside temporary boss scopes.
+The formerly failing pure case, complete shared pure suite, native aura world
+and combat calibrations, Angel Duo Incant/Slay and sweep-preview stage replay
+pass. See [retained actor evidence](../tests/fixtures/notes/combat/retained-preview-mode.md).
+No full curated native regression or Mac package was built.
+
+## Earlier Windows0.2.12 acceptance
 
 Windows0.2.12 fixes panel clearing and scroll resets while verified steps advance,
 including the native LoadingScreen work used by card/turn animations. Pending

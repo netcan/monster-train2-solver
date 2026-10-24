@@ -124,5 +124,84 @@ internal static class MoonSpellThresholdCompositionChecks
         Console.WriteLine($"MOON-SPELL-THRESHOLD-CARD-PLAYS PASS: triggers={fired} suppressed={suppressed} increments={increments} fivefold={fivefold} exclusions={excluded}.");
     }
     private static string Json(object value) => JsonSerializer.Serialize(value, ModelJson.Options);
+
+    internal static void PlayerPair(FixtureValue source, FixtureValue replay)
+    {
+        // Actual search can correctly win without playing any of the five
+        // offensive moon spells or Eclipse. Their positive casts/masks belong
+        // to the separate controlled battle, not a forced player policy.
+        RollingAdviceChecks.FrozenPair(source, replay, calibration: "original-moon-card-upgrades");
+        BattleAdviceChecks.Native(source, requireBoss: false, calibration: "original-moon-card-upgrades");
+        int hands = 0, traits = 0, playedMoon = 0;
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            Require(fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("OriginalMoonCardUpgradesLunacy").GetBoolean() &&
+                fixture.GetProperty("OriginalMoonCardUpgradesRoomMask").GetBoolean() &&
+                new[] { "Cost", "Attack", "Healing", "PhaseHeal", "PhaseEnergy", "HandPower", "Status", "LiveRelics" }
+                    .All(name => !fixture.GetProperty("OriginalMoonCardUpgrades" + (name == "LiveRelics" ? name : name + "Relic")).GetBoolean()),
+                "Third-spell player pair requires separate original Lunacy/room controls and two native victories.");
+            CardPlays(fixture, requireFivefold: true);
+            var phases = new HashSet<int>();
+            foreach (FixtureValue row in fixture.GetProperty("RollingDecisions").EnumerateArray())
+            {
+                foreach (string boundary in new[] { "Root", "Actual" })
+                {
+                    CombatContext context = row.GetProperty(boundary).Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
+                    Owner(context); phases.Add(context.QueryFrame!.MoonPhase!.Value);
+                    if (boundary == "Actual" && row.GetProperty("Outcome").Deserialize<RoomOutcome>() == RoomOutcome.BattleWon)
+                    {
+                        Require(context.CardInstances!.Count == 0 && context.Cards.Hand.Count == 0,
+                            "Terminal native victory did not clear owned battle cards.");
+                        continue;
+                    }
+                    CardInstanceState[] moon = context.CardInstances!.Where(card => card.MaskDescriptor?.SourceTraits?
+                        .Any(trait => trait.Type == CardMoonUpgradeModel.Trait) == true).ToArray();
+                    Require(moon.Select(card => card.DataId).Distinct().Count() == 5, "Player registry lost an original moon spell type.");
+                    traits += moon.Sum(card => card.MaskDescriptor!.BaseTraits.Count(trait => trait.RuntimeType == CardMoonUpgradeModel.Trait));
+                }
+                if (!row.GetProperty("IsEndTurn").GetBoolean())
+                {
+                    CombatContext context = row.GetProperty("Root").Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
+                    CardInstanceState card = context.FindCard(row.GetProperty("Action").GetProperty("CardInstanceId").GetInt32())!;
+                    if (card.MaskDescriptor!.SourceTraits!.Any(trait => trait.Type == CardMoonUpgradeModel.Trait)) playedMoon++;
+                }
+            }
+            Require(phases.SetEquals([1, 2]), "Player pair did not observe both native moon phases.");
+            foreach (FixtureValue row in fixture.GetProperty("OriginalMoonCardUpgradesHands").EnumerateArray())
+            {
+                CombatContext before = row.GetProperty("Before").Deserialize<CombatContext>()!, after = row.GetProperty("After").Deserialize<CombatContext>()!;
+                string parent = Json(before);
+                CombatContext predicted = CardMoonUpgradeModel.RefreshHand(before, out string? error);
+                Require(row.GetProperty("Completed").GetBoolean() && error == null &&
+                    ModelJson.Difference(Json(predicted), Json(after)) == null && Json(before) == parent,
+                    "Player native hand callback differs or mutated its root: " + error);
+                Require(Json(Owner(before)) == Json(Owner(after)), "Player moon refresh changed third-spell history.");
+                foreach (CardInstanceState card in before.CardInstances!)
+                    Require(Json(card.Temporary.Offsets) == Json(after.FindCard(card.InstanceId)!.Temporary.Offsets),
+                        "Player moon refresh changed fixed third-spell offsets.");
+                hands++;
+            }
+        }
+        Require(hands > 0 && traits > 0, "Missing native player hand callbacks or original moon trait snapshots.");
+        FixtureValue[] records = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        BattleTurnState initial = records[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        string unchanged = Json(initial);
+        Parallel.For(0, 16, _ =>
+        {
+            BattleTurnState state = initial;
+            foreach (FixtureValue row in records)
+            {
+                bool end = row.GetProperty("IsEndTurn").GetBoolean();
+                PlayCardAction? action = end ? null : row.GetProperty("Action").Deserialize<PlayCardAction>();
+                state = BattlePlannerChecks.Replay(state, [new BattleSearchStep(action, end)], out RoomOutcome outcome);
+                bool terminal = outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+                Require(outcome == row.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
+                    BattleTurnChecks.Comparable(state, terminal) == BattleTurnChecks.Comparable(
+                        row.GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal), "Immutable threshold player chain differs.");
+            }
+        });
+        Require(Json(initial) == unchanged, "Threshold player branches mutated their root.");
+        Console.WriteLine($"PLAYER-MOON-SPELL-THRESHOLD PASS: nativeHandCallbacks={hands} traitSnapshots={traits} actualOffensiveMoonCasts={playedMoon} originalTypes=5 bothPhases=true fivefoldTriggers=true immutableBranches=16 exactFrozenReplay=true; positive offensive casts and Eclipse are separate controlled-battle evidence.");
+    }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

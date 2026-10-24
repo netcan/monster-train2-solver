@@ -64,6 +64,44 @@ sixteen immutable full state/RNG chains.
 
 Explicit selections of the two threshold component/battle fixtures now use
 their dedicated gates without starting unrelated public pure checks. The
-normal regression path retains its existing checks. Actual player search and
-fresh frozen replay remain a separate acceptance stage; the controlled
-policy victory alone is not player-search acceptance.
+normal regression path retains its existing checks.
+
+## Actual Windows player and independent frozen replay
+
+The exact Windows0.2.25 payload passes actual player source
+`full-battle-units-spells-and-junk-20261025-020810-2fcef0d1` (161.01s) and a
+fresh native frozen replay `full-battle-units-spells-and-junk-20261025-021055-e3fa9cf6`
+(104.72s). The archives are `advisor/moon/full-battle-player-moon-room-threshold-relic-{search,replay}.mt2f`.
+Both win with Pyre80 and zero capture/mismatch/unsupported/pending failures;
+real protected files stay unchanged. This is the configured six-turn/10s,
+one-worker tactical control, not a natural default-budget campaign claim.
+
+All 19 inputs (12 plays/seven EndTurns), complete roots, successors, forecasts
+and RNG match. Source renders 21 accepted panel publications / 166 pure
+captures, and retains 683 native branch contexts. Frozen replay searches zero
+times after pause, retaining 79 native branch contexts. The independent gate
+also matches 80 complete hand callbacks, 1,110 moon trait snapshots, both
+phases, positive third-spell triggers in each process (20 increments including
+three fivefold values, six later once-per-turn controls and three excluded
+cards), terminal card clearing and sixteen immutable complete player chains.
+
+The player selects a zero-loss route with durable unit deployment and original
+Lunacy plus the phase/energy controls. It does not play the five offensive moon
+spells or Eclipse. The original all-five-offensive-casts player gate therefore
+does not accept this route; that requirement remains unchanged for the older
+composition fixtures. A dedicated third-spell gate checks this actual search
+route and its complete callbacks. All-five offensive casts / Eclipse room-mask
+semantics remain demonstrated by the separate controlled native battle and
+15-boundary component above. Their evidence must not be confused with actual
+player input coverage.
+
+The acceptance runner can reuse both immutable completed profiles for checker
+changes without starting the game again:
+
+```powershell
+./scripts/Run-MoonSpellRelicPlayerPair.ps1 -Relic Threshold -NativeWorker 2 -SkipBuild `
+  -SourceProfile .probe-runs/full-battle-units-spells-and-junk-20261025-020810-2fcef0d1 `
+  -ReplayProfile .probe-runs/full-battle-units-spells-and-junk-20261025-021055-e3fa9cf6
+```
+
+The verified receipt is `player-pair-accepted.json` in the source profile.

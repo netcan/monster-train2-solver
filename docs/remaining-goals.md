@@ -52,8 +52,10 @@
 以及光环世界／战斗校准均通过，见
 [保留角色预览身份](../tests/fixtures/notes/combat/retained-preview-mode.md)。
 
-“月相法术＋每回合第三张法术加法强”已补齐 15 个组件边界及 22 次出牌的原生胜局，
-包括 3 次真实 5 倍加成和跨月相保留；玩家搜索与独立回放继续推进，见
+“月相法术＋每回合第三张法术加法强”已补齐 15 个组件边界、22 次出牌受控胜局，
+以及 Windows0.2.25 实际玩家／独立回放两个胜局；19 个输入、80 次手牌回调、
+真实 5 倍加成、完整预测和 RNG 均通过。玩家采用推进牌路线，五张攻击法术和
+房间挂载的出牌覆盖来自受控战斗，见
 [组合验收](../tests/fixtures/notes/relics/moon-spell-threshold.md)。
 
 [卡牌清单](../tests/fixtures/inventory/card-coverage.md) 的 559/559 指可直接打出的

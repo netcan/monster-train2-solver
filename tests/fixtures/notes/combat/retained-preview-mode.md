@@ -30,6 +30,11 @@ Validation:
   seven EndTurns, 64 room stages and sixteen immutable complete state/RNG chains.
 - Original enchantment world/combat calibration passes 32/41 real transitions,
   complete aura maps, 76/135 callback payloads, RNG and 32 immutable branches.
+- The historical sweep-preview negative control retains its original three
+  failed counters while all 86 room / 17 train stages now replay exactly,
+  including eight immutable exchange branches. Its old counters stay unchanged.
+- The complete shared pure suite (no archive arguments) passes once after the
+  fix in 4.08s. The full curated native fixture regression was not rerun.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --retained-callbacks-only

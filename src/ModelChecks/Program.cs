@@ -2933,14 +2933,18 @@ if (args.Length == 3 && args[0] is "--player-moon-room-spells-pair-only" or "--p
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
+    if (args[0] == "--player-moon-room-threshold-relic-pair-only")
+    {
+        MoonSpellThresholdCompositionChecks.PlayerPair(source.RootElement, replay.RootElement);
+        return;
+    }
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement,
         requireHealingRelic: args[0] == "--player-moon-room-healing-relic-pair-only",
         requirePhaseHealRelic: args[0] == "--player-moon-room-phase-heal-relic-pair-only",
         requirePhaseEnergyRelic: args[0] == "--player-moon-room-phase-energy-relic-pair-only",
         requireHandPowerRelic: args[0] == "--player-moon-room-hand-power-relic-pair-only",
         requireStatusRelic: args[0] == "--player-moon-room-status-relic-pair-only",
-        requireCovenant03: args[0] == "--player-moon-room-covenant03-pair-only",
-        requireThresholdRelic: args[0] == "--player-moon-room-threshold-relic-pair-only");
+        requireCovenant03: args[0] == "--player-moon-room-covenant03-pair-only");
     return;
 }
 if (args.Length == 2 && args[0] == "--player-moon-room-turn-only")
@@ -5270,6 +5274,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         "full-battle-player-moon-room-phase-energy-relic-replay.mt2f"));
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requirePhaseEnergyRelic: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-threshold-relic-search.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
+        "full-battle-player-moon-room-threshold-relic-replay.mt2f"));
+    MoonSpellThresholdCompositionChecks.PlayerPair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-status-relic-search.mt2f"))
 {

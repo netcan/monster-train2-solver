@@ -11,6 +11,8 @@ $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
     'room-moon-spell-threshold-relic-calibration.mt2f',
     'full-battle-original-moon-card-upgrades-threshold-relic.mt2f',
+    'full-battle-player-moon-room-threshold-relic-search.mt2f',
+    'full-battle-player-moon-room-threshold-relic-replay.mt2f',
     'player-live-arkion-pyre-unavailable.mt2f',
     'full-battle-player-live-arkion-pyre.mt2f',
     'outer-boss-birth-live-arkion-pyre.mt2f',
@@ -1141,6 +1143,8 @@ if ($Fixture.Count -gt 0) {
 $moonThresholdGates = @{
     'room-moon-spell-threshold-relic-calibration.mt2f' = '--moon-spell-threshold-component-only'
     'full-battle-original-moon-card-upgrades-threshold-relic.mt2f' = '--original-moon-card-upgrades-only'
+    'full-battle-player-moon-room-threshold-relic-search.mt2f' = '--player-moon-room-threshold-relic-pair-only'
+    'full-battle-player-moon-room-threshold-relic-replay.mt2f' = '--player-moon-room-threshold-relic-pair-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { -not $moonThresholdGates.ContainsKey($_) }).Count -eq 0) {
     if (-not $SkipBuild) {
@@ -1148,8 +1152,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { -not $moo
         if ($LASTEXITCODE -ne 0) { throw 'Moon threshold checker build failed.' }
     }
     $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+    $thresholdPairChecked = $false
     foreach ($path in $fixtures) {
-        dotnet $checker $moonThresholdGates[(Split-Path -Leaf $path)] $path
+        $gate = $moonThresholdGates[(Split-Path -Leaf $path)]
+        if ($gate -eq '--player-moon-room-threshold-relic-pair-only') {
+            if ($thresholdPairChecked) { continue }
+            dotnet $checker $gate (Get-TestFixturePath 'full-battle-player-moon-room-threshold-relic-search.mt2f') `
+                (Get-TestFixturePath 'full-battle-player-moon-room-threshold-relic-replay.mt2f')
+            $thresholdPairChecked = $true
+        } else { dotnet $checker $gate $path }
         if ($LASTEXITCODE -ne 0) { throw 'Focused moon threshold acceptance failed.' }
     }
     return
