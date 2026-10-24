@@ -2374,9 +2374,14 @@ if ($PlayerAdvisor -and -not $PlannerInput -and -not $RollingInput) {
 if ($AdvisorFloorBrowse -and -not $RollingInput -and ($null -eq $trace.PlayerAdvisor.FloorBrowse -or
     -not $trace.PlayerAdvisor.FloorBrowse.Passed -or -not $trace.PlayerAdvisor.FloorBrowse.DuringSearch -or
     $trace.PlayerAdvisor.FloorBrowse.Switches -ne 7 -or $trace.PlayerAdvisor.FloorBrowse.CaptureFreeSwitches -ne 7 -or
-    $trace.PlayerAdvisor.Overlay.BrowseSelections -ne 7 -or
+    $trace.PlayerAdvisor.Overlay.BrowseSelections -lt 7 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'PLAYER-ADVISOR-FLOOR-BROWSE-PASS .*newSearches=0' -Quiet))) {
     throw 'Real player floor browsing did not preserve its generation and search count through seven switches.'
+}
+if ($OriginalConduitRelics -and $AdvisorFloorBrowse -and -not $RollingInput -and
+    (-not $trace.PlayerAdvisor.FloorBrowse.DeployedConduitPassed -or
+        $trace.PlayerAdvisor.FloorBrowse.DeployedConduitSwitches -ne 4)) {
+    throw 'Deployed Conduit floor browsing did not preserve capture/publication/search counts and the readable view.'
 }
 if ($AdvisorPresentation -and -not $RollingInput) {
     $presentation = $trace.PlayerAdvisor.Presentation

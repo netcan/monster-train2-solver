@@ -36,6 +36,8 @@ namespace MonsterTrain2Poju.Probe
         private static Color browseColor;
         private static float browseScroll;
         private static int captureFreeSwitches;
+        private static int conduitSwitches;
+        private static bool conduitBrowsePassed;
         private static bool browsingDuringSearch;
         private static int browseDirection = 1;
         private static bool replayWheelInput;
@@ -87,6 +89,7 @@ namespace MonsterTrain2Poju.Probe
             Presentation = AdvisorPresentationProbe.Enabled ? AdvisorPresentationProbe.Evidence : null,
             FloorBrowse = !BrowseEnabled ? null : new { Passed = FloorBrowsePassed, Switches = browseSwitches,
                 DuringSearch = browsingDuringSearch, WheelInput = true, CaptureFreeSwitches = captureFreeSwitches,
+                DeployedConduitPassed = conduitBrowsePassed, DeployedConduitSwitches = conduitSwitches,
                 SwitchMilliseconds = browseMilliseconds },
             ReplayedFloorSwitches = replayBrowseSwitches,
             FrozenObservation = !frozenObservation ? null : new { Paused = Field<bool>("paused"),
@@ -254,13 +257,7 @@ namespace MonsterTrain2Poju.Probe
             }
             if (BrowseEnabled && phase is 6 or 7)
             {
-                Require(Get<int>("Captures") == browseCaptures, "floor browsing triggered native state capture");
-                if (browseAdvice != null)
-                    Require(ReferenceEquals(Advice, browseAdvice) && Get<int>("Published") == browsePublications &&
-                        Field<Text>("body").text == browseText && Field<Text>("statusLabel").text == browseStatus &&
-                        Field<Text>("body").color == browseColor &&
-                        Math.Abs(Field<ScrollRect>("planScroll").verticalNormalizedPosition - browseScroll) < .005,
-                        "floor browsing changed the publication, text, status, color or scroll position");
+                CheckBrowseView();
                 if (Time.frameCount <= boundaryFrame || Field<bool>("selectionPending") || !SettledBrowse()) return false;
                 captureFreeSwitches++;
                 Require(GetGeneration() == browseGeneration && Get<long>("Searches") == browseSearches,
@@ -274,7 +271,28 @@ namespace MonsterTrain2Poju.Probe
                     " readySwitchMs=" + string.Join(",", browseMilliseconds.Skip(1).Select(value => value.ToString("F1"))));
                 phase = 8;
             }
+            if (BrowseEnabled && phase == 70)
+            {
+                CheckBrowseView();
+                if (Time.frameCount <= boundaryFrame || Field<bool>("selectionPending") || !SettledBrowse()) return false;
+                Require(GetGeneration() == browseGeneration && Get<long>("Searches") == browseSearches,
+                    "deployed Conduit browsing restarted or cancelled a search");
+                if (conduitSwitches < 4) { BrowseNext(false); return false; }
+                conduitBrowsePassed = true; phase = 8;
+                log!.LogInfo("PLAYER-ADVISOR-CONDUIT-BROWSE-PASS switches=4 captures=0 publications=0 searches=0 stableView=true fullNativeRng=true");
+            }
             if (!Ready()) return false;
+            if (BrowseEnabled && phase == 8 && !conduitBrowsePassed && RollingAdviceScenario.Records.Count > 0)
+            {
+                Type traceType = type!.Assembly.GetType("MonsterTrain2Poju.Probe.FullBattleTrace", true)!;
+                object trace = AccessTools.Property(traceType, "Active").GetValue(null)!;
+                var units = (IReadOnlyList<CharacterState>)AccessTools.Property(traceType, "KnownUnits").GetValue(trace)!;
+                if (units.Any(unit => unit != null && !unit.IsDestroyed && unit.IsAlive && unit.GetStatusEffectStacks("conduit") > 0))
+                {
+                    browseGeneration = GetGeneration(); browseSearches = Get<long>("Searches");
+                    BrowseNext(false); phase = 70; return false;
+                }
+            }
             if (!InteractionsPassed)
             {
                 Require(GetGeneration() > initialGeneration, "refresh reused the preceding generation");
@@ -285,7 +303,18 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
-        private static void BrowseNext()
+        private static void CheckBrowseView()
+        {
+            Require(Get<int>("Captures") == browseCaptures, "floor browsing triggered native state capture");
+            if (browseAdvice != null)
+                Require(ReferenceEquals(Advice, browseAdvice) && Get<int>("Published") == browsePublications &&
+                    Field<Text>("body").text == browseText && Field<Text>("statusLabel").text == browseStatus &&
+                    Field<Text>("body").color == browseColor &&
+                    Math.Abs(Field<ScrollRect>("planScroll").verticalNormalizedPosition - browseScroll) < .005,
+                    "floor browsing changed the publication, text, status, color or scroll position");
+        }
+
+        private static void BrowseNext(bool initial = true)
         {
             browseStarted = Time.realtimeSinceStartup; boundaryFrame = Time.frameCount + 2;
             browseCaptures = Get<int>("Captures"); browsePublications = Get<int>("Published");
@@ -294,7 +323,7 @@ namespace MonsterTrain2Poju.Probe
             browseColor = Field<Text>("body").color;
             browseScroll = Field<ScrollRect>("planScroll").verticalNormalizedPosition;
             ScrollNext();
-            browseSwitches++;
+            if (initial) browseSwitches++; else conduitSwitches++;
         }
 
         private static void ScrollNext()

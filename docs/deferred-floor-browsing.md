@@ -35,3 +35,40 @@ also checks the advice object, publication count, text, status, color and scroll
 position before taking its own explicit diagnostic capture. That independent
 capture compares the complete native selection transition and RNG with the
 recorded callbacks; it is not part of the player's browsing path.
+
+## Native acceptance
+
+The accepted run is
+`.probe-runs/full-battle-units-spells-and-junk-20261024-211810-9c3644f9`.
+It loads the actual 0.2.17 player DLL, whole-battle/two-worker/3000ms settings,
+and the existing isolated original Conduit relic scenario. The scenario authors
+Steward/equipment carriers and keeps the three native relic definitions unchanged.
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Policy units-spells-and-junk `
+  -OriginalConduitRelics -PlayerAdvisor -RollingAdvice -AdvisorPresentation `
+  -AdvisorFloorBrowse -PlannerWholeBattle -PlannerSearchWorkers 2 -SkipBuild `
+  -TimeoutSeconds 300
+```
+
+Seven initial wheel inputs, including one during search, add zero player captures
+and zero searches. Once a living Conduit contributor is deployed, four additional
+native wheel inputs add zero captures, publications and searches, retain the
+same text/status/color/scroll, and match independently captured full native
+selection callbacks/RNG. Those four inputs include leaving and returning to the
+contributor's floor. Global BrowseSelections also counts selection callbacks
+caused by ordinary native actions; it is not the explicit wheel-input count.
+
+The driver then completes four card plays and seven EndTurns, wins, and records
+53 room stages, 13 publications and 10 reused suffixes. CaptureFailures,
+Mismatches, Unsupported and Pending are all zero. Presentation acceptance checks
+50 retained input notifications, six non-top scroll positions and four live
+duration changes. The process exits normally in 105.91 seconds and protected
+player files remain unchanged.
+
+The captured Conduit fixture also passes with the exact production Model.dll
+in a separate checker harness. Existing floor concurrency/divergence and live
+moon continuation controls pass. The 1360-fixture catalog hash/registration
+check is separate from these focused behavior checks; no full regression or
+Mac build is required for this change. These counters establish removal of the
+player's browsing work in the covered native cases, not an FPS benchmark.
