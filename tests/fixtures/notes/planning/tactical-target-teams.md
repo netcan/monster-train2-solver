@@ -19,7 +19,18 @@ cases first failed against the prior implementation. All now check the exact
 chosen successor/state/RNG and parent immutability, while preserving legal
 cross-team branches. The archived natural Ring7 tactical deployment still yields
 a fully replayable 60-input victory, with cancellation and node-bound controls.
-This is model validation; a new native player run is recorded separately.
+This is model validation; it does not establish a new natural Ring7 native pair.
+
+The actual player 0.2.24 payload subsequently passed the isolated native run
+`full-battle-units-spells-and-junk-20261025-014005-38b5292b`: 21 plays and seven
+EndTurns, victory, normal exit in141.20 seconds, unchanged original player files,
+and zero capture/mismatch/unsupported/pending counters. Full native state/RNG,
+30 publications with fresh complete roots, seven zero-capture/zero-search floor
+selections, 27 reused publications, six collapsed cross-turn resets and complete
+background history counts/drop0 all pass. The accepted trace SHA256 is
+`e0fbe036a696c59749bcbf5fe80a431b11a1d648643175c04e696fed2682d235`.
+This is a focused player smoke and model/native comparison, not a claim that the
+remaining natural Angel Duo or higher Covenant strategy gaps are closed.
 
 ```powershell
 ./scripts/Check-DefaultAdvice.ps1 -Case Targets -SkipBuild
