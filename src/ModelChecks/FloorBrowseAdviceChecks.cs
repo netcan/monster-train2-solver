@@ -93,6 +93,7 @@ internal static class FloorBrowseAdviceChecks
         RapidInputs(before, plan, browse: false, interleaved: false);
         RapidInputs(before, plan, browse: true, interleaved: false);
         RapidInputs(before, plan, browse: true, interleaved: true);
+        RapidInputs(before, plan, browse: true, interleaved: true, divergentCheckpoint: true);
         int searches = 0;
         using var session = new BattleAdviceSession((_, _) =>
         {
@@ -149,10 +150,18 @@ internal static class FloorBrowseAdviceChecks
         { BattleActionResult next = BattleActionModel.PlayCard(projected, first.Action!); Require(next.Supported, next.Reason!); after = next.State!; }
         if (plan.Steps.Count > 1)
         {
-            session.InvalidateForInput(); session.Observe(after, Key(after)); Pump(session);
+            session.InvalidateForInput(); session.Observe(after, Key(after));
+            // A later view belongs to the accepted input root. Publishing the
+            // in-flight result may consume only its own earlier history prefix.
+            int room = (after.SelectedRoom + 1) % 3;
+            session.BrowseRoom(room);
+            BattleTurnResult lateView = BattleTurnModel.SelectRoom(after, room);
+            Require(lateView.Supported, lateView.UnsupportedReason!);
+            Pump(session);
             Require(searches == 1 && session.Current!.ReusedContinuation && session.Current.Plan.Steps.Count == plan.Steps.Count - 1,
                 "Following advice after deferred browsing lost its verified suffix.");
             BattleAdviceSession.Verify(after, session.Current.Plan);
+            Require(session.MatchesCurrentRoot(lateView.State!), "Publication discarded a later deferred view.");
         }
         session.Invalidate(); session.Observe(root, Key(root)); Pump(session);
         Require(searches == 2 && session.MatchesCurrentRoot(root), "Manual reset retained an obsolete browsing history.");
@@ -179,7 +188,8 @@ internal static class FloorBrowseAdviceChecks
         Console.WriteLine("DEFERRED-BROWSING PASS: seven O(1) view events preserve the exact publication, then a real input matches and verifies its full remaining state/RNG.");
     }
 
-    private static void RapidInputs(BattleTurnState root, BattlePlanResult plan, bool browse, bool interleaved)
+    private static void RapidInputs(BattleTurnState root, BattlePlanResult plan, bool browse, bool interleaved,
+        bool divergentCheckpoint = false)
     {
         if (plan.Steps.Count < 3) return;
         int searches = 0;
@@ -211,7 +221,8 @@ internal static class FloorBrowseAdviceChecks
             }
             // No Poll/publication between actual inputs. Even a completed
             // obsolete worker must not consume the last published anchor.
-            session.InvalidateForInput(); session.Observe(actual, Key(actual)); consumed++;
+            BattleTurnState checkpoint = divergentCheckpoint && consumed == 0 ? Copy(actual, energy: actual.Energy + 1) : actual;
+            session.InvalidateForInput(); session.Observe(checkpoint, Key(checkpoint)); consumed++;
             if (consumed >= 2 && step.IsEndTurn) break;
             if (interleaved)
             {
@@ -220,6 +231,15 @@ internal static class FloorBrowseAdviceChecks
                 BattleTurnResult selected = BattleTurnModel.SelectRoom(actual, room);
                 Require(selected.Supported, selected.UnsupportedReason!); actual = selected.State!;
             }
+        }
+        if (divergentCheckpoint)
+        {
+            // Even convergence to a later matching prefix must not hide an
+            // earlier checkpoint that was outside the advised route.
+            Pump(session, BattleAdviceStatus.Unavailable);
+            Require(searches == 2 && session.Current == null, "A divergent intermediate checkpoint reused the original route.");
+            Console.WriteLine("RAPID-INPUTS DIVERGENCE PASS: an off-route intermediate resource change forces fresh search.");
+            return;
         }
         Pump(session);
         Require(searches == 1 && session.Current!.ReusedContinuation &&

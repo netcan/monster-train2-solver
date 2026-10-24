@@ -1233,3 +1233,22 @@ Windows 0.2.17 is installed with three source/installed hash matches and a previ
 payload backup. PID33172 still runs 0.2.16 until the user restarts the game.
 See [acceptance and delivery](deferred-floor-browsing.md) for exact evidence,
 payload hashes, backup and package locations. No Mac package was built.
+
+## Overlapping advised inputs · Windows 0.2.18 · 2026-10-24
+
+Starting verification no longer consumes the prior published root or its floor
+history. Consecutive advised inputs, including EndTurn before a new publication,
+match ordered full-state/RNG checkpoints and retain the verified suffix. New
+floor callbacks survive earlier publications; an off-route intermediate resource
+checkpoint still forces fresh search. All focused cases pass with the exact
+production Model.dll.
+
+The actual isolated player wins at Pyre74 after four plays and seven EndTurns,
+with ten reused suffixes, 53 room stages and four zero failure counters. Eleven
+native wheel inputs retain the existing capture-free browsing behavior, with
+the deployed Conduit case adding zero captures/publications/searches. The run
+exits normally and protects original player files. Ordinary floor concurrency,
+cost/resource/RNG divergence and live moon continuation controls pass. See
+[rapid-input acceptance](rapid-advice-continuation.md) for the race regression,
+native timing boundary and exact payload hashes. No full regression or Mac build
+was performed.
