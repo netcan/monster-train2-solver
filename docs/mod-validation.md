@@ -21,7 +21,20 @@ All thirty publications have fresh full-root checks; seven floor switches
 preserve the search count, including one switch during search. Pause/hide,
 refresh, pointer controls, drag/clamp and the two new UI/idle checks pass.
 All capture/mismatch/unsupported/pending counters are zero, native exit is normal
-and protected originals are unchanged. Independent frozen replay is pending.
+and protected originals are unchanged. Independent frozen replay
+`full-battle-units-spells-and-junk-20261024-150309-713d7962` also wins after the
+same 15 plays/seven EndTurns, with all four counters zero, normal exit and
+protected originals unchanged. The paused advisor performs no new searches or
+publications, while the replay verifies the actual input sequence independently.
+
+The three 0.2.5 Windows DLLs are installed in the real Steam game with matching
+build/installed SHA256 hashes. All 28 other loader/plugin/configuration files
+are unchanged, including F10. The previous 0.2.4 payload remains under
+`BepInEx/PojuBackups/IdlePlan-20261024-150747/previous`. A fresh real Steam
+process (PID122100, started15:07:55) loads 0.2.5 and logs its own Update and
+the F10 canvas at2560x1440. The real Unity window screenshot visibly shows
+the panel, launcher and complete-plan button at the title screen; no save is
+loaded or played by this startup check.
 
 Windows 0.2.4 protects the BepInEx host with `HideAndDontSave`. With the real
 loader's default `HideManagerGameObject = false`, the original host is disabled
