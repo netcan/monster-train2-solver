@@ -32,8 +32,8 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 
 | 样本 | 主族／副族 | 原生种子 | 本次状态 |
 | --- | --- | ---: | --- |
-| 1 | Banished / Umbra | 1970936330 | 前五战源局及独立复放通过，第六战进行中；整局仍在验收 |
-| 2 | Pyreborne / Banished | 1862997127 | 前两战源局及独立复放通过，第三战继续验证；采集及永久成长偏差见下文 |
+| 1 | Banished / Umbra | 1970936330 | 前六战源局及独立复放通过，第七战进行中；整局仍在验收 |
+| 2 | Pyreborne / Banished | 1862997127 | 第三战实际败北；38个输入完整验证，采集／模型失败计数均为零 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
@@ -75,6 +75,12 @@ Permafrost，并立即、幂等添加独立临时 Freeze；不改变临时升级
 即使战斗异常退出，也不会误指向上一战，并再次校验败局输入保存文件未变。
 
 定向检查入口：
+
+第二组的第三战修复后完成原生结算，29次出牌、9次结束回合、40次建议发布，
+薪火57降至0；源局完整后继、预测、RNG 和实际面板均通过，
+已归档为 `full-battle-random-campaign-02-ring3-loss.mt2f`。
+这是默认策略的真实失败样本，不能据此宣称组合不可通关或该局无解；
+也未将完整败局计作独立原生双胜验收。
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll `
