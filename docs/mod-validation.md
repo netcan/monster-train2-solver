@@ -324,7 +324,7 @@ removal and hand refresh after completed death focus; both original failed
 prefixes remain preserved as boundary evidence. This controlled
 six-turn/10000ms scene remains separate from natural/default-budget victory.
 Additional active relics and later Covenants retain their separate guards. See
-[Moon Covenant composition](../tests/fixtures/moon-covenant.md).
+[Moon Covenant composition](../tests/fixtures/notes/campaign/moon-covenant.md).
 
 Original New-moon Silent armor now composes with the five moon spells,
 Lunacy and Eclipse room masks. The 15-boundary component and 20-play native
@@ -338,7 +338,7 @@ their plans. Frozen replay has no searches/publications after pausing.
 The reusable pair runner accepts completed source/replay profiles and writes
 its hashed receipt only after independent acceptance. This controlled
 six-turn/10000ms scene remains separate from natural/default-budget victory.
-See [New-moon Silent armor](../tests/fixtures/moon-status-relic.md).
+See [New-moon Silent armor](../tests/fixtures/notes/relics/moon-status-relic.md).
 
 Original moon spell upgrades/Lunacy/room masks now also support the exact
 Full-moon end-turn hand magic-power relic. The 19-boundary component and
@@ -350,7 +350,7 @@ Fifty publications have fresh full-root checks; nine ordinary and 37 winning
 continuations reuse their verified plans. Frozen replay has no searches or
 publications after pausing. This controlled six-turn/10000ms scene remains
 separate from natural/default-budget victory. See
-[end-turn hand magic power](../tests/fixtures/moon-hand-power-relic.md).
+[end-turn hand magic power](../tests/fixtures/notes/relics/moon-hand-power-relic.md).
 
 Original moon spell upgrades/Lunacy/room masks now also support the exact
 original Full-moon energy relic and its once-per-turn condition. The isolated
@@ -362,7 +362,7 @@ remains distinct from any energy refunded afterward. Forty-seven publications
 have fresh full-root checks;44 winning continuations reuse the verified route.
 Frozen replay has no searches/publications after pausing. This controlled
 six-turn/10000ms scene is separate from natural/default campaign victories.
-See [Full-moon energy composition](../tests/fixtures/moon-phase-energy-relic.md).
+See [Full-moon energy composition](../tests/fixtures/notes/relics/moon-phase-energy-relic.md).
 
 Original moon spell upgrades/Lunacy/room masks now also support the exact
 original phase-healing relic. The isolated15-boundary component and20-play
@@ -373,7 +373,7 @@ have fresh root checks;nine ordinary and37 winning continuations reuse plans.
 The frozen process has zero searches/publications after pausing. This is a
 controlled six-turn/10000ms scene,with unchanged original spell/relic definitions,
 and a separate acceptance from natural/default campaign victories. See
-[phase-healing composition](../tests/fixtures/moon-phase-heal-relic.md).
+[phase-healing composition](../tests/fixtures/notes/relics/moon-phase-heal-relic.md).
 
 Natural Covenant3 Ring6 now gives complete actual-default advice,but still
 loses after46 inputs. Its source-only counterexample passes complete forecasts/
@@ -381,7 +381,7 @@ state/RNG,player UI,normal exit and four zero counters;seven floor selections
 add no searches. It is not a victory or independent pair. Four offline scouts
 also lose,so no additional native attempt is spent on them. The continuous
 runner retains structured loss/input diagnostics before stopping progression.
-See [default loss](../tests/fixtures/angel-duo.md#natural-covenant3-default-loss).
+See [default loss](../tests/fixtures/notes/bosses/angel-duo.md#natural-covenant3-default-loss).
 
 Natural Covenant3 Ring6 initially showed no advice because the exact original
 Angel pair rejected its merchant-only third owner. The shared projection/model
@@ -390,7 +390,7 @@ native birth,16 immutable branches and a seven-EndTurn no-card loss match
 complete state/RNG,61 room stages and14 train phases; normal exit,protected
 originals and four zero counters pass. Other variants remain guarded. This
 mechanism calibration is separate from player-victory acceptance. See
-[natural Angel birth](../tests/fixtures/angel-duo.md#natural-cumulative-covenant3-birth).
+[natural Angel birth](../tests/fixtures/notes/bosses/angel-duo.md#natural-cumulative-covenant3-birth).
 
 Natural Covenant3 Ring5 now passes actual-default source and independent native
 replay:43 inputs,Pyre72 wins,74 room stages and17 train phases per process,
@@ -399,7 +399,7 @@ Thirty ordinary/five winning continuations avoid search; fifteen inputs use
 explicitly marked shorter complete forecasts. The frozen process pauses after
 one initial search and starts none afterward. The continuous runner restores
 all15 input payloads and advances original rewards/map to Ring6; later battles
-are not yet accepted. See [Ring5 evidence](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring5-with-actual-defaults).
+are not yet accepted. See [Ring5 evidence](../tests/fixtures/notes/campaign/native-covenant-campaign.md#natural-rank-three-ring5-with-actual-defaults).
 
 Natural Covenant3 Ring3 now passes actual defaults too: both native processes
 win original Siphon Rage at Pyre52 after36 inputs. Full forecasts/state/RNG,
@@ -408,7 +408,7 @@ all four failure counters zero. The exact original merchant-only third
 Covenant no longer rejects the queued boss before the first recommendation.
 Thirty-eight source publications have fresh full-root checks;24 ordinary/five
 winning continuations reuse their verified suffixes without search. See
-[natural Ring3 evidence](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring3-with-actual-defaults).
+[natural Ring3 evidence](../tests/fixtures/notes/campaign/native-covenant-campaign.md#natural-rank-three-ring3-with-actual-defaults).
 
 Natural Covenant3 Ring2 now also passes the actual three-turn/3000ms/top-floor
 defaults with tactical seed off: source and independent native replay both win
@@ -417,7 +417,7 @@ phases per process match; both exit normally with four zero failure counters.
 Thirty source publications each have a fresh full-root check; sixteen ordinary
 and seven winning continuations skip search. This extends natural higher-rank
 advice beyond startup, not full campaign completion. See
-[native campaign evidence](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring2-with-actual-defaults).
+[native campaign evidence](../tests/fixtures/notes/campaign/native-covenant-campaign.md#natural-rank-three-ring2-with-actual-defaults).
 
 Endless carriers killed by a spell now retain their already completed return
 to Draw during the spell's outer cleanup. An original Angel Duo rejected
@@ -427,7 +427,7 @@ states/RNG match, including draw order, retained temporary upgrades and unchange
 exhaustion statistics. Both component processes exit normally and preserve
 protected original files. The existing complete Angel Duo player pair still
 passes; this component repair does not establish a new boss victory. See
-[Endless spell routing](../tests/fixtures/endless-spell-routing.md).
+[Endless spell routing](../tests/fixtures/notes/cards/endless-spell-routing.md).
 
 Original moon-upgrade spells now accept the unchanged `IncreaseSpellHealing`
 relic after isolated resource-callback calibration, full controlled battle and
@@ -436,7 +436,7 @@ after 48 inputs; complete forecasts/state/RNG, real UI, normal exit and four
 zero failure counters pass. Fifty source publications have fresh full-root
 checks; 46 continuations reuse verified suffixes. This uses controlled cards,
 six turns/10000ms and tactical seed, with no natural/default-budget claim. See
-[moon/healing relic evidence](../tests/fixtures/moon-healing-relic.md).
+[moon/healing relic evidence](../tests/fixtures/notes/relics/moon-healing-relic.md).
 
 Natural Fragile now passes a three-turn/3000ms, bottom-preference actual-player
 source and independent native replay, with the extra tactical option off.
@@ -445,7 +445,7 @@ train phases per process match, normal exits and four zero failure counters.
 The ordinary-prefix timeout is fixed at the exact original native failure root.
 Replay also completes original eight-battle Standard settlement; all 26 bundled
 payloads pass fresh isolated restoration. See
-[short-budget Fragile acceptance](../tests/fixtures/player-fragile-short-budget.md).
+[short-budget Fragile acceptance](../tests/fixtures/notes/bosses/player-fragile-short-budget.md).
 The configured top-floor default now also passes an actual-default native pair
 after adaptive opening-floor comparison: both processes win at Pyre2 after
 54 inputs, all complete forecasts/state/RNG and seventeen train phases per
@@ -453,14 +453,14 @@ process match, normal exits and four zero failure counters pass. The source
 uses eleven consumed searches, 39 ordinary and four winning continuations;
 all 56 publications have fresh full-root checks. Replay also completes original
 eight-battle Standard settlement. See
-[default Fragile acceptance](../tests/fixtures/adaptive-deployment.md).
+[default Fragile acceptance](../tests/fixtures/notes/advisor/adaptive-deployment.md).
 
 Natural Ring7 also has a new actual-default player victory and independent
 native replay: 60 inputs/ten EndTurns, Pyre62, all complete forecasts/state/RNG,
 normal exits and four zero failure counters. It closes that checkpoint's old
 default-budget loss, with requested three-turn/3000ms settings and the tactical
 option off. Explicit shorter windows and atomic soft-budget overruns remain
-visible. See [default strategy acceptance](../tests/fixtures/default-advice-strategy.md).
+visible. See [default strategy acceptance](../tests/fixtures/notes/planning/default-advice-strategy.md).
 
 The complete-state key optimization now has a fresh actual-default player
 source and independent native replay, both winning at Pyre69 after 28 inputs.
@@ -469,7 +469,7 @@ both exit normally, preserve protected files and have four zero failure
 counters. The source's 36 publications each have a fresh full-root check.
 Seven floor switches still add zero searches; twelve ordinary continuations
 and eleven winning continuations skip search. See
-[state-key performance and acceptance](../tests/fixtures/state-key-performance.md).
+[state-key performance and acceptance](../tests/fixtures/notes/planning/state-key-performance.md).
 
 The player entry point is `src/Advisor/AdvisorPlugin.cs`. The 0.2.0 baseline below
 is followed by the 0.2.1, 0.2.2 and 0.2.3 focused results.
@@ -489,7 +489,7 @@ not install every patch in its assembly.
   new turns retain the full planning horizon and seven floor switches still
   add no searches. Both processes win with Pyre 76, all 24 inputs/full
   forecasts/state/RNG match, normal exit and all four counters zero. See
-  [same-turn advice continuation](../tests/fixtures/player-ordinary-continuation.md).
+  [same-turn advice continuation](../tests/fixtures/notes/advisor/player-ordinary-continuation.md).
 - Both Advisor and the existing Probe Release builds succeed. The ordinary
   unsuppressed first build retains existing nullable warnings in reused code.
 - `--battle-advice-only full-battle-planner-starter-search.mt2f` passes stale
@@ -713,8 +713,8 @@ effects, preserve protected files and have zero capture/mismatch/unsupported/pen
 counters. Full roots, successors, published continuations and RNG match.
 
 The complete archives are committed as
-`tests/fixtures/full-battle-player-moon-search.mt2f` and
-`tests/fixtures/full-battle-player-moon-replay.mt2f`. Run
+`tests/fixtures/advisor/moon/full-battle-player-moon-search.mt2f` and
+`tests/fixtures/advisor/moon/full-battle-player-moon-replay.mt2f`. Run
 `ModelChecks --player-moon-pair-only <search> <replay>` to verify both native
 sequences, both moon phases, repeated shifts, the retained native mask bit and
 Witchweave casts in each phase. The existing set/advance/unit-callback fixtures
@@ -1109,7 +1109,7 @@ wins with Pyre62 in 504.36 seconds, with all 60 unchanged inputs and complete
 state/RNG matched. It has zero failure counters, settled terminal effects,
 normal code-zero exit and protected originals unchanged. Its actual player
 assembly records 206 pure captures and zero publications/search nodes.
-See [complete evidence and limits](../tests/fixtures/natural-ring7-tactics.md).
+See [complete evidence and limits](../tests/fixtures/notes/campaign/natural-ring7-tactics.md).
 
 This case uses horizon12/30,000-ms tactical search, floor3 in the user config
 (zero-based room2). It does not establish default three-turn/3,000-ms performance
@@ -1129,7 +1129,7 @@ The native jump explicitly overrides the encounter unlock; assets, original
 HP, deck and Pyre80 are unchanged. Both runs lose. This establishes bounded
 advice and replay, while natural victory and higher Covenant remain open.
 Diagnostic writers stay disabled in the player build. See
-[the complete evidence and supported scope](../tests/fixtures/player-true-final-boss-bounded.md).
+[the complete evidence and supported scope](../tests/fixtures/notes/bosses/player-true-final-boss-bounded.md).
 
 ## Original Level9 ordinary ally · 2026-10-23
 
@@ -1143,7 +1143,7 @@ Actual median/P95 response is 4.55/6.09 seconds.
 
 This uses explicit native jump/unlock and added-card controls; enemy assets,
 original HP/phases and Pyre80 are unchanged. Both runs lose. The original
-17-input player pair remains passing. See [ordinary ally player evidence](../tests/fixtures/player-true-final-boss-ordinary.md).
+17-input player pair remains passing. See [ordinary ally player evidence](../tests/fixtures/notes/bosses/player-true-final-boss-ordinary.md).
 
 ## Original Level9 numeric ordinary ally · 2026-10-23
 
@@ -1158,7 +1158,7 @@ three-turn/3,000-ms tactical configuration.
 
 This extends controlled deck acceptance, with original enemy HP/phases and
 Pyre80. Natural victory remains open. The unmodified ordinary ally pair still
-passes. See [numeric ally player evidence](../tests/fixtures/player-true-final-boss-ordinary-upgraded.md).
+passes. See [numeric ally player evidence](../tests/fixtures/notes/bosses/player-true-final-boss-ordinary-upgraded.md).
 
 ## Natural Fragile winning player pair · 2026-10-23
 
@@ -1174,7 +1174,7 @@ and pointer/pause/hide/refresh interactions pass; 603 source and 125 replay
 captures are pure. At twelve turns/30,000 ms with tactical candidates and
 bottom deployment, the first consumed total response is 51.09 seconds.
 Retained response median/P95 is 2.38/3.96 seconds. The default bounded-loss
-pair remains separate. See [complete winning evidence](../tests/fixtures/player-fragile-winning.md).
+pair remains separate. See [complete winning evidence](../tests/fixtures/notes/bosses/player-fragile-winning.md).
 
 ## Original Level9 OnHit ally · 2026-10-23
 
@@ -1185,7 +1185,7 @@ Three linked attacker unit turns exercise the original OnHit melee-weakness
 callback. Both controlled losses settle, exit normally, leave protected files
 unchanged and retain four zero native failure counters. Panel interactions
 and 141 source/29 replay pure captures pass; source publishes eleven plans.
-Actual response median/P95 is 5.18/5.57 seconds. See [player evidence](../tests/fixtures/player-true-final-boss-avenger.md).
+Actual response median/P95 is 5.18/5.57 seconds. See [player evidence](../tests/fixtures/notes/bosses/player-true-final-boss-avenger.md).
 
 ## Floor-browsing advice reuse · 2026-10-23
 
@@ -1198,7 +1198,7 @@ both win, matching all 28 inputs and full forecasts/state/RNG. Both exit normall
 with protected originals unchanged and four zero failure counters. Focused
 session and resource/cost/RNG controls pass. The historical boss winning-plan
 check fails identically on baseline `74f9272c` and is recorded separately.
-See [floor-browsing evidence](../tests/fixtures/player-floor-browse.md) and run
+See [floor-browsing evidence](../tests/fixtures/notes/advisor/player-floor-browse.md) and run
 `scripts/Check-FloorBrowseAdvice.ps1`; no full regression is required.
 
 ## Natural covenant-three Ring4 defaults · 2026-10-24
@@ -1209,8 +1209,8 @@ phases match, with normal exits, unchanged protected originals and four zero
 failure counters. This closes the natural player aura-capture and original
 Harvester birth-movement guards; cross-floor movement has its separate27-input
 native component. Frozen replay pauses after one initial search, starts zero
-further searches and publishes no advice. See [Ring4 evidence](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring4-with-actual-defaults)
-and [birth calibration](../tests/fixtures/harvester-birth.md). No full regression
+further searches and publishes no advice. See [Ring4 evidence](../tests/fixtures/notes/campaign/native-covenant-campaign.md#natural-rank-three-ring4-with-actual-defaults)
+and [birth calibration](../tests/fixtures/notes/combat/harvester-birth.md). No full regression
 or Mac package is built.
 
 ## Deferred floor browsing · Windows 0.2.17 · 2026-10-24

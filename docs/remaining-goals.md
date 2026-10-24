@@ -26,7 +26,7 @@
 全零。49次发布均有新鲜完整根局面校验，9次普通续步和36次胜局续步复用
 计划；冻结暂停后零新增搜索／发布。该组仍是受控牌组与六回合／10秒预算，
 更高 Covenant、额外遗物组合及自然默认预算胜局仍需分别验收，见
-[月相 Covenant 组合](../tests/fixtures/moon-covenant.md)。
+[月相 Covenant 组合](../tests/fixtures/notes/campaign/moon-covenant.md)。
 
 新月默者护甲遗物 `MoonPhaseAddArmorToSilent` 与月相法术／Lunacy／房间遮罩
 现已补齐15个隔离原生边界：两次新月各加10护甲，其余13个边界及非默者对照
@@ -38,7 +38,7 @@
 冻结暂停后零新增搜索／发布。两场各有两次原始默者技能激活。另补齐可复用
 配对脚本，可沿用已通过的源局和回放，独立检查通过后才生成带哈希的验收记录。
 该组仍为受控牌组与六回合／10秒预算，见
-[新月默者护甲组合](../tests/fixtures/moon-status-relic.md)。
+[新月默者护甲组合](../tests/fixtures/notes/relics/moon-status-relic.md)。
 
 满月手牌法强遗物 `MoonPhaseRoomsGainMagicPower` 与月相法术／Lunacy／房间遮罩
 现已补齐 19 个隔离原生边界：三次满月共 15 次升级，九个新月／筛选对照，
@@ -49,7 +49,7 @@
 47 个房间阶段和 13 个列车阶段、十六条整场分支匹配。50 次发布都有新鲜
 完整根局面核对；9 次普通续步和 37 次胜局续步复用计划，冻结暂停后零新增
 搜索／发布。该组仍使用受控牌组及六回合／10 秒预算，见
-[满月手牌法强组合](../tests/fixtures/moon-hand-power-relic.md)。
+[满月手牌法强组合](../tests/fixtures/notes/relics/moon-hand-power-relic.md)。
 
 满月回能遗物与月相法术／Lunacy／房间遮罩的组合现已通过 15 个隔离原生边界：
 首次满月加 1，同回合再次满月不加；11 个房间／资源／选层对照不回能。
@@ -60,14 +60,14 @@
 火炉 80 血获胜；完整预测／状态／RNG、每场 36 个房间阶段和 10 个列车阶段、
 十六条整场分支匹配。47 次发布均核对新鲜完整根局面，44 次胜局续步复用计划；
 冻结回放暂停后零新增搜索／发布。该组仍使用受控牌组和六回合／10 秒预算，见
-[满月回能组合](../tests/fixtures/moon-phase-energy-relic.md)。
+[满月回能组合](../tests/fixtures/notes/relics/moon-phase-energy-relic.md)。
 
 自然 Covenant 3 第六战已恢复完整默认建议，但新源局仍败北：46 个输入、完整
 预测／状态／RNG 及原生 UI 匹配，正常退出、原文件不变且四项失败计数全零。
 七次选层（含搜索中）零新增搜索。三种固定楼层候选和一条六回合／10 秒战术候选
 均在离线验证后判败，没有重复原生试跑。该局已按完整败局单独归档，不能计为
 胜局或独立原生配对；连续脚本新增结构化败局记录，保留原输入供后续策略改进。
-第七／八战仍未验收，见 [双天使策略反例](../tests/fixtures/angel-duo.md#natural-covenant3-default-loss)。
+第七／八战仍未验收，见 [双天使策略反例](../tests/fixtures/notes/bosses/angel-duo.md#natural-covenant3-default-loss)。
 
 另一项会阻断建议的月相组合已补齐机制和整场校准：原始
 `MooncycleRestoreFriendlyHealth` 与月相法术／Lunacy／房间遮罩并存时，四次
@@ -78,14 +78,14 @@
 状态／RNG、每场 47 个房间阶段和 13 个列车阶段、十六条整场分支全部通过。
 50 次发布均有新鲜完整根局面核对；9 次普通续步和 37 次胜局续步复用已验证计划。
 冻结回放暂停后零新增搜索／发布。该组仍为受控牌组及六回合／10 秒预算，
-见 [月相治疗遗物组合](../tests/fixtures/moon-phase-heal-relic.md)。
+见 [月相治疗遗物组合](../tests/fixtures/notes/relics/moon-phase-heal-relic.md)。
 
 自然 Covenant 3 第六战开局的无建议问题已定位为同类出生保护缺口：原生第三项
 只影响商店，但双天使签名此前只允许累计前两项。现仅为这一原始双天使变体放行
 精确有序前缀；全新出生／十六条分支及七回合无卡整场通过，61 个房间阶段、
 14 个列车阶段完整状态／RNG 匹配，正常退出、原文件不变且四项失败计数全零。
 这项机制校准不代表第六战玩家胜局，见
-[自然双天使出生](../tests/fixtures/angel-duo.md#natural-cumulative-covenant3-birth)。
+[自然双天使出生](../tests/fixtures/notes/bosses/angel-duo.md#natural-cumulative-covenant3-birth)。
 
 自然 Covenant 3 已推进到第五战默认建议胜局及独立原生回放：两场均为 43 个输入、
 火炉 72 血，完整预测／状态／RNG、每场 74 个房间阶段和 17 个列车阶段匹配，
@@ -93,7 +93,7 @@
 普通续步、5 次胜局续步不重搜，15 个输入使用明确标记的较短完整预测。
 冻结回放暂停后零新增搜索；15 个检查点载荷已恢复校验。连续脚本已完成
 独立配对、检查点保存恢复和原生奖励／地图推进至第六战，后续关卡尚未计为通过。
-见 [自然第五战验收](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring5-with-actual-defaults)。
+见 [自然第五战验收](../tests/fixtures/notes/campaign/native-covenant-campaign.md#natural-rank-three-ring5-with-actual-defaults)。
 
 自然 Covenant 3 已补齐第四战默认建议胜局及独立原生回放：两场均为 35 个输入、
 火炉 72 血获胜，完整预测／状态／RNG、每场 15 个列车阶段、正常退出及四项
@@ -102,8 +102,8 @@
 3000ms／顶层偏好、额外战术开关关闭，没有缩短窗口；21 次普通续步和 8 次胜局
 续步不重搜。冻结回放在一次初始搜索后暂停，后续零新增搜索、零发布建议。
 这仍不是 Covenant 3 整轮通关，见
-[自然第四战验收](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring4-with-actual-defaults) 与
-[出生移层校准](../tests/fixtures/harvester-birth.md)。
+[自然第四战验收](../tests/fixtures/notes/campaign/native-covenant-campaign.md#natural-rank-three-ring4-with-actual-defaults) 与
+[出生移层校准](../tests/fixtures/notes/combat/harvester-birth.md)。
 
 更高难度推进到自然第三战时发现并修复出生保护缺口：累计第三项 Covenant 只改
 商店费用，原生 Rage 首领仍为 7 攻／625 血，但原保护只允许累计前两项，因此
@@ -112,8 +112,8 @@
 独立回放也均获胜：36 个输入、火炉 52 血，完整预测／状态／RNG、17 个列车阶段、
 正常退出和四项失败计数全零通过；38 次发布均有新鲜完整根局面校验，24 次普通
 续步和 5 次胜局续步不重搜，没有缩短窗口。见
-[自然累计第三项出生](../tests/fixtures/arkion.md#natural-cumulative-covenant3-rage-birth) 与
-[自然第三战默认胜局](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring3-with-actual-defaults)。
+[自然累计第三项出生](../tests/fixtures/notes/bosses/arkion.md#natural-cumulative-covenant3-rage-birth) 与
+[自然第三战默认胜局](../tests/fixtures/notes/campaign/native-covenant-campaign.md#natural-rank-three-ring3-with-actual-defaults)。
 
 更高难度的自然推进已新增 Covenant 3 第二战默认配置胜局配对：两进程均为
 28 个输入、火炉 52 血获胜，完整预测／状态／RNG、13 个列车阶段、正常退出及
@@ -121,29 +121,29 @@
 7 次胜局续步不重搜；实际三回合／3000ms／顶层偏好、额外战术开关关闭，没有
 缩短窗口。原生首战胜利及累计三项 Covenant 保留，检查点的六个载荷已恢复校验。
 这不是 Covenant 3 整轮通关，见
-[高难度自然推进验收](../tests/fixtures/native-covenant-campaign.md#natural-rank-three-ring2-with-actual-defaults)。
+[高难度自然推进验收](../tests/fixtures/notes/campaign/native-covenant-campaign.md#natural-rank-three-ring2-with-actual-defaults)。
 
 自然第七战的默认预算胜局缺口已关闭：三回合／3000ms、额外战术开关关闭，
 原生玩家源局及独立回放均完成 60 个输入、火炉 62 血获胜，正常退出且四项
 失败计数全零。47 次普通续步、3 次胜局续步不重搜；18 个输入使用明确标记的
 较短完整预测。默认预算仍是软时限，不保证三秒总响应，详见
-[默认策略验收](../tests/fixtures/default-advice-strategy.md)。
+[默认策略验收](../tests/fixtures/notes/planning/default-advice-strategy.md)。
 
 完整局面指纹也已优化，保留全部状态字段与既有归一化边界。新玩家首战及
 独立回放均获胜，36 次发布都有本帧完整根局面校验，七次切层零新增搜索，见
-[指纹性能与原生验收](../tests/fixtures/state-key-performance.md)。
+[指纹性能与原生验收](../tests/fixtures/notes/planning/state-key-performance.md)。
 
 月相升级与原始治疗遗物 `IncreaseSpellHealing` 的组合已补齐隔离组件、完整战斗、
 实际玩家建议及独立原生重放。两场玩家运行均为 48 个输入、火炉 80 血获胜，
 完整状态／预测／RNG 匹配、正常退出且四项失败计数全零。原生月相资源回调
 不会重新缩放已有的治疗遗物偏移；现在允许这一精确原始签名，避免因此没有建议。
 该组使用受控牌组及 6 回合／10 秒预算，见
-[月相与治疗遗物验收](../tests/fixtures/moon-healing-relic.md)。
+[月相与治疗遗物验收](../tests/fixtures/notes/relics/moon-healing-relic.md)。
 
 仍待完成的是其他复杂月相／嫁接等未校准组合、其余自然终局和更高 Covenant 的
 实战质量、真终局自然解锁（已归档标准通关档案仍为额外薪火之心 0/9），以及
 Mac 实机验收。真终局的九项原生累计指标及精确剩余量已从通关归档核对，见
-[自然解锁条件](../tests/fixtures/native-story-unlock.md)；独立恢复检查点不会累加这些进度。
+[自然解锁条件](../tests/fixtures/notes/campaign/native-story-unlock.md)；独立恢复检查点不会累加这些进度。
 自然 Fragile 已有底层偏好的短预算原生胜局；默认顶层配置的
 胜局缺口本轮也已关闭，详见下文。不构建新的 Mac 包。
 
@@ -154,7 +154,7 @@ Mac 实机验收。真终局的九项原生累计指标及精确剩余量已从�
 新鲜完整局面校验，39 次普通续步及 4 次胜局续步不重搜；重放随后完成原生
 八战 Standard 结算。原先只展开 16 个节点的默认原生败局保留为反例，修订后的
 16 节点控制已核对实际冠军部署及完整预测。见
-[默认 Fragile 原生验收](../tests/fixtures/adaptive-deployment.md)。
+[默认 Fragile 原生验收](../tests/fixtures/notes/advisor/adaptive-deployment.md)。
 
 Fragile 已完成三回合／3000ms、底层偏好、额外战术开关关闭的原生玩家胜局与
 独立回放：两场均为 54 个输入、火炉 2 血，完整预测／状态／RNG 匹配，正常退出，
@@ -163,8 +163,8 @@ Fragile 已完成三回合／3000ms、底层偏好、额外战术开关关闭的
 完整局面上补完一次结束回合，发布完整胜局；严格窗口／节点上限／取消控制仍有效。
 独立回放随后完成原生八战 Standard 结算，通关档案的 26 个载荷恢复校验通过。
 不全局更改默认楼层：自然第七战在底层偏好下反而败北。见
-[Fragile 短预算原生验收](../tests/fixtures/player-fragile-short-budget.md) 和
-[默认 Fragile 诊断](../tests/fixtures/fragile-default-diagnosis.md)。
+[Fragile 短预算原生验收](../tests/fixtures/notes/bosses/player-fragile-short-budget.md) 和
+[默认 Fragile 诊断](../tests/fixtures/notes/bosses/fragile-default-diagnosis.md)。
 
 离线候选工具已接入玩家建议复用流程：同一 Fragile 根局面的 54 个模型输入只做
 7 次搜索，全部完整预测／后继／RNG 及篡改反例检查通过。双天使自然累计 2 关卡
@@ -173,9 +173,9 @@ Fragile 已完成三回合／3000ms、底层偏好、额外战术开关关闭的
 23 个前置输入及击杀动作共 24 步，在旧模型观察与修复后全新进程中完整匹配
 状态／RNG，来源卡按原顺序追加回抽牌堆、升级保留且不增加消耗次数；两进程正常
 退出且原文件不变。既有完整双天使配对仍通过，但该修复不代表新增首领胜局。
-见 [不朽法术死亡路由](../tests/fixtures/endless-spell-routing.md)、
-[离线筛选](../tests/fixtures/offline-planning.md) 和
-[双天使诊断](../tests/fixtures/angel-duo.md)。
+见 [不朽法术死亡路由](../tests/fixtures/notes/cards/endless-spell-routing.md)、
+[离线筛选](../tests/fixtures/notes/planning/offline-planning.md) 和
+[双天使诊断](../tests/fixtures/notes/bosses/angel-duo.md)。
 
 以下保留此前各阶段记录；其中“默认预算仍败局”描述历史归档，最新结论以
 本节及其独立证据为准。
@@ -186,11 +186,11 @@ Fragile 已完成三回合／3000ms、底层偏好、额外战术开关关闭的
 下回合重新规划原定三回合范围，完整胜局仍跨回合复用。实际默认预算原生源局
 及独立回放均获胜，24 个输入／完整预测／状态／RNG 匹配；9 次普通续步搜索
 耗时为零，响应中位数 634ms。七次楼层浏览仍零新增搜索，两个进程正常退出且
-四项失败计数全零，见 [同回合建议复用](../tests/fixtures/player-ordinary-continuation.md)。
+四项失败计数全零，见 [同回合建议复用](../tests/fixtures/notes/advisor/player-ordinary-continuation.md)。
 同时自然第七战默认预算试跑暴露了无尽乘务员重召唤漏算房间附魔多重攻击的问题。
 出生阶段顺序已修复，出错动作／完整原生后继及 16 条不可变分支、全部 26 个
 已观察输入通过；原失败记录保留，不计为原生整场验收通过。详见
-[房间附魔出生顺序](../tests/fixtures/room-attachment-birth.md)。默认策略质量仍未完成验收。
+[房间附魔出生顺序](../tests/fixtures/notes/combat/room-attachment-birth.md)。默认策略质量仍未完成验收。
 修复后的自然第七战新源局／独立回放现也正常完成 25 个输入，完整预测／状态／
 RNG、每场 20 个列车阶段均匹配，两进程正常退出且四项失败计数为零；10 次
 普通续步搜索耗时为零、9 次换回合正常重搜。两场仍败局；本次路线未重召唤
@@ -200,7 +200,7 @@ RNG、每场 20 个列车阶段均匹配，两进程正常退出且四项失败�
 新增搜索为零，原建议持续显示；三回合／3000ms 原生整场与独立重放均获胜，
 28 个输入的完整状态／预测／RNG 匹配，正常退出且四项失败计数全零。
 资源、费用、RNG 和真实输入变化仍触发更新，见
-[楼层浏览性能证据](../tests/fixtures/player-floor-browse.md)。
+[楼层浏览性能证据](../tests/fixtures/notes/advisor/player-floor-browse.md)。
 同时完成后台第七战两组重跑验收：策略预算源局及重放均正常退出、火炉 62 血
 获胜；实际默认预算仍败局，默认策略质量仍是剩余目标，不能以本次浏览优化
 或较高预算胜局代替验收。
@@ -211,16 +211,16 @@ RNG、每场 20 个列车阶段均匹配，两进程正常退出且四项失败�
 失败计数均为零。三组实际玩家建议／独立原生重放配对也已通过，六场均获胜；
 三组分别执行 43／40／42 个输入，源局全部 131 次建议发布均有本帧完整局面
 核对，完整预测／状态／RNG 和实际 UI 匹配。六进程正常退出、原文件未变、
-四项失败计数全零，见 [Fleshweaver 证据](../tests/fixtures/fleshweaver.md)。
+四项失败计数全零，见 [Fleshweaver 证据](../tests/fixtures/notes/combat/fleshweaver.md)。
 Arkion 推挤／收割怒气已通过出生、完整无卡和有卡原生胜局、
 正向触发见证及十六条分支；怒气和推挤实际玩家配对也通过，各自两场均获胜。
 Arkion 薪火伤害已通过出生、
 四次远端伤害和完整无卡战斗／十六条分支，实际玩家配对也已通过，两场均获胜，见
-[Arkion 原生证据](../tests/fixtures/arkion.md)。Cael 三场出生与完整无卡战斗现已通过，各有正向
+[Arkion 原生证据](../tests/fixtures/notes/bosses/arkion.md)。Cael 三场出生与完整无卡战斗现已通过，各有正向
 升级见证和十六条独立整场分支；AtkHP／护盾／吸血玩家配对现也通过，均为受限预算败局，见
-[Cael 原生证据](../tests/fixtures/cael.md)。双天使 Revenge/Harvest 的
+[Cael 原生证据](../tests/fixtures/notes/bosses/cael.md)。双天使 Revenge/Harvest 的
 出生、无卡整场及复仇／跨层收割正向见证已通过，实际玩家建议配对现也完成。
-完整签名与证据来源见 [首领缺口清单](../tests/fixtures/boss-coverage.md)，运行
+完整签名与证据来源见 [首领缺口清单](../tests/fixtures/inventory/boss-coverage.md)，运行
 `Get-BossCoverageInventory.ps1 -Check -SkipBuild` 可做只读元数据核对。
 这些数量不包括真终局、试炼替换、Endless／测试场景及 Soul Savior，亦不代表
 更高难度／任意组合验收；自然路线胜局与这些额外组合仍需分别验收。
@@ -234,14 +234,14 @@ Arkion 薪火伤害已通过出生、
 第三组 Revenge/Harvest 配对也已通过：各 56 个输入、45 次出牌／技能、11 次结束
 回合，源局 58 次建议发布与新鲜局面核对，完整预测／状态／RNG 和 UI 匹配。
 两进程正常退出、原文件未变、四项计数全零，均为败局；无受控伤害或首领生命改写。
-详见 [双天使变体](../tests/fixtures/angel-duo-variants.md)。
+详见 [双天使变体](../tests/fixtures/notes/bosses/angel-duo-variants.md)。
 
 建议采集已减少搜索期间的重复工作，并在每次新建议显示前强制核对本帧完整局面。
 相同累计 2 开局、相同 31 个输入和 52 薪火胜局的对照中，完整采集由 391 次降至
 259 次，减少 33.8%；33 次发布均有新鲜局面核对。源进程与独立重放均正常退出、
 原文件未变、四项失败计数全零，全部预测/状态/RNG 与 UI 通过。响应中位数/P95
 本轮为 4.59/5.65 秒，前一对照为 4.42/5.29 秒，主要收益为采集开销减少。
-详见 [建议采集校准](../tests/fixtures/advisor-capture.md)。
+详见 [建议采集校准](../tests/fixtures/notes/advisor/advisor-capture.md)。
 
 当前原生累计难度受控矩阵已齐备；这些首领跳图使用新开局牌组，自然战役
 胜局与解锁另计。只需按对应等级／变体运行定向脚本。
@@ -277,22 +277,22 @@ Arkion 薪火伤害已通过出生、
 两个进程正常退出、原文件未变、四项失败计数全零；使用 3 回合／3 秒软预算，
 建议响应中位数/P95 为 6.78/9.67 秒，两局均为败局，不计自然胜局。该原始输入
 的两首领在部署结束后才出生；人工提前放入部署期再击杀的状态继续保留保护。
-详见 [双天使边界](../tests/fixtures/angel-duo.md) 与
-[自然累计战役](../tests/fixtures/native-covenant-campaign.md)。
+详见 [双天使边界](../tests/fixtures/notes/bosses/angel-duo.md) 与
+[自然累计战役](../tests/fixtures/notes/campaign/native-covenant-campaign.md)。
 
 新增自然第七战验收：种子 42 的六胜存档此前因试炼金币遗物
 `RelicEffectModifyTrialGoldRewards` 在战斗输入中被拒绝，玩家版没有建议。
 该战斗接入已修复；真实玩家版执行 42 次出牌、8 次结束回合后获胜，薪火剩 84。
 独立进程冻结重放同样获胜，所有输入、完整预测、状态/RNG 与原生六胜历史通过
 定向复核，两个进程四项失败计数均为零。
-详见 [试炼金币遗物玩家验收](../tests/fixtures/player-campaign-trial-gold.md)。
+详见 [试炼金币遗物玩家验收](../tests/fixtures/notes/campaign/player-campaign-trial-gold.md)。
 
 同一自然路线的腐化者终局现也完成玩家胜局及全新进程重放：57 次出牌、
 10 次结束回合，两场均获胜且薪火保留 84；完整预测、状态/RNG 与每场 19 个列车
 阶段通过定向配对检查，每场原生 73 个房间阶段也均匹配。两个进程正常退出、原文件未变且四项失败
 计数全零。使用 12 回合/30 秒软预算、中层部署与战术候选；后续 66 次建议沿用
 同一胜局，中位数/P95 为 2.86/4.10 秒，首次总响应 49.77 秒。
-详见 [腐化者自然胜局](../tests/fixtures/player-corrupter-winning.md)。
+详见 [腐化者自然胜局](../tests/fixtures/notes/bosses/player-corrupter-winning.md)。
 该胜局也已接入原生战役结算并确认八战 Standard 通关；补齐解锁页正常领取后，
 直接恢复已保存的战后状态，未重复战斗。完成存档及明确来源的上一进程胜局已
 打包，33 个载荷恢复校验通过；通关后原生观测仍为额外薪火之心 0/9、真终局未解锁。
@@ -304,7 +304,7 @@ Arkion 薪火伤害已通过出生、
 出生分支全部匹配；原生四项失败计数全零。保留原生开局牌组与等级 9 的薪火扣血，
 明确使用隔离档跳图与临时解锁覆盖，未宣称自然解锁或高难度战役通关。
 同时修复跨楼层首领预览同步覆盖远端真实生命的问题，既有最高难度两个首领对照通过。
-详见 [累计 Covenant 真终局](../tests/fixtures/native-covenant-final-bosses.md)。
+详见 [累计 Covenant 真终局](../tests/fixtures/notes/bosses/native-covenant-final-bosses.md)。
 最高累计等级 10 的真终局真实玩家建议及全新进程重放也已通过：各 20 个输入、
 15 次出牌和五次结束回合，22 次源建议、UI、39 个房间阶段与九个列车阶段、
 完整预测/状态/RNG 全匹配，两个进程四项失败计数为零。两场均为败局；这是新开局
@@ -321,7 +321,7 @@ StartingConditions／StartRun 初始化；原生清卡回调把 15 张清到冠�
 真实玩家版与独立重放也已通过这套原生 20 张开局：各 31 个输入（24 次出牌、
 七次结束回合）、33 次源建议，面板交互及所有完整预测/状态/RNG 匹配，两场
 均获胜且薪火为 56，四项失败计数全零。未宣称隔离档等级由游玩解锁。
-详见 [原生 Covenant 开局](../tests/fixtures/native-covenant-startup.md)。
+详见 [原生 Covenant 开局](../tests/fixtures/notes/campaign/native-covenant-startup.md)。
 累计等级 2 的原始 01+02 开局也通过完整无卡首战：原生选择型 02 没有战斗回调，
 实际敌人选择和出生属性由原生捕获；七回合获胜、薪火为 8，十四个列车阶段、
 57 个房间阶段和十六条独立整场分支全匹配，四项失败计数全零。未知回调和
@@ -369,12 +369,12 @@ RNG 不变。等级 6 无卡获胜，等级 7–10 无卡败北；高等级真�
 出生状态／触发器；全部原生计数为零，十六条整场分支匹配。新增精英牧师整车
 加攻的范围校验与终局预览中远处附魔对象的同步已修复。该项使用显式隔离跳图，
 六组真实玩家建议／新进程重放现也全部通过，但仍未替代自然七胜历史；详见
-[累计难度首领验收](../tests/fixtures/native-covenant-outer-bosses.md)。
+[累计难度首领验收](../tests/fixtures/notes/bosses/native-covenant-outer-bosses.md)。
 精英牧师整车加攻现已补齐实际施法正向验收：六次原生施法产生 36 次远端加攻，
 首领六次均被排除，13 次实际出牌、四次结束回合、完整状态/RNG 和每次施法
 十六条不可变分支通过。此前队列未提供完整列车目标，导致该楼层的合法施法被
 模型排除；队列与远端攻击状态更新已修正。该显式合法输入对照与真实建议配对
-分别验收，详见 [精英牧师施法](../tests/fixtures/chosen-incant-attack.md)。
+分别验收，详见 [精英牧师施法](../tests/fixtures/notes/combat/chosen-incant-attack.md)。
 修复后的累计等级 10 AllyBuffer 已重新完成实际玩家建议和独立进程重放：各
 19 个输入（15 次出牌、四次结束回合）、21 次源建议，完整预测/状态/RNG、
 33 个房间阶段和八个列车阶段全匹配，面板和纯度检查通过，四项失败计数全零。
@@ -395,13 +395,13 @@ RNG 不变。等级 6 无卡获胜，等级 7–10 无卡败北；高等级真�
 预测/状态/RNG 匹配，两个进程正常退出、原文件未变且失败及纯度计数全零。
 至此两档 × 三变体的六组累计首领玩家矩阵齐备。该最后一组补齐普通战斗的
 灾厄预览致死及实际致死保留手牌：两处边界各有十六条不可变整回合分支，
-详见 [未打出牌的薪火边界](../tests/fixtures/unplayed-pyre-preview.md)。
+详见 [未打出牌的薪火边界](../tests/fixtures/notes/combat/unplayed-pyre-preview.md)。
 
 此前已完成第八环原始三种 Boss × 01／00+01 六组原生
 整场：创建时保留原始属性，落位后分别增加 1000／3000 血，波次属性、完整
 状态/RNG、十六条独立不可变分支及伪造/缺失来源保护通过。六场无卡对照均
 自然落败，四项失败计数全零；受控选路及启动后激活不代表自然 Covenant 战役。
-详见 [Covenant 第八环首领](../tests/fixtures/covenant-outer-bosses.md)。
+详见 [Covenant 第八环首领](../tests/fixtures/notes/bosses/covenant-outer-bosses.md)。
 其中 AllyBuffer 两组已通过真实玩家建议与独立重放：各 11 个输入、13 次建议，
 UI 交互、完整预测与状态/RNG 匹配，四个进程失败计数全零；均为受限预算败局。
 Fragile 两组也完成玩家建议与新进程重放：各 16 个输入、18 次建议，完整预测、
@@ -422,7 +422,7 @@ Corrupter 00+01 也完成同一终止点验证；第八环三种原始首领 × 
 薪火分别为 60/52。四个进程四项失败计数全零，纯采集分别 327/94 与 331/98。
 原生等级 1 初始化和第八环原始首领已分别补充上文证据；其他累计等级战役
 及首领签名仍需分别验收，详见
-[普通 Covenant 出生](../tests/fixtures/covenant-enemy-stats.md)。
+[普通 Covenant 出生](../tests/fixtures/notes/campaign/covenant-enemy-stats.md)。
 
 真实 `MonsterTrain2Poju.Advisor.dll` 已完成原生加载、纯读取采集、面板渲染、
 Unity 指针路由、暂停/恢复、隐藏时取消、显示/刷新后换代，以及三回合建议
@@ -448,13 +448,13 @@ Unity 指针路由、暂停/恢复、隐藏时取消、显示/刷新后换代，
 胜局。3 回合/3 秒搜索配合战术候选完成整场，其中六次发布保留已完整验证的
 较短窗口，面板明确显示完成/目标回合数；不再因该现场的预算截断而整场无建议。
 实际响应中位数/P95 为 7.03/9.78 秒，不能把搜索软预算当作总响应时限。
-详见 [Fragile 玩家验收](../tests/fixtures/player-fragile-bounded.md)。
+详见 [Fragile 玩家验收](../tests/fixtures/notes/bosses/player-fragile-bounded.md)。
 同一自然 Fragile 存档现已补齐取胜验收：真实玩家的 45 次出牌、9 次结束回合
 与全新进程 54 输入冻结重放均获胜，火炉剩 2 血；全部预测、完整状态/RNG
 一致，两个进程正常退出、原文件未变且四项失败计数全零。使用 12 回合/30 秒
 战术搜索和底层部署，首次已消费建议总响应 51.09 秒，后续 53 次完整沿用胜局，
 响应中位数/P95 为 2.38/3.96 秒。默认短预算的败局证据仍保留。
-详见 [Fragile 自然胜局](../tests/fixtures/player-fragile-winning.md)。
+详见 [Fragile 自然胜局](../tests/fixtures/notes/bosses/player-fragile-winning.md)。
 导流玩家采集也已开放：真实玩家入口逐步更新完成 24 次出牌、6 次回合结束并
 获胜，独立进程重放相同 30 个输入后同样获胜，火炉均为 80 血。三个原生遗物
 保持原定义，携带单位为人工安排的校准场景；该结果不替代自然牌组组合验收。
@@ -527,7 +527,7 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    和 RNG 匹配。五张原生法术、32 次掩码楼层出牌、1014 个手牌特征快照及
    16 条不可变整场分支均通过；42 次后续建议沿用胜局，响应中位数/P95 为
    0.97/1.46 秒。该项仍为人工受控牌组，自然后期组合与默认预算另行验收，
-   详见 [房间法术升级](../tests/fixtures/room-moon-spell-upgrades.md)。
+   详见 [房间法术升级](../tests/fixtures/notes/cards/room-moon-spell-upgrades.md)。
    原生 Lunacy 与 Eclipse/五法术组合也已补齐：15 个隔离资源边界中 Lunacy
    保持不变，完整付费链与新进程 25 输入重放均获胜且火炉 80 血。实际支付
    2/3/0 点费用的月相推进与导流层数、每场 20 个完整手牌回调、状态/RNG 和
@@ -564,7 +564,7 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    选层会先排入原生支持法术；玩家观察器和自动验收现均等待待执行效果、当前
    效果及输入状态收敛，避免 Gravity 在旧掩码下抢先执行。原生队列由游戏正常
    处理，未修改特征或抢跑回调。
-   详见 [房间月相回调校准](../tests/fixtures/room-moon-callbacks.md)。
+   详见 [房间月相回调校准](../tests/fixtures/notes/combat/room-moon-callbacks.md)。
    导流已完成 38 次原生位置调用、3 组临时预览校准，死亡/脱离追踪表已纳入
    完整快照。含真实物理站位的导流遗物整场战斗获胜，21 次出牌、5 次回合
    结束、239 次原生站位压缩及全部状态均匹配。玩家入口及独立进程配对检查
@@ -587,7 +587,7 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    获胜：34 次建议、28 次出牌、6 次回合结束，八个快照同时见证双方手牌升级，
    所有输入、预测和完整状态/RNG 匹配。33 次后续建议沿用胜局，响应中位数/
    P95 为 1.25/1.77 秒；自然牌组组合及玩家发布敌方升降仍需分别验收。
-   详见 [导流校准](../tests/fixtures/conduit-movement.md)。
+   详见 [导流校准](../tests/fixtures/notes/combat/conduit-movement.md)。
 3. **其他终局 Boss。** 真终局的自然解锁与标准通关分别验收。原生剧情条件
    要求额外解锁九个薪火之心；已完成的 seed424242 标准战役档案目前为 0/9。
    已保留十三个剧情节点和全部薪火之心的原生条件/实际进度，详见
@@ -605,10 +605,10 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    00/01/08 玩家入口随后也已完成各自整场建议与新进程重放：分别六、十七、六个
    输入；四组共三十九个实际输入，完整预测/状态/RNG 与原生均匹配。四组 UI
    交互和所有纯读取采集通过，两边四项失败计数均为零，详见
-   [Covenant 玩家矩阵](../tests/fixtures/player-true-final-boss-covenants.md)。
+   [Covenant 玩家矩阵](../tests/fixtures/notes/bosses/player-true-final-boss-covenants.md)。
    这四项的十五个非空子集已补出生矩阵，四项叠加另通过五个完整回合、十个列车
    阶段、四十个房间阶段及十六条独立整场分支，原生四项失败计数全零；详见
-   [组合矩阵](../tests/fixtures/true-final-boss-covenant-combinations.md)。
+   [组合矩阵](../tests/fixtures/notes/bosses/true-final-boss-covenant-combinations.md)。
    四项叠加也已完成真实玩家建议与独立冻结重放：十七个输入（十二次出牌、五次
    结束回合）的完整预测/状态/RNG 全匹配，源局十九次发布、238 次纯采集，重放
    59 次纯采集且不搜索；UI 交互通过，两边原生四项失败计数全零，均为败局。
@@ -622,7 +622,7 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    五体/控制器/生命链接清理与完整状态/RNG 匹配，五组共八十条独立不可变整场
    分支一致，原生四项失败计数均为零。
    其余 Covenant、其他组合及其他终结签名仍需分别验收，出生与整场边界详见
-   [Covenant 出生校准](../tests/fixtures/true-final-boss-covenant-birth.md)。
+   [Covenant 出生校准](../tests/fixtures/notes/bosses/true-final-boss-covenant-birth.md)。
    玩家入口目前开放已校准的
    `Boss_Level8_AllyBuffer`、`Boss_Level8_Fragile`、`Boss_Level8_Corrupter` 及其三个
    Titan Trial 版本，其他定义继续保留外部/排队
@@ -630,7 +630,7 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    配置下的自然胜局玩家配对验收；默认短预算的取胜质量仍需单独评估。
    Corrupter 现也有自然七胜存档的玩家整场胜局与独立冻结重放，67 个输入后均以
    薪火 84 获胜，完整预测/状态/RNG 匹配，四项失败计数全零；详见
-   [腐化者自然胜局](../tests/fixtures/player-corrupter-winning.md)。下面的早期败局
+   [腐化者自然胜局](../tests/fixtures/notes/bosses/player-corrupter-winning.md)。下面的早期败局
    与受控无情场景继续保留各自边界，不替代这组自然胜局。
    普通 Corrupter 的原生模型现已补齐：原始回合开始腐化、攻击后翻倍、出生、
    9 个施法阶段边界，以及 18 次出牌/6 次回合结束的完整败局均匹配。全新进程
@@ -641,7 +641,7 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    24 次逐步建议及独立进程重放：18 次出牌/6 次回合结束的完整败局、全部预测、
    状态/RNG 均匹配，原始 Boss/牌组/火炉未变，面板交互通过且四项失败计数为零。
    该项显式选择原始场景，不是自然推进；3 回合/3 秒软搜索配置的实际响应中位数/
-   P95 为 4.59/5.42 秒。详见 [Corrupter 玩家验收](../tests/fixtures/player-corrupter-bounded.md)。
+   P95 为 4.59/5.42 秒。详见 [Corrupter 玩家验收](../tests/fixtures/notes/bosses/player-corrupter-bounded.md)。
    六个 Level8 定义为三种普通版本和各自的 Titan Trial 版本。三个 Trial 的原生模型
    现也通过原始罪孽遗物替换、出生、强化载荷、控制器及完整付费链：独立新进程
    重放共 66 个输入，完整状态/RNG 匹配，六个进程四项失败计数均为零。
@@ -650,11 +650,11 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    验收：共 53 个输入、完整预测/状态/RNG 匹配，六个进程四项失败计数为零，面板
    操作与纯读取通过。3 回合/3 秒软预算下，响应中位数为 4.43–4.77 秒、P95 为
    5.53–5.78 秒；三局均败，不算自然胜局。详见
-   [Trial 玩家验收](../tests/fixtures/player-trials-bounded.md)。
+   [Trial 玩家验收](../tests/fixtures/notes/advisor/player-trials-bounded.md)。
    原生未校准 Covenant 出生保护保持；Level9 原始无 Covenant 场景现已通过
    独立玩家整场验收，包含 Dominion、Savagery 和三个共享生命的 Entropy 实体，
    保留完整载荷校验。详见
-   [Trial 校准](../tests/fixtures/outer-boss-trials.md)。
+   [Trial 校准](../tests/fixtures/notes/bosses/outer-boss-trials.md)。
    已采集五个原始实体的创建顺序、物理楼层、三个 Entropy 锚点和生命链接，
    纯读取/RNG 检查通过；共享生命属性和原生预览深拷贝现也通过 80 个原生操作、
    完整存储/读取/更新标记匹配及 128 条并发分支，实战状态/帧/RNG 不变。
@@ -746,7 +746,7 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    输入（12 次出牌/5 次结束回合），全部根状态、预测、后继与 RNG 一致；两个
    进程四项失败计数全零，面板交互和纯读取通过。三回合/三秒战术配置实际
    响应中位数/P95 为 4.62/6.63 秒。明确跳图并覆盖解锁，原始血量/牌组未变，
-   此路线败北，不算自然胜局；详见 [玩家真终局验收](../tests/fixtures/player-true-final-boss-bounded.md)。
+   此路线败北，不算自然胜局；详见 [玩家真终局验收](../tests/fixtures/notes/bosses/player-true-final-boss-bounded.md)。
    五主体的普通法术来源致死另通过五个新进程、9 次连续命中及每主体 64 条
    独立并发链，完整房间/列车/卡牌/统计/RNG 一致。Dominion 的四次护盾消耗
    与第五次致死按同一模型状态连续推进；原生一次性多播协程中统计回调被最后
@@ -800,55 +800,55 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    对该攻击者施加一层近战脆弱。两个付费召唤、六次 EndTurn、五次 UI 预览及
    16 条独立完整链一致，原生四项计数为零且正常退出。十种签名变化、勇气组合
    和未校准的带回调终局来源仍拒绝；此明确加牌路线败北。
-   详见 [Avenger 原生证据](../tests/fixtures/true-final-boss-avenger.md)。
+   详见 [Avenger 原生证据](../tests/fixtures/notes/bosses/true-final-boss-avenger.md)。
    原始受击友军另补齐永久生命/攻击/双数值强化：20/60、30/40、30/60 三个
    新原生完整对局的受击回调、两个付费召唤、六次 EndTurn、五次 UI 预览及
    每场 16 条独立完整链一致，四项计数全零且正常退出。升级来源、临时升级、
    额外回调及原始生命元数据的反例保留；强化受击友军的终局来源与勇气组合
    仍分别保护。三场均为明确加牌/强化的败局，不计自然胜利。
-   详见 [受击友军强化](../tests/fixtures/true-final-boss-avenger-upgraded.md)。
+   详见 [受击友军强化](../tests/fixtures/notes/bosses/true-final-boss-avenger-upgraded.md)。
    双强化还完成真实玩家九输入建议及全新进程冻结重放，实际部署 30/60
    受击友军并有三次链接攻击者触发见证。全部预测/后继/RNG、面板交互和
    138/29 次纯采集通过；两进程四项计数全零且正常退出。实际端到端响应
    中位数/P95 为 4.46/4.93 秒；仍是明确加牌/强化的败局。
-   详见 [强化受击友军玩家验收](../tests/fixtures/player-true-final-boss-avenger-upgraded.md)。
+   详见 [强化受击友军玩家验收](../tests/fixtures/notes/bosses/player-true-final-boss-avenger-upgraded.md)。
    该签名现也完成真实玩家建议及全新进程冻结重放：4 次出牌、5 次结束回合，
    实际召唤 Avenger 并见证三次链接攻击者触发受击回调，全部预测/状态/RNG
    一致。两个进程正常退出、原文件未变、四项计数全零；面板交互和 141/29 次
    纯采集通过，实际响应中位数/P95 为 5.18/5.57 秒。仍是受控败局。
-   详见 [受击友军玩家验收](../tests/fixtures/player-true-final-boss-avenger.md)。
+   详见 [受击友军玩家验收](../tests/fixtures/notes/bosses/player-true-final-boss-avenger.md)。
    存活 Avenger 下的五主体付费法术致死现也通过五个新原生进程：先按明确的
    三所有者生命控制准备一血，再实际支付原始法术。每场 Avenger 保持 20/40、
    火炉 80 血、四项计数全零且正常退出；每目标 16 条完整不可变取胜链一致。
    该施法签名只放行有来源、无升级/额外特征的普通法术；其他来源和组合分别验收。
-   详见 [受击友军终局法术](../tests/fixtures/true-final-boss-avenger-terminal.md)。
+   详见 [受击友军终局法术](../tests/fixtures/notes/bosses/true-final-boss-avenger-terminal.md)。
    鹰心命令 Avenger 和 Pyreshot 命令跨层火炉也各完成一个新原生临界胜局，
    原始回调、20/40 友军和火炉 80 血保留，四项计数全零且正常退出。命中前
    内部致死预览、完整单位回合及每命令 16 条不可变取胜链匹配。只接受捕获的
    跨层火炉或五主体均一血的五层勇气签名；普通战斗、六层勇气和非临界组合
    的反例仍拒绝。这两项仍有明确减血控制，不计自然真终局胜利。
-   详见 [受击友军命令攻击](../tests/fixtures/true-final-boss-avenger-commands.md)。
+   详见 [受击友军命令攻击](../tests/fixtures/notes/bosses/true-final-boss-avenger-commands.md)。
    存活 Avenger 下的三层物理火炉普通反击现也验收：一个付费召唤、出生后
    明确三所有者减血，再正常 EndTurn。Dominion 先打火炉至 77 血，火炉
    反击完成五主体清理，Avenger 保持 20/40。新原生进程正常退出、四项
    计数全零，三个单位回合、内部致死预览与 16 条完整不可变链一致。默认
    终局 API、匿名伤害、其他楼层和变更回调仍拒绝；不计自然真终局胜利。
-   详见 [受击友军普通火炉反击](../tests/fixtures/true-final-boss-avenger-ordinary-pyre.md)。
+   详见 [受击友军普通火炉反击](../tests/fixtures/notes/bosses/true-final-boss-avenger-ordinary-pyre.md)。
    此普通友军签名也完成真实玩家整场建议与新进程冻结重放：20 次输入
    （15 次出牌/5 次结束回合），实际选用并召唤新增的原始 HornedWarrior。
    根状态、整份预测、每个后继和 RNG 一致；两个进程四项计数全零，真实面板
    交互及纯读取通过。实际响应中位数/P95 为 4.55/6.09 秒。明确跳图、解锁和
    添加单位卡，原始敌军生命/阶段未改；均败北，不是自然胜局。
-   详见 [普通友军玩家验收](../tests/fixtures/player-true-final-boss-ordinary.md)。
+   详见 [普通友军玩家验收](../tests/fixtures/notes/bosses/player-true-final-boss-ordinary.md)。
    双永久数值强化的狱魔（25/28，Multistrike 1）也已完成真实玩家 20 输入
    整场建议与全新进程冻结重放，实际召唤该强化单位。全部预测/后继/RNG
    匹配，283/49 次纯采集、面板交互及正常退出通过，四项计数全零；
    响应中位数/P95 为 4.54/6.35 秒。此项仍为明确受控牌组的败局。
-   详见 [强化普通友军玩家验收](../tests/fixtures/player-true-final-boss-ordinary-upgraded.md)。
+   详见 [强化普通友军玩家验收](../tests/fixtures/notes/bosses/player-true-final-boss-ordinary-upgraded.md)。
    其他友军、其他带来源致死签名、其他主体致死 UI、自然死亡终局、存活外壳的火炉
    战斗与更高 Covenant 仍未关闭。
-   详见 [Level9 组件证据](../tests/fixtures/true-final-boss.md)。
-   详见 [Corrupter 原生校准](../tests/fixtures/outer-boss-corrupter.md)。
+   详见 [Level9 组件证据](../tests/fixtures/notes/bosses/true-final-boss.md)。
+   详见 [Corrupter 原生校准](../tests/fixtures/notes/bosses/outer-boss-corrupter.md)。
    Fragile 已完成原生出生、8 次控制器操作、1152 次隔离转换，以及 4 个完整
    EndTurn 的移动光环/远程火种伤害败局校准，四项失败计数为零；这仍是跳图
    诊断。另已完成持续战、三层摧毁与 Pyre 路由的受控原生校准：8 个阶段边界、
@@ -868,14 +868,14 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    现已修复。自然胜局随后已补齐：45 次出牌、9 次回合结束，54 个输入和所有
    发布的完整胜局预测均与全新原生重放匹配，两个进程均剩火炉 2 血、四项计数
    全零且正常退出。首次搜索后 53 次沿用完整胜局；保留原来的有界败局作为对照。
-   见 [Fragile 自然胜局](../tests/fixtures/player-fragile-winning.md)。
+   见 [Fragile 自然胜局](../tests/fixtures/notes/bosses/player-fragile-winning.md)。
    带 Titanite/护盾的新路线还暴露了原生远程伤害致死时立即停止战斗的边界。
    独立原生小场景已补齐：火炉 5→0 时保留卡牌、尚未触发死亡回调/击杀镜头，
    1 次出牌、2 次回合结束、13 个房间阶段与 8 个不可变分支完整匹配。
    自然路线还补齐死亡火炉的共享光环引用清理；同一存活对象不能在终态刷新时
    被重新放回列车。全新原生重放正常退出，原文件未变，四项失败计数为零。
-   详见 [远程火炉致死校准](../tests/fixtures/conditional-pyre-lethal.md)。
-   详见 [Boss 变体校准](../tests/fixtures/outer-boss-variants.md)。
+   详见 [远程火炉致死校准](../tests/fixtures/notes/combat/conditional-pyre-lethal.md)。
+   详见 [Boss 变体校准](../tests/fixtures/notes/bosses/outer-boss-variants.md)。
    新变体需先校准实际动作控制器、出生和阶段转换，再做自然对局与独立重放。
    AllyBuffer 已完成完整计划和逐步保留胜局验收；主动刷新、撤销、重开或
    偏离已验证路线会重新搜索，不保证仍能找到胜局。默认 3 回合/3 秒预算
@@ -892,8 +892,8 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    排序及 192 个伤害阶段对照全部匹配，完整模型的血量、护盾消耗、统计和
    十六条并发不可变分支通过。要求捕获字典顺序；缺失原生定义和超出已校准
    目录的组合仍拒绝。其他嫁接组合及自然组合仍待验收，详见
-   [Titanite 组合校准](../tests/fixtures/titanite-combinations.md)。
-   详见 [事件嫁接校准](../tests/fixtures/event-grafted-equipment.md)。
+   [Titanite 组合校准](../tests/fixtures/notes/combat/titanite-combinations.md)。
+   详见 [事件嫁接校准](../tests/fixtures/notes/cards/event-grafted-equipment.md)。
    自然第七战也已完成 36 次出牌、8 次回合结束的完整模型匹配，固定策略仍告负；
    过程中修正了卡牌击杀光环源后过早清理绑定、以及等待尚未安排销毁的单位导致
    停滞的问题。原生“按原始费用治疗火种”升级另有四组显式载体/费用/血量对照，
@@ -947,11 +947,11 @@ RNG 及七个敌军出生边界均匹配，包含四个掩码房间中的敌军�
    超时、宽限后仍停滞及隔离拒绝提前停止。实际使用与检查共用同一等待函数；
    这些控制不追认原源运行正常退出，Unity 长时间退出停滞仍未复现。
    自然 Fragile 的真实玩家胜局及新进程配对重放现已完成，见
-   [Fragile 自然胜局](../tests/fixtures/player-fragile-winning.md)；其他自然终局和
+   [Fragile 自然胜局](../tests/fixtures/notes/bosses/player-fragile-winning.md)；其他自然终局和
    更高 Covenant 仍需各自验收。
-   详见 [第七战策略验证](../tests/fixtures/natural-ring7-tactics.md)。
-   详见 [打出后复制校准](../tests/fixtures/copy-on-play.md)。
-   详见 [销毁与费用治疗校准](../tests/fixtures/retired-auras-and-ember-healing.md)。
+   详见 [第七战策略验证](../tests/fixtures/notes/campaign/natural-ring7-tactics.md)。
+   详见 [打出后复制校准](../tests/fixtures/notes/cards/copy-on-play.md)。
+   详见 [销毁与费用治疗校准](../tests/fixtures/notes/combat/retired-auras-and-ember-healing.md)。
 
 每批完成后提交代码及证据，只跑对应原生探针、独立重放和受影响检查。
 全量回归留给发布关口或涉及公共机制的大范围修改。

@@ -2,6 +2,7 @@
 [CmdletBinding()]
 param([switch] $SkipBuild)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = Split-Path $PSScriptRoot -Parent
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
@@ -19,7 +20,7 @@ $checks = @(
     @('--enchantment-summon-only', 'enchantment-summon-calibration.mt2f')
 )
 foreach ($check in $checks) {
-    $path = Join-Path $workspace "tests/fixtures/$($check[1])"
+    $path = Get-TestFixturePath "$($check[1])"
     $rows = @($manifest | Where-Object archive -CEQ $check[1])
     if ($rows.Count -ne 1 -or (Get-Item -LiteralPath $path).Length -ne [long]$rows[0].archive_bytes -or
         (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $rows[0].archive_sha256) {

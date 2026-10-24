@@ -14,11 +14,11 @@ try {
     }
     $checks = 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
     $tools = 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll'
-    $original = 'tests/fixtures/full-battle-progressed-ring7-holdover-win.mt2f'
-    $shortened = 'tests/fixtures/full-battle-progressed-ring7-holdover-exact-replay.mt2f'
-    dotnet $checks --holdover-variants-only tests/fixtures/holdover-variants-calibration.mt2f
+    $original = 'tests/fixtures/campaign/progression/full-battle-progressed-ring7-holdover-win.mt2f'
+    $shortened = 'tests/fixtures/campaign/progression/full-battle-progressed-ring7-holdover-exact-replay.mt2f'
+    dotnet $checks --holdover-variants-only tests/fixtures/cards/traits/holdover-variants-calibration.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Native upgrade/clone variant matrix failed.' }
-    dotnet $checks --permanent-traits-only tests/fixtures/permanent-trait-calibration.mt2f
+    dotnet $checks --permanent-traits-only tests/fixtures/cards/traits/permanent-trait-calibration.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Native permanent trait matrix failed.' }
     foreach ($mode in @('--holdover-only', '--starting-duality-only', '--rolling-advice-only')) {
         dotnet $checks $mode $shortened

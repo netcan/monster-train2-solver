@@ -95,7 +95,7 @@ else if (args.Length == 3 && args[0] == "pack-directory")
     var sources = Directory.GetFiles(sourceDirectory).Where(path => path.EndsWith(".json", StringComparison.OrdinalIgnoreCase) ||
         path.EndsWith(".json.gz", StringComparison.OrdinalIgnoreCase)).Order(StringComparer.Ordinal).ToArray();
     if (sources.Length == 0) throw new InvalidOperationException("No legacy fixture inputs found.");
-    var manifest = new List<string> { "archive\tsource\tsource_bytes\tsource_sha256\tarchive_bytes\tarchive_sha256\tunique_nodes" };
+    var manifest = new List<string> { FixtureCatalog.Header };
     foreach (string source in sources)
     {
         string stem = Path.GetFileName(source).Replace(".json.gz", "", StringComparison.OrdinalIgnoreCase).Replace(".json", "", StringComparison.OrdinalIgnoreCase);
@@ -133,5 +133,9 @@ static string Pack(string source, string archive)
     using var archiveStream = File.OpenRead(archive);
     string archiveHash = Convert.ToHexString(SHA256.HashData(archiveStream)).ToLowerInvariant();
     Console.WriteLine($"FIXTURE-PACK PASS: {Path.GetFileName(archive)}; {new FileInfo(source).Length:N0} -> {archiveLength:N0} bytes; {imported.UniqueNodeCount:N0} unique nodes; {timer.Elapsed.TotalSeconds:F1}s.");
-    return $"{Path.GetFileName(archive)}\t{Path.GetFileName(source)}\t{imported.SourceLength}\t{imported.SourceSha256}\t{archiveLength}\t{archiveHash}\t{imported.UniqueNodeCount}";
+    string archivePath = Path.GetFileName(archive);
+    for (DirectoryInfo? directory = new FileInfo(Path.GetFullPath(archive)).Directory; directory != null; directory = directory.Parent)
+        if (File.Exists(Path.Combine(directory.FullName, "manifest.tsv")))
+        { archivePath = Path.GetRelativePath(directory.FullName, Path.GetFullPath(archive)).Replace('\\', '/'); break; }
+    return $"{Path.GetFileName(archive)}\t{Path.GetFileName(source)}\t{imported.SourceLength}\t{imported.SourceSha256}\t{archiveLength}\t{archiveHash}\t{imported.UniqueNodeCount}\t{archivePath}";
 }

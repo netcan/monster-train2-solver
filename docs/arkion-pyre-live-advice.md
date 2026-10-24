@@ -107,7 +107,7 @@ user restart to load 0.2.21. No real player inputs/restart or Mac build occurred
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-arkion-pyre-only `
-  tests/fixtures/player-live-arkion-pyre-unavailable.mt2f <accepted-native.mt2f>
+  tests/fixtures/bosses/arkion/player-live-arkion-pyre-unavailable.mt2f <accepted-native.mt2f>
 ./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Policy units-spells-and-junk `
   -InputProfile .probe-runs/live-arkion-covenant10-20261024 -BattleDistance 2 `
   -OuterBossBirth -OuterBossTurns -PhysicalSpawnPoints -PlayerAdvisor `

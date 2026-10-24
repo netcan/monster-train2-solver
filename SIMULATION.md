@@ -6,11 +6,11 @@ one historical capture retains nonzero mismatch counters and stays excluded.
 Unchanged original relic evidence
 covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
 interface owners and one native no-op; see
-[the owner evidence table](tests/fixtures/relic-coverage.md). Whole-battle
+[the owner evidence table](tests/fixtures/inventory/relic-coverage.md). Whole-battle
 coverage for arbitrary combinations remains in progress. Exact deterministic
 search and probability policies now have explicit, scoped certificates and
-independent replay; see [exact search](tests/fixtures/exact-search.md) and
-[unknown draw policies](tests/fixtures/unknown-draw-policy.md).
+independent replay; see [exact search](tests/fixtures/notes/planning/exact-search.md) and
+[unknown draw policies](tests/fixtures/notes/advisor/unknown-draw-policy.md).
 
 The real 0.2.2 player assembly now accepts the calibrated natural Luna Coven
 starter and `Boss_Level8_AllyBuffer` final encounter. The moon battle's 38 rolling
@@ -25,7 +25,7 @@ A further 34 original Conduit movement callbacks now match independently in
 complete context, private card trackers, physical points and gameplay RNG.
 This isolated component keeps the whole-battle physical guard: detached and dead
 contributors need retained tracker snapshots before player support can expand.
-See [Conduit movement calibration](tests/fixtures/conduit-movement.md).
+See [Conduit movement calibration](tests/fixtures/notes/combat/conduit-movement.md).
 
 The original seventh-ring checkpoint now also wins while retaining its
 naturally purchased Holdover upgrade: 42 frozen inputs, Pyre104, fresh native
@@ -39,7 +39,7 @@ replacement variants, discard cleanup and cloning with native source-cache
 side effects. Exhaustive search of the last card decision's one-EndTurn horizon
 also removes one unnecessary play. Its fresh 41-input native replay wins with
 Pyre104, matching every full-state/RNG successor with four zero counters.
-See [the Holdover evidence and remaining guards](tests/fixtures/holdover.md).
+See [the Holdover evidence and remaining guards](tests/fixtures/notes/cards/holdover.md).
 
 176 additional detached native permanent-upgrade operations cover all four
 Holdover/Corrupt/Consume/Distinct/Ephemeral stack modes, repeated installation, clobber protection and
@@ -47,7 +47,7 @@ Ephemeral/CopyOnPlay removal with temporary/nonremovable controls. The model
 retains native dummy slots, runtime parameters, private pending state and the
 upgrade's modified-trait flags. Consume controls also retain the native private
 exhausted-card reference across surviving instances and clear it on replacement. See
-[permanent trait calibration](tests/fixtures/permanent-traits.md).
+[permanent trait calibration](tests/fixtures/notes/cards/permanent-traits.md).
 
 `scripts/Check-SolverCompletion.ps1` checks these increments and both new search
 interfaces without invoking the full fixture regression. Native witnesses,
@@ -55,7 +55,7 @@ model predictions and certificate scopes stay separate. Unknown future
 reshuffles/combat RNG, arbitrary mechanic combinations and universal native
 optimality are not established by these finite checks.
 
-The [naturally progressed fifth-ring checkpoint](tests/fixtures/campaign-progressed.md)
+The [naturally progressed fifth-ring checkpoint](tests/fixtures/notes/campaign/campaign-progressed.md)
 now has a strict rolling victory: 59 Pyre HP, 26 decisions, an identical fresh
 native replay and a completed losing fixed-policy baseline. All three full
 battles have zero capture/mismatch/unsupported/pending counters. The natural
@@ -154,7 +154,7 @@ Native upgrade-slot relics now pass battle validation because their only
 consumer is the already calibrated campaign upgrade-slot interface; acquired
 card upgrades are captured normally. The six-owner campaign calibration passes.
 
-The [bounded multi-turn planner](tests/fixtures/planner-benchmarks.md) now has
+The [bounded multi-turn planner](tests/fixtures/notes/planning/planner-benchmarks.md) now has
 five captured-state benchmarks and five search/independent-native-replay pairs.
 Each plans two or three EndTurns under shared node/time budgets, ranks wins
 before survival and Pyre HP, and reproduces its frozen sequence in a fresh
@@ -164,13 +164,13 @@ mismatch, unsupported and pending counters. The starter planning window retains
 policy. These include controlled mechanic setups, use captured deck order/RNG,
 and do not establish global optimality or a hidden-draw policy.
 
-The [interactive battle advisor](tests/fixtures/live-advisor.md) now captures
+The [interactive battle advisor](tests/fixtures/notes/advisor/live-advisor.md) now captures
 quiet live decisions, plans on one model worker, displays the next card/ability
 and target plus forecast Pyre HP, and invalidates advice after native actions.
 It includes an isolated manual launcher, a native Unity panel render, and three
 natural first-ring miniboss search/fresh-replay pairs. All six full battles
 pass with four failure counters zero. These cover two encounter types and one
-miniboss identity. The newer [full-battle rolling acceptance](tests/fixtures/rolling-advisor.md)
+miniboss identity. The newer [full-battle rolling acceptance](tests/fixtures/notes/advisor/rolling-advisor.md)
 retains four historical source/replay/completed-policy triples and 62 computed native
 decisions through actual battle ends. Three distinct bosses enter actual rooms,
 including the fifth-ring boss. The first two encounters win with 73/34 Pyre HP
@@ -178,7 +178,7 @@ versus the completed policy's 66/33; the fifth/seventh-ring starter-deck runs
 lose and tie that policy. The seventh-ring boss never enters and is not counted.
 Capture-to-UI-publication response has a 3893.4 ms median and 4492.3 ms P95.
 The historical later encounters use controlled native map jumps. New
-[natural campaign checkpoints](tests/fixtures/campaign-progressed.md) preserve
+[natural campaign checkpoints](tests/fixtures/notes/campaign/campaign-progressed.md) preserve
 four/six/seven preceding native victories and all offered rewards/upgrades without
 map jumps or authored stats. Strict progressed-deck wins at rings five, seven
 and eight are accepted separately. Controlled Pyre-entry integration is
@@ -188,7 +188,7 @@ seventh-ring replay retained in `campaign-progressed-ring8-gold.zip`.
 
 ### Per-card evidence inventory
 
-The [per-card coverage report](tests/fixtures/card-coverage.md) indexes all 668
+The [per-card coverage report](tests/fixtures/inventory/card-coverage.md) indexes all 668
 original card definitions by DataId, retaining 563 native logbook entries, unit
 and room abilities, and other internal definitions separately. The raw catalog
 is frozen under [tests/catalogs](tests/catalogs/README.md), separately from the
@@ -1348,7 +1348,7 @@ additional callback combinations and metagame consumers require separate evidenc
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCorruptedAngelsRelic -BinaryCapture -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-corrupted-angels.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-corrupted-angels-only tests/fixtures/full-battle-original-corrupted-angels.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-corrupted-angels-only tests/fixtures/combat/status/full-battle-original-corrupted-angels.mt2f
 ```
 
 `BalatroEventPerkeo` has schema-245 evidence for original permanent random-pile
@@ -1370,7 +1370,7 @@ combined unplayed callbacks and metagame purge consumers need separate evidence.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalPerkeoRelic -BinaryCapture -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-perkeo.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-perkeo-only tests/fixtures/full-battle-original-perkeo.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-perkeo-only tests/fixtures/cards/originals/full-battle-original-perkeo.mt2f
 ```
 
 `RandomUnitEveryFloor` has schema-244 evidence for its unchanged Null plus three
@@ -1393,7 +1393,7 @@ combined birth/discard callbacks require separate native evidence.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalOpeningDeckSpawnRelic -BinaryCapture -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-opening-deck-spawn.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-opening-deck-spawn-only tests/fixtures/full-battle-original-opening-deck-spawn.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-opening-deck-spawn-only tests/fixtures/combat/spawn/full-battle-original-opening-deck-spawn.mt2f
 ```
 
 `SpawnRandomMorsels` has schema-243 evidence for its unchanged three ordered
@@ -1420,7 +1420,7 @@ equipment returns and repeated meals; the original cardless witness remains unch
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalOpeningMorselsRelic -BinaryCapture -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-opening-morsels.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-opening-morsels-only tests/fixtures/full-battle-original-opening-morsels.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-opening-morsels-only tests/fixtures/combat/units/full-battle-original-opening-morsels.mt2f
 ```
 
 `OnDecayDeathApplyStatusEffects` has schema-242 evidence for its unchanged
@@ -1798,7 +1798,7 @@ one native callback runs after initial enemy spawn, before first-turn income,
 with no relic notification. Both winning captures have zero error counters.
 Their independent policy replay, immutable branches and bounded search are
 included in the eight-fixture affected regression recorded in
-[validation provenance](tests/fixtures/validation-20261015.md).
+[validation provenance](tests/fixtures/notes/combat/validation-20261015.md).
 
 The new unchanged `GiveSpellStatsForUpgrades_DH` and
 `GiveUnitStatsForUpgrades_DH` battle validates +3 attack/health per visible
@@ -1818,7 +1818,7 @@ The previous complete 335-archive general/focused regression passes, including a
 initial bulk run, two final recaptures, and all 27 fixtures from its failed shard
 rerun after a resource-checker terminal projection fix. Every accepted run uses
 identical model/archive binaries; the checker-only change is scoped and recorded
-in [the validation report](tests/fixtures/validation-20261015.md). The original
+in [the validation report](tests/fixtures/notes/combat/validation-20261015.md). The original
 failed bulk summary is preserved rather than relabelled as a complete pass.
 
 The unchanged original `ConserveEmber` now preserves remaining Ember through
@@ -2109,7 +2109,7 @@ Other Spell Shield owners and piercing combinations remain uncalibrated.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-spell-shield.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-spell-shield.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/damage/full-battle-original-spell-shield.mt2f
 ```
 
 ### Original Trample damage chain
@@ -2128,7 +2128,7 @@ Trample owners, LifeLink interactions and specialized Boss cases remain open.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-trample-basher.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-trample-basher.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-trample-basher.mt2f
 ```
 
 ### Original null-effect target forwarding
@@ -2146,7 +2146,7 @@ Other null-effect uses still need original-owner calibration.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-null-forwarding-cleave.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-null-forwarding-cleave.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/core/full-battle-null-forwarding-cleave.mt2f
 ```
 
 ### Original null-effect unit triggers
@@ -2166,7 +2166,7 @@ its null-effect trigger can receive original-owner evidence.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-null-unit-triggers.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-null-unit-triggers.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/units/full-battle-null-unit-triggers.mt2f
 ```
 
 ### Original targetless scourges
@@ -2184,7 +2184,7 @@ the recorded original cards and targetless path, not every null-effect owner.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-null-targetless-scourges.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-null-targetless-scourges.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/spells/full-battle-null-targetless-scourges.mt2f
 ```
 
 ### Original self-attack-scaled status
@@ -2204,7 +2204,7 @@ been calibrated in a native battle.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-self-attack-status.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-self-attack-status.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/status/full-battle-self-attack-status.mt2f
 ```
 
 ### Original conditional status after an unblocked floor
@@ -2222,7 +2222,7 @@ The related Pyre-damage effect still needs whole-train targeting.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-conditional-no-player-status.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-conditional-no-player-status.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/advisor/presentation/full-battle-conditional-no-player-status.mt2f
 ```
 
 ### Original moon-phase unit callbacks
@@ -2239,7 +2239,7 @@ Other moon-phase card traits and relic callback combinations remain guarded.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-moon-phase-callbacks.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-moon-phase-callbacks.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/core/full-battle-moon-phase-callbacks.mt2f
 ```
 
 ### Original Fae Meddler spawn advance
@@ -2257,7 +2257,7 @@ Other moon-phase trait/relic combinations remain guarded.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-moon-phase-advance.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-moon-phase-advance.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/core/full-battle-moon-phase-advance.mt2f
 ```
 
 ### Original Moonrise phase transition
@@ -2375,8 +2375,8 @@ The 31,026-byte binary has 4,957 unique nodes and SHA-256
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --status-upgrade-pure
-dotnet run --project src/ModelChecks -c Release -- --status-upgrade-only tests/fixtures/full-battle-status-upgrade.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-status-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --status-upgrade-only tests/fixtures/combat/status/full-battle-status-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/status/full-battle-status-upgrade.mt2f
 ```
 
 ### Train healing from original PayOff
@@ -2394,8 +2394,8 @@ The 33,285-byte binary has 5,439 unique nodes and SHA-256
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --train-heal-pure
-dotnet run --project src/ModelChecks -c Release -- --train-heal-only tests/fixtures/full-battle-train-heal.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-train-heal.mt2f
+dotnet run --project src/ModelChecks -c Release -- --train-heal-only tests/fixtures/combat/core/full-battle-train-heal.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/core/full-battle-train-heal.mt2f
 ```
 
 ### Remove all visible status effects (schema 164)
@@ -2416,7 +2416,7 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-remove-all-status-effects.mt2f
-dotnet run --project src/ModelChecks -c Release -- --remove-all-status-only tests/fixtures/full-battle-remove-all-status-effects.mt2f
+dotnet run --project src/ModelChecks -c Release -- --remove-all-status-only tests/fixtures/combat/status/full-battle-remove-all-status-effects.mt2f
 ```
 
 ### Fixed unplayed Pyre-damage triggers (schema 161)
@@ -2435,7 +2435,7 @@ The 34,660-byte native binary has its unique-node count and SHA-256 recorded in
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-pyre-damage.mt2f
-dotnet run --project src/ModelChecks -c Release -- --unplayed-card-trigger-only tests/fixtures/full-battle-unplayed-card-pyre-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --unplayed-card-trigger-only tests/fixtures/combat/damage/full-battle-unplayed-card-pyre-damage.mt2f
 ```
 
 ### Unplayed upgrade and copy triggers (schema 163)
@@ -2453,7 +2453,7 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-effects.mt2f
-dotnet run --project src/ModelChecks -c Release -- --unplayed-card-effects-only tests/fixtures/full-battle-unplayed-card-effects.mt2f
+dotnet run --project src/ModelChecks -c Release -- --unplayed-card-effects-only tests/fixtures/combat/core/full-battle-unplayed-card-effects.mt2f
 ```
 ### Original card-draw relics (schema 160)
 
@@ -2474,9 +2474,9 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-draw-on-card-play.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-card-draw-on-card-play.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-card-draw-on-card-play-only tests/fixtures/full-battle-original-card-draw-on-card-play.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-draw-on-card-play.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/relics/triggers/full-battle-original-card-draw-on-card-play.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-draw-on-card-play-only tests/fixtures/relics/triggers/full-battle-original-card-draw-on-card-play.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/triggers/full-battle-original-card-draw-on-card-play.mt2f
 ```
 
 ### Original CardEffectKill spell
@@ -2516,14 +2516,14 @@ It has no JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/combat/core/full-battle-card-effect-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --sacrifice-pure
 ```
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill-subtype.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill-subtype.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-effect-kill-subtype.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/combat/core/full-battle-card-effect-kill-subtype.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/core/full-battle-card-effect-kill-subtype.mt2f
 ```
 
 ### CardEffectRecursion
@@ -2564,13 +2564,13 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-retch.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-retch-only tests/fixtures/full-battle-original-retch.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-retch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-retch-only tests/fixtures/cards/originals/full-battle-original-retch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-retch.mt2f
 ```
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-recursion.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/draw/full-battle-card-recursion.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-pure
 ```
 
@@ -2587,8 +2587,8 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-choice-only tests/fixtures/full-battle-card-recursion-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-choice-only tests/fixtures/cards/draw/full-battle-card-recursion-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-choice.mt2f
 ```
 
 `full-battle-card-recursion-choose-to-hand.mt2f` uses the same controlled native
@@ -2606,8 +2606,8 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choose-to-hand.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-hand-choice-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-hand-choice-only tests/fixtures/cards/draw/full-battle-card-recursion-choose-to-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-choose-to-hand.mt2f
 ```
 
 `full-battle-card-recursion-filter-choice.mt2f` captures `ChooseToDeck` with a
@@ -2623,8 +2623,8 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-filter-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-filter-choice-only tests/fixtures/full-battle-card-recursion-filter-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-filter-choice-only tests/fixtures/cards/draw/full-battle-card-recursion-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-filter-choice.mt2f
 ```
 
 ### Original MoonPhaseModifyEmber relic
@@ -2639,7 +2639,7 @@ dedicated relic check plus full battle policy replay pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-energy-relic.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-energy-only tests/fixtures/full-battle-original-moon-phase-energy-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-energy-only tests/fixtures/relics/modifiers/full-battle-original-moon-phase-energy-relic.mt2f
 ```
 
 ### Original HymnistsApplyValorOnSummon relic
@@ -2681,8 +2681,8 @@ JSON companion. Original relic evidence is now 75/224 (33.48%).
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-tuned-gear.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/relics/modifiers/full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/modifiers/full-battle-spawn-status-relics-tuned-gear.mt2f
 ```
 
 ### Mix draft native evidence (model pending)
@@ -3015,7 +3015,7 @@ capture-path regression, not another original relic owner.
 
 Native `CardEffectSpawnMonsterOrAddStatusEffect` fallback births and the
 existing-unit status branch now match in
-[`full-battle-spawn-or-status.mt2f`](tests/fixtures/full-battle-spawn-or-status.mt2f).
+[`full-battle-spawn-or-status.mt2f`](tests/fixtures/combat/spawn/full-battle-spawn-or-status.mt2f).
 The battle wins after two skill activations with zero differential failures.
 
 The fixed-cost ability activation archive now exercises native
@@ -4021,7 +4021,7 @@ stops. Dynamic resource inputs are immutable query frames in the shared combat
 context; transitions advance these values as the branch progresses. An explicit
 query frame overrides that shared frame for isolated calibration queries.
 
-`tests/fixtures/statistic-query-calibration.mt2f` preserves 17,892 native
+`tests/fixtures/combat/core/statistic-query-calibration.mt2f` preserves 17,892 native
 observations across six batches: live, distributed and empty piles, each with
 and without stored paid costs. Calibration uses isolated inactive native
 components, synthetic counters and a synthetic variable-cost source. The
@@ -5070,7 +5070,7 @@ and `.probe-runs/full-battle-units-spells-and-junk-20261007-133253-1dd16f32`
 (Instant). Both exit zero with no capture failures, mismatches, unsupported
 stages or pending observations, and original game files remain unchanged.
 
-The initial `tests/fixtures/full-battle-triggered-status-instant.mt2f` preserved
+The initial `tests/fixtures/combat/status/full-battle-triggered-status-instant.mt2f` preserved
 all captured values from the 620,310,073-byte Instant source (source SHA-256
 `d4e68baf103d6562e84dbf7235def6c9241949ffbf63aea7ca9892434eae7dcd`). The archive
 is 43,288 bytes with 7,146 unique nodes; its hash is recorded in the manifest.
@@ -5144,7 +5144,7 @@ Independent adversarial checks cover zero additions, consumed shields, hidden
 and persistent definitions, zero-entry cleanup/readdition, missing legacy state
 and 32 parallel branches without parent mutation.
 
-The retained `tests/fixtures/full-battle-status-registry.mt2f` comes from
+The retained `tests/fixtures/combat/status/full-battle-status-registry.mt2f` comes from
 `.probe-runs/full-battle-units-spells-and-junk-20261007-140231-8021bb2d`.
 The 249,937,719-byte complete capture becomes a 45,315-byte binary archive with
 7,403 unique nodes; source SHA-256 is
@@ -5204,7 +5204,7 @@ selects the legacy path. An offline `FixtureTools benchmark-capture` command
 measures export/import on a retained graph and verifies its complete values;
 those .NET timings are separate from Unity timings.
 
-The retained `tests/fixtures/full-battle-native-binary.mt2f` stores this complete
+The retained `tests/fixtures/combat/core/full-battle-native-binary.mt2f` stores this complete
 native binary, SHA-256
 `7f363ab290e21dfb3c4398e596d6579f7de8c42853288af89e5a5c526efa5c13`.
 Its text-source metadata is zero because it was not imported from JSON; binary
@@ -5249,7 +5249,7 @@ dead bosses skip these callbacks. Valor still invokes an armor addition at zero
 delta when existing armor exceeds its target. Source traits and flat pyregel
 damage apply before melee-weakness multiplication.
 
-The retained `tests/fixtures/full-battle-status-callbacks.mt2f` comes from game
+The retained `tests/fixtures/combat/status/full-battle-status-callbacks.mt2f` comes from game
 2.2.1, module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The complete native
 run takes 95.04 seconds at Instant timing and passes with 21 plays, seven
 EndTurns, 69 room stages, victory/Pyre 72, zero capture failures, mismatches,
@@ -5395,7 +5395,7 @@ override targets and native activity/dying/removal flags. Temporary removal
 observations are scoped to this isolated action scenario. The observers wrap
 native enumerators and preserve parent callback scopes through nested execution.
 
-The retained `tests/fixtures/full-battle-status-callback-actions.mt2f` comes from
+The retained `tests/fixtures/combat/status/full-battle-status-callback-actions.mt2f` comes from
 game 2.2.1, module MVID `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The native run
 takes 223.86 seconds at Instant timing with muted audio, 15 card plays, five
 EndTurns, 35 room stages, nine train phases, seven spawn observations and victory
@@ -5714,7 +5714,7 @@ including detached equipment waiting on its original host and returns before
 later draws; specialized exhaustion listeners and full-hand return overflow
 still require dedicated native coverage.
 
-`tests/fixtures/full-battle-equipment.mt2f` records 25 native API operations,
+`tests/fixtures/cards/equipment/full-battle-equipment.mt2f` records 25 native API operations,
 19 subsequent card plays, seven EndTurns and 61 room stages. The muted Instant
 native run takes 72.35 seconds, wins at Pyre 61 and has zero capture failures,
 differences, unsupported or pending records, with unchanged original files.
@@ -5734,7 +5734,7 @@ is tracked.
 
 `-EquipmentExhausted` constructs the same native attachment/replacement and
 reverse-removal scenario without CardTraitReturnToHandEquipment. The retained
-`tests/fixtures/full-battle-equipment-exhausted.mt2f` verifies attached equipment
+`tests/fixtures/cards/equipment/full-battle-equipment-exhausted.mt2f` verifies attached equipment
 returning during the host's death and detached equipment returning during the
 global standby check. Complete contexts compare exact exhausted-pile order,
 dictionary free-slot history, card links and live TimesExhausted/AnyExhausted
@@ -5776,7 +5776,7 @@ declared canonical output boundary; live links and immutable parents remain
 intact. Pure checks compare both conventions and 32 parallel branches. This
 avoids making simulated semantic relationships depend on Unity frame cleanup.
 
-`tests/fixtures/full-battle-equipment-overflow.mt2f` stores 4,940 nodes in
+`tests/fixtures/cards/equipment/full-battle-equipment-overflow.mt2f` stores 4,940 nodes in
 29,900 bytes with schema 55 on game 2.2.1 and the unchanged module MVID.
 The muted Instant native run takes 47.18 seconds and wins at Pyre 52 after
 21 policy plays, seven EndTurns and 56 room stages. Its 30 equipment API
@@ -5829,7 +5829,7 @@ preview exclusion, inherited spawner triggers, immutable parents and 32
 parallel branches. Upgrade trigger descriptors share the ordinary character
 trigger projection, with bounded recursion explicitly reported as unsupported.
 
-`tests/fixtures/full-battle-equipment-triggers.mt2f` contains 4,958 nodes in
+`tests/fixtures/cards/equipment/full-battle-equipment-triggers.mt2f` contains 4,958 nodes in
 29,238 bytes, schema 56 on game 2.2.1 and module MVID
 8fb07b96-f4db-4d2b-884d-c00536d6ccf4. The muted Instant native run takes 45.25
 seconds, wins at Pyre 61 after 19 plays and seven EndTurns, and compares 61 room
@@ -5887,7 +5887,7 @@ testing explicitly permits PreCombat in the in-memory balance timing list;
 the original Boss and waves are unchanged. Every before/after state is
 captured from the native coroutine and independently compared.
 
-`tests/fixtures/full-battle-trigger-mutation.mt2f` stores 4,595 nodes in 27,669
+`tests/fixtures/combat/core/full-battle-trigger-mutation.mt2f` stores 4,595 nodes in 27,669
 bytes, schema 57 on game 2.2.1 with the unchanged module MVID. The muted Instant
 native run takes 45.56 seconds and wins at Pyre 73 after 20 plays and seven
 EndTurns. All 60 room stages, 13 card cycles, 14 train phases, 11 spawns and
@@ -5939,7 +5939,7 @@ listeners retain distinct counters totaling eight additional draws. The next
 ordinary hand caps at ten, applies the native callbacks' temporary upgrades,
 and clears their counters/listeners. The original Boss/waves are unchanged.
 
-`tests/fixtures/full-battle-detached-bonus-draw.mt2f` stores 4,087 nodes in
+`tests/fixtures/cards/draw/full-battle-detached-bonus-draw.mt2f` stores 4,087 nodes in
 24,981 bytes, schema 58 on game 2.2.1 with module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The muted Instant native run takes
 44.45 seconds and wins at Pyre 80 after 17 plays and six EndTurns. All 49 room
@@ -5996,7 +5996,7 @@ exercise the same conditions during the ordinary battle. The Boss and enemy
 waves remain unchanged. Each raw native phase captures complete room, actor
 and dying-target states, independently of its embedded prediction.
 
-`tests/fixtures/full-battle-conditional-triggers.mt2f` stores 4,441 nodes in
+`tests/fixtures/combat/core/full-battle-conditional-triggers.mt2f` stores 4,441 nodes in
 27,430 bytes, schema 59 on game 2.2.1 with module MVID
 `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`. The muted Instant native run takes
 48.21 seconds and wins at Pyre 80 after 19 plays and six EndTurns. Its 53 room
@@ -6470,7 +6470,7 @@ timing and isolated save files. It wins at Pyre 80 with 17 card plays (four skil
 activations), five EndTurns, 48 room stages, nine card cycles, nine train phases
 and seven spawn phases. Capture failures, differences, unsupported and pending
 counts are zero, exit code is zero, and original files are unchanged. Its schema
-66 archive `tests/fixtures/full-battle-ability-effects.mt2f` contains 4,734 unique
+66 archive `tests/fixtures/combat/units/full-battle-ability-effects.mt2f` contains 4,734 unique
 nodes in 29,332 bytes, with SHA-256
 `d0989e70226ecd4115098f7faf7f543eddd83184a2c4eb389fe05dc1a08aa8c1` and no JSON
 source dependency. The entire policy matches independently from initial and
@@ -6550,7 +6550,7 @@ branches; the complete policy matches initial and actual mid-battle roots in
 keep-existing birth, disabled upgraded births, raw cooldown restoration, both
 quiet/card callback contexts and real equipment skill activation.
 
-`tests/fixtures/full-battle-equipment-abilities.mt2f` contains 5,000 unique nodes
+`tests/fixtures/cards/equipment/full-battle-equipment-abilities.mt2f` contains 5,000 unique nodes
 in 31,439 bytes, SHA-256
 `3bbbeae20c27930358f8df2e4058c7e0008be9d93e4c98b3d00f6d2b860162b2`.
 It is a direct native binary archive with no text source or JSON dependency.
@@ -6609,7 +6609,7 @@ including the entire chain in 16 parallel branches; it wins at Pyre 49.
 The muted Instant run takes 36.46 seconds, exits zero and leaves original files
 unchanged. All battle capture failure/mismatch/unsupported/pending counts are zero.
 
-`tests/fixtures/horde-stat-calibration.mt2f` is a direct native schema 1 archive:
+`tests/fixtures/combat/units/horde-stat-calibration.mt2f` is a direct native schema 1 archive:
 4,625 bytes, 1,051 unique nodes, SHA-256
 `1705f0c276404b5f0129f8c97ed5eb3d9be0271ab31c219c4a54bfd326bd2ccb`.
 It has no text source or JSON dependency. The inventory is now 97 archives:
@@ -6665,7 +6665,7 @@ The complete policy from initial and mid-battle roots matches in 16 branches.
 The muted Instant native run takes 44.80 seconds and exits zero, with capture
 failure/mismatch/unsupported/pending counts all zero and original files unchanged.
 
-`tests/fixtures/full-battle-trigger-repeats.mt2f` is direct native schema 68,
+`tests/fixtures/combat/core/full-battle-trigger-repeats.mt2f` is direct native schema 68,
 26,319 bytes / 4,135 nodes, SHA-256
 `7e3ef1f226b4aae1db5f73cf5337f11a2f3a7cfecdc805c5da74162cc6735a86`.
 It has no JSON dependency. The curated inventory is 98 archives: 89 battles and
@@ -6753,7 +6753,7 @@ plays and five EndTurns. Capture failures, mismatches, unsupported and pending
 counts are zero; original profile signatures are unchanged. The independent
 complete policy also matches from initial and mid-battle inputs in 16 branches.
 
-`tests/fixtures/full-battle-horde-statuses.mt2f` contains 23,825 bytes and 3,548
+`tests/fixtures/combat/status/full-battle-horde-statuses.mt2f` contains 23,825 bytes and 3,548
 unique nodes, with SHA-256
 `71c0ff606fa826dec2bd82236a3f958a4a4995913177cabb764b751d17fe1ad1`.
 It is a direct native binary archive with no JSON source. The curated inventory
@@ -6811,7 +6811,7 @@ pending records are zero; original profile signatures remain unchanged.
 The complete subsequent policy matches from initial and mid-battle inputs in
 16 branches.
 
-`tests/fixtures/full-battle-harvest-triggers.mt2f` is direct native schema 70,
+`tests/fixtures/combat/core/full-battle-harvest-triggers.mt2f` is direct native schema 70,
 28,694 bytes / 4,567 nodes, SHA-256
 `b042c3d62aac10e7095981abd096f3fe6b34dfe378eea8ef951a094ea6e2deb7`.
 It has no JSON dependency. The curated inventory now contains 100 archives:
@@ -6878,7 +6878,7 @@ The final muted Instant native run takes 53.32 seconds, wins at Pyre 49 and
 records 56 room stages, 13 card cycles, 14 train phases and 11 spawn stages.
 Capture failures, mismatches, unsupported transitions and pending records are
 zero, and original profile signatures remain unchanged. Its direct native
-archive `tests/fixtures/full-battle-horde-removal.mt2f` has schema 71,
+archive `tests/fixtures/combat/units/full-battle-horde-removal.mt2f` has schema 71,
 35,970 bytes / 6,109 nodes and SHA-256
 `c9a25d986f7dc3279c3aafc70e1033a2da4d594739fcb52b72f977cba622cd89`.
 The curated inventory contains 101 archives: 92 battles and nine calibrations,
@@ -6953,7 +6953,7 @@ The final muted Instant run takes 53.30 seconds, wins at Pyre 51, and records
 56 room stages, 13 card cycles, 14 train phases and 11 spawn stages. Capture
 failures, mismatches, unsupported transitions and pending records are zero;
 original profile signatures remain unchanged. The direct native archive
-`tests/fixtures/full-battle-horde-death.mt2f` has schema 72, 36,353 bytes and
+`tests/fixtures/combat/damage/full-battle-horde-death.mt2f` has schema 72, 36,353 bytes and
 6,019 unique nodes, with no source JSON. Its SHA-256 is
 `0d4f5138ea96491cfb876e4b6580db546b93e2c71233af1646d74cab6ea7eb7e`.
 The curated inventory now contains 102 archives: 93 battles and nine calibrations.
@@ -7031,7 +7031,7 @@ The final muted Instant run takes 57.60 seconds, wins at Pyre 49 and records
 58 room stages, 13 card cycles, 14 train phases and 11 spawn stages. Capture
 failures, mismatches, unsupported transitions and pending records are zero;
 original profile signatures remain unchanged. The native schema-73 archive
-`tests/fixtures/full-battle-horde-upgrades.mt2f` is 40,760 bytes with 6,624 unique
+`tests/fixtures/combat/units/full-battle-horde-upgrades.mt2f` is 40,760 bytes with 6,624 unique
 nodes, no source JSON and SHA-256
 `b44e36e43490dba2f7472a03b3b8143babaac5145ff88b551937cdd56e2cbeed`.
 The curated inventory now contains 103 archives: 94 battles and nine calibrations.
@@ -7093,7 +7093,7 @@ The final muted Instant run takes 69.48 seconds, wins at Pyre 53 and captures
 seven EndTurns. Capture failures, mismatches, unsupported transitions and pending
 records are zero; original profile signatures remain unchanged. Complete initial
 and actual mid-battle policies match independently in 16 parallel branches. The
-accepted native archive `tests/fixtures/full-battle-dying-horde-upgrades.mt2f` is
+accepted native archive `tests/fixtures/combat/units/full-battle-dying-horde-upgrades.mt2f` is
 36,888 bytes / 6,137 unique nodes, has no source JSON, and has SHA-256
 `9539d9f350724766e138e717b86465585def7a07d7a84ad862ad09595e4f6dc8`.
 
@@ -7156,7 +7156,7 @@ The final muted Instant run takes 57.25 seconds, wins at Pyre 80 and captures
 41 room stages, nine card cycles, nine train phases, seven spawn stages, 13 card
 plays and five EndTurns. Capture failures, mismatches, unsupported transitions
 and pending records are zero; original profile signatures remain unchanged.
-`tests/fixtures/full-battle-rally-triggers.mt2f` is 30,867 bytes / 4,937 unique nodes,
+`tests/fixtures/combat/core/full-battle-rally-triggers.mt2f` is 30,867 bytes / 4,937 unique nodes,
 contains no source JSON, and has SHA-256
 `ac1158939bc57d98e13e419343d2c1d58407c017cfd4f0c82d618833c286c1b6`.
 
@@ -7227,7 +7227,7 @@ The final muted Instant native run takes 39.39 seconds, wins at Pyre 80, and
 captures 28 room stages, eight card cycles, eight train phases and seven spawn
 stages. Capture failures, mismatches, unsupported transitions and pending records
 are zero; original profile signatures remain unchanged.
-`tests/fixtures/full-battle-rally-lethal.mt2f` is 21,543 bytes / 3,333 unique nodes,
+`tests/fixtures/combat/core/full-battle-rally-lethal.mt2f` is 21,543 bytes / 3,333 unique nodes,
 contains no source JSON, and has SHA-256
 `a583073ce01d40551f8d63947ea6fbee318ea61a5893d988421095d033fc7857`.
 
@@ -7285,10 +7285,10 @@ policies match all thirteen plays and five/four EndTurns from initial and actual
 mid-battle roots in 16 parallel branches. Mechanism checks also repeat in 32
 branches, preserving the new counter at each captured callback boundary.
 
-`tests/fixtures/full-battle-unit-identities.mt2f` is 30,824 bytes / 4,954 unique
+`tests/fixtures/combat/units/full-battle-unit-identities.mt2f` is 30,824 bytes / 4,954 unique
 nodes, with SHA-256
 `229dd8ed2603d2b2f07f00dbeaebcf134f6d4518574c1ef2c0a5668ec9713823`.
-`tests/fixtures/full-battle-unit-identities-lethal.mt2f` is 21,475 bytes / 3,345
+`tests/fixtures/combat/units/full-battle-unit-identities-lethal.mt2f` is 21,475 bytes / 3,345
 unique nodes, with SHA-256
 `ac7353c87345a229588dd185a83887fce36afc7f35c89a6c36549e38f8401f76`.
 Both are direct native binary captures with no source JSON.
@@ -7374,7 +7374,7 @@ and repeats births, copies and both Rally phase kinds in 32 isolated branches.
 Complete policies are also recomputed from initial and actual mid-battle states
 in 16 parallel branches.
 
-The curated archive is `tests/fixtures/full-battle-multi-summon.mt2f`, a direct
+The curated archive is `tests/fixtures/combat/spawn/full-battle-multi-summon.mt2f`, a direct
 binary capture with no JSON provenance: 24,180 bytes, 3,792 unique graph nodes,
 SHA-256 `7814b455c3298c84ebe57712c8e6d7c1c6477ba8a7304b695640a8847417f7c6`.
 The muted Instant native run took 55.84 seconds, completed 15 card plays and five
@@ -7382,7 +7382,7 @@ EndTurns, and won at Pyre 80. Capture failures, differences, unsupported stages
 and pending work are zero; original profile signatures are unchanged.
 
 The second direct binary archive is
-`tests/fixtures/full-battle-multi-summon-zero.mt2f`: 24,643 bytes, 3,842 unique
+`tests/fixtures/combat/spawn/full-battle-multi-summon-zero.mt2f`: 24,643 bytes, 3,842 unique
 nodes, SHA-256 `1320a8647847ad4f000c53831f14824d2fcc9f9bd6f4d231f81ff9e386cdbddb`.
 It contains eleven complete births, six detached copies, ten paid phases and
 28 Rally dispatches, including the separate zero-count operation. Its muted
@@ -8349,7 +8349,7 @@ than inferred. Trigger capture reads the active primary/preview once flag;
 the scenario includes once-only re-spawn triggers and verifies their restored
 primary flags.
 
-`tests/fixtures/full-battle-horde-merge.mt2f` records 17 native API operations,
+`tests/fixtures/combat/units/full-battle-horde-merge.mt2f` records 17 native API operations,
 including four temporary previews, and five manager-order selections. It
 covers both teams, different definitions, self/cross-team/null/non-Horde/immunity
 boundaries, a removed actor still present in the Rally queue, both equipment
@@ -9026,7 +9026,7 @@ states; 16 branches agree and preserve parents. Physical-position checks cover
 teams, multiple bound sources, preview removals/preparations, retained destroyed
 targets and drained status children.
 
-`tests/fixtures/full-battle-persistent-enchantment.mt2f` is the byte-identical
+`tests/fixtures/combat/core/full-battle-persistent-enchantment.mt2f` is the byte-identical
 native binary: 26,528 bytes, 4,444 unique nodes, no text source or JSON companion.
 Its SHA-256 is recorded in manifest.tsv. Inventory is now 155 archives: 142 battles
 and thirteen calibrations.
@@ -10299,7 +10299,7 @@ captures remain rejected; arbitrary original-frame scheduling is still unverifie
 ### Accepted binary ability-Incant battle
 
 The fully verified second settled recording is byte-identically curated as
-tests/fixtures/full-battle-ability-incant.mt2f:55,375 bytes,9,329 unique nodes,
+tests/fixtures/combat/status/full-battle-ability-incant.mt2f:55,375 bytes,9,329 unique nodes,
 SHA256f36e097a8f59346c647d2e9d0163c6391d088025839d640c5980a9cee527e3e4.
 The native-source manifest records its complete archive identity; no JSON input
 or results directory becomes a regression dependency. The previous manifest
@@ -10434,7 +10434,7 @@ a complete regression of the extended model against the full required inventory.
 ### Accepted original Incant relic archive
 
 The verified schema108 recording is byte-identically curated as
-tests/fixtures/full-battle-incant-relic.mt2f:66,810 bytes,10,132 unique nodes,
+tests/fixtures/relics/modifiers/full-battle-incant-relic.mt2f:66,810 bytes,10,132 unique nodes,
 SHA25688de4749ce5cac84ed296ffd8240b5052f89178df4d3649f08037db5d702b83e.
 Its native-source manifest row is appended while retaining every previous manifest
 byte and row order. No diagnostic JSON or results output becomes a dependency.
@@ -10489,7 +10489,7 @@ requirements; the new label adds its explicit three-artifact/spawn/death require
 ### Accepted combined trigger-count relic archive
 
 The fully verified combined recording is byte-identically curated as
-tests/fixtures/full-battle-incant-relics-combined.mt2f:67,012 bytes,10,189 unique
+tests/fixtures/relics/modifiers/full-battle-incant-relics-combined.mt2f:67,012 bytes,10,189 unique
 nodes,SHA2566820bcf4a39c3b7219fbcb29e04f93d67f7d0346dc45ccb43ba889306273adcc.
 The native-source manifest row is appended with all previous bytes/order intact.
 The required inventory is now184 binary archives:160 accepted complete battles
@@ -10574,7 +10574,7 @@ a full regression of this extended model remains required.
 ### Accepted original spawn-status relic archive
 
 The final schema109 recording is byte-identically curated as
-tests/fixtures/full-battle-spawn-status-relics.mt2f:38,483 bytes,6,061 unique nodes,
+tests/fixtures/relics/modifiers/full-battle-spawn-status-relics.mt2f:38,483 bytes,6,061 unique nodes,
 SHA2562147f6871cc015f027269e18cdf23a3ba1e0c943394723e897d50b68ae73e499.
 The native-source manifest row is appended without changing any previous byte
 or row order. No JSON or generated results output is introduced as a dependency.
@@ -10663,7 +10663,7 @@ arbitrary original-frame scheduling still need native acceptance.
 ### Accepted original relic clone-combination archive
 
 The final repeat native recording is curated as
-tests/fixtures/full-battle-spawn-status-relics-clones.mt2f:64,176 bytes,9,277 unique
+tests/fixtures/relics/modifiers/full-battle-spawn-status-relics-clones.mt2f:64,176 bytes,9,277 unique
 nodes,SHA256da7c454f4a27af6ce356384867bfeacc5a014a2f44585bf042837cc3c38190a6.
 The manifest row is appended with every preceding byte and row order preserved.
 The curated inventory is now186 binary archives:162 accepted complete battles
@@ -10779,7 +10779,7 @@ battle simulator; the complete186 baseline precedes this independent component.
 ### Accepted original card-upgrade mask calibration archive
 
 The verified native schema2 capture is byte-identically curated as
-tests/fixtures/card-upgrade-mask-calibration.mt2f, with34,127 bytes,3,087 nodes and
+tests/fixtures/cards/upgrades/card-upgrade-mask-calibration.mt2f, with34,127 bytes,3,087 nodes and
 SHA256f0b892649780b816168e4d244a0dbcdb3f70050d54b4d5ac5b9bace876f301b3.
 Its native-source manifest row is appended while preserving all previous bytes
 and row order. The curated script and manifest now contain187 archives:162
@@ -10835,7 +10835,7 @@ room, Boss and card/effect coverage. The entire battle objective remains open.
 ### Accepted native card-modifier overflow archive
 
 The verified native capture is byte-identically curated as
-tests/fixtures/card-modifier-overflow-calibration.mt2f:9,282 bytes,2,949 nodes,
+tests/fixtures/combat/core/card-modifier-overflow-calibration.mt2f:9,282 bytes,2,949 nodes,
 SHA256ebe5a4c9e54232661ab4247a2748ef17478ee90ba357983818b3ace1e0e8bbd5.
 Its native-source manifest row is appended while retaining all prior bytes/order.
 The required inventory is now188 binary archives:162 accepted complete battles
@@ -11288,7 +11288,7 @@ relic/card combinations and the decision solver remain unfinished.
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --titan-skin-pure
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -TitanSkinCombat
-dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-titan-skin.mt2f
+dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/combat/core/full-battle-titan-skin.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-titan-skin.mt2f
 ```
@@ -11362,7 +11362,7 @@ broader card/relic interactions and the decision solver remain unfinished.
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-card-play-magic-power-pure
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCardPlayMagicPower
-dotnet run --project src/ModelChecks -c Release -- --original-card-play-magic-power-only tests/fixtures/full-battle-original-card-play-magic-power.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-play-magic-power-only tests/fixtures/relics/triggers/full-battle-original-card-play-magic-power.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-play-magic-power.mt2f
 ```
 
@@ -11390,7 +11390,7 @@ triggers and room-ability payloads remain rejected. Full-inventory replay,
 broader relic/card interaction coverage and the decision solver remain open.
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-replacement-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/relics/modifiers/full-battle-relic-card-replacement-upgrades.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-replacement-upgrades.mt2f
 ```
 
@@ -11463,7 +11463,7 @@ inventory replay remains deferred.
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-unit-upgrade-trigger-relic.mt2f
 dotnet run --project src/ModelChecks -c Release -- --relic-unit-upgrade-triggers-pure
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-unit-upgrade-trigger-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/relics/modifiers/full-battle-original-unit-upgrade-trigger-relic.mt2f
 ```
 
 ### Relic-granted Ephemeral routing
@@ -11484,8 +11484,8 @@ JSON companion. The curated inventory is now 249 archives: 218 full battles and
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-ephemeral-upgrades.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-cycle-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/relics/modifiers/full-battle-relic-card-ephemeral-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-cycle-only tests/fixtures/relics/modifiers/full-battle-relic-card-ephemeral-upgrades.mt2f
 ```
 
 ### Random recursion with a temporary upgrade
@@ -11572,16 +11572,16 @@ pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursi
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-choice.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-filter-choice.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-replacement-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-filter-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-replacement-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-filter-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-replacement-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-replacement-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-replacement-choice.mt2f
 ```
 
 ### Discard recursion to hand (schema 154)
@@ -11606,8 +11606,8 @@ component calibrations.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-discard-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-discard-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-discard-only tests/fixtures/cards/draw/full-battle-card-recursion-discard-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-discard-choice.mt2f
 ```
 
 ### TunedGear Burst relic (schema 155)
@@ -11627,8 +11627,8 @@ and 31 component calibrations. Original relic evidence is 75/224 (33.48%).
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-tuned-gear.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/relics/modifiers/full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/modifiers/full-battle-spawn-status-relics-tuned-gear.mt2f
 ```
 
 ### AddStatsToSoloUnits relic (schema 183)
@@ -11659,8 +11659,8 @@ variants or external upgrade effects remain unsupported.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalSoloUnitUpgradeRelic -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-add-stats-to-solo-units.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-solo-unit-upgrade-only tests/fixtures/full-battle-original-add-stats-to-solo-units.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-add-stats-to-solo-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-solo-unit-upgrade-only tests/fixtures/cards/originals/full-battle-original-add-stats-to-solo-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-add-stats-to-solo-units.mt2f
 ```
 
 ### UpgradeMaxHpFrontUnit relic (schema 207)
@@ -11685,8 +11685,8 @@ companion is tracked.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalFrontRoomHealthUpgradeRelic -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-front-room-health-upgrade.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-front-room-health-upgrade-only tests/fixtures/full-battle-original-front-room-health-upgrade.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-front-room-health-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-front-room-health-upgrade-only tests/fixtures/combat/rooms/full-battle-original-front-room-health-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/rooms/full-battle-original-front-room-health-upgrade.mt2f
 ```
 
 ### Original support units and typed draws
@@ -11721,7 +11721,7 @@ state, RNG and frame remained unchanged.
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -CardCatalog -SkipBuild
 pwsh -NoProfile -File .probe-runs/Compare-CardCatalogs.ps1 -NewCatalog .probe-runs/full-battle-no-cards-20261019-080544-5c85bf11/card-catalog.mt2f
 pwsh -NoProfile -File scripts/Get-CardCoverageInventory.ps1
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-support-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/spells/full-battle-original-support-units.mt2f
 dotnet run --project src/ModelChecks -c Release -- --triggered-typed-draw-pure
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-support-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/spells/full-battle-original-support-units.mt2f
 ```

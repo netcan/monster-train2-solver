@@ -6,8 +6,9 @@ $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
 $directory = Join-Path $workspace 'tests/fixtures'
 $manifest = @(Import-Csv -LiteralPath (Join-Path $directory 'manifest.tsv') -Delimiter "`t")
-if (@($manifest.archive | Select-Object -Unique).Count -ne $manifest.Count) {
-    throw 'Duplicate fixture manifest rows.'
+if (@($manifest.archive | Select-Object -Unique).Count -ne $manifest.Count -or
+    @($manifest.path | Select-Object -Unique).Count -ne $manifest.Count) {
+    throw 'Duplicate fixture manifest names or paths.'
 }
 $tokens = $null; $errors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile(
@@ -27,14 +28,24 @@ if ($registered.Count -ne $manifest.Count -or
     @($registered | Where-Object { $_ -notin $manifest.archive }).Count) {
     throw 'Fixture manifest and curated registrations differ or contain duplicates.'
 }
+$expectedPaths = @{}
 foreach ($row in $manifest) {
-    $path = Join-Path $directory $row.archive
+    if (-not $row.path -or $row.path.Contains('\') -or
+        @($row.path.Split('/') | Where-Object { $_ -in @('', '.', '..') }).Count -or
+        [IO.Path]::IsPathRooted($row.path) -or (Split-Path $row.path -Leaf) -cne $row.archive) {
+        throw "Invalid fixture relative path: $($row.archive)"
+    }
+    $path = [IO.Path]::GetFullPath((Join-Path $directory $row.path))
+    if (-not $path.StartsWith($directory + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Fixture path escapes its root: $($row.archive)"
+    }
+    $expectedPaths[$path] = $true
     if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or
         (Get-Item -LiteralPath $path).Length -ne [long]$row.archive_bytes -or
         (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $row.archive_sha256) {
         throw "Fixture bytes/hash mismatch: $($row.archive)"
     }
 }
-if (@(Get-ChildItem -LiteralPath $directory -File -Filter '*.mt2f' |
-    Where-Object Name -NotIn $manifest.archive).Count) { throw 'Unregistered fixture archives.' }
+if (@(Get-ChildItem -LiteralPath $directory -Recurse -File -Filter '*.mt2f' |
+    Where-Object { -not $expectedPaths.ContainsKey($_.FullName) }).Count) { throw 'Unregistered fixture archive locations.' }
 Write-Output "FIXTURE-CATALOG PASS: $($manifest.Count) archive hashes/registrations; no battle simulations."

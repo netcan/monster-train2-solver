@@ -5,6 +5,7 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = Split-Path $PSScriptRoot -Parent
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
@@ -13,7 +14,7 @@ if (-not $SkipBuild) {
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
 $manifest = @(Import-Csv -LiteralPath (Join-Path $workspace 'tests/fixtures/manifest.tsv') -Delimiter "`t")
 function Get-Archive([string] $Name) {
-    $path = Join-Path $workspace "tests/fixtures/$Name"
+    $path = Get-TestFixturePath "$Name"
     $rows = @($manifest | Where-Object archive -CEQ $Name)
     if ($rows.Count -ne 1 -or -not (Test-Path -LiteralPath $path) -or
         (Get-Item -LiteralPath $path).Length -ne [long]$rows[0].archive_bytes -or

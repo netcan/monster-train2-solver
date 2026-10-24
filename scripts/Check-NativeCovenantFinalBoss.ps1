@@ -7,6 +7,7 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 if ($Rank.Count -eq 0) { $Rank = @(2, 10) }
 $workspace = Split-Path $PSScriptRoot -Parent
 if (-not $SkipBuild) {
@@ -22,7 +23,7 @@ foreach ($level in $Rank) {
     } else {
         @("full-battle-native-covenant-final-boss-$suffix.mt2f", "true-final-boss-scheduled-native-covenant-$suffix.mt2f")
     }
-    $paths = @($names | ForEach-Object { Join-Path $workspace "tests/fixtures/$_" })
+    $paths = @($names | ForEach-Object { Get-TestFixturePath "$_" })
     foreach ($path in $paths) {
         $rows = @($manifest | Where-Object archive -CEQ ([IO.Path]::GetFileName($path)))
         if ($rows.Count -ne 1 -or -not (Test-Path -LiteralPath $path -PathType Leaf) -or

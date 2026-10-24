@@ -11,6 +11,7 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = Split-Path $PSScriptRoot -Parent
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
@@ -34,7 +35,7 @@ foreach ($boss in $Variant) {
         if ($StartingRank -eq 10 -and $Player -and $boss -eq 'AllyBuffer') {
             $names += 'full-battle-chosen-incant-attack.mt2f'
         }
-        $paths = @($names | ForEach-Object { Join-Path $workspace "tests/fixtures/$_" })
+        $paths = @($names | ForEach-Object { Get-TestFixturePath "$_" })
         foreach ($path in $paths) {
             $rows = @($manifest | Where-Object archive -CEQ ([IO.Path]::GetFileName($path)))
             if ($rows.Count -ne 1 -or -not (Test-Path -LiteralPath $path -PathType Leaf) -or

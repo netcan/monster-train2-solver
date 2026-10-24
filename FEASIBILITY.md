@@ -5,7 +5,7 @@ Fixed native regression inputs live in `tests/fixtures/` and are read by
 investigation logs, catalogs and benchmarks; that output directory is ignored.
 
 The original feasibility experiment is described below. Current implementation
-status is in [SIMULATION.md](SIMULATION.md); the [live battle advisor](tests/fixtures/live-advisor.md)
+status is in [SIMULATION.md](SIMULATION.md); the [live battle advisor](tests/fixtures/notes/advisor/live-advisor.md)
 now provides an isolated interactive overlay backed by bounded model planning.
 The historical probe
 plugin lives in `src/Probe`, the copied game is in `.sandbox-game`, isolated

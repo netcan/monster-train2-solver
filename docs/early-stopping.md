@@ -33,9 +33,9 @@ search worker. Verified continuations preserve early-stop provenance.
 ```powershell
 dotnet build src/ModelChecks/ModelChecks.csproj -c Release --no-restore
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --early-stop-only `
-  tests/fixtures/full-battle-player-conduit-search.mt2f `
-  tests/fixtures/full-battle-train-heal.mt2f `
-  tests/fixtures/full-battle-player-cross-turn-scroll-search.mt2f
+  tests/fixtures/advisor/presentation/full-battle-player-conduit-search.mt2f `
+  tests/fixtures/combat/core/full-battle-train-heal.mt2f `
+  tests/fixtures/advisor/continuations/full-battle-player-cross-turn-scroll-search.mt2f
 ```
 
 The native winning control reaches the same 80-HP score with 3 expanded nodes
@@ -76,7 +76,7 @@ simulation.
   -PlannerTurn 4 -PlannerWholeBattle -PlannerSearchWorkers 2 -SkipBuild `
   -TimeoutSeconds 300
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --early-stop-native-only `
-  tests/fixtures/full-battle-player-early-stop-search.mt2f
+  tests/fixtures/advisor/presentation/full-battle-player-early-stop-search.mt2f
 ```
 
 Two earlier complete player runs with bottom/middle deployment

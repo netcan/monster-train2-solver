@@ -59,7 +59,7 @@ provide the deterministic work comparison. No general speedup or optimality
 claim follows from a single opening.
 
 ```powershell
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --search-pruning-only tests/fixtures/player-live-empty-deployment-advice.mt2f tests/fixtures/advisor-ordinary-budget-failure.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --search-pruning-only tests/fixtures/advisor/live/player-live-empty-deployment-advice.mt2f tests/fixtures/planning/search/advisor-ordinary-budget-failure.mt2f
 ```
 
 The same sources were also compiled into an isolated assembly and searched

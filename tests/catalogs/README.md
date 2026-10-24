@@ -18,7 +18,7 @@ identify runtime work; catalog presence alone does not enable a new player route
 
 `scripts/Get-BossCoverageInventory.ps1` compares all fifteen ordinary base-game
 Ring3/6/8 scenarios against the current model identity gate and curated native
-battle/player-pair metadata. It generates `tests/fixtures/boss-coverage.md` and
+battle/player-pair metadata. It generates `tests/fixtures/inventory/boss-coverage.md` and
 `boss-inventory.tsv`; `-Check -SkipBuild` verifies their freshness without native
 games or a battle regression. Other boss systems keep separate denominators.
 

@@ -9,11 +9,11 @@ try {
         dotnet build src/ModelChecks/ModelChecks.csproj -c Release --no-restore -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Advice check build failed.' }
     }
-    dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --battle-advice-only tests/fixtures/full-battle-planner-starter-search.mt2f
+    dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --battle-advice-only tests/fixtures/planning/search/full-battle-planner-starter-search.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Advice session check failed.' }
-    dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --floor-browse-advice-only tests/fixtures/full-battle-player-boss-search.mt2f
+    dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --floor-browse-advice-only tests/fixtures/advisor/presentation/full-battle-player-boss-search.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Floor-browsing advice reuse check failed.' }
-    $cases = @(Get-ChildItem tests/fixtures -Filter 'full-battle-advisor-*-search.mt2f')
+    $cases = @(Get-ChildItem tests/fixtures -Recurse -File -Filter 'full-battle-advisor-*-search.mt2f')
     if ($cases.Count -ne 3) { throw 'Expected three curated natural advisor cases.' }
     foreach ($case in $cases) {
         $replay = Join-Path $case.DirectoryName ($case.Name -replace '-search\.mt2f$', '-replay.mt2f')

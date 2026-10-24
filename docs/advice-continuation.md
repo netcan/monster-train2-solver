@@ -79,5 +79,5 @@ The complete pair is curated and registered as
 `full-battle-player-cross-turn-scroll-{search,replay}.mt2f`.
 
 ```powershell
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --player-ordinary-advice-pair-only tests/fixtures/full-battle-player-cross-turn-scroll-search.mt2f tests/fixtures/full-battle-player-cross-turn-scroll-replay.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --player-ordinary-advice-pair-only tests/fixtures/advisor/continuations/full-battle-player-cross-turn-scroll-search.mt2f tests/fixtures/advisor/continuations/full-battle-player-cross-turn-scroll-replay.mt2f
 ```

@@ -7,6 +7,7 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = Split-Path $PSScriptRoot -Parent
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
@@ -20,7 +21,7 @@ foreach ($level in $Rank) {
         'full-battle-player-native-covenant-startup' + $(if ($level -eq 1) { '' } else { "-$suffix" })
     } else { "full-battle-native-covenant-startup-$suffix" }
     $names = if ($Player) { @("$prefix-search.mt2f", "$prefix-replay.mt2f") } else { @("$prefix.mt2f") }
-    $paths = @($names | ForEach-Object { Join-Path $workspace "tests/fixtures/$_" })
+    $paths = @($names | ForEach-Object { Get-TestFixturePath "$_" })
     foreach ($path in $paths) {
         $rows = @($manifest | Where-Object archive -CEQ ([IO.Path]::GetFileName($path)))
         if ($rows.Count -ne 1 -or -not (Test-Path -LiteralPath $path -PathType Leaf) -or

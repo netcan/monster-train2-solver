@@ -1,51 +1,76 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-24): 1305 archives,
+Current manifest inventory (2026-10-24): 1365 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
+
+## Directory layout
+
+Archives are grouped by feature under `advisor/`, `bosses/`, `campaign/`,
+`cards/`, `combat/`, `planning/` and `relics/`. Each family has subdirectories;
+search, replay and policy witnesses retain their original filenames.
+
+- [Notes](notes/) contains acceptance descriptions grouped by subject.
+- [Inventory](inventory/) contains coverage reports and TSV evidence indexes.
+- [Evidence](evidence/) contains captured acceptance JSON and the panel image.
+- [Saves](saves/campaign/) contains native campaign checkpoint ZIPs.
+- [Manifest](manifest.tsv) maps each stable archive name to its relative `path`,
+  byte count, SHA-256 and provenance. It is the source of file locations.
+
+Focused checks still accept archive names, for example:
+
+```powershell
+./scripts/Check-Models.ps1 -Fixture full-battle-player-live-arkion-pyre.mt2f -SkipBuild
+./scripts/Check-FixtureCatalog.ps1
+```
+
+New archives belong in the matching feature subdirectory. Add a manifest row
+with `path` relative to this directory and register the unchanged archive name
+in `scripts/Check-Models.ps1`. Tooling resolves cross-directory pairs through
+the manifest; do not duplicate archives or add root-level copies.
 
 The natural Fragile checkpoint now has actual-default three-turn/3000ms player
 and independent native replay victories, both at Pyre2 after 54 inputs, followed
 by original eight-battle Standard settlement. Its configured top preference is
 unchanged; opening-floor selection adapts within the shared budget. See
-[adaptive deployment acceptance](adaptive-deployment.md).
+[adaptive deployment acceptance](notes/advisor/adaptive-deployment.md).
 
 All three original Cael variants now have native rank-two birth and complete
 no-card battle calibrations, including positive original enemy upgrades and
 sixteen immutable full chains each. Exact original encounter selection retains
 the five preceding victories, original assets and route RNG. All three also
 have actual-player source/fresh native replay pairs; those bounded player
-routes lose. See [Cael evidence](cael.md).
+routes lose. See [Cael evidence](notes/bosses/cael.md).
 
 Arkion's original Pyre-damage variant also passes its rank-two birth, positive
 remote damage and complete no-card battle with sixteen immutable full chains.
 The random-room controller retains exact native state/RNG. All three Angel Duo
 variants now have accepted actual player advice/fresh replay pairs. See
-[Arkion evidence](arkion.md) and [Angel Duo variants](angel-duo-variants.md).
+[Arkion evidence](notes/bosses/arkion.md) and [Angel Duo variants](notes/bosses/angel-duo-variants.md).
 
 Native cumulative Covenant 2/10 also pass original true-final-boss birth and
 complete no-card battles, with exact full state/RNG and zero native failures.
 These retain native startup and disclose the isolated unlock/map jump.
 Rank ten's actual player advice and independent replay also match all twenty
 inputs, UI and complete forecasts/state/RNG; both lose with zero failures.
-See [cumulative final-boss evidence](native-covenant-final-bosses.md).
+See [cumulative final-boss evidence](notes/bosses/native-covenant-final-bosses.md).
 
 Native ranks six/seven/eight's actual player advice and independent replays
 also win with Pyre42/32/28 after thirty-three inputs, matching UI and all
 complete forecasts/state/RNG with zero failures. See
-[startup evidence](native-covenant-startup.md).
+[startup evidence](notes/campaign/native-covenant-startup.md).
 
 The original chosen cleric's tower Incant now passes six actual native spell
 casts, thirty-six remote attack buffs and boss exclusion, including searchable
-successors and immutable branches. See [chosen Incant](chosen-incant-attack.md).
+successors and immutable branches. See [chosen Incant](notes/combat/chosen-incant-attack.md).
 The repaired rank-ten AllyBuffer also passes actual player advice and fresh
 frozen replay for all nineteen inputs, UI and full forecasts/state/RNG, with
-zero failures. See [cumulative outer bosses](native-covenant-outer-bosses.md).
+zero failures. See [cumulative outer bosses](notes/bosses/native-covenant-outer-bosses.md).
 
 Native Covenant 1 run initialization now has a complete first-battle control:
 normal run-setup callback/starting conditions, original startup purge/add
 effects exactly once, 20 starting cards and a seven-turn no-cards victory
-with Pyre10. See [native Covenant startup](native-covenant-startup.md).
+with Pyre10. See [native Covenant startup](notes/campaign/native-covenant-startup.md).
 Actual advice/UI and independent frozen native replay also pass this native
 20-card startup: 31 inputs each, 33 source publications, two complete wins
 with Pyre56, exact full forecasts/state/RNG and zero native failure counters.
@@ -60,7 +85,7 @@ with Pyre8; its exact original merchant-only signature has no combat hooks.
 Original Ring8 bosses now have complete native Covenant 01 and 00+01 birth
 and no-cards controls: six full battles, raw creation followed by the native
 +1000/+3000 HP adjustment, exact state/RNG and sixteen immutable chains each.
-See [Covenant outer-boss evidence](covenant-outer-bosses.md).
+See [Covenant outer-boss evidence](notes/bosses/covenant-outer-bosses.md).
 AllyBuffer also passes actual player advice/UI and fresh native replay in
 both contexts: 22 source inputs and 22 replay inputs, complete forecasts and
 state/RNG, with four zero native failure counters in every process.
@@ -78,7 +103,7 @@ and twelve native processes reporting four zero failure counters.
 
 Ordinary rank-one enemy birth stats now have native complete-battle controls
 for original 01 and 00+01: seven-turn victories with Pyre10, pure wave-stat
-projection and guarded spoofed origins. See [ordinary Covenant evidence](covenant-enemy-stats.md).
+projection and guarded spoofed origins. See [ordinary Covenant evidence](notes/campaign/covenant-enemy-stats.md).
 Both also pass actual player advice and fresh native frozen replay: 56 source
 inputs, 56 replay inputs, complete forecasts/state/RNG and two full victories
 with Pyre60/Pyre52, with zero native failure counters in all four processes.
@@ -86,10 +111,10 @@ with Pyre60/Pyre52, with zero native failure counters in all four processes.
 Single original Covenants 00/01/04/08 now have complete controlled Level9
 no-cards losses: exact native birth adjustments, ordinary waves, full turns,
 room/train stages and state/RNG pass with zero native failure counters.
-See [Covenant evidence](true-final-boss-covenant-birth.md).
+See [Covenant evidence](notes/bosses/true-final-boss-covenant-birth.md).
 All fifteen nonempty subsets of these four definitions now have exact native
 birth evidence. The four-way combination also has a complete native loss;
-see [combination evidence](true-final-boss-covenant-combinations.md).
+see [combination evidence](notes/bosses/true-final-boss-covenant-combinations.md).
 Its actual player advice and independent frozen replay also pass all seventeen
 inputs, complete forecasts and state/RNG, with zero native failure counters.
 Original 04 and the all-four combination also pass controlled relentless
@@ -101,13 +126,13 @@ one-energy payment and eighty independent immutable full chains.
 The actual player assembly also publishes and executes advice against all four
 single definitions: 39 inputs and corresponding fresh frozen native replays
 pass complete plans, state/RNG and zero native failure counters. These controlled
-full losses are documented in [player Covenant evidence](player-true-final-boss-covenants.md).
+full losses are documented in [player Covenant evidence](notes/bosses/player-true-final-boss-covenants.md).
 
 Natural Corrupter now has an actual-player winning source and independent
 fresh native replay: 57 plays/ten EndTurns, Pyre84, all four failure counters
 zero in both processes. The seed42 seven-win input, original full-health boss,
 acquired relics, every forecast and complete state/RNG remain checked. See
-[natural Corrupter player evidence](player-corrupter-winning.md).
+[natural Corrupter player evidence](notes/bosses/player-corrupter-winning.md).
 `campaign-completed-corrupter.zip` additionally retains the native eight-win
 Standard completion, hash-verified inherited winning replay and post-EndGame
 story observation; restore verifies all 33 payload files.
@@ -117,51 +142,51 @@ birth comparisons, pure native stat previews and 64 immutable branches each.
 The stronger-boss definition raises original health/attack without replacing
 the raw/Horde bases; three nonmatching controls retain baseline stats. This
 is a controlled birth boundary, with later combat and natural unlock still
-guarded. See [Covenant birth evidence](true-final-boss-covenant-birth.md).
+guarded. See [Covenant birth evidence](notes/bosses/true-final-boss-covenant-birth.md).
 
 The original trial-gold campaign relic now also works in actual player battle
 inputs. A natural seed42 Ring7 checkpoint, previously rejected before any
 advice, wins with fifty real player inputs and Pyre84; an independent fresh
 player replay wins with identical full state/RNG and four zero failure counters.
 The read-only native campaign input retains the actual seed and six preceding
-victory records. See [trial-gold player evidence](player-campaign-trial-gold.md).
+victory records. See [trial-gold player evidence](notes/campaign/player-campaign-trial-gold.md).
 
 `titanite-weakness-calibration.mt2f` adds 144 isolated native damage-stage
 controls. Titanite rounds damage before melee/spell weakness, followed by
 Titanskin and armor: a five-point non-piercing attack becomes six with one
 Titanite and one melee weakness. Shield, card/unit piercing, zero/even damage,
 immediate/deferred weakness consumption and immutable roots are checked.
-See [Titanite combinations](titanite-combinations.md).
+See [Titanite combinations](notes/combat/titanite-combinations.md).
 
 `true-final-boss-ordinary-ally-avenger.mt2f` calibrates the original 20/40
 Avenger OnHit callback against the original five linked bosses. Paid summons,
 six EndTurns, five native previews and sixteen immutable full chains match;
 all native failure counters are zero. Ten altered callback signatures,
 noncritical Valor and ordinary-combat terminal group death retain their guards. The added card
-is explicit and the route loses. See [Avenger evidence](true-final-boss-avenger.md).
+is explicit and the route loses. See [Avenger evidence](notes/bosses/true-final-boss-avenger.md).
 The separate actual player pair now executes nine inputs including the Avenger
 summon and three OnHit witnesses, with complete forecasts/state/RNG matching a
 fresh native replay. Both losses have four zero counters and normal exits.
 Measured response median/P95 is 5.18/5.57 seconds at three turns/3,000 ms;
-see [player OnHit evidence](player-true-final-boss-avenger.md).
+see [player OnHit evidence](notes/bosses/player-true-final-boss-avenger.md).
 Five `true-final-boss-triggered-paid-spell-*.mt2f` captures now separately
 calibrate paid plain-spell terminal cleanup with the original Avenger alive.
 All five original targets win with Avenger20/40 and Pyre80, zero native counters,
 and sixteen immutable summon/birth/HP-control/paid-victory chains per target.
 The explicit one-HP controls are retained; anonymous damage and ordinary combat
-remain guarded for this ally. See [terminal spell evidence](true-final-boss-avenger-terminal.md).
+remain guarded for this ally. See [terminal spell evidence](notes/bosses/true-final-boss-avenger-terminal.md).
 `true-final-boss-triggered-{command,pyre-command}.mt2f` separately calibrates
 paid Eagleheart and Pyreshot with Avenger alive at the same explicit one-HP
 boundary. Native full unit turns, internal kill previews, actor/victim, terminal
 state/RNG and sixteen immutable full chains per command match. Both wins have
 four zero counters and normal exits. Healthy Valor, six Valor and ordinary
-combat counterexamples stay guarded. See [command evidence](true-final-boss-avenger-commands.md).
+combat counterexamples stay guarded. See [command evidence](notes/bosses/true-final-boss-avenger-commands.md).
 
 `boss-preview-sweep-calibration.mt2f` retains a native Fragile diagnostic win
 with three historical intermediate mismatches. Its focused checker recomputes
 all 86 room stages and 17 train phases after correcting held temporary sweep
 callbacks and physical death removal. The preserved failed capture does not
-grant winning-player acceptance. See [preview queue evidence](boss-preview-sweep.md).
+grant winning-player acceptance. See [preview queue evidence](notes/bosses/boss-preview-sweep.md).
 
 `true-final-boss-commanded-attack.mt2f` adds the original paid Eagleheart
 command: move the original small Steward to the front, apply five Valor,
@@ -169,7 +194,7 @@ attack the bottom outer body while bypassing dormant Savagery, then remove
 the five linked bosses. Native unit-turn state/RNG and sixteen independent
 summon/birth/draw/HP-control/command chains match. The initial deck additions,
 draw ordering and owner HP controls are explicit; this is a controlled win.
-See [true-final-boss evidence](true-final-boss.md). The focused `PaidSpell`
+See [true-final-boss evidence](notes/bosses/true-final-boss.md). The focused `PaidSpell`
 case includes this command alongside its ten paid damage-spell fixtures.
 `true-final-boss-pyre-command.mt2f` adds the original three-cost Pyreshot:
 the Pyre attacks the bottom outer body, stays on floor three with 80 HP,
@@ -188,13 +213,13 @@ same catalog check. Use focused fixture/player cases for behavioral changes.
 and Consume copies generated after the original Flicker kills a native boss.
 All four controlled battles win at Pyre80 with three plays/four EndTurns;
 seven frozen inputs, terminal card identities/piles/statistics, complete RNG
-and sixteen immutable full chains match. See [copy on play](copy-on-play.md).
+and sixteen immutable full chains match. See [copy on play](notes/cards/copy-on-play.md).
 
 The opposing moon callback pair `full-battle-eclipse-chamber-enemy-callbacks{,-replay}.mt2f`
 verifies 13 plays/five EndTurns and Pyre80 in two fresh native processes.
 It fixes missing off-train enemy birth callbacks and covers four paid original
 up/down movements with New upgrade removal/reapplication, complete state/RNG
-and sixteen immutable full chains. See [room moon callbacks](room-moon-callbacks.md).
+and sixteen immutable full chains. See [room moon callbacks](notes/combat/room-moon-callbacks.md).
 The actual player pair `full-battle-player-room-moon-enemy-{search,replay}.mt2f`
 also wins with Pyre80 in 30 decisions and validates opposing birth/global phase
 callbacks, all live publications and complete frozen forecasts/state/RNG.
@@ -202,7 +227,7 @@ It does not exercise player-published Bumps on the opposing callback carrier.
 `conduit-enemy-movement-calibration.mt2f` adds 38 opposing physical movement
 boundaries and three native preview controls. Full contexts/private trackers,
 ordinary/stronger hand upgrades, points, RNG and eight immutable branches match.
-See [Conduit movement](conduit-movement.md).
+See [Conduit movement](notes/combat/conduit-movement.md).
 `full-battle-eclipse-chamber-enemy-conduit{,-replay}.mt2f` composes opposing
 Conduit, Full/New callbacks and four paid original Bumps through victory at
 Pyre80. Eighteen frozen inputs, sixteen full model branches and four actual
@@ -216,7 +241,7 @@ forecasts and complete state/RNG match in independent native processes.
 and opposing Conduit simultaneously upgrading the same hand cards, then four
 paid opposing Bumps clearing only their own tracking. Both independent native
 processes win at Pyre80; eighteen frozen inputs and sixteen immutable model
-chains match. See [Conduit movement](conduit-movement.md).
+chains match. See [Conduit movement](notes/combat/conduit-movement.md).
 `full-battle-player-mixed-conduit-{search,replay}.mt2f` adds actual player
 publications and independent frozen forecasts through 34 decisions, winning
 at Pyre80 in both processes. Eight shared-card snapshot witnesses retain
@@ -228,7 +253,7 @@ traits, forty active-state changes and complete hand/private-state/RNG match
 eight immutable branches per boundary. The paid pair
 `full-battle-original-moon-card-upgrades-room-mask{,-replay}.mt2f` also wins
 at Pyre80 with sixteen plays/five EndTurns, twenty-one frozen inputs and
-sixteen immutable full model chains. See [room spell upgrades](room-moon-spell-upgrades.md).
+sixteen immutable full model chains. See [room spell upgrades](notes/cards/room-moon-spell-upgrades.md).
 `player-moon-room-turn-calibration.mt2f` retains a failed real player run's
 first EndTurn and queued native hand callback. Complete state/RNG and sixteen
 immutable branches validate the fix for retained Gravity after enemy focus
@@ -256,7 +281,7 @@ All three are losses and do not establish Fragile winning-player acceptance.
 the real player entry on the same natural checkpoint: 44 plays/nine EndTurns,
 53 exact inputs and full forecasts/RNG, both boss phases and six shorter verified
 windows under a three-turn/three-second tactical budget. Both processes lose;
-see [bounded Fragile evidence](player-fragile-bounded.md).
+see [bounded Fragile evidence](notes/bosses/player-fragile-bounded.md).
 
 `full-battle-player-boss-fragile-{search,replay}.mt2f` now establishes the natural
 winning player pair: 45 plays/nine EndTurns, all 54 inputs and complete forecasts,
@@ -264,7 +289,7 @@ state and RNG match, both win at Pyre2 with all four native failure counters zer
 The actual player searches once, then retains 53 verified winning suffixes.
 This uses twelve-turn/30-second tactical advice; the first consumed response is
 51.09 seconds and retained response median/P95 is 2.38/3.96 seconds. Both
-processes exit normally with protected files unchanged. See [winning evidence](player-fragile-winning.md).
+processes exit normally with protected files unchanged. See [winning evidence](notes/bosses/player-fragile-winning.md).
 
 The ordinary Corrupter now has original birth, casting, corruption multiplication,
 24-input fresh replay and separate controlled Relentless/floor/Pyre evidence.
@@ -272,16 +297,16 @@ Its casting pair loses with four zero counters. The controlled route retains its
 explicit queue/Pyre mutation and expected one mismatch; it is not a natural win.
 The actual player entry separately passes 24 bounded publications/inputs and
 independent fresh replay of its complete native loss, with UI checks and four
-zero counters. See [Corrupter calibration](outer-boss-corrupter.md) and
-[player evidence](player-corrupter-bounded.md).
-See [outer-boss validation](outer-boss-variants.md).
+zero counters. See [Corrupter calibration](notes/bosses/outer-boss-corrupter.md) and
+[player evidence](notes/bosses/player-corrupter-bounded.md).
+See [outer-boss validation](notes/bosses/outer-boss-variants.md).
 
 The three Level8 Titan Trials now add 21 native archives: original sin/substituted
 birth, strengthened callbacks, 66 independently replayed casting inputs and
 separate controlled Relentless/floor/Pyre routes. The actual player pairs add
 53 exact inputs and full forecasts/RNG, zero counters and UI checks. All three
-bounded pairs lose. See [Trial evidence](outer-boss-trials.md) and
-[player acceptance](player-trials-bounded.md).
+bounded pairs lose. See [Trial evidence](notes/bosses/outer-boss-trials.md) and
+[player acceptance](notes/advisor/player-trials-bounded.md).
 
 `full-battle-natural-ring7-tactical-win.mt2f` verifies a natural Rax victory:
 57 plays/ten EndTurns and Pyre46, with all frozen inputs and full state/RNG
@@ -293,18 +318,18 @@ the independent frozen replay exits normally and preserves protected originals.
 The source captures the whole native victory and `DEPTH-PASS`, then hits its
 outer runner's exit deadline; its final protected-file comparison is unverified.
 The exact natural input is retained in `campaign-progressed-ring7-tactical.zip`.
-See [Ring7 tactics and acceptance limits](natural-ring7-tactics.md).
+See [Ring7 tactics and acceptance limits](notes/campaign/natural-ring7-tactics.md).
 
 `full-battle-train-heal-per-ember-x.mt2f` verifies original Vent carriers with
 the original per-ember healing upgrade. With +2 X modifiers, paid3/0 still
 heals3/0. The complete native victory has 20 plays/seven EndTurns and Pyre75;
 58 room stages and sixteen independent full state/RNG branches match.
-See [cost-based healing](retired-auras-and-ember-healing.md).
+See [cost-based healing](notes/combat/retired-auras-and-ember-healing.md).
 
 `full-battle-copy-on-play.mt2f` calibrates original CreateSpellCopyWithPurge
 on plain and ChaosScepter Consume carriers: three actual copies and three
 played-copy purges, 27 plays/seven EndTurns, Pyre80 victory and sixteen exact
-immutable branches. See [copy-on-play scope](copy-on-play.md).
+immutable branches. See [copy-on-play scope](notes/cards/copy-on-play.md).
 
 `full-battle-natural-ring7-copy-on-play.mt2f` combines the natural event graft,
 Titanite/Endless, Consume/copy and two spell-triggered Pyre heals. All 40 plays,
@@ -317,7 +342,7 @@ covered; tactical status targeting has separate positive/negative controls.
 The natural event-graft player pair validates 47 inputs through victory with
 Pyre15 in two independent native processes. All forecasts, full states and RNG
 match; 46 later publications retain the verified winning continuation. See
-[event graft acceptance](event-grafted-equipment.md).
+[event graft acceptance](notes/cards/event-grafted-equipment.md).
 
 `full-battle-retired-aura-card-kill.mt2f` retains a killed enchanter's binding
 through card actions, then observes native turn-end destruction with animation
@@ -326,7 +351,7 @@ immutable branches match. `full-battle-train-heal-per-ember.mt2f` calibrates the
 original upgrade with explicit carrier/cost/HP controls: raw costs 1,1,3,1,
 paid costs 1,0,2,0 and actual healing 1,1,3,0. The separate X-cost fixture above
 now covers original Vent; negative healing remains guarded.
-See [removal and healing scope](retired-auras-and-ember-healing.md).
+See [removal and healing scope](notes/combat/retired-auras-and-ember-healing.md).
 
 `full-battle-event-grafted-equipment.mt2f` covers naturally acquired
 Firebrand/MeatShield grafting, its temporary equipment trait, severing and
@@ -336,15 +361,15 @@ subsequent host rebirth. The unchanged native battle wins with 27 Pyre HP;
 `titanite-combinations-calibration.mt2f` adds 1,536 native shield/Titanskin/armor
 and piercing comparisons, including both shield insertion orders. Combined
 Titanite/Damage Shield requires captured order and at most sixteen active statuses.
-See [Titanite combinations](titanite-combinations.md).
+See [Titanite combinations](notes/combat/titanite-combinations.md).
 Other event graft pairs remain unverified; see
-[event graft scope](event-grafted-equipment.md).
+[event graft scope](notes/cards/event-grafted-equipment.md).
 
 `full-battle-outer-boss-fragile-no-cards.mt2f` and its three component archives
 calibrate original Fragile creation, initial placement, casting movement, enemy
 buff aura and remote Pyre damage. Four complete EndTurns match a native loss;
 all four failure counters are zero. This map-jump diagnostic does not establish
-a naturally progressed player victory. See [boss variant scope](outer-boss-variants.md).
+a naturally progressed player victory. See [boss variant scope](notes/bosses/outer-boss-variants.md).
 
 Three `outer-boss-fragile-{relentless-phase,pyre,pyre-turn}-calibration.mt2f`
 archives additionally cover eight phase boundaries, all three destroyed floors
@@ -369,7 +394,7 @@ callbacks. All complete states/RNG match: eleven moves, eight understanding
 changes, fifteen refreshes, seven global shifts and four attachment changes.
 Only the moved actor refreshes after Shift/Sentry; stale non-targets remain
 unchanged. Eight immutable branches per row and missing-mask/preview/unknown
-room-rule guards pass. See [scope and reproduction](room-moon-callbacks.md).
+room-rule guards pass. See [scope and reproduction](notes/combat/room-moon-callbacks.md).
 
 `room-moon-enemy-movement-calibration.mt2f` adds 39 complete native boundaries,
 with unchanged original Selene/Nightingale definitions created on both teams
@@ -384,7 +409,7 @@ ordinary enemy paid chain in independent native processes: thirteen plays,
 five EndTurns, four actual moon-mask moves by two original up/down pairs and
 Pyre80 victories. All eighteen frozen inputs, complete state/RNG and sixteen
 immutable model chains match. This retains the separate paid enemy callback
-and real player entry gates. See [details](room-moon-callbacks.md).
+and real player entry gates. See [details](notes/combat/room-moon-callbacks.md).
 
 `full-battle-eclipse-chamber-movement.mt2f` extends that mechanism to twelve
 paid plays and five EndTurns, winning with Pyre80. Two original Hidden Passage
@@ -410,7 +435,7 @@ naturally purchased Holdover branch: the fixed policy loses; the frozen plan
 wins with Pyre104 after 33 plays/nine EndTurns. Both retain 48 isolated native
 callback controls, complete context/RNG matches and four zero failure counters.
 The winning route also calibrates starting Duality before temporary armor and
-avarice. See [Holdover evidence, commands and variant guards](holdover.md).
+avarice. See [Holdover evidence, commands and variant guards](notes/cards/holdover.md).
 
 `holdover-variants-calibration.mt2f` adds 100 original native operations covering
 five installation/replacement paths, both discard lifetimes, private state,
@@ -420,8 +445,8 @@ one-EndTurn search removes the final unnecessary card play; its independent
 32 plays/nine EndTurns, with four zero counters and all full-state/RNG matches.
 The native archive is 81,479 bytes/14,151 nodes, SHA256
 `9d438efb48e4546c9c433a8909efa3aeaa89cb3fea66503c2febe4ffdd8dd659`.
-See [exact search and certificates](exact-search.md) and
-[unknown draw probability policies](unknown-draw-policy.md).
+See [exact search and certificates](notes/planning/exact-search.md) and
+[unknown draw probability policies](notes/advisor/unknown-draw-policy.md).
 `scripts/Check-SolverCompletion.ps1` is the focused acceptance entrypoint;
 it does not run the full regression inventory.
 
@@ -431,7 +456,7 @@ repeated installation, clobber
 protection and Ephemeral/CopyOnPlay removal. Temporary and nonremovable trait
 controls retain complete private/card state and native modified-trait flags,
 including Consume's retained card identity across parameter changes/replacement.
-See [permanent trait evidence](permanent-traits.md).
+See [permanent trait evidence](notes/cards/permanent-traits.md).
 
 `full-battle-progressed-ring8-gold-{search,replay,policy}.mt2f` closes natural
 eighth-ring rolling-advisor acceptance: 50 decisions, 39 plays, 11 EndTurns,
@@ -444,7 +469,7 @@ triple with `scripts/Check-RollingAdvisor.ps1 -ProgressedRing 8 -SkipBuild`.
 The fresh replay also completes the game's Standard eight-battle run;
 `campaign-completed-ring8.zip` retains its native result, completed save snapshot,
 replay and full preparation history with per-member hash verification. See
-[campaign evidence](campaign-progressed.md) and [rolling acceptance](rolling-advisor.md).
+[campaign evidence](notes/campaign/campaign-progressed.md) and [rolling acceptance](notes/advisor/rolling-advisor.md).
 
 `full-battle-progressed-ring8-gold-frozen-win.mt2f` is a natural eighth-ring
 victory from `campaign-progressed-ring8-gold.zip`: 50 frozen decisions, 39 plays,
@@ -655,14 +680,14 @@ and is diagnostic evidence; it is not curated as an accepted full battle.
 Original game files are unchanged. Binary: 24,183 bytes, 8,521 nodes, SHA256
 `14a7a279d84e84b92358f200095cb9688e3ca0b986659a33a05d55394bb2e36f`.
 Check only this component with `dotnet run --project src/ModelChecks -c Release
---no-build -- --boss-action-target-only tests/fixtures/boss-action-target-calibration.mt2f`.
+--no-build -- --boss-action-target-only tests/fixtures/bosses/outer/boss-action-target-calibration.mt2f`.
 
 The three `full-battle-progressed-ring7-{search,replay,policy}.mt2f` archives
 retain the natural checkpoint's strict seventh-ring victory: actual boss
 `Boss_Level7_Rax`, 111 Pyre HP, 42 decisions, identical independent native
 replay and a completed losing policy baseline. All three have zero capture,
 mismatch, unsupported and pending counters. See [campaign evidence and
-reproduction](campaign-progressed.md); hashes and sizes are in the manifest.
+reproduction](notes/campaign/campaign-progressed.md); hashes and sizes are in the manifest.
 
 `retired-unit-destruction-calibration.mt2f` retains native EndTurns 2, 3 and 4
 from `full-battle-units-spells-and-junk-20261021-112619-4fac265b`. Three retired
@@ -677,31 +702,31 @@ boundary. That complete native run has zero differential counters but loses.
 Binary: 42,681 bytes, 5,484 nodes, SHA256
 `403c73a66cb79134b1410f99489e08fc033345502cf2e1a14270249b89a0fce3`.
 
-The separate [per-card inventory](card-coverage.md) covers all 668 original
+The separate [per-card inventory](inventory/card-coverage.md) covers all 668 original
 definitions and identifies the 563 native logbook entries. It records exact
 archive/action evidence and explicit gaps; authored variants and missing trait
 metadata do not become direct original-card evidence just by sharing a DataId.
-The [unplayed-trigger index](card-trigger-evidence.tsv) separately records
+The [unplayed-trigger index](inventory/card-trigger-evidence.tsv) separately records
 positive new-copy and spell-upgrade observations with exact EndTurn indices;
 these provide mechanism evidence and do not count as direct card plays.
-The [native legality index](card-legality-evidence.tsv) separately records
+The [native legality index](inventory/card-legality-evidence.tsv) separately records
 definition-matched full-card rejection queries; these do not count as plays.
 The [native catalog](../catalogs/README.md) is metadata outside this directory's
 archives. The card index accepts 760 full battles; one historical capture stays
 excluded because its original mismatch counters are nonzero. Refresh/check with
 `scripts/Get-CardCoverageInventory.ps1`; it does not run model regression.
 
-The [planner benchmark report](planner-benchmarks.md) documents five offline
+The [planner benchmark report](notes/planning/planner-benchmarks.md) documents five offline
 two/three-turn cases and ten native search/replay archives. It includes measured
 budget/quality results, controlled-scenario boundaries, and a single command
 for searching, executing and independently replaying each case.
 
-The [live advisor report](live-advisor.md) adds the interactive launcher,
+The [live advisor report](notes/advisor/live-advisor.md) adds the interactive launcher,
 native panel render and three natural first-ring miniboss cases with independent
 fresh-process replay. It records action invalidation/replanning, background
 frames, capture purity, budget timings and explicit later-boss boundaries.
 
-The [full-battle rolling report](rolling-advisor.md) adds twelve native archives:
+The [full-battle rolling report](notes/advisor/rolling-advisor.md) adds twelve native archives:
 four rolling-source/fresh-replay/completed-policy triples, 62 decisions to actual
 battle ends, three distinct actual bosses including ring five, native enemy
 Harvest/Incant buffs and natural aura lifecycle evidence. Ring-seven defeat
@@ -1279,7 +1304,7 @@ Binary-only: 41,030 bytes/6,663 nodes, SHA-256
 `8b30af379ede9a7d06bb6c37da645a92116376774a572daf0d903523a984c04e`.
 The fresh `full-battle-original-moon-card-upgrades-replay.mt2f` validates all
 twenty frozen inputs in another normally exited native process. Room overrides
-now have [separate acceptance](room-moon-spell-upgrades.md); living-unit traits,
+now have [separate acceptance](notes/cards/room-moon-spell-upgrades.md); living-unit traits,
 recast copies and active relic combinations remain separate boundaries.
 Use `-OriginalMoonCardUpgrades` and `--original-moon-card-upgrades-only`.
 The 128-state serial/parallel search matches (46 roots, zero unsupported,
@@ -3358,7 +3383,7 @@ reset/repeat, owner ablations and actual healing. The unchanged
 first-turn income; deployment, acquisition and later-turn controls pass with
 zero notifications. Both battles win with zero error counters. Eight affected
 archives pass general/focused checks, independent policy replay and bounded
-search; see [validation provenance](validation-20261015.md).
+search; see [validation provenance](notes/combat/validation-20261015.md).
 
 Previous upgrade-count checkpoint (2026-10-15): the inventory was 336 archives
 (305 full battles and 31 calibrations), with 89/224 original collectible relic
@@ -3386,7 +3411,7 @@ also refreshed, along with the status registry, Instant triggered status and
 Incant relic recordings, ordinary triggered status and combined Incant relics.
 Incant thresholds and generation with relic status upgrades are refreshed too.
 The complete 335-archive general/focused regression passes; see the
-[validation report](validation-20261015.md) for shard provenance and the scoped
+[validation report](notes/combat/validation-20261015.md) for shard provenance and the scoped
 resource-checker correction. Byte counts and hashes in older entries below
 describe their historical captures; [manifest.tsv](manifest.tsv) records
 the current accepted binaries.
@@ -3440,7 +3465,7 @@ The 32,702-byte archive contains 5,330 unique nodes and has SHA-256
 `1a3ef9260fabb9019eb3975cb74ba1ebe0de7c8d237590d42bb6bb23bc6308b3`.
 Accepted original-owner coverage is now 87/224 (38.84%); the inventory contains
 335 archives: 304 full battles and 31 component calibrations. Full-inventory
-regression is still pending; see [relic-coverage.md](relic-coverage.md).
+regression is still pending; see [relic-coverage.md](inventory/relic-coverage.md).
 
 ```powershell
 ./scripts/Run-FullBattleProbe.ps1 -OriginalConserveEmber
@@ -3667,7 +3692,7 @@ for the focused regression.
 against an explicitly configured five-HP Pyre. Its remote PostCombat hit
 stops combat before death callbacks or killcam card clearing. One play, two
 EndTurns, thirteen room stages, three train phases and full state/RNG match
-with zero failure counters. See [remote lethal boundary](conditional-pyre-lethal.md)
+with zero failure counters. See [remote lethal boundary](notes/combat/conditional-pyre-lethal.md)
 for native provenance and the eight immutable branch checks.
 
 `full-battle-self-attack-status.mt2f` records unchanged Weldling applying
@@ -3708,13 +3733,13 @@ full-battle capture or the complete inventory. For a narrower scenario check,
 call its dedicated `ModelChecks` mode directly, for example:
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-companion-bump.mt2f
-dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-companion-bump.mt2f
-dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-outer-boss-bump.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-mageblade.mt2f
-dotnet run --project src/ModelChecks -c Release -- --mageblade-only tests/fixtures/full-battle-original-mageblade-magnitude.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-units-spells-and-junk.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-dragon-hoard.mt2f
+dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/combat/units/full-battle-companion-bump.mt2f
+dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/combat/units/full-battle-companion-bump.mt2f
+dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/bosses/outer/full-battle-outer-boss-bump.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/core/full-battle-mageblade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --mageblade-only tests/fixtures/cards/originals/full-battle-original-mageblade-magnitude.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/spells/full-battle-units-spells-and-junk.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/resources/full-battle-dragon-hoard.mt2f
 ```
 
 The default command checks the full curated inventory. For routine changes, run
@@ -3775,7 +3800,7 @@ scene to isolate live battle state from preview-born references. This adds
 mechanism evidence, not another original relic owner.
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- --egg-transformation-only tests/fixtures/full-battle-egg-transformation.mt2f
+dotnet run --project src/ModelChecks -c Release -- --egg-transformation-only tests/fixtures/combat/core/full-battle-egg-transformation.mt2f
 ```
 
 `full-battle-original-kinhost-vessel.mt2f` plays the unchanged `KinhostVessel`
@@ -3791,7 +3816,7 @@ The binary-only archive is 45,011 bytes with 7,309 unique nodes and SHA-256
 This adds original-card evidence, not another relic owner.
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- --original-egg-card-only tests/fixtures/full-battle-original-kinhost-vessel.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-egg-card-only tests/fixtures/cards/originals/full-battle-original-kinhost-vessel.mt2f
 ```
 
 `full-battle-original-kinhost-vessel-delayed.mt2f` keeps the same unchanged
@@ -3806,7 +3831,7 @@ SHA-256 `9fc3571f9c26e1294c5d33adf9f674971a05b03dbade8ceb85680a535620e92e`.
 This is multi-turn mechanism evidence, with no new relic owner.
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- --original-egg-card-delayed-only tests/fixtures/full-battle-original-kinhost-vessel-delayed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-egg-card-delayed-only tests/fixtures/cards/originals/full-battle-original-kinhost-vessel-delayed.mt2f
 ```
 
 The Pyre spawn-status
@@ -3845,7 +3870,7 @@ no JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-remove-all-status-effects.mt2f
-dotnet run --project src/ModelChecks -c Release -- --remove-all-status-only tests/fixtures/full-battle-remove-all-status-effects.mt2f
+dotnet run --project src/ModelChecks -c Release -- --remove-all-status-only tests/fixtures/combat/status/full-battle-remove-all-status-effects.mt2f
 ```
 
 The schema-161
@@ -3864,7 +3889,7 @@ no JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-pyre-damage.mt2f
-dotnet run --project src/ModelChecks -c Release -- --unplayed-card-trigger-only tests/fixtures/full-battle-unplayed-card-pyre-damage.mt2f
+dotnet run --project src/ModelChecks -c Release -- --unplayed-card-trigger-only tests/fixtures/combat/damage/full-battle-unplayed-card-pyre-damage.mt2f
 ```
 
 The schema-163 `full-battle-unplayed-card-effects.mt2f` archive captures the
@@ -3880,7 +3905,7 @@ JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unplayed-card-effects.mt2f
-dotnet run --project src/ModelChecks -c Release -- --unplayed-card-effects-only tests/fixtures/full-battle-unplayed-card-effects.mt2f
+dotnet run --project src/ModelChecks -c Release -- --unplayed-card-effects-only tests/fixtures/combat/core/full-battle-unplayed-card-effects.mt2f
 ```
 
 The schema-160
@@ -3900,7 +3925,7 @@ archive adds accepted native evidence for the unchanged `MoonPhaseModifyEmber`
 relic: three Full callbacks add one Ember and notify; three New callbacks are
 no-ops. It also verifies exact moon markers across 24 plays, seven EndTurns and
 57 matched battle stages. The binary has no JSON companion. See
-[relic coverage](relic-coverage.md) for its owner evidence and replay details.
+[relic coverage](inventory/relic-coverage.md) for its owner evidence and replay details.
 
 The schema-147 `full-battle-original-card-attack-relic.mt2f` archive adds
 accepted native evidence for the unchanged `WhelpDragonAttack_DH` relic. Its two
@@ -3916,7 +3941,7 @@ there is no JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-attack-relic.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only tests/fixtures/full-battle-original-card-attack-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-attack-only tests/fixtures/relics/modifiers/full-battle-original-card-attack-relic.mt2f
 ```
 
 `full-battle-card-effect-kill.mt2f` records the native `KillRandomUnit` spell's
@@ -3932,7 +3957,7 @@ JSON companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/combat/core/full-battle-card-effect-kill.mt2f
 dotnet run --project src/ModelChecks -c Release -- --sacrifice-pure
 ```
 
@@ -3949,8 +3974,8 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-effect-kill-subtype.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-effect-kill-subtype.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-effect-kill-subtype.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/combat/core/full-battle-card-effect-kill-subtype.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/core/full-battle-card-effect-kill-subtype.mt2f
 ```
 
 `full-battle-card-recursion.mt2f` captures `WurmkinEtchings` returning five of
@@ -3964,7 +3989,7 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-card-recursion.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/draw/full-battle-card-recursion.mt2f
 dotnet run --project src/ModelChecks -c Release -- --card-recursion-pure
 ```
 
@@ -3981,8 +4006,8 @@ JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-choice-only tests/fixtures/full-battle-card-recursion-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-choice-only tests/fixtures/cards/draw/full-battle-card-recursion-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-choice.mt2f
 ```
 
 `full-battle-card-recursion-choose-to-hand.mt2f` is a controlled native
@@ -3998,8 +4023,8 @@ JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-choose-to-hand.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-hand-choice-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-choose-to-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-hand-choice-only tests/fixtures/cards/draw/full-battle-card-recursion-choose-to-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-choose-to-hand.mt2f
 ```
 
 `full-battle-card-recursion-filter-choice.mt2f` is a controlled native
@@ -4015,8 +4040,8 @@ JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-filter-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-filter-choice-only tests/fixtures/full-battle-card-recursion-filter-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-filter-choice-only tests/fixtures/cards/draw/full-battle-card-recursion-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-filter-choice.mt2f
 ```
 
 ### Random recursion with a temporary upgrade (schema 149)
@@ -4035,8 +4060,8 @@ component calibrations.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgrade -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade.mt2f
 ```
 
 ### `RandomToHandWithUpgrades` recursion (schema 150)
@@ -4059,8 +4084,8 @@ component calibrations.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeToHand -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-hand.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-hand.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-hand.mt2f
 ```
 
 ### Chosen recursion with a temporary upgrade (schema 151)
@@ -4081,8 +4106,8 @@ calibrations.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeChoose -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-choice.mt2f
 ```
 
 ### Filtered chosen recursion with a temporary upgrade (schema 152)
@@ -4104,8 +4129,8 @@ calibrations.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeFilterChoose -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-filter-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-filter-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-filter-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-filter-choice.mt2f
 ```
 
 ### Chosen recursion with a replacement upgrade (schema 153)
@@ -4128,8 +4153,8 @@ component calibrations.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -CardRecursionUpgradeReplacementChoose -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-upgrade-replacement-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/full-battle-card-recursion-upgrade-replacement-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-upgrade-replacement-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-upgrade-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-replacement-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-upgrade-replacement-choice.mt2f
 ```
 
 `full-battle-relic-card-negative-unhealed.mt2f` (schema 145)
@@ -4147,8 +4172,8 @@ JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-negative-unhealed.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-negative-unhealed.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-relic-card-negative-unhealed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/relics/modifiers/full-battle-relic-card-negative-unhealed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/modifiers/full-battle-relic-card-negative-unhealed.mt2f
 ```
 
 `enchantment-combat-calibration.mt2f` captures two native
@@ -6352,7 +6377,7 @@ Focused commands:
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --typed-draw-pure
-dotnet run --project src/ModelChecks -c Release -- --typed-draw-only tests/fixtures/full-battle-typed-draw.mt2f
+dotnet run --project src/ModelChecks -c Release -- --typed-draw-only tests/fixtures/cards/draw/full-battle-typed-draw.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-typed-draw.mt2f
 ```
 
@@ -6393,11 +6418,11 @@ deferred under the incremental workflow.
 
 The native archive uses schema 103, has 69,249 bytes/11,309 nodes and SHA-256
 `5f0eb05bb64b8716ee6a28db7d7024e9d61d9e4a02058202262bed761d3e3794`. There are
-no JSON companions. See [relic-coverage.md](relic-coverage.md) for the 60/224
+no JSON companions. See [relic-coverage.md](inventory/relic-coverage.md) for the 60/224
 original-relic coverage scope and effect witnesses.
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- --original-unit-relics-only tests/fixtures/full-battle-original-unit-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-unit-relics-only tests/fixtures/relics/modifiers/full-battle-original-unit-relics.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-unit-relics.mt2f
 ```
 
@@ -6450,14 +6475,14 @@ preservation and immutable branches; another control verifies both source teams
 and the Pyre exclusion. Targeted general/focused fixture regression runs below.
 The accepted archive inventory remains 362 files: 324 battles and 38 component
 calibrations. Original relic coverage is now 141/224 (62.95%), with exact owner
-scope in [relic-coverage.md](relic-coverage.md). The other native transfer modes,
+scope in [relic-coverage.md](inventory/relic-coverage.md). The other native transfer modes,
 status filters and tower-wide transfers remain unsupported.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTriggerRelicBatchStationary
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTriggerRelicBatch
 dotnet run --project src/ModelChecks -c Release -- --relic-triggers-pure
-dotnet run --project src/ModelChecks -c Release -- --original-trigger-relics-combined tests/fixtures/full-battle-original-trigger-relic-deaths.mt2f tests/fixtures/full-battle-original-trigger-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-trigger-relics-combined tests/fixtures/relics/modifiers/full-battle-original-trigger-relic-deaths.mt2f tests/fixtures/relics/modifiers/full-battle-original-trigger-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture @('full-battle-original-trigger-relics.mt2f', 'full-battle-original-trigger-relic-deaths.mt2f')
 ```
 
@@ -6514,7 +6539,7 @@ calibrations. Original coverage is 145/224 (64.73%), including 129 battle owners
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-part-factory.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-part-factory-only tests/fixtures/full-battle-original-part-factory.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-part-factory-only tests/fixtures/cards/originals/full-battle-original-part-factory.mt2f
 ```
 
 ### Original status stack relics
@@ -6547,12 +6572,12 @@ Its raw native source is
 `.probe-runs/full-battle-units-spells-and-junk-20261013-044528-5081dd10/full-battle.mt2f`.
 The selected fixture checks pass. At that milestone, the 248-archive
 inventory's complete replay remained deferred. Original relic coverage is
-now 65/224 (29.02%); [relic-coverage.md](relic-coverage.md) lists the exact
+now 65/224 (29.02%); [relic-coverage.md](inventory/relic-coverage.md) lists the exact
 original definitions and witnesses.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-status-stacks-pure
-dotnet run --project src/ModelChecks -c Release -- --original-status-relics-only tests/fixtures/full-battle-original-status-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-status-relics-only tests/fixtures/relics/modifiers/full-battle-original-status-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-status-relics.mt2f
 ```
 
@@ -6613,7 +6638,7 @@ Current raw source:
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-status-magnitudes-pure
-dotnet run --project src/ModelChecks -c Release -- --original-magnitude-relics-only tests/fixtures/full-battle-original-magnitude-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-magnitude-relics-only tests/fixtures/relics/modifiers/full-battle-original-magnitude-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-magnitude-relics.mt2f
 ```
 
@@ -6657,7 +6682,7 @@ and Boss coverage remain open.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-lifecycle-pure
-dotnet run --project src/ModelChecks -c Release -- --original-lifecycle-relics-only tests/fixtures/full-battle-original-lifecycle-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-lifecycle-relics-only tests/fixtures/relics/modifiers/full-battle-original-lifecycle-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-lifecycle-relics.mt2f
 ```
 
@@ -6709,7 +6734,7 @@ combinations, all Bosses and the optimal solver remain unfinished.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-status-decay-pure
-dotnet run --project src/ModelChecks -c Release -- --original-decay-relics-only tests/fixtures/full-battle-original-decay-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-decay-relics-only tests/fixtures/relics/modifiers/full-battle-original-decay-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-decay-relics.mt2f
 ```
 
@@ -6781,7 +6806,7 @@ card/relic combinations, all Bosses or an optimal solver.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-resources-pure
-dotnet run --project src/ModelChecks -c Release -- --original-resource-relics-only tests/fixtures/full-battle-original-resource-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-resource-relics-only tests/fixtures/relics/modifiers/full-battle-original-resource-relics.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-original-resource-relics.mt2f
 ```
 
@@ -6849,7 +6874,7 @@ card/relic combinations, all Bosses and the optimal solver remain unfinished.
 
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --gold-pyre-pure
-dotnet run --project src/ModelChecks -c Release -- --pyre-resource-refresh-only tests/fixtures/full-battle-pyre-resource-refresh.mt2f
+dotnet run --project src/ModelChecks -c Release -- --pyre-resource-refresh-only tests/fixtures/combat/resources/full-battle-pyre-resource-refresh.mt2f
 & ./scripts/Check-Models.ps1 -Fixture full-battle-pyre-resource-refresh.mt2f
 ```
 
@@ -7115,7 +7140,7 @@ calibrations. Accepted original relic evidence remains 59/224 (26.34%). Full
 inventory replay remains deferred.
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- --equipment-native-only tests/fixtures/full-battle-equipment-buff.mt2f
+dotnet run --project src/ModelChecks -c Release -- --equipment-native-only tests/fixtures/cards/equipment/full-battle-equipment-buff.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-equipment-buff.mt2f
 ```
 
@@ -7163,7 +7188,7 @@ JSON companion. Inventory is 240 archives: 209 battles and 31 component
 calibrations. Original relic evidence is 60/224 (26.79%).
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- --covenant-character-filter-only tests/fixtures/full-battle-covenant-character-filter.mt2f
+dotnet run --project src/ModelChecks -c Release -- --covenant-character-filter-only tests/fixtures/campaign/covenants/full-battle-covenant-character-filter.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
 ```
 
@@ -7196,7 +7221,7 @@ evidence is 60/224 (26.79%).
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --titan-skin-pure
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -TitanSkinCombat
-dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-titan-skin.mt2f
+dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/combat/core/full-battle-titan-skin.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-covenant-character-filter.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-titan-skin.mt2f
 ```
@@ -7220,7 +7245,7 @@ original relic coverage remains 59/224 (26.34%). Inventory is 240 archives:
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -AllUnitsMultistrikeMutator
-dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-all-units-multistrike-mutator.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/combat/core/full-battle-all-units-multistrike-mutator.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-all-units-multistrike-mutator.mt2f
 ```
 
@@ -7299,7 +7324,7 @@ coverage and the decision solver remain unfinished.
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-card-play-magic-power-pure
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCardPlayMagicPower
-dotnet run --project src/ModelChecks -c Release -- --original-card-play-magic-power-only tests/fixtures/full-battle-original-card-play-magic-power.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-play-magic-power-only tests/fixtures/relics/triggers/full-battle-original-card-play-magic-power.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-play-magic-power.mt2f
 ```
 
@@ -7328,7 +7353,7 @@ and the inventory has 361 archives: 323 battles and 38 component calibrations.
 ```powershell
 dotnet run --project src/ModelChecks -c Release -- --relic-card-play-magic-power-pure
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-carriage-jack.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-carriage-jack-only tests/fixtures/full-battle-original-carriage-jack.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-carriage-jack-only tests/fixtures/cards/originals/full-battle-original-carriage-jack.mt2f
 ```
 
 ### Native original moon-phase healing relic
@@ -7353,7 +7378,7 @@ and the inventory has 362 archives: 324 battles and 38 component calibrations.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMoonPhaseHealRelic
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-heal-relic.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-heal-only tests/fixtures/full-battle-original-moon-phase-heal-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-heal-only tests/fixtures/relics/modifiers/full-battle-original-moon-phase-heal-relic.mt2f
 ```
 
 ### Native original first-room attachment relic
@@ -7379,7 +7404,7 @@ and the inventory has 363 archives: 325 battles and 38 component calibrations.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalFirstRoomAttachment
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-first-room-attachment.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-first-room-attachment-only tests/fixtures/full-battle-original-first-room-attachment.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-first-room-attachment-only tests/fixtures/combat/rooms/full-battle-original-first-room-attachment.mt2f
 ```
 
 ### Selected-room and current-cost statistic queries
@@ -7402,7 +7427,7 @@ and 31 component calibrations. The muted Instant full-battle sample matched all
 with zero capture failures, mismatches, unsupported operations or pending work.
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- tests/fixtures/statistic-query-calibration.mt2f
+dotnet run --project src/ModelChecks -c Release -- tests/fixtures/combat/core/statistic-query-calibration.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture statistic-query-calibration.mt2f
 ```
 
@@ -7420,7 +7445,7 @@ JSON companion. Original relic evidence stays at 60/224 (26.79%). Inventory is
 242 archives: 211 battles and 31 component calibrations.
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- --unit-teleport-native-only tests/fixtures/full-battle-unit-ability-teleport.mt2f
+dotnet run --project src/ModelChecks -c Release -- --unit-teleport-native-only tests/fixtures/combat/rooms/full-battle-unit-ability-teleport.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-unit-ability-teleport.mt2f
 ```
 
@@ -7474,7 +7499,7 @@ JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-room-entry-status-relics.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-room-entry-status-relics-only tests/fixtures/full-battle-original-room-entry-status-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-room-entry-status-relics-only tests/fixtures/relics/modifiers/full-battle-original-room-entry-status-relics.mt2f
 ```
 
 ```powershell
@@ -7539,8 +7564,8 @@ calibrations. Full-inventory replay remains deferred.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-ephemeral-upgrades.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-cycle-only tests/fixtures/full-battle-relic-card-ephemeral-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/relics/modifiers/full-battle-relic-card-ephemeral-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-cycle-only tests/fixtures/relics/modifiers/full-battle-relic-card-ephemeral-upgrades.mt2f
 ```
 
 ### Original ExtraToughTombs relic
@@ -7565,8 +7590,8 @@ calibrations. Full-inventory replay remains deferred.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-extra-tough-tombs.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-extra-tough-tombs.mt2f
-dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/full-battle-relic-extra-tough-tombs.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/relics/modifiers/full-battle-relic-extra-tough-tombs.mt2f
+dotnet run --project src/ModelChecks -c Release -- --room-combat-only tests/fixtures/relics/modifiers/full-battle-relic-extra-tough-tombs.mt2f
 ```
 
 ### Random hand discard (schema 138)
@@ -7589,8 +7614,8 @@ calibrations. Full-inventory replay remains deferred.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-random-discard.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-random-discard.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-random-discard.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/draw/full-battle-random-discard.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-random-discard.mt2f
 ```
 
 ### Pure room capacity attachment (schema 139)
@@ -7624,7 +7649,7 @@ calibrations. Full-inventory replay remains deferred.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-stealth-waxers.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-original-stealth-waxers.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/cards/originals/full-battle-original-stealth-waxers.mt2f
 ```
 
 ### Original IncreaseBurnoutStacks relic (schema 142)
@@ -7648,7 +7673,7 @@ remains deferred.
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalStatusRelicBatchBurnout -GameSpeed Instant
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-burnout-stacks.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-status-relics-only tests/fixtures/full-battle-original-burnout-stacks.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-status-relics-only tests/fixtures/combat/status/full-battle-original-burnout-stacks.mt2f
 ```
 
 ### Recursion from Discard to Hand (schema 154)
@@ -7673,8 +7698,8 @@ JSON companion.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-card-recursion-discard-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --card-recursion-discard-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-card-recursion-discard-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --card-recursion-discard-only tests/fixtures/cards/draw/full-battle-card-recursion-discard-choice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-card-recursion-discard-choice.mt2f
 ```
 
 ### TunedGear Burst relic (schema 155)
@@ -7693,8 +7718,8 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-tuned-gear.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/relics/modifiers/full-battle-spawn-status-relics-tuned-gear.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/modifiers/full-battle-spawn-status-relics-tuned-gear.mt2f
 ```
 
 ### BalatroEventChicot Mute relic (schema 156)
@@ -7715,8 +7740,8 @@ and 31 component calibrations.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-spawn-status-relics-boss-mute.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/full-battle-spawn-status-relics-boss-mute.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-spawn-status-relics-boss-mute.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-spawn-status-only tests/fixtures/bosses/outer/full-battle-spawn-status-relics-boss-mute.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/bosses/outer/full-battle-spawn-status-relics-boss-mute.mt2f
 ```
 
 ### Relic card OnCast effects (schema 157)
@@ -7738,8 +7763,8 @@ calibrations. Original relic evidence remains 76/224 (33.93%).
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-cast-trigger-upgrades.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-cast-trigger-upgrades.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-relic-card-cast-trigger-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/relics/triggers/full-battle-relic-card-cast-trigger-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/triggers/full-battle-relic-card-cast-trigger-upgrades.mt2f
 ```
 
 ### Relic card OnCast effects on Monster cards (schema 158)
@@ -7761,8 +7786,8 @@ companion is tracked. Inventory is now 275 archives: 244 accepted battles and
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-relic-card-cast-trigger-unit-upgrades.mt2f
-dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/full-battle-relic-card-cast-trigger-unit-upgrades.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-relic-card-cast-trigger-unit-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --relic-card-modifiers-only tests/fixtures/relics/triggers/full-battle-relic-card-cast-trigger-unit-upgrades.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/triggers/full-battle-relic-card-cast-trigger-unit-upgrades.mt2f
 ```
 
 ### Original cheaper-spell upgrade relic (schema 171)
@@ -7786,8 +7811,8 @@ filters and temporary upgrades.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-cheaper-spell-cost.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-cheaper-spell-cost-only tests/fixtures/full-battle-original-cheaper-spell-cost.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-cheaper-spell-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-cheaper-spell-cost-only tests/fixtures/relics/modifiers/full-battle-original-cheaper-spell-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/modifiers/full-battle-original-cheaper-spell-cost.mt2f
 ```
 
 ### Original NefariousOverflow relic (schema 172)
@@ -7810,8 +7835,8 @@ remains pending because its native growth rate is 5.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-nefarious-overflow.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-nefarious-overflow-only tests/fixtures/full-battle-original-nefarious-overflow.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-nefarious-overflow.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-nefarious-overflow-only tests/fixtures/cards/originals/full-battle-original-nefarious-overflow.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-nefarious-overflow.mt2f
 ```
 
 ### Original CopyFirstSpellPlayed relic (schema 173)
@@ -7837,8 +7862,8 @@ owners and parameter combinations remain rejected.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-copy-first-spell-played.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-copy-first-spell-only tests/fixtures/full-battle-original-copy-first-spell-played.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-copy-first-spell-played.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-copy-first-spell-only tests/fixtures/relics/triggers/full-battle-original-copy-first-spell-played.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/triggers/full-battle-original-copy-first-spell-played.mt2f
 ```
 
 ### Original StartOfTurnAddFunguysPerDeckSize relic (schema 174)
@@ -7864,7 +7889,7 @@ and deck-size bands remain unsupported.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-funguy-deck-scaling.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-funguy-deck-only tests/fixtures/full-battle-original-funguy-deck-scaling.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-funguy-deck-only tests/fixtures/cards/originals/full-battle-original-funguy-deck-scaling.mt2f
 ```
 
 ### Original CardDrawOnHeal relic (schema 175)
@@ -7888,8 +7913,8 @@ and condition combinations remain unsupported.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-draw-on-heal.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-card-draw-on-heal-only tests/fixtures/full-battle-original-card-draw-on-heal.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-draw-on-heal.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-draw-on-heal-only tests/fixtures/relics/triggers/full-battle-original-card-draw-on-heal.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/triggers/full-battle-original-card-draw-on-heal.mt2f
 ```
 
 ### Original BrokenRail forge-upgrade relic (schema 176)
@@ -7918,8 +7943,8 @@ inventory now has 374 archives: 336 battles and 38 component calibrations.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-broken-rail.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-broken-rail-only tests/fixtures/full-battle-original-broken-rail.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-broken-rail.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-broken-rail-only tests/fixtures/cards/originals/full-battle-original-broken-rail.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-broken-rail.mt2f
 ```
 
 ### Original RageOnBurnoutStackLoss relic (schema 177)
@@ -7944,7 +7969,7 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-rage-on-burnout-stack-loss.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-rage-on-burnout-stack-loss-only tests/fixtures/full-battle-original-rage-on-burnout-stack-loss.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-rage-on-burnout-stack-loss-only tests/fixtures/combat/status/full-battle-original-rage-on-burnout-stack-loss.mt2f
 ```
 
 ### Original PyreRevengeAddPyregel relic (schema 178)
@@ -7968,7 +7993,7 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-pyre-revenge.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-pyre-revenge-only tests/fixtures/full-battle-original-pyre-revenge.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-pyre-revenge-only tests/fixtures/combat/resources/full-battle-original-pyre-revenge.mt2f
 ```
 
 ### Original ExtractForEmberAndEchos relic (schema 179)
@@ -7992,7 +8017,7 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-extract-for-ember-and-echos.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-extract-for-ember-and-echos-only tests/fixtures/full-battle-original-extract-for-ember-and-echos.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-extract-for-ember-and-echos-only tests/fixtures/combat/resources/full-battle-original-extract-for-ember-and-echos.mt2f
 ```
 
 ### Original CopyFirstConsumePlayed relic (schema 180)
@@ -8017,7 +8042,7 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-copy-first-consume-played.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-copy-first-consume-only tests/fixtures/full-battle-original-copy-first-consume-played.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-copy-first-consume-only tests/fixtures/relics/triggers/full-battle-original-copy-first-consume-played.mt2f
 ```
 
 ### Original CopyConsumedCard relic (schema 181)
@@ -8042,7 +8067,7 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-copy-consumed-card.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-copy-consumed-card-only tests/fixtures/full-battle-original-copy-consumed-card.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-copy-consumed-card-only tests/fixtures/relics/triggers/full-battle-original-copy-consumed-card.mt2f
 ```
 
 ### Original DamageOnFloorTransition relic (schema 182)
@@ -8065,8 +8090,8 @@ owners, fifteen campaign-interface owners and one no-op); the inventory now has
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-damage-on-floor-transition.mt2f
-dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/full-battle-original-damage-on-floor-transition.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-damage-on-floor-transition.mt2f
+dotnet run --project src/ModelChecks -c Release -- --bump-only tests/fixtures/combat/rooms/full-battle-original-damage-on-floor-transition.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/rooms/full-battle-original-damage-on-floor-transition.mt2f
 ```
 
 ### Original SingleToTeamMonsterSpellTargeting relic (schema 188)
@@ -8095,8 +8120,8 @@ battle, 15 campaign and one native no-op owner.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-monster-spell-targeting.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-monster-spell-targeting-only tests/fixtures/full-battle-original-monster-spell-targeting.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-monster-spell-targeting.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-monster-spell-targeting-only tests/fixtures/cards/spells/full-battle-original-monster-spell-targeting.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/spells/full-battle-original-monster-spell-targeting.mt2f
 ```
 
 ### Original GarfieldBoxRandomCardPerTurn relic (schema 189)
@@ -8129,8 +8154,8 @@ battle, 15 campaign and one native no-op owner.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-garfield-box-random-card.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-garfield-box-only tests/fixtures/full-battle-original-garfield-box-random-card.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-garfield-box-random-card.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-garfield-box-only tests/fixtures/cards/originals/full-battle-original-garfield-box-random-card.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-garfield-box-random-card.mt2f
 ```
 
 ### Original MoonPhaseAddArmorToSilent relic (schema 190)
@@ -8161,8 +8186,8 @@ campaign and one native no-op owner.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-moon-phase-status-relic.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-status-only tests/fixtures/full-battle-original-moon-phase-status-relic.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-moon-phase-status-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-moon-phase-status-only tests/fixtures/relics/modifiers/full-battle-original-moon-phase-status-relic.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/modifiers/full-battle-original-moon-phase-status-relic.mt2f
 ```
 
 ### Original AddSnackOnKill relic (schema 192)
@@ -8191,8 +8216,8 @@ component calibrations. Original relic evidence is 169/224 (75.45%): 153 battle,
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-add-snack-on-kill.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-add-snack-on-kill-only tests/fixtures/full-battle-original-add-snack-on-kill.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-add-snack-on-kill.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-add-snack-on-kill-only tests/fixtures/combat/damage/full-battle-original-add-snack-on-kill.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/damage/full-battle-original-add-snack-on-kill.mt2f
 ```
 
 ### Original FinalEndingArtifact relic (schema 193)
@@ -8221,8 +8246,8 @@ campaign and one native no-op.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-final-ending-artifact.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-final-ending-artifact-only tests/fixtures/full-battle-original-final-ending-artifact.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-final-ending-artifact.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-final-ending-artifact-only tests/fixtures/cards/originals/full-battle-original-final-ending-artifact.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-final-ending-artifact.mt2f
 ```
 
 ### Original BalatroEventYorick relic (schema 194)
@@ -8248,8 +8273,8 @@ campaign and one native no-op.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-balatro-event-yorick.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-balatro-event-yorick-only tests/fixtures/full-battle-original-balatro-event-yorick.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-balatro-event-yorick.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-balatro-event-yorick-only tests/fixtures/cards/originals/full-battle-original-balatro-event-yorick.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-balatro-event-yorick.mt2f
 ```
 
 ### Original 2ChargesOnCardConsumed relic (schema 195)
@@ -8275,8 +8300,8 @@ battles and 38 component calibrations. Original relic coverage is 173/224
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-two-charges-on-card-consumed.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-two-charges-only tests/fixtures/full-battle-original-two-charges-on-card-consumed.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-two-charges-on-card-consumed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-two-charges-only tests/fixtures/cards/originals/full-battle-original-two-charges-on-card-consumed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-two-charges-on-card-consumed.mt2f
 ```
 
 ### Original ChanceForSpellWeakness relic (schema 196)
@@ -8306,8 +8331,8 @@ battle owners, sixteen campaign owners and one native no-op.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-chance-for-spell-weakness.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-chance-for-spell-weakness-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-chance-for-spell-weakness.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-chance-for-spell-weakness-only tests/fixtures/relics/triggers/full-battle-original-chance-for-spell-weakness.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/triggers/full-battle-original-chance-for-spell-weakness.mt2f
 ```
 
 ### Original FriendlyUnitsGainDeathwishPermanentHealth relic
@@ -8333,8 +8358,8 @@ persistence are outside this evidence boundary.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-equipment-growth-relics.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-equipment-growth-only tests/fixtures/full-battle-original-equipment-growth-relics.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-equipment-growth-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-equipment-growth-only tests/fixtures/relics/modifiers/full-battle-original-equipment-growth-relics.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/relics/modifiers/full-battle-original-equipment-growth-relics.mt2f
 ```
 
 ### Original ReduceCostUnitIfNoUpgrade relic
@@ -8357,8 +8382,8 @@ companion is tracked.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-no-upgrade-cost.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-no-upgrade-card-cost-only tests/fixtures/full-battle-original-no-upgrade-cost.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-no-upgrade-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-no-upgrade-card-cost-only tests/fixtures/cards/originals/full-battle-original-no-upgrade-cost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-no-upgrade-cost.mt2f
 ```
 
 ### Original FirstImpBonus relic
@@ -8384,8 +8409,8 @@ owners, sixteen campaign owners and one native no-op owner.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-first-imp-bonus.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-first-imp-bonus-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-first-imp-bonus.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-first-imp-bonus-only tests/fixtures/cards/originals/full-battle-original-first-imp-bonus.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-first-imp-bonus.mt2f
 ```
 
 `full-battle-original-support-units.mt2f` captures twenty unchanged original
@@ -8437,10 +8462,10 @@ live stat refresh is not modeled.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-support-units.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-support-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/spells/full-battle-original-support-units.mt2f
 dotnet run --project src/ModelChecks -c Release -- --combat-effects-pure
 dotnet run --project src/ModelChecks -c Release -- --triggered-typed-draw-pure
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-support-units.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/spells/full-battle-original-support-units.mt2f
 ```
 
 ### Original Divine Dancer
@@ -8458,8 +8483,8 @@ four decisions match, with 12 root actions and zero unsupported attempts.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalDivineDancer -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-divine-dancer.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-divine-dancer.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/originals/full-battle-original-divine-dancer.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-divine-dancer.mt2f
 ```
 
 ### Original Branded Warrior
@@ -8476,8 +8501,8 @@ decisions match, with 12 root actions and zero unsupported attempts.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitBatch -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-unit-batch.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-unit-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/combat/units/full-battle-original-isolated-unit-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/units/full-battle-original-isolated-unit-batch.mt2f
 ```
 
 ### Original Coldstrike Siren
@@ -8494,8 +8519,8 @@ decisions match, with 12 root actions and zero unsupported attempts.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedColdstrikeSiren -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-coldstrike-siren.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-coldstrike-siren.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-coldstrike-siren.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-coldstrike-siren.mt2f
 ```
 
 ### Original Coldsting Siren
@@ -8511,8 +8536,8 @@ immutable branches and 128 serial/parallel search states.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId ca84a9e5-f167-49d1-91cc-ba662d3c1dc4 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-coldsting-siren.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-coldsting-siren.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-coldsting-siren.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-coldsting-siren.mt2f
 ```
 
 ### Original Eel Gorgon
@@ -8532,8 +8557,8 @@ witness; the separate remove-all fixture covers positive full/half status remova
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId eaaae54e-58ed-4926-b5bb-a0b36404c4b7 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-eel-gorgon.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-eel-gorgon.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-eel-gorgon.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-eel-gorgon.mt2f
 ```
 
 ### Original Entombed Explosive
@@ -8552,8 +8577,8 @@ damage definition was captured but did not trigger in this encounter.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 9a8943a3-d6a6-454b-91d4-d6d08dd6fd81 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-entombed-explosive.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-entombed-explosive.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-entombed-explosive.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-entombed-explosive.mt2f
 ```
 
 ### Original Overworked Assistant
@@ -8571,8 +8596,8 @@ serial/parallel states. This does not claim a positive Unstable trigger witness.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId f4a5935a-ea84-41b8-944f-7d08cd228a58 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-overworked-assistant.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-overworked-assistant.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-overworked-assistant.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-overworked-assistant.mt2f
 ```
 
 ### Original Crucible Collector
@@ -8590,8 +8615,8 @@ definition is captured but its status addition is not a positive trigger witness
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId e27358a6-e42f-410b-be76-75dfbf2bfab4 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-crucible-collector.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-crucible-collector.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-crucible-collector.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-crucible-collector.mt2f
 ```
 
 ### Original Crucible Warden
@@ -8605,8 +8630,8 @@ occurred, so the callback is definition-only evidence here.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId abae9cd1-d180-41cb-956c-5cf09cf85fa9 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-crucible-warden.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-crucible-warden.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-crucible-warden.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-crucible-warden.mt2f
 ```
 
 ### Original Makeshift Golem
@@ -8620,8 +8645,8 @@ the callback is definition-only evidence here.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 92084a94-6cc6-4af3-9a7d-de61ec7d161c -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-makeshift-golem.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-makeshift-golem.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-makeshift-golem.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-makeshift-golem.mt2f
 ```
 
 ### Original Deathcapped Prophet
@@ -8636,8 +8661,8 @@ the callback is definition-only evidence here.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId ec522dfa-0b0d-41a9-860d-1a18fae0efb6 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-deathcapped-prophet.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-deathcapped-prophet.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/combat/damage/full-battle-original-isolated-deathcapped-prophet.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/damage/full-battle-original-isolated-deathcapped-prophet.mt2f
 ```
 
 ### Original Parrafin Enforcer
@@ -8651,8 +8676,8 @@ or pending captures.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId b9788a77-50da-4654-acfa-960c23649984 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-parrafin-enforcer.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-parrafin-enforcer.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-parrafin-enforcer.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-parrafin-enforcer.mt2f
 ```
 
 ### Original Sycophant
@@ -8667,8 +8692,8 @@ unsupported transitions or pending captures.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 6d2053e9-1a6a-4862-b348-76a92a92ea83 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-sycophant.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-sycophant.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-sycophant.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-sycophant.mt2f
 ```
 
 ### Original Votivary
@@ -8682,8 +8707,8 @@ failures, mismatches, unsupported transitions or pending captures.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId e9bb0dfe-ecf7-4046-be6d-f6f00893662f -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-votivary.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-votivary.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-votivary.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-votivary.mt2f
 ```
 
 ### Original Bounty Stalker
@@ -8698,8 +8723,8 @@ unsupported transitions or pending captures.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 3e86422e-c8e4-4ec7-bc0a-0c622b7237b4 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-bounty-stalker.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-bounty-stalker.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-bounty-stalker.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-bounty-stalker.mt2f
 ```
 
 ### Original Plague Doctor
@@ -8718,8 +8743,8 @@ unique nodes and SHA-256
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 34909c50-4cba-41fa-8b33-64c1e463691c -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-plague-doctor.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-plague-doctor.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-plague-doctor.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-plague-doctor.mt2f
 ```
 
 ### Original Hulking Mass
@@ -8736,8 +8761,8 @@ zero, and protected original files were unchanged. The 26,340-byte archive has
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId a0c52fd5-e77f-43ec-b9f7-2ebf7e3ac8ac -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hulking-mass.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hulking-mass.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-hulking-mass.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-hulking-mass.mt2f
 ```
 
 ### Original Reforming Ooze
@@ -8754,8 +8779,8 @@ and Pending were all zero, and protected original files were unchanged. The
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalIsolatedUnitId 357a72e3-935c-4946-9e5a-6449482641c1 -BinaryCapture -TimeoutSeconds 480
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-reforming-ooze.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-reforming-ooze.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-reforming-ooze.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-reforming-ooze.mt2f
 ```
 
 ### Original Alloyed Construct fuel
@@ -8780,9 +8805,9 @@ checks and 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-fuel.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-fuel-only tests/fixtures/full-battle-original-fuel.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-fuel-only tests/fixtures/cards/originals/full-battle-original-fuel.mt2f
 dotnet run --project src/ModelChecks -c Release -- --fuel-pure
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-fuel.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-fuel.mt2f
 ```
 
 ### Original Card Draw Potion
@@ -8801,8 +8826,8 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-card-draw-potion.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-card-draw-potion-only tests/fixtures/full-battle-original-card-draw-potion.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-card-draw-potion.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-card-draw-potion-only tests/fixtures/cards/draw/full-battle-original-card-draw-potion.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/draw/full-battle-original-card-draw-potion.mt2f
 ```
 
 ### Original Accelerated Incubation
@@ -8819,8 +8844,8 @@ unique nodes and SHA-256
 Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
-dotnet run --project src/ModelChecks -c Release -- --original-accelerated-incubation-only tests/fixtures/full-battle-original-accelerated-incubation.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-accelerated-incubation.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-accelerated-incubation-only tests/fixtures/cards/originals/full-battle-original-accelerated-incubation.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-accelerated-incubation.mt2f
 ```
 
 ### Original Eager Conscript
@@ -8833,8 +8858,8 @@ routing, same-unit extension and immutable action replay.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-eager-conscript.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-eager-conscript-only tests/fixtures/full-battle-original-eager-conscript.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-eager-conscript.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-eager-conscript-only tests/fixtures/cards/originals/full-battle-original-eager-conscript.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-eager-conscript.mt2f
 ```
 
 ### Original Copy Morsel Twice
@@ -8848,8 +8873,8 @@ immutable replay.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-copy-morsel-twice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-copy-morsel-twice-only tests/fixtures/full-battle-original-copy-morsel-twice.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-copy-morsel-twice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-copy-morsel-twice-only tests/fixtures/combat/units/full-battle-original-copy-morsel-twice.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/units/full-battle-original-copy-morsel-twice.mt2f
 ```
 
 ### Original Lazarus League Spike
@@ -8861,8 +8886,8 @@ remaining-Ember payment, Consume routing and immutable replay.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-lazarus-league-spike.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-lazarus-league-spike-only tests/fixtures/full-battle-original-lazarus-league-spike.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-lazarus-league-spike.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-lazarus-league-spike-only tests/fixtures/cards/originals/full-battle-original-lazarus-league-spike.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-lazarus-league-spike.mt2f
 ```
 
 ### Original Tome of Contracts
@@ -8879,8 +8904,8 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture full-battle-original-tome-of-contracts.mt2f
-dotnet run --project src/ModelChecks -c Release -- --original-tome-of-contracts-only tests/fixtures/full-battle-original-tome-of-contracts.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-tome-of-contracts.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-tome-of-contracts-only tests/fixtures/cards/originals/full-battle-original-tome-of-contracts.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-tome-of-contracts.mt2f
 ```
 
 ### Original Minds of Their Own
@@ -8899,9 +8924,9 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMindsOfTheirOwn -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-minds-of-their-own-only tests/fixtures/full-battle-original-minds-of-their-own.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-minds-of-their-own.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-minds-of-their-own.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-minds-of-their-own-only tests/fixtures/cards/originals/full-battle-original-minds-of-their-own.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-minds-of-their-own.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-minds-of-their-own.mt2f
 ```
 
 ### Original Metallurgy
@@ -8919,9 +8944,9 @@ both legal hand-card selections.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMetallurgy -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-metallurgy-only tests/fixtures/full-battle-original-metallurgy.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-metallurgy.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-metallurgy.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-metallurgy-only tests/fixtures/cards/originals/full-battle-original-metallurgy.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-metallurgy.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-metallurgy.mt2f
 ```
 
 ### Original Fertile Ground
@@ -8940,9 +8965,9 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalFertileGround -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-fertile-ground-only tests/fixtures/full-battle-original-fertile-ground.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-fertile-ground.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-fertile-ground.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-fertile-ground-only tests/fixtures/cards/originals/full-battle-original-fertile-ground.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-fertile-ground.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-fertile-ground.mt2f
 ```
 
 ### Original Cover of Night
@@ -8960,9 +8985,9 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalCoverOfNight -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-cover-of-night-only tests/fixtures/full-battle-original-cover-of-night.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-cover-of-night.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-cover-of-night.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-cover-of-night-only tests/fixtures/cards/originals/full-battle-original-cover-of-night.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-cover-of-night.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-cover-of-night.mt2f
 ```
 
 ### Original Waxen Spike
@@ -8981,9 +9006,9 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalWaxenSpike -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-waxen-spike-only tests/fixtures/full-battle-original-waxen-spike.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-waxen-spike.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-waxen-spike.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-waxen-spike-only tests/fixtures/cards/originals/full-battle-original-waxen-spike.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-waxen-spike.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-waxen-spike.mt2f
 ```
 
 ### Original ImpPressive
@@ -9002,9 +9027,9 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalImpPressive -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-imp-pressive-only tests/fixtures/full-battle-original-imp-pressive.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-imp-pressive.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-imp-pressive.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-imp-pressive-only tests/fixtures/cards/originals/full-battle-original-imp-pressive.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-imp-pressive.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-imp-pressive.mt2f
 ```
 
 ### Original Tome of Evergrowth
@@ -9022,9 +9047,9 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTomeOfEvergrowth -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-tome-of-evergrowth-only tests/fixtures/full-battle-original-tome-of-evergrowth.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-tome-of-evergrowth.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-tome-of-evergrowth.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-tome-of-evergrowth-only tests/fixtures/cards/originals/full-battle-original-tome-of-evergrowth.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-tome-of-evergrowth.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-tome-of-evergrowth.mt2f
 ```
 
 ### Original Tome of the Lost Path
@@ -9042,9 +9067,9 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalTomeOfTheLostPath -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-tome-of-the-lost-path-only tests/fixtures/full-battle-original-tome-of-the-lost-path.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-tome-of-the-lost-path.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-tome-of-the-lost-path.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-tome-of-the-lost-path-only tests/fixtures/cards/originals/full-battle-original-tome-of-the-lost-path.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-tome-of-the-lost-path.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-tome-of-the-lost-path.mt2f
 ```
 
 ### Original Make It Rain
@@ -9062,9 +9087,9 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalMakeItRain -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-make-it-rain-only tests/fixtures/full-battle-original-make-it-rain.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-make-it-rain.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-make-it-rain.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-make-it-rain-only tests/fixtures/cards/originals/full-battle-original-make-it-rain.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-make-it-rain.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-make-it-rain.mt2f
 ```
 
 ### Original Deathroar
@@ -9086,9 +9111,9 @@ Independent replay and the 128-state serial/parallel search pass.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalDeathroar -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-deathroar-only tests/fixtures/full-battle-original-deathroar.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-deathroar.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-deathroar.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-deathroar-only tests/fixtures/combat/damage/full-battle-original-deathroar.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/combat/damage/full-battle-original-deathroar.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/damage/full-battle-original-deathroar.mt2f
 ```
 
 ### Original Secret Ingredient
@@ -9107,9 +9132,9 @@ and exposes both first-draft choices. Bounded serial/parallel search agrees at
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalSecretIngredient -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-secret-ingredient-only tests/fixtures/full-battle-original-secret-ingredient.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-secret-ingredient.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-secret-ingredient.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-secret-ingredient-only tests/fixtures/cards/originals/full-battle-original-secret-ingredient.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-secret-ingredient.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-secret-ingredient.mt2f
 ```
 
 ### Original Green Recruit
@@ -9131,9 +9156,9 @@ The 57,656-byte archive has 7,132 unique nodes and SHA-256
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalGreenRecruit -BinaryCapture
-dotnet run --project src/ModelChecks -c Release -- --original-green-recruit-only tests/fixtures/full-battle-original-green-recruit.mt2f
-dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/full-battle-original-green-recruit.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-green-recruit.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-green-recruit-only tests/fixtures/cards/originals/full-battle-original-green-recruit.mt2f
+dotnet run --project src/ModelChecks -c Release -- --native-actions-only tests/fixtures/cards/originals/full-battle-original-green-recruit.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-green-recruit.mt2f
 ```
 
 ### Original Molten Encasement
@@ -9151,8 +9176,8 @@ at 128 states, with three replayed steps. The archive is 27,902 bytes, has
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId b20aaea2-cf9e-4475-aac3-abba7a0bed7e
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-molten-encasement.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-molten-encasement.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/originals/full-battle-original-molten-encasement.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/originals/full-battle-original-molten-encasement.mt2f
 ```
 
 ### Original Shattered Shell
@@ -9170,8 +9195,8 @@ has 3,503 unique nodes and SHA-256
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 57985d47-d8ac-46be-8545-20a51209fc4f
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-shattered-shell.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-shattered-shell.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-shattered-shell.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-shattered-shell.mt2f
 ```
 
 ### Original Weldling
@@ -9188,8 +9213,8 @@ count are recorded in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId acb9a1cb-f6fc-40df-b287-fc82b8df156b
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-weldling.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-weldling.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-weldling.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-weldling.mt2f
 ```
 
 ### Original Hostguard
@@ -9204,8 +9229,8 @@ pending records. Focused replay and bounded serial/parallel search agree at
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId c682012e-b5fc-4f75-9cb4-f6ade997b72f
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hostguard.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hostguard.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-hostguard.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-hostguard.mt2f
 ```
 
 ### Original Rubble Raiser
@@ -9221,8 +9246,8 @@ pending records. Focused replay and bounded serial/parallel search agree at
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId e2ed318d-754c-41b8-8df6-0a6af221e54e
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-rubble-raiser.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-rubble-raiser.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-rubble-raiser.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-rubble-raiser.mt2f
 ```
 
 ### Original Nightingale
@@ -9238,8 +9263,8 @@ archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 7775c5b5-eed9-4864-9976-9c86896becc1
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-nightingale.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-nightingale.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-nightingale.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-nightingale.mt2f
 ```
 
 ### Original Juggernaut
@@ -9254,8 +9279,8 @@ steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 952db29f-b585-41be-bfdd-0a36b9b05010
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-juggernaut.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-juggernaut.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-juggernaut.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-juggernaut.mt2f
 ```
 
 ### Original Hoard Acolyte
@@ -9270,8 +9295,8 @@ search agree at 128 states, with three replayed steps; archive metadata is in
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 3224dfe8-41f9-49b9-8917-3afefb67e9dd
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hoard-acolyte.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hoard-acolyte.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/combat/resources/full-battle-original-isolated-hoard-acolyte.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/resources/full-battle-original-isolated-hoard-acolyte.mt2f
 ```
 
 ### Original HotHead
@@ -9286,8 +9311,8 @@ search agree at 128 states, with three replayed steps; archive metadata is in
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId ee2a1d34-f1de-43ac-a06b-f3a414c93363
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-hothead.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-hothead.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-hothead.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-hothead.mt2f
 ```
 
 ### Original Steadfast Crusader
@@ -9304,8 +9329,8 @@ search agree at 128 states, with three replayed steps; archive metadata is in
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 075a061c-480c-4873-8f9f-88cf836eec27
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-steadfast-crusader.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-steadfast-crusader.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-steadfast-crusader.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-steadfast-crusader.mt2f
 ```
 
 ### Original Truffles
@@ -9321,8 +9346,8 @@ replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 9a63e469-ae29-4199-ae41-4060ecd92853
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-truffles.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-truffles.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-truffles.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-truffles.mt2f
 ```
 
 ### Original Pyreblooded
@@ -9340,8 +9365,8 @@ metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -OriginalIsolatedUnitId e962f77b-d5bc-441b-be79-8cb3207d8a42
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-pyreblooded.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-pyreblooded.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-pyreblooded.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-pyreblooded.mt2f
 ```
 
 ### Original Kinhost Carapace
@@ -9359,8 +9384,8 @@ archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 8fcb523c-690f-44cb-887d-7112795a50a1
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-kinhost-carapace.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-kinhost-carapace.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-kinhost-carapace.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-kinhost-carapace.mt2f
 ```
 
 ### Original Meathook
@@ -9376,8 +9401,8 @@ with three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 6c070dfb-65b7-4955-a651-999990fd0c90
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-meathook.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-meathook.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-meathook.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-meathook.mt2f
 ```
 
 ### Original Railgun
@@ -9394,8 +9419,8 @@ with three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 9b8f9080-0001-4994-bf1f-cf8bb247222f
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-railgun.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-railgun.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-railgun.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-railgun.mt2f
 ```
 
 ### Original Silent Sentinel
@@ -9411,8 +9436,8 @@ three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 4f0f249f-2a0e-4704-b8e2-8395505e6bdb
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-silent-sentinel.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-silent-sentinel.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-silent-sentinel.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-silent-sentinel.mt2f
 ```
 
 ### Original Spikedriver Factory
@@ -9428,8 +9453,8 @@ states, with three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId acf2b858-7dc9-492f-b01c-cbb8278fd43a
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-spikedriver-factory.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-spikedriver-factory.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-spikedriver-factory.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-spikedriver-factory.mt2f
 ```
 
 ### Original Scrivener
@@ -9445,8 +9470,8 @@ steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId c2baee0e-4bc6-4da6-8330-71f5a299133e
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-scrivener.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-scrivener.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-scrivener.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-scrivener.mt2f
 ```
 
 ### Original Banished Champion 2
@@ -9462,8 +9487,8 @@ states, with three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 27340034-9ee7-4535-bb63-2e0bd8c321fb
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-banished-champ2.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-banished-champ2.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-banished-champ2.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-banished-champ2.mt2f
 ```
 
 ### Original Pyreborne Champion 1
@@ -9479,8 +9504,8 @@ states, with three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 7488b439-316c-4a13-8897-90de239b6250
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-pyreborne-champ1.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-pyreborne-champ1.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-pyreborne-champ1.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-pyreborne-champ1.mt2f
 ```
 
 ### Original Death Eater
@@ -9495,8 +9520,8 @@ with three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 68a76ecf-2108-4b7f-b805-b3653cdd96bf
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-death-eater.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-death-eater.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/combat/damage/full-battle-original-isolated-death-eater.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/damage/full-battle-original-isolated-death-eater.mt2f
 ```
 
 ### Original Luna Coven Champion 1
@@ -9511,8 +9536,8 @@ states, with three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 5d2b15ed-e9b4-464a-b029-f337f2ed6cd2
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-luna-coven-champ1.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-luna-coven-champ1.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-luna-coven-champ1.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-luna-coven-champ1.mt2f
 ```
 
 ### Original Luna Coven Champion 2
@@ -9528,8 +9553,8 @@ metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 63eba1e1-3118-44a3-8906-c8bfbe559667
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-luna-coven-champ2.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-luna-coven-champ2.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-luna-coven-champ2.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-luna-coven-champ2.mt2f
 ```
 
 ### Original Sporelauncher
@@ -9544,8 +9569,8 @@ with three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId aa20f108-ca78-42b1-b949-55fad0f84b15
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-sporelauncher.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-sporelauncher.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-sporelauncher.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-sporelauncher.mt2f
 ```
 
 ### Original Conductor Steward
@@ -9562,8 +9587,8 @@ three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 52b17dc7-968f-4748-a2ea-b6c09c5c8931
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-conductor-steward.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-conductor-steward.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-conductor-steward.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-conductor-steward.mt2f
 ```
 
 ### Original Enchantrelle
@@ -9578,8 +9603,8 @@ three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 658321b4-08bd-443c-b4e1-b8a8931d3299
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-enchantrelle.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-enchantrelle.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-enchantrelle.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-enchantrelle.mt2f
 ```
 
 ### Original Feeder Damage Enemies
@@ -9594,8 +9619,8 @@ three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId aa94ef0c-0fd8-4d42-992f-25345d3717b5
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-feeder-damage-enemies.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-feeder-damage-enemies.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/combat/damage/full-battle-original-isolated-feeder-damage-enemies.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/damage/full-battle-original-isolated-feeder-damage-enemies.mt2f
 ```
 
 ### Original Lady of the Reformed
@@ -9612,8 +9637,8 @@ search agree at 128 states, with three replayed steps; archive metadata is in
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 5ac22130-17f1-4f8e-967f-a2d3b71ef7ca
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-lady-of-the-reformed.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-lady-of-the-reformed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-lady-of-the-reformed.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-lady-of-the-reformed.mt2f
 ```
 
 ### Original Feeder Permanent Attack Boost
@@ -9629,8 +9654,8 @@ metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId ed072114-b62e-4f61-8892-adf775d5a34c
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-feeder-permanent-attack-boost.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-feeder-permanent-attack-boost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-feeder-permanent-attack-boost.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-feeder-permanent-attack-boost.mt2f
 ```
 
 ### Original Zealot
@@ -9645,8 +9670,8 @@ pending records. Focused replay and bounded serial/parallel search agree at
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 071d7448-0be6-4a40-860c-ede856a42228
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-zealot.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-zealot.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-zealot.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-zealot.mt2f
 ```
 
 ### Original Parrafin Thug
@@ -9662,8 +9687,8 @@ replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId a2bc0531-4037-418b-a30b-9189cc580adf
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-parrafin-thug.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-parrafin-thug.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-parrafin-thug.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-parrafin-thug.mt2f
 ```
 
 ### Original Monstrosity
@@ -9681,8 +9706,8 @@ metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 5336f488-1e09-40a5-97bc-5a5fde3c5e55
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-monstrosity.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-monstrosity.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-monstrosity.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-monstrosity.mt2f
 ```
 
 ### Original Wickless Death-Trigger Batch
@@ -9698,8 +9723,8 @@ search agrees at 128 states with three replayed steps.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitIds '4cf9eb1d-b852-4514-8f32-831bc38276ec,918f8345-8660-49de-a764-d16e76343abc'
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-wickless-death-trigger-batch.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-wickless-death-trigger-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/combat/damage/full-battle-original-isolated-wickless-death-trigger-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/damage/full-battle-original-isolated-wickless-death-trigger-batch.mt2f
 ```
 
 ### Original Frozen Totem
@@ -9713,8 +9738,8 @@ three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 174fefa4-95ec-40cf-9116-fcb954c6dc4c
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-frozen-totem.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-frozen-totem.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-frozen-totem.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-frozen-totem.mt2f
 ```
 
 ### Original Royal Whelp
@@ -9728,8 +9753,8 @@ with three replayed steps; archive metadata is in `manifest.tsv`.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 198fb647-d5fc-4fb4-912c-cb8e64789412
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-royal-whelp.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-royal-whelp.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-royal-whelp.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-royal-whelp.mt2f
 ```
 
 ### Original Consumer of Crowns
@@ -9745,8 +9770,8 @@ search agree at 128 states with three replayed steps; archive metadata is in
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 61f74a3a-8292-4478-b213-50cef449ed61
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-consumer-of-crowns.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-consumer-of-crowns.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-consumer-of-crowns.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-consumer-of-crowns.mt2f
 ```
 
 ### Original Steelsinger
@@ -9761,8 +9786,8 @@ pending records. Focused replay and bounded serial/parallel search agree at
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitId 55f5945e-8cb3-4577-9207-a92c5deb78d5
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-steelsinger.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-steelsinger.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/cards/isolated/full-battle-original-isolated-steelsinger.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/cards/isolated/full-battle-original-isolated-steelsinger.mt2f
 ```
 
 ### Original Death-Summon Unit Batch
@@ -9793,8 +9818,8 @@ the updated placement/energy-control chooser. Archive metadata is in
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -Policy no-cards -SkipBuild -OriginalIsolatedUnitIds 'b8f0ce9f-65ef-49cd-87e5-a75dd95b7032,1fd77f47-4735-41d0-b660-66df674f1969' -FailFastOnIsolatedUnitReject
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-death-summon-batch.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-death-summon-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/combat/spawn/full-battle-original-isolated-death-summon-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/spawn/full-battle-original-isolated-death-summon-batch.mt2f
 ```
 
 ### Original Conduit and Moon Unit Batch
@@ -9817,8 +9842,8 @@ an affected regression.
 
 ```powershell
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -SkipBuild -OriginalIsolatedUnitIds 'd8c13978-32aa-4476-b568-68a3d83e1d49,ad37d22e-fcbe-43a0-9901-faaba3bb2ea7,df0a4dbc-b022-4e29-aadc-10e98ceaceab,2b7a187f-da0b-4c34-b8c5-b18755911b43' -IsolatedUnitConduit -FailFastOnIsolatedUnitReject
-dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/full-battle-original-isolated-conduit-moon-batch.mt2f
-dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/full-battle-original-isolated-conduit-moon-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --original-support-units-only tests/fixtures/combat/rooms/full-battle-original-isolated-conduit-moon-batch.mt2f
+dotnet run --project src/ModelChecks -c Release -- --battle-search-only tests/fixtures/combat/rooms/full-battle-original-isolated-conduit-moon-batch.mt2f
 ```
 
 ### Original Enchant and Equipment Batches

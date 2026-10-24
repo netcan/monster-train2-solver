@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
     'player-live-arkion-pyre-unavailable.mt2f',
@@ -1126,7 +1127,7 @@ if ($Fixture.Count -gt 0) {
         throw 'Duplicate fixture selections are not allowed.'
     }
 }
-$fixtures = @($selectedFixtureNames | ForEach-Object { Join-Path $workspace ('tests\fixtures\' + $_) })
+$fixtures = @($selectedFixtureNames | ForEach-Object { Get-TestFixturePath $_ })
 & (Join-Path $PSScriptRoot 'Check-FixtureCatalog.ps1')
 if ($Fixture.Count -gt 0) {
     Write-Host "FIXTURE-INTEGRITY PASS: $($fixtures.Count) selected of $($fixtureNames.Count) curated archives match the SHA-256 manifest."
@@ -3800,12 +3801,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     if ($LASTEXITCODE -ne 0) { throw "Observed Arkion Pyre native inputs failed: $fixturePath" }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-live-arkion-pyre-unavailable.mt2f' })) {
-    $nativePath = Join-Path (Split-Path $fixturePath -Parent) 'full-battle-player-live-arkion-pyre.mt2f'
+    $nativePath = Get-TestFixturePath 'full-battle-player-live-arkion-pyre.mt2f'
     dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- --live-arkion-pyre-only $fixturePath $nativePath
     if ($LASTEXITCODE -ne 0) { throw "Live Arkion Pyre advice checks failed: $fixturePath" }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-player-live-arkion-pyre.mt2f' })) {
-    $birthPath = Join-Path (Split-Path $fixturePath -Parent) 'outer-boss-birth-live-arkion-pyre.mt2f'
+    $birthPath = Get-TestFixturePath 'outer-boss-birth-live-arkion-pyre.mt2f'
     dotnet run --project (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-build -- --live-arkion-pyre-native-only $fixturePath $birthPath
     if ($LASTEXITCODE -ne 0) { throw "Native Arkion Pyre advice checks failed: $fixturePath" }
 }

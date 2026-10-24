@@ -43,7 +43,7 @@ preview-allocator and floor-browsing modes remain identical; Unicode/large-buffe
 and scalar representation controls also pass.
 
 ```powershell
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --state-key-only tests/fixtures/full-battle-player-natural-ring7-ordinary-search.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --state-key-only tests/fixtures/campaign/progression/full-battle-player-natural-ring7-ordinary-search.mt2f
 ```
 
 The real0.2.9 player and a fresh native frozen process both win with73 Pyre HP:
@@ -70,7 +70,7 @@ checks; GC/JIT latency spikes remain possible. No native allocation/FPS claim
 is inferred from the .NET8 benchmark.
 
 ```powershell
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --parallel-planner-pair-only tests/fixtures/full-battle-player-performance-finish-search.mt2f tests/fixtures/full-battle-player-performance-finish-replay.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --parallel-planner-pair-only tests/fixtures/planning/performance/full-battle-player-performance-finish-search.mt2f tests/fixtures/planning/performance/full-battle-player-performance-finish-replay.mt2f
 ```
 
 ## Snapshot-local native reuse · Windows0.2.8
@@ -128,7 +128,7 @@ fixture manifest. This also registers the previously unregistered0.2.7
 whole-battle pair. Recheck the optimized pair without a full regression:
 
 ```powershell
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --parallel-planner-pair-only tests/fixtures/full-battle-player-capture-reuse-search.mt2f tests/fixtures/full-battle-player-capture-reuse-replay.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --parallel-planner-pair-only tests/fixtures/advisor/presentation/full-battle-player-capture-reuse-search.mt2f tests/fixtures/advisor/presentation/full-battle-player-capture-reuse-replay.mt2f
 ```
 
 Fresh native cost/moon component
@@ -184,7 +184,7 @@ while allocations occur; the profiler reports that value as unavailable.
 Reproduce with the already built player/probe assemblies:
 
 ```powershell
-./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Seed 424242 -BattleDistance 0 -Policy units-spells-and-junk -PlayerAdvisor -RollingAdvice -AdvisorFloorBrowse -PlannerWholeBattle -PlannerSearchWorkers 2 -ProfileCapture -PhysicalSpawnPoints -BranchCardMasks -RollingInput tests/fixtures/full-battle-player-whole-battle-search.mt2f -SkipBuild -TimeoutSeconds 600
+./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Seed 424242 -BattleDistance 0 -Policy units-spells-and-junk -PlayerAdvisor -RollingAdvice -AdvisorFloorBrowse -PlannerWholeBattle -PlannerSearchWorkers 2 -ProfileCapture -PhysicalSpawnPoints -BranchCardMasks -RollingInput tests/fixtures/advisor/presentation/full-battle-player-whole-battle-search.mt2f -SkipBuild -TimeoutSeconds 600
 ```
 
 The profiler dynamically patches only the separately loaded player assembly in

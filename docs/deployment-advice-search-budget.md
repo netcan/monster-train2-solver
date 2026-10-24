@@ -72,7 +72,7 @@ contains 1360 registered archives. No full regression or macOS build was
 run for this repair.
 
 ```powershell
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --deployment-advice-budget-only tests/fixtures/player-live-empty-deployment-advice.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --deployment-advice-budget-only tests/fixtures/advisor/live/player-live-empty-deployment-advice.mt2f
 ./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Policy units-and-junk -PlayerAdvisor -RollingAdvice -AdvisorPresentation -AdvisorFloorBrowse -PlannerWholeBattle -PlannerSearchWorkers 2 -SkipBuild -TimeoutSeconds 300
 ./scripts/Check-FixtureCatalog.ps1
 ```

@@ -10,6 +10,7 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = Split-Path $PSScriptRoot -Parent
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
@@ -74,10 +75,10 @@ foreach ($name in $Case) {
         'TerminalCopy' { 'player-terminal-copy' }
         'TerminalPurgeCopy' { 'player-terminal-purge-copy' }
     }
-    $search = Join-Path $workspace "tests/fixtures/full-battle-$prefix-search.mt2f"
-    $replay = Join-Path $workspace "tests/fixtures/full-battle-$prefix-replay.mt2f"
+    $search = Get-TestFixturePath "full-battle-$prefix-search.mt2f"
+    $replay = Get-TestFixturePath "full-battle-$prefix-replay.mt2f"
     $archives = @($search, $replay)
-    $budgetFailure = Join-Path $workspace 'tests/fixtures/advisor-ordinary-budget-failure.mt2f'
+    $budgetFailure = Join-Path $workspace 'tests/fixtures/planning/search/advisor-ordinary-budget-failure.mt2f'
     if ($name -eq 'FragileShortBudget') { $archives += $budgetFailure }
     foreach ($path in $archives) {
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Missing player acceptance archive: $path" }

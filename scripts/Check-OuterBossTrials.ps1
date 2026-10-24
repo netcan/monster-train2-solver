@@ -5,6 +5,7 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = Split-Path $PSScriptRoot -Parent
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
@@ -25,7 +26,7 @@ foreach ($variant in $Case) {
         "outer-boss-trial-$stem-relentless-phase-calibration.mt2f"
     )
     $paths = @(foreach ($archive in $archives) {
-        $path = Join-Path $workspace "tests/fixtures/$archive"
+        $path = Get-TestFixturePath "$archive"
         $rows = @($manifest | Where-Object archive -CEQ $archive)
         if ($rows.Count -ne 1 -or (Get-Item -LiteralPath $path).Length -ne [long]$rows[0].archive_bytes -or
             (Get-FileHash -LiteralPath $path).Hash -ine $rows[0].archive_sha256) {

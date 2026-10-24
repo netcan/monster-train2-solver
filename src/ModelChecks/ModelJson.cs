@@ -8,6 +8,7 @@ internal static class ModelJson
     internal static readonly JsonSerializerOptions Options = Create();
     internal static FixtureDocument ReadFixture(string path) => path.EndsWith(".mt2f", StringComparison.OrdinalIgnoreCase)
         ? FixtureDocument.Read(path) : LegacyFixtureImport.Read(path);
+    internal static string RelatedFixture(string source, string name) => FixtureCatalog.Related(source, name);
     internal static string? Difference(string predicted, string actual)
     {
         using var left = JsonDocument.Parse(predicted);

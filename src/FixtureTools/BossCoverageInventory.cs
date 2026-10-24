@@ -27,12 +27,12 @@ internal static class BossCoverageInventory
             Text(row, "AssetKey").StartsWith("Level8", StringComparison.Ordinal)).ToArray();
         var evidence = scenarios.ToDictionary(row => Text(row, "AssetKey"), _ => new Evidence(), StringComparer.Ordinal);
         string directory = Path.Combine(workspace, "tests/fixtures");
-        string[] archives = File.ReadLines(Path.Combine(directory, "manifest.tsv")).Skip(1)
-            .Select(line => line.Split('\t')[0]).Where(name => name.StartsWith("full-battle-", StringComparison.Ordinal)).ToArray();
+        var fixtures = new FixtureCatalog(directory);
+        string[] archives = fixtures.Paths.Keys.Where(name => name.StartsWith("full-battle-", StringComparison.Ordinal)).ToArray();
         var registered = archives.ToHashSet(StringComparer.Ordinal);
         foreach (string archive in archives)
         {
-            using var document = FixtureDocument.Read(Path.Combine(directory, archive));
+            using var document = FixtureDocument.Read(fixtures.Resolve(archive));
             FixtureValue battle = document.RootElement;
             string scenario = Scenario(battle);
             if (!evidence.TryGetValue(scenario, out Evidence? entry) || !Accepted(battle)) continue;
@@ -40,7 +40,7 @@ internal static class BossCoverageInventory
             if (!archive.EndsWith("-search.mt2f", StringComparison.Ordinal) || !Player(battle, requirePublication: true)) continue;
             string replayName = archive[..^"-search.mt2f".Length] + "-replay.mt2f";
             if (!registered.Contains(replayName)) continue;
-            using var replay = FixtureDocument.Read(Path.Combine(directory, replayName));
+            using var replay = FixtureDocument.Read(fixtures.Resolve(replayName));
             if (Scenario(replay.RootElement) == scenario && Accepted(replay.RootElement) && Player(replay.RootElement, requirePublication: false))
                 entry.Pairs.Add(archive);
         }
@@ -73,8 +73,8 @@ internal static class BossCoverageInventory
             "\nThe TSV retains native identities, growth signatures and exact player-source archives. " +
             "True-final-boss routing, Titan Trial substitutions, Endless/test scenarios and Soul Savior definitions are separate " +
             "and are not included in this denominator. Card/relic logbook completion does not establish boss advice coverage.\n";
-        Write(Path.Combine(directory, "boss-inventory.tsv"), tsv.ToString(), check);
-        Write(Path.Combine(directory, "boss-coverage.md"), report, check);
+        Write(Path.Combine(directory, "inventory", "boss-inventory.tsv"), tsv.ToString(), check);
+        Write(Path.Combine(directory, "inventory", "boss-coverage.md"), report, check);
         Console.WriteLine($"BOSS-INVENTORY {(check ? "CHECK" : "WRITE")} PASS: {scenarios.Length} original scenarios/{allowed} allowed definition gates/{paired} curated player-pair scenarios; metadata only, no battle regression.");
     }
 

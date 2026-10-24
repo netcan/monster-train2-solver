@@ -60,9 +60,9 @@ full-state/RNG replay. Its outcome is PlayerDefeated; a terminal forecast is not
 proof of an optimal line or that this battle is unwinnable.
 
 ```powershell
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-opening-forsaken-only tests/fixtures/full-battle-original-opening-forsaken-covenant10.mt2f
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-forsaken-only tests/fixtures/player-live-forsaken-trial.mt2f
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-opening-morsels-only tests/fixtures/full-battle-original-opening-morsels.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-opening-forsaken-only tests/fixtures/campaign/covenants/full-battle-original-opening-forsaken-covenant10.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-forsaken-only tests/fixtures/advisor/live/player-live-forsaken-trial.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-opening-morsels-only tests/fixtures/combat/units/full-battle-original-opening-morsels.mt2f
 ./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Seed 424242 -OriginalOpeningForsakenTrial -StartingCovenantLevel 10 -SkipBuild -TimeoutSeconds 240
 ./scripts/Check-FixtureCatalog.ps1
 ```

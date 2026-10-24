@@ -98,7 +98,7 @@ internal static class CovenantOuterBossChecks
         bool ftue = suffix == variant.ToLowerInvariant() + "-00-01";
         Require(ftue || suffix == variant.ToLowerInvariant() + "-01", "Unknown curated Covenant context.");
         using var battle = ModelJson.ReadFixture(path);
-        using var birth = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "outer-boss-birth-covenant-" + suffix + ".mt2f"));
+        using var birth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "outer-boss-birth-covenant-" + suffix + ".mt2f"));
         Native(battle.RootElement, birth.RootElement, variant, ftue);
     }
 
@@ -113,7 +113,7 @@ internal static class CovenantOuterBossChecks
         bool ftue = suffix == variant.ToLowerInvariant() + "-00-01";
         Require(ftue || suffix == variant.ToLowerInvariant() + "-01", "Unknown player Covenant context.");
         using var source = ModelJson.ReadFixture(path);
-        using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!,
+        using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
             "full-battle-player-covenant-outer-boss-" + suffix + "-replay.mt2f"));
         Pair(source.RootElement, replay.RootElement, variant, ftue);
     }

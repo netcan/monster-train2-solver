@@ -8,7 +8,7 @@ $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
 $accepted = @{}
 $evidenceKind = 'accepted-native-battle'
-foreach ($line in Get-Content (Join-Path $workspace 'tests/fixtures/relic-coverage.md')) {
+foreach ($line in Get-Content (Join-Path $workspace 'tests/fixtures/inventory/relic-coverage.md')) {
     if ($line -match '^## ') {
         $evidenceKind = switch ($line) {
             '## Campaign interface evidence' { 'accepted-native-campaign' }

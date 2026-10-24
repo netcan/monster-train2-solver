@@ -50,9 +50,9 @@ instead of treating an archived prediction as a future native observation.
 Focused commands (no full regression):
 
 ```powershell
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-moon-continuation-only tests/fixtures/player-live-moon-continuation.mt2f
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-moon-composition-only tests/fixtures/full-battle-original-moon-card-upgrades-live-relics-covenant10.mt2f
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-floor-scroll-only tests/fixtures/player-live-conduit-floor-scroll.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-moon-continuation-only tests/fixtures/advisor/moon/player-live-moon-continuation.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-moon-composition-only tests/fixtures/campaign/covenants/full-battle-original-moon-card-upgrades-live-relics-covenant10.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-floor-scroll-only tests/fixtures/advisor/live/player-live-conduit-floor-scroll.mt2f
 ./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Seed 424242 -OriginalMoonCardUpgradesLiveRelics -StartingCovenantLevel 10 -SkipBuild -TimeoutSeconds 240
 ./scripts/Check-FixtureCatalog.ps1
 ```

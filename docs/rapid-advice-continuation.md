@@ -33,7 +33,7 @@ later root converges to the old route. A floor callback arriving after worker
 start must survive that worker's publication.
 
 ```powershell
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --floor-browse-selection-only tests/fixtures/player-live-conduit-floor-scroll.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --floor-browse-selection-only tests/fixtures/advisor/live/player-live-conduit-floor-scroll.mt2f
 ```
 
 Actual divergence, exhaustion of the available forecast, and manual reset retain

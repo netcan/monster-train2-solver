@@ -37,7 +37,7 @@ verified current-turn and complete-winning suffixes while reporting searches
 separately. It permits explicitly shorter complete forecasts just as the player
 does. Without it, `plan-battle` retains strict-horizon search after every input.
 Every recorded complete forecast now passes independent full-state/RNG replay,
-including legacy one-step frozen policies. See [offline workflow](../tests/fixtures/offline-planning.md).
+including legacy one-step frozen policies. See [offline workflow](../tests/fixtures/notes/planning/offline-planning.md).
 
 The seed42 Corrupter deployment in
 `full-battle-units-spells-and-junk-20261023-055405-e160c30a` provided the first

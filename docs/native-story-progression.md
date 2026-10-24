@@ -24,7 +24,7 @@
 三个击败真终局后解锁的薪火之心不计入这九个前置目标。
 
 证据保留在
-[原生快照](../tests/fixtures/native-story-progression-after-standard.json)。
+[原生快照](../tests/fixtures/evidence/campaign/native-story-progression-after-standard.json)。
 源为 `campaign-completed-ring8.zip` 恢复的 48 个已校验成员，观察进程为
 `campaign-story-20261023-063754-d268f1e6`：正常退出、原文件未变、只有两个
 审计事件、没有开始或恢复战斗。它是原生进度观测，不是新的战役胜局。
@@ -44,5 +44,5 @@ seed42 的自然腐化者路线现也完成原生八战 Standard 结算。其
 seed424244 的自然 Fragile 路线也已完成原生八战 Standard 结算，最终战使用
 三回合／3000ms、底层偏好的真实玩家建议及独立回放。完成档案
 `campaign-completed-fragile.zip` 的 26 个载荷恢复校验通过；其
-[通关后原生快照](../tests/fixtures/native-story-progression-after-fragile.json)
+[通关后原生快照](../tests/fixtures/evidence/bosses/native-story-progression-after-fragile.json)
 仍为额外薪火之心 0/9、剧情索引 0、真终局未解锁。三份标准通关档案独立保留。

@@ -56,7 +56,7 @@ failure `roots-1.json`, fixed observations `roots-101.json` through107,
 not an autoplay/frozen full-battle victory pair.
 
 ```powershell
-dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-floor-scroll-only tests/fixtures/player-live-conduit-floor-scroll.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-floor-scroll-only tests/fixtures/advisor/live/player-live-conduit-floor-scroll.mt2f
 ```
 
 The checker independently reproduces every full native selection transition,

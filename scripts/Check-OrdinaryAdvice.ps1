@@ -2,6 +2,7 @@
 [CmdletBinding()]
 param([switch] $SkipBuild)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = Split-Path $PSScriptRoot -Parent
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
@@ -12,7 +13,7 @@ $manifest = Import-Csv -LiteralPath (Join-Path $workspace 'tests/fixtures/manife
 function Get-VerifiedPair([string] $Case) {
     foreach ($mode in @('search', 'replay')) {
         $name = "full-battle-player-$Case-$mode.mt2f"
-        $path = Join-Path $workspace "tests/fixtures/$name"
+        $path = Get-TestFixturePath "$name"
         $rows = @($manifest | Where-Object archive -CEQ $name)
         if ($rows.Count -ne 1 -or (Get-Item -LiteralPath $path).Length -ne [long]$rows[0].archive_bytes -or
             (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $rows[0].archive_sha256) {
@@ -32,7 +33,7 @@ $crossTurn = @(Get-VerifiedPair 'cross-turn-scroll')
 dotnet $checker --player-ordinary-advice-pair-only @crossTurn
 if ($LASTEXITCODE -ne 0) { throw 'Cross-turn/native wheel continuation pair checks failed.' }
 $liveName = 'player-live-conduit-floor-scroll.mt2f'
-$livePath = Join-Path $workspace "tests/fixtures/$liveName"
+$livePath = Get-TestFixturePath "$liveName"
 $liveRows = @($manifest | Where-Object archive -CEQ $liveName)
 if ($liveRows.Count -ne 1 -or (Get-Item -LiteralPath $livePath).Length -ne [long]$liveRows[0].archive_bytes -or
     (Get-FileHash -LiteralPath $livePath -Algorithm SHA256).Hash -ine $liveRows[0].archive_sha256) {

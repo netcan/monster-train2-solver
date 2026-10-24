@@ -208,7 +208,7 @@ internal static class StartingCovenantChecks
         if (player) suffix = suffix[..^"-search".Length];
         int level = int.Parse(suffix);
         string other = player ? prefix + suffix + "-replay.mt2f" : "true-final-boss-scheduled-native-covenant-" + suffix + ".mt2f";
-        using var document = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, other));
+        using var document = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, other));
         if (player) FinalPair(root, document.RootElement, level);
         else FinalNative(root, document.RootElement, path, level);
     }
@@ -289,13 +289,13 @@ internal static class StartingCovenantChecks
         };
         string other = player ? "full-battle-player-native-covenant-outer-boss-" + suffix + "-replay.mt2f" :
             "outer-boss-birth-native-covenant-" + suffix + ".mt2f";
-        using var document = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, other));
+        using var document = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, other));
         if (player)
         {
             OuterPair(root, document.RootElement, variant, level);
             if (variant == "AllyBuffer" && level == 10)
             {
-                string positive = Path.Combine(Path.GetDirectoryName(path)!, "full-battle-chosen-incant-attack.mt2f");
+                string positive = ModelJson.RelatedFixture(path, "full-battle-chosen-incant-attack.mt2f");
                 using var observed = ModelJson.ReadFixture(positive);
                 ChosenNative(observed.RootElement, positive);
             }

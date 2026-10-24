@@ -4675,7 +4675,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-harvester-birth-calibration.mt2f"))
 {
     using var observation = ModelJson.ReadFixture(path);
-    using var fixture = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+    using var fixture = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         "full-battle-harvester-birth-calibration.mt2f"));
     HarvesterBirthChecks.Component(observation.RootElement, fixture.RootElement);
 }
@@ -4690,7 +4690,7 @@ foreach (int ring in new[] { 2, 3, 4, 5 })
 foreach (string path in args.Where(path => Path.GetFileName(path) == $"full-battle-player-native-covenant-campaign-03-ring{ring}-default-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         $"full-battle-player-native-covenant-campaign-03-ring{ring}-default-replay.mt2f"));
     NativeCovenantCampaignChecks.DefaultPair(source.RootElement, replay.RootElement, 3, ring - 1);
 }
@@ -4700,30 +4700,29 @@ foreach (string variant in new[] { "AllyBuffer", "Fragile", "Corrupter" })
     string stem = variant.ToLowerInvariant();
     foreach (string path in args.Where(path => Path.GetFileName(path) == $"full-battle-outer-boss-trial-{stem}-casting.mt2f"))
     {
-        string directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
         using var battle = ModelJson.ReadFixture(path);
-        using var birth = ModelJson.ReadFixture(Path.Combine(directory, $"outer-boss-trial-{stem}-birth-calibration.mt2f"));
-        using var phases = ModelJson.ReadFixture(Path.Combine(directory, $"outer-boss-trial-{stem}-phase-calibration.mt2f"));
-        using var controller = ModelJson.ReadFixture(Path.Combine(directory, $"boss-action-trial-{stem}-controller-calibration.mt2f"));
-        using var replay = ModelJson.ReadFixture(Path.Combine(directory, $"full-battle-outer-boss-trial-{stem}-replay.mt2f"));
-        using var relentless = ModelJson.ReadFixture(Path.Combine(directory, $"outer-boss-trial-{stem}-relentless-turn-calibration.mt2f"));
-        using var relentlessPhases = ModelJson.ReadFixture(Path.Combine(directory, $"outer-boss-trial-{stem}-relentless-phase-calibration.mt2f"));
+        using var birth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, $"outer-boss-trial-{stem}-birth-calibration.mt2f"));
+        using var phases = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, $"outer-boss-trial-{stem}-phase-calibration.mt2f"));
+        using var controller = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, $"boss-action-trial-{stem}-controller-calibration.mt2f"));
+        using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, $"full-battle-outer-boss-trial-{stem}-replay.mt2f"));
+        using var relentless = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, $"outer-boss-trial-{stem}-relentless-turn-calibration.mt2f"));
+        using var relentlessPhases = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, $"outer-boss-trial-{stem}-relentless-phase-calibration.mt2f"));
         OuterBossTrialChecks.Native(variant, battle.RootElement, birth.RootElement, phases.RootElement, controller.RootElement);
         OuterBossTrialChecks.Pair(variant, battle.RootElement, replay.RootElement);
         OuterBossCorrupterChecks.Relentless(relentless.RootElement, relentlessPhases.RootElement,
             OuterBossTrialChecks.Boss(variant), variant == "AllyBuffer" ? 7105 : variant == "Fragile" ? 7961 : 8745);
     }
 }
-foreach (string directory in args.Where(path => Path.GetFileName(path).Contains("corrupter", StringComparison.OrdinalIgnoreCase))
-    .Select(path => Path.GetDirectoryName(Path.GetFullPath(path))!).Distinct())
+foreach (string path in args.Where(path => Path.GetFileName(path).Contains("corrupter", StringComparison.OrdinalIgnoreCase))
+    .GroupBy(path => Path.GetDirectoryName(Path.GetFullPath(path))).Select(group => group.First()))
 {
-    using var battle = ModelJson.ReadFixture(Path.Combine(directory, "full-battle-outer-boss-corrupter-casting.mt2f"));
-    using var birth = ModelJson.ReadFixture(Path.Combine(directory, "outer-boss-corrupter-birth-calibration.mt2f"));
-    using var phases = ModelJson.ReadFixture(Path.Combine(directory, "outer-boss-corrupter-phase-calibration.mt2f"));
-    using var controller = ModelJson.ReadFixture(Path.Combine(directory, "boss-action-corrupter-controller-calibration.mt2f"));
-    using var replay = ModelJson.ReadFixture(Path.Combine(directory, "full-battle-outer-boss-corrupter-casting-replay.mt2f"));
-    using var relentless = ModelJson.ReadFixture(Path.Combine(directory, "outer-boss-corrupter-relentless-turn-calibration.mt2f"));
-    using var relentlessPhases = ModelJson.ReadFixture(Path.Combine(directory, "outer-boss-corrupter-relentless-phase-calibration.mt2f"));
+    using var battle = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-outer-boss-corrupter-casting.mt2f"));
+    using var birth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "outer-boss-corrupter-birth-calibration.mt2f"));
+    using var phases = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "outer-boss-corrupter-phase-calibration.mt2f"));
+    using var controller = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "boss-action-corrupter-controller-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-outer-boss-corrupter-casting-replay.mt2f"));
+    using var relentless = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "outer-boss-corrupter-relentless-turn-calibration.mt2f"));
+    using var relentlessPhases = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "outer-boss-corrupter-relentless-phase-calibration.mt2f"));
     OuterBossCorrupterChecks.Native(battle.RootElement, birth.RootElement, phases.RootElement, controller.RootElement);
     OuterBossCorrupterChecks.Pair(battle.RootElement, replay.RootElement);
     OuterBossCorrupterChecks.Relentless(relentless.RootElement, relentlessPhases.RootElement);
@@ -4985,7 +4984,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("fu
 {
     using var source = ModelJson.ReadFixture(path);
     string suffix = Path.GetFileNameWithoutExtension(path)["full-battle-player-native-covenant-startup".Length..^"-search".Length];
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-native-covenant-startup" + suffix + "-replay.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-native-covenant-startup" + suffix + "-replay.mt2f"));
     StartingCovenantChecks.Pair(source.RootElement, replay.RootElement, suffix.Length > 0 ? int.Parse(suffix[1..]) : 1);
 }
 
@@ -5241,21 +5240,21 @@ foreach (string path in args.Where(path => path.EndsWith("player-moon-room-turn-
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-phase-energy-relic-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         "full-battle-player-moon-room-phase-energy-relic-replay.mt2f"));
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requirePhaseEnergyRelic: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-status-relic-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         "full-battle-player-moon-room-status-relic-replay.mt2f"));
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requireStatusRelic: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-covenant03-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         "full-battle-player-moon-room-covenant03-replay.mt2f"));
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requireCovenant03: true);
 }
@@ -5267,14 +5266,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is "heavenfall
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-hand-power-relic-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         "full-battle-player-moon-room-hand-power-relic-replay.mt2f"));
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requireHandPowerRelic: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-moon-room-phase-heal-relic-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!,
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         "full-battle-player-moon-room-phase-heal-relic-replay.mt2f"));
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requirePhaseHealRelic: true);
 }
@@ -5379,13 +5378,13 @@ foreach (string path in args.Where(path => path.EndsWith("player-live-moon-conti
 foreach (string path in args.Where(path => path.EndsWith("player-live-arkion-pyre-unavailable.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var live = ModelJson.ReadFixture(path);
-    using var native = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-live-arkion-pyre.mt2f"));
+    using var native = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-live-arkion-pyre.mt2f"));
     LiveArkionPyreChecks.Run(live.RootElement, native.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-player-live-arkion-pyre.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var native = ModelJson.ReadFixture(path);
-    using var birth = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "outer-boss-birth-live-arkion-pyre.mt2f"));
+    using var birth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "outer-boss-birth-live-arkion-pyre.mt2f"));
     LiveArkionPyreChecks.Native(native.RootElement, birth.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("player-live-arkion-pyre-observed-prefix.mt2f", StringComparison.OrdinalIgnoreCase)))
@@ -5529,7 +5528,7 @@ foreach (var variant in new[] { (Name: "mass", Native: "Mass"), (Name: "corrupti
     foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-fleshweaver-" + variant.Name + "-search.mt2f"))
     {
         using var source = ModelJson.ReadFixture(path);
-        using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-fleshweaver-" + variant.Name + "-replay.mt2f"));
+        using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-fleshweaver-" + variant.Name + "-replay.mt2f"));
         NativeCovenantCampaignChecks.FleshweaverPair(source.RootElement, replay.RootElement, variant.Native);
     }
 }
@@ -5552,7 +5551,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-arkion-rage-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-arkion-rage-replay.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-arkion-rage-replay.mt2f"));
     NativeCovenantCampaignChecks.ArkionRagePair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss-birth-calibration-arkion-rage.mt2f"))
@@ -5574,7 +5573,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-arkion-push-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-arkion-push-replay.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-arkion-push-replay.mt2f"));
     NativeCovenantCampaignChecks.ArkionPushPair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-arkion-pyre.mt2f"))
@@ -5590,7 +5589,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-arkion-pyre-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-arkion-pyre-replay.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-arkion-pyre-replay.mt2f"));
     NativeCovenantCampaignChecks.ArkionPyrePair(source.RootElement, replay.RootElement);
 }
 foreach (var variant in new[] { (Name: "atkhp", Native: "AtkHP"), (Name: "damage-shield", Native: "DamageShield"),
@@ -5599,7 +5598,7 @@ foreach (var variant in new[] { (Name: "atkhp", Native: "AtkHP"), (Name: "damage
     foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-cael-" + variant.Name + "-search.mt2f"))
     {
         using var source = ModelJson.ReadFixture(path);
-        using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-cael-" + variant.Name + "-replay.mt2f"));
+        using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-cael-" + variant.Name + "-replay.mt2f"));
         NativeCovenantCampaignChecks.CaelPair(source.RootElement, replay.RootElement, variant.Native);
     }
     foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-cael-" + variant.Name + ".mt2f"))
@@ -5635,13 +5634,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "angel-duo-
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-angel-duo-loop-resolve-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-angel-duo-loop-resolve-replay.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-angel-duo-loop-resolve-replay.mt2f"));
     NativeCovenantCampaignChecks.AngelDuoVariantPair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-angel-duo-revenge-harvest-search.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-angel-duo-revenge-harvest-replay.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-angel-duo-revenge-harvest-replay.mt2f"));
     NativeCovenantCampaignChecks.AngelDuoVariantPair(source.RootElement, replay.RootElement, "RevengeHarvest");
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss-birth-calibration-angel-duo-revenge-harvest.mt2f"))
@@ -5657,7 +5656,7 @@ foreach (string path in args.Where(path => path.EndsWith("outer-boss-birth-calib
 foreach (string path in args.Where(path => path.EndsWith("full-battle-player-advisor-capture-search.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-advisor-capture-replay.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-advisor-capture-replay.mt2f"));
     Check(source.RootElement.GetProperty("PlayerAdvisor").GetProperty("Overlay")
         .GetProperty("PublicationRootChecks").GetInt32() > 0, "Missing mandatory fresh-publication observations.");
     StartingCovenantChecks.Pair(source.RootElement, replay.RootElement, 2);
@@ -5665,7 +5664,7 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-player-adv
 foreach (string path in args.Where(path => path.EndsWith("full-battle-player-angel-duo-search.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!, "full-battle-player-angel-duo-replay.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-player-angel-duo-replay.mt2f"));
     NativeCovenantCampaignChecks.AngelDuoPair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-player-native-covenant-campaign-", StringComparison.Ordinal) &&
@@ -5675,7 +5674,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("fu
         @"^full-battle-player-native-covenant-campaign-(?<rank>\d{2})-ring(?<ring>[2-8])-search\.mt2f$");
     Check(name.Success, "Invalid curated cumulative campaign fixture name.");
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(Path.Combine(Path.GetDirectoryName(path)!,
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         Path.GetFileName(path).Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal)));
     NativeCovenantCampaignChecks.Pair(source.RootElement, replay.RootElement,
         int.Parse(name.Groups["rank"].Value), int.Parse(name.Groups["ring"].Value) - 1);

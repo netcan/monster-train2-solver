@@ -90,12 +90,14 @@ the emitted binary before reporting timings. These are .NET tool timings,
 separate from Unity battle/process timings:
 
 ```powershell
-dotnet run --project src/FixtureTools -c Release -- benchmark-capture tests/fixtures/full-battle-status-registry.mt2f results/capture-benchmark
+dotnet run --project src/FixtureTools -c Release -- benchmark-capture tests/fixtures/combat/status/full-battle-status-registry.mt2f results/capture-benchmark
 ```
 
 For a direct native fixture, copy the validated archive into the curated fixture
 directory and record its full archive hash, byte length and node count in the
-manifest. Use a `native:` source label and zero text-source length/hash. The
+manifest, including its `path` relative to `tests/fixtures`. Archive names are
+stable IDs; related archives can live in different feature subdirectories.
+Use a `native:` source label and zero text-source length/hash. The
 capture's game version and module MVID identify the native runtime.
 
 The native capture checks and benchmark use the installed game's Json.NET DLL.
