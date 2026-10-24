@@ -3703,7 +3703,7 @@ namespace MonsterTrain2Poju.Model
                 int? currentRoom = context.SpawnPoints == null ? roomIndex :
                     context.SpawnPoints.Units.FirstOrDefault(unit => unit.UnitId == dying.Id)?.Current?.RoomIndex;
                 if (currentRoom >= 0)
-                    context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: currentRoom.Value));
+                    SelectNotificationRoom(currentRoom.Value);
             }
 
             private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget, WorkingUnit? dyingCharacter, int triggerCount, int lastSpawnedOverrideUnitId,
@@ -5508,17 +5508,20 @@ namespace MonsterTrain2Poju.Model
             private void FocusRoomForStatusRemoval(string statusId, bool fromTrigger = false)
             {
                 if ((fromTrigger || statusId != "cooldown") && !source.Preview && context?.QueryFrame?.SelectedRoomIndex != null)
+                    SelectNotificationRoom(source.RoomIndex);
+            }
+            private void SelectNotificationRoom(int roomIndex)
+            {
+                int? previousRoom = context?.QueryFrame?.SelectedRoomIndex;
+                if (!previousRoom.HasValue) return;
+                context = context!.WithQueryFrame(context.QueryFrame!.With(selectedRoomIndex: roomIndex));
+                // Status removal and completed deaths select their room and
+                // refresh hand resource traits before the next card trigger.
+                // The resolving card is already outside the hand.
+                if (previousRoom != roomIndex)
                 {
-                    int previousRoom = context.QueryFrame.SelectedRoomIndex.Value;
-                    context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
-                    // Native status-removal notifications select their room,
-                    // refreshing hand resource traits before the next card
-                    // trigger. The resolving card is already outside the hand.
-                    if (previousRoom != source.RoomIndex)
-                    {
-                        context = CardMoonUpgradeModel.RefreshHand(context, out string? handError);
-                        if (handError != null) unsupportedReason = handError;
-                    }
+                    context = CardMoonUpgradeModel.RefreshHand(context, out string? handError);
+                    if (handError != null) unsupportedReason = handError;
                 }
             }
 

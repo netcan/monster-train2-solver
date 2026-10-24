@@ -5147,7 +5147,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
         "full-battle-player-moon-room-covenant03-replay.mt2f"));
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement, requireCovenant03: true);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "heavenfall-focus-native-prefix.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path) is "heavenfall-focus-native-prefix.mt2f" or "heavenfall-death-focus-native-prefix.mt2f"))
 {
     using var document = ModelJson.ReadFixture(path);
     HeavenfallFocusChecks.Prefix(document.RootElement);

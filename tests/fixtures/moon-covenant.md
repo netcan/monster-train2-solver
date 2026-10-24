@@ -89,3 +89,19 @@ Archive: `heavenfall-focus-native-prefix.mt2f`.
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --heavenfall-focus-prefix-only tests/fixtures/heavenfall-focus-native-prefix.mt2f
 ```
+
+The next actual-player attempt,
+`full-battle-units-spells-and-junk-20261024-121622-8a2867eb`, passes the remote
+Armor witness and retains a distinct late-death focus boundary after 24 plays
+and two EndTurns. This also preserves one original mismatch and no terminal
+result. Both original Heavenfall upgrades are active, the remote target has
+107 HP, and its death completes after the OnCast effects. The trigger cache
+therefore retains the two original cast-floor occupants, while final focus
+moves to floor 1 and refreshes the remaining in-hand Gravity to Full/Ascend.
+The resolving/previously discarded cards are excluded from that hand refresh.
+
+The corrected model matches all 24 native successors/RNG and sixteen immutable
+last-action branches. Status-removal focus and completed-death focus share
+the same hand refresh, preserving their different queue timing. This prefix,
+`heavenfall-death-focus-native-prefix.mt2f`, uses the same focused command and
+does not count as a completed source, victory or independent replay.
