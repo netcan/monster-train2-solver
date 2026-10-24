@@ -45,4 +45,20 @@ Advisor 和 Probe 的 Release 构建通过。`ModelChecks --advice-history-only`
 战败、僵持、零费技能的来源楼层，以及整场/窗口模式名称；同时逐次确认输入
 进入实际玩家记录器，并比对历史中的发布数、出牌数、结束回合数与原生证据。
 隔离探针会跳过同名的输入快照补丁，避免 Harmony 的同名 __state 覆盖玩家记录。
-原生验收结果将在最终交付时补录。
+实际玩家 0.2.23 DLL 已通过隔离原生验收：
+`.probe-runs/full-battle-units-spells-and-junk-20261025-004050-96957f9f`。
+对局获胜，21 次出牌、7 次结束回合、30 次发布与 JSON 历史逐项计数吻合，
+丢弃事件为零，独立写盘线程为 5，完整状态/RNG 的四项失败计数均为零，原始
+玩家文件未变。七项显示检查、三项卡牌描述、五项悬停检查、七次楼层滚动的
+零采集/零搜索、27 次复用发布和六次收起面板跨回合复位均通过。
+
+```powershell
+./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Seed 424242 -BattleDistance 0 `
+  -Policy units-spells-and-junk -PlayerAdvisor -RollingAdvice -AdvisorFloorBrowse `
+  -AdvisorPresentation -PlannerWholeBattle -PlannerSearchWorkers 2 `
+  -PhysicalSpawnPoints -BranchCardMasks -SkipBuild -TimeoutSeconds 300
+```
+
+这是玩家提示、续步和诊断记录的专项验收，不替代未校准机制组合的原生验证。
+记录从新版加载后开始，不恢复旧版丢失的方案，也不自动将预测变化归因为玩家
+失误。本次未构建 Mac 版本。
