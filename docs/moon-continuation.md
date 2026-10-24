@@ -56,3 +56,33 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --live-floor-scroll-on
 ./scripts/Run-FullBattleProbe.ps1 -NativeWorker 2 -Seed 424242 -OriginalMoonCardUpgradesLiveRelics -StartingCovenantLevel 10 -SkipBuild -TimeoutSeconds 240
 ./scripts/Check-FixtureCatalog.ps1
 ```
+
+## Windows 0.2.13 delivery
+
+Built from `251c0e97` and installed on 2026-10-24 at 18:18 in
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+SHA256 values:
+
+| File | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | 80cbe2e0c4b8bdf3efbe85b022789f9d7dda51ce749ffb742a37e8a0bbdf5335 |
+| Model.dll | 1980626a44e6ef11e7ea0531cb36739e8b8a094dcc7b75829f83007893e8b882 |
+| FixtureArchive.dll | 32b0b58698d1ed17b06ea4fd4f0aa15723a60a9c10eaca68da4f2216d70b73b7 |
+
+The exact production Model.dll passed both live-root terminal searches,
+the native composition's full state/RNG/battle-chain checks, and the real
+floor-scroll fixture in an isolated ModelChecks copy. The harness retains
+its net8.0 FixtureArchive serializer support; the installed archive is the
+netstandard2.1 build. The native isolated witness above used the same model
+implementation before the more specific diagnostic error strings were added.
+No repeated full regression or macOS build was run. The fixture catalog
+passes 1357 archive hashes and curated registrations.
+
+Previous and accepted payloads are retained under
+`BepInEx/PojuBackups/MoonContinuation-20261024-181833/{previous,accepted}`.
+All 28 other loader/plugin/config file hashes match. F10, whole-battle mode,
+two workers and 3000ms are unchanged. The player process is still PID 59976,
+started at 17:22:19; replacing disk files does not reload its managed model.
+The existing temporary floor/presentation fixes remain active, but this moon
+continuation repair requires a normal full game restart. No player cards,
+turns, save data or process lifecycle were changed for delivery.
