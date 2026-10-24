@@ -49,7 +49,11 @@ cropping. The Canvas uses a GraphicRaycaster and a blocking panel image.
 `BattleAdviceSession` accepts only immutable model snapshots. One background
 worker runs the bounded planner and independently replays every selected step
 before publishing a complete continuation. Unity/game APIs stay on the main
-thread. Node/time budgets, complete no-card fallback and completed fixed-policy
+thread; detached snapshot keys and floor-equivalence comparisons are also
+prepared on a background worker. The UI polls completed preparations without
+waiting. Input/selection/busy revisions and a cheap observation check reject
+outdated preparations before a complete root match can reach the panel.
+Node/time budgets, complete no-card fallback and completed fixed-policy
 seeds retain the planner's existing semantics.
 
 Card plays, EndTurn, undo and restart invalidate advice. Floor selection retains

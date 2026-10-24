@@ -119,9 +119,10 @@ internal static class FloorBrowseAdviceChecks
             int divergentCalls = 0;
             using var session = new BattleAdviceSession((_, _) => ++divergentCalls == 1 ? plan :
                 throw new InvalidOperationException("Fresh gameplay search."));
-            session.Observe(root, original); Pump(session);
+            session.Observe(session.PrepareObservationAsync(root).GetAwaiter().GetResult()); Pump(session);
             long generation = session.Generation;
-            session.Observe(changed, Key(changed)); Pump(session, BattleAdviceStatus.Unavailable);
+            session.Observe(session.PrepareObservationAsync(changed).GetAwaiter().GetResult());
+            Pump(session, BattleAdviceStatus.Unavailable);
             Require(session.Current == null && divergentCalls == 2 && session.Generation > generation,
                 "A resource, card cost or RNG change reused the floor-browsing line.");
         }
