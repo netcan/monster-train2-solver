@@ -87,13 +87,19 @@ namespace MonsterTrain2Poju.Probe
             yield return Select(0);
             yield return Managers.GetCombatManager()!.RunTriggerQueue();
             yield return Record("unmasked-full", "Refresh", 0, Refresh(resource));
+            if (RoomMoonCallbackCalibration.SpellHandPowerRelic)
+                yield return Record("unmasked-full-hand-power", "PreDiscardHand", 0, Managers.GetRelicManager()!.ApplyEndOfTurnPreDiscardRelicEffects());
             yield return Record("attach-selected-full", "Attach", 0, rooms.GetRoom(0).AddTrainRoomAttachment("poju-spell-room-moon", eclipse,
                 upgrade, null!, Team.Type.Monsters, TrainRoomAttachmentType.Primary, Managers.GetCoreManagers(), skipTargeting: true));
             yield return Record("masked-full-resource", "Refresh", 0, Refresh(resource));
+            if (RoomMoonCallbackCalibration.SpellHandPowerRelic)
+                yield return Record("masked-full-hand-power-stack", "PreDiscardHand", 0, Managers.GetRelicManager()!.ApplyEndOfTurnPreDiscardRelicEffects());
             yield return Record("leave-mask-full", "Select", 1, Select(1));
             yield return Record("reenter-mask-full", "Select", 0, Select(0));
             yield return Record("same-selected-mask", "Select", 0, Select(0));
             yield return Record("masked-global-new", "SetMoonPhase", 1, player.SetMoonPhase(PlayerManager.MoonPhase.New));
+            if (RoomMoonCallbackCalibration.SpellHandPowerRelic)
+                yield return Record("masked-new-hand-power-control", "PreDiscardHand", 0, Managers.GetRelicManager()!.ApplyEndOfTurnPreDiscardRelicEffects());
             yield return Record("leave-mask-new", "Select", 1, Select(1));
             yield return Record("outside-global-full", "SetMoonPhase", 2, player.SetMoonPhase(PlayerManager.MoonPhase.Full));
             yield return Record("reenter-full-again", "Select", 0, Select(0));
@@ -102,6 +108,8 @@ namespace MonsterTrain2Poju.Probe
             yield return Record("unmasked-global-new", "SetMoonPhase", 1, player.SetMoonPhase(PlayerManager.MoonPhase.New));
             yield return Record("unmasked-selection-control", "Select", 2, Select(2));
             yield return Record("unmasked-global-full", "SetMoonPhase", 2, player.SetMoonPhase(PlayerManager.MoonPhase.Full));
+            if (RoomMoonCallbackCalibration.SpellHandPowerRelic)
+                yield return Record("unmasked-full-hand-power-third", "PreDiscardHand", 0, Managers.GetRelicManager()!.ApplyEndOfTurnPreDiscardRelicEffects());
             bool unchanged = rows.All(row => JToken.DeepEquals(JObject.FromObject(row)["Before"]!["Rng"], JObject.FromObject(row)["Actual"]!["Rng"]));
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId, NativeCompleted = true, RngUnchanged = unchanged,
@@ -112,12 +120,14 @@ namespace MonsterTrain2Poju.Probe
                 HealingRelicControls = RoomMoonCallbackCalibration.SpellHealingRelic,
                 PhaseHealRelicControls = RoomMoonCallbackCalibration.SpellPhaseHealRelic,
                 PhaseEnergyRelicControls = RoomMoonCallbackCalibration.SpellPhaseEnergyRelic,
+                HandPowerRelicControls = RoomMoonCallbackCalibration.SpellHandPowerRelic,
                 EnergyConditionsResetBeforeRows = RoomMoonCallbackCalibration.SpellPhaseEnergyRelic,
                 AnchorWoundedBeforeEachRow = healAnchor != null,
                 ShadeCallbacks = false, MovementControls = false, EnemyControls = false,
                 ActorIds = healAnchor == null ? Array.Empty<int>() : new[] { Trace.UnitId(healAnchor) },
                 CardIds = ids, AttachmentEffect = BattleActionProbe.Definition(eclipseData).Effects[0], Rows = rows }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                RoomMoonCallbackCalibration.SpellHandPowerRelic ? "room-moon-spell-hand-power-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellPhaseEnergyRelic ? "room-moon-spell-phase-energy-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellPhaseHealRelic ? "room-moon-spell-phase-heal-relic-calibration.mt2f" :
                 RoomMoonCallbackCalibration.SpellHealingRelic ? "room-moon-spell-healing-relic-calibration.mt2f" :

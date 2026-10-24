@@ -28,8 +28,13 @@ internal static class RoomMoonSpellUpgradeChecks
         bool phaseEnergy = root.TryGetProperty("PhaseEnergyRelicControls", out FixtureValue energyFlag) && energyFlag.GetBoolean();
         Require(!phaseEnergy || advance && !phaseHeal && !healingRelic && !attackRelic && !costRelic &&
             root.GetProperty("EnergyConditionsResetBeforeRows").GetBoolean(), "Missing separate once-per-turn energy controls.");
-        Require(ids.Length == (advance ? 6 : 5) && root.GetProperty("Rows").GetArrayLength() == 15, "Missing original spells or controls.");
+        bool handPower = root.TryGetProperty("HandPowerRelicControls", out FixtureValue handPowerFlag) && handPowerFlag.GetBoolean();
+        Require(!handPower || advance && !phaseEnergy && !phaseHeal && !healingRelic && !attackRelic && !costRelic,
+            "Missing separate hand magic-power controls.");
+        int boundaries = handPower ? 19 : 15;
+        Require(ids.Length == (advance ? 6 : 5) && root.GetProperty("Rows").GetArrayLength() == boundaries, "Missing original spells or controls.");
         int witnesses = 0, changes = 0, exclusive = 0, additive = 0, selections = 0, heals = 0, energyGains = 0, blockedFull = 0;
+        int powerApplications = 0, powerControls = 0;
         bool guardsChecked = false, advanceGuardChecked = false;
         foreach (FixtureValue row in root.GetProperty("Rows").EnumerateArray())
         {
@@ -40,6 +45,13 @@ internal static class RoomMoonSpellUpgradeChecks
             MoonPhaseTransitionResult Replay()
             {
                 if (operation == "Refresh") return RoomMoonPhaseModel.Refresh(before, false);
+                if (operation == "PreDiscardHand")
+                {
+                    RelicMoonPhaseHandUpgradeResult upgraded = RelicMoonPhaseHandUpgradeModel.Apply(before.Context!,
+                        before.Context!.QueryFrame!.MoonPhase!.Value, deployment: false, preview: false);
+                    return new MoonPhaseTransitionResult(upgraded.Supported ? CardSpellModel.WithContext(before, upgraded.Context) : null,
+                        upgraded.UnsupportedReason);
+                }
                 if (operation == "SetMoonPhase") return MoonPhaseTransitionModel.Apply(before,
                     new CardActionEffect("SetMoonPhase", "Room", value, false, false, []), playerActionOnly: false);
                 if (operation == "Select")
@@ -73,6 +85,25 @@ internal static class RoomMoonSpellUpgradeChecks
             Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Spell room branch mutated its parent.");
             Require(row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")), "Spell room upgrade advanced gameplay RNG.");
             CombatContext after = actual.Context!;
+            if (handPower)
+            {
+                HandPowerRelic(before.Context!); HandPowerRelic(after);
+                if (operation == "Refresh" && !guardsChecked) HandPowerGuards(parent);
+                foreach (int id in ids)
+                {
+                    CardInstanceState prior = before.Context!.FindCard(id)!, next = after.FindCard(id)!;
+                    int priorCount = prior.Temporary.Upgrades.Count(item => item.DataId == "ba427938-c3ad-480b-aa27-44a6426a059c");
+                    CardUpgradeModifier[] upgrades = next.Temporary.Upgrades.Where(item => item.DataId == "ba427938-c3ad-480b-aa27-44a6426a059c").ToArray();
+                    bool matches = id != ids[5]; // all five unchanged offensive spells match; Lunacy does not.
+                    bool fires = operation == "PreDiscardHand" && before.Context.QueryFrame!.MoonPhase == 2 && matches;
+                    Require(upgrades.Length == priorCount + (fires ? 1 : 0), "Full hand power must stack only on matching spells at pre-discard.");
+                    int scale = CardMagicPowerModel.Multiplier(next);
+                    Require(upgrades.All(item => item.Stats.Damage == 10 * scale && item.Stats.Heal == 10 * scale &&
+                        !item.Unique && !item.RemoveOnDiscard), "Native hand power must rescale with the current moon trait and retain its lifetime.");
+                    if (fires) powerApplications++;
+                    else if (operation == "PreDiscardHand") powerControls++;
+                }
+            }
             if (phaseEnergy)
             {
                 RelicConditionState prior = PhaseEnergyRelic(before.Context!), next = PhaseEnergyRelic(after);
@@ -223,7 +254,9 @@ internal static class RoomMoonSpellUpgradeChecks
         Require(!phaseEnergy || energyGains == 1 && blockedFull == 1, "Missing positive Full and repeated-Full once-per-turn controls.");
         if (phaseEnergy) Console.WriteLine("ROOM-MOON-PHASE-ENERGY PASS: original +1 Full, repeated-Full blocked, 11 room/resource/selection controls and exact guards.");
         if (phaseHeal) Console.WriteLine("ROOM-MOON-PHASE-HEAL PASS: 4 native +10 heals, 11 nonhealing controls and exact original relic guards.");
-        Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells={ids.Length} lunacyResourceControls={advance} costRelicControls={costRelic} attackRelicControls={attackRelic} healingRelicControls={healingRelic} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
+        Require(!handPower || powerApplications == 15 && powerControls == 9, "Missing three Full stack witnesses, New controls or Lunacy exclusions.");
+        if (handPower) Console.WriteLine("ROOM-MOON-HAND-POWER PASS: 15 spell applications, 9 phase/filter controls, repeated Full stacking and subsequent 5x/1x rescaling.");
+        Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries={boundaries} originalSpells={ids.Length} lunacyResourceControls={advance} costRelicControls={costRelic} attackRelicControls={attackRelic} healingRelicControls={healingRelic} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
     }
     internal static int LunacyEnergyAfter(BattleTurnState before, int paid, bool phaseEnergy)
     {
@@ -231,6 +264,59 @@ internal static class RoomMoonSpellUpgradeChecks
         RelicConditionState condition = PhaseEnergyRelic(before.Spawn.Train.Context!);
         bool reachesFull = paid >= (before.MoonPhase == "New" ? 1 : 2);
         return condition.DurationTriggerCount == 0 && reachesFull ? Math.Min(1, before.Spawn.Train.Context!.Resources!.MaxEnergy) : 0;
+    }
+    internal static void HandPowerRelic(CombatContext context)
+    {
+        Require(RelicModel.Validate(context) == null && RelicMoonPhaseHandUpgradeModel.CompatibleMoonSpells(
+            context.Relics!.Single(owner => owner.DataId == RelicMoonPhaseHandUpgradeModel.OwnerId)),
+            "Original hand magic-power composition signature changed.");
+    }
+    private static void HandPowerGuards(string parent)
+    {
+        foreach (string field in new[] { "Damage", "MoonPhaseMask", "Unique", "Filter", "ExcludedPool" })
+        {
+            var malformed = System.Text.Json.Nodes.JsonNode.Parse(parent)!;
+            var rule = malformed["Context"]!["Relics"]!.AsArray().Single(node => node!["DataId"]!.GetValue<string>() ==
+                RelicMoonPhaseHandUpgradeModel.OwnerId)!["CardModifiers"]![0]!["MoonPhaseHandUpgrade"]!;
+            if (field == "Damage") rule["Upgrade"]!["Stats"]!["Damage"] = 11;
+            else if (field == "MoonPhaseMask") rule[field] = 3;
+            else if (field == "Unique") rule["Upgrade"]![field] = true;
+            else if (field == "Filter") rule["Filters"]![0]!["Effects"]!["Required"]![0] = "CardEffectAddStatusEffect";
+            else rule["Filters"]![1]!["DisallowedPools"]![0]![0] = "unknown";
+            var unknown = JsonSerializer.Deserialize<TrainCombatState>(malformed.ToJsonString(), ModelJson.Options)!;
+            Require(!RoomMoonPhaseModel.Refresh(unknown, false).Supported, "Uncalibrated moon hand-power payload bypassed the guard: " + field);
+        }
+    }
+    internal static void HandPowerCallbacks(FixtureValue fixture)
+    {
+        int full = 0, newMoon = 0, applications = 0, moonApplications = 0;
+        foreach (FixtureValue row in fixture.GetProperty("MoonHandPowerCallbacks").EnumerateArray())
+        {
+            CombatContext before = row.GetProperty("Before").Deserialize<CombatContext>()!;
+            CombatContext actual = row.GetProperty("After").Deserialize<CombatContext>()!;
+            HandPowerRelic(before); HandPowerRelic(actual);
+            int phase = before.QueryFrame!.MoonPhase!.Value;
+            Require(phase is 1 or 2 && row.GetProperty("Completed").GetBoolean(), "Native hand-power callback did not settle.");
+            string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
+            RelicMoonPhaseHandUpgradeResult replay = RelicMoonPhaseHandUpgradeModel.Apply(before, phase, deployment: false, preview: false);
+            string? difference = replay.UnsupportedReason ?? ModelJson.Difference(JsonSerializer.Serialize(replay.Context, ModelJson.Options),
+                JsonSerializer.Serialize(actual, ModelJson.Options));
+            Require(difference == null && JsonSerializer.Serialize(before, ModelJson.Options) == immutable,
+                "Original native hand-power callback full context differs: " + difference);
+            foreach (CardToken token in before.Cards.Hand)
+            {
+                CardInstanceState prior = before.FindCard(token.InstanceId)!, next = actual.FindCard(token.InstanceId)!;
+                int delta = next.Temporary.Upgrades.Count(upgrade => upgrade.DataId == "ba427938-c3ad-480b-aa27-44a6426a059c") -
+                    prior.Temporary.Upgrades.Count(upgrade => upgrade.DataId == "ba427938-c3ad-480b-aa27-44a6426a059c");
+                Require(delta is 0 or 1 && (phase == 2 || delta == 0), "Hand power applied outside Full or duplicated within one callback.");
+                applications += delta;
+                if (prior.MaskDescriptor?.SourceTraits?.Any(trait => trait.Type == CardMoonUpgradeModel.Trait) == true)
+                    moonApplications += delta;
+            }
+            if (phase == 2) full++; else newMoon++;
+        }
+        Require(full >= 1 && newMoon >= 1 && moonApplications >= 1, "Missing actual Full/New hand-power callbacks and positive original moon-spell upgrades.");
+        Console.WriteLine($"MOON-HAND-POWER-CALLBACKS PASS Full={full} New={newMoon} applications={applications} moonSpellApplications={moonApplications} completeNativeContexts=true");
     }
     internal static RelicConditionState PhaseEnergyRelic(CombatContext context)
     {

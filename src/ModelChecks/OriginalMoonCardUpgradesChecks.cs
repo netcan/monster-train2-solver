@@ -23,6 +23,7 @@ internal static class OriginalMoonCardUpgradesChecks
         bool healingRelic = root.TryGetProperty("OriginalMoonCardUpgradesHealingRelic", out FixtureValue healingFlag) && healingFlag.GetBoolean();
         bool phaseHealRelic = root.TryGetProperty("OriginalMoonCardUpgradesPhaseHealRelic", out FixtureValue phaseFlag) && phaseFlag.GetBoolean();
         bool phaseEnergyRelic = root.TryGetProperty("OriginalMoonCardUpgradesPhaseEnergyRelic", out FixtureValue energyFlag) && energyFlag.GetBoolean();
+        bool handPowerRelic = root.TryGetProperty("OriginalMoonCardUpgradesHandPowerRelic", out FixtureValue powerFlag) && powerFlag.GetBoolean();
         Require(root.GetProperty("OriginalMoonCardUpgradesPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing settled original moon upgrade battle.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
@@ -36,6 +37,13 @@ internal static class OriginalMoonCardUpgradesChecks
             Console.WriteLine("MOON-UPGRADE-NEXT-ACTION: " + attempted.Reason);
         }
         Require(ids.Length == (costRelic ? 23 : lunacy ? 21 : roomMask ? 17 : 16) && actions.Length == (costRelic ? 22 : lunacy ? 20 : roomMask ? 16 : 15) && hands.Length >= 2, "Missing original moon plays/hand callback boundaries.");
+        if (handPowerRelic)
+        {
+            Require(lunacy && !costRelic && !attackRelic && !healingRelic && !phaseHealRelic && !phaseEnergyRelic,
+                "Hand-power composition requires separate Lunacy controls.");
+            RoomMoonSpellUpgradeChecks.HandPowerRelic(actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train.Context!);
+            RoomMoonSpellUpgradeChecks.HandPowerCallbacks(root);
+        }
         if (phaseEnergyRelic)
         {
             Require(lunacy && !costRelic && !attackRelic && !healingRelic && !phaseHealRelic, "Phase-energy composition requires separate Lunacy controls.");

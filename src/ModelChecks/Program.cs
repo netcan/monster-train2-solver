@@ -2821,14 +2821,15 @@ if (args.Length == 3 && args[0] == "--player-mixed-conduit-pair-only")
     MixedConduitChecks.PlayerPair(source.RootElement, replay.RootElement);
     return;
 }
-if (args.Length == 3 && args[0] is "--player-moon-room-spells-pair-only" or "--player-moon-room-healing-relic-pair-only" or "--player-moon-room-phase-heal-relic-pair-only" or "--player-moon-room-phase-energy-relic-pair-only")
+if (args.Length == 3 && args[0] is "--player-moon-room-spells-pair-only" or "--player-moon-room-healing-relic-pair-only" or "--player-moon-room-phase-heal-relic-pair-only" or "--player-moon-room-phase-energy-relic-pair-only" or "--player-moon-room-hand-power-relic-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
     PlayerMoonRoomSpellChecks.Pair(source.RootElement, replay.RootElement,
         requireHealingRelic: args[0] == "--player-moon-room-healing-relic-pair-only",
         requirePhaseHealRelic: args[0] == "--player-moon-room-phase-heal-relic-pair-only",
-        requirePhaseEnergyRelic: args[0] == "--player-moon-room-phase-energy-relic-pair-only");
+        requirePhaseEnergyRelic: args[0] == "--player-moon-room-phase-energy-relic-pair-only",
+        requireHandPowerRelic: args[0] == "--player-moon-room-hand-power-relic-pair-only");
     return;
 }
 if (args.Length == 2 && args[0] == "--player-moon-room-turn-only")
@@ -5079,6 +5080,7 @@ foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-ch
     MixedConduitChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("room-moon-spell-upgrade-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("room-moon-spell-hand-power-relic-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("room-moon-spell-phase-heal-relic-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("room-moon-spell-phase-energy-relic-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("room-moon-spell-healing-relic-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
@@ -5124,6 +5126,7 @@ foreach (string path in args.Where(path => path.EndsWith("advisor-ordinary-budge
     OrdinaryAdviceBudgetChecks.Run(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-original-moon-card-upgrades-room-mask.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("full-battle-original-moon-card-upgrades-hand-power-relic.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-original-moon-card-upgrades-phase-heal-relic.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-original-moon-card-upgrades-phase-energy-relic.mt2f", StringComparison.OrdinalIgnoreCase) ||
     path.EndsWith("full-battle-original-moon-card-upgrades-healing-relic.mt2f", StringComparison.OrdinalIgnoreCase) ||

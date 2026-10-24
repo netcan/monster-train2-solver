@@ -67,7 +67,8 @@ namespace MonsterTrain2Poju.Model
                 relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyCardHealingPower }) &&
                 relic.MagicPowerModifiers?.Count == 1 && relic.MagicPowerModifiers[0].EffectIndex == 0 &&
                 relic.MagicPowerModifiers[0].PowerModifier == 10 && relic.MagicPowerModifiers[0].ConditionCount == 0 ||
-            CompatiblePhaseHealRelic(relic) || CompatiblePhaseEnergyRelic(relic);
+            CompatiblePhaseHealRelic(relic) || CompatiblePhaseEnergyRelic(relic) ||
+            RelicMoonPhaseHandUpgradeModel.CompatibleMoonSpells(relic);
 
         private static bool CompatiblePhaseEnergyRelic(CombatRelicState relic)
         {

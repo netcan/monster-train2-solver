@@ -18,6 +18,53 @@ namespace MonsterTrain2Poju.Model
         internal const string OwnerId = "e96497a1-3c1e-4adf-b897-8ef09b931d1d";
         internal const string OwnerKey = "MoonPhaseRoomsGainMagicPower";
 
+        // The original numeric hand upgrade has a native composition witness
+        // with moon-owned traits, repeated stacks and room-mask refreshes.
+        internal static bool CompatibleMoonSpells(CombatRelicState owner)
+        {
+            if (owner.DataId != OwnerId || owner.AssetKey != OwnerKey || owner.IsCovenant != false ||
+                owner.DisallowedInPlacementPhase != false ||
+                !owner.EffectTypes.SequenceEqual(new[] { RelicModel.ApplyCardUpgradeToHandEndOfTurnOnMoon }) ||
+                owner.CardModifiers?.Count != 1) return false;
+            RelicCardModifier effect = owner.CardModifiers[0];
+            RelicMoonPhaseHandUpgrade? rule = effect.MoonPhaseHandUpgrade;
+            if (effect.EffectIndex != 0 || effect.ConditionCount != 0 || effect.Conditions.Count != 0 || rule == null ||
+                rule.MoonPhaseMask != 2 || rule.RemoveOnDiscard || rule.CanApplyInPreviewMode || rule.ConditionCount != 0 ||
+                rule.Filters.Count != 2) return false;
+            CardUpgradeModifier upgrade = rule.Upgrade;
+            CardStatModifier stats = upgrade.Stats;
+            CardLifecycleUpgrade? lifecycle = upgrade.Lifecycle;
+            return upgrade.DataId == "ba427938-c3ad-480b-aa27-44a6426a059c" && upgrade.AssetKey == "MoonPhaseRooms_UpgradeData" &&
+                stats.Damage == 10 && stats.Heal == 10 && stats.Health == 0 && stats.Cost == 0 && stats.Size == 0 &&
+                stats.XCost == 0 && stats.EquipmentLimit == 0 && stats.UpgradeSlotCount == 0 &&
+                upgrade.CloneDamageBase == 10 && upgrade.CloneHealBase == 10 && !upgrade.Unique && !upgrade.RemoveOnDiscard &&
+                !upgrade.ExcludeFromClones && upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 &&
+                lifecycle != null && lifecycle.AddedTraits.Count == 0 && lifecycle.RemovedRuntimeTypes.Count == 0 &&
+                lifecycle.ReplacedAssets.Count == 0 && lifecycle.Triggers.Count == 0 &&
+                OriginalFilter(rule.Filters[0], positive: true) && OriginalFilter(rule.Filters[1], positive: false);
+        }
+
+        private static bool OriginalFilter(CardUpgradeMaskRule filter, bool positive)
+        {
+            bool Empty<T>(UpgradeMaskContent<T> content, int op = 0) => content.Required.Count == 0 &&
+                content.Excluded.Count == 0 && content.RequiredOperator == op && content.ExcludedOperator == 0;
+            string[] excluded = { "d861b6a6-d8ef-4d58-8ebd-9f0abc276456", "537f6adf-0fd2-4c6b-88a8-e6cefeb52a7e",
+                "6f23bf7b-49c3-4a30-aa84-542ab9f939d0", "10f64bfb-81cd-4b7c-bf46-6fc1fa832008" };
+            string[] effects = { "CardEffectDamage", "CardEffectHeal", "CardEffectHealAndDamageRelative",
+                "CardEffectHealAndOverheal", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp" };
+            return filter.AssetKey == (positive ? "MagicPowerSpells" : "ExcludedSpellsFromMagicPower") &&
+                filter.CardType == (positive ? "Spell" : "Invalid") && filter.AdditionalCardTypes.Count == 0 &&
+                Empty(filter.Rarities, 1) && Empty(filter.Subtypes) && Empty(filter.Statuses) && Empty(filter.Traits) &&
+                Empty(filter.LinkedClans) && Empty(filter.Upgrades) && filter.AllowedPools.Count == 0 &&
+                (positive ? filter.DisallowedPools.Count == 0 && filter.Effects.Required.SequenceEqual(effects) &&
+                    filter.Effects.Excluded.Count == 0 && filter.Effects.RequiredOperator == 1 && filter.Effects.ExcludedOperator == 0
+                    : filter.DisallowedPools.Count == 1 && filter.DisallowedPools[0].SequenceEqual(excluded) && Empty(filter.Effects)) &&
+                filter.RequiredSizes.Count == 0 && filter.ExcludedSizes.Count == 0 && filter.MinCost == 0 && filter.MaxCost == 99 &&
+                filter.TargetMode == 0 && !filter.ExcludeNonAttackingMonsters && !filter.RequireXCost && !filter.ExcludeXCost &&
+                !filter.ExcludeIfHasUnitAbility && !filter.ExcludeIfHasGraftedEquipment && !filter.ExcludeIfHasAnyUpgrades &&
+                !filter.ExcludeIfHasNoUpgrades;
+        }
+
         internal static RelicMoonPhaseHandUpgradeResult Apply(CombatContext source, int moonPhase,
             bool deployment, bool preview)
         {
@@ -63,6 +110,10 @@ namespace MonsterTrain2Poju.Model
                         }
                         try { context = CardMagicPowerModel.Refresh(context, changed, out _); }
                         catch (InvalidOperationException error) { return Fail(context, error.Message); }
+                        // Native ReapplyMagicPowerScaling dispatches CardUpdated.
+                        // Conduit then removes/reappends its tracked upgrade after
+                        // the new hand upgrade, before discard refreshes it again.
+                        context = ConduitModel.Updated(context, token.InstanceId);
                     }
                 }
             }
