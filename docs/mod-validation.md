@@ -1275,3 +1275,35 @@ cost/resource/RNG divergence and live moon continuation controls pass. See
 [rapid-input acceptance](rapid-advice-continuation.md) for the race regression,
 native timing boundary and exact payload hashes. No full regression or Mac build
 was performed.
+
+## Random native campaigns · Windows 0.2.26 · 2026-10-25
+
+Two randomly sampled Covenant0 campaigns reached actual terminal defeats:
+Banished/Umbra at Ring7 and Pyreborne/Banished at Ring3. Earlier wins have
+independent native frozen replays; neither campaign cleared. See
+[random campaign validation](random-campaign-validation.md) for seeds, exact
+upgrade fixes, immutable archives and the remaining candidate-route cache gap.
+
+The final 0.2.26 player payload separately wins Ring1 in both actual advice and
+independent frozen native replay: nine inputs, matching full state/forecasts/RNG,
+zero capture/mismatch/unsupported/pending counters and unchanged original files.
+Focused affected checks and the 1392-fixture hash/registration catalog pass;
+no full regression or Mac package was run.
+
+Code revision `98f8ea97` was committed and pushed before Windows delivery.
+Three installed DLLs exactly match both accepted native processes. The real
+game was stopped; the next launch loads 0.2.26. All67 protected save/config/other
+mod and loader files retain their hashes, including F10 and the10000ms user
+budget. Previous DLLs and the installation receipt are under
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/PojuBackups/RandomCampaign-20261025-032259/`.
+
+Package: `results/mod-dist/PojuAdvisor-0.2.26-Windows-20261025-032259.zip`.
+All five ZIP payloads match their staging files. Package SHA-256:
+`fc219ad9659f41c44fdcd7b92326a14984851044dfd6f9b2d83cabb86658b941`.
+Installed Advisor / Model / FixtureArchive SHA-256 values, respectively:
+
+```text
+3daaa465eef3f0a1fb809340b85b828cbafb922bed3c7e2eec4a5849ffa26016
+58eb4d5cd67d5a6d61407e274f8456388cac71df06e33887aa25cb1daae3a72f
+b383a1f48d463787712b8efd23db77604ebb1703a9c7d6e41d9ef94e27941ccc
+```
