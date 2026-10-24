@@ -84,3 +84,43 @@ does not increase the number of full-state transposition hits: both runs
 have zero duplicates and zero beam pruning at this node limit. The savings
 come from transition reuse and seven validated illegal-input skips, plus
 25 policy cache hits in each optimized run.
+
+## Native overlay acceptance and Windows delivery
+
+The production 0.2.16 overlay passed the isolated native game run at
+`.probe-runs/full-battle-units-spells-and-junk-20261024-195225-38ddbc33`:
+100.84 seconds, native win with 73 Pyre HP, seven EndTurns, 21 actions and
+59 room stages. Capture failures, mismatches, unsupported transitions and
+pending records are all zero, and original player files remain unchanged.
+Thirty-three reused publications, 19 scrolled publications, seven floor
+switches and four duration changes pass presentation/continuation checks.
+The two actual search publications have consistent transition counters and
+together reuse four EndTurns and eight policy choices. Reused publications
+report zero new simulation work.
+
+Focused deployment, atomic and shorter budget, parallel/cancellation,
+live moon continuation, and native floor-scroll checks pass. The exact
+production Model.dll also preserves the opening's verified 10-second win.
+The 1360-archive catalog passes. No full regression or macOS build was run.
+`--search-frontier-only` runs the ordered candidate/state/RNG and parent
+immutability checks without repeating the four search benchmarks.
+That focused path also passes the captured live moon continuation's ordered
+frontier and complete state/RNG comparison.
+
+Implementation `7971c4184ee76c314231696dcd2c24a7e3f8912f` was pushed to
+`origin/master`. Installed at 2026-10-24 19:55:00 in
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`.
+All three installed files match the accepted payload:
+
+| File | SHA256 |
+| --- | --- |
+| MonsterTrain2Poju.Advisor.dll | 68f442c26a8111b4e34699fb286489056da82d9bedd2ab906fb588c84e6f8915 |
+| Model.dll | 0a9ee3975a0167ea56b056f12a9c770fb1b643fe20ad0fee754473136b1d41cd |
+| FixtureArchive.dll | c78e8bc21a68ee3bc3e9c4b49f1c48c77edf43a9026efb58955b0d334e9d0687 |
+
+Prior and accepted payloads are retained at
+`BepInEx/PojuBackups/SearchPruning-20261024-195459`. All 28 other
+loader/plugin/config hashes are unchanged. The Windows package is
+`results/mod-dist/PojuAdvisor-0.2.16-Windows-20261024-195459.zip`.
+The player process PID 134544 still has 0.2.14 loaded and was left running;
+a normal complete exit and restart is required to activate 0.2.16.

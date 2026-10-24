@@ -3,7 +3,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class SearchPruningChecks
 {
-    internal static void Run(string[] paths)
+    internal static void Run(string[] paths, bool comparePlans = true)
     {
         BattleTurnState? opening = null;
         foreach (string path in paths)
@@ -13,6 +13,7 @@ internal static class SearchPruningChecks
             if (root.Spawn.Turn == 0) opening = root;
             using var keys = new BattleStateKeys();
             string parent = keys.Key(root);
+            string serializedParent = JsonSerializer.Serialize(root);
             var workspace = new BattleSearchWorkspace();
             var expected = BattleActionModel.EnumerateActions(root);
             var actual = workspace.Enumerate(root);
@@ -53,13 +54,16 @@ internal static class SearchPruningChecks
             }
             var ended = workspace.EndTurn(root);
             Require(ReferenceEquals(ended, workspace.EndTurn(root)) && workspace.Metrics.CachedEndTurns == 1 &&
-                keys.Key(root) == parent, "EndTurn cache missed or changed native parent/RNG.");
+                keys.Key(root) == parent && JsonSerializer.Serialize(root) == serializedParent,
+                "EndTurn cache missed or changed native parent/RNG.");
             var metrics = workspace.Metrics;
             Require(metrics.CandidateRequests == metrics.SimulatedCandidates + metrics.CachedCandidates + metrics.PrefilteredCandidates,
                 "Candidate metrics do not account for all requested transitions.");
             Console.WriteLine($"SEARCH-FRONTIER PASS {Path.GetFileName(path)} legal={actual.SupportedCandidates.Count} simulated={metrics.SimulatedCandidates} cached={metrics.CachedCandidates} filtered={metrics.PrefilteredCandidates} fullStateRngEqual=true");
         }
+        if (!comparePlans) return;
         Require(opening != null, "Missing real playable opening for controlled search comparison.");
+        string openingJson = JsonSerializer.Serialize(opening);
         using var searchKeys = new BattleStateKeys();
         var options = new BattlePlannerOptions(128, beamWidth: 8, timeLimit: TimeSpan.FromSeconds(60),
             useTacticalSeed: true, allowShorterHorizon: true, searchToBattleEnd: true);
@@ -82,6 +86,7 @@ internal static class SearchPruningChecks
         }
         var baseline = results.First(x => !x.Optimized).Plan.SearchMetrics;
         var improved = results.First(x => x.Optimized).Plan.SearchMetrics;
+        Require(JsonSerializer.Serialize(opening) == openingJson, "Controlled search comparison mutated the parent.");
         Require(improved.SimulatedCandidates < baseline.SimulatedCandidates && improved.SimulatedEndTurns < baseline.SimulatedEndTurns &&
             improved.PrefilteredCandidates > 0 && improved.CachedPolicies > 0, "Optimization did not eliminate real repeated/illegal work.");
         double oldMs = results.Where(x => !x.Optimized).Average(x => x.Plan.Elapsed.TotalMilliseconds);
