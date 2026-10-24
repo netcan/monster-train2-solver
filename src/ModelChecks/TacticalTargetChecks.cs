@@ -4,12 +4,16 @@ internal static class TacticalTargetChecks
 {
     internal static void Run()
     {
-        foreach (bool negative in new[] { true, false })
+        foreach (var (negative, damage, roomDamage) in new[] { (true, false, false), (true, true, false),
+            (false, false, false), (false, false, true) })
         foreach (bool onCast in new[] { false, true })
+        foreach (bool preferredTeamPresent in new[] { true, false })
         {
             var status = new CombatStatus(negative ? "melee weakness" : "armor", 2,
                 displayCategory: negative ? "Negative" : "Positive");
-            CardActionEffect[] effects = [new("AddStatus", "DropTargetCharacter", 0, true, true, [status])];
+            CardActionEffect[] effects = [new(damage ? "Damage" : "AddStatus", "DropTargetCharacter", damage ? 2 : 0,
+                true, true, damage ? [] : [status])];
+            if (roomDamage) effects = [.. effects, new("Damage", "Room", 2, false, true, [])];
             var rule = new CardPlayRule("status", "status", 0, "Spell", "Discard", null, [],
                 effects: onCast ? [new("Null", "DropTargetCharacter", 0, true, true, [])] : effects,
                 onCastEffects: onCast ? effects : [], cardType: "Spell");
@@ -21,7 +25,8 @@ internal static class TacticalTargetChecks
             var trash = new CombatUnit(4, "trash", CombatTeam.Enemy, 1, 1, 1, true, false, false, []);
             var boss = new CombatUnit(5, "boss", CombatTeam.Enemy, 25, 1100, 1100, true, false, true, [], isBoss: true);
             var rooms = Enumerable.Range(0, 4).Select(index => new RoomCombatState(index, false,
-                index == 0 ? [enemy, trash, boss, ally] : index == 3 ? [pyre] : [], [], context)).ToArray();
+                index == 0 ? preferredTeamPresent ? [enemy, trash, boss, ally] : negative ? [ally] : [enemy, trash, boss]
+                    : index == 3 ? [pyre] : [], [], context)).ToArray();
             var train = new TrainCombatState(rooms, [], 7, context);
             var spawn = new EnemySpawnState(train, [new EnemyWave([new EnemyGroup([])])], [-1], 0,
                 false, rng, 6, [], 0, false, 2, 1, 1, []);
@@ -32,16 +37,28 @@ internal static class TacticalTargetChecks
             using var keys = new BattleStateKeys();
             string original = keys.Key(root);
             var chosen = BattleTacticalPolicy.Choose(root, out var omitted);
-            int target = negative ? boss.Id : ally.Id;
+            if (!preferredTeamPresent)
+            {
+                // These cross-team casts are legal and must remain searchable
+                // for sacrifice/Incant combinations. The ordinary seed should
+                // not spend its next input debuffing an ally or buffing a boss
+                // merely because its intended target is absent.
+                int wrongTarget = negative ? ally.Id : boss.Id;
+                var legal = BattleActionModel.EnumerateActions(root);
+                if (!legal.SupportedCandidates.Any(candidate => candidate.Action.TargetUnitId == wrongTarget) ||
+                    chosen != null || omitted.Count != 0 || keys.Key(root) != original)
+                    throw new InvalidOperationException($"Missing tactical target must skip the card while preserving legal branches: negative={negative}, onCast={onCast}, target={chosen?.Action.TargetUnitId}.");
+                continue;
+            }
+            int target = negative ? damage ? trash.Id : boss.Id : ally.Id;
             var direct = BattleActionModel.PlayCard(root, new PlayCardAction(1, 0, targetUnitId: target));
             if (!direct.Supported) throw new InvalidOperationException("Tactical target control is invalid: " + direct.Reason);
             using var independent = new BattleStateKeys();
             if (chosen == null || chosen.Action.TargetUnitId != target || omitted.Count != 0 ||
-                chosen.Result.State!.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == target).Status(status.Id)?.Stacks != 2 ||
-                chosen.Result.State.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id != target && unit.Status(status.Id) != null) ||
+                independent.Key(chosen.Result.State!) != independent.Key(direct.State!) ||
                 independent.Key(root) != original)
                 throw new InvalidOperationException($"Tactical status targeted the wrong team or changed its root: negative={negative}, onCast={onCast}, target={chosen?.Action.TargetUnitId}.");
         }
-        Console.WriteLine("TACTICAL-TARGET PASS: main/on-cast debuffs prefer the boss over low-HP trash, buffs target allies, other actors and parent state preserved.");
+        Console.WriteLine("TACTICAL-TARGET PASS: 16 main/on-cast status/damage/mixed-effect cases; absent targets defer the seed without pruning legal cross-team branches; immutable full-state/RNG replays.");
     }
 }

@@ -1,7 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Strategy', 'Keys', 'Native', 'FragileStrategy', 'FragileNative')][string[]] $Case = @('Strategy', 'Keys', 'Native', 'FragileStrategy', 'FragileNative'),
+    [ValidateSet('Strategy', 'Keys', 'Native', 'FragileStrategy', 'FragileNative', 'Targets')][string[]] $Case = @('Strategy', 'Keys', 'Native', 'FragileStrategy', 'FragileNative', 'Targets'),
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -26,6 +26,9 @@ function Get-Archive([string] $Name) {
 function Invoke-Check([string] $Mode, [string[]] $Archives) {
     dotnet $checker $Mode @Archives
     if ($LASTEXITCODE -ne 0) { throw "Default advice check failed: $Mode" }
+}
+if ('Targets' -in $Case) {
+    Invoke-Check '--tactical-target-only' @()
 }
 if ('Keys' -in $Case) {
     Invoke-Check '--state-key-only' @(Get-Archive 'full-battle-player-natural-ring7-ordinary-search.mt2f')

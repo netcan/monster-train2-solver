@@ -8,6 +8,7 @@ namespace MonsterTrain2Poju.Model
     // and spend on equipment/armor before X buffs and free unit abilities.
     public static class BattleTacticalPolicy
     {
+        private const double UnwantedTargetRank = double.NegativeInfinity;
         public static SupportedActionCandidate? Choose(BattleTurnState source,
             out IReadOnlyList<UnsupportedActionAttempt> unsupported, int preferredDeploymentRoom = 2)
             => Choose(source, out unsupported, preferredDeploymentRoom, null);
@@ -60,12 +61,17 @@ namespace MonsterTrain2Poju.Model
                 {
                     BattleActionEnumeration actions = workspace?.Enumerate(source, choice.token.InstanceId, false) ?? BattleActionModel.EnumerateActions(source, choice.token.InstanceId, includeAbilities: false);
                     omitted.AddRange(actions.UnsupportedAttempts);
-                    SupportedActionCandidate? selected = actions.SupportedCandidates.OrderByDescending(candidate => Rank(candidate.Action, rule))
+                    SupportedActionCandidate? selected = actions.SupportedCandidates.Where(candidate => Rank(candidate.Action, rule) > UnwantedTargetRank)
+                        .OrderByDescending(candidate => Rank(candidate.Action, rule))
                         .ThenBy(candidate => candidate.Action.TargetUnitId).FirstOrDefault();
                     if (selected != null) return selected;
                     continue;
                 }
-                foreach (PlayCardAction action in Inputs(choice.token, rule).OrderByDescending(action => Rank(action, rule)).ThenBy(action => action.TargetUnitId))
+                // An unfavorable team is not a fallback target. Keep those
+                // legal sacrifice/Incant branches in the full enumerator, but
+                // let this seed defer rather than buff an enemy or hurt an ally.
+                foreach (PlayCardAction action in Inputs(choice.token, rule).Where(action => Rank(action, rule) > UnwantedTargetRank)
+                    .OrderByDescending(action => Rank(action, rule)).ThenBy(action => action.TargetUnitId))
                 {
                     BattleActionResult result = Play(source, action);
                     if (result.Supported) return new SupportedActionCandidate(action, result);
@@ -138,13 +144,17 @@ namespace MonsterTrain2Poju.Model
                 if (target == null) return BattleHeuristicPolicy.RoomDamageValue(source, action, rule) ??
                     -100 * Math.Abs(action.RoomIndex - preferredDeploymentRoom);
                 CardActionEffect[] effects = rule.Effects.Concat(rule.OnCastEffects).ToArray();
-                bool damaging = effects.Any(effect => effect.Type is "Damage" or "Kill");
-                bool harmful = damaging || effects.Any(effect =>
-                    (effect.Target is "DropTargetCharacter" or "LastTargetedCharacters") &&
+                // Only effects on the selected actor determine its team.
+                // Room-wide enemy damage may accompany an allied-target buff.
+                CardActionEffect[] targeted = effects.Where(effect =>
+                    effect.Target is "DropTargetCharacter" or "LastTargetedCharacters").ToArray();
+                bool damaging = targeted.Any(effect => effect.Type is "Damage" or "DamagePerSourceAttack" or
+                    "DamagePerHp" or "DamageByUnitsKilled" or "Kill");
+                bool harmful = damaging || targeted.Any(effect =>
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
-                if (harmful) return target.Team != CombatTeam.Enemy ? -100000 : damaging ? 1000 - target.Health :
+                if (harmful) return target.Team != CombatTeam.Enemy ? UnwantedTargetRank : damaging ? 1000 - target.Health :
                     (target.IsBoss == true ? 10000 : 0) + target.Health + target.Attack * 3;
-                if (target.Team != CombatTeam.Player || target.IsPyre) return -100000;
+                if (target.Team != CombatTeam.Player || target.IsPyre) return UnwantedTargetRank;
                 if (rule.Equipment != null)
                 {
                     double value = EquipmentValue(room, target, action.CardInstanceId);
@@ -158,7 +168,7 @@ namespace MonsterTrain2Poju.Model
                     return target.Health + Math.Max(0, target.Status("armor")?.Stacks ?? 0) +
                         target.Triggers.Count(trigger => trigger.Kind == "OnHit") * 50;
                 return target.Team == CombatTeam.Player && !target.IsPyre
-                    ? target.Attack + (target.Modifiers?.IsChampion == true ? 10000 : 0) : -100000;
+                    ? target.Attack + (target.Modifiers?.IsChampion == true ? 10000 : 0) : UnwantedTargetRank;
             }
 
             double EquipmentValue(RoomCombatState room, CombatUnit unit, int cardId)
