@@ -62,3 +62,16 @@ Advisor 和 Probe 的 Release 构建通过。`ModelChecks --advice-history-only`
 这是玩家提示、续步和诊断记录的专项验收，不替代未校准机制组合的原生验证。
 记录从新版加载后开始，不恢复旧版丢失的方案，也不自动将预测变化归因为玩家
 失误。本次未构建 Mac 版本。
+
+## Windows 交付
+
+2026-10-25 00:43 已安装 0.2.23 到
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/plugins/PojuAdvisor`。
+三个 DLL 与上述原生验收载荷、已检查的 Windows ZIP 哈希一致；28 个其他
+加载器/Mod/配置文件哈希未变，保留 F10 和用户的 10000 毫秒搜索预算。
+交付时真实游戏已关闭，下次启动直接加载新版。
+
+包：`results/mod-dist/PojuAdvisor-0.2.23-Windows-20261025-004337.zip`。
+包 SHA-256：`19692DFF06773AAC1492118A682883287BA50CB84A0DCA4E902C0624742253C1`。
+旧版、已验收载荷及安装回执保存在
+`BepInEx/PojuBackups/AdviceHistory-20261025-004337`，构建/交付来源为 `eeda8e7c`。
