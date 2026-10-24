@@ -3,6 +3,27 @@ using MonsterTrain2Poju.Model;
 
 internal static class RandomCampaignChecks
 {
+    internal static void Curated(string path)
+    {
+        using var source = ModelJson.ReadFixture(path);
+        FixtureValue input = source.RootElement.GetProperty("NativeRunInput");
+        int seed = input.GetProperty("Seed").GetInt32(), rank = input.GetProperty("AscensionLevel").GetInt32();
+        int distance = input.GetProperty("Distance").GetInt32();
+        string primary = input.GetProperty("PrimaryClan").GetString()!, secondary = input.GetProperty("SecondaryClan").GetString()!;
+        if (path.EndsWith("-loss.mt2f", StringComparison.Ordinal))
+        {
+            Require(!source.RootElement.GetProperty("NativeWon").GetBoolean(), "A curated loss must be an actual terminal defeat.");
+            Source(source.RootElement, seed, rank, distance, primary, secondary);
+        }
+        else
+        {
+            Require(path.EndsWith("-search.mt2f", StringComparison.Ordinal), "A curated pair must start with its source archive.");
+            string replayPath = path.Substring(0, path.Length - "-search.mt2f".Length) + "-replay.mt2f";
+            using var replay = ModelJson.ReadFixture(replayPath);
+            Pair(source.RootElement, replay.RootElement, seed, rank, distance, primary, secondary);
+        }
+    }
+
     private static void Require(bool value, string message)
     { if (!value) throw new InvalidOperationException(message); }
 

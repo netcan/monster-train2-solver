@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--random-campaign-curated-only")
+{
+    RandomCampaignChecks.Curated(args[1]);
+    return;
+}
+
 if (args.Length == 7 && args[0] == "--random-campaign-source-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -4724,6 +4730,10 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-har
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-random-campaign-", StringComparison.Ordinal) &&
+    (path.EndsWith("-search.mt2f", StringComparison.Ordinal) || path.EndsWith("-loss.mt2f", StringComparison.Ordinal))))
+    RandomCampaignChecks.Curated(path);
+
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-native-covenant-campaign-03-ring6-default-loss.mt2f"))
 {
     using var fixture = ModelJson.ReadFixture(path);

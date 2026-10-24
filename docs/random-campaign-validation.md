@@ -32,8 +32,13 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 
 | 样本 | 主族／副族 | 原生种子 | 本次状态 |
 | --- | --- | ---: | --- |
-| 1 | Banished / Umbra | 1970936330 | 首战源局及独立复放通过，已自然进入第二战；整局仍在验收 |
-| 2 | Pyreborne / Banished | 1862997127 | 已完成原生开局；整局仍在验收 |
+| 1 | Banished / Umbra | 1970936330 | 前两战源局及独立复放通过，第三战源局胜；整局仍在验收 |
+| 2 | Pyreborne / Banished | 1862997127 | 首战源局及独立复放通过；第二战发现原生商店 Permafrost 升级采集保护缺口，正在修复并从原检查点继续 |
+
+两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
+以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
+定向选择任意一侧归档都会校验整对，重复选择不会重复执行。
+首批同时确认错误种子、难度和交换的主／副族均被拒绝；未运行全量回归。
 
 定向检查入口：
 

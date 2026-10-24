@@ -9,6 +9,10 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'full-battle-random-campaign-01-ring1-search.mt2f',
+    'full-battle-random-campaign-01-ring1-replay.mt2f',
+    'full-battle-random-campaign-02-ring1-search.mt2f',
+    'full-battle-random-campaign-02-ring1-replay.mt2f',
     'room-moon-spell-threshold-relic-calibration.mt2f',
     'full-battle-original-moon-card-upgrades-threshold-relic.mt2f',
     'full-battle-player-moon-room-threshold-relic-search.mt2f',
@@ -1140,6 +1144,22 @@ if ($Fixture.Count -gt 0) {
 }
 # Explicit selections for this composition have complete dedicated gates.
 # Avoid starting all unrelated pure checks before a component-only request.
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notlike 'full-battle-random-campaign-*' }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Random campaign checker build failed.' }
+    }
+    $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+    $checkedSources = @{}
+    foreach ($path in $fixtures) {
+        $sourceName = (Split-Path -Leaf $path) -replace '-replay\.mt2f$', '-search.mt2f'
+        if ($checkedSources.ContainsKey($sourceName)) { continue }
+        dotnet $checker --random-campaign-curated-only (Get-TestFixturePath $sourceName)
+        if ($LASTEXITCODE -ne 0) { throw 'Focused random campaign acceptance failed.' }
+        $checkedSources[$sourceName] = $true
+    }
+    return
+}
 $moonThresholdGates = @{
     'room-moon-spell-threshold-relic-calibration.mt2f' = '--moon-spell-threshold-component-only'
     'full-battle-original-moon-card-upgrades-threshold-relic.mt2f' = '--original-moon-card-upgrades-only'
