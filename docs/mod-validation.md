@@ -8,8 +8,17 @@ full battle wins at Pyre80 after 20 plays/five EndTurns; all 34 room stages,
 nine train phases and sixteen immutable battle chains match. All four counters
 are zero, exit is normal and protected originals are unchanged. The component
 also exposed and fixed stale enchantment-world moon understanding after global
-phase changes. Actual player-pair acceptance is still pending. Additional
-active relics and later Covenants retain their separate guards. See
+phase changes. Actual player source and independent frozen replay now both
+win at Pyre80 after 47 inputs, with complete forecasts/state/RNG, 46 room
+stages and thirteen train phases per process, normal exits and all four
+failure counters zero. Forty-nine publications have fresh full-root checks;
+nine ordinary and 36 winning continuations reuse plans. Frozen replay has
+no searches or publications after pausing. Native player actions also exposed
+and fixed separate original Heavenfall triggers recaching after remote Armor
+removal and hand refresh after completed death focus; both original failed
+prefixes remain preserved as boundary evidence. This controlled
+six-turn/10000ms scene remains separate from natural/default-budget victory.
+Additional active relics and later Covenants retain their separate guards. See
 [Moon Covenant composition](../tests/fixtures/moon-covenant.md).
 
 Original New-moon Silent armor now composes with the five moon spells,

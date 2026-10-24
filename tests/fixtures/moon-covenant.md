@@ -63,6 +63,38 @@ Archive: `full-battle-original-moon-card-upgrades-covenant03.mt2f`.
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-moon-card-upgrades-only tests/fixtures/full-battle-original-moon-card-upgrades-covenant03.mt2f
 ```
 
+## Actual player source and independent frozen replay
+
+The corrected actual-player source,
+`full-battle-units-spells-and-junk-20261024-122329-677fd01d`, and independent
+frozen replay, `full-battle-units-spells-and-junk-20261024-123112-4cce9989`,
+both win at Pyre80 after 47 inputs: forty plays and seven EndTurns. Each
+process retains 46 room stages, thirteen train phases and eleven spawns.
+All four failure counters are zero, both exit normally and protected
+original files are unchanged. Native times are 459.44 and 203.49 seconds.
+
+The dedicated pair gate matches every input, complete root, successor,
+forecast and gameplay RNG across the independent processes, including sixteen
+immutable battle branches. Both retain original cumulative rank-three startup.
+The shared moon gate checks all five unchanged spells, 1,962 settled trait
+snapshots, 128 exclusive/272 additive witnesses, sixteen Lunacy casts and
+118 paid advances across both traces and their inspected forecasts.
+
+The source has 395 pure captures and 49 publications with 49 fresh full-root
+checks. Two consumed searches, nine ordinary continuations and 36 winning
+continuations account for all 47 inputs; the overlay performs eleven total
+searches. Frozen replay has 95 captures, one initial search and no searches
+or publications after pausing. These figures remain a controlled
+six-turn/10000-ms tactical acceptance, not natural/default-budget victory.
+
+Archives: `full-battle-player-moon-room-covenant03-search.mt2f` and
+`full-battle-player-moon-room-covenant03-replay.mt2f`; hashed runner receipt:
+`player-moon-room-covenant03-accepted.json`.
+
+```powershell
+./scripts/Check-PlayerAdvisor.ps1 -Case MoonRoomCovenant03 -SkipBuild
+```
+
 ## Retained native Heavenfall focus prefix
 
 The first actual-player attempt, profile

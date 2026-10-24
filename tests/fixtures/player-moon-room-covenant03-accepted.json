@@ -1,0 +1,12 @@
+{
+  "Schema": 1,
+  "Composition": "MoonRoomCovenant03",
+  "SourceProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-122329-677fd01d",
+  "ReplayProfile": "E:\\Workspace\\Program\\monster-train2-poju\\.probe-runs\\full-battle-units-spells-and-junk-20261024-123112-4cce9989",
+  "SourceSha256": "7a2fafe8847af30ff9de096c7440b7ed010d277c233055a2afcb8ca54ff2d188",
+  "ReplaySha256": "1d2ff2ff19e91a01d30dc44cce046d47e2cfdbef36ff2d202b3d11c8f00f74c7",
+  "IndependentFocusedCheck": "--player-moon-room-covenant03-pair-only",
+  "ReusedSource": false,
+  "ReusedReplay": false,
+  "Passed": true
+}

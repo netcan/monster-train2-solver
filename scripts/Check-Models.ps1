@@ -14,6 +14,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-original-moon-card-upgrades-covenant03.mt2f',
     'heavenfall-focus-native-prefix.mt2f',
     'heavenfall-death-focus-native-prefix.mt2f',
+    'full-battle-player-moon-room-covenant03-search.mt2f',
+    'full-battle-player-moon-room-covenant03-replay.mt2f',
     'room-moon-spell-status-relic-calibration.mt2f',
     'full-battle-player-moon-room-status-relic-search.mt2f',
     'full-battle-player-moon-room-status-relic-replay.mt2f',
