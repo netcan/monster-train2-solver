@@ -16,6 +16,9 @@ internal static class NativeCovenantCampaignChecks
                 "Natural default acceptance requires actual three-turn/3000ms/top-floor settings with tactical seed off.");
         }
         Pair(source, replay, level, distance, requireVictory: true);
+        if (source.GetProperty("PlayerAdvisor").TryGetProperty("FloorBrowse", out FixtureValue browse) &&
+            browse.ValueKind != FixtureKind.Null)
+            FloorBrowseAdviceChecks.Selection(source, replay);
         Console.WriteLine($"PLAYER-NATIVE-COVENANT-DEFAULT PASS rank={level} ring={distance + 1}: actual defaults, two natural victories and independent full-state/RNG replay.");
     }
 

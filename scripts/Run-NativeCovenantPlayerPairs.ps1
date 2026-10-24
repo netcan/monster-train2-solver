@@ -80,6 +80,9 @@ foreach ($level in $Rank) {
         $profiles = @{}
         foreach ($mode in @('search', 'replay')) {
             $step = @{ SkipBuild = -not $buildNative }
+            # Exercise selection-only reuse on the real natural deck while
+            # accepting defaults; the frozen driver repeats these switches.
+            if ($DefaultAdvice -and $mode -eq 'search') { $step.AdvisorFloorBrowse = $true }
             if ($mode -eq 'replay') { $step.RollingInput = Join-Path $profiles.search 'full-battle.mt2f' }
             $nativeResult = $null
             & (Join-Path $PSScriptRoot 'Run-FullBattleProbe.ps1') @common @step | ForEach-Object {

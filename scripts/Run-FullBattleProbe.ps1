@@ -2257,6 +2257,12 @@ if ($PlayerAdvisor -and -not $PlannerInput -and -not $RollingInput) {
     }
     Write-Output "PLAYER-ADVISOR-PASS version=$($trace.PlayerAdvisor.Version) publications=$($playerEvidence.Published)"
 }
+if ($AdvisorFloorBrowse -and ($null -eq $trace.PlayerAdvisor.FloorBrowse -or
+    -not $trace.PlayerAdvisor.FloorBrowse.Passed -or -not $trace.PlayerAdvisor.FloorBrowse.DuringSearch -or
+    $trace.PlayerAdvisor.FloorBrowse.Switches -ne 7 -or $trace.PlayerAdvisor.Overlay.SelectionReuses -ne 7 -or
+    -not (Select-String -LiteralPath $unityLog -Pattern 'PLAYER-ADVISOR-FLOOR-BROWSE-PASS .*newSearches=0' -Quiet))) {
+    throw 'Real player floor browsing did not preserve its generation and search count through seven switches.'
+}
 if ($PlayerAdvisor -and $RollingInput) {
     $frozen = $trace.PlayerAdvisor.FrozenObservation
     $overlay = $trace.PlayerAdvisor.Overlay

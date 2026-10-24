@@ -8,6 +8,15 @@ internal static class FloorBrowseAdviceChecks
 {
     internal static void NativePair(FixtureValue source, FixtureValue replay)
     {
+        Selection(source, replay);
+        BattleAdviceChecks.Native(source, requireBoss: false);
+        RollingAdviceChecks.FrozenPair(source, replay);
+        foreach (FixtureValue fixture in new[] { source, replay }) TrainCombatChecks.Native(fixture);
+        Console.WriteLine("PLAYER-FLOOR-BROWSE PASS: 7 native user floor switches, ready/in-flight reuse, zero new searches, live full roots, complete forecasts/state/RNG and fresh frozen replay.");
+    }
+
+    internal static void Selection(FixtureValue source, FixtureValue replay)
+    {
         FixtureValue player = source.GetProperty("PlayerAdvisor"), overlay = player.GetProperty("Overlay");
         FixtureValue browse = player.GetProperty("FloorBrowse");
         Require(player.GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&
@@ -22,10 +31,6 @@ internal static class FloorBrowseAdviceChecks
             reused.Select(row => row.GetProperty("Generation").GetInt64()).Distinct().Count() == 1 &&
             reused.All(row => row.GetProperty("SearchMs").GetDouble() == 0),
             "Floor switches changed the active generation or searched instead of replaying the existing line.");
-        BattleAdviceChecks.Native(source, requireBoss: false);
-        RollingAdviceChecks.FrozenPair(source, replay);
-        foreach (FixtureValue fixture in new[] { source, replay }) TrainCombatChecks.Native(fixture);
-        Console.WriteLine("PLAYER-FLOOR-BROWSE PASS: 7 native user floor switches, ready/in-flight reuse, zero new searches, live full roots, complete forecasts/state/RNG and fresh frozen replay.");
     }
 
     internal static void Run(FixtureValue fixture)
