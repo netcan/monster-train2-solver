@@ -90,6 +90,9 @@ internal static class FloorBrowseAdviceChecks
                 native.GetProperty("MaxSteps").GetInt32());
         }
         DeferredBrowsing(before, plan);
+        RapidInputs(before, plan, browse: false, interleaved: false);
+        RapidInputs(before, plan, browse: true, interleaved: false);
+        RapidInputs(before, plan, browse: true, interleaved: true);
         int searches = 0;
         using var session = new BattleAdviceSession((_, _) =>
         {
@@ -174,6 +177,57 @@ internal static class FloorBrowseAdviceChecks
         }
         finally { release.Set(); }
         Console.WriteLine("DEFERRED-BROWSING PASS: seven O(1) view events preserve the exact publication, then a real input matches and verifies its full remaining state/RNG.");
+    }
+
+    private static void RapidInputs(BattleTurnState root, BattlePlanResult plan, bool browse, bool interleaved)
+    {
+        if (plan.Steps.Count < 3) return;
+        int searches = 0;
+        using var session = new BattleAdviceSession((_, _) =>
+        {
+            if (++searches != 1) throw new InvalidOperationException("Rapid advised inputs restarted search.");
+            return plan;
+        });
+        session.Observe(root, Key(root)); Pump(session);
+        BattleTurnState actual = root;
+        foreach (int room in browse ? new[] { 2, 1, 0 } : Array.Empty<int>())
+        {
+            session.BrowseRoom(room);
+            BattleTurnResult selected = BattleTurnModel.SelectRoom(actual, room);
+            Require(selected.Supported, selected.UnsupportedReason!); actual = selected.State!;
+        }
+        int consumed = 0;
+        foreach (BattleSearchStep step in plan.Steps.Take(plan.Steps.Count - 1))
+        {
+            if (step.IsEndTurn)
+            {
+                BattleTurnResult next = BattleTurnModel.EndTurn(actual);
+                Require(next.Supported, next.UnsupportedReason!); actual = next.State!;
+            }
+            else
+            {
+                BattleActionResult next = BattleActionModel.PlayCard(actual, step.Action!);
+                Require(next.Supported, next.Reason!); actual = next.State!;
+            }
+            // No Poll/publication between actual inputs. Even a completed
+            // obsolete worker must not consume the last published anchor.
+            session.InvalidateForInput(); session.Observe(actual, Key(actual)); consumed++;
+            if (consumed >= 2 && step.IsEndTurn) break;
+            if (interleaved)
+            {
+                int room = (actual.SelectedRoom + 1) % 3;
+                session.BrowseRoom(room);
+                BattleTurnResult selected = BattleTurnModel.SelectRoom(actual, room);
+                Require(selected.Supported, selected.UnsupportedReason!); actual = selected.State!;
+            }
+        }
+        Pump(session);
+        Require(searches == 1 && session.Current!.ReusedContinuation &&
+            session.Current.Plan.Steps.Count == plan.Steps.Count - consumed,
+            "Consecutive advised inputs lost their retained anchor or browsing history.");
+        BattleAdviceSession.Verify(actual, session.Current.Plan);
+        Require(session.MatchesCurrentRoot(actual), "Published rapid-input checkpoint left obsolete history behind.");
+        Console.WriteLine($"RAPID-INPUTS PASS: {consumed} unpolled advised inputs including EndTurn, browse={browse}, interleaved={interleaved}, one search and exact full suffix replay.");
     }
 
     internal static void NativePair(FixtureValue source, FixtureValue replay)

@@ -10,6 +10,16 @@ namespace MonsterTrain2Poju.Model
     // outcome from the newly captured live root.
     internal static class SelectionAdviceReuse
     {
+        // UI-owned ordered history since the last accepted publication. Roots
+        // are detached immutable checkpoints; a worker receives its own array.
+        internal sealed class Observation
+        {
+            internal readonly int Room;
+            internal readonly BattleTurnState? Root;
+            internal Observation(int room) { Room = room; }
+            internal Observation(BattleTurnState root) { Room = -1; Root = root; }
+        }
+
         // One cache belongs to one verified suffix and is only accessed by its
         // session worker. Every root field, including the allocator, is keyed:
         // a different allocator may change the strict replayed final snapshot.
@@ -55,46 +65,59 @@ namespace MonsterTrain2Poju.Model
         // Called after an actual input, never by a floor-view event. Reproduce
         // every recorded native selection callback before matching the next
         // complete decision/RNG against the original line's prefixes.
-        internal static VerifiedAdviceContinuation? MatchAfterBrowsing(BattleAdvice advice, IReadOnlyList<int> rooms,
+        internal static VerifiedAdviceContinuation? MatchAfterObservations(BattleAdvice advice, IReadOnlyList<Observation> observations,
             BattleTurnState actual, CancellationToken token)
         {
             BattleTurnState projected = advice.Root;
-            foreach (int room in rooms)
-            {
-                token.ThrowIfCancellationRequested();
-                BattleTurnResult selected = BattleTurnModel.SelectRoom(projected, room);
-                if (!selected.Supported) return null;
-                projected = selected.State!;
-            }
+            int index = 0;
             using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
-            string actualKey = keys.Key(actual);
-            for (int index = 0; index < advice.Plan.Steps.Count; index++)
+            foreach (Observation observation in observations)
             {
                 token.ThrowIfCancellationRequested();
-                if (keys.Key(projected) == actualKey)
+                if (observation.Root != null)
                 {
-                    BattlePlanResult remaining = VerifiedAdviceContinuation.Remaining(advice.Plan, index);
-                    // The native preview allocator may have advanced again.
-                    // Replay from the actual input root so the resulting full
-                    // forecast remains exact, including its allocator value.
-                    return Replay(remaining, actual, true, token, out _, out VerifiedAdviceContinuation? proof) ? proof : null;
-                }
-                BattleSearchStep step = advice.Plan.Steps[index];
-                if (step.IsEndTurn)
-                {
-                    BattleTurnResult next = BattleTurnModel.EndTurn(projected);
-                    if (!next.Supported) return null;
-                    projected = next.State!;
+                    if (!AdvanceTo(observation.Root)) return null;
+                    // Continue from the exact observed allocator, rather than
+                    // from the normalized model prefix used for matching.
+                    projected = observation.Root;
                 }
                 else
                 {
-                    if (step.Action == null) return null;
-                    BattleActionResult next = BattleActionModel.PlayCard(projected, step.Action);
-                    if (!next.Supported) return null;
-                    projected = next.State!;
+                    BattleTurnResult selected = BattleTurnModel.SelectRoom(projected, observation.Room);
+                    if (!selected.Supported) return null;
+                    projected = selected.State!;
                 }
             }
-            return null;
+            if (!AdvanceTo(actual)) return null;
+            BattlePlanResult remaining = VerifiedAdviceContinuation.Remaining(advice.Plan, index);
+            // Reproduce the complete suffix from the latest actual root. Never
+            // publish an old final snapshot with a different preview allocator.
+            return Replay(remaining, actual, true, token, out _, out VerifiedAdviceContinuation? proof) ? proof : null;
+
+            bool AdvanceTo(BattleTurnState checkpoint)
+            {
+                string actualKey = keys.Key(checkpoint);
+                while (index < advice.Plan.Steps.Count)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (keys.Key(projected) == actualKey) return true;
+                    BattleSearchStep step = advice.Plan.Steps[index++];
+                    if (step.IsEndTurn)
+                    {
+                        BattleTurnResult next = BattleTurnModel.EndTurn(projected);
+                        if (!next.Supported) return false;
+                        projected = next.State!;
+                    }
+                    else
+                    {
+                        if (step.Action == null) return false;
+                        BattleActionResult next = BattleActionModel.PlayCard(projected, step.Action);
+                        if (!next.Supported) return false;
+                        projected = next.State!;
+                    }
+                }
+                return false;
+            }
         }
 
         private static bool Replay(BattlePlanResult original, BattleTurnState root, bool retainPlans,

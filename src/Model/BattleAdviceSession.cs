@@ -56,7 +56,8 @@ namespace MonsterTrain2Poju.Model
         private BattleTurnState? pending;
         private BattleTurnState? observed;
         private BattleAdvice? reusable;
-        private readonly List<int> browsedRooms = new List<int>();
+        private readonly List<SelectionAdviceReuse.Observation> reuseObservations = new List<SelectionAdviceReuse.Observation>();
+        private int workerObservationCount;
         private string? pendingKey, currentKey;
         private long generation, workerGeneration;
         private long observationVersion;
@@ -77,8 +78,9 @@ namespace MonsterTrain2Poju.Model
         {
             if (disposed) throw new ObjectDisposedException(nameof(BattleAdviceSession));
             if (roomIndex < 0) throw new ArgumentOutOfRangeException(nameof(roomIndex));
-            int previous = browsedRooms.Count > 0 ? browsedRooms[browsedRooms.Count - 1] : observed?.SelectedRoom ?? -1;
-            if (previous != roomIndex) browsedRooms.Add(roomIndex);
+            var previous = reuseObservations.Count > 0 ? reuseObservations[reuseObservations.Count - 1] : null;
+            int previousRoom = previous?.Root?.SelectedRoom ?? previous?.Room ?? observed?.SelectedRoom ?? -1;
+            if (previousRoom != roomIndex) reuseObservations.Add(new SelectionAdviceReuse.Observation(roomIndex));
         }
 
         // Used only by isolated native acceptance, which supplies a fresh full
@@ -86,12 +88,13 @@ namespace MonsterTrain2Poju.Model
         internal bool MatchesCurrentRoot(BattleTurnState root)
         {
             if (Current == null) return false;
-            if (browsedRooms.Count == 0)
+            if (reuseObservations.Count == 0)
             { using var keys = new BattleStateKeys(); return keys.Key(root) == Current.RootKey; }
             BattleTurnState projected = Current.Root;
-            foreach (int room in browsedRooms)
+            foreach (var observation in reuseObservations)
             {
-                BattleTurnResult selected = BattleTurnModel.SelectRoom(projected, room);
+                if (observation.Root != null) return false;
+                BattleTurnResult selected = BattleTurnModel.SelectRoom(projected, observation.Room);
                 if (!selected.Supported) return false;
                 projected = selected.State!;
             }
@@ -149,8 +152,9 @@ namespace MonsterTrain2Poju.Model
             {
                 observationVersion++;
                 bool browsing = sameBattle ?? (observed != null && SelectionAdviceReuse.SameBattle(observed, state));
-                if (browsing) reusable = Current ?? reusable;
-                else { generation++; if (observed != null) reusable = null; cancellation?.Cancel(); }
+                reusable = Current ?? reusable;
+                if (!browsing) { generation++; cancellation?.Cancel(); }
+                if (reusable != null) reuseObservations.Add(new SelectionAdviceReuse.Observation(state));
                 currentKey = fullStateKey; observed = state;
                 Current = null; Error = null;
                 // A floor change must not cancel an in-flight search. Rebase
@@ -174,9 +178,9 @@ namespace MonsterTrain2Poju.Model
         {
             if (disposed) return;
             observationVersion++;
-            if (!preserveContinuation) { continuation = null; reusable = null; browsedRooms.Clear(); }
+            if (!preserveContinuation) { continuation = null; reusable = null; reuseObservations.Clear(); }
             else reusable = Current ?? reusable;
-            if (reusable == null && continuation == null) browsedRooms.Clear();
+            if (reusable == null && continuation == null) reuseObservations.Clear();
             if (currentKey != null) generation++;
             currentKey = pendingKey = null; pending = null;
             observed = null;
@@ -195,9 +199,20 @@ namespace MonsterTrain2Poju.Model
                     if (workerGeneration == generation && currentKey != null)
                     {
                         if (advice.RootKey == currentKey)
-                        { Current = advice; continuation = advice.Continuation; Status = BattleAdviceStatus.Ready; }
+                        {
+                            Current = reusable = advice; continuation = advice.Continuation;
+                            // Starting or cancelling verification must not consume
+                            // the anchor/history. Commit only this accepted prefix;
+                            // later view callbacks still belong to the new root.
+                            reuseObservations.RemoveRange(0, workerObservationCount);
+                            Status = BattleAdviceStatus.Ready;
+                        }
                         else
-                        { reusable = advice; pending = observed; pendingKey = currentKey; }
+                        {
+                            reusable = advice;
+                            reuseObservations.RemoveRange(0, workerObservationCount);
+                            pending = observed; pendingKey = currentKey;
+                        }
                     }
                 }
                 catch (Exception error)
@@ -217,11 +232,8 @@ namespace MonsterTrain2Poju.Model
                 TimeSpan preparationElapsed = pendingPreparationElapsed;
                 VerifiedAdviceContinuation? retained = continuation;
                 BattleAdvice? candidate = reusable;
-                // Keep views taken during the initial search anchored to that
-                // result. Drain them only when a later capture can reuse it.
-                int[] selections = candidate == null ? Array.Empty<int>() : browsedRooms.ToArray();
-                if (candidate != null) browsedRooms.Clear();
-                reusable = null;
+                var observations = candidate == null ? Array.Empty<SelectionAdviceReuse.Observation>() : reuseObservations.ToArray();
+                workerObservationCount = observations.Length;
                 pending = null; pendingKey = null;
                 workerGeneration = generation;
                 cancellation = new CancellationTokenSource();
@@ -238,8 +250,8 @@ namespace MonsterTrain2Poju.Model
                     if (fullKeys.Key(root) != key)
                         throw new InvalidOperationException(retained == null ? "Captured state differs from its full-state key." :
                             "Captured state differs from the retained continuation.");
-                    VerifiedAdviceContinuation? matched = candidate != null && selections.Length > 0
-                        ? SelectionAdviceReuse.MatchAfterBrowsing(candidate, selections, root, token) : retained?.Match(root);
+                    VerifiedAdviceContinuation? matched = candidate != null && observations.Any(item => item.Root == null)
+                        ? SelectionAdviceReuse.MatchAfterObservations(candidate, observations, root, token) : retained?.Match(root);
                     bool reusedSelection = matched == null && candidate != null && SelectionAdviceReuse.TryRebase(candidate, root,
                         retainPlans, token, out plan, out proof);
                     verification.Stop();
@@ -267,7 +279,7 @@ namespace MonsterTrain2Poju.Model
                     return new BattleAdvice(root, key, plan, captureElapsed, queued, verification.Elapsed, requestedAt,
                         proof, reusedWinningContinuation: matched?.IsWinning == true, reusedSelection: reusedSelection,
                         reusedContinuation: matched != null, preparationElapsed: preparationElapsed,
-                        selectionCache: reusedSelection || matched != null && matched.SamePosition(retained!)
+                        selectionCache: reusedSelection || matched != null && retained != null && matched.SamePosition(retained)
                             ? candidate?.SelectionCache : null);
                 });
             }
