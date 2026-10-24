@@ -16,6 +16,7 @@ namespace MonsterTrain2Poju.Probe
         internal Action<int>? SaveTimeLimitMs { get; set; }
         internal bool WholeBattle { get; set; } = true;
         internal int MaxSteps { get; set; } = 256;
+        internal bool StopAtBestPyreHealth { get; set; } = true;
         internal int SearchWorkers { get; set; } = 2;
         internal int DeploymentRoom { get; set; } = 2;
         internal bool TacticalSeed { get; set; }

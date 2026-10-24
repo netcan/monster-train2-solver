@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace MonsterTrain2Poju.Model
 {
@@ -45,6 +46,34 @@ namespace MonsterTrain2Poju.Model
         { this.ignorePreviewCopyAllocator = ignorePreviewCopyAllocator; this.ignoreRoomSelection = ignoreRoomSelection; }
 
         public string Key(BattleTurnState state) => SnapshotKey(state);
+        // Inspect the same complete immutable graph as the state key, including
+        // future waves, summon/copy definitions and generated-card payloads.
+        // Reuse compiled getters, but keep the visited set local to this walk.
+        internal static bool AnySnapshot(object snapshot, Func<object, bool> predicate, CancellationToken token)
+        {
+            var visited = new HashSet<object>(new IdentityComparer());
+            bool Visit(object? value)
+            {
+                if (token.IsCancellationRequested) return true;
+                if (value == null || value is string) return false;
+                Type type = value.GetType();
+                if (type.IsPrimitive || type.IsEnum || value is decimal) return false;
+                if (!type.IsValueType && !visited.Add(value)) return false;
+                if (predicate(value)) return true;
+                if (value is IEnumerable sequence)
+                { foreach (object? item in sequence) if (Visit(item)) return true; }
+                else
+                    foreach (Field field in Layout(type)) if (Visit(field.Read(value))) return true;
+                return false;
+            }
+            return Visit(snapshot);
+        }
+
+        private static Field[] Layout(Type type) => layouts.GetOrAdd(type, item => new Lazy<Field[]>(() => item
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(field => field.CanRead && field.GetIndexParameters().Length == 0)
+            .OrderBy(field => field.Name, StringComparer.Ordinal).Select(field => new Field(field)).ToArray())).Value;
+
         public string SnapshotKey(object? snapshot)
         {
             if (disposed) throw new ObjectDisposedException(nameof(BattleStateKeys));
@@ -93,10 +122,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else
                 {
-                    Field[] fields = layouts.GetOrAdd(type, item => new Lazy<Field[]>(() => item
-                        .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                        .Where(field => field.CanRead && field.GetIndexParameters().Length == 0)
-                        .OrderBy(field => field.Name, StringComparer.Ordinal).Select(field => new Field(field)).ToArray())).Value;
+                    Field[] fields = Layout(type);
                     foreach (Field field in fields)
                     {
                         Append(field.Name);

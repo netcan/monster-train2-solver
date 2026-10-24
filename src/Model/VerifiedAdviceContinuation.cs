@@ -45,7 +45,8 @@ namespace MonsterTrain2Poju.Model
                 original.CompletedHorizon, original.Outcome == RoomOutcome.BattleWon ? Array.Empty<UnsupportedActionAttempt>() : original.UnsupportedAttempts,
                 null, Math.Max(0, original.RequestedTurns - original.Steps.Take(offset).Count(step => step.IsEndTurn)),
                 original.UsedShorterHorizon, original.SearchedToBattleEnd, original.ReachedStepLimit,
-                original.MaxSteps, original.WorkerThreadIds);
+                original.MaxSteps, original.WorkerThreadIds, stoppedEarly: original.StoppedEarly,
+                pyreHealthUpperBound: original.PyreHealthUpperBound);
         }
     }
 }

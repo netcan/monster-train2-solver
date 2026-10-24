@@ -164,6 +164,7 @@ namespace MonsterTrain2Poju.Model
             new BattlePlanResult(state, plan.Outcome, plan.Steps, plan.Score, plan.TurnsCompleted,
                 0, 0, 0, TimeSpan.Zero, plan.TimedOut, false, plan.ReachedNodeLimit, plan.ReachedActionLimit,
                 plan.CompletedHorizon, plan.UnsupportedAttempts, null, plan.RequestedTurns, plan.UsedShorterHorizon,
-                plan.SearchedToBattleEnd, plan.ReachedStepLimit, plan.MaxSteps, plan.WorkerThreadIds);
+                plan.SearchedToBattleEnd, plan.ReachedStepLimit, plan.MaxSteps, plan.WorkerThreadIds,
+                stoppedEarly: plan.StoppedEarly, pyreHealthUpperBound: plan.PyreHealthUpperBound);
     }
 }

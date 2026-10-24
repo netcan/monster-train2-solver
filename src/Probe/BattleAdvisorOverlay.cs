@@ -29,6 +29,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly Action<int>? saveTimeLimitMs;
         private readonly bool wholeBattle;
         private readonly int maxSteps, searchWorkers;
+        private readonly bool stopAtBestPyreHealth;
         private readonly bool playerSession;
         private readonly bool pauseWhenHidden;
         private readonly KeyCode toggleKey;
@@ -103,6 +104,8 @@ namespace MonsterTrain2Poju.Probe
             public int[] WorkerThreadIds { get; set; } = Array.Empty<int>();
             public bool SearchedToBattleEnd { get; set; }
             public bool ReachedStepLimit { get; set; }
+            public bool StoppedEarly { get; set; }
+            public int? PyreHealthUpperBound { get; set; }
             public bool ReusedWinningContinuation { get; set; }
             public bool ReusedContinuation { get; set; }
             public bool ReusedSelection { get; set; }
@@ -118,6 +121,7 @@ namespace MonsterTrain2Poju.Probe
             PlannerBackend = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_DOTNET_PLANNER")) ? "in-process" : "dotnet",
             TimeLimitMs = timeLimitMs,
             WholeBattle = wholeBattle, MaxSteps = maxSteps, SearchWorkers = searchWorkers,
+            StopAtBestPyreHealth = stopAtBestPyreHealth,
             Scenario = AllGameManagers.Instance?.GetSaveManager()?.GetCurrentScenarioData()?.name,
             InTestScenario = AllGameManagers.Instance?.GetSaveManager()?.InTestScenario,
             Seed = Environment.GetEnvironmentVariable("MT2_PROBE_SEED"),
@@ -137,6 +141,7 @@ namespace MonsterTrain2Poju.Probe
             wholeBattle = settings?.WholeBattle ?? Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_WHOLE_BATTLE") == "1";
             maxSteps = settings?.MaxSteps ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_MAX_STEPS") ?? "256");
             searchWorkers = settings?.SearchWorkers ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_SEARCH_WORKERS") ?? "1");
+            stopAtBestPyreHealth = settings?.StopAtBestPyreHealth ?? false;
             if (timeLimitMs < 100 || timeLimitMs > 30000) throw new ArgumentOutOfRangeException(nameof(timeLimitMs));
             int floor = settings?.DeploymentRoom ?? int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2");
             bool tactical = settings?.TacticalSeed ?? Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1";
@@ -145,7 +150,7 @@ namespace MonsterTrain2Poju.Probe
                 session = new BattleAdviceSession((root, token) => ParallelBattlePlanner.Plan(root,
                     new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromMilliseconds(Volatile.Read(ref timeLimitMs)),
                     preferredDeploymentRoom: floor, useTacticalSeed: tactical, allowShorterHorizon: playerSession || wholeBattle,
-                    searchToBattleEnd: wholeBattle, maxSteps: maxSteps), searchWorkers, token));
+                    searchToBattleEnd: wholeBattle, maxSteps: maxSteps, stopAtBestPyreHealth: stopAtBestPyreHealth), searchWorkers, token));
             else
             {
                 if (wholeBattle || searchWorkers != 1) throw new InvalidOperationException("Whole-battle/parallel search requires the in-process planner.");
@@ -491,6 +496,7 @@ namespace MonsterTrain2Poju.Probe
                     EndToEndMs = displayed.ResponseElapsed.TotalMilliseconds,
                     SearchWorkers = displayed.Plan.SearchWorkers, WorkerThreadIds = displayed.Plan.WorkerThreadIds.ToArray(),
                     SearchedToBattleEnd = displayed.Plan.SearchedToBattleEnd, ReachedStepLimit = displayed.Plan.ReachedStepLimit,
+                    StoppedEarly = displayed.Plan.StoppedEarly, PyreHealthUpperBound = displayed.Plan.PyreHealthUpperBound,
                     ReusedWinningContinuation = displayed.ReusedWinningContinuation, ReusedSelection = displayed.ReusedSelection,
                     ReusedContinuation = displayed.ReusedContinuation });
                 if (playerSession && Publications.Count > 128) Publications.RemoveAt(0);
@@ -501,6 +507,7 @@ namespace MonsterTrain2Poju.Probe
                     " publishCaptureMs=" + LastCaptureMs.ToString("F1") + " publishPrepareMs=" + LastPreparationMs.ToString("F1") +
                     " projectionMs=" + LastProjectionMs.ToString("F1") + " purityMs=" + LastPurityMs.ToString("F1") +
                     " verifyMs=" + displayed.VerificationElapsed.TotalMilliseconds.ToString("F1") +
+                    " stoppedEarly=" + displayed.Plan.StoppedEarly + " pyreHealthBound=" + displayed.Plan.PyreHealthUpperBound +
                     " wholeBattle=" + displayed.Plan.SearchedToBattleEnd + " workers=" + displayed.Plan.SearchWorkers +
                     " workerThreads=" + string.Join(",", displayed.Plan.WorkerThreadIds) +
                     " candidates=" + displayed.Plan.SearchMetrics.CandidateRequests +
@@ -668,6 +675,7 @@ namespace MonsterTrain2Poju.Probe
             else if (advice.ReusedWinningContinuation) text.Append("\n\n沿用已验证胜局");
             else if (advice.ReusedContinuation) text.Append("\n\n沿用已验证步骤");
             else text.Append("\n\n搜索 ").Append((plan.Elapsed.TotalMilliseconds / 1000).ToString("F2")).Append(" 秒");
+            if (plan.StoppedEarly) text.Append(" · 薪火血量已达上界，提前结束搜索");
             if (plan.TimedOut) text.Append(" · 使用预算内已验证方案");
             if (plan.TimedOut && playerSession) text.Append("\n可增加时长后点击重新计算");
             if (plan.ReachedStepLimit) text.Append("\n部分路线已达 ").Append(plan.MaxSteps).Append(" 步上限");

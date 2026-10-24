@@ -18,10 +18,11 @@ namespace MonsterTrain2Poju.Model
         public bool SearchToBattleEnd { get; }
         public int MaxSteps { get; }
         public TimeSpan TimeLimit { get; }
+        public bool StopAtBestPyreHealth { get; }
 
         public BattlePlannerOptions(int maxNodes = 2048, int maxTurns = 3, int beamWidth = 16,
             int maxActionsPerTurn = 12, TimeSpan? timeLimit = null, int preferredDeploymentRoom = 2, bool useTacticalSeed = false,
-            bool allowShorterHorizon = false, bool searchToBattleEnd = false, int maxSteps = 256)
+            bool allowShorterHorizon = false, bool searchToBattleEnd = false, int maxSteps = 256, bool stopAtBestPyreHealth = false)
         {
             if (maxNodes < 1 || maxTurns < 1 || beamWidth < 1 || maxActionsPerTurn < 1 || preferredDeploymentRoom < 0 || maxSteps < 1 || maxSteps == int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(maxNodes));
@@ -32,6 +33,7 @@ namespace MonsterTrain2Poju.Model
             UseTacticalSeed = useTacticalSeed;
             AllowShorterHorizon = allowShorterHorizon;
             SearchToBattleEnd = searchToBattleEnd; MaxSteps = maxSteps;
+            StopAtBestPyreHealth = stopAtBestPyreHealth;
         }
     }
 
@@ -63,6 +65,8 @@ namespace MonsterTrain2Poju.Model
         public double? PolicyBaselineScore { get; }
         public IReadOnlyList<UnsupportedActionAttempt> UnsupportedAttempts { get; }
         public BattleSearchMetrics SearchMetrics { get; }
+        public bool StoppedEarly { get; }
+        public int? PyreHealthUpperBound { get; }
 
         internal BattlePlanResult(BattleTurnState state, RoomOutcome outcome, IReadOnlyList<BattleSearchStep> steps,
             double score, int turns, int nodes, int duplicates, int beamPruned, TimeSpan elapsed,
@@ -70,7 +74,7 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<UnsupportedActionAttempt> unsupported, double? policyBaselineScore,
             int requestedTurns = 0, bool usedShorterHorizon = false, bool searchedToBattleEnd = false,
             bool stepLimit = false, int maxSteps = 256, IReadOnlyList<int>? workerThreadIds = null,
-            BattleSearchMetrics? searchMetrics = null)
+            BattleSearchMetrics? searchMetrics = null, bool stoppedEarly = false, int? pyreHealthUpperBound = null)
         {
             State = state; Outcome = outcome; Steps = Array.AsReadOnly(steps.ToArray()); Score = score;
             TurnsCompleted = turns; ExpandedNodes = nodes; DuplicateStates = duplicates; BeamPruned = beamPruned;
@@ -82,6 +86,7 @@ namespace MonsterTrain2Poju.Model
             SearchedToBattleEnd = searchedToBattleEnd; ReachedStepLimit = stepLimit; MaxSteps = maxSteps;
             WorkerThreadIds = Array.AsReadOnly((workerThreadIds ?? new[] { Thread.CurrentThread.ManagedThreadId }).ToArray());
             SearchMetrics = searchMetrics ?? new BattleSearchMetrics();
+            StoppedEarly = stoppedEarly; PyreHealthUpperBound = pyreHealthUpperBound;
         }
     }
 
@@ -110,12 +115,15 @@ namespace MonsterTrain2Poju.Model
 
         internal static BattlePlanResult PlanCore(BattleTurnState source, Func<BattleTurnState, string> stateKey,
             BattlePlannerOptions? options, Func<BattleTurnState, RoomOutcome, double>? evaluate,
-            CancellationToken cancellationToken, bool optimizeTransitions)
+            CancellationToken cancellationToken, bool optimizeTransitions, BattleEarlyStop? earlyStop = null)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (stateKey == null) throw new ArgumentNullException(nameof(stateKey));
-            options ??= new BattlePlannerOptions(); evaluate ??= Evaluate;
+            options ??= new BattlePlannerOptions();
             var watch = Stopwatch.StartNew();
+            if (options.StopAtBestPyreHealth && evaluate == null) earlyStop ??= BattleEarlyStop.Create(source, cancellationToken);
+            else earlyStop = null;
+            evaluate ??= Evaluate;
             var workspace = new BattleSearchWorkspace(optimizeTransitions);
             int maxTurns = options.SearchToBattleEnd ? options.MaxSteps + 1 : options.MaxTurns;
             int nodes = 0, duplicates = 0, pruned = 0;
@@ -134,7 +142,7 @@ namespace MonsterTrain2Poju.Model
                 cancelled |= cancellationToken.IsCancellationRequested;
                 timedOut |= watch.Elapsed >= options.TimeLimit;
                 nodeLimit |= nodes >= options.MaxNodes;
-                return cancelled || timedOut || nodeLimit;
+                return cancelled || timedOut || nodeLimit || earlyStop?.Reached == true;
             }
             double Score(BattleTurnState state, RoomOutcome outcome)
             {
@@ -159,6 +167,7 @@ namespace MonsterTrain2Poju.Model
             {
                 if (node.Turns > fallback.Turns || node.Turns == fallback.Turns && Better(node, fallback)) fallback = node;
                 if ((Terminal(node) || node.Turns >= maxTurns) && (best == null || Better(node, best))) best = node;
+                earlyStop?.Consider(node.State, node.Outcome);
                 // A usable shorter window ends after a complete EndTurn. Do
                 // not publish an arbitrary truncated action sequence.
                 if (node.Turns > 0 && node.Actions == 0 && node.Steps[node.Steps.Count - 1].IsEndTurn &&
@@ -181,7 +190,7 @@ namespace MonsterTrain2Poju.Model
             Node Rollout(Node baseline, int? stopAfterTurns = null, bool finishFirstTurn = false)
             {
                 while (baseline.Turns < (stopAfterTurns ?? maxTurns) && !Terminal(baseline) && CanExpand(baseline) &&
-                    (!Stop() || finishFirstTurn && baseline.Turns == 0 && !cancelled && !nodeLimit))
+                    (!Stop() || finishFirstTurn && baseline.Turns == 0 && !cancelled && !nodeLimit && earlyStop?.Reached != true))
                 {
                     nodes++;
                     BattleTurnResult ended = workspace.EndTurn(baseline.State);
@@ -406,7 +415,7 @@ namespace MonsterTrain2Poju.Model
                         var children = new List<Node>();
                         foreach (SupportedActionCandidate candidate in actions.SupportedCandidates)
                         {
-                            if (watch.Elapsed >= options.TimeLimit || cancellationToken.IsCancellationRequested) break;
+                            if (watch.Elapsed >= options.TimeLimit || cancellationToken.IsCancellationRequested || earlyStop?.Reached == true) break;
                             Node child = Child(node, candidate.Result.State!, candidate.Result.Outcome, new BattleSearchStep(candidate.Action, false));
                             children.Add(child); Add(child);
                         }
@@ -415,7 +424,7 @@ namespace MonsterTrain2Poju.Model
                         foreach (Node child in children.OrderBy(child => child.Score).ThenBy(child => child.PositionCost).Take(2)) Rollout(child);
                     }
                     else actionLimit = true;
-                    if (watch.Elapsed >= options.TimeLimit || cancellationToken.IsCancellationRequested) break;
+                    if (watch.Elapsed >= options.TimeLimit || cancellationToken.IsCancellationRequested || earlyStop?.Reached == true) break;
                     BattleTurnResult ended = workspace.EndTurn(node.State);
                     if (ended.Supported) Add(Child(node, ended.State!, ended.Outcome, new BattleSearchStep(null, true)));
                     else Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported EndTurn."));
@@ -442,7 +451,8 @@ namespace MonsterTrain2Poju.Model
             Node selected = best ?? (shorter ? completedPrefix! : fallback);
             return new BattlePlanResult(selected.State, selected.Outcome, selected.Steps, selected.Score, selected.Turns,
                 nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null, unsupported, policyBaselineScore,
-                maxTurns, shorter, options.SearchToBattleEnd, stepLimit, options.MaxSteps, searchMetrics: workspace.Metrics);
+                maxTurns, shorter, options.SearchToBattleEnd, stepLimit, options.MaxSteps, searchMetrics: workspace.Metrics,
+                stoppedEarly: earlyStop?.Reached == true, pyreHealthUpperBound: earlyStop?.PyreHealthUpperBound);
         }
 
         private sealed class Node

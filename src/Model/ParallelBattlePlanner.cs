@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Model
             int count = Math.Min(maxWorkers, Math.Min(options.MaxNodes, Math.Max(1, Environment.ProcessorCount - 1)));
             if (cancellationToken.IsCancellationRequested) count = 1;
             var watch = Stopwatch.StartNew();
+            BattleEarlyStop? earlyStop = options.StopAtBestPyreHealth ? BattleEarlyStop.Create(source, cancellationToken) : null;
             var results = new BattlePlanResult[count];
             var errors = new Exception?[count];
             int[] rooms = source.PlayRules?.Rooms.Select(room => room.RoomIndex)
@@ -36,9 +37,9 @@ namespace MonsterTrain2Poju.Model
                         remaining > TimeSpan.Zero ? remaining : TimeSpan.FromTicks(1),
                         index == 0 || rooms.Length == 0 ? options.PreferredDeploymentRoom : rooms[0],
                         index == 0 ? options.UseTacticalSeed : !options.UseTacticalSeed,
-                        options.AllowShorterHorizon, options.SearchToBattleEnd, options.MaxSteps);
+                        options.AllowShorterHorizon, options.SearchToBattleEnd, options.MaxSteps, earlyStop != null);
                     using var keys = new BattleStateKeys();
-                    results[index] = BattlePlanner.Plan(source, keys.Key, branchOptions, cancellationToken: cancellationToken);
+                    results[index] = BattlePlanner.PlanCore(source, keys.Key, branchOptions, null, cancellationToken, true, earlyStop);
                 }
                 catch (Exception error) { errors[index] = error; }
                 finally { thread.Priority = priority; }
@@ -68,7 +69,8 @@ namespace MonsterTrain2Poju.Model
                 best.PolicyBaselineScore, best.RequestedTurns, best.UsedShorterHorizon, best.SearchedToBattleEnd,
                 results.Any(result => result.ReachedStepLimit), best.MaxSteps,
                 results.SelectMany(result => result.WorkerThreadIds).Distinct().ToArray(),
-                BattleSearchMetrics.Sum(results.Select(result => result.SearchMetrics)));
+                BattleSearchMetrics.Sum(results.Select(result => result.SearchMetrics)),
+                results.Any(result => result.StoppedEarly), earlyStop?.PyreHealthUpperBound);
         }
     }
 }

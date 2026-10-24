@@ -1,6 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 4 && args[0] == "--early-stop-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var healing = ModelJson.ReadFixture(args[2]);
+    using var loss = ModelJson.ReadFixture(args[3]);
+    EarlyStopChecks.Run(fixture.RootElement, healing.RootElement, loss.RootElement);
+    return;
+}
+
 if (args.Length >= 2 && args[0] is "--search-pruning-only" or "--search-frontier-only")
 {
     SearchPruningChecks.Run(args.Skip(1).ToArray(), args[0] == "--search-pruning-only");

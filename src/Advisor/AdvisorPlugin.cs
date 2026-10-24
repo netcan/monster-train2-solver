@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Advisor
     public sealed class AdvisorPlugin : BaseUnityPlugin
     {
         public const string PluginId = "netcan.monstertrain2.advisor";
-        public const string Version = "0.2.19";
+        public const string Version = "0.2.20";
         private Harmony? harmony;
         private BattleAdvisorOverlay? overlay;
         private bool updateLogged;
@@ -34,6 +34,8 @@ namespace MonsterTrain2Poju.Advisor
                     WholeBattle = Config.Bind("Search", "WholeBattle", true, "以整场战斗结束为目标；预算不足时显示明确标记的部分方案。").Value,
                     MaxSteps = Config.Bind("Search", "MaxSteps", 256,
                         new ConfigDescription("每条路线的总步数上限，包含出牌、技能和结束回合；限制无尽或循环局面。", new AcceptableValueRange<int>(1, 4096))).Value,
+                    StopAtBestPyreHealth = Config.Bind("Search", "StopAtBestPyreHealth", true,
+                        "找到薪火血量达到可证明上界的完整胜局后提前停止两个搜索线程；存在未界定的薪火增长时继续搜索。更改后重启游戏。").Value,
                     SearchWorkers = Config.Bind("Search", "SearchWorkers", 2,
                         new ConfigDescription("后台搜索线程上限；共用节点与时间预算，最多两个并自动给游戏留一个逻辑核心。1 为单线程。", new AcceptableValueRange<int>(1, 2))).Value,
                     TimeLimitMs = searchTimeLimit.Value,
@@ -60,6 +62,7 @@ namespace MonsterTrain2Poju.Advisor
                     " game=" + Application.version + " module=" + typeof(CardState).Assembly.ManifestModule.ModuleVersionId +
                     " horizon=" + settings.Horizon + " budgetMs=" + settings.TimeLimitMs +
                     " wholeBattle=" + settings.WholeBattle + " maxSteps=" + settings.MaxSteps + " searchWorkers=" + settings.SearchWorkers +
+                    " stopAtBestPyreHealth=" + settings.StopAtBestPyreHealth +
                     " hostFlags=" + gameObject.hideFlags);
             }
             catch (Exception error)
