@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
     'room-moon-spell-status-relic-calibration.mt2f',
+    'full-battle-original-moon-card-upgrades-status-relic.mt2f',
     'room-moon-spell-hand-power-relic-calibration.mt2f',
     'full-battle-player-moon-room-hand-power-relic-search.mt2f',
     'full-battle-player-moon-room-hand-power-relic-replay.mt2f',
