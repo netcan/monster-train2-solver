@@ -20,8 +20,13 @@ internal static class RoomMoonSpellUpgradeChecks
         Require(!attackRelic || advance && !costRelic && attackIds.Length == 1, "Missing separate monster attack relic controls.");
         bool healingRelic = root.TryGetProperty("HealingRelicControls", out FixtureValue healingFlag) && healingFlag.GetBoolean();
         Require(!healingRelic || advance && !attackRelic && !costRelic, "Missing separate healing relic controls.");
+        bool phaseHeal = root.TryGetProperty("PhaseHealRelicControls", out FixtureValue phaseFlag) && phaseFlag.GetBoolean();
+        int anchor = phaseHeal ? root.GetProperty("ActorIds")[0].GetInt32() : 0;
+        Require(!phaseHeal || advance && !healingRelic && !attackRelic && !costRelic &&
+            root.GetProperty("AnchorWoundedBeforeEachRow").GetBoolean() && root.GetProperty("ActorIds").GetArrayLength() == 1,
+            "Missing separate phase-healing anchor controls.");
         Require(ids.Length == (advance ? 6 : 5) && root.GetProperty("Rows").GetArrayLength() == 15, "Missing original spells or controls.");
-        int witnesses = 0, changes = 0, exclusive = 0, additive = 0, selections = 0;
+        int witnesses = 0, changes = 0, exclusive = 0, additive = 0, selections = 0, heals = 0;
         bool guardsChecked = false, advanceGuardChecked = false;
         foreach (FixtureValue row in root.GetProperty("Rows").EnumerateArray())
         {
@@ -65,6 +70,27 @@ internal static class RoomMoonSpellUpgradeChecks
             Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Spell room branch mutated its parent.");
             Require(row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")), "Spell room upgrade advanced gameplay RNG.");
             CombatContext after = actual.Context!;
+            if (phaseHeal)
+            {
+                PhaseHealRelic(before.Context!); PhaseHealRelic(after);
+                CombatUnit prior = before.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == anchor);
+                CombatUnit next = actual.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == anchor);
+                Require(prior.Team == CombatTeam.Player && prior.Health == 1 && prior.MaxHealth >= 11 &&
+                    next.Health == (operation == "SetMoonPhase" ? 11 : 1),
+                    "Phase changes must heal the wounded original anchor by10; room/resource refresh must not heal.");
+                if (next.Health > prior.Health) heals++;
+                if (operation == "Refresh" && !guardsChecked)
+                    foreach (string field in new[] { "HealthAmount", "MoonPhaseMask", "ConditionCount" })
+                    {
+                        var malformed = System.Text.Json.Nodes.JsonNode.Parse(parent)!;
+                        var rule = malformed["Context"]!["Relics"]!.AsArray().Single(node => node!["DataId"]!.GetValue<string>() ==
+                            "6d977136-5aac-44fd-9843-54cf2a0bd01d")!["MoonPhaseHealRules"]![0]!;
+                        rule[field] = field == "HealthAmount" ? 11 : field == "MoonPhaseMask" ? 3 : 1;
+                        var unknown = JsonSerializer.Deserialize<TrainCombatState>(malformed.ToJsonString(), ModelJson.Options)!;
+                        Require(!RoomMoonPhaseModel.Refresh(unknown, false).Supported,
+                            "Uncalibrated phase-heal amount/mask/conditions bypassed the moon guard.");
+                    }
+            }
             if (costRelic) CostRelic(after, costIds);
             if (attackRelic) AttackRelic(after, ids, attackIds);
             if (healingRelic)
@@ -168,7 +194,35 @@ internal static class RoomMoonSpellUpgradeChecks
             if (operation == "Select") selections++;
         }
         Require(changes > 0 && exclusive > 0 && additive > 0 && selections == 6 && guardsChecked && (!advance || advanceGuardChecked), "Missing changed upgrades, both room modes, guard or selection controls.");
+        Require(!phaseHeal || heals == 4, "Missing four positive native phase-healing boundaries.");
+        if (phaseHeal) Console.WriteLine("ROOM-MOON-PHASE-HEAL PASS: 4 native +10 heals, 11 nonhealing controls and exact original relic guards.");
         Console.WriteLine($"ROOM-MOON-SPELL-UPGRADES PASS boundaries=15 originalSpells={ids.Length} lunacyResourceControls={advance} costRelicControls={costRelic} attackRelicControls={attackRelic} healingRelicControls={healingRelic} traitSnapshots={witnesses} activeChanges={changes} exclusiveWitnesses={exclusive} additiveWitnesses={additive} selections={selections} immutableBranchesPerBoundary=8");
+    }
+    internal static void PhaseHealRelic(CombatContext context)
+    {
+        CombatRelicState owner = context.Relics!.Single(relic => relic.DataId == "6d977136-5aac-44fd-9843-54cf2a0bd01d");
+        Require(owner.AssetKey == "MooncycleRestoreFriendlyHealth" && owner.IsCovenant == false &&
+            owner.DisallowedInPlacementPhase == false && owner.EffectTypes.SequenceEqual([RelicMoonPhaseHealModel.Effect]) &&
+            owner.MoonPhaseHealRules!.Select(rule => (rule.EffectIndex, rule.TargetPlayer, rule.TargetEnemy, rule.TargetMode,
+                rule.RequiredSubtype, rule.HealthAmount, rule.MoonPhaseMask, rule.ConditionCount))
+                .SequenceEqual([(0, true, false, "WeakestAllRooms", (string?)null, 10, -1, 0)]) &&
+            RelicModel.Validate(context) == null, "Original phase-healing relic signature changed.");
+    }
+    internal static void PhaseHealCallbacks(FixtureValue fixture)
+    {
+        FixtureValue[] operations = fixture.GetProperty("RelicMoonPhaseHealOperations").EnumerateArray().ToArray();
+        Require(operations.Length >= 2 && operations.All(row =>
+            row.GetProperty("OwnerDataId").GetString() == "6d977136-5aac-44fd-9843-54cf2a0bd01d" &&
+            row.GetProperty("EffectIndex").GetInt32() == 0 && row.GetProperty("SourceTeam").GetString() == "Monsters" &&
+            row.GetProperty("TargetMode").GetString() == "WeakestAllRooms" && row.GetProperty("HealthAmount").GetInt32() == 10 &&
+            row.GetProperty("MoonPhaseMask").GetInt32() == -1 && row.GetProperty("After").ValueKind == FixtureKind.Array) &&
+            new[] { "New", "Full" }.All(phase => operations.Any(row => row.GetProperty("Phase").GetString() == phase)),
+            "Missing settled native healing callbacks in both phases while moon spells are active.");
+        int positive = operations.Sum(row => row.GetProperty("After").EnumerateArray().Count(after =>
+            row.GetProperty("Before").EnumerateArray().Any(before =>
+                before.GetProperty("UnitId").GetInt32() == after.GetProperty("UnitId").GetInt32() &&
+                before.GetProperty("Health").GetInt32() < after.GetProperty("Health").GetInt32())));
+        Console.WriteLine($"MOON-PHASE-HEAL-CALLBACKS PASS: {operations.Length} native New/Full callbacks, {positive} positive heals; full states are checked by the battle/pair gate.");
     }
     internal static void HealingRelic(CombatContext context)
     {

@@ -33,9 +33,9 @@ namespace MonsterTrain2Poju.Model
             {
                 CardInstanceState? card = context.FindCard(token.InstanceId);
                 if (card == null || !Present(card)) continue;
-                // These witnessed modifiers have no moon-resource callback.
-                // Existing healing offsets stay fixed when a moon trait changes;
-                // only the ordinary relic-manager refresh applies them again.
+                // Refreshing traits does not dispatch phase-change callbacks.
+                // Existing healing-power offsets stay fixed; phase healing is
+                // dispatched separately by the ordered global moon pipeline.
                 if (context.QueryFrame?.MoonPhase is not (1 or 2) || context.QueryFrame.SelectedRoomIndex == null ||
                     context.Relics?.Any(relic => !CompatibleRelic(relic)) == true)
                 { error = "Moon spell upgrades require captured phase/selection; active relic combinations need separate witnesses."; return source; }
@@ -66,7 +66,18 @@ namespace MonsterTrain2Poju.Model
                 relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
                 relic.EffectTypes.SequenceEqual(new[] { RelicModel.ModifyCardHealingPower }) &&
                 relic.MagicPowerModifiers?.Count == 1 && relic.MagicPowerModifiers[0].EffectIndex == 0 &&
-                relic.MagicPowerModifiers[0].PowerModifier == 10 && relic.MagicPowerModifiers[0].ConditionCount == 0;
+                relic.MagicPowerModifiers[0].PowerModifier == 10 && relic.MagicPowerModifiers[0].ConditionCount == 0 ||
+            CompatiblePhaseHealRelic(relic);
+
+        private static bool CompatiblePhaseHealRelic(CombatRelicState relic) =>
+            relic.DataId == "6d977136-5aac-44fd-9843-54cf2a0bd01d" && relic.AssetKey == "MooncycleRestoreFriendlyHealth" &&
+            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+            relic.EffectTypes.SequenceEqual(new[] { RelicMoonPhaseHealModel.Effect }) &&
+            relic.MoonPhaseHealRules?.Count == 1 && relic.MoonPhaseHealRules[0].EffectIndex == 0 &&
+            relic.MoonPhaseHealRules[0].TargetPlayer && !relic.MoonPhaseHealRules[0].TargetEnemy &&
+            relic.MoonPhaseHealRules[0].TargetMode == "WeakestAllRooms" && relic.MoonPhaseHealRules[0].RequiredSubtype == null &&
+            relic.MoonPhaseHealRules[0].HealthAmount == 10 && relic.MoonPhaseHealRules[0].MoonPhaseMask == -1 &&
+            relic.MoonPhaseHealRules[0].ConditionCount == 0;
         // This boundary covers spell-owned upgrades; living unit callbacks are separate.
         public static CardMoonUpgradeResult Update(CardInstanceState source, int phase, bool reset = false, bool preview = false, int roomMask = 0)
         {

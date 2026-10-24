@@ -4,21 +4,28 @@ using MonsterTrain2Poju.Model;
 
 internal static class PlayerMoonRoomSpellChecks
 {
-    internal static void Pair(FixtureValue source, FixtureValue replay, bool requireHealingRelic = false)
+    internal static void Pair(FixtureValue source, FixtureValue replay, bool requireHealingRelic = false, bool requirePhaseHealRelic = false)
     {
         if (requireHealingRelic)
             foreach (FixtureValue fixture in new[] { source, replay })
                 Require(fixture.TryGetProperty("OriginalMoonCardUpgradesHealingRelic", out FixtureValue flag) && flag.GetBoolean(),
                     "Healing composition acceptance requires its explicit original-relic witnesses in both native processes.");
+        if (requirePhaseHealRelic)
+            foreach (FixtureValue fixture in new[] { source, replay })
+                Require(fixture.TryGetProperty("OriginalMoonCardUpgradesPhaseHealRelic", out FixtureValue flag) && flag.GetBoolean(),
+                    "Phase-healing acceptance requires explicit original-relic witnesses in both native processes.");
         RollingAdviceChecks.FrozenPair(source, replay, calibration: "original-moon-card-upgrades");
         BattleAdviceChecks.Native(source, requireBoss: false, calibration: "original-moon-card-upgrades");
         bool lunacy = source.TryGetProperty("OriginalMoonCardUpgradesLunacy", out FixtureValue advance) && advance.GetBoolean();
         bool costRelic = source.TryGetProperty("OriginalMoonCardUpgradesCostRelic", out FixtureValue costFlag) && costFlag.GetBoolean();
         bool attackRelic = source.TryGetProperty("OriginalMoonCardUpgradesAttackRelic", out FixtureValue attackFlag) && attackFlag.GetBoolean();
         bool healingRelic = source.TryGetProperty("OriginalMoonCardUpgradesHealingRelic", out FixtureValue healingFlag) && healingFlag.GetBoolean();
+        bool phaseHealRelic = source.TryGetProperty("OriginalMoonCardUpgradesPhaseHealRelic", out FixtureValue phaseFlag) && phaseFlag.GetBoolean();
         Require(!costRelic || lunacy, "Cost relic player scene requires Lunacy controls.");
         Require(!attackRelic || lunacy && !costRelic, "Attack relic player scene requires separate Lunacy controls.");
         Require(!healingRelic || lunacy && !costRelic && !attackRelic, "Healing relic player scene requires separate Lunacy controls.");
+        Require(!phaseHealRelic || lunacy && !costRelic && !attackRelic && !healingRelic,
+            "Phase-healing player scene requires separate Lunacy controls.");
         int traits = 0, exclusive = 0, additive = 0, maskedCasts = 0, eclipseCasts = 0, waits = 0, lunacyCasts = 0, paidAdvances = 0, freePurges = 0;
         var spells = new HashSet<string>();
         foreach (FixtureValue fixture in new[] { source, replay })
@@ -33,6 +40,9 @@ internal static class PlayerMoonRoomSpellChecks
                 "Attack relic player scene flags differ between processes.");
             Require((fixture.TryGetProperty("OriginalMoonCardUpgradesHealingRelic", out FixtureValue healing) && healing.GetBoolean()) == healingRelic,
                 "Healing relic player scene flags differ between processes.");
+            Require((fixture.TryGetProperty("OriginalMoonCardUpgradesPhaseHealRelic", out FixtureValue phaseRelicFlag) && phaseRelicFlag.GetBoolean()) == phaseHealRelic,
+                "Phase-healing player scene flags differ between processes.");
+            if (phaseHealRelic) RoomMoonSpellUpgradeChecks.PhaseHealCallbacks(fixture);
             // The player capture owns a different instance registry from the
             // isolation trace. Resolve unchanged control identities in its root.
             CombatContext initialContext = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root")
@@ -73,6 +83,7 @@ internal static class PlayerMoonRoomSpellChecks
                     if (costRelic) RoomMoonSpellUpgradeChecks.CostRelic(context, costIds);
                     if (attackRelic) RoomMoonSpellUpgradeChecks.AttackRelic(context, spellIds, attackIds);
                     if (healingRelic) RoomMoonSpellUpgradeChecks.HealingRelic(context);
+                    if (phaseHealRelic) RoomMoonSpellUpgradeChecks.PhaseHealRelic(context);
                     int phase = context.QueryFrame!.MoonPhase!.Value;
                     int mask = Mask(context, context.QueryFrame.SelectedRoomIndex!.Value);
                     foreach (CardToken token in context.Cards.Hand)

@@ -525,6 +525,9 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && (RoomMoonCallbackCalibration.SpellHealingRelic || OriginalMoonCardUpgradesScenario.HealingRelic) &&
                         !OriginalHealingPowerScenario.Acquired)
                         OriginalHealingPowerScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && (RoomMoonCallbackCalibration.SpellPhaseHealRelic || OriginalMoonCardUpgradesScenario.PhaseHealRelic) &&
+                        !OriginalMoonPhaseHealRelicScenario.Acquired)
+                        OriginalMoonPhaseHealRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && (OriginalCardTypeCostScenario.Enabled || RoomMoonCallbackCalibration.SpellCostRelic ||
                         OriginalMoonCardUpgradesScenario.CostRelic) && !OriginalCardTypeCostScenario.Acquired)
                         OriginalCardTypeCostScenario.AcquireBeforeBattle(managers!, log);

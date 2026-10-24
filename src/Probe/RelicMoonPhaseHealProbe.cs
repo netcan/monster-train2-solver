@@ -120,7 +120,8 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(RelicEffectHealOnMoonPhase __instance, ref IEnumerator __result)
             {
-                if (OriginalMoonPhaseHealRelicScenario.Prepared)
+                if (OriginalMoonPhaseHealRelicScenario.Prepared ||
+                    OriginalMoonCardUpgradesScenario.Prepared && OriginalMoonCardUpgradesScenario.PhaseHealRelic)
                     __result = Wrap(__result, __instance);
             }
         }
