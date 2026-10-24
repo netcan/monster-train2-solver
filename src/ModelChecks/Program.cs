@@ -41,11 +41,13 @@ if (args.Length == 3 && args[0] == "--player-arkion-rage-pair-only")
     return;
 }
 
-if (args.Length == 2 && args[0] is "--arkion-rage-birth-only" or "--arkion-rage-baseline-only" or "--arkion-rage-growth-only")
+if (args.Length == 2 && args[0] is "--arkion-rage-birth-only" or "--arkion-rage-baseline-only" or "--arkion-rage-growth-only" or
+    "--arkion-rage-natural-birth-only" or "--arkion-rage-natural-baseline-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    if (args[0] == "--arkion-rage-birth-only") ArkionRageChecks.Birth(fixture.RootElement);
-    else ArkionRageChecks.Battle(fixture.RootElement, args[1], args[0] == "--arkion-rage-growth-only");
+    bool natural = args[0].Contains("natural", StringComparison.Ordinal);
+    if (args[0].EndsWith("birth-only", StringComparison.Ordinal)) ArkionRageChecks.Birth(fixture.RootElement, natural);
+    else ArkionRageChecks.Battle(fixture.RootElement, args[1], args[0] == "--arkion-rage-growth-only", natural);
     return;
 }
 
@@ -5255,6 +5257,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
 {
     using var fixture = ModelJson.ReadFixture(path);
     ArkionRageChecks.Battle(fixture.RootElement, path, Path.GetFileName(path).Contains("native-spells"));
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-arkion-rage-natural-covenant03.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    ArkionRageChecks.Battle(fixture.RootElement, path, requireGrowth: false, natural: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "outer-boss-birth-calibration-arkion-rage-natural-covenant03.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    ArkionRageChecks.Birth(fixture.RootElement, natural: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-arkion-rage-search.mt2f"))
 {

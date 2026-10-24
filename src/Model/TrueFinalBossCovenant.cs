@@ -80,13 +80,24 @@ namespace MonsterTrain2Poju.Model
         {
             CombatRelicState[] owners = context?.Relics?.Where(owner => owner.IsCovenant == true).ToArray()
                 ?? System.Array.Empty<CombatRelicState>();
+            return CalibratedOuterBossOwners(owners, asset);
+        }
+
+        internal static bool CalibratedOuterBossOwners(CombatRelicState[] owners, string asset)
+        {
             return owners.Length == 0 || (asset is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" ||
+                OuterBossDefinitions.IsArkionRage(asset) && NaturalArkionRageOwners(owners) ||
                 (OuterBossDefinitions.IsAngelDuo(asset) || OuterBossDefinitions.IsCael(asset) ||
                     OuterBossDefinitions.IsArkionPyre(asset) || OuterBossDefinitions.IsArkionRage(asset) || OuterBossDefinitions.IsArkionPush(asset) ||
                     OuterBossDefinitions.IsFleshweaver(asset)) &&
                     owners.All(owner => owner.AssetKey is "Covenant01_StrongerEnemiesMoreCards" or "Covenant02_BattlesNewEnemies")) &&
                 CalibratedOrdinaryWaveOwners(owners);
         }
+
+        private static bool NaturalArkionRageOwners(CombatRelicState[] owners) => owners.Length == 3 &&
+            owners.Select(owner => owner.DataId).SequenceEqual(new[] {
+                "d3b53481-f26b-4344-ae8e-ec80b28d6004", "92c18b99-e4c0-4953-ba2c-4815f570a66e",
+                "dcb31cd7-4293-4b07-b396-5456a0ce0b6e" }) && MerchantOnlyOwner(owners[2]);
 
         // Original additive Covenant controls. Authored stats remain separate
         // from the native birth adjustments; other definitions stay guarded.

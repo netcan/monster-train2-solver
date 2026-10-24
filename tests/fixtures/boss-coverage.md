@@ -8,7 +8,7 @@ The gate is an identity filter. Allowed definitions can still reject uncalibrate
 | --- | --- | ---: | ---: |
 | Level3BattleHeavyHitter_PushAttack | allowed | 4 | 1 |
 | Level3BattleHeavyHitter_PyreDamage | allowed | 3 | 1 |
-| Level3BattleHeavyHitter_SiphonRage | allowed | 4 | 1 |
+| Level3BattleHeavyHitter_SiphonRage | allowed | 5 | 1 |
 | Level3ImmortalMass_Corruption | allowed | 4 | 1 |
 | Level3ImmortalMass_MoreMass | allowed | 4 | 1 |
 | Level3ImmortalMass_Spikes | allowed | 4 | 1 |

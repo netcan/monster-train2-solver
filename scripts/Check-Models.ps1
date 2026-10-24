@@ -47,6 +47,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-player-arkion-rage-search.mt2f',
     'full-battle-player-arkion-rage-replay.mt2f',
     'full-battle-arkion-rage-baseline.mt2f',
+    'full-battle-arkion-rage-natural-covenant03.mt2f',
+    'outer-boss-birth-calibration-arkion-rage-natural-covenant03.mt2f',
     'outer-boss-birth-calibration-arkion-rage.mt2f',
     'full-battle-arkion-rage-native-spells.mt2f',
     'full-battle-arkion-push-baseline.mt2f',

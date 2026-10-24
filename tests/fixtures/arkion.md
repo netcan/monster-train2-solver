@@ -121,4 +121,40 @@ and is retained only as a diagnostic, not accepted evidence.
 | full-battle-player-arkion-push-search.mt2f | 91331 | 14330 | a82951d30b3738e855d094ca0c2a3de593bea47331b1814519bebf73ab48a058 |
 | full-battle-player-arkion-push-replay.mt2f | 88143 | 14116 | 513392861bf31cf05578d3d672bbe34388f2436a872b3398e5c167ab21c4508c |
 
-No arbitrary higher-Covenant or natural-victory claim is made.
+## Natural cumulative Covenant3 Rage birth
+
+The unchanged rank-three campaign now reaches original
+`Level3BattleHeavyHitter_SiphonRage` after two native victories. The first player
+attempt `full-battle-units-spells-and-junk-20261024-084153-0c2ae0f2` rejected before
+its first recommendation: the outer-boss birth guard allowed only owners01+02.
+The extra original `Covenant03_MerchantCostsIncrease` has exactly the merchant
+reroll/purge effects and adds no native birth callback or stat adjustment.
+
+Unchanged native observation `full-battle-no-cards-20261024-084453-699522cc`
+confirms the original7/425 definition becomes7/625 at birth. It retains the
+unsupported counters and is diagnostic only. A fresh observation after the
+narrow gate fix, `full-battle-no-cards-20261024-084627-0e4f0068`, matches complete
+creation, physical placement, controller and RNG. The6-EndTurn no-card loss
+also matches51 room stages,12 train phases and sixteen independent immutable
+full chains; it exits normally in49.14 seconds, with protected originals
+unchanged and all four failure counters zero.
+
+Projection and modeled creation now share the same owner gate. Only this Rage
+identity with the exact ordered original01+02+03 owners is newly admitted.
+Changed merchant combat effects, reordered/duplicated owners and the same
+owners on uncalibrated Push/Cael encounters remain rejected. Existing selected
+rank-two birth and no-card checks still pass. This component/no-card acceptance
+does not establish a rank-three player victory or campaign completion.
+
+Curated archives are `full-battle-arkion-rage-natural-covenant03.mt2f` and
+`outer-boss-birth-calibration-arkion-rage-natural-covenant03.mt2f`.
+Focused gates: `--arkion-rage-natural-baseline-only` and
+`--arkion-rage-natural-birth-only`.
+
+The native input is preserved as `campaign-native-covenant-03-ring3.zip`,
+SHA256 `42add3f01b5909e85e5eb8ead5149b77635603246a1fcd5bbb97cc721ca9c30a`;
+all nine payloads verify on restore. Its seed424242 rank3 save retains two
+original wins,27 cards and the original scenario, without a cheat flag.
+Save SHA256: `518812b70332f3b63572d3d3b741954d093c4866f27e2f0b75327a3cf2cec101`.
+
+No arbitrary higher-Covenant or natural-victory claim is made by this component.

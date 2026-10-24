@@ -65,11 +65,13 @@ namespace MonsterTrain2Poju.Probe
         internal static bool OuterBossCalibrated(SaveManager save, CharacterData data)
         {
             if (save.GetCovenantsForSpawnPattern().Count == 0) return true;
-            if (data.name is not ("Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter") &&
-                !((OuterBossDefinitions.IsAngelDuo(data.name) || OuterBossDefinitions.IsCael(data.name) ||
-                    OuterBossDefinitions.IsArkionPyre(data.name) || OuterBossDefinitions.IsArkionRage(data.name) ||
-                    OuterBossDefinitions.IsArkionPush(data.name) || OuterBossDefinitions.IsFleshweaver(data.name)) && save.GetCovenants().All(owner =>
-                    owner.GetSourceRelicData().name is "Covenant01_StrongerEnemiesMoreCards" or "Covenant02_BattlesNewEnemies"))) return false;
+            // Use the same identity/effect boundary as modeled creation. In
+            // particular, the natural rank-three Rage encounter retains the
+            // exact merchant-only owner without changing its birth callbacks.
+            CombatRelicState[] owners = save.GetCovenants().Select(owner => new CombatRelicState(
+                owner.GetRelicDataID(), owner.GetSourceRelicData().name,
+                owner.GetEffects().Select(effect => effect.GetType().Name).ToArray(), isCovenant: true)).ToArray();
+            if (!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(owners, data.GetAssetKey())) return false;
             return save.GetCovenantsForSpawnPattern().Select(owner => owner.GetRelicDataID()).SequenceEqual(
                 save.GetCovenants().Select(owner => owner.GetRelicDataID())) &&
                 WavesCalibrated(save);
