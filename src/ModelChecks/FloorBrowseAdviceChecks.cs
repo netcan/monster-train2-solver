@@ -89,6 +89,7 @@ internal static class FloorBrowseAdviceChecks
                 native.GetProperty("SearchedToBattleEnd").GetBoolean(), native.GetProperty("ReachedStepLimit").GetBoolean(),
                 native.GetProperty("MaxSteps").GetInt32());
         }
+        DeferredBrowsing(before, plan);
         int searches = 0;
         using var session = new BattleAdviceSession((_, _) =>
         {
@@ -111,6 +112,68 @@ internal static class FloorBrowseAdviceChecks
                 stream.State.S2, stream.State.S3)) : stream).ToArray();
         Require(!SelectionAdviceReuse.SameBattle(before, Copy(after, rng: rng)), "Selection projection hid native RNG divergence.");
         Console.WriteLine($"FLOOR-SELECTION PASS: live Conduit/card trackers, exact full native selection transition, three switches with one search, {plan.Steps.Count}-step forecast replay and energy/RNG divergence rejection.");
+    }
+
+    private static void DeferredBrowsing(BattleTurnState root, BattlePlanResult plan)
+    {
+        int searches = 0;
+        using var session = new BattleAdviceSession((_, _) => { searches++; return plan; });
+        session.Observe(root, Key(root)); Pump(session);
+        BattleAdvice original = session.Current!;
+        long generation = session.Generation;
+        BattleTurnState projected = root;
+        foreach (int room in new[] { 2, 1, 0, 1, 2, 1, 0 })
+        {
+            session.BrowseRoom(room);
+            Require(ReferenceEquals(session.Current, original) && session.Generation == generation &&
+                session.Status == BattleAdviceStatus.Ready && searches == 1,
+                "A view event changed the publication, scheduled a worker, or searched.");
+            BattleTurnResult selected = BattleTurnModel.SelectRoom(projected, room);
+            Require(selected.Supported, selected.UnsupportedReason!); projected = selected.State!;
+        }
+        Require(session.MatchesCurrentRoot(projected), "Recorded selection callbacks differ from the complete viewed root.");
+        Require(!session.MatchesCurrentRoot(Copy(projected, energy: projected.Energy + 1)),
+            "Deferred browsing hid an unrelated gameplay change.");
+        BattleRngStream[] changedRng = projected.RngStreams.Select((stream, index) => index == 0 ?
+            new BattleRngStream(stream.Name, stream.Seed, new UnityRng(stream.State.S0 ^ 1,
+                stream.State.S1, stream.State.S2, stream.State.S3)) : stream).ToArray();
+        Require(!session.MatchesCurrentRoot(Copy(projected, rng: changedRng)), "Deferred browsing hid RNG divergence.");
+        BattleSearchStep first = plan.Steps[0];
+        BattleTurnState after;
+        if (first.IsEndTurn)
+        { BattleTurnResult next = BattleTurnModel.EndTurn(projected); Require(next.Supported, next.UnsupportedReason!); after = next.State!; }
+        else
+        { BattleActionResult next = BattleActionModel.PlayCard(projected, first.Action!); Require(next.Supported, next.Reason!); after = next.State!; }
+        if (plan.Steps.Count > 1)
+        {
+            session.InvalidateForInput(); session.Observe(after, Key(after)); Pump(session);
+            Require(searches == 1 && session.Current!.ReusedContinuation && session.Current.Plan.Steps.Count == plan.Steps.Count - 1,
+                "Following advice after deferred browsing lost its verified suffix.");
+            BattleAdviceSession.Verify(after, session.Current.Plan);
+        }
+        session.Invalidate(); session.Observe(root, Key(root)); Pump(session);
+        Require(searches == 2 && session.MatchesCurrentRoot(root), "Manual reset retained an obsolete browsing history.");
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        using var inFlight = new BattleAdviceSession((_, token) =>
+        {
+            entered.Set();
+            if (!release.Wait(10000)) throw new TimeoutException();
+            token.ThrowIfCancellationRequested(); return plan;
+        });
+        try
+        {
+            inFlight.Observe(root, Key(root)); Require(entered.Wait(10000), "Search did not start.");
+            long runningGeneration = inFlight.Generation;
+            inFlight.BrowseRoom(1); inFlight.BrowseRoom(2);
+            Require(inFlight.Status == BattleAdviceStatus.Planning && inFlight.Generation == runningGeneration &&
+                inFlight.SearchCount == 1, "Browsing interfered with an in-flight search.");
+            release.Set(); Pump(inFlight);
+            Require(ReferenceEquals(inFlight.Current!.Root, root) && inFlight.SearchCount == 1,
+                "Browsing replaced the in-flight result or triggered a second worker.");
+        }
+        finally { release.Set(); }
+        Console.WriteLine("DEFERRED-BROWSING PASS: seven O(1) view events preserve the exact publication, then a real input matches and verifies its full remaining state/RNG.");
     }
 
     internal static void NativePair(FixtureValue source, FixtureValue replay)

@@ -30,6 +30,12 @@ namespace MonsterTrain2Poju.Probe
         private static int browseSwitches;
         private static long browseGeneration, browseSearches;
         private static float browseStarted;
+        private static int browseCaptures, browsePublications;
+        private static BattleAdvice? browseAdvice;
+        private static string? browseText, browseStatus;
+        private static Color browseColor;
+        private static float browseScroll;
+        private static int captureFreeSwitches;
         private static bool browsingDuringSearch;
         private static int browseDirection = 1;
         private static bool replayWheelInput;
@@ -80,7 +86,8 @@ namespace MonsterTrain2Poju.Probe
             IdlePassed, PlanPreviewPassed,
             Presentation = AdvisorPresentationProbe.Enabled ? AdvisorPresentationProbe.Evidence : null,
             FloorBrowse = !BrowseEnabled ? null : new { Passed = FloorBrowsePassed, Switches = browseSwitches,
-                DuringSearch = browsingDuringSearch, WheelInput = true, SwitchMilliseconds = browseMilliseconds },
+                DuringSearch = browsingDuringSearch, WheelInput = true, CaptureFreeSwitches = captureFreeSwitches,
+                SwitchMilliseconds = browseMilliseconds },
             ReplayedFloorSwitches = replayBrowseSwitches,
             FrozenObservation = !frozenObservation ? null : new { Paused = Field<bool>("paused"),
                 SearchesAtPause = frozenSearches, SearchesAfterPause = Get<long>("Searches") - frozenSearches,
@@ -247,7 +254,15 @@ namespace MonsterTrain2Poju.Probe
             }
             if (BrowseEnabled && phase is 6 or 7)
             {
+                Require(Get<int>("Captures") == browseCaptures, "floor browsing triggered native state capture");
+                if (browseAdvice != null)
+                    Require(ReferenceEquals(Advice, browseAdvice) && Get<int>("Published") == browsePublications &&
+                        Field<Text>("body").text == browseText && Field<Text>("statusLabel").text == browseStatus &&
+                        Field<Text>("body").color == browseColor &&
+                        Math.Abs(Field<ScrollRect>("planScroll").verticalNormalizedPosition - browseScroll) < .005,
+                        "floor browsing changed the publication, text, status, color or scroll position");
                 if (Time.frameCount <= boundaryFrame || Field<bool>("selectionPending") || !SettledBrowse()) return false;
+                captureFreeSwitches++;
                 Require(GetGeneration() == browseGeneration && Get<long>("Searches") == browseSearches,
                     "browsing restarted or cancelled a search");
                 browseMilliseconds.Add((Time.realtimeSinceStartup - browseStarted) * 1000d);
@@ -255,6 +270,7 @@ namespace MonsterTrain2Poju.Probe
                 FloorBrowsePassed = true;
                 log!.LogInfo("PLAYER-ADVISOR-FLOOR-BROWSE-PASS switches=" + browseSwitches +
                     " duringSearch=true newSearches=0 generation=" + browseGeneration +
+                    " captureFreeSwitches=" + captureFreeSwitches +
                     " readySwitchMs=" + string.Join(",", browseMilliseconds.Skip(1).Select(value => value.ToString("F1"))));
                 phase = 8;
             }
@@ -272,6 +288,11 @@ namespace MonsterTrain2Poju.Probe
         private static void BrowseNext()
         {
             browseStarted = Time.realtimeSinceStartup; boundaryFrame = Time.frameCount + 2;
+            browseCaptures = Get<int>("Captures"); browsePublications = Get<int>("Published");
+            browseAdvice = CurrentIsNull() ? null : Advice;
+            browseText = Field<Text>("body").text; browseStatus = Field<Text>("statusLabel").text;
+            browseColor = Field<Text>("body").color;
+            browseScroll = Field<ScrollRect>("planScroll").verticalNormalizedPosition;
             ScrollNext();
             browseSwitches++;
         }
@@ -289,11 +310,11 @@ namespace MonsterTrain2Poju.Probe
 
         private static bool SettledBrowse()
         {
-            if (CurrentIsNull()) return false;
+            if (CurrentIsNull() || Time.frameCount <= Field<int>("displayFrame") + 1 ||
+                Field<bool>("captureNeeded") || Field<object?>("preparation") != null) return false;
             BattleTurnState root = Capture();
-            using var keys = new BattleStateKeys();
-            if (Advice.RootKey != keys.Key(root)) return false;
-            return (bool)Call("ReadyFor", root)!;
+            Require((bool)Call("ReadyFor", root)!, "deferred floor view differs from a fresh complete native capture/RNG");
+            return true;
         }
 
         internal static bool ReplayFloorBrowsing()
@@ -340,7 +361,7 @@ namespace MonsterTrain2Poju.Probe
             // identity space; translate chosen inputs by native object identity.
             BattleTurnState root = Capture();
             using var keys = new BattleStateKeys();
-            Require(Advice.RootKey == keys.Key(root), "player advice is stale: " +
+            Require(session.MatchesCurrentRoot(root), "player advice is stale: " +
                 UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(Advice.Root), BattleTurnProbe.Comparable(root), "$"));
             return (bool)Call("ReadyFor", root)!;
         }

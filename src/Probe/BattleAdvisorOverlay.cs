@@ -56,6 +56,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly FieldInfo combatChanged = AccessTools.Field(typeof(CombatManager), "combatStateChanged");
         private bool paused, wasInBattle, screenshotTaken;
         private bool selectionPending;
+        private bool browseOnly;
         private float selectionReadyAt;
         private string? captureError;
         private string? manualBattleKey;
@@ -66,6 +67,8 @@ namespace MonsterTrain2Poju.Probe
         internal int PublicationRootChecks { get; private set; }
         internal int Invalidations { get; private set; }
         internal int SelectionReuses { get; private set; }
+        internal int BrowseSelections { get; private set; }
+        internal int BrowseFrames { get; private set; }
         internal long Searches => session.SearchCount;
         internal int PlanningFrames { get; private set; }
         internal int IdleFrames { get; private set; }
@@ -106,7 +109,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal List<Publication> Publications { get; } = new List<Publication>();
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
-        internal object Evidence => new { CrossTurnContinuation = true, Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, SelectionReuses, Searches, PlanningFrames, IdleFrames, PanelVertices, PanelPixels, Failures, Publications, LastCaptureMs, TotalCaptureMs,
+        internal object Evidence => new { CrossTurnContinuation = true, DeferredFloorBrowsing = true, BrowseSelections, BrowseFrames, Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, SelectionReuses, Searches, PlanningFrames, IdleFrames, PanelVertices, PanelPixels, Failures, Publications, LastCaptureMs, TotalCaptureMs,
             LastProjectionMs, LastPurityMs, LastPreparationMs, PreparedObservations, DiscardedPreparations,
             MainThreadId, PreparationThreadId,
             Error = session.Error, UnavailableRoot = session.Status == BattleAdviceStatus.Unavailable ? lastCapture : null, Horizon = horizon,
@@ -324,6 +327,23 @@ namespace MonsterTrain2Poju.Probe
             }
             Keyboard();
             AllGameManagers? managers = AllGameManagers.Instance;
+            // Selection previews may use the native loading/animation counter.
+            // Keep the verified publication untouched while only this view is
+            // changing. Actual inputs/mutations and cheap gameplay changes wake
+            // the ordinary capture path; every callback is retained for it.
+            if (browseOnly && !captureNeeded && !paused && !HiddenPause && managers != null &&
+                managers.GetSaveManager().GetGameSequence() == SaveData.GameSequence.InBattle)
+            {
+                bool preview = managers.GetSaveManager().PreviewMode || PreviewRngIsolation.Active;
+                if (preview || observation.SameGameplay(new AdvisorObservation(managers)))
+                {
+                    session.Poll(); BrowseFrames++;
+                    if (preview || LoadingScreen.IsWorking() || !Ready(managers) ||
+                        Time.realtimeSinceStartup < selectionReadyAt) return;
+                    observation = new AdvisorObservation(managers); selectionPending = false;
+                }
+                else InvalidateState(true, "gameplay-changed-during-browse");
+            }
             if (managers == null || LoadingScreen.IsWorking())
             {
                 session.InvalidateForInput(); session.Poll();
@@ -381,7 +401,7 @@ namespace MonsterTrain2Poju.Probe
             var currentObservation = new AdvisorObservation(managers);
             if (observed && !observation.Equals(currentObservation) && !selectionPending)
             {
-                if (observation.SameGameplay(currentObservation)) MarkSelection();
+                if (observation.SameGameplay(currentObservation)) { MarkSelection(); if (browseOnly) RecordSelection(); }
                 else InvalidateState(true, "observed-gameplay-change");
             }
             observation = currentObservation; observed = true;
@@ -394,14 +414,15 @@ namespace MonsterTrain2Poju.Probe
             // Hash detached model values on a worker. A publication still needs
             // an exact fresh root match, with no input/selection/busy boundary or
             // cheap observation change between capture and accepting that hash.
-            bool publicationChecked = false;
+            bool publicationChecked = browseOnly && !captureNeeded && preparation == null && session.Current != null;
             if (preparation?.IsCompleted == true)
             {
                 Task<PreparedBattleObservation> completed = preparation; preparation = null;
                 try
                 {
                     PreparedBattleObservation prepared = completed.GetAwaiter().GetResult();
-                    if (preparationRevision != observationRevision || !preparationObservation.Equals(currentObservation))
+                    if (preparationRevision != observationRevision || !(browseOnly
+                        ? preparationObservation.SameGameplay(currentObservation) : preparationObservation.Equals(currentObservation)))
                     { DiscardedPreparations++; captureNeeded = true; }
                     else
                     {
@@ -419,7 +440,7 @@ namespace MonsterTrain2Poju.Probe
             }
             bool unpublished = session.Current != null && !ReferenceEquals(displayed, session.Current);
             if (captureError == null && preparation == null && !publicationChecked &&
-                (!selectionPending || Time.realtimeSinceStartup >= selectionReadyAt) && (unpublished || selectionPending ||
+                (!selectionPending || Time.realtimeSinceStartup >= selectionReadyAt) && (unpublished || selectionPending && !browseOnly ||
                 captureNeeded && session.Status != BattleAdviceStatus.Planning))
             {
                 try
@@ -533,7 +554,8 @@ namespace MonsterTrain2Poju.Probe
             string key = keys.Key(root);
             if (session.Status == BattleAdviceStatus.Unavailable) throw new InvalidOperationException(session.Error);
             return !captureNeeded && !selectionPending && preparation == null && observed &&
-                session.Current?.RootKey == key && ReferenceEquals(displayed, session.Current) && Time.frameCount > displayFrame + 1;
+                (browseOnly ? session.MatchesCurrentRoot(root) : session.Current?.RootKey == key) &&
+                ReferenceEquals(displayed, session.Current) && Time.frameCount > displayFrame + 1;
         }
         internal BattlePlanResult CurrentPlan => session.Current?.Plan ?? throw new InvalidOperationException("Advice is not ready.");
         internal BattleAdvice CurrentAdvice => session.Current ?? throw new InvalidOperationException("Advice is not ready.");
@@ -653,7 +675,7 @@ namespace MonsterTrain2Poju.Probe
             if (playerSession && session.Status != BattleAdviceStatus.Idle)
                 log.LogInfo("POJU-INVALIDATE reason=" + reason + " generation=" + session.Generation);
             if (preserveContinuation) session.InvalidateForInput(); else session.Invalidate();
-            captureError = null; captureNeeded = true; observed = false; selectionPending = false;
+            captureError = null; captureNeeded = true; observed = false; selectionPending = false; browseOnly = false;
             if (preserveContinuation && displayed != null) SetPending(true);
             else ShowMessage("正在核对局面…");
         }
@@ -701,13 +723,28 @@ namespace MonsterTrain2Poju.Probe
                 if (Active != null && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
                     Active.MarkSelection();
             }
+            private static void Postfix()
+            {
+                if (Active?.browseOnly == true && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
+                    Active.RecordSelection();
+            }
         }
 
         private void MarkSelection()
         {
-            observationRevision++; selectionPending = true; captureNeeded = true;
-            // Coalesce rapid wheel events before taking a native snapshot.
+            if (observed && !captureNeeded && (preparation != null || session.Status is BattleAdviceStatus.Ready or BattleAdviceStatus.Planning))
+                browseOnly = true;
+            else { observationRevision++; captureNeeded = true; }
+            selectionPending = true;
+            // Coalesce preview settlement without traversing native/model state.
             selectionReadyAt = Time.realtimeSinceStartup + .12f;
+        }
+
+        private void RecordSelection()
+        {
+            int room = AllGameManagers.Instance.GetRoomManager().GetSelectedRoom();
+            if (room < 0) return;
+            session.BrowseRoom(room); BrowseSelections++;
         }
 
         public void Dispose()

@@ -56,6 +56,7 @@ namespace MonsterTrain2Poju.Model
         private BattleTurnState? pending;
         private BattleTurnState? observed;
         private BattleAdvice? reusable;
+        private readonly List<int> browsedRooms = new List<int>();
         private string? pendingKey, currentKey;
         private long generation, workerGeneration;
         private long observationVersion;
@@ -69,6 +70,34 @@ namespace MonsterTrain2Poju.Model
         public string? Error { get; private set; }
         public long Generation => generation;
         public long SearchCount => Interlocked.Read(ref searchCount);
+
+        // A view change records only its order. No hashing, model traversal,
+        // worker cancellation or publication happens until a gameplay capture.
+        public void BrowseRoom(int roomIndex)
+        {
+            if (disposed) throw new ObjectDisposedException(nameof(BattleAdviceSession));
+            if (roomIndex < 0) throw new ArgumentOutOfRangeException(nameof(roomIndex));
+            int previous = browsedRooms.Count > 0 ? browsedRooms[browsedRooms.Count - 1] : observed?.SelectedRoom ?? -1;
+            if (previous != roomIndex) browsedRooms.Add(roomIndex);
+        }
+
+        // Used only by isolated native acceptance, which supplies a fresh full
+        // capture. The player does not call this while browsing or idling.
+        internal bool MatchesCurrentRoot(BattleTurnState root)
+        {
+            if (Current == null) return false;
+            if (browsedRooms.Count == 0)
+            { using var keys = new BattleStateKeys(); return keys.Key(root) == Current.RootKey; }
+            BattleTurnState projected = Current.Root;
+            foreach (int room in browsedRooms)
+            {
+                BattleTurnResult selected = BattleTurnModel.SelectRoom(projected, room);
+                if (!selected.Supported) return false;
+                projected = selected.State!;
+            }
+            using var selectionKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+            return selectionKeys.Key(projected) == selectionKeys.Key(root);
+        }
 
         public BattleAdviceSession(BattlePlannerOptions? options = null, int maxSearchWorkers = 1)
             : this((root, token) =>
@@ -145,8 +174,9 @@ namespace MonsterTrain2Poju.Model
         {
             if (disposed) return;
             observationVersion++;
-            if (!preserveContinuation) { continuation = null; reusable = null; }
+            if (!preserveContinuation) { continuation = null; reusable = null; browsedRooms.Clear(); }
             else reusable = Current ?? reusable;
+            if (reusable == null && continuation == null) browsedRooms.Clear();
             if (currentKey != null) generation++;
             currentKey = pendingKey = null; pending = null;
             observed = null;
@@ -187,6 +217,10 @@ namespace MonsterTrain2Poju.Model
                 TimeSpan preparationElapsed = pendingPreparationElapsed;
                 VerifiedAdviceContinuation? retained = continuation;
                 BattleAdvice? candidate = reusable;
+                // Keep views taken during the initial search anchored to that
+                // result. Drain them only when a later capture can reuse it.
+                int[] selections = candidate == null ? Array.Empty<int>() : browsedRooms.ToArray();
+                if (candidate != null) browsedRooms.Clear();
                 reusable = null;
                 pending = null; pendingKey = null;
                 workerGeneration = generation;
@@ -204,7 +238,8 @@ namespace MonsterTrain2Poju.Model
                     if (fullKeys.Key(root) != key)
                         throw new InvalidOperationException(retained == null ? "Captured state differs from its full-state key." :
                             "Captured state differs from the retained continuation.");
-                    VerifiedAdviceContinuation? matched = retained?.Match(root);
+                    VerifiedAdviceContinuation? matched = candidate != null && selections.Length > 0
+                        ? SelectionAdviceReuse.MatchAfterBrowsing(candidate, selections, root, token) : retained?.Match(root);
                     bool reusedSelection = matched == null && candidate != null && SelectionAdviceReuse.TryRebase(candidate, root,
                         retainPlans, token, out plan, out proof);
                     verification.Stop();

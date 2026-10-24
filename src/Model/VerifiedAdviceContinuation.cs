@@ -34,13 +34,15 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        internal BattlePlanResult Remaining()
+        internal BattlePlanResult Remaining() => Remaining(original, offset);
+
+        internal static BattlePlanResult Remaining(BattlePlanResult original, int offset)
         {
             BattleSearchStep[] steps = original.Steps.Skip(offset).ToArray();
             return new BattlePlanResult(original.State, original.Outcome, steps, original.Score,
                 steps.Count(step => step.IsEndTurn), 0, 0, 0, TimeSpan.Zero,
                 original.TimedOut, false, original.ReachedNodeLimit, original.ReachedActionLimit,
-                original.CompletedHorizon, IsWinning ? Array.Empty<UnsupportedActionAttempt>() : original.UnsupportedAttempts,
+                original.CompletedHorizon, original.Outcome == RoomOutcome.BattleWon ? Array.Empty<UnsupportedActionAttempt>() : original.UnsupportedAttempts,
                 null, Math.Max(0, original.RequestedTurns - original.Steps.Take(offset).Count(step => step.IsEndTurn)),
                 original.UsedShorterHorizon, original.SearchedToBattleEnd, original.ReachedStepLimit,
                 original.MaxSteps, original.WorkerThreadIds);

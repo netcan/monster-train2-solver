@@ -49,6 +49,59 @@ namespace MonsterTrain2Poju.Model
             if (key == originalKey)
             { plan = Reused(advice.Plan, advice.Plan.State); proof = advice.Continuation; return true; }
             if (!SameBattle(advice.Root, root)) return false;
+            return Replay(advice.Plan, root, retainPlans, token, out plan, out proof, advice.SelectionCache, key);
+        }
+
+        // Called after an actual input, never by a floor-view event. Reproduce
+        // every recorded native selection callback before matching the next
+        // complete decision/RNG against the original line's prefixes.
+        internal static VerifiedAdviceContinuation? MatchAfterBrowsing(BattleAdvice advice, IReadOnlyList<int> rooms,
+            BattleTurnState actual, CancellationToken token)
+        {
+            BattleTurnState projected = advice.Root;
+            foreach (int room in rooms)
+            {
+                token.ThrowIfCancellationRequested();
+                BattleTurnResult selected = BattleTurnModel.SelectRoom(projected, room);
+                if (!selected.Supported) return null;
+                projected = selected.State!;
+            }
+            using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+            string actualKey = keys.Key(actual);
+            for (int index = 0; index < advice.Plan.Steps.Count; index++)
+            {
+                token.ThrowIfCancellationRequested();
+                if (keys.Key(projected) == actualKey)
+                {
+                    BattlePlanResult remaining = VerifiedAdviceContinuation.Remaining(advice.Plan, index);
+                    // The native preview allocator may have advanced again.
+                    // Replay from the actual input root so the resulting full
+                    // forecast remains exact, including its allocator value.
+                    return Replay(remaining, actual, true, token, out _, out VerifiedAdviceContinuation? proof) ? proof : null;
+                }
+                BattleSearchStep step = advice.Plan.Steps[index];
+                if (step.IsEndTurn)
+                {
+                    BattleTurnResult next = BattleTurnModel.EndTurn(projected);
+                    if (!next.Supported) return null;
+                    projected = next.State!;
+                }
+                else
+                {
+                    if (step.Action == null) return null;
+                    BattleActionResult next = BattleActionModel.PlayCard(projected, step.Action);
+                    if (!next.Supported) return null;
+                    projected = next.State!;
+                }
+            }
+            return null;
+        }
+
+        private static bool Replay(BattlePlanResult original, BattleTurnState root, bool retainPlans,
+            CancellationToken token, out BattlePlanResult plan, out VerifiedAdviceContinuation? proof,
+            Dictionary<string, Result>? cache = null, string? key = null)
+        {
+            plan = original; proof = null;
             BattleTurnState state = root;
             RoomOutcome outcome = RoomOutcome.Exchanged;
             using var continuationKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
@@ -76,8 +129,11 @@ namespace MonsterTrain2Poju.Model
             if (roots != null) proof = new VerifiedAdviceContinuation(plan, roots.ToArray());
             // Preview allocators can advance on every browse. Bound retained
             // calibration graphs even if none of those exact roots repeat.
-            if (advice.SelectionCache.Count >= 8) advice.SelectionCache.Clear();
-            advice.SelectionCache[key] = new Result(plan, proof);
+            if (cache != null && key != null)
+            {
+                if (cache.Count >= 8) cache.Clear();
+                cache[key] = new Result(plan, proof);
+            }
             return true;
         }
 
