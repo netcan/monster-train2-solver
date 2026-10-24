@@ -53,6 +53,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly FieldInfo combatChanged = AccessTools.Field(typeof(CombatManager), "combatStateChanged");
         private bool paused, wasInBattle, screenshotTaken;
         private bool selectionPending;
+        private float selectionReadyAt;
         private string? captureError;
         private string? manualBattleKey;
         private BattleTurnState? lastCapture;
@@ -99,7 +100,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal List<Publication> Publications { get; } = new List<Publication>();
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
-        internal object Evidence => new { Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, SelectionReuses, Searches, PlanningFrames, IdleFrames, PanelVertices, PanelPixels, Failures, Publications, LastCaptureMs, TotalCaptureMs,
+        internal object Evidence => new { CrossTurnContinuation = true, Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, SelectionReuses, Searches, PlanningFrames, IdleFrames, PanelVertices, PanelPixels, Failures, Publications, LastCaptureMs, TotalCaptureMs,
             LastProjectionMs, LastPurityMs, LastPreparationMs, PreparedObservations, DiscardedPreparations,
             MainThreadId, PreparationThreadId,
             Error = session.Error, UnavailableRoot = session.Status == BattleAdviceStatus.Unavailable ? lastCapture : null, Horizon = horizon,
@@ -302,12 +303,16 @@ namespace MonsterTrain2Poju.Probe
             {
                 captureNeeded = true;
                 bool browsing = selectionPending && inBattle && !paused && !HiddenPause;
-                if (browsing && preparation != null && preparationRevision == observationRevision)
+                if (preparation != null && preparationRevision == observationRevision)
                     observationRevision++;
-                if (!browsing && (session.Status != BattleAdviceStatus.Idle ||
-                    preparation != null && preparationRevision == observationRevision))
-                    InvalidateState(inBattle && !paused && !HiddenPause);
+                // A native preview/animation is not proof of a gameplay input.
+                // Keep its verified candidate and in-flight worker; the next
+                // settled full snapshot must still match before publication.
+                // Actual plays/mutations invalidate through their input hooks.
+                if ((paused || HiddenPause || !inBattle) && session.Status != BattleAdviceStatus.Idle)
+                    InvalidateState(false, "paused-or-outside-battle");
                 session.Poll();
+                if (!browsing) displayed = null;
                 if (!browsing || displayed == null)
                     body.text = paused || HiddenPause ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。";
                 return;
@@ -324,7 +329,10 @@ namespace MonsterTrain2Poju.Probe
             }
             var currentObservation = new AdvisorObservation(managers);
             if (observed && !observation.Equals(currentObservation) && !selectionPending)
-                InvalidateState(true);
+            {
+                if (observation.SameGameplay(currentObservation)) MarkSelection();
+                else InvalidateState(true, "observed-gameplay-change");
+            }
             observation = currentObservation; observed = true;
             session.Poll();
             if (session.Status == BattleAdviceStatus.Planning) PlanningFrames++;
@@ -361,7 +369,8 @@ namespace MonsterTrain2Poju.Probe
                 { session.Invalidate(); captureError = error.Message; log.LogError("ADVISOR-CAPTURE-FAIL " + error); }
             }
             bool unpublished = session.Current != null && !ReferenceEquals(displayed, session.Current);
-            if (captureError == null && preparation == null && !publicationChecked && (unpublished || selectionPending ||
+            if (captureError == null && preparation == null && !publicationChecked &&
+                (!selectionPending || Time.realtimeSinceStartup >= selectionReadyAt) && (unpublished || selectionPending ||
                 captureNeeded && session.Status != BattleAdviceStatus.Planning))
             {
                 try
@@ -412,7 +421,7 @@ namespace MonsterTrain2Poju.Probe
                     " wholeBattle=" + displayed.Plan.SearchedToBattleEnd + " workers=" + displayed.Plan.SearchWorkers +
                     " workerThreads=" + string.Join(",", displayed.Plan.WorkerThreadIds) +
                     " source=" + (displayed.ReusedSelection ? "floor-browse" : displayed.ReusedWinningContinuation ? "verified-continuation" :
-                        displayed.ReusedContinuation ? "verified-turn" : "search"));
+                        displayed.ReusedContinuation ? "verified-plan" : "search"));
                 if (!playerSession && !screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")
                 {
                     CapturePanel(); screenshotTaken = true;
@@ -561,20 +570,22 @@ namespace MonsterTrain2Poju.Probe
             return text.ToString();
         }
 
-        private void Invalidate() => InvalidateState(false);
+        private void Invalidate() => InvalidateState(false, "manual-reset");
 
-        private void InvalidateState(bool preserveWinningContinuation)
+        private void InvalidateState(bool preserveContinuation, string reason = "native-state-change")
         {
             observationRevision++;
             if (session.Status != BattleAdviceStatus.Idle) Invalidations++;
-            if (preserveWinningContinuation) session.InvalidateForInput(); else session.Invalidate();
+            if (playerSession && session.Status != BattleAdviceStatus.Idle)
+                log.LogInfo("POJU-INVALIDATE reason=" + reason + " generation=" + session.Generation);
+            if (preserveContinuation) session.InvalidateForInput(); else session.Invalidate();
             displayed = null; captureError = null; captureNeeded = true; observed = false; selectionPending = false;
             if (body != null) body.text = "局面已更新，正在核对后续方案…";
         }
-        private static void NativeAction(bool preserveWinningContinuation = true)
+        private static void NativeAction(bool preserveContinuation = true, string reason = "native-mutation")
         {
             if (Active != null && !Active.capturing && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
-                Active.InvalidateState(preserveWinningContinuation);
+                Active.InvalidateState(preserveContinuation, reason);
         }
         internal static void InstallAdvisorPatches(Harmony harmony)
         {
@@ -582,13 +593,13 @@ namespace MonsterTrain2Poju.Probe
                 harmony.CreateClassProcessor(patch).Patch();
         }
         [HarmonyPatch(typeof(CardManager), nameof(CardManager.PlayAnyCard))]
-        private static class CardPlayedPatch { private static void Prefix() => NativeAction(); }
+        private static class CardPlayedPatch { private static void Prefix() => NativeAction(reason: "card-play"); }
         [HarmonyPatch(typeof(BattleHud), "EndTurn")]
-        private static class EndTurnPatch { private static void Prefix() => NativeAction(); }
+        private static class EndTurnPatch { private static void Prefix() => NativeAction(reason: "end-turn"); }
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.UndoTurn))]
-        private static class UndoPatch { private static void Prefix() { NativeAction(false); if (Active != null) Active.manualBattleKey = null; } }
+        private static class UndoPatch { private static void Prefix() { NativeAction(false, "undo"); if (Active != null) Active.manualBattleKey = null; } }
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.RestartBattle))]
-        private static class RestartPatch { private static void Prefix() { NativeAction(false); if (Active != null) Active.manualBattleKey = null; } }
+        private static class RestartPatch { private static void Prefix() { NativeAction(false, "restart"); if (Active != null) Active.manualBattleKey = null; } }
         [HarmonyPatch]
         private static class MutationPatch
         {
@@ -613,8 +624,15 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix()
             {
                 if (Active != null && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
-                { Active.observationRevision++; Active.selectionPending = true; Active.captureNeeded = true; }
+                    Active.MarkSelection();
             }
+        }
+
+        private void MarkSelection()
+        {
+            observationRevision++; selectionPending = true; captureNeeded = true;
+            // Coalesce rapid wheel events before taking a native snapshot.
+            selectionReadyAt = Time.realtimeSinceStartup + .12f;
         }
 
         public void Dispose()

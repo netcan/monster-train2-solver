@@ -31,6 +31,8 @@ namespace MonsterTrain2Poju.Probe
         private static long browseGeneration, browseSearches;
         private static float browseStarted;
         private static bool browsingDuringSearch;
+        private static int browseDirection = 1;
+        private static bool replayWheelInput;
         private static readonly List<double> browseMilliseconds = new List<double>();
         private static int replayBrowseCount = -1, replayBrowseSwitches;
         internal static bool FloorBrowsePassed { get; private set; }
@@ -77,7 +79,7 @@ namespace MonsterTrain2Poju.Probe
             InteractionsPassed,
             IdlePassed, PlanPreviewPassed,
             FloorBrowse = !BrowseEnabled ? null : new { Passed = FloorBrowsePassed, Switches = browseSwitches,
-                DuringSearch = browsingDuringSearch, SwitchMilliseconds = browseMilliseconds },
+                DuringSearch = browsingDuringSearch, WheelInput = true, SwitchMilliseconds = browseMilliseconds },
             ReplayedFloorSwitches = replayBrowseSwitches,
             FrozenObservation = !frozenObservation ? null : new { Paused = Field<bool>("paused"),
                 SearchesAtPause = frozenSearches, SearchesAfterPause = Get<long>("Searches") - frozenSearches,
@@ -266,11 +268,20 @@ namespace MonsterTrain2Poju.Probe
 
         private static void BrowseNext()
         {
-            RoomManager rooms = AllGameManagers.Instance.GetRoomManager();
-            int next = (rooms.GetSelectedRoom() + 1) % 3;
             browseStarted = Time.realtimeSinceStartup; boundaryFrame = Time.frameCount + 2;
-            AccessTools.Method(typeof(RoomUI), "InnerSetSelectedRoom").Invoke(rooms.GetRoomUI(), new object[] { next, true });
+            ScrollNext();
             browseSwitches++;
+        }
+
+        private static void ScrollNext()
+        {
+            RoomManager rooms = AllGameManagers.Instance.GetRoomManager();
+            int before = rooms.GetSelectedRoom();
+            if (before == 0) browseDirection = 1;
+            else if (before == 2) browseDirection = -1;
+            AccessTools.Method(typeof(RoomUI), "HandleScrollWheel").Invoke(rooms.GetRoomUI(),
+                new object[] { browseDirection * 100f });
+            Require(rooms.GetSelectedRoom() == before + browseDirection, "native wheel input did not select the adjacent floor");
         }
 
         private static bool SettledBrowse()
@@ -290,7 +301,10 @@ namespace MonsterTrain2Poju.Probe
                 replayBrowseCount = 0;
                 if (fixture.RootElement.GetProperty("PlayerAdvisor").TryGetProperty("FloorBrowse", out FixtureValue browse) &&
                     browse.ValueKind != FixtureKind.Null && browse.GetProperty("Passed").GetBoolean())
+                {
                     replayBrowseCount = browse.GetProperty("Switches").GetInt32();
+                    replayWheelInput = browse.TryGetProperty("WheelInput", out FixtureValue wheel) && wheel.GetBoolean();
+                }
                 Require(replayBrowseCount >= 0 && replayBrowseCount <= 30, "invalid frozen browsing count");
             }
             PauseForFrozenPlan();
@@ -298,9 +312,13 @@ namespace MonsterTrain2Poju.Probe
             if (Time.frameCount <= boundaryFrame) return true;
             if (replayBrowseSwitches < replayBrowseCount)
             {
-                RoomManager rooms = AllGameManagers.Instance.GetRoomManager();
-                AccessTools.Method(typeof(RoomUI), "InnerSetSelectedRoom").Invoke(rooms.GetRoomUI(),
-                    new object[] { (rooms.GetSelectedRoom() + 1) % 3, true });
+                if (replayWheelInput) ScrollNext();
+                else
+                {
+                    RoomManager rooms = AllGameManagers.Instance.GetRoomManager();
+                    AccessTools.Method(typeof(RoomUI), "InnerSetSelectedRoom").Invoke(rooms.GetRoomUI(),
+                        new object[] { (rooms.GetSelectedRoom() + 1) % 3, true });
+                }
                 replayBrowseSwitches++; boundaryFrame = Time.frameCount + 2;
                 return true;
             }

@@ -19,7 +19,8 @@ internal static class OrdinaryAdviceChecks
             "Ordinary continuation acceptance requires actual player defaults.");
         FixtureValue[] decisions = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         FixtureValue[] frozen = replay.GetProperty("RollingDecisions").EnumerateArray().ToArray();
-        int ordinary = 0, newTurnSearches = 0;
+        bool acrossTurns = overlay.TryGetProperty("CrossTurnContinuation", out FixtureValue crossTurn) && crossTurn.GetBoolean();
+        int ordinary = 0, newTurnSearches = 0, crossTurnReuses = 0;
         for (int index = 0; index < decisions.Length; index++)
         {
             FixtureValue current = decisions[index];
@@ -32,14 +33,23 @@ internal static class OrdinaryAdviceChecks
             if (index == 0) { Require(!reused, "The first native publication bypassed search."); continue; }
             FixtureValue previous = decisions[index - 1];
             bool previousWin = previous.GetProperty("PlannedOutcome").Deserialize<RoomOutcome>() == RoomOutcome.BattleWon;
-            if (previous.GetProperty("IsEndTurn").GetBoolean() && !previousWin)
+            bool endedTurn = previous.GetProperty("IsEndTurn").GetBoolean();
+            FixtureValue[] before = previous.GetProperty("PlanSteps").EnumerateArray().ToArray();
+            if (endedTurn && !previousWin)
             {
-                Require(!reused && current.GetProperty("Timing").GetProperty("SearchMs").GetDouble() > 0,
-                    "A new native turn reused a shrinking nonwinning horizon.");
-                newTurnSearches++;
+                if (acrossTurns && before.Length > 1)
+                {
+                    Require(reused && !winning, "A followed nonwinning EndTurn discarded its verified remaining plan.");
+                    crossTurnReuses++;
+                }
+                else
+                {
+                    Require(!reused && current.GetProperty("Timing").GetProperty("SearchMs").GetDouble() > 0,
+                        "An exhausted or historical same-turn forecast failed to start a fresh search.");
+                    newTurnSearches++;
+                }
             }
             if (!reused) continue;
-            FixtureValue[] before = previous.GetProperty("PlanSteps").EnumerateArray().ToArray();
             FixtureValue[] after = current.GetProperty("PlanSteps").EnumerateArray().ToArray();
             Require(before.Length == after.Length + 1 && after.Select((step, offset) =>
                     step.ContentEquals(before[offset + 1])).All(equal => equal) &&
@@ -50,16 +60,20 @@ internal static class OrdinaryAdviceChecks
                 current.GetProperty("PolicyBaselineScore").ValueKind == FixtureKind.Null,
                 "Retained native advice changed its verified suffix, forecast or search work.");
             if (winning) continue;
-            Require(!previous.GetProperty("IsEndTurn").GetBoolean() &&
+            Require(acrossTurns || !endedTurn &&
                 current.GetProperty("PlannedOutcome").Deserialize<RoomOutcome>() == RoomOutcome.Exchanged,
-                "Ordinary advice crossed an EndTurn or claimed a terminal forecast.");
-            foreach (string field in new[] { "RequestedHorizon", "TurnsPlanned", "UsedShorterHorizon" })
-                Require(previous.GetProperty(field).ContentEquals(current.GetProperty(field)),
-                    "Ordinary native continuation changed the original lookahead: " + field);
+                "Historical ordinary advice crossed an EndTurn or claimed a terminal forecast.");
+            foreach (string field in new[] { "RequestedHorizon", "TurnsPlanned" })
+                Require(current.GetProperty(field).GetInt32() == Math.Max(0,
+                    previous.GetProperty(field).GetInt32() - (acrossTurns && endedTurn ? 1 : 0)),
+                    "Ordinary native continuation lost its remaining lookahead: " + field);
+            Require(previous.GetProperty("UsedShorterHorizon").ContentEquals(current.GetProperty("UsedShorterHorizon")),
+                "Ordinary native continuation changed its original budget limitation.");
             ordinary++;
         }
-        Require(ordinary >= 3 && newTurnSearches > 0, "Missing ordinary reuse and a fresh new-turn search witness.");
-        Console.WriteLine($"PLAYER-ORDINARY-ADVICE PASS: {ordinary} same-turn continuations with zero search; {newTurnSearches} fresh new-turn searches; exact native suffixes, original lookahead, full forecasts/state/RNG and independent replay.");
+        Require(ordinary >= 3 && (acrossTurns ? crossTurnReuses > 0 : newTurnSearches > 0),
+            "Missing ordinary reuse and the expected cross-turn or historical new-turn witness.");
+        Console.WriteLine($"PLAYER-ORDINARY-ADVICE PASS: {ordinary} ordinary continuations with zero search; {crossTurnReuses} retained nonwinning EndTurns; {newTurnSearches} fresh boundary searches; exact native suffixes, remaining lookahead, full forecasts/state/RNG and independent replay.");
     }
 
     internal static void Run(FixtureValue fixture)

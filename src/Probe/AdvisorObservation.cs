@@ -6,7 +6,8 @@ namespace MonsterTrain2Poju.Probe
     // This only schedules captures; publications still use the full immutable key.
     internal readonly struct AdvisorObservation : IEquatable<AdvisorObservation>
     {
-        private readonly (int Turn, int Phase, int Room, int Energy, int Moon, int Pyre,
+        private readonly int room;
+        private readonly (int Turn, int Phase, int Energy, int Moon, int Pyre,
             int Gold, int Forge, int Hoard, int DrawModifier, int Hand, int Draw,
             int Discard, int DiscardBuffer, int Exhausted, int Purged, int Eaten) values;
 
@@ -16,7 +17,8 @@ namespace MonsterTrain2Poju.Probe
             PlayerManager player = managers.GetPlayerManager();
             SaveManager save = managers.GetSaveManager();
             CardManager cards = managers.GetCardManager();
-            values = (combat.GetTurnCount(), (int)combat.GetCombatPhase(), managers.GetRoomManager().GetSelectedRoom(),
+            room = managers.GetRoomManager().GetSelectedRoom();
+            values = (combat.GetTurnCount(), (int)combat.GetCombatPhase(),
                 player.GetEnergy(), (int)player.CurrentMoonPhase, save.GetTowerHP(), save.GetGold(),
                 save.GetForgePoints(), save.GetDragonsHoardAmount(), cards.GetDrawCountModifier(),
                 cards.GetHand().Count, cards.GetDrawPile().Count, cards.GetDiscardPile().Count,
@@ -24,8 +26,9 @@ namespace MonsterTrain2Poju.Probe
                 cards.GetPurgedPile().Count, cards.GetEatenPile().Count);
         }
 
-        public bool Equals(AdvisorObservation other) => values.Equals(other.values);
+        internal bool SameGameplay(AdvisorObservation other) => values.Equals(other.values);
+        public bool Equals(AdvisorObservation other) => room == other.room && SameGameplay(other);
         public override bool Equals(object? other) => other is AdvisorObservation stamp && Equals(stamp);
-        public override int GetHashCode() => values.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(room, values.GetHashCode());
     }
 }

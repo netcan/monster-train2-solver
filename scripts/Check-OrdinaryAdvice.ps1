@@ -29,6 +29,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Independent ordinary advice pair checks failed
 dotnet $checker --player-floor-browse-pair-only @archives
 if ($LASTEXITCODE -ne 0) { throw 'Floor browsing no longer retains native advice.' }
 $natural = @(Get-VerifiedPair 'natural-ring7-ordinary')
+dotnet $checker --terminal-advice-only $natural[0]
+if ($LASTEXITCODE -ne 0) { throw 'Terminal losing-forecast continuation checks failed.' }
 dotnet $checker --player-natural-ring7-default-pair-only @natural
 if ($LASTEXITCODE -ne 0) { throw 'Natural Ring7 default-budget native pair checks failed.' }
 dotnet $checker --player-ordinary-advice-pair-only @natural
