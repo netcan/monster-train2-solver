@@ -1,5 +1,28 @@
 # Player Mod validation · 2026-10-24
 
+Windows 0.2.5 removes the half-second full capture after advice is ready. Native
+input/mutation and settlement boundaries wake the observer; a value-only stamp
+checks resources, floor, turn/phase and pile counts without traversing the model.
+An unchanged publication also skips the full animation/enchantment scan. Exact
+full-root publication checks, capture purity and background replay remain enabled.
+`POJU-ADVICE` now distinguishes capture and verification time from search time.
+
+The complete-plan button expands a scrollable ordered forecast grouped by turn,
+then collapses back to the next-step summary. The twelve-step native UI control
+verifies the final step is present, scrolling works, and both toggles leave
+capture/search counts unchanged. A two-second settled control records zero
+captures, searches or publications. This removes repeated idle work; captures
+after real inputs and floor changes still have a measurable main-thread cost,
+and no numerical FPS improvement is claimed.
+
+Source `full-battle-units-spells-and-junk-20261024-145920-daf8dc68` wins after
+15 plays/seven EndTurns with 59 native room stages and fourteen train phases.
+All thirty publications have fresh full-root checks; seven floor switches
+preserve the search count, including one switch during search. Pause/hide,
+refresh, pointer controls, drag/clamp and the two new UI/idle checks pass.
+All capture/mismatch/unsupported/pending counters are zero, native exit is normal
+and protected originals are unchanged. Independent frozen replay is pending.
+
 Windows 0.2.4 protects the BepInEx host with `HideAndDontSave`. With the real
 loader's default `HideManagerGameObject = false`, the original host is disabled
 and destroyed at frame zero, before the advisor receives Update. Moving UI
@@ -29,8 +52,8 @@ other loader/plugin/configuration files and the F10 setting are unchanged.
 Previous files remain under
 `BepInEx/PojuBackups/HostFix-20261024-143054/previous`. This validates isolated
 Windows startup with the actual loader configuration, not a new full battle or
-Mac acceptance. The still-running 0.2.3 process must exit before the real game
-can load 0.2.4; a fresh real-process screenshot remains to be checked.
+Mac acceptance. The subsequent real 0.2.4 process (PID137068, started14:37:50)
+also logs its own Update, the F10 canvas and actual recommendations.
 
 Moon spell/Lunacy/Eclipse refreshes now accept the original ordered cumulative
 Covenant 1-3 prefix. Each rank has fifteen native component boundaries with

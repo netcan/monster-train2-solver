@@ -242,6 +242,8 @@ namespace MonsterTrain2Poju.Probe
             bool ignoreOuterBossSpawnInteraction = false) => turns.Capture(includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
         internal BattlePlayRules CapturePlayRules(EnemySpawnState spawn) => actions.CaptureRules(spawn);
         internal int CardId(CardState card) => projection.CaptureCards(new List<CardState> { card })[0].InstanceId;
+        internal bool KnowsNativeObject(object value) => value is CardState card ? projection.Knows(card) :
+            value is CharacterState unit && identities.ContainsKey(unit);
         internal int EquippedUnitId(CardState card)
         {
             CharacterState? unit = card.EquippedCharacter;

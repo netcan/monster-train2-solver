@@ -29,14 +29,20 @@ namespace MonsterTrain2Poju.Probe
         private bool ManualSession => playerSession || Environment.GetEnvironmentVariable("MT2_PROBE_SCENARIO") == "advisor";
         private GameObject canvas = null!;
         private GameObject panel = null!;
-        private Text body = null!, pauseLabel = null!, toggleLabel = null!;
+        private Text body = null!, pauseLabel = null!, toggleLabel = null!, planLabel = null!;
+        private ScrollRect planScroll = null!;
+        private bool showFullPlan;
         private Font? uiFont;
         private bool panelVisible = true;
         private bool HiddenPause => pauseWhenHidden && !panelVisible;
         private BattleAdvice? displayed;
         private int displayFrame;
         private long displayedSearches;
-        private float nextCapture;
+        private bool captureNeeded = true, observed;
+        private bool capturing;
+        private AdvisorObservation observation;
+        private int manualBattleDistance = -1;
+        private static readonly FieldInfo combatChanged = AccessTools.Field(typeof(CombatManager), "combatStateChanged");
         private bool paused, wasInBattle, screenshotTaken;
         private bool selectionPending;
         private string? captureError;
@@ -50,9 +56,12 @@ namespace MonsterTrain2Poju.Probe
         internal int SelectionReuses { get; private set; }
         internal long Searches => session.SearchCount;
         internal int PlanningFrames { get; private set; }
+        internal int IdleFrames { get; private set; }
         internal int PanelVertices { get; private set; }
         internal int PanelPixels { get; private set; }
         internal int Failures { get; private set; }
+        internal double LastCaptureMs { get; private set; }
+        internal double TotalCaptureMs { get; private set; }
         internal sealed class Publication
         {
             public long Generation { get; set; }
@@ -68,7 +77,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal List<Publication> Publications { get; } = new List<Publication>();
         internal bool IsPlanning => session.Status == BattleAdviceStatus.Planning;
-        internal object Evidence => new { Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, SelectionReuses, Searches, PlanningFrames, PanelVertices, PanelPixels, Failures, Publications,
+        internal object Evidence => new { Captures, PurityFailures, Published, PublicationRootChecks, Invalidations, SelectionReuses, Searches, PlanningFrames, IdleFrames, PanelVertices, PanelPixels, Failures, Publications, LastCaptureMs, TotalCaptureMs,
             Error = session.Error, UnavailableRoot = session.Status == BattleAdviceStatus.Unavailable ? lastCapture : null, Horizon = horizon,
             PreferredDeploymentRoom = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_DEPLOYMENT_ROOM") ?? "2"),
             TacticalSeed = Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TACTICAL_SEED") == "1",
@@ -107,8 +116,7 @@ namespace MonsterTrain2Poju.Probe
 
         private void EnsureUi()
         {
-            // The game recreates its UI while changing scenes. Build after its
-            // loading boundary and recover if it clears a persistent canvas.
+            // Recover if scene changes clear the persistent canvas.
             if (canvas != null && body != null) return;
             if (canvas != null) UnityEngine.Object.Destroy(canvas);
             displayed = null;
@@ -139,6 +147,18 @@ namespace MonsterTrain2Poju.Probe
             Text scope = Label("Scope", "已知牌序 · 未来 " + horizon + " 回合 · " + toggleKey + " 显示/隐藏", 52, 28, 15);
             scope.color = new Color(.55f, .72f, .84f);
             body = Label("Recommendation", "进入战斗后自动计算建议。", 92, 208, 18);
+            var viewport = new GameObject("Plan viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D), typeof(ScrollRect));
+            viewport.transform.SetParent(panel.transform, false);
+            RectTransform viewRect = viewport.GetComponent<RectTransform>();
+            viewRect.anchorMin = viewRect.anchorMax = viewRect.pivot = new Vector2(0, 1);
+            viewRect.anchoredPosition = new Vector2(18, -92); viewRect.sizeDelta = new Vector2(424, 208);
+            viewport.GetComponent<Image>().color = Color.clear;
+            body.transform.SetParent(viewport.transform, false);
+            RectTransform content = body.rectTransform; content.anchoredPosition = Vector2.zero;
+            body.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            planScroll = viewport.GetComponent<ScrollRect>(); planScroll.viewport = viewRect; planScroll.content = content;
+            planScroll.horizontal = false; planScroll.vertical = true; planScroll.scrollSensitivity = 35;
+            planScroll.movementType = ScrollRect.MovementType.Clamped;
             Text Button(string title, float x, Action click, bool launcher = false)
             {
                 var button = new GameObject(title, typeof(RectTransform), typeof(Image), typeof(Button));
@@ -146,7 +166,7 @@ namespace MonsterTrain2Poju.Probe
                 RectTransform place = button.GetComponent<RectTransform>();
                 place.anchorMin = place.anchorMax = place.pivot = new Vector2(launcher ? 1 : 0, 1);
                 place.anchoredPosition = launcher ? new Vector2(-20, -20) : new Vector2(x, -315);
-                place.sizeDelta = launcher ? new Vector2(160, 34) : new Vector2(200, 32);
+                place.sizeDelta = launcher ? new Vector2(160, 34) : new Vector2(132, 32);
                 button.GetComponent<Image>().color = new Color(.12f, .22f, .29f);
                 button.GetComponent<Button>().onClick.AddListener(() => click());
                 var child = new GameObject("Label", typeof(RectTransform), typeof(Text)); child.transform.SetParent(button.transform, false);
@@ -157,8 +177,10 @@ namespace MonsterTrain2Poju.Probe
                 return label;
             }
             Button("重新计算", 18, () => { paused = false; pauseLabel.text = "暂停建议"; Invalidate(); });
-            pauseLabel = Button(paused ? "恢复建议" : "暂停建议", 242, () => { paused = !paused; Invalidate(); pauseLabel.text = paused ? "恢复建议" : "暂停建议"; });
+            pauseLabel = Button(paused ? "恢复建议" : "暂停建议", 164, () => { paused = !paused; Invalidate(); pauseLabel.text = paused ? "恢复建议" : "暂停建议"; });
+            planLabel = Button("完整方案", 310, () => SetFullPlan(!showFullPlan));
             toggleLabel = Button(panelVisible ? "隐藏破局建议" : "显示破局建议", 0, () => SetPanelVisible(!panelVisible), launcher: true);
+            SetFullPlan(showFullPlan);
             panel.SetActive(panelVisible);
             log.LogInfo("ADVISOR-UI ready resolution=" + Screen.width + "x" + Screen.height +
                 " visible=" + panelVisible + " toggle=" + toggleKey);
@@ -176,6 +198,23 @@ namespace MonsterTrain2Poju.Probe
             if (pauseWhenHidden) Invalidate();
         }
 
+        private void SetFullPlan(bool expanded)
+        {
+            showFullPlan = expanded;
+            panel.GetComponent<RectTransform>().sizeDelta = new Vector2(460, expanded ? 620 : 365);
+            planScroll.viewport.sizeDelta = new Vector2(424, expanded ? 450 : 208);
+            foreach (Text label in new[] { pauseLabel, planLabel })
+            {
+                RectTransform button = (RectTransform)label.transform.parent;
+                button.anchoredPosition = new Vector2(button.anchoredPosition.x, expanded ? -570 : -315);
+            }
+            RectTransform refresh = (RectTransform)panel.transform.Find("重新计算");
+            refresh.anchoredPosition = new Vector2(18, expanded ? -570 : -315);
+            planLabel.text = expanded ? "收起方案" : "完整方案";
+            if (displayed != null) body.text = Describe(displayed);
+            planScroll.verticalNormalizedPosition = 1;
+        }
+
         private static bool Ready(AllGameManagers managers)
         {
             SaveManager save = managers.GetSaveManager(); CombatManager combat = managers.GetCombatManager();
@@ -184,7 +223,7 @@ namespace MonsterTrain2Poju.Probe
                 !PreviewRngIsolation.Active && save.GetGameSequence() == SaveData.GameSequence.InBattle &&
                 !managers.GetScreenManager().GetScreenActive(ScreenName.Dialog) && CardAnimationSettlement.Ready() &&
                 NativeEffectSettlement.Ready(combat) && combat.ShouldShowEndTurnButton() && NativeDecisionReadiness.CardsDrawn(combat) && !combat.IsRunningTriggerQueue &&
-                (!save.GetBattlePreviewEnabled() || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat)) &&
+                (!save.GetBattlePreviewEnabled() || !(bool)combatChanged.GetValue(combat)) &&
                 !managers.GetReplayManager().IsCardPlaying() && !(managers.GetHandUI()?.AreAnyCardsAnimating() ?? false);
         }
 
@@ -210,6 +249,7 @@ namespace MonsterTrain2Poju.Probe
             if (managers == null || LoadingScreen.IsWorking())
             {
                 session.InvalidateForInput(); displayed = null; session.Poll();
+                captureNeeded = true; observed = false;
                 if (body != null) body.text = "等待场景加载完成…";
                 return;
             }
@@ -217,8 +257,19 @@ namespace MonsterTrain2Poju.Probe
             if (!inBattle && wasInBattle && ManualSession)
             { new FullBattleTrace(log); manualBattleKey = null; Invalidate(); }
             wasInBattle = inBattle;
+            // A settled publication needs no model traversal or animation scan.
+            // Input/mutation hooks, cheap resource/pile changes and native busy
+            // boundaries wake it; cosmetic previews alone leave it untouched.
+            if (inBattle && !paused && !HiddenPause && observed && !captureNeeded && !selectionPending &&
+                ReferenceEquals(displayed, session.Current) &&
+                session.Status is BattleAdviceStatus.Ready or BattleAdviceStatus.Unavailable &&
+                (managers!.GetSaveManager().PreviewMode || observation.Equals(new AdvisorObservation(managers))) &&
+                NativeEffectSettlement.Ready(managers.GetCombatManager()) && !managers.GetCombatManager().IsRunningTriggerQueue &&
+                !managers.GetReplayManager().IsCardPlaying())
+            { IdleFrames++; return; }
             if (paused || HiddenPause || managers == null || !Ready(managers))
             {
+                captureNeeded = true;
                 bool browsing = selectionPending && inBattle && !paused && !HiddenPause;
                 if (!browsing && session.Status != BattleAdviceStatus.Idle) InvalidateState(inBattle && !paused && !HiddenPause);
                 session.Poll();
@@ -229,10 +280,17 @@ namespace MonsterTrain2Poju.Probe
             if (ManualSession)
             {
                 SaveManager save = managers.GetSaveManager();
-                string battle = save.GetShareCode() + ":" + save.GetCurrentDistance();
-                if (manualBattleKey != battle || FullBattleTrace.Active?.NativeWon != null)
-                { new FullBattleTrace(log); manualBattleKey = battle; Invalidate(); }
+                int distance = save.GetCurrentDistance();
+                if (manualBattleKey == null || manualBattleDistance != distance || FullBattleTrace.Active?.NativeWon != null)
+                {
+                    new FullBattleTrace(log); manualBattleDistance = distance;
+                    manualBattleKey = save.GetShareCode() + ":" + distance; Invalidate();
+                }
             }
+            var currentObservation = new AdvisorObservation(managers);
+            if (observed && !observation.Equals(currentObservation) && !selectionPending)
+                InvalidateState(true);
+            observation = currentObservation; observed = true;
             session.Poll();
             if (session.Status == BattleAdviceStatus.Planning) PlanningFrames++;
             if (!playerSession && Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR") == "1" &&
@@ -243,7 +301,7 @@ namespace MonsterTrain2Poju.Probe
             bool unpublished = session.Current != null && !ReferenceEquals(displayed, session.Current);
             int publicationCaptureFrame = -1;
             if (captureError == null && (unpublished || selectionPending ||
-                session.Status != BattleAdviceStatus.Planning && Time.realtimeSinceStartup >= nextCapture))
+                captureNeeded && session.Status != BattleAdviceStatus.Planning))
             {
                 try
                 {
@@ -253,13 +311,13 @@ namespace MonsterTrain2Poju.Probe
                     using var keys = new BattleStateKeys();
                     string key = keys.Key(root);
                     capture.Stop();
+                    LastCaptureMs = capture.Elapsed.TotalMilliseconds; TotalCaptureMs += LastCaptureMs;
                     long generation = session.Generation;
                     session.Observe(root, key, capture.Elapsed);
                     if (session.Generation != generation) displayed = null;
                     selectionPending = false;
                     publicationCaptureFrame = Time.frameCount;
-                    // A slow capture must not make the next one immediately due.
-                    nextCapture = Time.realtimeSinceStartup + .5f;
+                    captureNeeded = false;
                 }
                 catch (Exception error)
                 { session.Invalidate(); captureError = error.Message; log.LogError("ADVISOR-CAPTURE-FAIL " + error); }
@@ -277,6 +335,7 @@ namespace MonsterTrain2Poju.Probe
                 displayFrame = Time.frameCount;
                 displayedSearches = session.SearchCount;
                 body.text = Describe(displayed);
+                planScroll.verticalNormalizedPosition = 1;
                 Publications.Add(new Publication { Generation = session.Generation, Turn = displayed.Root.Spawn.Turn,
                     CaptureMs = displayed.CaptureElapsed.TotalMilliseconds, QueueMs = displayed.QueueElapsed.TotalMilliseconds,
                     SearchMs = displayed.Plan.Elapsed.TotalMilliseconds, VerificationMs = displayed.VerificationElapsed.TotalMilliseconds,
@@ -286,6 +345,8 @@ namespace MonsterTrain2Poju.Probe
                 if (playerSession && Publications.Count > 128) Publications.RemoveAt(0);
                 log.LogInfo((playerSession ? "POJU-ADVICE" : "ADVISOR-PUBLISHED") + " generation=" + session.Generation + " steps=" + displayed.Plan.Steps.Count +
                     " elapsedMs=" + displayed.Plan.Elapsed.TotalMilliseconds.ToString("F1") + " capturePurityFailures=" + PurityFailures +
+                    " captureMs=" + displayed.CaptureElapsed.TotalMilliseconds.ToString("F1") +
+                    " verifyMs=" + displayed.VerificationElapsed.TotalMilliseconds.ToString("F1") +
                     " source=" + (displayed.ReusedSelection ? "floor-browse" : displayed.ReusedWinningContinuation ? "verified-continuation" :
                         displayed.ReusedContinuation ? "verified-turn" : "search"));
                 if (!playerSession && !screenshotTaken && Environment.GetEnvironmentVariable("MT2_ADVISOR_SCREENSHOT") == "1")
@@ -303,11 +364,16 @@ namespace MonsterTrain2Poju.Probe
             string Stamp() => TwoTurnScenario.CaptureSnapshot("advisor", managers, managers.GetSaveManager(),
                 managers.GetCombatManager(), managers.GetCardManager(), log, writeLog: false, includePresentationRng: true) +
                 " room=" + managers.GetRoomManager().GetSelectedRoom();
-            string before = Stamp(); UnityEngine.Random.State unity = UnityEngine.Random.state; int frame = Time.frameCount;
-            BattleTurnState root = FullBattleTrace.Active!.CaptureDecision();
-            if (before != Stamp() || !unity.Equals(UnityEngine.Random.state) || frame != Time.frameCount)
-            { PurityFailures++; throw new InvalidOperationException("Decision capture changed native state, RNG or frame."); }
-            Captures++; return root;
+            capturing = true;
+            try
+            {
+                string before = Stamp(); UnityEngine.Random.State unity = UnityEngine.Random.state; int frame = Time.frameCount;
+                BattleTurnState root = FullBattleTrace.Active!.CaptureDecision();
+                if (before != Stamp() || !unity.Equals(UnityEngine.Random.state) || frame != Time.frameCount)
+                { PurityFailures++; throw new InvalidOperationException("Decision capture changed native state, RNG or frame."); }
+                Captures++; return root;
+            }
+            finally { capturing = false; }
         }
 
         internal bool ReadyFor(BattleTurnState root)
@@ -369,29 +435,48 @@ namespace MonsterTrain2Poju.Probe
                 .Append(" · 火炉 ").Append(hp).Append(" 血");
             if (plan.UsedShorterHorizon)
                 text.Append(" · 已完成 ").Append(plan.TurnsCompleted).Append('/').Append(plan.RequestedTurns).Append(" 回合（预算内缩短）");
-            text.Append("\n\n下一步：\n");
-            BattleSearchStep step = plan.Steps[0];
-            if (step.IsEndTurn) text.Append("结束回合");
-            else
+            FullBattleTrace trace = FullBattleTrace.Active!;
+            var cards = trace.KnownCards.ToDictionary(card => trace.CardId(card));
+            var units = trace.KnownUnits.Where(unit => unit != null).ToDictionary(unit => trace.UnitId(unit));
+            string CardName(int id)
             {
+                if (cards.TryGetValue(id, out CardState known)) return known.GetTitle();
+                string? dataId = advice.Root.Spawn.Train.Context?.FindCard(id)?.DataId ?? plan.State.Spawn.Train.Context?.FindCard(id)?.DataId;
+                return dataId == null ? "生成的卡牌 #" + id :
+                    AllGameManagers.Instance.GetSaveManager().GetAllGameData().FindCardData(dataId)?.GetName() ?? "卡牌 #" + id;
+            }
+            string UnitName(int id) => units.TryGetValue(id, out CharacterState known) ? known.GetName() : "单位 #" + id;
+            void AppendStep(BattleSearchStep step)
+            {
+                if (step.IsEndTurn) { text.Append("结束回合"); return; }
                 PlayCardAction action = step.Action!;
-                CardState? card = FullBattleTrace.Active!.KnownCards.FirstOrDefault(item => FullBattleTrace.Active.CardId(item) == action.CardInstanceId);
-                if (action.ActivatorUnitId > 0)
-                {
-                    CharacterState actor = FullBattleTrace.Active.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
-                    text.Append(actor.GetName()).Append("：").Append(actor.GetUnitAbilityCardState().GetTitle());
-                }
-                else text.Append(card?.GetTitle() ?? "房间技能");
-                text.Append("\n第 ").Append(action.RoomIndex + 1).Append(" 层");
+                if (action.ActivatorUnitId > 0 && units.TryGetValue(action.ActivatorUnitId, out CharacterState actor))
+                    text.Append(actor.GetName()).Append("：").Append(actor.GetUnitAbilityCardState()?.GetTitle() ?? "单位技能");
+                else if (action.ActivatorUnitId > 0) text.Append(UnitName(action.ActivatorUnitId)).Append("：单位技能");
+                else text.Append(action.CardInstanceId > 0 ? CardName(action.CardInstanceId) : "房间技能");
+                text.Append(showFullPlan ? " → 第 " : "\n第 ").Append(action.RoomIndex + 1).Append(" 层");
                 if (action.PlayerPosition >= 0) text.Append(" · 部署位 ").Append(action.PlayerPosition + 1);
                 if (action.TargetSpawnPointIndex >= 0) text.Append(" · 目标部署位 ").Append(action.TargetSpawnPointIndex + 1);
                 if (action.ActivatorRoomIndex.HasValue) text.Append(" · 来源：第 ").Append(action.ActivatorRoomIndex.Value + 1).Append(" 层房间技能");
                 if (action.TargetUnitId > 0)
                 {
-                    CharacterState target = FullBattleTrace.Active.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.TargetUnitId);
-                    text.Append(" · 目标：").Append(target.GetName()).Append("（").Append(target.GetHP()).Append(" 血）");
+                    text.Append(" · 目标：").Append(UnitName(action.TargetUnitId));
+                    if (!showFullPlan && units.TryGetValue(action.TargetUnitId, out CharacterState target))
+                        text.Append("（").Append(target.GetHP()).Append(" 血）");
                 }
             }
+            if (showFullPlan)
+            {
+                text.Append("\n完整方案 · ").Append(plan.Steps.Count).Append(" 步\n按当前局面预测，操作后更新。\n\n当前回合\n");
+                int turns = 0;
+                for (int index = 0; index < plan.Steps.Count; index++)
+                {
+                    text.Append(index + 1).Append(". "); AppendStep(plan.Steps[index]); text.Append('\n');
+                    if (plan.Steps[index].IsEndTurn && index + 1 < plan.Steps.Count)
+                        text.Append("\n后续第 ").Append(++turns).Append(" 回合\n");
+                }
+            }
+            else { text.Append("\n\n下一步：\n"); AppendStep(plan.Steps[0]); }
             if (advice.ReusedSelection) text.Append("\n\n沿用当前建议");
             else if (advice.ReusedWinningContinuation) text.Append("\n\n沿用已验证胜局");
             else if (advice.ReusedContinuation) text.Append("\n\n沿用已验证步骤");
@@ -407,17 +492,17 @@ namespace MonsterTrain2Poju.Probe
         {
             if (session.Status != BattleAdviceStatus.Idle) Invalidations++;
             if (preserveWinningContinuation) session.InvalidateForInput(); else session.Invalidate();
-            displayed = null; captureError = null; nextCapture = 0; selectionPending = false;
+            displayed = null; captureError = null; captureNeeded = true; observed = false; selectionPending = false;
             if (body != null) body.text = "局面已更新，等待重新计算…";
         }
         private static void NativeAction(bool preserveWinningContinuation = true)
         {
-            if (Active != null && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
+            if (Active != null && !Active.capturing && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
                 Active.InvalidateState(preserveWinningContinuation);
         }
         internal static void InstallAdvisorPatches(Harmony harmony)
         {
-            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch) })
+            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch), typeof(MutationPatch) })
                 harmony.CreateClassProcessor(patch).Patch();
         }
         [HarmonyPatch(typeof(CardManager), nameof(CardManager.PlayAnyCard))]
@@ -428,13 +513,31 @@ namespace MonsterTrain2Poju.Probe
         private static class UndoPatch { private static void Prefix() { NativeAction(false); if (Active != null) Active.manualBattleKey = null; } }
         [HarmonyPatch(typeof(SaveManager), nameof(SaveManager.RestartBattle))]
         private static class RestartPatch { private static void Prefix() { NativeAction(false); if (Active != null) Active.manualBattleKey = null; } }
+        [HarmonyPatch]
+        private static class MutationPatch
+        {
+            // Real changes outside PlayAnyCard (including other mods) must wake
+            // the observer too. Native preview/capture copies are excluded.
+            private static IEnumerable<MethodBase> TargetMethods()
+            {
+                foreach (MethodInfo method in AccessTools.GetDeclaredMethods(typeof(CardState)))
+                    if (method.Name is "ApplyPermanentUpgrade" or "ApplyTemporaryUpgrade" or "RemoveUpgrade") yield return method;
+                foreach (MethodInfo method in AccessTools.GetDeclaredMethods(typeof(CharacterState)))
+                    if (method.Name is "SetHealth" or "SetAttackDamage" or "AddStatusEffect" or "RemoveStatusEffect" or
+                        "ApplyCardUpgrade" or "RemoveCardUpgrade" or "ApplyHeal" or "ApplyDamage") yield return method;
+            }
+            private static void Postfix(object __instance)
+            {
+                if (FullBattleTrace.Active?.KnowsNativeObject(__instance) == true) NativeAction();
+            }
+        }
         [HarmonyPatch(typeof(RoomManager), nameof(RoomManager.RoomSelectionChanged))]
         private static class SelectionPatch
         {
             private static void Prefix()
             {
                 if (Active != null && AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
-                { Active.selectionPending = true; Active.nextCapture = 0; }
+                { Active.selectionPending = true; Active.captureNeeded = true; }
             }
         }
 

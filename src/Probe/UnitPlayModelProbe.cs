@@ -26,6 +26,7 @@ namespace MonsterTrain2Poju.Probe
         private int nextCardId = 1;
         internal int NextCardId => nextCardId;
         internal CardState[] KnownCards => new List<CardState>(cardIds.Keys).ToArray();
+        internal bool Knows(CardState card) => cardIds.ContainsKey(card);
         private int nextUnitId = 1;
         private CombatProjection? before;
         private CombatProjection? predicted;

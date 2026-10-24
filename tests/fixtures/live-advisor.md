@@ -7,8 +7,12 @@ pwsh -NoProfile -File scripts/Run-BattleAdvisor.ps1
 ```
 
 Play normally. The panel shows the next card/ability, floor, deployment slot
-or target, and the forecast Pyre HP after up to three EndTurns. F8 hides/shows
-the panel; its buttons refresh or pause recommendations. `-Horizon 2` selects
+or target, and the forecast Pyre HP after up to three EndTurns. The complete-plan
+button expands a scrollable sequence grouped by turn; collapsing restores the
+next-step summary. Viewing the plan does not capture or search. Future actions
+are forecasts from the current state and update after actual inputs. F8 hides/shows
+the development overlay (the installed player's existing key is preserved);
+its buttons refresh or pause recommendations. `-Horizon 2` selects
 two EndTurns. The overlay does not play cards automatically.
 
 Longer known-state continuations are opt-in: `-TacticalSeed -Horizon 12
@@ -48,8 +52,12 @@ before publishing a complete continuation. Unity/game APIs stay on the main
 thread. Node/time budgets, complete no-card fallback and completed fixed-policy
 seeds retain the planner's existing semantics.
 
-Card plays, EndTurn, floor selection, undo and restart invalidate advice.
-Quiet native state is checked every half second; full-state keys retain unit
+Card plays, EndTurn, undo and restart invalidate advice. Floor selection retains
+the worker and verifies a rebased continuation. Native input/settlement and
+tracked card/unit mutations schedule captures; an allocation-free observation
+of turn, phase, floor, resources and pile counts detects additional changes.
+Settled advice skips complete capture, full-state hashing and the full animation
+scan while those inputs remain unchanged. Full-state keys still retain unit
 and card identities, histories, selected floor and gameplay RNG. New requests
 cancel obsolete work and retain only the latest pending snapshot. Generation
 checks reject results even if an old worker finishes after cancellation.

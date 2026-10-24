@@ -2313,6 +2313,7 @@ if ($Advisor -and ($trace.Advisor.Captures -lt 1 -or $trace.Advisor.PurityFailur
 if ($PlayerAdvisor -and -not $PlannerInput -and -not $RollingInput) {
     $playerEvidence = $trace.PlayerAdvisor.Overlay
     if ($trace.PlayerAdvisor.Assembly -cne 'MonsterTrain2Poju.Advisor' -or -not $trace.PlayerAdvisor.InteractionsPassed -or
+        -not $trace.PlayerAdvisor.IdlePassed -or -not $trace.PlayerAdvisor.PlanPreviewPassed -or
         $playerEvidence.Captures -lt 1 -or $playerEvidence.PurityFailures -ne 0 -or $playerEvidence.Failures -ne 0 -or
         $playerEvidence.Published -lt 4 -or $playerEvidence.Invalidations -lt 3 -or $playerEvidence.PlanningFrames -lt 2 -or
         $playerEvidence.PanelVertices -lt 1 -or $playerEvidence.PanelPixels -lt 1000 -or

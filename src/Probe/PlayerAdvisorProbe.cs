@@ -34,6 +34,11 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<double> browseMilliseconds = new List<double>();
         private static int replayBrowseCount = -1, replayBrowseSwitches;
         internal static bool FloorBrowsePassed { get; private set; }
+        private static float idleUntil;
+        private static int idleCaptures, idlePublications;
+        private static long idleSearches;
+        internal static bool IdlePassed { get; private set; }
+        internal static bool PlanPreviewPassed { get; private set; }
         internal static bool InteractionsPassed { get; private set; }
         internal static bool CaptureInitialized
         {
@@ -70,6 +75,7 @@ namespace MonsterTrain2Poju.Probe
             Assembly = type?.Assembly.GetName().Name,
             Version = type?.Assembly.GetName().Version?.ToString(),
             InteractionsPassed,
+            IdlePassed, PlanPreviewPassed,
             FloorBrowse = !BrowseEnabled ? null : new { Passed = FloorBrowsePassed, Switches = browseSwitches,
                 DuringSearch = browsingDuringSearch, SwitchMilliseconds = browseMilliseconds },
             ReplayedFloorSwitches = replayBrowseSwitches,
@@ -177,6 +183,7 @@ namespace MonsterTrain2Poju.Probe
                 if (!Ready()) return false;
                 initialGeneration = GetGeneration();
                 Call("CapturePanel");
+                PreviewPlan();
                 Drag();
                 Click("暂停建议");
                 Require(Field<bool>("paused") && CurrentIsNull(), "pause retained a recommendation");
@@ -209,6 +216,18 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (!Ready()) return false;
                 Require(GetGeneration() > initialGeneration, "cancelled generation was republished");
+                idleUntil = Time.realtimeSinceStartup + 2;
+                idleCaptures = Get<int>("Captures"); idlePublications = Get<int>("Published"); idleSearches = Get<long>("Searches");
+                phase = 40; return false;
+            }
+            if (phase == 40)
+            {
+                Require(Get<int>("Captures") == idleCaptures && Get<int>("Published") == idlePublications &&
+                    Get<long>("Searches") == idleSearches && !CurrentIsNull(), "idle advice repeated capture, publication or search");
+                if (Time.realtimeSinceStartup < idleUntil) return false;
+                Require(Ready(), "idle advice became stale");
+                IdlePassed = true;
+                log!.LogInfo("PLAYER-ADVISOR-IDLE-PASS seconds=2 captures=0 publications=0 searches=0");
                 browseSearches = Get<long>("Searches");
                 initialGeneration = GetGeneration(); Click("重新计算");
                 Require(CurrentIsNull(), "refresh retained a recommendation");
@@ -326,6 +345,27 @@ namespace MonsterTrain2Poju.Probe
             Require(hits.Count > 0 && ExecuteEvents.GetEventHandler<IPointerClickHandler>(hits[0].gameObject) == button.gameObject,
                 "button is blocked from pointer input: " + objectName);
             Require(ExecuteEvents.Execute(button.gameObject, pointer, ExecuteEvents.pointerClickHandler), "button has no click handler");
+        }
+        private static void PreviewPlan()
+        {
+            int captures = Get<int>("Captures"); long searches = Get<long>("Searches");
+            Click("完整方案"); Canvas.ForceUpdateCanvases();
+            Text text = Field<Text>("body");
+            Require(Field<bool>("showFullPlan") && text.text.Contains("完整方案") &&
+                text.text.Contains(Advice.Plan.Steps.Count + ". "), "complete plan omitted its final step");
+            ScrollRect scroll = Field<ScrollRect>("planScroll");
+            if (scroll.content.rect.height > scroll.viewport.rect.height)
+            {
+                scroll.OnScroll(new PointerEventData(EventSystem.current) { scrollDelta = new Vector2(0, -10) });
+                Require(scroll.verticalNormalizedPosition < 1, "long plan did not scroll");
+            }
+            Call("CapturePanel");
+            Click("完整方案");
+            Require(!Field<bool>("showFullPlan") && text.text.Contains("下一步") &&
+                Get<int>("Captures") == captures && Get<long>("Searches") == searches,
+                "preview toggling changed planning or did not restore the summary");
+            PlanPreviewPassed = true;
+            log!.LogInfo("PLAYER-ADVISOR-PLAN-PASS steps=" + Advice.Plan.Steps.Count + " captures=0 searches=0");
         }
         private static void Drag()
         {
