@@ -1,12 +1,13 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.96, committed source`01f67308d6992a595680c9967bd296946cee3004`.
+Current Windows installation:0.2.97, committed source`e6860f667b28be910579b9a0aa1969790d35220c`.
 The exact release payload passes the tenth random Banished/Wurmkin sample's
-first battle with actual10000ms/two-worker advice and independent native
-replay:22 inputs,17 plays,5 EndTurns,Pyre80 and9 train stages per process.
-Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-025110-9b604970` and replay`20261026-025337-53ac8ecf`
-bind the three installed DLL hashes to the committed build.
+Ring7 offline-refined route in independent native processes:54 inputs,
+46 plays,8 EndTurns,Pyre34 and15 train stages per process. Every root,
+successor,forecast and RNG matches; all four failure counters are zero.
+Source`20261026-031736-1ab7977e` and replay`20261026-032228-4e287604`
+bind the three installed DLL hashes to the committed build. This is a frozen
+refined route,not a default-budget search victory.
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
 Permafrost draw callbacks, preview-born aura cleanup/mode and direct boss
@@ -22,14 +23,20 @@ upgrades:30 paired native inputs and focused box/Conduit/relic controls pass.
 Ring6 now wins natively with54 actual/default inputs,Pyre2,and separately
 with66 offline-refined inputs,Pyre82. Both normal-reward independent replays
 pass. The six-battle default and mixed checkpoint chains are independently
-verified; Ring7 currently exposes an unmodeled merchant room-modifier upgrade.
+verified. Version0.2.97 calibrates the merchant AddWurmScaleDamage birth rule
+and positive-corruption attack getters. Ring7's two actual default66-input
+defeats remain archived. Its54-input refined native pair passes the continuous
+first-seven mixed checkpoint chain and normal progression to Ring8.
+The0.2.98 code additionally fixes a removed character's stale queued Sentry
+target:11-input independent native component pair and focused Sentry/binding
+checks pass; the same Ring8 checkpoint's full default run is in progress.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.96. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261026-025547/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.96-Windows-20261026-025547.zip`,SHA256
-`cae382ae3daaf3059ac13930acd60c6b21edf3ca8b183316eb271ff762503ea9`.
+its next launch loads0.2.97. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261026-033110/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.97-Windows-20261026-033110.zip`,SHA256
+`aea00c09792a5d792b0f665405f3f966f7949dcc06be275c60eb4f236da1047a`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
