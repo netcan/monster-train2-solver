@@ -350,6 +350,11 @@ workers produces a57-input/11-turn defeat (204 nodes). A separate process
 reproduces every frozen successor,full forecast and RNG. This is another
 bounded offline diagnostic, not a native win or proof that no winning line exists.
 
+With0.2.58 on2026-10-25, a30000ms whole-battle/two-worker root search again
+predicts a57-input/11-EndTurn defeat at Pyre0 (250 nodes,30.12s soft budget).
+Independent complete-state/RNG replay passes. This additional offline budget
+does not establish a winning candidate or justify repeating the native defeat.
+
 Four further bounded refinement batches cover single-input alternatives at
 recorded decisions0 through12, followed by the ordinary tactical policy.
 There are87 attempted continuations,84 complete defeats and three interrupted

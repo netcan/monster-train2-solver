@@ -8,6 +8,18 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.EndsWith("full-battle-random-campaign-05-ring6-root30000-keep-champion-search.mt2f", StringComparison.Ordinal))
+        {
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(source.RootElement, replay.RootElement, 972508374, 0, 5, "Stygian", "LazarusLeague", 50);
+            foreach (var fixture in new[] { source.RootElement, replay.RootElement })
+            {
+                var final = fixture.GetProperty("RollingDecisions").EnumerateArray().Last().GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 59,
+                    "Changed curated offline-root Ring6 win: expected Pyre59.");
+            }
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-04-ring5-refined-search.mt2f", StringComparison.Ordinal))
         {
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
@@ -184,7 +196,8 @@ internal static class RandomCampaignChecks
     private static void Require(bool value, string message)
     { if (!value) throw new InvalidOperationException(message); }
 
-    internal static void Input(FixtureValue fixture, int seed, int rank, int distance, string primary, string secondary, int timeLimitMs = 3000)
+    internal static void Input(FixtureValue fixture, int seed, int rank, int distance, string primary, string secondary,
+        int timeLimitMs = 3000, bool validateSearchSettings = true)
     {
         Require(seed > 0 && rank is >= 0 and <= 10 && distance is >= 0 and <= 7 && primary != secondary && timeLimitMs is >= 100 and <= 30000,
             "Invalid declared random campaign configuration.");
@@ -202,7 +215,7 @@ internal static class RandomCampaignChecks
         int pyre = initial.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health;
         NativeCampaignInputChecks.Native(fixture, distance, seed, pyre, input.GetProperty("Scenario").GetString()!);
         FixtureValue settings = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
-        Require(settings.GetProperty("Horizon").GetInt32() == 3 && settings.GetProperty("WholeBattle").GetBoolean() &&
+        Require(!validateSearchSettings || settings.GetProperty("Horizon").GetInt32() == 3 && settings.GetProperty("WholeBattle").GetBoolean() &&
             settings.GetProperty("MaxSteps").GetInt32() == 256 && settings.GetProperty("SearchWorkers").GetInt32() == 2 &&
             settings.GetProperty("TimeLimitMs").GetInt32() == timeLimitMs &&
             settings.GetProperty("PreferredDeploymentRoom").GetInt32() == 2 && !settings.GetProperty("TacticalSeed").GetBoolean(),
@@ -219,26 +232,25 @@ internal static class RandomCampaignChecks
         Console.WriteLine($"RANDOM-CAMPAIGN-SOURCE PASS {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1} budgetMs={timeLimitMs} won={fixture.GetProperty("NativeWon").GetBoolean()}.");
     }
 
-    internal static void RefinedPair(FixtureValue source, FixtureValue replay)
+    internal static void RefinedPair(FixtureValue source, FixtureValue replay, int seed = 770862752, int rank = 0,
+        int distance = 4, string primary = "Hellhorned", string secondary = "Wurmkin", int inputCount = 50)
     {
         Require(source.GetProperty("NativeRunInput").ContentEquals(replay.GetProperty("NativeRunInput")),
             "Refined route changed the native campaign input.");
         foreach (FixtureValue fixture in new[] { source, replay })
         {
-            FixtureValue input = fixture.GetProperty("NativeRunInput");
-            Require(input.GetProperty("PrimaryClan").GetString() == "Hellhorned" &&
-                input.GetProperty("SecondaryClan").GetString() == "Wurmkin" && input.GetProperty("AscensionLevel").GetInt32() == 0 &&
-                fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("RollingDecisions").GetArrayLength() == 50 &&
-                fixture.GetProperty("StartingCovenantControl").ValueKind == FixtureKind.Null &&
-                fixture.GetProperty("CovenantEnemyStatsControl").ValueKind == FixtureKind.Null,
-                "Wrong refined fifth-battle native victory.");
-            var root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
-            int pyre = root.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health;
-            NativeCampaignInputChecks.Native(fixture, 4, 770862752, pyre, input.GetProperty("Scenario").GetString()!);
+            // The overlay budget is captured metadata only: these processes execute
+            // an offline-selected policy and must not count as default-search wins.
+            int metadataBudget = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("TimeLimitMs").GetInt32();
+            Input(fixture, seed, rank, distance, primary, secondary, metadataBudget, validateSearchSettings: false);
+            Require(inputCount > 0 && fixture.GetProperty("NativeWon").GetBoolean() &&
+                fixture.GetProperty("RollingDecisions").GetArrayLength() == inputCount &&
+                fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("Published").GetInt32() == 0,
+                "Refined native wins must preserve frozen inputs and publish no new advice.");
             TrainCombatChecks.Native(fixture);
         }
         RollingAdviceChecks.FrozenPair(source, replay, sourceFrozen: true);
-        Console.WriteLine("RANDOM-CAMPAIGN-REFINED-PAIR PASS:50 unchanged frozen inputs, two native wins/full forecasts/state/RNG; offline refined route, not a default search-budget acceptance.");
+        Console.WriteLine($"RANDOM-CAMPAIGN-REFINED-PAIR PASS:{inputCount} unchanged frozen inputs, {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1}, two native wins/full forecasts/state/RNG; offline refined route, not a default search-budget acceptance.");
     }
 
     internal static void Pair(FixtureValue source, FixtureValue replay, int seed, int rank, int distance, string primary, string secondary, int timeLimitMs = 3000)

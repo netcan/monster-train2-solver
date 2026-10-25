@@ -26,6 +26,24 @@ bounds are rejected; these artifacts explicitly require native validation and
 are not added to the native evidence inventory. Search time excludes capture,
 archive serialization and independent replay, and remains a soft budget.
 
+A complete terminal root plan can be exported directly for native execution:
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll freeze-root-plan .probe-runs/root-candidate.mt2f .probe-runs/frozen-root-candidate.mt2f
+```
+
+The exporter verifies the root plan, replays every input, builds complete frozen
+successor/forecast records, then independently verifies the resulting archive.
+Partial horizons, malformed Action/EndTurn pairs and existing outputs are
+rejected. The file retains its source hash, ModelPrediction kind and
+NativeValidationRequired flag; export does not establish native acceptance.
+After actual native execution and independent replay, use `verify-offline-native`
+to bind the prediction to each observed trace, and ModelChecks
+`--random-refined-campaign-pair-only <source> <replay> <seed> <rank> <distance>
+<primary> <secondary> <input-count>` to check the two complete frozen native
+state/forecast/RNG chains. Search settings in a frozen process are metadata,
+so such wins do not count as default-budget search acceptance.
+
 Focused checks on2026-10-25 reproduced a partial Angel Duo deployment and a
 nonzero recorded decision, plus the live moon root's terminal defeat with one
 and two workers. Every result passed a second process's full replay. Altered

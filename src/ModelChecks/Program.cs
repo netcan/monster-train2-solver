@@ -78,6 +78,14 @@ if (args.Length == 3 && args[0] == "--random-refined-campaign-pair-only")
     RandomCampaignChecks.RefinedPair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length == 9 && args[0] == "--random-refined-campaign-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    RandomCampaignChecks.RefinedPair(source.RootElement, replay.RootElement, int.Parse(args[3]), int.Parse(args[4]),
+        int.Parse(args[5]), args[6], args[7], int.Parse(args[8]));
+    return;
+}
 if (args.Length == 2 && args[0] == "--discard-holdover-return-native-only")
 {
     using var native = ModelJson.ReadFixture(args[1]);
