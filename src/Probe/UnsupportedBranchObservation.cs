@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using HarmonyLib;
 using BepInEx.Logging;
 using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Fixtures;
@@ -106,8 +107,19 @@ namespace MonsterTrain2Poju.Probe
             }
             Require(boundary || predicted != null && outcome == RoomOutcome.Exchanged,
                 "Branch prefix is unsupported or terminal: " + reason);
+            string[] targetDeathOnceCallbacks = Array.Empty<string>();
+            if (boundary && action?.TargetUnitId > 0)
+            {
+                FullBattleTrace trace = FullBattleTrace.Active!;
+                CharacterState target = trace.KnownUnits.Single(unit => trace.UnitId(unit) == action.TargetUnitId);
+                object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(target);
+                object signal = AccessTools.Field(primary.GetType(), "deathSignal").GetValue(primary);
+                var once = (Delegate?)AccessTools.Field(signal.GetType(), "OnceListener").GetValue(signal);
+                targetDeathOnceCallbacks = (once?.GetInvocationList() ?? Array.Empty<Delegate>())
+                    .Select(callback => callback.Method.DeclaringType!.Name + "." + callback.Method.Name).ToArray();
+            }
             rows.Add(new Row { Before = root, Action = action, IsEndTurn = end, Boundary = boundary,
-                Expected = predicted, UnsupportedReason = reason, Outcome = outcome });
+                Expected = predicted, UnsupportedReason = reason, Outcome = outcome, TargetDeathOnceCallbacks = targetDeathOnceCallbacks });
             if (predicted != null) expected = predicted;
             waiting = true; readyFrame = -1;
             log.LogInfo("UNSUPPORTED-BRANCH-INPUT index=" + rows.Count + " boundary=" + boundary + " reason=" + reason);
@@ -121,6 +133,7 @@ namespace MonsterTrain2Poju.Probe
             public PlayCardAction? Action { get; set; }
             public bool IsEndTurn { get; set; }
             public bool Boundary { get; set; }
+            public string[] TargetDeathOnceCallbacks { get; set; } = Array.Empty<string>();
             public BattleTurnState? Expected { get; set; }
             public string? UnsupportedReason { get; set; }
             public RoomOutcome Outcome { get; set; }

@@ -3284,6 +3284,11 @@ namespace MonsterTrain2Poju.Model
 
             private void DispatchDeathStatistics(WorkingUnit? actor, WorkingUnit target, int sourceCardId, bool sacrifice)
             {
+                // Original outer-boss spawning appends RemoveBossActionQueuedVFX
+                // after the statistics once-listener. CoroutineSignal<T> advances
+                // only the last multicast iterator, masking the earlier callback.
+                if (target.Source.BumpRules?.OuterBoss == true && target.Source.DeathState?.StatisticsListenerOnce == true)
+                    return;
                 if (!source.Preview && context?.Statistics != null && target.Source.DeathState?.HasStatisticsListener != false)
                 {
                     int responsible = sourceCardId > 0 ? sourceCardId : target.Source.SpawnerCardId;
