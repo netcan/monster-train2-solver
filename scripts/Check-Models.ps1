@@ -71,6 +71,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-equipment-preview-owner-replay-calibration.mt2f',
     'player-spell-angel-death-calibration.mt2f',
     'player-spell-angel-death-replay-calibration.mt2f',
+    'player-spell-harvest-tower-calibration.mt2f',
+    'player-spell-harvest-tower-replay-calibration.mt2f',
     'player-unbox-conduit-replay-calibration.mt2f',
     'player-outer-boss-death-statistics-calibration.mt2f',
     'player-outer-boss-death-statistics-replay-calibration.mt2f',

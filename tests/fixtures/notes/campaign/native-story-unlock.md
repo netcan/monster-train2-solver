@@ -197,4 +197,8 @@ completes59 of60 candidates with one further61-input losing improvement,
 187 unsupported alternative attempts and106.75s total under a90s soft limit.
 Both exported routes independently replay fully. These local improvements
 do not prove impossibility; no losing model route is sent through redundant
-native replays. Ring6 remains unfinished and extra hearts remain0/9.
+native replays. A separate late30..60 batch completes99/99 continuations,
+29 unsupported attempts and53.79s,no win. Its cross-floor spell/Harvest
+boundary now passes two independent35-input native observations in0.2.79;
+see [deferred Harvest](../bosses/spell-harvest-tower.md). Ring6 remains
+unfinished and extra hearts remain0/9.
