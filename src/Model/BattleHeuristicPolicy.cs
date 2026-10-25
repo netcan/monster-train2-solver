@@ -97,6 +97,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
                 if (target == null) return RoomDamageValue(source, action, rule) ??
+                    RoomNegativeStatusValue(source, action, rule, preferredDeploymentRoom) ??
                     room.Units.Count(unit => unit.Team == CombatTeam.Enemy) * 25 + action.RoomIndex;
                 if (SacrificeTargetValue(rule, target) is double sacrifice) return sacrifice;
                 bool harmful = rule.Effects.Any(effect => effect.Type is "Damage" or "Kill" ||
@@ -120,6 +121,27 @@ namespace MonsterTrain2Poju.Model
             if (target.Team == CombatTeam.Enemy) return 1000 + target.Attack;
             return -Math.Min(10000d, Math.Max(0d, target.Attack) * target.Attacks +
                 Math.Max(0d, target.Health) + Math.Max(0d, target.Status("armor")?.Stacks ?? 0));
+        }
+
+        internal static double? RoomNegativeStatusValue(BattleTurnState source, PlayCardAction action, CardPlayRule rule,
+            int preferredDeploymentRoom)
+        {
+            // A pure enemy room debuff should reach its legal recipients before
+            // following the unit-deployment preference. Collect native targets
+            // so subtype filters, front targeting and immunities still matter.
+            // Mixed/targeted effects keep their existing ranking and all legal
+            // casts remain available to the full search.
+            if (rule.Effects.Count != 1 || rule.OnCastEffects.Count != 0) return null;
+            CardActionEffect effect = rule.Effects[0];
+            if (effect.Type != "AddStatus" || effect.Target is not ("Room" or "FrontInRoom") ||
+                !effect.AllowEnemy || effect.AllowPlayer || effect.Statuses.Count == 0 ||
+                effect.Statuses.Any(status => status.DisplayCategory != "Negative" || status.Stacks <= 0)) return null;
+            CardTargets targets = CardTargetModel.Collect(source.Spawn.Train, action.RoomIndex, effect, Array.Empty<int>(), firstEffect: true);
+            if (!targets.Supported) return null;
+            double stacks = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Where(unit => targets.UnitIds.Contains(unit.Id) && unit.Team == CombatTeam.Enemy && unit.Health > 0)
+                .Sum(unit => effect.Statuses.Where(status => !unit.StatusImmunities.Contains(status.Id)).Sum(status => (double)status.Stacks));
+            return stacks - Math.Abs(action.RoomIndex - preferredDeploymentRoom) * .001;
         }
 
         internal static double? RoomDamageValue(BattleTurnState source, PlayCardAction action, CardPlayRule rule)

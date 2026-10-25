@@ -168,6 +168,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
                 if (target == null) return BattleHeuristicPolicy.RoomDamageValue(source, action, rule) ??
+                    BattleHeuristicPolicy.RoomNegativeStatusValue(source, action, rule, preferredDeploymentRoom) ??
                     -100 * Math.Abs(action.RoomIndex - preferredDeploymentRoom);
                 if (BattleHeuristicPolicy.SacrificeTargetValue(rule, target) is double sacrifice) return sacrifice;
                 CardActionEffect[] effects = rule.Effects.Concat(rule.OnCastEffects).ToArray();

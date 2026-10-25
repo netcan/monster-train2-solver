@@ -1609,6 +1609,10 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
             dotnet $checker --tactical-ability-target-only $sourcePath
             if ($LASTEXITCODE -ne 0) { throw 'Focused tactical ability target check failed.' }
         }
+        if ($sourceName -eq 'player-juice-magic-calibration.mt2f') {
+            dotnet $checker --room-status-policy-only (Get-TestFixturePath 'player-juice-magic-observation-calibration.mt2f')
+            if ($LASTEXITCODE -ne 0) { throw 'Focused room-status target check failed.' }
+        }
     }
     return
 }

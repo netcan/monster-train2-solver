@@ -23,6 +23,17 @@ The original refusal has the same full deployment root. All protected game
 files remain unchanged. This component pair is distinct from a full Ring5
 default-advice victory.
 
+The same native boundary exposes a tactical seed problem: its three combat
+rooms have3/2/1 enemies, but the seed follows deployment preference and reaches
+only one on the upper floor. Version0.2.105 ranks pure enemy room/front negative
+statuses by eligible, nonimmune recipients before the deployment tiebreaker.
+Both seeds prefer the observed three-target room for all three deployment
+preferences. Six controls cover immunities, subtype filtering, front-only
+targeting and unchanged mixed/positive/selected-target handling. All legal
+floor alternatives and immutable parents remain available. Existing target-team,
+friendly room damage, shield and sacrifice controls pass; this ordering change
+does not establish an overall win-rate improvement.
+
 Focused verification:
 
 ```powershell

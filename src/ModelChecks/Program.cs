@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--room-status-policy-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    RoomStatusPolicyChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--juice-magic-pair-only")
 {
     using var refused = ModelJson.ReadFixture(args[1]);
@@ -5953,6 +5959,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-juice-magic-observation-calibration.mt2f"));
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-juice-magic-replay-calibration.mt2f"));
     JuiceMagicChecks.Pair(refused.RootElement, source.RootElement, replay.RootElement);
+    RoomStatusPolicyChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-juice-justcause-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-juice-justcause-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
