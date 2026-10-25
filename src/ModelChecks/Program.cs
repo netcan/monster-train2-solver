@@ -1837,6 +1837,17 @@ if (args.Length == 2 && args[0] == "--mixalot-only")
     MixalotChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--unbox-conduit-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 3)
+    {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        UnboxConduitChecks.Native(source.RootElement, replay.RootElement);
+    }
+    else UnboxConduitChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--small-box-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5406,6 +5417,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyre-payment-world-replay-calibration.mt2f"));
     PyrePaymentWorldChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-unbox-conduit-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-unbox-conduit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unbox-conduit-replay-calibration.mt2f"));
+    UnboxConduitChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-removed-ability-self-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-removed-ability-self-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

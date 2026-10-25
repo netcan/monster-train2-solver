@@ -44,7 +44,15 @@ namespace MonsterTrain2Poju.Model
                     definition.ExternalInteractions, maskDescriptor: definition.MaskDescriptor);
                 CardGenerationResult generated = CardGenerationModel.ApplyCachedCopy(context, creation, template);
                 if (!generated.Supported) return generated;
-                context = generated.Context!; added.AddRange(generated.AddedCards);
+                context = generated.Context!;
+                // TryAddCachedTemporaryCardToHand dispatches Drawn then Updated
+                // to the selected room after each copied card enters the hand.
+                foreach (CardToken card in generated.AddedCards)
+                {
+                    context = ConduitModel.Drawn(context, new[] { card.InstanceId });
+                    context = ConduitModel.Updated(context, card.InstanceId);
+                }
+                added.AddRange(generated.AddedCards);
             }
             return new CardGenerationResult(context, added);
         }
