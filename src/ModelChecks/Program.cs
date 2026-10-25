@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--feeding-spell-routing-native-only")
+{
+    using var native = ModelJson.ReadFixture(args[1]);
+    FeedingSpellRoutingChecks.Native(native.RootElement);
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--feeding-spell-routing-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    FeedingSpellRoutingChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--merchant-permafrost-observation-only")
 {
     using var before = ModelJson.ReadFixture(args[1]);
@@ -4728,6 +4743,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
 {
     using var observation = ModelJson.ReadFixture(path);
     EndlessSpellRoutingChecks.Native(observation.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is
+    "player-feeding-spell-routing-calibration.mt2f" or "player-feeding-spell-routing-replay-calibration.mt2f"))
+{
+    using var observation = ModelJson.ReadFixture(path);
+    FeedingSpellRoutingChecks.Native(observation.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-harvester-birth-calibration.mt2f"))
 {

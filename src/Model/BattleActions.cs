@@ -950,7 +950,10 @@ namespace MonsterTrain2Poju.Model
                         (dead.Status("cardless")?.Stacks > 0 || piles.Any(pile => pile.UnitConditions?.Any(binding => binding.HostUnitId == dead.Id) == true)) && context.CardInstances != null &&
                         !context.CardInstances.Any(item => item.InstanceId == dead.SpawnerCardId) &&
                         context.CardRegistry?.Any(item => item.InstanceId == dead.SpawnerCardId) == true)) continue;
-                    if (piles.Any(pile => pile.Name == "Purged" && pile.Cards.Any(item => item.InstanceId == dead.SpawnerCardId))) continue;
+                    // A feeding spell already routes consumed carriers to
+                    // Eaten. Its outer card cleanup must not exhaust them again.
+                    if (piles.Any(pile => (pile.Name == "Purged" || pile.Name == "Eaten") &&
+                        pile.Cards.Any(item => item.InstanceId == dead.SpawnerCardId))) continue;
                     if (standby == null || exhausted == null || deadCard == null) return Unsupported("Missing dead unit spawner card routing.");
                     piles = piles.Select(pile => pile == standby ? CardPileModel.Remove(pile, dead.SpawnerCardId) : pile == exhausted
                             ? new CardPileState(pile.Name, pile.Cards.Concat(new[] { deadCard }).ToArray()) : pile).ToArray();
