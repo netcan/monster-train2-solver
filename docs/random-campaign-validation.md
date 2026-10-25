@@ -39,7 +39,7 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 | 2 | Pyreborne / Banished | 1862997127 | 提升至10000ms后前四战双胜；第五战59输入原生败局，预测／状态／RNG和失败计数均通过 |
 | 3 | Remnant / Awoken | 295400568 | 从开局10000ms，前五战双胜；第六战56输入原生败局，预测／状态／RNG和失败计数均通过 |
 | 4 | Hellhorned / Wurmkin | 770862752 | 前四战10000ms双胜；第五战50输入局部优化冻结路线原生双胜；第六战0.2.46完整44输入实际败北 |
-| 5 | Stygian / LazarusLeague | 972508374 | 从开局10000ms，前五战源局和独立复放双胜；第六战46输入实际败北，薪火26至0，四项失败计数为零 |
+| 5 | Stygian / LazarusLeague | 972508374 | 旧构筑前五战10000ms双胜、第六战46输入实际败北；修复事件献祭冠军策略后，新第三战58输入、新第四战37输入均独立双胜，正在第五战。两种构筑分别保留。 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
@@ -353,7 +353,7 @@ RNG和父状态不变性匹配，原生缓存排除13号死亡小怪、仍保留
 后续叠加 `WurmReturnEnhanceCorrupt` 的组合仍保留保护；局部分支未找到胜路不代表无解。
 见 [腐化与正向门槛组合](../tests/fixtures/notes/cards/corrupt-restricted-state.md)。
 
-Windows当前已安装0.2.45，源修订 `ab989012`，载荷与上述第五组第三战双进程
+Windows先前安装0.2.45，源修订 `ab989012`，载荷与上述第五组第三战双进程
 验收完全一致。Windows包为 `results/mod-dist/PojuAdvisor-0.2.45-Windows-20261025-132523.zip`，
 备份在游戏的 `BepInEx/PojuBackups/RandomCampaign-20261025-132523/`；
 67个受保护的存档、配置及其他Mod文件校验未变。0.2.46／47尚未替换该玩家安装。
@@ -434,6 +434,20 @@ Mix及跨楼层法术后完整状态／RNG精确匹配原前缀，但浏览记�
 状态缩放、原牌消耗与复制牌双重清除引用。完整状态／预测／RNG通过。
 没有修改该原生构筑或存档；这些组件证据不等于第四战或八战通关。
 见[X费不灭复制](../tests/fixtures/notes/cards/undying-copy-on-play.md)。
+
+随后0.2.55实际完整建议取得新第四战双胜：37输入、30次出牌、7次结束回合，
+薪火99保持99。39次发布、6次搜索记录和1327份独立牌掩码上下文通过。
+独立冻结复放完整根、后继、预测与RNG一致，两边13个列车阶段通过，四项失败
+计数全零。该默认路线打出原牌但未打出复制牌；零费复制牌的清除证据来自上面的
+独立11输入组件，未虚报默认路线的出牌覆盖。正常奖励／地图到第五战，保存SHA256
+`b276dd9d31896cca0ef594e99e6a6f6ede75de318ad0ee2999bc4a833e2e992e`。
+八战通关仍未验收完成。
+
+Windows当前安装0.2.55，已提交源修订`156121e4`，三份DLL与该第四战源局及
+独立重放逐字节一致。包为`results/mod-dist/PojuAdvisor-0.2.55-Windows-20261025-151549.zip`，
+SHA256为`9f7f909cc5b1b0b29d565ae22f2cdf03811543076df9dbd44884a8b78602cb27`。
+备份／收据在游戏`BepInEx/PojuBackups/RandomCampaign-20261025-151549/`。
+67个受保护的存档、配置及其他Mod文件保持原哈希；游戏未运行，下次启动加载该版本。
 
 第四组第六战在0.2.54下再次离线筛选60秒：13个候选、12个完整评估，未找到胜路，
 仅余一次未支持分支为CorruptionAdded单位回调。保留11输入前缀请求；未据模型

@@ -1,5 +1,21 @@
 # Player Mod validation · 2026-10-25
 
+Current Windows installation:0.2.55, committed source`156121e4`. The champion-
+preserving Stygian/LazarusLeague fourth battle passes two independent native
+processes:37 inputs,30 plays,7 EndTurns,Pyre99,39 publications,6 searches and
+1327 independent card-mask contexts. Every root, successor, forecast and RNG
+matches; all four failure counters are zero. This includes the exact-prefix
+floor-browse continuation repair and calibrated X-cost Undying copy traits.
+
+The installed three DLLs match both accepted native processes. All67 protected
+save/config/other-mod files retain their hashes. The real game was stopped;
+its next launch loads0.2.55. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261025-151549/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.55-Windows-20261025-151549.zip`,SHA256
+`9f7f909cc5b1b0b29d565ae22f2cdf03811543076df9dbd44884a8b78602cb27`.
+No Mac package or full regression was run. Random eight-battle acceptance is
+still incomplete; historical sections below describe earlier installations.
+
 Windows0.2.25 passes the original third-spell magic-power / moon spell
 composition with a 15-boundary component, a 22-play complete controlled win,
 and actual player / fresh frozen replay victories at Pyre80. All 19 player
