@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--friendly-room-damage-policy-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    FriendlyRoomDamagePolicyChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length is 2 or 3 && args[0] == "--removed-ability-self-only")
 {
     UnitTriggerUpgradeChecks.Run();

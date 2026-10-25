@@ -132,13 +132,25 @@ namespace MonsterTrain2Poju.Model
             if (rule.Effects.Count != 1 || rule.OnCastEffects.Count != 0) return null;
             CardActionEffect effect = rule.Effects[0];
             if (effect.Type != "Damage" || effect.Target is not ("Room" or "FrontInRoom") ||
-                !effect.AllowEnemy || effect.AllowPlayer || effect.Value <= 0)
+                !effect.AllowEnemy || effect.Value <= 0)
                 return null;
             CardTargets targets = CardTargetModel.Collect(source.Spawn.Train, action.RoomIndex, effect, Array.Empty<int>(), firstEffect: true);
             if (!targets.Supported) return null;
             return source.Spawn.Train.Rooms.SelectMany(room => room.Units)
-                .Where(unit => targets.UnitIds.Contains(unit.Id) && unit.Team == CombatTeam.Enemy && unit.Health > 0)
-                .Sum(unit => Math.Min((double)effect.Value, unit.Health + Math.Max(0d, unit.Status("armor")?.Stacks ?? 0)));
+                .Where(unit => targets.UnitIds.Contains(unit.Id) && unit.Health > 0)
+                .Sum(unit =>
+                {
+                    double durability = unit.Health + Math.Max(0d, unit.Status("armor")?.Stacks ?? 0);
+                    double damage = Math.Min(effect.Value, durability);
+                    if (unit.Team == CombatTeam.Enemy) return damage;
+                    // A mixed-team room spell also destroys our combat strength.
+                    // This estimate only orders seeds: legal sacrifice casts
+                    // remain available to the full model/search enumerator.
+                    double loss = effect.Value >= durability
+                        ? Math.Max(0d, unit.Attack) * unit.Attacks + (unit.Modifiers?.IsChampion == true ? 10000d : 0d)
+                        : 0d;
+                    return -damage - loss;
+                });
         }
     }
 }
