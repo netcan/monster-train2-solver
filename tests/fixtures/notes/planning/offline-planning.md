@@ -322,6 +322,24 @@ before Rax's arrival, previously displaced a36-input turn9 loss with Rax187HP.
 The corrected diagnostic metric ranks the latter higher:1000000016991.19
 versus1000000099995.25. Both artifacts remain independently verified terminal
 defeats bound to the same native root; the production evaluator is unchanged.
+
+`improve-order <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f>
+<milliseconds> <passes> <start-decision>` additionally considers other hand
+cards and unit abilities before the recorded input. The existing commands
+retain their narrower same-card neighborhood. All candidates still require
+legal complete continuations,immutable parents,independent replay,and exact
+native source/hash binding; an exported loss remains explicitly a loss.
+This does not change the production planner or a player's saved settings.
+
+On continuous random09 Ring7,the36-input late baseline left Rax179HP.
+The narrow decision6..end sweep completed147 candidates without improvement;
+a30000ms/4096-node root search at decision24 also predicted defeat.
+The order mode starts at decision20 and changes card15 to card16 there.
+Four retained improvements among96 complete candidates find a37-input model
+win at Pyre55 in91.58s; full export/verification finishes in102.45s.
+The native source,root and first20 inputs/full successor states stay identical.
+A different native deployment is rejected before output creation. Native
+execution and independent replay remain required before counting a victory.
 Focused controls reject a different native source, a separately replayable
 prediction whose source hash was rebound while its root stayed different, and
 an existing output without overwriting it. The natural Covenant3 AngelDuo

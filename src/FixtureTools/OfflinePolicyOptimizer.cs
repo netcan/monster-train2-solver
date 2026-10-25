@@ -10,7 +10,7 @@ internal static partial class OfflineBattleSearch
     // two useful changes can compose instead of restarting every trial at the
     // original loss. A result is still a model prediction requiring native replay.
     internal static void Improve(string input, string output, int milliseconds, int maxPasses = 4,
-        string? prediction = null, int startDecision = 0)
+        string? prediction = null, int startDecision = 0, bool exploreCardOrder = false)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxPasses is >= 1 and <= 16,
             "Expected100..600000ms and1..16 improvement passes.");
@@ -62,13 +62,13 @@ internal static partial class OfflineBattleSearch
                 var entry = prefixes[index];
                 string parent = keys.Key(entry.State);
                 Step recorded = route[index];
-                var legal = BattleActionModel.EnumerateActions(entry.State, recorded.Action?.CardInstanceId,
-                    includeAbilities: recorded.Action == null || recorded.Action.ActivatorUnitId != 0);
+                var legal = BattleActionModel.EnumerateActions(entry.State, exploreCardOrder ? null : recorded.Action?.CardInstanceId,
+                    includeAbilities: exploreCardOrder || recorded.Action == null || recorded.Action.ActivatorUnitId != 0);
                 unsupported += legal.UnsupportedAttempts.Count;
                 string recordedAction = JsonSerializer.Serialize(recorded.Action);
                 var alternatives = legal.SupportedCandidates.Where(candidate =>
                     JsonSerializer.Serialize(candidate.Action) != recordedAction &&
-                    (recorded.Action == null || candidate.Action.ActivatorUnitId == recorded.Action.ActivatorUnitId))
+                    (exploreCardOrder || recorded.Action == null || candidate.Action.ActivatorUnitId == recorded.Action.ActivatorUnitId))
                     .Select(candidate => (Step: new Step { Action = candidate.Action },
                         State: candidate.Result.State!, Outcome: candidate.Result.Outcome)).ToList();
                 if (!recorded.IsEndTurn)
@@ -134,7 +134,7 @@ internal static partial class OfflineBattleSearch
             Freeze(input, JsonSerializer.Serialize(route), output);
         }
         Console.WriteLine($"IMPROVE-POLICY foundWin={outcome == RoomOutcome.BattleWon} improvements={improvements} " +
-            $"startDecision={startDecision} candidates={candidates} completed={completed} unsupported={unsupported} " +
+            $"startDecision={startDecision} exploreCardOrder={exploreCardOrder} candidates={candidates} completed={completed} unsupported={unsupported} " +
             $"timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
 
         BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal)
