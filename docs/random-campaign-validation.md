@@ -42,7 +42,7 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 | 4 | Hellhorned / Wurmkin | 770862752 | 前四战10000ms双胜；第五战50输入局部优化冻结路线原生双胜；第六战0.2.46完整44输入实际败北 |
 | 5 | Stygian / LazarusLeague | 972508374 | 旧构筑前五战10000ms双胜、第六战46输入实际败北；保留冠军的新第三至六战均有双胜，其中第六战30秒根搜索50输入、薪火59，非实际默认搜索验收；第七战默认10000ms实际43输入败局已校准，继续补齐Hydra及生成装备分支，第八战未进入。 |
 | 6 | Hellhorned / LazarusLeague | 1848503146 | 前五战10000ms实际建议及独立原生复放双胜；0.2.66第六战完整62输入原生败局，状态／预测／RNG与四项零失败通过；30秒根搜索也判败，未证明无胜法。 |
-| 7 | LazarusLeague / Pyreborne | 243930257 | 0.2.66／10000ms第一战实际建议与独立原生复放双胜，31输入、薪火80；正常地图已推进第二战，尚未通关。 |
+| 7 | LazarusLeague / Pyreborne | 243930257 | 0.2.66／10000ms前两战实际建议与独立原生复放双胜，31／35输入、薪火80；第三战因PyreHeartFather最大生命效果被拒绝，继续校准，未计为败局或整局通关。 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
@@ -667,6 +667,21 @@ Windows于18:13安装原生双胜的同一套0.2.65 DLL，源修订`1f5427c5`，
 `7236bd72070978ea458cb8de195a625c4db908784ad3d3c97eb301ea3ee63488`。
 收据`.probe-runs/random-campaign-20261025-183356-67649638/accepted-rings.jsonl`。
 归档1552份，尚无该组合的完整八战验收。
+
+第二战也已通过实际建议与独立原生复放双胜：35输入（28次出牌／7次结束回合）、
+薪火80，完整根／后继／预测／RNG、两边各13个列车阶段与四项零失败通过。
+源局146.01秒、37次发布、4份搜索指标、1452份独立牌掩码上下文、295次纯采集。
+正常领奖并推进第三战，存档SHA256
+`ac2207dfb9b3c37b670fa83248dd2465aef2b39c1f644edc19ea4fd1a4709b0d`。
+第三战开局拒绝PyreHeartFather的RelicEffectModifyTowerMaxHealth，尚待单独校准。
+归档1554份，前两战的无模拟连续链检查通过。
+
+Windows于18:43安装原生双胜的同一套0.2.66 DLL，修订`4cc97ceb`，
+包`results/mod-dist/PojuAdvisor-0.2.66-Windows-20261025-184348.zip`，SHA256
+`324befb2e8767840bf0b053aff232cf8e04941d3f8bccac719ef2db5101c0fcf`。
+备份／收据`BepInEx/PojuBackups/RandomCampaign-20261025-184348/installation.json`。
+复用第一战完整独立验收收据，67个受保护文件、F10／10000ms／双线程配置保留。
+真实游戏未运行，下次启动加载0.2.66；未构建Mac包。
 
 定向检查入口：
 
