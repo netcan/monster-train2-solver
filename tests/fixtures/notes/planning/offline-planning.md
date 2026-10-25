@@ -231,6 +231,14 @@ carrier routing, with full-state/RNG agreement. A separate
 Pyreborne/Banished control produces a47-input model win and passes independent
 full-state/RNG replay. These are diagnostic results, not new native victories.
 
+After the feeding repair, the Banished/Umbra opening's10,000ms/two-worker
+whole-battle search still predicts a37-step defeat and passes independent replay.
+The preserved feeding counterexample first diverges at recorded decision0;
+rechecking only that opening produces three complete local-policy defeats with
+zero unsupported attempts in4.04s. This closes that focused diagnostic guard,
+without rerunning a native defeat or claiming all remaining local alternatives
+were rechecked or that no winning route exists.
+
 ```powershell
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll refine-policy tests/fixtures/campaign/random/full-battle-random-campaign-01-ring7-budget10000-loss.mt2f .probe-runs/ring7-local-candidate.mt2f 180000 0 16
 ```

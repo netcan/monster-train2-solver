@@ -1369,3 +1369,31 @@ b383a1f48d463787712b8efd23db77604ebb1703a9c7d6e41d9ef94e27941ccc
 ```
 
 No Mac package or full regression was run.
+
+## Commanded attack death centering · Windows 0.2.29 · 2026-10-25
+
+Stable native Wrath ability decisions center surviving physical unit references
+after a front unit dies. The original27-input counterexample and independent
+repaired component observation pass, alongside ability and dead-caster controls.
+The final player payload also wins the full Remnant/Awoken Ring4 in two native
+processes:42 inputs,34 plays,8 EndTurns,44 source publications and15 matched train
+stages, with complete state/forecast/RNG equality and zero failure counters.
+
+The real Windows installation now contains those exact accepted DLLs. Source
+revision `e2e20774` was committed and pushed before delivery; all67 protected
+files remain unchanged, including F10,10000ms and two search workers. The game
+was stopped; its next launch loads0.2.29.
+
+Backup/receipt:
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/PojuBackups/RandomCampaign-20261025-091247/`.
+Package: `results/mod-dist/PojuAdvisor-0.2.29-Windows-20261025-091247.zip`, SHA-256
+`8b3f967e41febeffeb03ebe2c61e613e9d325a7c97ca3696d3f9c5f70f00d3ac`.
+Installed Advisor / Model / FixtureArchive hashes:
+
+```text
+ead21a618584c4ef388c2e8823468a744be2093c718df7a618e2dbca46e707cb
+e6487af8c01fc85a0d1885bf9ce60053ba265a3894f43edd0874d449547b49d7
+b383a1f48d463787712b8efd23db77604ebb1703a9c7d6e41d9ef94e27941ccc
+```
+
+No Mac package or full regression was run.
