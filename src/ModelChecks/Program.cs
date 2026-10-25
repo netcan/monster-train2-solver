@@ -5468,6 +5468,20 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyre-payment-world-replay-calibration.mt2f"));
     PyrePaymentWorldChecks.Pair(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-stronger-corruption-copy-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-stronger-corruption-copy-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-stronger-corruption-copy-replay-calibration.mt2f"));
+    StrongerCorruptionCopyChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-pre-discard-spell-rng-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-pre-discard-spell-rng-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pre-discard-spell-rng-replay-calibration.mt2f"));
+    PreDiscardSpellRngChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-corrupt-poison-combat-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-corrupt-poison-combat-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
@@ -6764,7 +6778,7 @@ foreach (string path in args.Where(path => path.Contains("moon-card-upgrade-cali
 }
 foreach (string path in args.Where(path => path.Contains("relic-card-upgrade-calibration", StringComparison.OrdinalIgnoreCase)))
     RelicCardUpgradeChecks.Native(path);
-foreach (string path in args.Where(path => path.Contains("rng-calibration", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("rng-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
     RngChecks.Run(path);
 foreach (string path in args.Where(path => path.Contains("gold-reward-calibration", StringComparison.OrdinalIgnoreCase)))
     GoldRewardChecks.Native(path);
