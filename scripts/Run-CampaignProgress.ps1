@@ -18,9 +18,13 @@ param(
     [switch] $StoryProgressionOnly,
     [ValidateRange(1, 2)] [int] $NativeWorker = 1,
     [ValidateRange(60, 7200)] [int] $TimeoutSeconds = 1800,
+    [string] $NativeBuildRoot = '',
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+if ($NativeBuildRoot -and -not $SkipBuild) {
+    throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.'
+}
 if ($NewRunFromProfile -and ($InputProfile -or $BattleReplay -or $StoryProgressionOnly -or $StopBeforeRing -ne 1)) {
     throw 'NewRunFromProfile opens Ring1 from an idle native profile; omit InputProfile, BattleReplay and StoryProgressionOnly.'
 }
@@ -33,6 +37,19 @@ if ($StoryProgressionOnly -and (-not $InputProfile -or $BattleReplay)) {
     throw '-StoryProgressionOnly requires an InputProfile and cannot execute BattleReplay.'
 }
 $workspace = Split-Path $PSScriptRoot -Parent
+$nativeBuildWorkspace = if ($NativeBuildRoot) { (Resolve-Path -LiteralPath $NativeBuildRoot).Path } else { $workspace }
+if ($NativeBuildRoot) {
+    foreach ($dependency in @('Model', 'FixtureArchive')) {
+        $expectedDependency = Join-Path $nativeBuildWorkspace "src/$dependency/bin/Release/netstandard2.1/$dependency.dll"
+        $expectedHash = (Get-FileHash -LiteralPath $expectedDependency -Algorithm SHA256).Hash
+        foreach ($consumer in @('Probe', 'Advisor')) {
+            $consumerDependency = Join-Path $nativeBuildWorkspace "src/$consumer/bin/Release/netstandard2.1/$dependency.dll"
+            if ((Get-FileHash -LiteralPath $consumerDependency -Algorithm SHA256).Hash -cne $expectedHash) {
+                throw "Stale native dependency: $consumer/$dependency. Rebuild consumers against NativeBuildRoot."
+            }
+        }
+    }
+}
 $profilesRoot = [IO.Path]::GetFullPath((Join-Path $workspace '.probe-runs')).TrimEnd('\')
 $gameRoot = Join-Path $workspace $(if ($NativeWorker -eq 1) { '.sandbox-game' } else { '.sandbox-game-worker2' })
 $executable = Join-Path $gameRoot 'MonsterTrain2.exe'
@@ -142,7 +159,7 @@ $playerCheckPlugin = $null; $playerConfigPath = $null; $playerConfigBackup = $nu
 $playerConfigPrepared = $false; $process = $null
 try {
 foreach ($assembly in @('Probe', 'Model', 'FixtureArchive')) {
-    Copy-Item -LiteralPath (Join-Path $workspace "src/Probe/bin/Release/netstandard2.1/$assembly.dll") -Destination (Join-Path $gameRoot 'BepInEx/plugins') -Force
+    Copy-Item -LiteralPath (Join-Path $nativeBuildWorkspace "src/Probe/bin/Release/netstandard2.1/$assembly.dll") -Destination (Join-Path $gameRoot 'BepInEx/plugins') -Force
 }
 if ($playerReplay) {
     $pluginDir = Join-Path $gameRoot 'BepInEx/plugins'
@@ -151,7 +168,7 @@ if ($playerReplay) {
     }
     $playerCheckPlugin = Join-Path $pluginDir ('PojuPlayerCheck-' + [Guid]::NewGuid().ToString('N'))
     $null = New-Item -ItemType Directory -Path $playerCheckPlugin
-    Copy-Item -LiteralPath (Join-Path $workspace 'src/Advisor/bin/Release/netstandard2.1/MonsterTrain2Poju.Advisor.dll') -Destination $playerCheckPlugin
+    Copy-Item -LiteralPath (Join-Path $nativeBuildWorkspace 'src/Advisor/bin/Release/netstandard2.1/MonsterTrain2Poju.Advisor.dll') -Destination $playerCheckPlugin
     $playerConfigPath = Join-Path $gameRoot 'BepInEx/config/netcan.monstertrain2.advisor.cfg'
     $playerConfigBackup = Join-Path $profile 'original-player-advisor.cfg'
     if (Test-Path -LiteralPath $playerConfigPath) { Move-Item -LiteralPath $playerConfigPath -Destination $playerConfigBackup }

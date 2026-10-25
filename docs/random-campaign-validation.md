@@ -18,6 +18,9 @@ pwsh -NoProfile -File scripts/Run-RandomCampaign.ps1 `
 ```
 
 开始前顺序构建 Probe、Advisor、ModelChecks；已经构建时可加 `-SkipBuild`。
+`Run-CampaignProgress.ps1`与整场探针均可用`-NativeBuildRoot <工作树> -SkipBuild`
+选择同一份已构建原生载荷，避免隔离修复验收时覆盖主工作区输出。启动前核对
+Probe／Advisor的Model及FixtureArchive依赖哈希；正常存档、奖励和地图流程仍归主工作区管理。
 指定 `-InputProfile .probe-runs/<checkpoint>` 可继续同一种子、难度和组合的
 未完成隔离检查点。失败记录和各战接受记录写入独立的
 `.probe-runs/random-campaign-*/campaign-result.json` 与 `accepted-rings.jsonl`。
