@@ -24,6 +24,7 @@ namespace MonsterTrain2Poju.Probe
         private static int phase, boundaryFrame, captureCount, publicationCount;
         private static long initialGeneration;
         private static long recordedCardInputs;
+        private static int pendingPublicationWaits;
         private static ManualLogSource? log;
         private static BattleTurnState? terminal;
         private static bool frozenObservation;
@@ -91,6 +92,7 @@ namespace MonsterTrain2Poju.Probe
             Version = type?.Assembly.GetName().Version?.ToString(),
             InteractionsPassed,
             IdlePassed, PlanPreviewPassed,
+            PendingPublicationWaits = pendingPublicationWaits,
             Presentation = AdvisorPresentationProbe.Enabled ? AdvisorPresentationProbe.Evidence : null,
             FloorBrowse = !BrowseEnabled ? null : new { Passed = FloorBrowsePassed, Switches = browseSwitches,
                 DuringSearch = browsingDuringSearch, WheelInput = true, CaptureFreeSwitches = captureFreeSwitches,
@@ -553,6 +555,14 @@ namespace MonsterTrain2Poju.Probe
             BattleAdviceSession session = Field<BattleAdviceSession>("session");
             Require(session.Status != BattleAdviceStatus.Unavailable, "player advice unavailable: " + session.Error);
             if (CurrentIsNull()) return false;
+            // Retained advice stays readable while the next observation is being
+            // prepared. Match only a settled publication, as the production
+            // ReadyFor gate does; the preceding turn is not executable advice.
+            if (IsPlanning || Field<bool>("captureNeeded") || Field<bool>("selectionPending") ||
+                Field<object?>("preparation") != null || !Field<bool>("observed") ||
+                !ReferenceEquals(Field<BattleAdvice?>("displayed"), session.Current) ||
+                Time.frameCount <= Field<int>("displayFrame") + 1)
+            { pendingPublicationWaits++; return false; }
             // Both assemblies allocate their own capture identities. Compare
             // the player publication with a fresh native capture in its own
             // identity space; translate chosen inputs by native object identity.

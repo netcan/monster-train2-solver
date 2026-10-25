@@ -1,11 +1,11 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.107, committed source`4e888b1afc805d5946634a335b8a44520d05d804`.
+Current Windows installation:0.2.108, committed source`a77a4362783c35995469e7223c7f4eb035dc5f1a`.
 The exact release payload passes the eleventh random Stygian/Awoken sample's
 first battle with actual10000ms/two-worker advice and independent native
 replay:26 inputs,21 plays,five EndTurns,Pyre80 and nine train stages per process.
 Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-061736-355ecabc` and replay`20261026-061859-3679aa95`
+zero. Source`20261026-063654-74a99a09` and replay`20261026-063836-e83c28a2`
 bind the three installed DLL hashes to the committed build.
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
@@ -72,10 +72,10 @@ counterexample rather than a blocked model or seventh-battle victory.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.107. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261026-062310/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.107-Windows-20261026-062310.zip`,SHA256
-`c60a52c5d021875799d70a9554dce127f138eea959ff70b6be444a1a2bd7b493`.
+its next launch loads0.2.108. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261026-064546/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.108-Windows-20261026-064546.zip`,SHA256
+`d072a10303fc88d34b13b5789a2a318d4f03a98508f2525da4e19896b5f11bfb`.
 No Mac package or full regression was run. A full random clear at the default
 search budget is still unaccepted; historical sections describe earlier installations.
 
