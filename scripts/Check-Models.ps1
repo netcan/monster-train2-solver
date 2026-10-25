@@ -73,6 +73,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-spell-angel-death-replay-calibration.mt2f',
     'player-spell-harvest-tower-calibration.mt2f',
     'player-spell-harvest-tower-replay-calibration.mt2f',
+    'player-triggered-corruption-calibration.mt2f',
+    'player-triggered-corruption-replay-calibration.mt2f',
     'player-unbox-conduit-replay-calibration.mt2f',
     'player-outer-boss-death-statistics-calibration.mt2f',
     'player-outer-boss-death-statistics-replay-calibration.mt2f',
@@ -1437,6 +1439,7 @@ $branchPairGates = @{
     'player-infusion-trigger-merge-calibration.mt2f' = '--infusion-trigger-merge-pair-only'
     'player-juice-ritual-calibration.mt2f' = '--juice-ritual-pair-only'
     'player-juice-fracture-calibration.mt2f' = '--juice-fracture-pair-only'
+    'player-triggered-corruption-calibration.mt2f' = '--triggered-corruption-only'
     'player-consume-kill-copy-calibration.mt2f' = '--consume-kill-copy-pair-only'
     'player-sacrifice-preview-calibration.mt2f' = '--sacrifice-preview-pair-only'
     'player-pyre-max-health-calibration.mt2f' = '--pyre-max-health-pair-only'
