@@ -9,10 +9,10 @@ internal static partial class OfflineBattleSearch
 {
     // Counterexample investigation only. Keep improvements between sweeps so
     // two useful changes can compose instead of restarting every trial at the
-    // original loss. A result is still a model prediction requiring native replay.
+    // original route. A result is still a model prediction requiring native replay.
     internal static void Improve(string input, string output, int milliseconds, int maxPasses = 4,
         string? prediction = null, int startDecision = 0, bool exploreCardOrder = false, bool retainSuffix = false,
-        int secondActionWidth = 0)
+        int secondActionWidth = 0, bool improveWinningRoute = false)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxPasses is >= 1 and <= 16,
             "Expected100..600000ms and1..16 improvement passes.");
@@ -49,6 +49,8 @@ internal static partial class OfflineBattleSearch
         // independent replay from the original deployment root.
         var prefixes = new List<BattleTurnState>();
         BattleTurnState final = Replay(route, out RoomOutcome outcome, prefixes);
+        Require(!improveWinningRoute || outcome == RoomOutcome.BattleWon,
+            "Winning-route improvement requires an already verified complete model win.");
         double best = ImprovementMerit(final, outcome), initial = best;
         var watch = Stopwatch.StartNew();
         var tried = new HashSet<string>(StringComparer.Ordinal);
@@ -84,7 +86,7 @@ internal static partial class OfflineBattleSearch
             Console.WriteLine($"IMPROVE-BRANCH prefix={failedPrefix.Count} output={unsupportedOutput}; native observation required.");
         }
         bool Expired() => watch.ElapsedMilliseconds >= milliseconds;
-        for (int pass = 0; pass < maxPasses && outcome != RoomOutcome.BattleWon && !Expired(); pass++)
+        for (int pass = 0; pass < maxPasses && (outcome != RoomOutcome.BattleWon || improveWinningRoute) && !Expired(); pass++)
         {
             bool improved = false;
             for (int index = startDecision; index < prefixes.Count && !Expired(); index++)
@@ -245,7 +247,7 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"IMPROVE-POLICY foundWin={outcome == RoomOutcome.BattleWon} improvements={improvements} " +
             $"startDecision={startDecision} exploreCardOrder={exploreCardOrder} candidates={candidates} completed={completed} unsupported={unsupported} " +
-            $"retainSuffix={retainSuffix} secondActionWidth={secondActionWidth} pairCandidates={pairCandidates} pairImprovements={pairImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
+            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} secondActionWidth={secondActionWidth} pairCandidates={pairCandidates} pairImprovements={pairImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
 
         BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal, List<BattleTurnState>? collect = null)
         {
