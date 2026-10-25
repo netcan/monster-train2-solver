@@ -1837,6 +1837,17 @@ if (args.Length == 2 && args[0] == "--mixalot-only")
     MixalotChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--spell-angel-death-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 3)
+    {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        SpellAngelDeathChecks.Native(source.RootElement, replay.RootElement);
+    }
+    else SpellAngelDeathChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 3 or 4 && args[0] == "--equipment-preview-owner-only")
 {
     using var failure = ModelJson.ReadFixture(args[1]);

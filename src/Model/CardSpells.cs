@@ -178,6 +178,17 @@ namespace MonsterTrain2Poju.Model
                 source.Rooms.Any(room => room.Units.Any(unit => unit.Id == queued.Unit.Id))) ||
                 pendingDeaths.Select(queued => queued.Unit.Id).Distinct().Count() != pendingDeaths.Count)
                 return UnsupportedTrain("Invalid global spell damage phase.");
+            (int RoomIndex, CombatUnit Unit)[] Targets(TrainCombatState frame, int localRoom, int excludedId = 0) =>
+                frame.Rooms.Where(room => room.RoomIndex != localRoom).SelectMany(room => room.Units
+                    .Where(unit => unit.Id != excludedId).Select(unit => (room.RoomIndex, unit))).ToArray();
+            void MergeBorrowed(RoomCombatResult result, IReadOnlyList<(int RoomIndex, CombatUnit Unit)> borrowed)
+            {
+                foreach (var target in borrowed)
+                {
+                    CombatUnit changed = result.RetainedUnits.Single(unit => unit.Id == target.Unit.Id);
+                    state = ReplaceExternalActor(state, target.RoomIndex, changed);
+                }
+            }
             RoomCombatResult FinishQueue(RoomCombatState frame)
             {
                 state = ReplaceRoom(state, frame);
@@ -199,9 +210,12 @@ namespace MonsterTrain2Poju.Model
                 bool drained = RoomCombatModel.DrainCharacterQueue(queue, queued =>
                 {
                     RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
-                    var fired = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, queue.Add, refreshPyre: Refresh);
+                    var borrowed = Targets(state, room.RoomIndex);
+                    var fired = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, queue.Add, refreshPyre: Refresh,
+                        externalTargets: borrowed);
                     if (!fired.Supported) { error = fired.UnsupportedReason; return false; }
                     state = ReplaceRoom(state, RestoreUnfinished(fired)); events.AddRange(fired.Events);
+                    MergeBorrowed(fired, borrowed);
                     if (fired.Outcome != RoomOutcome.Exchanged) outcome = fired.Outcome;
                     return true;
                 }, queued =>
@@ -229,15 +243,19 @@ namespace MonsterTrain2Poju.Model
                     drained && error == null ? outcome : RoomOutcome.Unsupported, 0, events, error,
                     retainedUnits: updatedAttacker == null ? null : [updatedAttacker]);
             }
+            var borrowedTargets = Targets(source, roomIndex, externalAttacker ? attackerUnitId : 0);
             var applied = RoomCombatModel.ApplyNativeCardDamageAfterTraits(initial, targetId, damage, sourceCardId,
                 attackerUnitId,
                 pendingDeaths.Count == 0 ? null : (Func<RoomCombatState, RoomCombatResult>)FinishQueue, refreshPyre: Refresh,
                 externalActor: externalAttacker ? attacker : null,
                 externalActorRoomIndex: externalAttacker ? attackerRoom!.RoomIndex : -1,
-                enqueueCharacterTrigger: externalAttacker ? enqueueCharacterTrigger : null);
+                enqueueCharacterTrigger: externalAttacker ? enqueueCharacterTrigger : null, externalTargets: borrowedTargets);
             if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
             state = ReplaceRoom(state, applied.State!);
+            MergeBorrowed(applied, borrowedTargets);
             var retainedUnits = applied.RetainedUnits.ToList();
+            var borrowedIds = borrowedTargets.Select(target => target.Unit.Id).ToHashSet();
+            retainedUnits.RemoveAll(unit => borrowedIds.Contains(unit.Id) && ActorIsLive(unit));
             if (externalAttacker)
             {
                 CombatUnit? updatedAttacker = retainedUnits.FirstOrDefault(unit => unit.Id == attackerUnitId);

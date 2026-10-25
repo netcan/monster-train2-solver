@@ -873,7 +873,7 @@ namespace MonsterTrain2Poju.Model
             Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
             Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false,
-            bool piercing = false)
+            bool piercing = false, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
         {
             string? error = Validate(state);
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
@@ -888,7 +888,7 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>(), nativeCardDamage: true,
                 finishDamageQueue: finishDamageQueue, refreshPyre: refreshPyre,
                 enqueueCharacterTrigger: enqueueCharacterTrigger, externalActor: externalActor,
-                externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false)
+                externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false, externalTargets: externalTargets)
                 .TraceAllDispatches(captureAllDispatches)
                 .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId, piercing);
         }
