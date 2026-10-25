@@ -101,9 +101,10 @@ Existing16 target-team,four ability-team,and front-damage controls also pass.
 Recomputing the exact captured decision with10000ms/two workers/256 shared
 nodes changes a38-step model defeat into a34-step model win at Pyre40.
 Both plans independently replay their complete state/RNG. A separate offline
-43-step/Pyre6 route has one complete native victory; independent replay and
-the corrected actual-default full battle are separately pending. Neither
-model result is counted as an actual-default native campaign win.
+43-step/Pyre6 route now has two independent complete native victories with
+full state/forecasts/RNG identity and zero failures; both are bound to its
+frozen prediction. The corrected actual-default full battle is separately
+pending. Neither model result is counted as an actual-default native win.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --friendly-room-damage-policy-only tests/fixtures/campaign/random/full-battle-random-campaign-09-ring5-budget10000-loss.mt2f
