@@ -26,9 +26,15 @@ not additional native observations. Eight parallel unboxing branches retain
 their parent. Existing full-hand shuffle, capacity truncation, copied
 temporary upgrades, Conduit and original expensive-card relic checks pass.
 
-The floor0 tactical route now predicts a66-input Ring6 victory. This is
-strategy screening only until full native play and independent normal-reward
-replay pass. No full random campaign is claimed.
+The floor0 tactical route completes66 inputs,55 plays/11 EndTurns,in two
+native processes with Pyre82. The actual10000ms/two-worker default also
+completes54 inputs,43 plays/11 EndTurns,in two native processes with Pyre2.
+Full forecasts,state and RNG agree; every failure counter is zero. Normal
+rewards and maps reach separate Ring7 checkpoints,each at Pyre120. The six
+default victories pass their uninterrupted checkpoint chain; the refined
+six-battle chain is separately marked mixed. Ring7 is blocked by the newly
+purchased AddWurmScaleDamage room-modifier upgrade. No full random campaign
+is claimed.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --unbox-relic-only `

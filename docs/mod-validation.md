@@ -20,8 +20,9 @@ inputs match independent native processes. Version0.2.96 adds calibrated
 Small Box/expensive-card relic ordering and preserves copied temporary
 upgrades:30 paired native inputs and focused box/Conduit/relic controls pass.
 Ring6 now wins natively with54 actual/default inputs,Pyre2,and separately
-with66 offline-refined inputs,Pyre82. Their normal-reward independent replays
-are in progress; neither is counted as an accepted continuous sixth victory yet.
+with66 offline-refined inputs,Pyre82. Both normal-reward independent replays
+pass. The six-battle default and mixed checkpoint chains are independently
+verified; Ring7 currently exposes an unmodeled merchant room-modifier upgrade.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
