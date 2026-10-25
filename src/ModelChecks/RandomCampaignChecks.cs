@@ -8,6 +8,12 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.EndsWith("full-battle-random-campaign-04-ring5-refined-search.mt2f", StringComparison.Ordinal))
+        {
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(source.RootElement, replay.RootElement);
+            return;
+        }
         if (path.EndsWith("player-random-campaign-02-ring3-fixed-policy-native-win.mt2f", StringComparison.Ordinal))
         {
             FixedPolicyWin(source.RootElement);
@@ -211,6 +217,28 @@ internal static class RandomCampaignChecks
         TrainCombatChecks.Native(fixture);
         JuiceTraitChecks.Native(fixture);
         Console.WriteLine($"RANDOM-CAMPAIGN-SOURCE PASS {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1} budgetMs={timeLimitMs} won={fixture.GetProperty("NativeWon").GetBoolean()}.");
+    }
+
+    internal static void RefinedPair(FixtureValue source, FixtureValue replay)
+    {
+        Require(source.GetProperty("NativeRunInput").ContentEquals(replay.GetProperty("NativeRunInput")),
+            "Refined route changed the native campaign input.");
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            FixtureValue input = fixture.GetProperty("NativeRunInput");
+            Require(input.GetProperty("PrimaryClan").GetString() == "Hellhorned" &&
+                input.GetProperty("SecondaryClan").GetString() == "Wurmkin" && input.GetProperty("AscensionLevel").GetInt32() == 0 &&
+                fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("RollingDecisions").GetArrayLength() == 50 &&
+                fixture.GetProperty("StartingCovenantControl").ValueKind == FixtureKind.Null &&
+                fixture.GetProperty("CovenantEnemyStatsControl").ValueKind == FixtureKind.Null,
+                "Wrong refined fifth-battle native victory.");
+            var root = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            int pyre = root.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health;
+            NativeCampaignInputChecks.Native(fixture, 4, 770862752, pyre, input.GetProperty("Scenario").GetString()!);
+            TrainCombatChecks.Native(fixture);
+        }
+        RollingAdviceChecks.FrozenPair(source, replay, sourceFrozen: true);
+        Console.WriteLine("RANDOM-CAMPAIGN-REFINED-PAIR PASS:50 unchanged frozen inputs, two native wins/full forecasts/state/RNG; offline refined route, not a default search-budget acceptance.");
     }
 
     internal static void Pair(FixtureValue source, FixtureValue replay, int seed, int rank, int distance, string primary, string secondary, int timeLimitMs = 3000)

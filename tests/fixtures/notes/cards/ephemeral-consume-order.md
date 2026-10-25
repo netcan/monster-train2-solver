@@ -20,8 +20,9 @@ counter mismatch and requires the independently repaired forecast. This
 also checks subsequent pile validation: the dual references are accepted
 only with the matching composed order and private consumed-card reference;
 missing metadata or extra exhausted duplicates remain rejected. All fifty
-frozen inputs now replay through a model victory. The complete victory
-still requires another native execution.
+frozen inputs now replay through a model victory. The complete fifty-input
+route also wins in two independent native processes, with matching full
+states, forecasts and RNG; see the fourth campaign's refinement acceptance.
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -SkipBuild -Fixture player-ephemeral-consume-order-calibration.mt2f

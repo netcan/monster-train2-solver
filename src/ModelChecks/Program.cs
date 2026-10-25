@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--random-refined-campaign-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    RandomCampaignChecks.RefinedPair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--status-callback-room-sync-native-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

@@ -118,7 +118,8 @@ internal static class RollingAdviceChecks
         Pair(source, replay, baseline);
         Console.WriteLine("ROLLING-ADVICE-VICTORY PASS: actual boss, native victory and winning fresh frozen replay.");
     }
-    internal static void FrozenPair(FixtureValue source, FixtureValue replay, bool conduitCalibration = false, string? calibration = null)
+    internal static void FrozenPair(FixtureValue source, FixtureValue replay, bool conduitCalibration = false, string? calibration = null,
+        bool sourceFrozen = false)
     {
         Native(source, conduitCalibration, calibration); Native(replay, conduitCalibration, calibration);
         FixtureValue[] first = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
@@ -126,7 +127,7 @@ internal static class RollingAdviceChecks
         Require(first.Length == second.Length, "Fresh rolling replay has a different decision count.");
         for (int index = 0; index < first.Length; index++)
         {
-            Require(first[index].GetProperty("Mode").GetString() == "rolling" && second[index].GetProperty("Mode").GetString() == "replay" &&
+            Require(first[index].GetProperty("Mode").GetString() == (sourceFrozen ? "replay" : "rolling") && second[index].GetProperty("Mode").GetString() == "replay" &&
                 first[index].GetProperty("Action").ContentEquals(second[index].GetProperty("Action")) &&
                 first[index].GetProperty("IsEndTurn").ContentEquals(second[index].GetProperty("IsEndTurn")), "Fresh rolling replay changed an input.");
             bool terminal = index == first.Length - 1;
