@@ -32,7 +32,14 @@ namespace MonsterTrain2Poju.Model
                 traits[0].RuntimeType == "CardTraitExhaustState" && Ordinary(traits[0], 0) &&
                 traits[1].RuntimeType == Trait && Ordinary(traits[1], 2) &&
                 card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { Upgrade });
-            if ((!fracture && !justCause && !magicJuice && card.DataId is not ("3020f56f-71a5-4155-8bed-48ada7e7e0de" or "f9f20326-dccb-44af-894b-467534afab4a")) ||
+            bool unnamedTome = card.DataId == "561f7a74-93a3-438f-9bfd-fbc84d979bdd" &&
+                (traits.Count == 3 || traits.Count == 4 && traits[3].RuntimeType == "CardTraitFreeze" &&
+                    traits[3].DeclaredName == "CardTraitFreeze" && Ordinary(traits[3], 0)) &&
+                traits[0].RuntimeType == "CardTraitPermafrost" && Ordinary(traits[0], 0) &&
+                traits[1].RuntimeType == "CardTraitExhaustState" && Ordinary(traits[1], 0) &&
+                traits[2].RuntimeType == Trait && Ordinary(traits[2], 2) &&
+                card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { Upgrade });
+            if ((!fracture && !justCause && !magicJuice && !unnamedTome && card.DataId is not ("3020f56f-71a5-4155-8bed-48ada7e7e0de" or "f9f20326-dccb-44af-894b-467534afab4a")) ||
                 card.StatusScalingTraits?.Count > 0 ||
                 traits.Count(trait => trait.RuntimeType == Trait) != 1)
                 return "Juice with this card or ordered scaling traits requires native calibration.";
