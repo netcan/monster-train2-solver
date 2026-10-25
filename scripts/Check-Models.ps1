@@ -289,6 +289,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'angel-duo-paired-pyre-calibration.mt2f',
     'full-battle-angel-duo-inner-death.mt2f',
     'angel-duo-inner-death-calibration.mt2f',
+    'full-battle-natural-angel-pair-cache-calibration.mt2f',
+    'full-battle-natural-angel-pair-cache-replay-calibration.mt2f',
     'full-battle-angel-duo-outer-death.mt2f',
     'angel-duo-outer-death-calibration.mt2f',
     'angel-duo-companion-phase-calibration.mt2f',
@@ -1327,6 +1329,7 @@ $branchPairGates = @{
     'player-undying-permafrost-copy-effects-calibration.mt2f' = '--undying-copy-effects-pair-only'
     'player-undying-permafrost-copy-discard-calibration.mt2f' = '--undying-copy-effects-pair-only'
     'player-slay-corruption-callback-calibration.mt2f' = '--slay-corruption-callback-pair-only'
+    'full-battle-natural-angel-pair-cache-calibration.mt2f' = '--natural-angel-pair-cache-only'
     'player-generated-discard-guard-calibration.mt2f' = '--generated-discard-guard-pair-only'
     'player-ephemeral-consume-order-calibration.mt2f' = '--ephemeral-consume-order-pair-only'
     'player-status-callback-room-sync-calibration.mt2f' = '--status-callback-room-sync-pair-only'

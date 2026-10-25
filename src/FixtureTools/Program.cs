@@ -32,6 +32,10 @@ else if (args.Length == 2 && args[0] == "verify-root-plan")
 {
     OfflineRootSearch.Verify(args[1]);
 }
+else if (args.Length == 3 && args[0] == "freeze-root-plan")
+{
+    OfflineBattleSearch.FreezeRootPlan(args[1], args[2]);
+}
 else if (args.Length is >= 6 and <= 8 && args[0] == "plan-battle" &&
     args.Skip(6).All(flag => flag is "--tactical" or "--player-continuation") &&
     args.Skip(6).Distinct().Count() == args.Length - 6)
@@ -128,7 +132,7 @@ else if (args.Length == 3 && args[0] == "pack-directory")
 else
 {
     Console.Error.WriteLine("Diagnostics: extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason>");
-    Console.Error.WriteLine("Player root: plan-root <capture.mt2f> <new-output.mt2f> <milliseconds> [decision-index] [workers] | verify-root-plan <prediction.mt2f>");
+    Console.Error.WriteLine("Player root: plan-root <capture.mt2f> <new-output.mt2f> <milliseconds> [decision-index] [workers] | verify-root-plan <prediction.mt2f> | freeze-root-plan <prediction.mt2f> <new-output.mt2f>");
     Console.Error.WriteLine("Counterexample: refine-policy <native.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; bounded single-decision alternatives followed by legal tactical choices, model prediction only.");
     Console.Error.WriteLine("Predicted counterexample: refine-prediction <native.mt2f> <verified-prediction.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; validates native input hash/root and independently replays the baseline before exploring.");
     Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");

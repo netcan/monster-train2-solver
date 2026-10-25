@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Model
             var infusion = new HashSet<int>(infusionCardIds ?? Array.Empty<int>());
             var retained = new HashSet<int>(persistent);
             retained.UnionWith(infusion);
-            if (source.ExternalInteractions.Any(BattleTurnModel.IsDeferredPersistentDiscard) && persistent.Count == 0)
+            if (source.ExternalInteractions.Any(BattleTurnModel.IsDeferredPersistentDiscard) && persistentCardIds == null)
                 return new CardCycleResult(null, "Persistent discard requires captured hand identities.");
             if (ephemeral.Concat(retained).Any(id => source.Hand.All(card => card.InstanceId != id)))
                 return new CardCycleResult(null, "An Ephemeral, Persistent or Infusion card is not in hand.");

@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--natural-angel-pair-cache-only")
+{
+    NaturalAngelPairCacheChecks.Pair(args[1], args[2]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--slay-corruption-callback-native-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5571,6 +5576,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "angel-duo-
 {
     using var fixture = ModelJson.ReadFixture(path);
     AngelDuoCompanionPhaseChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-natural-angel-pair-cache-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "full-battle-natural-angel-pair-cache-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    NaturalAngelPairCacheChecks.Pair(path, ModelJson.RelatedFixture(path, "full-battle-natural-angel-pair-cache-replay-calibration.mt2f"));
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "angel-duo-forced-relentless-calibration.mt2f"))
 {

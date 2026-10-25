@@ -3182,7 +3182,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     int remainingId = activeCompanionBossIds.Single();
                     WorkingUnit? remaining = units.FirstOrDefault(unit => unit.Source.Id == remainingId);
-                    if (remaining != null) remaining.Source = remaining.Source.WithEndsBattleOnDeath(true);
+                    if (remaining != null) remaining.Source = remaining.Source.WithEndsBattleOnDeath(true)
+                        .WithoutRemovedCompanion(activeCompanionBossIds);
                 }
                 // At the captured StopCombatLoop boundary, Pyre death has no
                 // ordinary unit death accounting/removal; its point stays occupied.
