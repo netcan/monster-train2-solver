@@ -14,7 +14,7 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CardInstanceState card)
         {
             if (!Present(card)) return null;
-            // Original Lifesteal/Scorch,Ritual of Battle,and Corrupt/Juice Fracture merchant owners.
+            // Original Lifesteal/Scorch,Ritual of Battle,and calibrated merchant owners.
             // Ordered scaling callbacks and other owners remain explicit gaps.
             var traits = CardExhaustModel.RefreshTraits(card).CombinedTraits!;
             bool fracture = card.DataId == "b197fdec-a77d-49f5-bc05-6233b7ce01c7" && traits.Count == 2 &&
@@ -22,7 +22,13 @@ namespace MonsterTrain2Poju.Model
                 traits[1].RuntimeType == Trait && Ordinary(traits[1], 2) &&
                 card.Permanent.Upgrades.Any(upgrade => upgrade.DataId == "83a6c9ec-0e40-48e6-8a4c-695a68b7e990") &&
                 card.Permanent.Upgrades.Any(upgrade => upgrade.DataId == Upgrade);
-            if ((!fracture && card.DataId is not ("3020f56f-71a5-4155-8bed-48ada7e7e0de" or "f9f20326-dccb-44af-894b-467534afab4a")) ||
+            bool justCause = card.DataId == "c8b39244-83c1-4eb3-b474-8898226d4280" && traits.Count == 3 &&
+                traits[0].RuntimeType == "CardTraitCorruptState" && Ordinary(traits[0], 0) &&
+                traits[1].RuntimeType == "CardTraitExhaustState" && Ordinary(traits[1], 0) &&
+                traits[2].RuntimeType == Trait && Ordinary(traits[2], 2) &&
+                card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] {
+                    "83a6c9ec-0e40-48e6-8a4c-695a68b7e990", "fb416958-813a-435b-b7ea-e428127ece20", Upgrade });
+            if ((!fracture && !justCause && card.DataId is not ("3020f56f-71a5-4155-8bed-48ada7e7e0de" or "f9f20326-dccb-44af-894b-467534afab4a")) ||
                 card.StatusScalingTraits?.Count > 0 ||
                 traits.Count(trait => trait.RuntimeType == Trait) != 1)
                 return "Juice with this card or ordered scaling traits requires native calibration.";

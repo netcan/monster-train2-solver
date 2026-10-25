@@ -1,6 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 4 && args[0] == "--juice-justcause-pair-only")
+{
+    using var refused = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    using var source = ModelJson.ReadFixture(args[3]);
+    JuiceJustCauseChecks.Pair(refused.RootElement, source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length is 2 or 3 && args[0] == "--triggered-corruption-relic-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5658,6 +5667,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-replay-calibration.mt2f"));
     using var observation = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-observation-calibration.mt2f"));
     ConsumeKillCopyChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-juice-justcause-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-juice-justcause-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var refused = ModelJson.ReadFixture(path);
+    using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-juice-justcause-observation-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-juice-justcause-replay-calibration.mt2f"));
+    JuiceJustCauseChecks.Pair(refused.RootElement, source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-juice-fracture-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-juice-fracture-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

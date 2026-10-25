@@ -1,25 +1,23 @@
 # Player Mod validation · 2026-10-25
 
-Current Windows installation:0.2.82, committed source`412b38da`. The ninth
-random Wurmkin/Hellhorned sample's fifth battle passes actual10000ms advice
-and independent native replay:43 inputs,34 plays,9 EndTurns,Pyre49 and18 train
-stages per process. Every root,successor,forecast and RNG matches; all four
-failure counters are zero. The earlier second/third-battle default losses
-and offline-refined wins remain recorded separately.
-The payload includes friendly room-damage scoring that preserves the champion,
-merchant Juice/Corrupt Fracture support,full-train spell death callbacks and
-queued Champion Strike corruption callbacks. It also recognizes acquired
-draft-upgrade relics as reward-only,with independent native deployment and
-existing840-selection reward calibration. Five continuous default battles now
-pass their native checkpoint/hash chain; Ring6 remains a strategy gap. The old
-friendly-fire defeat and separate43-step/Pyre6 frozen victory remain retained.
+Current Windows installation:0.2.83, committed source`913102467829f0149684863276d8f02b5bbb7cce`.
+The tenth random Banished/Wurmkin sample's first battle passes actual10000ms,
+two-worker advice and independent native replay:22 inputs,17 plays,5 EndTurns,
+Pyre80 and9 train stages per process. Every root,successor,forecast and RNG
+matches; all four failure counters are zero. The payload adds the native
+phase/preview gate for inactive corruption-status relic callbacks during
+champion Strike. Active callback combinations retain their guards.
+The ninth sample has five continuous default victories and a sixth offline
+refined native paired victory; its seventh default battle remains a verified
+defeat. Default and refined evidence remain separate; no full random campaign
+is claimed.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.82. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261025-230702/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.82-Windows-20261025-230702.zip`,SHA256
-`7e62f1d3a0007e4deaa1bdbbd874bb72300dbe29e397f3d315dd5573baa769b5`.
+its next launch loads0.2.83. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261025-235237/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.83-Windows-20261025-235237.zip`,SHA256
+`a10fe78769341b2568bf71826b8406a029dd0540afef0fc1b71edb384c798a2c`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
