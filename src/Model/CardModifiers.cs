@@ -511,8 +511,21 @@ namespace MonsterTrain2Poju.Model
                     unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, nextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules,
                     lastFeederId: unit.LastFeederId ?? (triggers.Any(trigger => trigger.Kind == "OnEaten") ? 0 : (int?)null), moonPhaseMask: unit.MoonPhaseMask);
             }
-            CardActionEffect[] triggerEffects = cardUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>())
-                .Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Actions).ToArray();
+            // Native Infusion/CraftedSpike cards merge equal upgrade triggers in
+            // first-occurrence order. Scale their base payload before applying
+            // magic power, rather than repeating effects around other upgrades.
+            bool mergeTriggers = instance.MaskDescriptor != null && CardBranchMaskModel.Resolve(instance).Traits
+                .Any(trait => trait is "CardTraitInfusion" or "CardTraitCraftedSpike");
+            CardActionEffect[] triggerEffects = mergeTriggers
+                ? cardUpgrades.Select((upgrade, index) => (upgrade, index))
+                    .GroupBy(item => item.upgrade.DataId.Length > 0 ? item.upgrade.DataId : "#" + item.index,
+                        StringComparer.Ordinal)
+                    .SelectMany(group => group.First().upgrade.Lifecycle?.Triggers
+                        .Where(trigger => trigger.Type == "OnCast")
+                        .SelectMany(trigger => trigger.Actions.Select(effect => ResolveMergedEffect(effect, group.Count())))
+                        ?? Enumerable.Empty<CardActionEffect>()).ToArray()
+                : cardUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>())
+                    .Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Actions).Select(ResolveEffect).ToArray();
             CardLifecycleTrigger[] unplayedTriggers = cardUpgrades.SelectMany(upgrade => upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>())
                 .Where(trigger => trigger.Type.StartsWith("OnUnplayed", StringComparison.Ordinal)).ToArray();
             CardActionEffect[] onUnplayedNegativeEffects = rule.OnUnplayedNegativeEffects
@@ -520,7 +533,7 @@ namespace MonsterTrain2Poju.Model
                 .Select(ResolveEffect).ToArray();
             bool unsupportedUnplayedTriggers = rule.HasUnsupportedUnplayedTriggers || unplayedTriggers.Any(trigger => !RelicPerkeoModel.IsConversionTrigger(trigger));
             CardActionEffect[] effects = rule.Effects.Select(ResolveEffect).ToArray();
-            CardActionEffect[] onCastEffects = rule.OnCastEffects.Concat(triggerEffects).Select(ResolveEffect).ToArray();
+            CardActionEffect[] onCastEffects = rule.OnCastEffects.Select(ResolveEffect).Concat(triggerEffects).ToArray();
             string destination = rule.Destination;
             IReadOnlyList<string> effectiveTraits = instance.MaskDescriptor == null || killError != null
                 ? Array.Empty<string>() : CardBranchMaskModel.Resolve(instance).Traits;
@@ -538,8 +551,11 @@ namespace MonsterTrain2Poju.Model
                 rule.IsAnyAbility, rule.CanPlayInEngineRoom, onCastEffects, onUnplayedNegativeEffects,
                 rule.UnplayedNegativeOrder, unsupportedUnplayedTriggers, rule.ForgeEligible, rule.HasKillTriggers, rule.OnForgeEffects);
 
-            CardActionEffect ResolveEffect(CardActionEffect effect) => new CardActionEffect(effect.Type, effect.Target,
-                ResolveValue(effect, effect.Value), effect.AllowEnemy, effect.AllowPlayer, effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests,
+            CardActionEffect ResolveEffect(CardActionEffect effect) => ResolveMergedEffect(effect, 1);
+            CardActionEffect ResolveMergedEffect(CardActionEffect effect, int count) => new CardActionEffect(effect.Type, effect.Target,
+                ResolveValue(effect, unchecked(effect.Value * count)), effect.AllowEnemy, effect.AllowPlayer,
+                count == 1 ? effect.Statuses : effect.Statuses.Select(status => status.WithStacks(unchecked(status.Stacks * count))).ToArray(),
+                effect.Upgrade, effect.Lifetime, effect.Tests,
                 effect.Range == null ? null : new CardEffectRange(ResolveValue(effect, effect.Range.Min),
                     ResolveValue(effect, effect.Range.Max), effect.Range.Multiplier), effect.Filters, effect.Generation, effect.OnlyIfNoEnemies,
                 effect.CooldownParameter, effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade,

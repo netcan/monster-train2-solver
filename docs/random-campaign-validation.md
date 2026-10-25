@@ -530,13 +530,27 @@ Covenant0，10000ms／双线程／整场搜索。第一战Level1BattleHealers实
 独立复放正常领奖和地图推进第二战，保存SHA256
 `2b5354ae41968d06038eb1f1313c81f563672c2c0ec54c1de77168bbbf6eff0d`。
 记录位于`.probe-runs/random-campaign-20261025-170302-73c5765c/accepted-rings.jsonl`。
-当前只接受第一战，后续仍在运行，不计为八战通关。
+当前第一战已接受，后续边界见下节，不计为八战通关。
 
 Windows已安装同一套原生双胜通过的0.2.61 DLL（修订`58dd14a0`）。
 包`results/mod-dist/PojuAdvisor-0.2.61-Windows-20261025-170843.zip`，SHA256
 `d914b398c07d808083be5a5ee2308d533bb88123295c93459abf900a3d71945f`。
 备份／收据`BepInEx/PojuBackups/RandomCampaign-20261025-170843/installation.json`。
 67个受保护文件哈希不变，真实游戏未运行，下次启动加载新版本。未构建Mac包。
+
+### 第二战重复药剂升级边界 · 0.2.62
+
+0.2.61实际玩家第二战在BlastInfusion26造成致死伤害时停止：原生将重复的
+Unstable升级合并为10层后再造成4伤害，模型却交错执行5层／伤害／5层，
+Boss预测255HP而实际250HP，ThisBattle／ThisTurn添加状态层数也各少5。
+这是一份预测偏差，未将原始中断档案记成策略败局。
+
+0.2.62按原生MergeUpgradeTriggers的首次出现顺序合并药剂升级；数值先合并，
+再应用一次法强。原始诊断与独立修复重放的27输入完整状态／RNG均通过，旧版
+错误预测原样留档，额外覆盖重复伤害／法强及普通卡不合并的对照，见
+[药剂触发合并](../tests/fixtures/notes/cards/infusion-trigger-merge.md)。
+此时归档1532份，实际第二战已从相同检查点重开并获胜，独立复放仍在运行。
+当前Windows安装仍为0.2.61，未将诊断证据冒称新版本整场通关验收。
 
 定向检查入口：
 

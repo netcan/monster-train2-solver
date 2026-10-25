@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--infusion-trigger-merge-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    InfusionTriggerMergeChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--natural-hydra-graft-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5328,6 +5335,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-boss-preview-test-rng-replay-calibration.mt2f"));
     BossPreviewTestRngChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-infusion-trigger-merge-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-infusion-trigger-merge-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-infusion-trigger-merge-replay-calibration.mt2f"));
+    InfusionTriggerMergeChecks.Pair(source.RootElement, replay.RootElement);
 }
 // Equipment catalogs are required independently of triggered unit summoning.
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-natural-hydra-graft-equipment-", StringComparison.OrdinalIgnoreCase))
