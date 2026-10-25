@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length is 2 or 3 && args[0] == "--triggered-corruption-relic-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) TriggeredCorruptionRelicChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); TriggeredCorruptionRelicChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
+
 if (args.Length is 2 or 3 && args[0] == "--draft-upgrade-combat-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

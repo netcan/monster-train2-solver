@@ -5021,8 +5021,15 @@ namespace MonsterTrain2Poju.Model
                     bool unitCallbacks = room.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded"));
                     bool championAttack = action.Target == "Room" && action.CorruptionAdd == true && action.Value == 1 &&
                         actor.Source.AssetKey == "MonsterWurmChampion1" && triggerKind == "OnAttacking" && runningTriggerQueue;
+                    // The native Strike runs in HeroTurn; previews retain the
+                    // relic's separate CanApplyInPreviewMode gate. Inactive
+                    // status callbacks neither choose targets nor consume RNG.
+                    bool inactiveRelicStatuses = context?.Relics?.All(relic =>
+                        !relic.EffectTypes.Contains(RelicModel.AddStatusOnCorruption) ||
+                        RelicCorruptionStatusModel.Validate(relic) == null && relic.CorruptionStatuses!.All(rule =>
+                            source.Preview ? !rule.CanApplyInPreview : rule.OnlyDuringMonsterTurn)) != false;
                     RoomCorruptionResult changed = RoomCorruptionModel.Apply(train, source.RoomIndex, action,
-                        runUnitCallbacks: unitCallbacks && championAttack);
+                        runUnitCallbacks: championAttack && inactiveRelicStatuses);
                     if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
                     if (unitCallbacks && championAttack)
                     {
