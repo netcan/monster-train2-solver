@@ -82,6 +82,10 @@ SHA256`fb8ae4b1b61d8d995cf67e1c157f1850262d342f0bd278dc72385d9f9e89366c`。
 仍未找到终战胜路；继续处理实际拒绝分支，未计为整局通关。
 0.2.102已交付Windows：实际10000ms／双线程第一战22输入、薪火80原生双胜，
 完整后继／预测／RNG及四项零失败通过，67项受保护文件不变。
+0.2.103另补齐ExilesDiadem的原生腐化签名：32输入独立原生双进程完整
+后继／预测／RNG通过，腐化5→6、费用4→3、替换旧装备和体积3→1均一致；
+八项未知签名保护及原有腐化装备／房间挂件定向检查通过。
+见[腐化王冠](../tests/fixtures/notes/cards/corrupt-diadem.md)。尚未更换已验收的Windows载荷。
 
 旧`full-battle-persistent-enchantment-summons.mt2f`第4次出牌的
 `Enchantment.Bound`偏差已在0.2.91修复；旧整场15次出牌／5次结束回合通过。
