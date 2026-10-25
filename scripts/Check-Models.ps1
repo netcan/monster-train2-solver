@@ -215,6 +215,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-preview-birth-stage-replay-calibration.mt2f',
     'player-pyre-attachment-calibration.mt2f',
     'player-pyre-attachment-replay-calibration.mt2f',
+    'player-companion-world-roster-calibration.mt2f',
+    'player-companion-world-roster-replay-calibration.mt2f',
     'player-recursion-permafrost-calibration.mt2f',
     'player-recursion-permafrost-replay-calibration.mt2f',
     'full-battle-random-campaign-09-ring8-budget10000-loss.mt2f',
@@ -1515,6 +1517,7 @@ $branchPairGates = @{
     'player-preview-birth-binding-calibration.mt2f' = '--preview-birth-binding-only'
     'player-preview-birth-stage-calibration.mt2f' = '--preview-birth-stage-only'
     'player-pyre-attachment-calibration.mt2f' = '--outer-boss-pyre-attachment-only'
+    'player-companion-world-roster-calibration.mt2f' = '--companion-world-roster-only'
     'player-recursion-permafrost-calibration.mt2f' = '--recursion-draw-callbacks-only'
     'player-triggered-corruption-calibration.mt2f' = '--triggered-corruption-only'
     'player-triggered-corruption-relic-calibration.mt2f' = '--triggered-corruption-relic-only'

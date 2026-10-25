@@ -1,6 +1,6 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-26): 1690 archives,
+Current manifest inventory (2026-10-26): 1692 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
@@ -8,6 +8,8 @@ owners, seventeen campaign-interface owners and one native no-op.
 
 The52-input native direct tower movement pair and preserved early-removal
 counterexample are documented in [Pyre attachment ordering](notes/bosses/pyre-attachment.md).
+The52-input natural defeat pair also closes remote companion-roster updates
+at98 native room stages; see [shared companion roster](notes/bosses/companion-world-roster.md).
 
 Archives are grouped by feature under `advisor/`, `bosses/`, `campaign/`,
 `cards/`, `combat/`, `planning/` and `relics/`. Each family has subdirectories;

@@ -66,7 +66,10 @@ namespace MonsterTrain2Poju.Model
                     // Remote lethal tower damage stops before the death queue. The
                     // native room and aura snapshots still exclude its zero-HP Pyre.
                     .Where(unit => !unit.IsPyre || unit.Health > 0).ToArray(),
-                    room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray();
+                    // FullBattleTrace captures the live companion roster from
+                    // the whole train for every room, including remote floors.
+                    room.ExternalInteractions, null, room.Preview,
+                    source.ActiveCompanionBossIds ?? room.ActiveCompanionBossIds)).ToArray();
             var liveIds = rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
             var retained = world.RetainedUnits.Where(actor => !liveIds.Contains(actor.Unit.Id)).ToList();
             RoomCombatState? previous = world.Rooms.FirstOrDefault(room => room.RoomIndex == source.RoomIndex);

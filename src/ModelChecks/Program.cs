@@ -1,6 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length is 2 or 3 && args[0] == "--companion-world-roster-only")
+{
+    CompanionWorldRosterChecks.Native(args[1], args.Length == 3 ? args[2] : null);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--outer-boss-pyre-attachment-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5745,6 +5750,9 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-recursion-permafrost-replay-calibration.mt2f"));
     RecursionDrawCallbacksChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-companion-world-roster-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-companion-world-roster-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+    CompanionWorldRosterChecks.Native(path, ModelJson.RelatedFixture(path, "player-companion-world-roster-replay-calibration.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-pyre-attachment-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-pyre-attachment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
