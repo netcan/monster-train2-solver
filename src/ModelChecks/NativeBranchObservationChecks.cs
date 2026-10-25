@@ -4,10 +4,11 @@ using MonsterTrain2Poju.Model;
 
 internal static class NativeBranchObservationChecks
 {
-    internal static string Key(BattleTurnState state) => BattleTurnChecks.Comparable(state);
+    internal static string Key(BattleTurnState state, bool terminal = false) => BattleTurnChecks.Comparable(state, terminal);
 
     internal static FixtureValue[] Replay(FixtureValue fixture, string reason,
-        Action<BattleTurnState, BattleTurnState>? historicalBoundaryMismatch = null)
+        Action<BattleTurnState, BattleTurnState>? historicalBoundaryMismatch = null,
+        RoomOutcome boundaryOutcome = RoomOutcome.Exchanged)
     {
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
             fixture.GetProperty("EvidenceKind").GetString() == "NativeUnsupportedBranchObservation" &&
@@ -35,8 +36,9 @@ internal static class NativeBranchObservationChecks
             string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
             PlayCardAction? action = step.GetProperty("Action").Deserialize<PlayCardAction>();
             BattleTurnState predicted = BattlePlannerChecks.Replay(before, [new BattleSearchStep(action, end)], out RoomOutcome outcome);
-            Require(outcome == RoomOutcome.Exchanged && Key(predicted) == Key(actual),
-                "Native successor differs at " + index + ": " + ModelJson.Difference(Key(predicted), Key(actual)));
+            bool terminal = boundary && boundaryOutcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+            Require(outcome == (boundary ? boundaryOutcome : RoomOutcome.Exchanged) && Key(predicted, terminal) == Key(actual, terminal),
+                "Native successor differs at " + index + ": " + ModelJson.Difference(Key(predicted, terminal), Key(actual, terminal)));
             FixtureValue expected = row.GetProperty("Expected");
             if (expected.ValueKind == FixtureKind.Null)
                 Require(boundary && row.GetProperty("UnsupportedReason").GetString() == reason,
@@ -46,9 +48,9 @@ internal static class NativeBranchObservationChecks
                 Require(row.GetProperty("UnsupportedReason").ValueKind == FixtureKind.Null &&
                     row.GetProperty("Outcome").GetInt32() == (int)outcome, "Historical outcome differs at " + index);
                 BattleTurnState historical = expected.Deserialize<BattleTurnState>()!;
-                if (boundary && historicalBoundaryMismatch != null && Key(historical) != Key(actual))
+                if (boundary && historicalBoundaryMismatch != null && Key(historical, terminal) != Key(actual, terminal))
                     historicalBoundaryMismatch(historical, actual);
-                else Require(Key(historical) == Key(actual), "Historical prediction differs at " + index);
+                else Require(Key(historical, terminal) == Key(actual, terminal), "Historical prediction differs at " + index);
             }
             Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "Replay mutated its parent.");
             if (boundary) Require(Key(before) == Key(request.GetProperty("FailedRoot").Deserialize<BattleTurnState>()!), "Wrong failed root.");
@@ -79,11 +81,12 @@ internal static class NativeBranchObservationChecks
             second[^1].GetProperty("Expected").ValueKind == FixtureKind.Object &&
             second[^1].GetProperty("UnsupportedReason").ValueKind == FixtureKind.Null,
             "Preserve the original rejection and the independently repaired forecast.");
+        bool terminal = (RoomOutcome)second[^1].GetProperty("Outcome").GetInt32() is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
         if (originalPredictionPresent)
-            Require(Key(first[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!) !=
-                Key(first[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!) &&
-                Key(second[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!) ==
-                Key(second[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!),
+            Require(Key(first[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!, terminal) !=
+                Key(first[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal) &&
+                Key(second[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!, terminal) ==
+                Key(second[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal),
                 "Preserve the original mismatching forecast and the independently repaired forecast.");
     }
 

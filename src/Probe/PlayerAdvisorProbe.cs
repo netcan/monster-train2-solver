@@ -226,12 +226,15 @@ namespace MonsterTrain2Poju.Probe
                 Team.Type trainSide, TrainRoomAttachmentType attachType, bool skipTargeting, bool ignoreBosses)
             {
                 string? input = Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT");
+                bool branch = string.IsNullOrEmpty(input);
+                if (branch) input = Environment.GetEnvironmentVariable("MT2_PROBE_UNSUPPORTED_BRANCH");
                 if (!Enabled || string.IsNullOrEmpty(input) || cardState != null ||
                     upgradeData.GetID() != "f93ac9f7-45d2-47a4-a159-a1b326bd047f" ||
                     AllGameManagers.Instance.GetSaveManager().PreviewMode) return;
                 using var document = FixtureDocument.Read(input);
                 BattleTurnState initial = PlannerReplayScenario.ReadWithoutNativeObservation<BattleTurnState>(
-                    document.RootElement.GetProperty("RollingDecisions")[0].GetProperty("Root"));
+                    branch ? document.RootElement.GetProperty("Root") :
+                        document.RootElement.GetProperty("RollingDecisions")[0].GetProperty("Root"));
                 RoomCapacityAttachmentState expected = initial.Spawn.Train.Context!.RoomCapacities!
                     .Single(room => room.RoomIndex == __instance.GetRoomIndex()).Attachments!
                     .Single(attachment => attachment.DataId == upgradeData.GetID());

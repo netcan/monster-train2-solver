@@ -65,6 +65,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-dead-caster-status-replay-calibration.mt2f',
     'player-ability-attack-compaction-calibration.mt2f',
     'player-ability-attack-compaction-replay-calibration.mt2f',
+    'player-heal-growth-record-calibration.mt2f',
+    'player-heal-growth-record-replay-calibration.mt2f',
+    'player-overcharge-cleanup-calibration.mt2f',
+    'player-overcharge-cleanup-replay-calibration.mt2f',
     'player-random-campaign-02-ring2-permafrost-unavailable.mt2f',
     'room-moon-spell-threshold-relic-calibration.mt2f',
     'full-battle-original-moon-card-upgrades-threshold-relic.mt2f',
@@ -1203,6 +1207,8 @@ $branchPairGates = @{
     'player-ephemeral-copy-hand-space-calibration.mt2f' = '--authored-consume-copy-pair-only'
     'player-dead-caster-status-calibration.mt2f' = '--dead-caster-status-pair-only'
     'player-ability-attack-compaction-calibration.mt2f' = '--ability-attack-compaction-pair-only'
+    'player-heal-growth-record-calibration.mt2f' = '--heal-growth-record-pair-only'
+    'player-overcharge-cleanup-calibration.mt2f' = '--overcharge-cleanup-pair-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
     -not $branchPairGates.ContainsKey(($_ -replace '-replay-calibration\.mt2f$', '-calibration.mt2f'))

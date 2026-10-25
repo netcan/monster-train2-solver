@@ -87,7 +87,22 @@ internal static class RoomCorruptionChecks
         Parallel.For(0, 16, _ => Require(JsonSerializer.Serialize(CardSpellModel.Apply(source, 0,
             [Effect("AdjustMaxCorruption", 1), Effect("AdjustCorruption", 1, true)], 0).State) == expected,
             "Parallel corruption branches diverged."));
-        Console.WriteLine("ROOM-CORRUPTION-CHECKS PASS: max/current order, fill, remove, permanent floor, callback guard and branches.");
+        foreach (var (current, maximum, permanentFloor) in new[] { (6, 4, 0), (2, 4, 1), (6, 4, 5) })
+        {
+            RoomCombatState overcharge = Train(current, maximum, permanentFloor).Rooms[0];
+            string unchanged = JsonSerializer.Serialize(overcharge);
+            RoomCombatResult finished = RoomCombatModel.Resolve(overcharge);
+            RoomCombatResult exchange = RoomCombatModel.Exchange(overcharge);
+            var preview = new RoomCombatState(overcharge.RoomIndex, overcharge.Deployment, overcharge.Units,
+                overcharge.ExternalInteractions, overcharge.Context, preview: true);
+            RoomCombatResult predictedPreview = RoomCombatModel.Resolve(preview);
+            Require(finished.Supported && exchange.Supported && predictedPreview.Supported &&
+                Room(finished.State!.Context!).Corruption == Math.Max(Math.Min(current, maximum), permanentFloor) &&
+                Room(exchange.State!.Context!).Corruption == current && Room(predictedPreview.State!.Context!).Corruption == current &&
+                JsonSerializer.Serialize(overcharge) == unchanged,
+                "Overcharge cleanup must run at actual room completion, preserve the permanent floor, and leave previews/exchanges unchanged.");
+        }
+        Console.WriteLine("ROOM-CORRUPTION-CHECKS PASS: max/current order, fill, remove, permanent floor, callback guard, overcharge room/preview/exchange boundaries and branches.");
     }
 
     internal static void Native(FixtureValue fixture)

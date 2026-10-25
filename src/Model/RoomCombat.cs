@@ -1929,6 +1929,19 @@ namespace MonsterTrain2Poju.Model
                     if (!frozen.Supported) { unsupportedReason = frozen.UnsupportedReason; return Finish(RoomOutcome.Unsupported); }
                     context = frozen.Context;
                 }
+                // CombatManager removes overcharge after the room's complete
+                // post-combat and end-turn relic queues, including empty rooms.
+                // Individual exchanges and native previews do not clamp it.
+                RoomCapacityState? capacity = context?.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == source.RoomIndex);
+                if (!source.Preview && capacity?.Corruption is int currentCorruption &&
+                    capacity.MaxCorruption is int maximumCorruption && currentCorruption > maximumCorruption)
+                {
+                    var cleanup = RoomCorruptionModel.Apply(new TrainCombatState([CurrentRoom()], [], 0, context),
+                        source.RoomIndex, new CardActionEffect("AdjustCorruption", "Room", currentCorruption - maximumCorruption,
+                            false, false, [], corruptionAdd: false));
+                    if (!cleanup.Supported) { unsupportedReason = cleanup.UnsupportedReason; return Finish(RoomOutcome.Unsupported); }
+                    context = cleanup.Context;
+                }
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Cleared);
             }

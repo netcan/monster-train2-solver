@@ -189,6 +189,18 @@ namespace MonsterTrain2Poju.Probe
                 FullBattleTrace trace = FullBattleTrace.Active;
                 try
                 {
+#if DEVELOPMENT_PROBE
+                    if (UnsupportedBranchObservation.Enabled)
+                    {
+                        UnsupportedBranchObservation.Observe(PlayerAdvisorProbe.Terminal);
+                        if (!UnsupportedBranchObservation.Completed)
+                            throw new InvalidOperationException("Native combat ended before the requested component boundary.");
+                        trace.Write();
+                        log.LogInfo("UNSUPPORTED-BRANCH-NATIVE PASS observed terminal candidate boundary; model acceptance pending.");
+                        Finish(true, "Native terminal component captured; full battle acceptance remains separate.");
+                        return;
+                    }
+#endif
                     PlannerReplayScenario.ObserveTerminal();
                     RollingAdviceScenario.ObserveTerminal(log);
                     if (OriginalForgeConservationScenario.Enabled && !OriginalForgeConservationScenario.NaturalCompleted)
