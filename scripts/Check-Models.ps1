@@ -85,6 +85,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-recursion-target-text-replay-calibration.mt2f',
     'player-friendly-relic-piercing-calibration.mt2f',
     'player-friendly-relic-piercing-replay-calibration.mt2f',
+    'player-corrupt-copyability-calibration.mt2f',
+    'player-corrupt-copyability-replay-calibration.mt2f',
     'player-random-campaign-02-ring2-permafrost-unavailable.mt2f',
     'room-moon-spell-threshold-relic-calibration.mt2f',
     'full-battle-original-moon-card-upgrades-threshold-relic.mt2f',
@@ -1230,6 +1232,7 @@ $branchPairGates = @{
     'player-despawn-frame-removal-calibration.mt2f' = '--despawn-frame-removal-pair-only'
     'player-recursion-target-text-calibration.mt2f' = '--recursion-target-text-pair-only'
     'player-friendly-relic-piercing-calibration.mt2f' = '--friendly-relic-piercing-pair-only'
+    'player-corrupt-copyability-calibration.mt2f' = '--corrupt-copyability-pair-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
     -not $branchPairGates.ContainsKey(($_ -replace '-(?:replay|observation)-calibration\.mt2f$', '-calibration.mt2f'))
