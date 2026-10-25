@@ -202,3 +202,10 @@ native replays. A separate late30..60 batch completes99/99 continuations,
 boundary now passes two independent35-input native observations in0.2.79;
 see [deferred Harvest](../bosses/spell-harvest-tower.md). Ring6 remains
 unfinished and extra hearts remain0/9.
+
+After that correction,another90s local search completes64 of65 candidates,
+seven unsupported attempts and no improvement. Three inexpensive alternative
+deployments under0.2.80 (floor0,floor1,and strength-first floor2) independently
+replay to complete model defeats with62,44,and61 inputs respectively. None
+is sent through a redundant native battle; these outcomes do not prove that
+Ring6 is unwinnable.

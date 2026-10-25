@@ -44,7 +44,7 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 | 6 | Hellhorned / LazarusLeague | 1848503146 | 前五战10000ms实际建议及独立原生复放双胜；0.2.66第六战完整62输入原生败局，状态／预测／RNG与四项零失败通过；30秒根搜索也判败，未证明无胜法。 |
 | 7 | LazarusLeague / Pyreborne | 243930257 | 前四战10000ms实际建议与独立原生复放双胜、连续链通过；第五战45输入实际败北，完整状态／预测／RNG一致。30秒根搜索仍判败，未证明无胜法；尚未完整通关。 |
 | 8 | Umbra / Stygian | 1347120220 | 第一、二、四、五战10000ms实际建议与独立复放双胜；第三战默认63输入败局保留，离线改进61输入／薪火24原生双胜。第六战双天使53输入实际败北，状态／预测／RNG及四项零失败通过；离线继续筛选，尚未完整通关。 |
-| 9 | Wurmkin / Hellhorned | 771950956 | 首战实际10000ms以18输入／薪火80原生双胜；第二战默认七次结束回合败局及第三战默认10输入败局保留。离线第二战24输入／薪火80、第三战37输入／薪火67均原生双胜，连续进入第四战；不计为默认搜索胜利。 |
+| 9 | Wurmkin / Hellhorned | 771950956 | 第一、四战实际10000ms分别18输入／薪火80及30输入／薪火89原生双胜。第二战默认七次结束回合败局及第三战默认10输入败局保留；离线第二战24输入／薪火80、第三战37输入／薪火67均原生双胜。连续进入第五战，离线胜局不计为默认搜索胜利。 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
@@ -920,6 +920,28 @@ StarterFracture12；没有实际建议输入，不能计为预算超时或完整
 见[触发腐化校准](../tests/fixtures/notes/combat/triggered-corruption.md)。相关旧Slay
 12输入双进程检查保留通过，目录1625份。38输入／薪火90是完整模型胜路，
 尚不计为原生整场验收。
+
+0.2.80第四战`Level4BattleHunterAttackers`随后完成实际10000ms默认建议：
+30输入（23次出牌／7次结束回合）、薪火89获胜，源局167.35秒、32次发布、
+253次纯采集、13个列车阶段。独立原生复演及正常奖励／地图通过，逐步完整
+状态／预测／RNG一致，四项失败均零；六个原生Juice边界及一次原牌施放也通过。
+第五战检查点SHA256
+`91897812ea67d7241caf76b4eb19364558d459b95d114846db016d58a2819c5b`，
+收据`random-campaign-20261025-222544-4ca71f24/accepted-rings.jsonl`。
+两份完整战斗归档为`full-battle-random-campaign-09-ring4-budget10000-*.mt2f`，
+目录1627份。这条实际30步路线与此前离线38步／薪火90路线分别记录。
+
+22:31已将这对第四战原生胜局使用的0.2.80安装到当前Windows游戏，编译源修订
+`0367b2e8`。三份DLL与两边原生进程完全一致，67个受保护文件不变，
+F10／10000ms／双线程配置保留。包
+`results/mod-dist/PojuAdvisor-0.2.80-Windows-20261025-223136.zip`，SHA256
+`91008587926e8e93fa305fd9041aed0dcc0cb81e5f7550b7f80f981b62a5fcd5`；
+收据`BepInEx/PojuBackups/RandomCampaign-20261025-223136/installation.json`。
+第五战`Level5BattleDominionUndying`实际默认10000ms以43输入（34次出牌／
+9次结束回合）败北，187.84秒、45次发布、357次纯采集、18个列车阶段；
+完整状态／预测／RNG及四项零失败通过。六个Juice边界、两次原牌施放也匹配。
+败局归档`full-battle-random-campaign-09-ring5-budget10000-loss.mt2f`，
+目录1628份，继续离线筛选胜路。尚未记为通关，未构建Mac包或执行全量回归。
 
 定向检查入口：
 

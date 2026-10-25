@@ -1,20 +1,21 @@
 # Player Mod validation · 2026-10-25
 
-Current Windows installation:0.2.75, committed source`dd60ff61`. The ninth
-random Wurmkin/Hellhorned sample's third battle passes two independent native
-frozen-policy runs:37 inputs,28 plays,9 EndTurns,Pyre67 and17 train stages per
-process. Every root,successor,forecast and RNG matches; all four failure
-counters are zero. This is an offline-refined route,not an actual-default
-search-budget victory; the actual10000ms loss is retained separately.
-The payload includes pre-discard relic RNG preservation,original5x-magic /
-corruption2 spell copies,and current-corruption poison damage.
+Current Windows installation:0.2.80, committed source`0367b2e8`. The ninth
+random Wurmkin/Hellhorned sample's fourth battle passes actual10000ms advice
+and independent native replay:30 inputs,23 plays,7 EndTurns,Pyre89 and13 train
+stages per process. Every root,successor,forecast and RNG matches; all four
+failure counters are zero. The earlier second/third-battle default losses
+and offline-refined wins remain recorded separately.
+The payload includes merchant Juice/Corrupt Fracture support,full-train spell
+death callbacks and queued Champion Strike corruption callbacks, each with
+focused independent native calibration.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.75. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261025-213646/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.75-Windows-20261025-213646.zip`,SHA256
-`f1e05e4b59b85e9a2392f3df22a6f28ff5b24a9785d4aab2a7d92455e1253ad0`.
+its next launch loads0.2.80. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261025-223136/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.80-Windows-20261025-223136.zip`,SHA256
+`91008587926e8e93fa305fd9041aed0dcc0cb81e5f7550b7f80f981b62a5fcd5`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
