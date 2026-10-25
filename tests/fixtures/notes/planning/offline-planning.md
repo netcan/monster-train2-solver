@@ -293,7 +293,7 @@ input, and then replays its recorded outcomes/RNG. Prediction baselines do not
 become native evidence. Winning candidates are frozen from the original native
 input, so the existing fresh-game replay requirement stays intact.
 
-`improve-policy <native.mt2f> <new-output.mt2f> <milliseconds> [passes]`
+`improve-policy <native.mt2f> <new-output.mt2f> <milliseconds> [passes] [start-decision]`
 retains the first strictly better complete route between sweeps, allowing
 several useful changes to compose. The default is four sweeps (1..16 allowed)
 under a100..600000ms soft search budget. Each branch preserves its prefix,
@@ -304,12 +304,24 @@ production win/Pyre objective or prove optimality. Export/verification can
 extend the soft budget.
 
 `improve-prediction <native.mt2f> <verified-prediction.mt2f>
-<new-output.mt2f> <milliseconds> [passes]` resumes these sweeps from an
+<new-output.mt2f> <milliseconds> [passes] [start-decision]` resumes these sweeps from an
 independently verified frozen improvement. It requires the exact original
 native input SHA256 and complete deployment root, including RNG, before using
 any predicted input. The new export stays bound to that original native
 source. This avoids discarding useful losing improvements between bounded
 search runs; neither the baseline nor its continuation becomes native evidence.
+The optional zero-based starting decision defaults to0. Later sweeps leave
+that earlier prefix unchanged while still independently replaying the entire
+baseline and exported route. This avoids repeatedly exploring accepted early
+choices when composing improvements in later turns; it does not declare the
+skipped alternatives optimal. Invalid starting indices create no output.
+
+Loss ordering includes bosses in captured future waves and queued outer/final
+bosses at full health. In random09 Ring7, a historical24-input loss at turn5,
+before Rax's arrival, previously displaced a36-input turn9 loss with Rax187HP.
+The corrected diagnostic metric ranks the latter higher:1000000016991.19
+versus1000000099995.25. Both artifacts remain independently verified terminal
+defeats bound to the same native root; the production evaluator is unchanged.
 Focused controls reject a different native source, a separately replayable
 prediction whose source hash was rebound while its root stayed different, and
 an existing output without overwriting it. The natural Covenant3 AngelDuo

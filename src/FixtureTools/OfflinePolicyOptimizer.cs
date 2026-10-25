@@ -10,7 +10,7 @@ internal static partial class OfflineBattleSearch
     // two useful changes can compose instead of restarting every trial at the
     // original loss. A result is still a model prediction requiring native replay.
     internal static void Improve(string input, string output, int milliseconds, int maxPasses = 4,
-        string? prediction = null)
+        string? prediction = null, int startDecision = 0)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxPasses is >= 1 and <= 16,
             "Expected100..600000ms and1..16 improvement passes.");
@@ -32,13 +32,14 @@ internal static partial class OfflineBattleSearch
         var route = (predicted?.RootElement ?? trace).GetProperty("RollingDecisions").EnumerateArray().Select(row => new Step {
             Action = row.GetProperty("Action").Deserialize<PlayCardAction>(),
             IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() }).ToArray();
-        Require(route.Length is > 0 and <= 256, "Expected a bounded complete native battle.");
+        Require(route.Length is > 0 and <= 256 && startDecision >= 0 && startDecision < route.Length,
+            "Expected a bounded complete native battle and valid starting decision.");
         using var keys = new BattleStateKeys();
         string immutable = keys.Key(root);
         Require(predicted == null || keys.Key(predicted.RootElement.GetProperty("Root").Deserialize<BattleTurnState>()!) == immutable,
             "Prediction changed the native deployment root.");
         BattleTurnState final = Replay(route, out RoomOutcome outcome);
-        double best = Merit(final, outcome), initial = best;
+        double best = ImprovementMerit(final, outcome), initial = best;
         var watch = Stopwatch.StartNew();
         var tried = new HashSet<string>(StringComparer.Ordinal);
         int candidates = 0, completed = 0, unsupported = 0, improvements = 0;
@@ -56,7 +57,7 @@ internal static partial class OfflineBattleSearch
                 prefixes.Add((current, prefix.ToArray()));
                 current = Apply(current, step.Action, step.IsEndTurn, out _); prefix.Add(step);
             }
-            for (int index = 0; index < prefixes.Count && !Expired(); index++)
+            for (int index = startDecision; index < prefixes.Count && !Expired(); index++)
             {
                 var entry = prefixes[index];
                 string parent = keys.Key(entry.State);
@@ -111,7 +112,7 @@ internal static partial class OfflineBattleSearch
                     Require(keys.Key(entry.State) == parent && keys.Key(root) == immutable, "Improvement mutated its parent.");
                     if (!Terminal(result)) continue;
                     completed++;
-                    double score = Merit(branch, result);
+                    double score = ImprovementMerit(branch, result);
                     if (score >= best) continue;
                     best = score; final = branch; outcome = result; route = steps.ToArray();
                     improvements++; improved = true;
@@ -133,7 +134,7 @@ internal static partial class OfflineBattleSearch
             Freeze(input, JsonSerializer.Serialize(route), output);
         }
         Console.WriteLine($"IMPROVE-POLICY foundWin={outcome == RoomOutcome.BattleWon} improvements={improvements} " +
-            $"candidates={candidates} completed={completed} unsupported={unsupported} " +
+            $"startDecision={startDecision} candidates={candidates} completed={completed} unsupported={unsupported} " +
             $"timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
 
         BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal)
@@ -147,16 +148,22 @@ internal static partial class OfflineBattleSearch
             Require(Terminal(terminal), "Incomplete improvement route.");
             return state;
         }
-        static double Merit(BattleTurnState state, RoomOutcome result)
-        {
-            if (result == RoomOutcome.BattleWon) return BattlePlanner.Evaluate(state, result);
-            var enemies = state.Spawn.Train.Rooms.SelectMany(room => room.Units)
-                .Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0).ToArray();
-            // Diagnostic ordering among complete losses only. The production
-            // win/Pyre objective stays unchanged; this is no lower bound or proof.
-            return 1e12 + enemies.Where(unit => unit.IsBoss == true)
-                .Sum(unit => unit.Health / (double)Math.Max(1, unit.MaxHealth)) * 100000d +
-                enemies.Sum(unit => (double)unit.Health) * .001 - state.Spawn.Turn;
-        }
+    }
+
+    internal static double ImprovementMerit(BattleTurnState state, RoomOutcome result)
+    {
+        if (result == RoomOutcome.BattleWon) return BattlePlanner.Evaluate(state, result);
+        var enemies = state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0).ToArray();
+        double bosses = enemies.Where(unit => unit.IsBoss == true)
+            .Sum(unit => unit.Health / (double)Math.Max(1, unit.MaxHealth));
+        // Dying before a boss spawns does not count as defeating that boss.
+        // Unresolved wave groups conservatively retain their largest boss count.
+        bosses += state.Spawn.Waves.Skip(state.Spawn.Phase).Sum(wave => wave.Candidates
+            .Select(group => group.Units.Count(unit => unit.Unit.IsBoss == true)).DefaultIfEmpty(0).Max());
+        if (state.Spawn.QueuedOuterBoss != null || state.Spawn.QueuedTrueFinalBoss != null) bosses++;
+        // Diagnostic ordering among complete losses only. The production
+        // win/Pyre objective stays unchanged; this is no lower bound or proof.
+        return 1e12 + bosses * 100000d + enemies.Sum(unit => (double)unit.Health) * .001 - state.Spawn.Turn;
     }
 }

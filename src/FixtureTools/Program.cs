@@ -56,13 +56,15 @@ else if (args.Length is 4 or 5 && args[0] == "policy-battle" && (args.Length == 
 {
     OfflineBattleSearch.Policy(args[1], args[2], int.Parse(args[3]), args.Length == 5);
 }
-else if (args.Length is 4 or 5 && args[0] == "improve-policy")
+else if (args.Length is >= 4 and <= 6 && args[0] == "improve-policy")
 {
-    OfflineBattleSearch.Improve(args[1], args[2], int.Parse(args[3]), args.Length == 5 ? int.Parse(args[4]) : 4);
+    OfflineBattleSearch.Improve(args[1], args[2], int.Parse(args[3]), args.Length >= 5 ? int.Parse(args[4]) : 4,
+        startDecision: args.Length == 6 ? int.Parse(args[5]) : 0);
 }
-else if (args.Length is 5 or 6 && args[0] == "improve-prediction")
+else if (args.Length is >= 5 and <= 7 && args[0] == "improve-prediction")
 {
-    OfflineBattleSearch.Improve(args[1], args[3], int.Parse(args[4]), args.Length == 6 ? int.Parse(args[5]) : 4, args[2]);
+    OfflineBattleSearch.Improve(args[1], args[3], int.Parse(args[4]), args.Length >= 6 ? int.Parse(args[5]) : 4, args[2],
+        args.Length == 7 ? int.Parse(args[6]) : 0);
 }
 else if (args.Length is >= 4 and <= 6 && args[0] == "refine-policy")
 {
@@ -143,8 +145,8 @@ else
     Console.Error.WriteLine("Diagnostics: extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason>");
     Console.Error.WriteLine("Player root: plan-root <capture.mt2f> <new-output.mt2f> <milliseconds> [decision-index] [workers] [shared-nodes] | verify-root-plan <prediction.mt2f> | freeze-root-plan <prediction.mt2f> <new-output.mt2f>; nodes default256, other node budgets are offline experiments.");
     Console.Error.WriteLine("Counterexample: refine-policy <native.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; bounded single-decision alternatives followed by legal tactical choices, model prediction only.");
-    Console.Error.WriteLine("Iterated counterexample: improve-policy <native.mt2f> <new-output.mt2f> <milliseconds> [passes]; retain complete improvements between sweeps; exported outcome may still be a defeat and needs native validation.");
-    Console.Error.WriteLine("Resume improvement: improve-prediction <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> [passes]; independently verifies the baseline and binds its source hash and complete native deployment root.");
+    Console.Error.WriteLine("Iterated counterexample: improve-policy <native.mt2f> <new-output.mt2f> <milliseconds> [passes] [start-decision]; retain complete improvements between sweeps; exported outcome may still be a defeat and needs native validation.");
+    Console.Error.WriteLine("Resume improvement: improve-prediction <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> [passes] [start-decision]; independently verifies the full baseline and binds its source hash and complete native deployment root.");
     Console.Error.WriteLine("Predicted counterexample: refine-prediction <native.mt2f> <verified-prediction.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; validates native input hash/root and independently replays the baseline before exploring.");
     Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");
     Console.Error.WriteLine("Usage: FixtureTools plan-once <request.mt2f> <output.mt2f> | plan-battle <native.mt2f> <output.mt2f> <horizon> <milliseconds-per-decision> <deployment-room> [--tactical] [--player-continuation] | policy-battle <native.mt2f> <output.mt2f> <deployment-room> [--strength] | freeze-actions <native.mt2f> <actions.json or -> <output.mt2f> | verify-offline-plan <prediction.mt2f> | verify-offline-native <prediction.mt2f> <fresh-native.mt2f> | card-inventory <workspace> [--check] | pack <legacy.json[.gz]> <output.mt2f> | bundle-native <baseline.mt2f> <owned.mt2f> <output.mt2f> | verify <legacy> <archive> | compare-values <diagnostic.json> <native.mt2f> | benchmark-capture <fixture.mt2f> <output-directory> | pack-directory <source-dir> <output-dir> | compare-speeds <normal.mt2f> <accelerated.mt2f>");
