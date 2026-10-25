@@ -121,6 +121,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-unit-ability-duality-counterexample.mt2f',
     'player-hand-highlight-test-rng-counterexample.mt2f',
     'player-hand-highlight-test-rng-observed.mt2f',
+    'player-hand-highlight-test-rng-calibration.mt2f',
+    'player-hand-highlight-test-rng-replay-calibration.mt2f',
     'player-unit-ability-duality-calibration.mt2f',
     'player-unit-ability-duality-replay-calibration.mt2f',
     'player-relic-damage-tower-replay-calibration.mt2f',
@@ -1602,6 +1604,7 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-terminal-comp
     return
 }
 $branchPairGates = @{
+    'player-hand-highlight-test-rng-calibration.mt2f' = '--hand-highlight-rng-pair-only'
     'player-unit-ability-duality-calibration.mt2f' = '--unit-ability-duality-pair-only'
     'player-authored-consume-copy-calibration.mt2f' = '--authored-consume-copy-pair-only'
     'player-ephemeral-copy-full-hand-calibration.mt2f' = '--authored-consume-copy-pair-only'
