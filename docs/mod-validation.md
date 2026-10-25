@@ -1344,3 +1344,28 @@ b383a1f48d463787712b8efd23db77604ebb1703a9c7d6e41d9ef94e27941ccc
 
 No Mac package or full regression was run. Focused affected checks and1397
 archive hashes/registrations pass.
+
+## Native combination repairs · Windows 0.2.28 · 2026-10-25
+
+Authored Consume/copy-on-play and dead-caster status ordering now pass their
+isolated native comparisons. The accepted final payload also wins Remnant/Awoken
+Ring1 in both actual-advice and independent frozen processes:33 inputs,26 plays,
+7 EndTurns,Pyre73; complete state/forecast/RNG match and all four failure counters
+are zero. Later battles are recorded separately in the campaign ledger.
+
+Source revision `7ee2e699` was committed and pushed before delivery. All67
+protected files remain unchanged, including F10,10000ms and two search workers.
+The stopped real Windows game has the exact accepted DLLs; next launch loads0.2.28.
+Backup/receipt:
+`F:/SteamLibrary/steamapps/common/Monster Train 2/BepInEx/PojuBackups/RandomCampaign-20261025-084914/`.
+Package: `results/mod-dist/PojuAdvisor-0.2.28-Windows-20261025-084914.zip`, SHA-256
+`bf5ee1fd02615207d10a9f788708e0b03cc0e2f53e022f468d0f1fd1e90c81de`.
+Installed Advisor / Model / FixtureArchive hashes:
+
+```text
+1dc3fc032175c8d5a2c4c384949a2d4ea32a132979a039de30e6fb16f3101f91
+d667742ab9586d67da19f1fedad49d1c9e953dec72c4e2a1c2da5167e7373ea6
+b383a1f48d463787712b8efd23db77604ebb1703a9c7d6e41d9ef94e27941ccc
+```
+
+No Mac package or full regression was run.

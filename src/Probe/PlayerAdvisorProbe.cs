@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -26,6 +27,7 @@ namespace MonsterTrain2Poju.Probe
         private static ManualLogSource? log;
         private static BattleTurnState? terminal;
         private static bool frozenObservation;
+        private static readonly List<int> expectedChoiceCards = new List<int>();
         private static long frozenSearches;
         private static bool BrowseEnabled => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_FLOOR_BROWSE") == "1";
         private static int browseSwitches;
@@ -170,6 +172,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal static PlayCardAction? NativeAction(PlayCardAction? action)
         {
+            expectedChoiceCards.Clear();
             if (action == null) return null;
             Resolve();
             Type traceType = type!.Assembly.GetType("MonsterTrain2Poju.Probe.FullBattleTrace", true)!;
@@ -188,11 +191,70 @@ namespace MonsterTrain2Poju.Probe
                 CharacterState unit = units.Single(item => (int)AccessTools.Method(traceType, "UnitId").Invoke(trace, new object[] { item }) == id);
                 return FullBattleTrace.Active!.UnitId(unit);
             }
-            Require(action.RecursionSelections.Count == 0 && action.MixSelections.Count == 0,
-                "this focused driver does not translate choice-card identities");
+            Require(action.MixSelections.Count == 0, "native draft-choice automation is not implemented");
+            CardRecursionSelection[] choices = action.RecursionSelections.Select(selection =>
+                new CardRecursionSelection(selection.EffectIndex, selection.CardInstanceIds.Select(Card).ToArray())).ToArray();
+            expectedChoiceCards.AddRange(choices.OrderBy(choice => choice.EffectIndex).SelectMany(choice => choice.CardInstanceIds));
             return new PlayCardAction(Card(action.CardInstanceId), action.RoomIndex, action.PlayerPosition,
                 Unit(action.TargetUnitId), Unit(action.ActivatorUnitId), action.TargetSpawnPointIndex,
+                choices,
+                action.MixSelections,
                 activatorRoomIndex: action.ActivatorRoomIndex);
+        }
+
+        // Drive the same native selection/confirmation callbacks as a player.
+        // The original filters and every subsequent full-state/RNG check remain
+        // active; only identities from the published action may be selected.
+        private static bool ChoiceActive => Enabled && expectedChoiceCards.Count > 0 &&
+            AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false;
+
+        [HarmonyPatch(typeof(CardManager), nameof(CardManager.SelectCardFromHand))]
+        private static class HandChoicePatch
+        {
+            [HarmonyPrefix]
+            private static bool Prefix(CardManager __instance, HandSelectionUI.Params parameters, ref IEnumerator __result)
+            {
+                if (!ChoiceActive) return true;
+                __result = SelectHand(__instance, parameters);
+                return false;
+            }
+        }
+
+        private static IEnumerator SelectHand(CardManager cards, HandSelectionUI.Params parameters)
+        {
+            CardState chosen = expectedChoiceCards.Select(id => cards.GetHand().FirstOrDefault(card =>
+                FullBattleTrace.Active!.CardId(card) == id && !parameters.filterCallback(card))).FirstOrDefault(card => card != null)
+                ?? throw new InvalidOperationException("Published hand choice is absent or rejected by the native filter.");
+            int id = FullBattleTrace.Active!.CardId(chosen);
+            expectedChoiceCards.Remove(id);
+            log!.LogInfo("PLAYER-ADVISOR-CHOICE-PASS kind=hand card=" + id);
+            yield return parameters.cardChosenCallback(chosen, cards);
+        }
+
+        [HarmonyPatch(typeof(DeckScreen), nameof(DeckScreen.AddDeckScreenCardStateChosenDelegate))]
+        private static class DeckChoicePatch
+        {
+            [HarmonyPostfix]
+            private static void Postfix(DeckScreen __instance)
+            {
+                if (!ChoiceActive || (DeckScreen.Mode)AccessTools.Field(typeof(DeckScreen), "mode").GetValue(__instance) != DeckScreen.Mode.CardEffectSelection)
+                    return;
+                // CardEffectRecursion configures excludeFilteredOutCards=true;
+                // use only the original screen's eligible, captured instances.
+                IList infos = (IList)AccessTools.Field(typeof(DeckScreen), "cardInfos").GetValue(__instance);
+                foreach (int id in expectedChoiceCards.ToArray())
+                for (int index = 0; index < infos.Count; index++)
+                {
+                    CardState? card = AccessTools.Field(infos[index].GetType(), "cardState").GetValue(infos[index]) as CardState;
+                    if (card == null || FullBattleTrace.Active!.CardId(card) != id) continue;
+                    expectedChoiceCards.Remove(id);
+                    AccessTools.Method(typeof(DeckScreen), "AddSelectedIndex").Invoke(__instance, new object[] { index });
+                    AccessTools.Method(typeof(DeckScreen), "ConfirmSelectedCard").Invoke(__instance, null);
+                    log!.LogInfo("PLAYER-ADVISOR-CHOICE-PASS kind=deck card=" + id + " index=" + index);
+                    return;
+                }
+                throw new InvalidOperationException("Published deck choice is absent from the native filtered selection screen.");
+            }
         }
 
         internal static bool ReadyFor()
