@@ -270,8 +270,16 @@ namespace MonsterTrain2Poju.Probe
                     !x.GetData().HasBeenVisited(x.GetLocation(), save) &&
                     (x.GetBranch() == MapScreen.BranchSelection.NoBranch || (int)x.GetBranch() == save.GetCurrentBranch()))
                     .OrderByDescending(x => NodeValue(x.GetData()));
+                bool hasChampion = save.GetDeckState().Any(card => card.IsChampionCard());
                 foreach (MapNodeUI node in nodes)
+                {
+                    // MapNodeUI.TryTriggerNode refuses this reward without a
+                    // champion, leaving the node unvisited after its dialog.
+                    // Keep following the map instead of reopening that dialog.
+                    if (!hasChampion && node.GetData() is RewardNodeData rewardNode &&
+                        rewardNode.GetRewards().Any(item => item is ChampionUpgradeRewardData)) continue;
                     if (Click(node.button, "map-node", new { node = node.GetMapNodeDataName() })) return;
+                }
                 if (map.TryGetBattleNodeUI(save.GetCurrentDistance() + 1, out MapBattleNodeUI battle))
                     Click(battle.button, "depart-battle");
                 return;
