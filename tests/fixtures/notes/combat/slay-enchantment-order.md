@@ -19,8 +19,11 @@ processes match all31 complete states and RNG. The original extra sword and
 host upgrade remain preserved as a counterexample. Eight parallel EndTurn
 branches preserve the parent. Existing native Sentry,preview binding,and
 enchantment world/combat callbacks pass focused regression. This component
-pair is not a full Ring8 victory; actual default0.2.99 advice is continuing
-from the same original checkpoint.
+pair is not a full Ring8 victory. Actual default0.2.99 advice from the same
+checkpoint finishes in defeat after41 inputs (33 plays/eight EndTurns), with
+all complete successors/forecasts/RNG matching and all four failure counters
+zero. The full loss is archived separately as
+`full-battle-random-campaign-10-ring8-release099-budget10000-loss.mt2f`.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --slay-enchantment-order-only `
