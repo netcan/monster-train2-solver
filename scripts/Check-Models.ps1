@@ -75,6 +75,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-spell-harvest-tower-replay-calibration.mt2f',
     'player-triggered-corruption-calibration.mt2f',
     'player-triggered-corruption-replay-calibration.mt2f',
+    'player-triggered-corruption-relic-calibration.mt2f',
+    'player-triggered-corruption-relic-replay-calibration.mt2f',
     'player-draft-upgrade-combat-calibration.mt2f',
     'player-draft-upgrade-combat-replay-calibration.mt2f',
     'player-unbox-conduit-replay-calibration.mt2f',
@@ -116,6 +118,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-09-ring6-refined-replay.mt2f',
     'full-battle-random-campaign-09-ring6-release082-refined-search.mt2f',
     'full-battle-random-campaign-09-ring6-release082-refined-replay.mt2f',
+    'full-battle-random-campaign-09-ring7-release082-budget10000-loss.mt2f',
     'full-battle-random-campaign-09-ring5-refined-search.mt2f',
     'full-battle-random-campaign-09-ring5-refined-replay.mt2f',
     'full-battle-metagame-campaign-ring6-budget10000-loss.mt2f',
@@ -1463,6 +1466,7 @@ $branchPairGates = @{
     'player-juice-ritual-calibration.mt2f' = '--juice-ritual-pair-only'
     'player-juice-fracture-calibration.mt2f' = '--juice-fracture-pair-only'
     'player-triggered-corruption-calibration.mt2f' = '--triggered-corruption-only'
+    'player-triggered-corruption-relic-calibration.mt2f' = '--triggered-corruption-relic-only'
     'player-draft-upgrade-combat-calibration.mt2f' = '--draft-upgrade-combat-only'
     'player-consume-kill-copy-calibration.mt2f' = '--consume-kill-copy-pair-only'
     'player-sacrifice-preview-calibration.mt2f' = '--sacrifice-preview-pair-only'

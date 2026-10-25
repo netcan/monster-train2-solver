@@ -1045,6 +1045,17 @@ F10／10000ms／双线程设置保留，无Mac构建，无全量回归。
 已通过，零战斗模拟；每战标注`ActualDefaultBudget`或`OfflineRefined`，
 `AllRingsUseDefaultBudget=false`，完整八战标志仍为false。
 
+第七战0.2.82实际默认24输入（14次出牌／10次结束回合）败北，194.86秒，
+26次发布、205次纯采集；20个列车阶段、完整状态／预测／RNG及四项零失败通过。
+源局以`ring7-release082-budget10000-loss.mt2f`保留。独立候选另暴露冠军Strike
+腐化与`DamageOnCorruptPlay`遗物的阶段／预览门控缺口：两条原生中毒效果在该
+触发阶段均不生效，模型仍拒绝其回调。0.2.83修正已完成21输入独立原生双进程
+校准，旧模型失败、新模型完整状态和RNG匹配；主动生效的回调继续受保护。
+见[冠军触发与遗物门控](../tests/fixtures/notes/combat/triggered-corruption.md#inactive-corruption-relic-statuses-during-strike)。
+原有主动中毒遗物整场及31输入冠军／Inspire双进程对照保持通过，目录1651份。
+新实际默认第七战继续验收，尚未计胜；离线改进暂将终局首领剩余生命从1072
+降到414，仍是败局，继续筛选。
+
 定向检查入口：
 
 ```powershell

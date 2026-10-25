@@ -36,6 +36,33 @@ The now-complete tactical route exports38 inputs at Pyre90 and passes an
 independent full model replay. It still requires native battle acceptance;
 actual-default search is assessed separately.
 
+## Inactive corruption relic statuses during Strike
+
+Random09's continuous Ring7 checkpoint adds the original `DamageOnCorruptPlay`
+relic, with two ordered random-enemy `corrupt_poison` callbacks. Both require
+MonsterTurn and disallow preview. Champion Strike executes in HeroTurn; its
+room preview must also honor CanApplyInPreviewMode. These inactive callbacks
+must not collect targets or consume RNG, while the queued unit Inspire and
+room corruption commit still occur.
+
+Version0.2.82 rejected an otherwise legal spell at turn5 because its resulting
+room2 preview reaches this combination. The original observation and an
+independent0.2.83 process each execute21 unchanged native inputs, including
+the rejected action. Full successors, preview restoration, RNG and immutable
+parents match. Both retain live room corruption2 and the same Battle RNG.
+Direct queued-Strike checks preserve the deferred Inspire and corruption3
+in combat and preview; enabling active relic callbacks still rejects them.
+Unknown owners/amounts, damage/draw relic callbacks and card Slay retain
+their existing guards. The existing original poison-relic battle and the
+31-input Strike/Inspire pair both pass without changes.
+
+```powershell
+./scripts/Check-Models.ps1 -Fixture player-triggered-corruption-relic-calibration.mt2f -SkipBuild
+```
+
+The old actual-default Ring7 loss remains a separate24-input native defeat;
+the21-input calibration is neither a complete battle nor a default victory.
+
 ```powershell
 ./scripts/Check-Models.ps1 -Fixture player-triggered-corruption-calibration.mt2f -SkipBuild
 ```
