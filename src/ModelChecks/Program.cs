@@ -34,6 +34,19 @@ if (args.Length == 3 && args[0] == "--random-refined-campaign-pair-only")
     RandomCampaignChecks.RefinedPair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--discard-holdover-return-native-only")
+{
+    using var native = ModelJson.ReadFixture(args[1]);
+    DiscardHoldoverReturnChecks.Native(native.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--discard-holdover-return-pair-only")
+{
+    using var native = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    DiscardHoldoverReturnChecks.Pair(native.RootElement, replay.RootElement);
+    return;
+}
 
 if (args.Length == 2 && args[0] == "--terminal-enemy-slot-stages-only")
 {
@@ -5242,6 +5255,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-boss-preview-test-rng-replay-calibration.mt2f"));
     BossPreviewTestRngChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-discard-holdover-return-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-discard-holdover-return-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-discard-holdover-return-replay-calibration.mt2f"));
+    DiscardHoldoverReturnChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-guaranteed-status-test-rng-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-guaranteed-status-test-rng-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

@@ -692,8 +692,11 @@ namespace MonsterTrain2Poju.Model
                         changed = changed.WithCard(changedCard);
                     foreach (int restoredCardId in recursion.RestoredCardIds)
                     {
+                        // RestoreExhaustedOrEatenCard returns before resetting traits
+                        // for cards that came from the ordinary discard pile.
                         CardInstanceState? restoredCard = changed.FindCard(restoredCardId);
-                        if (restoredCard != null && (restoredCard.ExhaustState != null || CardRetainModel.Present(restoredCard)))
+                        if (effect.Target is "Exhaust" or "Eaten" && restoredCard != null &&
+                            (restoredCard.ExhaustState != null || CardRetainModel.Present(restoredCard)))
                             changed = changed.WithCard(CardExhaustModel.ResetTraits(restoredCard));
                     }
                     state = WithContext(state, changed);
