@@ -5,6 +5,41 @@ using MonsterTrain2Poju.Model;
 
 internal static class TacticalShiftChecks
 {
+    internal static void LethalRestoration(FixtureValue fixture)
+    {
+        FixtureValue[] rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        var root = rows[9].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var ability = rows[9].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        var restore = rows[10].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        using var keys = new BattleStateKeys();
+        string parent = keys.Key(root);
+        CombatUnit champion = root.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .Single(unit => unit.Id == ability.ActivatorUnitId);
+        Require(root.Spawn.Turn == 1 && champion.Modifiers?.IsChampion == true && champion.Health == 45 &&
+            Front(root, ability.RoomIndex) == restore.TargetUnitId,
+            "Missing native champion-behind-tank lethal restoration control.");
+        BattleActionResult shifted = UnitAbilityModel.Activate(root, ability);
+        Require(shifted.Supported && keys.Key(shifted.State!) == keys.Key(rows[9].GetProperty("Actual").Deserialize<BattleTurnState>()!) &&
+            shifted.State!.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == champion.Id).Health == 15,
+            "First equipment shift must match the complete native successor/RNG and leave fifteen health.");
+        BattleActionResult restored = BattleActionModel.PlayCard(shifted.State!, restore);
+        Require(restored.Supported && keys.Key(restored.State!) == keys.Key(rows[10].GetProperty("Actual").Deserialize<BattleTurnState>()!) &&
+            Front(restored.State!, ability.RoomIndex) == restore.TargetUnitId &&
+            !restored.State!.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == champion.Id && unit.Health > 0),
+            "Restoration must match the native lethal successor despite putting the tank back in front.");
+        for (int floor = 0; floor < 3; floor++)
+        {
+            SupportedActionCandidate? chosen = BattleTacticalPolicy.Choose(root, out var omitted, floor);
+            Require(chosen != null && chosen.Action.ActivatorUnitId != champion.Id && omitted.Count == 0 &&
+                chosen.Result.State!.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == champion.Id && unit.Health > 0),
+                "Tank restoration must not justify a champion ability whose follow-up kills its champion.");
+        }
+        Require(UnitAbilityModel.EnumerateActivations(root).SupportedCandidates.Any(candidate =>
+            candidate.Action.ActivatorUnitId == champion.Id) && keys.Key(root) == parent,
+            "The optional seed must keep the legal ability in full search and preserve the parent.");
+        Console.WriteLine("TACTICAL-SHIFT-SAFETY PASS: native 45/15/dead counterexample and complete successor/RNG, three deployment floors avoid fatal restoration; legal search branch and immutable parent preserved.");
+    }
+
     internal static void Run(FixtureValue fixture)
     {
         FixtureValue row = fixture.GetProperty("RollingDecisions").EnumerateArray().Last(record =>

@@ -4021,6 +4021,12 @@ if (args.Length == 2 && args[0] == "--tactical-shift-only")
     TacticalShiftChecks.Run(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--tactical-shift-safety-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TacticalShiftChecks.LethalRestoration(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--planner-deployment-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

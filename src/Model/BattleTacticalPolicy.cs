@@ -41,8 +41,8 @@ namespace MonsterTrain2Poju.Model
                     effect.Target == "DropTargetCharacter" && effect.Value == 0))
                 {
                     // A shift ability can temporarily expose its champion. Use
-                    // it before a legal tank-restoring card instead of wasting
-                    // that card on the tank already standing in front.
+                    // it before a legal tank-restoring card only when the
+                    // champion also survives both sets of shift callbacks.
                     BattleActionEnumeration shifts = Abilities();
                     foreach (SupportedActionCandidate ability in shifts.SupportedCandidates.Where(ExposesChampion))
                     {
@@ -51,9 +51,13 @@ namespace MonsterTrain2Poju.Model
                         CombatUnit tank = room.Units.First(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0);
                         BattleActionResult restored = Play(ability.Result.State!,
                             new PlayCardAction(choice.token.InstanceId, room.RoomIndex, targetUnitId: tank.Id));
-                        if (restored.Supported && restored.State!.Spawn.Train.Rooms.Single(item => item.RoomIndex == room.RoomIndex)
-                            .Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0)?.Id == tank.Id)
-                            return ability;
+                        if (restored.Supported)
+                        {
+                            RoomCombatState after = restored.State!.Spawn.Train.Rooms.Single(item => item.RoomIndex == room.RoomIndex);
+                            if (after.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0)?.Id == tank.Id &&
+                                after.Units.Any(unit => unit.Id == ability.Action.ActivatorUnitId && unit.Health > 0))
+                                return ability;
+                        }
                     }
                 }
                 if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Recursion != null || effect.SpikeRecipe != null ||

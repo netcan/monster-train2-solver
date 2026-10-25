@@ -8,6 +8,8 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.EndsWith("full-battle-random-campaign-10-ring8-release099-budget10000-loss.mt2f", StringComparison.Ordinal))
+            TacticalShiftChecks.LethalRestoration(source.RootElement);
         if (path.Contains("full-battle-random-campaign-10-ring7-", StringComparison.Ordinal))
             CardCorruptionAttackUpgradeChecks.NaturalQueries(source.RootElement);
         if (path.EndsWith("full-battle-random-campaign-10-ring7-refined-order-search.mt2f", StringComparison.Ordinal))

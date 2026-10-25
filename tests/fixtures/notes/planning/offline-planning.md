@@ -216,8 +216,9 @@ are validated separately.
 
 The tactical seed now considers a champion's shift ability immediately before
 a front-rearrangement card when both actions are legal and the card restores
-the original tank. Missing or unaffordable restoration retains the champion
-protection guard. This uses captured effects and unit roles, without card or
+the original tank and leaves the champion alive after both actions. Missing,
+unaffordable or lethal restoration retains the champion protection guard.
+This uses captured effects and unit roles, without card or
 encounter names. The natural Fragile deployment root produces a 54-input,
 nine-EndTurn model victory with Pyre2; model-only reproduction is:
 
@@ -231,6 +232,23 @@ winning full-state/RNG replay, and immutable roots. The full battle now wins in
 55 of 56 allowed nodes; a two-node control retains an explicitly shorter complete
 deployment turn. A separate actual player source and fresh native replay now
 both win at Pyre2 with all four counters zero; see [native winning evidence](../bosses/player-fragile-winning.md).
+
+In0.2.100, the native Random10 Ring8 loss adds a lethal restoration control.
+At input10, the champion's ability shifts it ahead of its tank and equipment
+self-damage reduces its health45 to15. Input11 restores the tank, but a second
+shift kills the champion. The optional seed previously accepted this because
+it checked only the tank's final position. It now also requires the champion
+to survive the restoration. The complete original successors/RNG remain
+replayable; three deployment preferences avoid this setup, and full search
+retains the legal ability. The original safe54-input Fragile win and bounded
+winning/shorter-horizon controls pass without changing their rules.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-shift-safety-only tests/fixtures/campaign/random/full-battle-random-campaign-10-ring8-release099-budget10000-loss.mt2f
+```
+
+This fixes a specific seed decision. Three model-only deployments from the
+same Random10 Ring8 entry still lose; it is not a new native campaign victory.
 
 `extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-reason>`
 accepts either recorded forecast roots or a pure native deployment observation,
