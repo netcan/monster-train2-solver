@@ -32,6 +32,7 @@ pwsh -NoProfile -File scripts/Run-RandomCampaign.ps1 `
 2026-10-25 首批用 `.NET Random(20261025)` 依序抽取主族、不同副族、游戏种子，
 按下列顺序运行 Covenant0。氏族池顺序为 Banished、Pyreborne、LunaCoven、
 Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、Wurmkin。
+每次先从全池选择主族，再从保持原顺序且排除主族的十族池选择副族，最后取游戏种子。
 
 | 样本 | 主族／副族 | 原生种子 | 本次状态 |
 | --- | --- | ---: | --- |
@@ -40,7 +41,8 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 | 3 | Remnant / Awoken | 295400568 | 从开局10000ms，前五战双胜；第六战56输入原生败局，预测／状态／RNG和失败计数均通过 |
 | 4 | Hellhorned / Wurmkin | 770862752 | 前四战10000ms双胜；第五战50输入局部优化冻结路线原生双胜；第六战0.2.46完整44输入实际败北 |
 | 5 | Stygian / LazarusLeague | 972508374 | 旧构筑前五战10000ms双胜、第六战46输入实际败北；保留冠军的新第三至六战均有双胜，其中第六战30秒根搜索50输入、薪火59，非实际默认搜索验收；第七战默认10000ms实际43输入败局已校准，继续补齐Hydra及生成装备分支，第八战未进入。 |
-| 6 | Hellhorned / LazarusLeague | 1848503146 | 固定随机序列的第六组，0.2.61第一战10000ms实际建议及独立原生复放双胜，24输入、薪火80；正常奖励及地图已进入第二战，整局尚在推进。 |
+| 6 | Hellhorned / LazarusLeague | 1848503146 | 前五战10000ms实际建议及独立原生复放双胜；0.2.66第六战完整62输入原生败局，状态／预测／RNG与四项零失败通过；30秒根搜索也判败，未证明无胜法。 |
+| 7 | LazarusLeague / Pyreborne | 243930257 | 同一随机序列的第七组，0.2.66／10000ms从原生开局推进，尚未通关。 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
@@ -646,6 +648,15 @@ Windows于18:13安装原生双胜的同一套0.2.65 DLL，源修订`1f5427c5`，
 [献祭来源预览恢复](../tests/fixtures/notes/combat/sacrifice-preview.md)。
 归档1549份；继续从相同第六战检查点验收，Windows已安装仍为0.2.65。
 
+提交`4cc97ceb`的0.2.66已完整执行第六战，62输入（51次出牌／11次结束回合）
+后原生败北、薪火0；完整状态／预测／RNG、22个列车阶段及四项零失败通过。
+源局469.20秒、64次发布、9份搜索指标、1764份独立牌掩码上下文、509次纯采集。
+原预览差异没有再出现，但策略仍不能获胜；不是整局通过。失败档案SHA256
+`1ba3db8bedaeba901582ed4e39957740d36960ce7d95d4bf83ed33814ad540b6`，
+收据`.probe-runs/random-campaign-20261025-182452-0296445a/accepted-rings.jsonl`。
+离线30秒／512节点根搜索也得到72输入败局，独立完整复演通过；没有重复原生败局，
+也未将其当成不可解证明。归档1550份，继续同序列第七组自然对局。
+
 定向检查入口：
 
 ```powershell
@@ -661,4 +672,4 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll `
 统一校验。默认要求连续八战、原生标准通关和完整胜局历史；`-ThroughRing 4`
 只验前四战，输出明确标记未通关。该检查复用逐战通过的独立原生重放收据，
 核对原档案／存档哈希、逐战输入输出连续性、相同种族／种子／难度／预算，
-及每对进程三份DLL一致；不重跑战斗模拟。前四战连续链已通过。
+及每对进程三份DLL一致；不重跑战斗模拟。第六组前五战连续链已通过。
