@@ -166,3 +166,11 @@ Normal rewards/merchant/map continuation enters Ring5 at save SHA256
 The ordered Ring2..5 checkpoint check passes without battle simulation and
 preserves all16 old counters,hearts,features and dialogues. Extra hearts
 remain0/9; actual10000ms/two-worker advice continues at Ring5.
+
+Ring5 actual10000ms advice loses after58 inputs (49 plays,9 EndTurns).
+Complete states/forecasts/RNG,18 train stages and four zero failure counters
+pass. Runtime233.35s,60 publications,4 search metric samples,1532 independent
+masks and477 pure captures. The curated default defeat remains separate.
+The iterative tool finds a48-input model win at Pyre8 after three improvements
+among9 complete candidates,zero unsupported:13.06s search,19.60s including
+independent export/replay. Its full native validation is in progress.

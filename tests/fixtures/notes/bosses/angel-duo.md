@@ -374,8 +374,14 @@ candidates (16 complete,zero unsupported) under a60000ms soft budget. Its
 with `improve-prediction` retains a further57-input improvement among18 complete
 candidates,zero unsupported,again no win at60000ms. Both search runs exceed
 the soft budget during atomic transitions/export and finish in82.13s and
-81.29s respectively. A further resumed batch investigates combined changes;
-none of these model defeats is a new native attempt or a proof of impossibility.
+81.29s respectively. A180000ms continuation retains four further improvements
+among51 candidates (50 complete,zero unsupported),exporting61 independently
+verified inputs in206.82s including export. Another180000ms continuation
+completes49 of50 candidates without an improvement or unsupported branch.
+Those repeated early alternatives are no longer restarted; a separate
+`refine-prediction` batch investigates decisions13..30 of the verified61-input
+baseline. None of these model defeats is a new native attempt or a proof of
+impossibility.
 
 The continuous default driver stops before replay/rewards on defeat. Future
 runs additionally emit `player-default-loss.json` with the checked input and
