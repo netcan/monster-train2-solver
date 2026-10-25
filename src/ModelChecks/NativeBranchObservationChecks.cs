@@ -6,7 +6,8 @@ internal static class NativeBranchObservationChecks
 {
     internal static string Key(BattleTurnState state) => BattleTurnChecks.Comparable(state);
 
-    internal static FixtureValue[] Replay(FixtureValue fixture, string reason)
+    internal static FixtureValue[] Replay(FixtureValue fixture, string reason,
+        Action<BattleTurnState, BattleTurnState>? historicalBoundaryMismatch = null)
     {
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
             fixture.GetProperty("EvidenceKind").GetString() == "NativeUnsupportedBranchObservation" &&
@@ -40,9 +41,15 @@ internal static class NativeBranchObservationChecks
             if (expected.ValueKind == FixtureKind.Null)
                 Require(boundary && row.GetProperty("UnsupportedReason").GetString() == reason,
                     "Only the original rejected boundary may omit its prediction.");
-            else Require(Key(expected.Deserialize<BattleTurnState>()!) == Key(actual) &&
-                row.GetProperty("UnsupportedReason").ValueKind == FixtureKind.Null && row.GetProperty("Outcome").GetInt32() == (int)outcome,
-                "Historical prediction differs at " + index);
+            else
+            {
+                Require(row.GetProperty("UnsupportedReason").ValueKind == FixtureKind.Null &&
+                    row.GetProperty("Outcome").GetInt32() == (int)outcome, "Historical outcome differs at " + index);
+                BattleTurnState historical = expected.Deserialize<BattleTurnState>()!;
+                if (boundary && historicalBoundaryMismatch != null && Key(historical) != Key(actual))
+                    historicalBoundaryMismatch(historical, actual);
+                else Require(Key(historical) == Key(actual), "Historical prediction differs at " + index);
+            }
             Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "Replay mutated its parent.");
             if (boundary) Require(Key(before) == Key(request.GetProperty("FailedRoot").Deserialize<BattleTurnState>()!), "Wrong failed root.");
             current = actual;
@@ -54,7 +61,7 @@ internal static class NativeBranchObservationChecks
         return rows;
     }
 
-    internal static void Pair(FixtureValue source, FixtureValue replay)
+    internal static void Pair(FixtureValue source, FixtureValue replay, bool originalPredictionPresent = false)
     {
         Require(source.GetProperty("Request").ContentEquals(replay.GetProperty("Request")), "Independent process changed its request.");
         FixtureValue[] first = source.GetProperty("Rows").EnumerateArray().ToArray();
@@ -68,10 +75,16 @@ internal static class NativeBranchObservationChecks
             foreach (string field in new[] { "Action", "IsEndTurn", "Boundary" })
                 Require(first[index].GetProperty(field).ContentEquals(second[index].GetProperty(field)), "Independent input changed at " + index);
         }
-        Require(first[^1].GetProperty("Expected").ValueKind == FixtureKind.Null &&
+        Require(first[^1].GetProperty("Expected").ValueKind == (originalPredictionPresent ? FixtureKind.Object : FixtureKind.Null) &&
             second[^1].GetProperty("Expected").ValueKind == FixtureKind.Object &&
             second[^1].GetProperty("UnsupportedReason").ValueKind == FixtureKind.Null,
             "Preserve the original rejection and the independently repaired forecast.");
+        if (originalPredictionPresent)
+            Require(Key(first[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!) !=
+                Key(first[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!) &&
+                Key(second[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!) ==
+                Key(second[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!),
+                "Preserve the original mismatching forecast and the independently repaired forecast.");
     }
 
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

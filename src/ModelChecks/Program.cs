@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--ability-attack-compaction-native-only")
+{
+    using var native = ModelJson.ReadFixture(args[1]);
+    AbilityAttackCompactionChecks.Native(native.RootElement);
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--ability-attack-compaction-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    AbilityAttackCompactionChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--dead-caster-status-native-only")
 {
     using var native = ModelJson.ReadFixture(args[1]);
@@ -4805,6 +4820,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is "player-dea
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-dead-caster-status-replay-calibration.mt2f"));
     DeadCasterStatusChecks.Pair(source.RootElement, replay.RootElement);
     TacticalTargetChecks.NativeAbilityBoundary(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-ability-attack-compaction-calibration.mt2f" or
+    "player-ability-attack-compaction-replay-calibration.mt2f").Select(path => ModelJson.RelatedFixture(path,
+        "player-ability-attack-compaction-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-ability-attack-compaction-replay-calibration.mt2f"));
+    AbilityAttackCompactionChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-harvester-birth-calibration.mt2f"))
 {

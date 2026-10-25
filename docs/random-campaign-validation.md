@@ -181,6 +181,11 @@ Windows0.2.26 的最终玩家载荷另复验第一组第一战：实际建议与
 原件为 `full-battle-random-campaign-04-ring2-budget10000-*.mt2f`。
 此次证明的是牌堆选牌路径；混合／药剂选择自动化仍有明确保护，不计作已验收。
 
+第三组第四战的第27个输入暴露了 Wrath 技能击杀前排后物理站位引用未补齐的偏差。
+相同26步前缀和技能已完成两次独立原生观察；修复后完整后继与RNG匹配，原始
+空位预测保留为反例。见 [技能击杀站位](../tests/fixtures/notes/combat/ability-attack-compaction.md)。
+这是组件校准，第四战的完整结算另行验收。
+
 第一组第七战的离线局部分支还发现进食法术外层重复路由已吞食单位的问题。
 两次原生观察均执行完整20输入前缀和最终法术；修复后完整状态、RNG、三个已吞食
 载体、装备去向和消耗统计匹配。见 [进食法术路由](../tests/fixtures/notes/combat/feeding-spell-routing.md)。

@@ -157,6 +157,29 @@ namespace MonsterTrain2Poju.Model
                 if (!after.Supported) return Unsupported(after.UnsupportedReason!);
                 train = after.State!; if (Terminal(after.Outcome)) outcome = after.Outcome;
             }
+            if (source.CanonicalPhysicalReferences && train.Context?.SpawnPoints != null &&
+                train.Context.IsolatedBattlePreview != true &&
+                effects.Any(effect => effect.Type is "AttackWithUnit" or "AttackTargetsWithSelfUnit"))
+            {
+                // The native RoomUI death callback retains control of room
+                // visuals for an ability and centers both teams. Stable player
+                // decisions observe that callback after the commanded attack;
+                // raw effect/preview frames retain their separate slot timing.
+                foreach (RoomCombatState before in source.Spawn.Train.Rooms)
+                {
+                    RoomCombatState room = train.Rooms.Single(item => item.RoomIndex == before.RoomIndex);
+                    if (room.Preview || !before.Units.Any(unit => room.Units.All(living => living.Id != unit.Id))) continue;
+                    foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
+                    {
+                        context = train.Context!;
+                        var scope = new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
+                            room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds);
+                        BattleSpawnPointResult centered = BattleSpawnPointModel.Apply(context.SpawnPoints!, scope, "Compact", team);
+                        if (!centered.Supported) return Unsupported(centered.Error!);
+                        train = CardSpellModel.WithContext(train, context.WithSpawnPoints(centered.State!));
+                    }
+                }
+            }
             // Native clears resolving and played-cost queries after both team queues.
             if (!roomAbility) train = Resolving(train, actorId, false);
             context = train.Context!;
