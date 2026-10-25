@@ -99,3 +99,25 @@ The same check compares cumulative counters, hearts, features and dialogues
 without battle simulations. Skipped/repeated boundaries are rejected. Actual
 battle states remain covered by the separate two curated `.mt2f` archives in
 `campaign/progression/full-battle-metagame-campaign-ring1-budget10000-*`.
+
+Ring2 also passed actual10000ms advice and independent native replay:35 inputs,
+28 plays,7 EndTurns, Pyre56,14 train stages per process; state/forecast/RNG and
+four zero failure counters match. Native runtime132.65s,37 publications,
+3 search metric samples,1498 independent mask contexts and293 pure captures.
+The next native save is
+`44e6ef19e0139783f648523fd4e70c004ab6dcdea55cb0c1dd3441e970aa3412`.
+`campaign-metagame-ring3.zip` has52 hash-verified files, SHA256
+`0ae5d64843e63088be6a9d89076155a07be860e5c9c7bf51e310a6f719c3941e`.
+Checking Ring2 and Ring3 archives in order confirms UnitsMoved172,
+StewardDamage1326, CoinsSpent1510, Debuffs120, MagicPower350 and PyreDamage144;
+all previous counters, hearts, features and dialogues are retained. Hearts0/9.
+
+Ring3 actual default advice loses after44 inputs,35 plays and9 EndTurns.
+Its complete native state/forecast/RNG,18 train stages and four zero failure
+counters pass; runtime197.13s,46 publications,4 search metric samples,
+1798 independent mask contexts and365 pure captures. The source defeat remains
+curated separately from the two earlier winning pairs; the pre-battle Ring3
+checkpoint is preserved for offline strategy improvement, with no Ring4 claim.
+An independent30s/4096-node-cap root search also predicts defeat after44 steps
+(1250 expanded nodes); its complete state/RNG replay passes. This is a bounded
+strategy counterexample, not a proof that the battle has no winning route.

@@ -54,6 +54,11 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-07-ring5-budget10000-loss.mt2f',
     'full-battle-metagame-campaign-ring1-budget10000-search.mt2f',
     'full-battle-metagame-campaign-ring1-budget10000-replay.mt2f',
+    'full-battle-metagame-campaign-ring2-budget10000-search.mt2f',
+    'full-battle-metagame-campaign-ring2-budget10000-replay.mt2f',
+    'full-battle-metagame-campaign-ring3-budget10000-loss.mt2f',
+    'full-battle-random-campaign-08-ring1-budget10000-search.mt2f',
+    'full-battle-random-campaign-08-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-03-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-03-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-03-ring2-budget10000-search.mt2f',
@@ -102,6 +107,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-pyre-max-health-replay-calibration.mt2f',
     'player-card-type-sequence-reset-calibration.mt2f',
     'player-card-type-sequence-reset-replay-calibration.mt2f',
+    'player-pyre-payment-world-calibration.mt2f',
+    'player-pyre-payment-world-replay-calibration.mt2f',
     'player-consume-kill-copy-observation-calibration.mt2f',
     'player-consume-kill-copy-replay-calibration.mt2f',
     'player-juice-ritual-calibration.mt2f',
@@ -1382,6 +1389,7 @@ $branchPairGates = @{
     'player-sacrifice-preview-calibration.mt2f' = '--sacrifice-preview-pair-only'
     'player-pyre-max-health-calibration.mt2f' = '--pyre-max-health-pair-only'
     'player-card-type-sequence-reset-calibration.mt2f' = '--card-type-sequence-reset-pair-only'
+    'player-pyre-payment-world-calibration.mt2f' = '--pyre-payment-world-pair-only'
     'player-generated-discard-guard-calibration.mt2f' = '--generated-discard-guard-pair-only'
     'player-ephemeral-consume-order-calibration.mt2f' = '--ephemeral-consume-order-pair-only'
     'player-status-callback-room-sync-calibration.mt2f' = '--status-callback-room-sync-pair-only'

@@ -76,10 +76,9 @@ namespace MonsterTrain2Poju.Model
                 return Fail(source, "Lethal or invalid Pyre payments require native resurrection and terminal-state coverage.");
 
             CombatUnit paidPyre = pyre.WithHealth(pyre.Health - (int)totalCost);
-            RoomCombatState[] rooms = source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
-                room.Units.Select(unit => unit.Id == pyre.Id ? paidPyre : unit).ToArray(), room.ExternalInteractions,
-                context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
-            TrainCombatState paidState = new(rooms, source.Movement, source.EnemySlotsPerRoom, context);
+            // Later room effects resume the enchantment world. Preserve the
+            // payment there as well as on the live Pyre before queuing OnHit.
+            TrainCombatState paidState = UnitCloneModel.ReplaceUnit(source, paidPyre);
             var callbacks = callbackCosts.Select(amount => new RoomCombatModel.QueuedCharacterTrigger(
                 pyreRoom.RoomIndex, paidPyre, "OnHit", paramInt: amount, paramInt2: 0)).ToArray();
             return new RelicPyreCostPlan(paidState, true, true, callbacks);
