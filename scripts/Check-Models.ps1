@@ -195,6 +195,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-juice-justcause-calibration.mt2f',
     'player-juice-justcause-observation-calibration.mt2f',
     'player-juice-justcause-replay-calibration.mt2f',
+    'full-battle-random-campaign-10-ring2-budget10000-search.mt2f',
+    'full-battle-random-campaign-10-ring2-budget10000-replay.mt2f',
     'player-juice-fracture-observation-calibration.mt2f',
     'player-juice-fracture-replay-calibration.mt2f',
     'player-juice-ritual-observation-calibration.mt2f',
