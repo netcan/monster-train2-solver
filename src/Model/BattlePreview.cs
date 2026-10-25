@@ -224,7 +224,9 @@ namespace MonsterTrain2Poju.Model
                     .Select(unit => unit.Id).ToArray();
                 CombatUnit RestoreEnchantments(CombatUnit original)
                 {
-                    if (!actors.TryGetValue(original.Id, out CombatUnit? tested)) return original;
+                    // Dead preview actors can be pruned from the aura world;
+                    // their observed non-primary reference writes still survive.
+                    if (!actors.TryGetValue(original.Id, out CombatUnit? tested)) return RestorePrimaryEffects(original);
                     return PreviewEffectsModel.Restore(RestorePrimaryEffects(original), tested, removed,
                         resetPreviewActionsForUnitIds: previewBossIds);
                 }
