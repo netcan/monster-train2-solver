@@ -21,20 +21,25 @@ internal static class JuiceTraitChecks
             .SequenceEqual(new[] { int.MinValue, -3, 0, 1, 4, int.MaxValue }), "Native Juice boundaries changed.");
         BattleTurnState initial = fixture.GetProperty("RollingDecisions")[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
         CombatContext context = initial.Spawn.Train.Context!;
-        CardInstanceState original = context.CardInstances!.Single(card => CardJuiceModel.Present(card));
-        Require(original.Permanent.Upgrades.Any(upgrade => upgrade.DataId == CardJuiceModel.Upgrade) &&
-            CardJuiceModel.Validate(original) == null, "Missing the original merchant upgrade on the captured spell.");
-        foreach (FixtureValue sample in samples.EnumerateArray())
-        foreach (string status in new[] { "lifesteal", "scorch" })
+        // Isolated callback evidence does not imply a fixed owner count at
+        // deployment. Validate every initial owner and each later played owner.
+        CardInstanceState[] originals = context.CardInstances!.Where(CardJuiceModel.Present).ToArray();
+        foreach (CardInstanceState original in originals)
         {
-            int input = sample.GetProperty("Input").GetInt32(), bonus = sample.GetProperty("Bonus").GetInt32();
-            StatusScalingResult applied = StatusScalingModel.Apply(context, original.InstanceId, CombatTeam.Player, status, input);
-            Require(applied.Supported && applied.Stacks == unchecked(input + bonus),
-                "Actual captured Juice owner diverged from the isolated native callback.");
+            Require(original.Permanent.Upgrades.Any(upgrade => upgrade.DataId == CardJuiceModel.Upgrade) &&
+                CardJuiceModel.Validate(original) == null, "Missing the original merchant upgrade on the captured spell.");
+            foreach (FixtureValue sample in samples.EnumerateArray())
+            foreach (string status in new[] { "lifesteal", "scorch" })
+            {
+                int input = sample.GetProperty("Input").GetInt32(), bonus = sample.GetProperty("Bonus").GetInt32();
+                StatusScalingResult applied = StatusScalingModel.Apply(context, original.InstanceId, CombatTeam.Player, status, input);
+                Require(applied.Supported && applied.Stacks == unchecked(input + bonus),
+                    "Actual captured Juice owner diverged from the isolated native callback.");
+            }
+            var unknownOwner = new CardInstanceState(original.InstanceId, "unobserved-juice-owner", original.Permanent, original.Temporary,
+                0, 0, 0, [], maskDescriptor: original.MaskDescriptor);
+            Require(CardJuiceModel.Validate(unknownOwner) != null, "Uncalibrated Juice ownership bypassed its guard.");
         }
-        var unknownOwner = new CardInstanceState(original.InstanceId, "unobserved-juice-owner", original.Permanent, original.Temporary,
-            0, 0, 0, [], maskDescriptor: original.MaskDescriptor);
-        Require(CardJuiceModel.Validate(unknownOwner) != null, "Uncalibrated Juice ownership bypassed its guard.");
         foreach (FixtureValue row in fixture.GetProperty("RollingDecisions").EnumerateArray())
         {
             if (row.GetProperty("IsEndTurn").GetBoolean()) continue;
@@ -51,7 +56,7 @@ internal static class JuiceTraitChecks
             Require(CardJuiceModel.Validate(unknown) != null, "Uncalibrated Juice ownership bypassed its guard.");
             plays++;
         }
-        Console.WriteLine($"NATIVE-JUICE PASS: {controls} native callback boundaries, {plays} observed original spell plays; other card signatures remain guarded.");
+        Console.WriteLine($"NATIVE-JUICE PASS: {controls} native callback boundaries, {originals.Length} initial owners, {plays} observed original spell plays; other card signatures remain guarded.");
     }
     private static void Require(bool value, string reason)
     { if (!value) throw new InvalidOperationException(reason); }

@@ -339,7 +339,12 @@ Four retained improvements among96 complete candidates find a37-input model
 win at Pyre55 in91.58s; full export/verification finishes in102.45s.
 The native source,root and first20 inputs/full successor states stay identical.
 A different native deployment is rejected before output creation. Native
-execution and independent replay remain required before counting a victory.
+execution and independent replay both subsequently win at Pyre55:37 inputs,
+27 plays and10 EndTurns,with every full state/forecast/RNG matching and four
+zero failure counters. Each native archive also binds exactly to the unchanged
+frozen model prediction. The continuous first7-ring mixed receipt chain passes
+without simulations; it remains explicitly distinct from default-budget
+acceptance and an8-ring campaign completion.
 Focused controls reject a different native source, a separately replayable
 prediction whose source hash was rebound while its root stayed different, and
 an existing output without overwriting it. The natural Covenant3 AngelDuo

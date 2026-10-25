@@ -29,6 +29,18 @@ stack mode,Corrupt/Consume parameters,trait order,upgrade identity and upgrade
 order. Unknown Juice combinations remain explicit gaps. This component pair
 does not prove a complete Ring2 victory or a complete campaign.
 
+The subsequent actual10000ms Ring2 advice and independent replay both win
+at Pyre80 with33 inputs. Ring3 also wins both native processes at Pyre62 with
+35 inputs. Its isolated callback samples coexist with zero initial active
+Juice owners; JustCause23 is observed with the merchant upgrade later on
+turn2. The old checker incorrectly required exactly one initial owner and
+threw after all full native state/forecast/RNG comparisons had passed.
+The checker now validates every initial owner and every later played owner.
+All six isolated signed/overflow callback boundaries and unknown-owner guards
+remain required. Rechecking the unchanged Ring3 pair passes; a focused Ring2
+control retains its one-initial-owner/one-observed-play coverage. No native
+battle was repeated for this checker repair.
+
 ```powershell
 ./scripts/Check-Models.ps1 -Fixture player-juice-justcause-calibration.mt2f -SkipBuild
 ```
