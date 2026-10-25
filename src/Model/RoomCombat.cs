@@ -5018,9 +5018,27 @@ namespace MonsterTrain2Poju.Model
                         { unsupportedReason = "Tower corruption is missing a captured floor."; return false; }
                     }
                     var train = new TrainCombatState(floors, Array.Empty<EnemyMovement>(), 1, context);
-                    RoomCorruptionResult changed = RoomCorruptionModel.Apply(train, source.RoomIndex, action);
+                    bool unitCallbacks = room.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded"));
+                    bool championAttack = action.Target == "Room" && action.CorruptionAdd == true && action.Value == 1 &&
+                        actor.Source.AssetKey == "MonsterWurmChampion1" && triggerKind == "OnAttacking" && runningTriggerQueue;
+                    RoomCorruptionResult changed = RoomCorruptionModel.Apply(train, source.RoomIndex, action,
+                        runUnitCallbacks: unitCallbacks && championAttack);
                     if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
-                    context = changed.Context;
+                    if (unitCallbacks && championAttack)
+                    {
+                        // QueueAndRunTrigger does not recursively drain an active native
+                        // queue. Commit room corruption before the queued Inspire callbacks.
+                        var capacities = context!.RoomCapacities!;
+                        foreach (var addition in changed.Additions)
+                            foreach (WorkingUnit target in units.Where(unit => unit.InRoom && unit.Alive && !unit.Removed &&
+                                unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded")).ToArray())
+                                for (int stack = 0; stack < addition.Count; stack++) FireTriggers(target, "CorruptionAdded");
+                        if (unsupportedReason != null) return false;
+                        if (!capacities.SequenceEqual(context.RoomCapacities!))
+                        { unsupportedReason = "Nested corruption callbacks require a fresh native ordering calibration."; return false; }
+                        context = context.WithRoomCapacities(changed.Context!.RoomCapacities!);
+                    }
+                    else context = changed.Context;
                     return true;
                 }
                 if (action.Type == "AdjustPyreMaxHealth")

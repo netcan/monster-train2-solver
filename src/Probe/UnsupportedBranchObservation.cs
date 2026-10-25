@@ -20,6 +20,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Completed { get; private set; }
         private static FixtureValue request;
         private static FixtureValue[]? prefix;
+        internal static bool ObserveTriggeredCorruption => prefix != null && request.GetProperty("Reason").GetString() ==
+            "Battle preview floor 2: CorruptionAdded unit callbacks are not modeled.";
         private static BattleTurnState expected = null!;
         private static readonly List<Row> rows = new List<Row>();
         private static bool waiting;
@@ -81,6 +83,7 @@ namespace MonsterTrain2Poju.Probe
                 PlayerAdvisor = PlayerAdvisorProbe.Evidence,
                 EquipmentOwnerRecoveries = FullBattleTrace.Active!.EquipmentOwnerRecoveries.ToArray(),
                 EquipmentPreviewClear = equipmentPreviewClear,
+                TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
                 BattleTestRng = BattleTestRngProbe.Records.ToArray(),
                 TerminalSpawnPoints = BattleSpawnPointProbe.Decisions.Where(sample => sample.Terminal).ToArray() });

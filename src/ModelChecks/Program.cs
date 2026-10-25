@@ -56,6 +56,17 @@ if (args.Length == 4 && args[0] == "--consume-kill-copy-pair-only")
     ConsumeKillCopyChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--triggered-corruption-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 3)
+    {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        TriggeredCorruptionChecks.Native(source.RootElement, replay.RootElement);
+    }
+    else TriggeredCorruptionChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--juice-fracture-pair-only")
 {
     using var refused = ModelJson.ReadFixture(args[1]);
