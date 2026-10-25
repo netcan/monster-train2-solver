@@ -398,6 +398,10 @@ on room2 in this observed branch; it does not establish every cross-floor
 combination. The public room-only damage API still explicitly rejects Tower
 callbacks without complete-train snapshots. Original refusal and fixed replay
 are retained as `player-spell-angel-death[-replay]-calibration.mt2f`.
+With0.2.77,the next decisions36..44 complete70 local continuations with
+zero unsupported candidates before the90s soft limit,and no win. Subsequent
+decisions45..60 complete94/94 continuations in54.61s,zero unsupported and no
+win,instead of repeating early decisions.
 None of these model defeats is a new native victory or a proof of impossibility.
 
 The continuous default driver stops before replay/rewards on defeat. Future

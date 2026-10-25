@@ -56,6 +56,14 @@ if (args.Length == 4 && args[0] == "--consume-kill-copy-pair-only")
     ConsumeKillCopyChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
     return;
 }
+if (args.Length == 4 && args[0] == "--juice-fracture-pair-only")
+{
+    using var refused = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    using var observation = ModelJson.ReadFixture(args[3]);
+    JuiceFractureChecks.Pair(refused.RootElement, observation.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--juice-ritual-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5576,6 +5584,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-replay-calibration.mt2f"));
     using var observation = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-observation-calibration.mt2f"));
     ConsumeKillCopyChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-juice-fracture-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-juice-fracture-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var refused = ModelJson.ReadFixture(path);
+    using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-juice-fracture-observation-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-juice-fracture-replay-calibration.mt2f"));
+    JuiceFractureChecks.Pair(refused.RootElement, source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-juice-ritual-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-juice-ritual-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

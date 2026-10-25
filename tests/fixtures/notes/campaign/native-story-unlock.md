@@ -187,3 +187,14 @@ The ordered Ring2..6 checkpoint check preserves all16 earlier counters,hearts,
 features and dialogues with zero battle simulations. Extra hearts remain0/9;
 actual10000ms/two-worker advice resumes at Ring6. Curated Ring4 and5 refined
 pairs use their frozen-policy gates,not actual-default search gates.
+
+After the pre-discard RNG correction,actual0.2.75 Ring6 advice still loses
+with62inputs/51plays/11EndTurns. Full state/forecasts/RNG,22train stages
+and all four failure counters pass. The loss remains curated separately.
+Offline improvementv2 completes58/58 candidates with four losing improvements,
+442 unsupported alternative attempts and97.08s total. Resuming it asv3
+completes59 of60 candidates with one further61-input losing improvement,
+187 unsupported alternative attempts and106.75s total under a90s soft limit.
+Both exported routes independently replay fully. These local improvements
+do not prove impossibility; no losing model route is sent through redundant
+native replays. Ring6 remains unfinished and extra hearts remain0/9.
