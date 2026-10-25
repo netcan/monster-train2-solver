@@ -5946,6 +5946,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corrupt-equipment-replay-calibration.mt2f"));
     CorruptEquipmentChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-juice-magic-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-juice-magic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var refused = ModelJson.ReadFixture(path);
+    using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-juice-magic-observation-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-juice-magic-replay-calibration.mt2f"));
+    JuiceMagicChecks.Pair(refused.RootElement, source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-juice-justcause-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-juice-justcause-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

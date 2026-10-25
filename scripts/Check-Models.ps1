@@ -215,6 +215,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-consume-kill-copy-observation-calibration.mt2f',
     'player-consume-kill-copy-replay-calibration.mt2f',
     'player-juice-ritual-calibration.mt2f',
+    'player-juice-magic-calibration.mt2f',
+    'player-juice-magic-observation-calibration.mt2f',
+    'player-juice-magic-replay-calibration.mt2f',
     'player-juice-fracture-calibration.mt2f',
     'player-juice-justcause-calibration.mt2f',
     'player-juice-justcause-observation-calibration.mt2f',
@@ -1539,6 +1542,7 @@ $branchPairGates = @{
     'player-natural-hydra-graft-equipment-calibration.mt2f' = '--natural-hydra-graft-pair-only'
     'player-infusion-trigger-merge-calibration.mt2f' = '--infusion-trigger-merge-pair-only'
     'player-juice-ritual-calibration.mt2f' = '--juice-ritual-pair-only'
+    'player-juice-magic-calibration.mt2f' = '--juice-magic-pair-only'
     'player-juice-fracture-calibration.mt2f' = '--juice-fracture-pair-only'
     'player-juice-justcause-calibration.mt2f' = '--juice-justcause-pair-only'
     'player-corrupt-equipment-calibration.mt2f' = '--corrupt-equipment-only'
@@ -1595,7 +1599,7 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
         $replayPath = Get-TestFixturePath ($sourceName -replace '-calibration\.mt2f$', '-replay-calibration.mt2f')
         $pairArguments = @($branchPairGates[$sourceName], $sourcePath, $replayPath)
         if ($sourceName -in @('player-heal-combat-removal-calibration.mt2f', 'player-despawn-frame-removal-calibration.mt2f',
-            'player-destroyed-feeder-calibration.mt2f', 'player-juice-ritual-calibration.mt2f', 'player-juice-fracture-calibration.mt2f', 'player-juice-justcause-calibration.mt2f',
+            'player-destroyed-feeder-calibration.mt2f', 'player-juice-ritual-calibration.mt2f', 'player-juice-magic-calibration.mt2f', 'player-juice-fracture-calibration.mt2f', 'player-juice-justcause-calibration.mt2f',
             'player-consume-kill-copy-calibration.mt2f')) {
             $pairArguments += Get-TestFixturePath ($sourceName -replace '-calibration\.mt2f$', '-observation-calibration.mt2f')
         }

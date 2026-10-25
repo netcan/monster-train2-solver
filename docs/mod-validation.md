@@ -12,9 +12,12 @@ Since0.2.84 the payload includes native-calibrated equipment Etch, returned
 Permafrost draw callbacks, preview-born aura cleanup/mode and direct boss
 Pyre-entry attachment ordering. The last correction passes52 unchanged
 native inputs in independent processes. The tenth sample's first five actual
-default battles and the ninth sample's mixed first seven battles have passed
-their continuous chains. Their remaining battles still need strategy work;
-no full random campaign is claimed. The remote companion-roster stage
+default battles and the ninth sample's mixed eight battles have passed
+their continuous chains. The ninth sample reaches a native eight-win Standard
+settlement: its final48-input offline-refined pair wins at Pyre1, and the
+44-file completed-run archive restores with all43 payload hashes verified.
+Its last three battles use offline refinement; an all-default-budget full
+random clear remains unaccepted. The remote companion-roster stage
 snapshot difference is fixed in0.2.95:98 room stages,22 train phases and52
 inputs match independent native processes. Version0.2.96 adds calibrated
 Small Box/expensive-card relic ordering and preserves copied temporary

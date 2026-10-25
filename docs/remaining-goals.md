@@ -94,6 +94,10 @@ SHA256`fb8ae4b1b61d8d995cf67e1c157f1850262d342f0bd278dc72385d9f9e89366c`。
 完整通关样本，前五战默认、后三战离线改进，默认预算整局通关仍待验收。
 自然Covenant3第六战用同一工具从61输入改进至49输入，仍为完整模型败局；
 两批均无不支持分支，没有为这些败路重复运行原生游戏。
+第十一组第五战MagicJuice商店Juice签名阻断已在0.2.104修复，14输入独立原生
+双进程确认三个敌人各施加4层法术易伤、0费、消耗和12层来源统计；完整后继／
+预测／RNG、八个不变父分支、十项未知签名保护及既有Juice定向回归通过。
+见[Juice法术易伤](../tests/fixtures/notes/cards/juice-magic.md)。继续实际默认整场验收。
 
 旧`full-battle-persistent-enchantment-summons.mt2f`第4次出牌的
 `Enchantment.Bound`偏差已在0.2.91修复；旧整场15次出牌／5次结束回合通过。
