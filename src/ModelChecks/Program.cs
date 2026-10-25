@@ -1,6 +1,20 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--friendly-relic-piercing-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    FriendlyRelicPiercingChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--friendly-relic-piercing-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    FriendlyRelicPiercingChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--recursion-target-text-native-only")
 {
     using var native = ModelJson.ReadFixture(args[1]);
@@ -4915,6 +4929,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-recursion-target-text-replay-calibration.mt2f"));
     RecursionTargetTextChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-friendly-relic-piercing-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-friendly-relic-piercing-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-friendly-relic-piercing-replay-calibration.mt2f"));
+    FriendlyRelicPiercingChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-despawn-frame-removal-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-despawn-frame-removal-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

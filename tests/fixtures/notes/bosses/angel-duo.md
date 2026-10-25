@@ -350,6 +350,15 @@ workers produces a57-input/11-turn defeat (204 nodes). A separate process
 reproduces every frozen successor,full forecast and RNG. This is another
 bounded offline diagnostic, not a native win or proof that no winning line exists.
 
+Four further bounded refinement batches cover single-input alternatives at
+recorded decisions0 through12, followed by the ordinary tactical policy.
+There are87 attempted continuations,84 complete defeats and three interrupted
+continuations; the batches repeat some boundary decisions, so these are not
+unique-path counts. The final decision12 batch completes all16 alternatives
+in50.59 seconds without an unsupported branch. Across all four batches no
+winning line or unsupported mechanism is found. This local search does not
+exhaust combinations of changes and does not establish that the deck cannot win.
+
 The continuous default driver stops before replay/rewards on defeat. Future
 runs additionally emit `player-default-loss.json` with the checked input and
 trace hashes,then append a `default-loss` journal entry retaining the next

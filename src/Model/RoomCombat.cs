@@ -852,9 +852,9 @@ namespace MonsterTrain2Poju.Model
             bool deferSpawnerExhaustion = false, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true, attackerUnitId, refreshPyre: refreshPyre);
 
         internal static RoomCombatResult ApplyRelicDamage(RoomCombatState state, int targetId, int damage,
-            Action<QueuedCharacterTrigger> enqueueCharacterTrigger) =>
+            Action<QueuedCharacterTrigger> enqueueCharacterTrigger, bool piercing = false) =>
             ApplyNativeCardDamageAfterTraits(state, targetId, damage, 0, enqueueCharacterTrigger: enqueueCharacterTrigger,
-                captureAllDispatches: true);
+                captureAllDispatches: true, piercing: piercing);
 
         internal static RoomCombatResult ApplyCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
             bool deferSpawnerExhaustion, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
@@ -866,7 +866,8 @@ namespace MonsterTrain2Poju.Model
             int attackerUnitId = 0,
             Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
-            Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false)
+            Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false,
+            bool piercing = false)
         {
             string? error = Validate(state);
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
@@ -883,7 +884,7 @@ namespace MonsterTrain2Poju.Model
                 enqueueCharacterTrigger: enqueueCharacterTrigger, externalActor: externalActor,
                 externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false)
                 .TraceAllDispatches(captureAllDispatches)
-                .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId);
+                .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId, piercing);
         }
 
         private static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId,
@@ -2016,14 +2017,16 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            internal RoomCombatResult CardDamage(int targetId, int damage, int sourceCardId, bool applyTraits = true, int attackerUnitId = 0)
+            internal RoomCombatResult CardDamage(int targetId, int damage, int sourceCardId, bool applyTraits = true,
+                int attackerUnitId = 0, bool piercing = false)
             {
                 CardInstanceState? card = context?.LifeLinks == null ? null : context.FindCard(sourceCardId);
                 plainSpellDamage = attackerUnitId == 0 && sourceCardId > 0 &&
                     card?.MaskDescriptor?.Definition.CardType == "Spell" && card.Permanent.Upgrades.Count == 0 &&
                     card.Temporary.Upgrades.Count == 0 && CardBranchMaskModel.Resolve(card).Traits.Count == 0;
                 WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
-                Damage(units.FirstOrDefault(unit => unit.Source.Id == attackerUnitId), target, damage, "Spell", sourceCardId, applyTraits);
+                Damage(units.FirstOrDefault(unit => unit.Source.Id == attackerUnitId), target, damage, "Spell", sourceCardId,
+                    applyTraits, piercing);
                 return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -2690,7 +2693,8 @@ namespace MonsterTrain2Poju.Model
                     units.Any(live => live.Alive && live.Source.Id == unit.Source.Id))) ClearTerminalCards();
             }
 
-            private void Damage(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId = 0, bool applyTraits = true)
+            private void Damage(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId = 0,
+                bool applyTraits = true, bool piercing = false)
             {
                 if (target.LastAttackerId.HasValue) target.LastAttackerId = actor != null && !actor.Source.IsPyre ? actor.Source.Id : 0;
                 int raw = damage;
@@ -2707,7 +2711,7 @@ namespace MonsterTrain2Poju.Model
                     context = retainedLegacy ? scaled.Context!.WithCardRegistry(null) : scaled.Context; damage = scaled.Damage;
                 }
                 damage = Math.Max(0, damage);
-                bool cardPiercing = context?.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AllDamageIsPiercing)) == true;
+                bool cardPiercing = piercing || context?.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AllDamageIsPiercing)) == true;
                 if (damage > 0 && !cardPiercing &&
                     (target.Has("damage shield") || target.Has("spell shield") ||
                      target.Has("armor") || target.Has("titanskin") || target.Has("titanite")))
@@ -4056,12 +4060,15 @@ namespace MonsterTrain2Poju.Model
                             {
                                 // Preview damage belongs to this engine's retained
                                 // units and death queue, without physical removal.
-                                Damage(null, units.Single(target => target.Source.Id == id), damage, "Spell", applyTraits: false);
+                                Damage(null, units.Single(target => target.Source.Id == id), damage, "Spell", applyTraits: false,
+                                    piercing: !healDamage);
                                 if (unsupportedReason != null) return false;
                                 continue;
                             }
+                            // The original balance list makes friendly-trigger
+                            // relic damage piercing, including burnout/death.
                             RoomCombatResult damaged = ApplyRelicDamage(CurrentRoom(), id, damage,
-                                QueueRelicDamageCallback);
+                                QueueRelicDamageCallback, piercing: !healDamage);
                             if (!damaged.Supported) { unsupportedReason = damaged.UnsupportedReason; return false; }
                             MergeSummon(damaged);
                             foreach (QueuedCharacterTrigger callback in damaged.PendingCallbacks)

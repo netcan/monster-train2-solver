@@ -65,7 +65,7 @@ namespace MonsterTrain2Poju.Model
             foreach (int target in targets)
             {
                 TrainCombatResult damaged = RelicCardPlayDamageModel.ApplySelected(state, new[] { target },
-                    deferPhysicalRemoval, damageAmount: 5, selectTargetRoom: false);
+                    deferPhysicalRemoval, damageAmount: 5, selectTargetRoom: false, piercing: true);
                 if (!damaged.Supported) return damaged;
                 state = damaged.State!; rooms.AddRange(damaged.RoomResults);
                 if (damaged.Outcome != RoomOutcome.Exchanged) outcome = damaged.Outcome;

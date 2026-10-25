@@ -73,7 +73,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static TrainCombatResult ApplySelected(TrainCombatState source, IReadOnlyList<int> targets,
-            bool deferPhysicalRemoval = false, int damageAmount = 3, bool selectTargetRoom = true)
+            bool deferPhysicalRemoval = false, int damageAmount = 3, bool selectTargetRoom = true, bool piercing = false)
         {
             if (targets.Count == 0) return new(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
             if (targets.Count != 1) return Fail("Original card-play damage requires one native random target.");
@@ -84,7 +84,7 @@ namespace MonsterTrain2Poju.Model
             room = state.Rooms.Single(item => item.RoomIndex == room.RoomIndex);
             var pending = new List<RoomCombatModel.QueuedCharacterTrigger>();
             RoomCombatResult damaged = RoomCombatModel.ApplyRelicDamage(room, targets[0], damageAmount,
-                callback => pending.Add(callback.WithRelicDamageRemoval()));
+                callback => pending.Add(callback.WithRelicDamageRemoval()), piercing);
             if (!damaged.Supported) return Fail(damaged.UnsupportedReason!);
             RelicDamageQueueModel.Import(ref state, damaged.State!);
             pending.AddRange(damaged.PendingCallbacks);
