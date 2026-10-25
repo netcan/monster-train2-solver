@@ -1,5 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--corrupt-diadem-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 3)
+    {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        CorruptDiademChecks.Native(source.RootElement, replay.RootElement);
+    }
+    else CorruptDiademChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--boxed-copy-trait-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

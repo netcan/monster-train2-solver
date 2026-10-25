@@ -14,14 +14,15 @@ namespace MonsterTrain2Poju.Model
             CardTraitValue[] traits = (CardExhaustModel.RefreshTraits(card).CombinedTraits ?? Array.Empty<CardTraitValue>())
                 .Where(trait => trait.RuntimeType == Trait).ToArray();
             if (traits.Length == 0) return new TrainSpellResult(source, RoomOutcome.Exchanged, Array.Empty<CombatEvent>());
-            bool startingCorruptOwner = (rule.CardType == "Equipment" && card.DataId == "75cfe90b-47b9-406c-b891-33564aac6677" ||
+            bool calibratedCorruptOwner = (rule.CardType == "Equipment" && card.DataId is
+                    "75cfe90b-47b9-406c-b891-33564aac6677" or "217d467c-77c2-481d-b78f-57aaf3dcd4a6" ||
                 rule.CardType == "TrainRoomAttachment" && card.DataId == "93759003-bb97-44e4-9ef6-472c55bee2d9") &&
                 traits.Length == 1 && traits[0].ParamInt == 0 && traits[0].DefinitionParamInt == 0 &&
                 traits[0].Removable && traits[0].DefinitionRemovable == true && traits[0].StackMode == 0 &&
                 !traits[0].TemporaryReplacement && card.MaskDescriptor.BaseTraits.Count == 1 &&
                 card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] {
                     "bdb7a38c-18de-4461-beb8-c27fdbdc5f62" });
-            if ((rule.CardType is not ("Spell" or "Monster") && !startingCorruptOwner) || rule.IsAnyAbility == true || traits.Any(trait => trait.DeclaredName != Trait))
+            if ((rule.CardType is not ("Spell" or "Monster") && !calibratedCorruptOwner) || rule.IsAnyAbility == true || traits.Any(trait => trait.DeclaredName != Trait))
                 return new TrainSpellResult(null, RoomOutcome.Unsupported, Array.Empty<CombatEvent>(),
                     "Corrupt State requires an ordinary spell or Monster with captured trait provenance.");
             if (source.Context?.Resources?.CorruptionPerCorruptTrait is not int amount || amount < 0)
