@@ -1,20 +1,20 @@
 # Player Mod validation · 2026-10-25
 
-Current Windows installation:0.2.73, committed source`8c9faebd`. The ninth
-random Wurmkin/Hellhorned sample passes actual10000ms/two-worker whole-battle
-advice and independent frozen native replay:18 inputs,13 plays,5 EndTurns,
-Pyre80 and9 train stages per process. Every root,successor,forecast and RNG
-matches; all four failure counters are zero. Source advice publishes20 times
-with158 pure captures. The payload includes current-corruption poison damage,
-removed ability caster Self-status,unboxed-hand Conduit callbacks and masked
-outer-boss death statistics.
+Current Windows installation:0.2.75, committed source`dd60ff61`. The ninth
+random Wurmkin/Hellhorned sample's third battle passes two independent native
+frozen-policy runs:37 inputs,28 plays,9 EndTurns,Pyre67 and17 train stages per
+process. Every root,successor,forecast and RNG matches; all four failure
+counters are zero. This is an offline-refined route,not an actual-default
+search-budget victory; the actual10000ms loss is retained separately.
+The payload includes pre-discard relic RNG preservation,original5x-magic /
+corruption2 spell copies,and current-corruption poison damage.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.73. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261025-210032/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.73-Windows-20261025-210032.zip`,SHA256
-`c78a48b245ae760013458343e4ff3f2e90aaaa38c93bb87bf89a05524efcb2d9`.
+its next launch loads0.2.75. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261025-213646/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.75-Windows-20261025-213646.zip`,SHA256
+`f1e05e4b59b85e9a2392f3df22a6f28ff5b24a9785d4aab2a7d92455e1253ad0`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
