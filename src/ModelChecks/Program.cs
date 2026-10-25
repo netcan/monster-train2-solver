@@ -1,6 +1,33 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length > 1 && args[0] == "--triggered-status-controls-only")
+{
+    TriggeredStatusChecks.Run();
+    foreach (string path in args.Skip(1))
+    {
+        using var fixture = ModelJson.ReadFixture(path);
+        if (fixture.RootElement.GetProperty("ModifierScenario").GetString() != "triggered-status")
+            throw new InvalidOperationException("Expected a triggered-status native control.");
+        TriggeredStatusChecks.Native(fixture.RootElement);
+    }
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--guaranteed-status-preview-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    GuaranteedStatusPreviewChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--guaranteed-status-preview-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    GuaranteedStatusPreviewChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--corrupt-source-alignment-native-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5021,6 +5048,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-friendly-relic-piercing-replay-calibration.mt2f"));
     FriendlyRelicPiercingChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-guaranteed-status-preview-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-guaranteed-status-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-guaranteed-status-preview-replay-calibration.mt2f"));
+    GuaranteedStatusPreviewChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-corrupt-source-alignment-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-corrupt-source-alignment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

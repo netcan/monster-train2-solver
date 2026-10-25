@@ -109,6 +109,16 @@ internal static class TriggeredStatusChecks
             "Preview modified live added-status statistics.");
         Require(!TriggeredStatusModel.Apply(new(0, false, root.Units, [], context, true), 1, Effect(50, [new("armor", 1)]), [4, 5]).Supported,
             "Vanilla history-dependent preview randomness was silently approximated.");
+        foreach (int guaranteedChance in new[] {100, 200})
+        {
+            var guaranteed = TriggeredStatusModel.Apply(new(0, false, root.Units, [], context, true), 1,
+                Effect(guaranteedChance, [new("armor", 1)]), [4, 5]);
+            Require(guaranteed.Supported && guaranteed.State!.Context!.BattleRng.Equals(context.BattleRng) &&
+                guaranteed.State.Units.Where(unit => unit.Id is 4 or 5).All(unit => unit.Status("armor")?.Stacks ==
+                    preview.State!.Units.Single(expected => expected.Id == unit.Id).Status("armor")?.Stacks) &&
+                guaranteed.State.Context.Statistics!.Value(1, "AnyStatusEffectStacksAdded") == 3,
+                "Guaranteed ordinary preview changed live RNG/statistics or lost a status application.");
+        }
         CombatEffect Multiply(string status = "corruption", int factor = 2, int chance = 0) =>
             new("CardEffectMultiplyStatusEffect", chance, 0, "", 0, [], false,
                 action: new("AddStatus", "LastAttackedCharacter", chance, false, true, [new(status, factor, stackable: true)]));

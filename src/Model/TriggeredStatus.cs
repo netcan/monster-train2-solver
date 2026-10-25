@@ -103,7 +103,7 @@ namespace MonsterTrain2Poju.Model
             if (perLastAttack && source.Context.Statistics == null)
                 return Unsupported("Last-attack status scaling requires captured battle statistics.");
             if (source.Preview && source.Context.IsolatedBattlePreview != true &&
-                (!perSelfAttack && !perLastAttack && (action.Range != null || action.Value != 0) ||
+                (!perSelfAttack && !perLastAttack && (action.Range != null || action.Value != 0 && action.Value < 100) ||
                     action.Statuses.Count > 1 || CardTargetModel.IsRandom(action.Target)))
                 return Unsupported("Randomized status previews require the explicit isolated preview RNG protocol.");
             CombatContext context = source.Context;
@@ -159,7 +159,11 @@ namespace MonsterTrain2Poju.Model
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             foreach (int id in targetIds.Reverse())
             {
-                if (chance != 0)
+                // Guaranteed chances still consume the native preview's test
+                // stream, but never the live Battle stream. Its history cannot
+                // change this fixed, single-status result. Isolated previews
+                // explicitly model the mirrored stream and retain that draw.
+                if (chance != 0 && !(source.Preview && source.Context.IsolatedBattlePreview != true && chance >= 100))
                 {
                     RngDraw draw = state.Context!.BattleRng.Range(0, 100);
                     state = WithContext(state, state.Context.WithBattleRng(draw.State));
