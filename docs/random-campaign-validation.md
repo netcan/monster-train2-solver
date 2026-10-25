@@ -1166,6 +1166,9 @@ TrainSteward后，Deathwish专用更新只应临时跳过光环调用，旧模�
 52个完整后继／预测／RNG匹配，修正版四项失败计数为零；继续默认整场与策略筛选。
 见[直接入薪火与附属物](../tests/fixtures/notes/bosses/pyre-attachment.md)。
 共享名单原始反例及复现见[全列车Boss名单](../tests/fixtures/notes/bosses/companion-world-roster.md)。
+随后0.2.95实际默认整场也已完整通过：52输入（41出牌／11结束回合），
+全部状态／预测／RNG和四项零失败计数匹配，结果仍为败局，归档为
+`full-battle-random-campaign-10-ring6-budget10000-loss.mt2f`。
 
 定向检查入口：
 

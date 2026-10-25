@@ -1,11 +1,11 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.94, committed source`fd856bef372525f8147150b408c7eac3857abdb7`.
+Current Windows installation:0.2.95, committed source`8a1642bee7ead5c7c36ba8ef129afd950c7df63f`.
 The exact release payload passes the tenth random Banished/Wurmkin sample's
 first battle with actual10000ms/two-worker advice and independent native
 replay:22 inputs,17 plays,5 EndTurns,Pyre80 and9 train stages per process.
 Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-021318-16cdb21c` and replay`20261026-021533-4399519a`
+zero. Source`20261026-022750-7460a3a5` and replay`20261026-022940-2b3c4ab6`
 bind the three installed DLL hashes to the committed build.
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
@@ -14,15 +14,17 @@ Pyre-entry attachment ordering. The last correction passes52 unchanged
 native inputs in independent processes. The tenth sample's first five actual
 default battles and the ninth sample's mixed first seven battles have passed
 their continuous chains. Their remaining battles still need strategy work;
-no full random campaign is claimed. A further remote companion-roster stage
-snapshot difference is being checked in an isolated build.
+no full random campaign is claimed. The remote companion-roster stage
+snapshot difference is fixed in0.2.95:98 room stages,22 train phases and52
+inputs match independent native processes. The fresh actual/default Ring6
+run also completes52 inputs with all four failure counters zero,still a defeat.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.94. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261026-021827/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.94-Windows-20261026-021827.zip`,SHA256
-`22536a71f46b6073225f80a51dec8c3748b2d13313edaccf155d3f7bb6ec738b`.
+its next launch loads0.2.95. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261026-023135/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.95-Windows-20261026-023135.zip`,SHA256
+`d78eaa86b171c807b102d45104293cd6e8b0b20c4b69a14471bfacd747ac6521`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 

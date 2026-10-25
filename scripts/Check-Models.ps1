@@ -220,6 +220,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-recursion-permafrost-calibration.mt2f',
     'player-recursion-permafrost-replay-calibration.mt2f',
     'full-battle-random-campaign-09-ring8-budget10000-loss.mt2f',
+    'full-battle-random-campaign-10-ring6-budget10000-loss.mt2f',
     'full-battle-random-campaign-10-ring2-budget10000-search.mt2f',
     'full-battle-random-campaign-10-ring2-budget10000-replay.mt2f',
     'full-battle-random-campaign-10-ring3-budget10000-search.mt2f',
