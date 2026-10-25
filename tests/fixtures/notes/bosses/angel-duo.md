@@ -368,6 +368,15 @@ in50.59 seconds without an unsupported branch. Across all four batches no
 winning line or unsupported mechanism is found. This local search does not
 exhaust combinations of changes and does not establish that the deck cannot win.
 
+The iterative improver retains three complete losing improvements among17
+candidates (16 complete,zero unsupported) under a60000ms soft budget. Its
+59-input export independently replays in full. Resuming that verified baseline
+with `improve-prediction` retains a further57-input improvement among18 complete
+candidates,zero unsupported,again no win at60000ms. Both search runs exceed
+the soft budget during atomic transitions/export and finish in82.13s and
+81.29s respectively. A further resumed batch investigates combined changes;
+none of these model defeats is a new native attempt or a proof of impossibility.
+
 The continuous default driver stops before replay/rewards on defeat. Future
 runs additionally emit `player-default-loss.json` with the checked input and
 trace hashes,then append a `default-loss` journal entry retaining the next

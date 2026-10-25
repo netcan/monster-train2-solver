@@ -153,4 +153,16 @@ pre-battle checkpoint starts at Pyre87 after normal recovery/rewards; the
 loss is archived separately as `full-battle-metagame-campaign-ring4-budget10000-loss`.
 Offline improvement needs only3 complete candidates and5.86s of search to
 find a53-input model win at Pyre17; full independent export/replay completes
-in16.52s. Native validation is required before advancing the campaign.
+in16.52s. The complete source and independent native replay now both win:
+44 plays,9 EndTurns,Pyre17,18 train stages,all roots/successors/forecasts/RNG
+and four zero failure counters. Source runtime141.36s,201 independent masks,
+107 pure captures,zero searches/publications; the53-input prediction is
+separately bound to both native traces. The51-input default defeat stays.
+
+Normal rewards/merchant/map continuation enters Ring5 at save SHA256
+`190167d488c3e45f2773635449dc11fa2e2065a987f98ef83bf367322ef248f6`.
+`campaign-metagame-ring5.zip` contains60 verified files,SHA256
+`fe1f7eed827302f046fbfdf4c49767b68eca842171344789cea55cadeb7000e4`.
+The ordered Ring2..5 checkpoint check passes without battle simulation and
+preserves all16 old counters,hearts,features and dialogues. Extra hearts
+remain0/9; actual10000ms/two-worker advice continues at Ring5.
