@@ -192,7 +192,8 @@ deployment turn. A separate actual player source and fresh native replay now
 both win at Pyre2 with all four counters zero; see [native winning evidence](../bosses/player-fragile-winning.md).
 
 `extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-reason>`
-reuses recorded forecast roots to extract a bounded supported prefix and its
+accepts either recorded forecast roots or a pure native deployment observation,
+which it continues with at most256 legal tactical inputs. It extracts a supported prefix and its
 rejected next action. It independently verifies the prefix and immutable root,
 and exports `ModelUnsupportedBranch` without an assumed successor. The scoped
 native `-UnsupportedBranchInput` driver replays that prefix from the original
@@ -232,3 +233,18 @@ full-state/RNG replay. These are diagnostic results, not new native victories.
 ```powershell
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll refine-policy tests/fixtures/campaign/random/full-battle-random-campaign-01-ring7-budget10000-loss.mt2f .probe-runs/ring7-local-candidate.mt2f 180000 0 16
 ```
+
+`refine-prediction <native.mt2f> <verified-prediction.mt2f>
+<new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]`
+uses the same bounded exploration before spending time on a complete native
+defeat. It first independently replays the frozen model baseline, requires its
+source SHA256 and full deployment root to match the exact pure/accepted native
+input, and then replays its recorded outcomes/RNG. Prediction baselines do not
+become native evidence. Winning candidates are frozen from the original native
+input, so the existing fresh-game replay requirement stays intact.
+
+The repaired random Pyreborne/Banished Ring5 input produced72 early local
+alternatives (decisions0..18), all terminal model defeats with zero unsupported
+attempts. This is an efficiency/diagnostic result, not an impossibility proof.
+Three fixed-floor baselines and the10000ms default root search also predict
+defeat; no new native victory is claimed by these files.

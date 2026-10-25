@@ -37,6 +37,7 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 | --- | --- | ---: | --- |
 | 1 | Banished / Umbra | 1970936330 | 前六战源局及独立复放通过，第七战实际败北；37个输入完整验证 |
 | 2 | Pyreborne / Banished | 1862997127 | 第三战实际败北；38个输入完整验证，采集／模型失败计数均为零 |
+| 3 | Remnant / Awoken | 295400568 | 同一固定随机序列的下一个样本；从第一战开始10000ms隔离验收，尚无整局通过结论 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。

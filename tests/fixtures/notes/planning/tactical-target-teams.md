@@ -10,8 +10,11 @@ The Ring5 native dead-caster observation supplies the control root. After four
 legal model hand plays, the seed selects champion2's ability against enemy10,
 preserves the champion, and still exposes the legal self-kill to the full search.
 This control verifies full parent immutability and is registered with the native
-observation pair. The16 existing hand-card target controls and pure ability
-controls pass. This is a model policy check, not a new native campaign victory.
+observation pair. Four synthetic ability controls separately cover damage/buffs
+and absent legal preferred targets, including the formerly first-listed allied
+damage target. The16 existing hand-card target controls, pure ability controls
+and60-step natural Ring7 model victory pass. This is a model policy check, not a
+new native campaign victory.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-ability-target-only tests/fixtures/combat/units/player-dead-caster-status-calibration.mt2f

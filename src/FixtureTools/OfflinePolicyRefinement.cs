@@ -9,7 +9,8 @@ internal static partial class OfflineBattleSearch
 {
     // Explore a recorded counterexample without launching a game for every
     // placement. These are local policy alternatives, never an optimality proof.
-    internal static void Refine(string input, string output, int milliseconds, int startDecision, int? lastRequestedDecision)
+    internal static void Refine(string input, string output, int milliseconds, int startDecision, int? lastRequestedDecision,
+        string? prediction = null)
     {
         Require(milliseconds is >= 100 and <= 600000, "Expected 100..600000ms.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
@@ -18,7 +19,16 @@ internal static partial class OfflineBattleSearch
         using var document = FixtureDocument.Read(input);
         FixtureValue trace = document.RootElement;
         RequireNativeInput(trace);
-        FixtureValue[] rows = trace.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        using var predicted = prediction == null ? null : FixtureDocument.Read(prediction);
+        if (predicted != null)
+        {
+            Verify(prediction!);
+            Require(predicted.RootElement.GetProperty("EvidenceKind").GetString() == "ModelPrediction" &&
+                predicted.RootElement.GetProperty("SourceSHA256").GetString() ==
+                    Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+                "Prediction must be independently verified and reference this exact native input.");
+        }
+        FixtureValue[] rows = (predicted?.RootElement ?? trace).GetProperty("RollingDecisions").EnumerateArray().ToArray();
         Require(rows.Length is > 0 and <= 256 && startDecision >= 0 && startDecision < rows.Length,
             "Expected a recorded battle and a valid starting decision.");
         int lastRequested = lastRequestedDecision ?? rows.Length - 1;
@@ -27,6 +37,8 @@ internal static partial class OfflineBattleSearch
         Require(root.Spawn.Turn == 0, "Policy refinement requires the original deployment root.");
         using var keys = new BattleStateKeys();
         string immutable = keys.Key(root);
+        Require(predicted == null || keys.Key(predicted.RootElement.GetProperty("Root").Deserialize<BattleTurnState>()!) == immutable,
+            "Prediction changed the native deployment root.");
         var prefixes = new List<(BattleTurnState State, Step[] Steps, string Key)>();
         var prefix = new List<Step>();
         BattleTurnState current = root;
@@ -43,14 +55,14 @@ internal static partial class OfflineBattleSearch
                 IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() };
             Require(step.IsEndTurn == (step.Action == null), "Invalid recorded input.");
             current = Apply(current, step.Action, step.IsEndTurn, out outcome);
-            BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            BattleTurnState actual = row.GetProperty(predicted == null ? "Actual" : "Expected").Deserialize<BattleTurnState>()!;
             Require(outcome == (RoomOutcome)row.GetProperty("Outcome").GetInt32() &&
                 keys.SnapshotKey(current.RngStreams) == keys.SnapshotKey(actual.RngStreams) &&
                 keys.SnapshotKey(current.Spawn.Rng) == keys.SnapshotKey(actual.Spawn.Rng),
                 "Recorded outcome or RNG differs from the current model.");
             prefix.Add(step);
         }
-        Require(Terminal(outcome) && keys.Key(root) == immutable, "Incomplete or mutable native baseline.");
+        Require(Terminal(outcome) && keys.Key(root) == immutable, "Incomplete or mutable refinement baseline.");
         var watch = Stopwatch.StartNew();
         int candidates = 0, completed = 0, unsupported = 0, lastDecision = startDecision;
         var reasons = new HashSet<string>(StringComparer.Ordinal);
