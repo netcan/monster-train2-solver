@@ -129,10 +129,13 @@ namespace MonsterTrain2Poju.Model
             RoomOutcome outcome = RoomOutcome.Exchanged;
             using var continuationKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             var roots = retainPlans && VerifiedAdviceContinuation.CanRetain(plan) ? new List<string>() : null;
+            using var fullKeys = new BattleStateKeys();
+            var fullRoots = roots == null ? null : new List<string>();
             foreach (BattleSearchStep step in plan.Steps)
             {
                 token.ThrowIfCancellationRequested();
                 roots?.Add(continuationKeys.Key(state));
+                fullRoots?.Add(fullKeys.Key(state));
                 if (step.IsEndTurn)
                 {
                     BattleTurnResult next = BattleTurnModel.EndTurn(state);
@@ -149,7 +152,7 @@ namespace MonsterTrain2Poju.Model
             }
             if (outcome != plan.Outcome || !SameBattle(state, plan.State)) return false;
             plan = Reused(plan, state);
-            if (roots != null) proof = new VerifiedAdviceContinuation(plan, roots.ToArray());
+            if (roots != null) proof = new VerifiedAdviceContinuation(plan, roots.ToArray(), fullRoots!.ToArray());
             // Preview allocators can advance on every browse. Bound retained
             // calibration graphs even if none of those exact roots repeat.
             if (cache != null && key != null)

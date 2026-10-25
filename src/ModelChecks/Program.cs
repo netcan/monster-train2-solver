@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--exact-browse-continuation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    ExactBrowseContinuationChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--boss-preview-test-rng-native-only")
 {
     using var native = ModelJson.ReadFixture(args[1]);

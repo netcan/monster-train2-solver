@@ -22,6 +22,8 @@ $archives = foreach ($mode in @('search', 'replay')) {
 }
 dotnet $checker --floor-browse-advice-only (Join-Path $workspace 'tests/fixtures/advisor/presentation/full-battle-player-boss-search.mt2f')
 if ($LASTEXITCODE -ne 0) { throw 'Floor-browsing concurrency/divergence checks failed.' }
+dotnet $checker --exact-browse-continuation-only (Join-Path $workspace 'tests/fixtures/campaign/random/full-battle-random-campaign-05-ring3-budget10000-keep-champion-search.mt2f')
+if ($LASTEXITCODE -ne 0) { throw 'Exact native checkpoint continuation failed.' }
 dotnet $checker --player-floor-browse-pair-only @archives
 if ($LASTEXITCODE -ne 0) { throw 'Native floor-browsing pair checks failed.' }
 Write-Output 'FLOOR-BROWSE-FOCUSED PASS: no full regression executed.'

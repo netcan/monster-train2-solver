@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MonsterTrain2Poju.Model
@@ -11,6 +12,7 @@ namespace MonsterTrain2Poju.Model
     {
         private readonly BattlePlanResult original;
         private readonly string[] roots;
+        private readonly string[] fullRoots;
         private readonly int offset;
 
         internal bool IsWinning => original.Outcome == RoomOutcome.BattleWon;
@@ -19,18 +21,44 @@ namespace MonsterTrain2Poju.Model
         internal static bool CanRetain(BattlePlanResult plan) => plan.Steps.Count > 0 &&
             plan.Outcome is RoomOutcome.Exchanged or RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
 
-        internal VerifiedAdviceContinuation(BattlePlanResult original, string[] roots)
-            : this(original, roots, 0) { }
+        internal VerifiedAdviceContinuation(BattlePlanResult original, string[] roots, string[] fullRoots)
+            : this(original, roots, fullRoots, 0) { }
 
-        private VerifiedAdviceContinuation(BattlePlanResult original, string[] roots, int offset)
-        { this.original = original; this.roots = roots; this.offset = offset; }
+        private VerifiedAdviceContinuation(BattlePlanResult original, string[] roots, string[] fullRoots, int offset)
+        { this.original = original; this.roots = roots; this.fullRoots = fullRoots; this.offset = offset; }
 
         internal VerifiedAdviceContinuation? Match(BattleTurnState state)
         {
             using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
-            string key = keys.Key(state);
+            return MatchKey(keys.Key(state));
+        }
+
+        // Exact settled checkpoints already prove the forward gameplay path.
+        // Do not let recorded view callbacks replace that stronger proof, but
+        // reject any observed intermediate state outside the verified suffix.
+        internal VerifiedAdviceContinuation? MatchObserved(BattleTurnState state,
+            IReadOnlyList<SelectionAdviceReuse.Observation> observations, bool exactFinalState)
+        {
+            using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+            VerifiedAdviceContinuation? matched = this;
+            foreach (var observation in observations)
+            {
+                if (observation.Root == null) continue;
+                matched = matched.MatchKey(keys.Key(observation.Root));
+                if (matched == null) return null;
+            }
+            matched = matched.MatchKey(keys.Key(state));
+            if (matched == null || !exactFinalState) return matched;
+            // Otherwise use selection replay to update the full final snapshot
+            // when even the unused preview allocator differs after browsing.
+            using var fullKeys = new BattleStateKeys();
+            return matched.fullRoots[matched.offset] == fullKeys.Key(state) ? matched : null;
+        }
+
+        private VerifiedAdviceContinuation? MatchKey(string key)
+        {
             for (int index = offset; index < roots.Length; index++)
-                if (roots[index] == key) return new VerifiedAdviceContinuation(original, roots, index);
+                if (roots[index] == key) return new VerifiedAdviceContinuation(original, roots, fullRoots, index);
             return null;
         }
 

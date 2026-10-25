@@ -250,8 +250,10 @@ namespace MonsterTrain2Poju.Model
                     if (fullKeys.Key(root) != key)
                         throw new InvalidOperationException(retained == null ? "Captured state differs from its full-state key." :
                             "Captured state differs from the retained continuation.");
-                    VerifiedAdviceContinuation? matched = candidate != null && observations.Any(item => item.Root == null)
-                        ? SelectionAdviceReuse.MatchAfterObservations(candidate, observations, root, token) : retained?.Match(root);
+                    bool browsed = observations.Any(item => item.Root == null);
+                    VerifiedAdviceContinuation? matched = retained?.MatchObserved(root, observations, exactFinalState: browsed);
+                    if (matched == null && candidate != null && browsed)
+                        matched = SelectionAdviceReuse.MatchAfterObservations(candidate, observations, root, token);
                     bool reusedSelection = matched == null && candidate != null && SelectionAdviceReuse.TryRebase(candidate, root,
                         retainPlans, token, out plan, out proof);
                     verification.Stop();
@@ -308,10 +310,12 @@ namespace MonsterTrain2Poju.Model
             using var keys = new BattleStateKeys();
             using var continuationKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             var roots = retain && VerifiedAdviceContinuation.CanRetain(plan) ? new List<string>() : null;
+            var fullRoots = roots == null ? null : new List<string>();
             foreach (BattleSearchStep step in plan.Steps)
             {
                 token.ThrowIfCancellationRequested();
                 roots?.Add(continuationKeys.Key(replayed));
+                fullRoots?.Add(keys.Key(replayed));
                 if (step.IsEndTurn)
                 {
                     BattleTurnResult next = BattleTurnModel.EndTurn(replayed);
@@ -330,7 +334,7 @@ namespace MonsterTrain2Poju.Model
                 throw new InvalidOperationException("Advice does not reproduce the full planned state.");
             if (plan.PolicyBaselineScore.HasValue && plan.Score > plan.PolicyBaselineScore.Value)
                 throw new InvalidOperationException("Advice lost its completed policy baseline.");
-            return roots == null ? null : new VerifiedAdviceContinuation(plan, roots.ToArray());
+            return roots == null ? null : new VerifiedAdviceContinuation(plan, roots.ToArray(), fullRoots!.ToArray());
         }
 
         public void Dispose()
