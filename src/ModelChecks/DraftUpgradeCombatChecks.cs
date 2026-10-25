@@ -50,6 +50,10 @@ internal static class DraftUpgradeCombatChecks
         foreach (var array in node.SelectTokens("$..ExternalInteractions").OfType<JArray>().ToArray())
             foreach (var value in array.Where(value => value.Type == JTokenType.String && value.Value<string>() == Reason).ToArray())
                 value.Remove();
+        // Projection audit fields do not change the native action/root. The
+        // pair check below still compares every normalized request/state field.
+        foreach (string name in new[] { "HistoricalRequestSHA256", "FreshDeploymentSHA256", "RemovedHistoricalDiagnosticCount" })
+            ((JObject)node["Request"]!).Property(name)?.Remove();
         return NativeFixtureCapture.Capture(node);
     }
 
