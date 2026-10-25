@@ -30,6 +30,13 @@ An initial offline root search finds a53-input/9-EndTurn win with Pyre94,
 This is a model prediction; actual default-budget native acceptance follows
 separately, and no new native victory is claimed by this component check.
 
+Subsequent committed0.2.65 actual10000ms/two-worker advice and independent
+native replay both win Ring5:41 inputs (32 plays/9 EndTurns), Pyre94,
+full states/forecasts/RNG and zero failure counters. This differs from the
+offline53-input route. The source takes238.59s with43 publications and six
+search metric samples. Normal native rewards advance the same save to Ring6.
+See `full-battle-random-campaign-06-ring5-budget10000-{search,replay}.mt2f`.
+
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --sacrifice-policy-only tests/fixtures/campaign/random/full-battle-random-campaign-06-ring5-budget10000-loss.mt2f
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-target-only
