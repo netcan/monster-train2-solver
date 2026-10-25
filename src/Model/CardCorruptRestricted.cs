@@ -37,7 +37,18 @@ namespace MonsterTrain2Poju.Model
                 source.Int2 != 0 || source.Int3 != 0 || source.Bool && !allowSourceRoom || source.Str != "" || source.Float != 0 || source.Scaling ||
                 source.TrackedValue != "SubtypeInDeck" || source.EntryDuration != "ThisTurn")
                 return "Uncalibrated Corrupt Restricted parameters or source-room eligibility.";
-            if (combined.Any(trait => trait.RuntimeType == "CardTraitCorruptState"))
+            CardTraitValue[] corrupt = combined.Where(trait => trait.RuntimeType == CardCorruptStateModel.Trait).ToArray();
+            var corruptUpgrades = card.Permanent.Upgrades.Where(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true).ToArray();
+            if (corrupt.Length > 0 && !(card.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463" &&
+                descriptor.Definition.CardType == "Spell" && active[0].ParamInt == 1 &&
+                corrupt.Length == 1 && corrupt[0].DeclaredName == CardCorruptStateModel.Trait &&
+                corrupt[0].DefinitionParamInt == 0 && corrupt[0].ParamInt == 0 &&
+                descriptor.BaseTraits.Count(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == 1 &&
+                !descriptor.TemporaryTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) &&
+                !descriptor.PermanentReplacements.Any(rule => rule.OldName == CardCorruptStateModel.Trait || rule.NewRuntimeType == CardCorruptStateModel.Trait) &&
+                corruptUpgrades.Length == 1 && corruptUpgrades[0].DataId == "bdb7a38c-18de-4461-beb8-c27fdbdc5f62" &&
+                corruptUpgrades[0].AssetKey == "TraitCorruptwIcon" && corruptUpgrades[0].Lifecycle!.AddedTraits.Count == 1 &&
+                !card.Temporary.Upgrades.Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true)))
                 return "Corrupt State's additional eligibility and pre-play ordering require native calibration.";
             amount = active[0].ParamInt;
             return null;
@@ -52,7 +63,10 @@ namespace MonsterTrain2Poju.Model
             int? roomIndex = UsesSourceRoom(card) ? sourceRoomIndex : selectedRoomIndex;
             RoomCapacityState? room = context.RoomCapacities?.SingleOrDefault(value => value.RoomIndex == roomIndex);
             if (room?.Corruption == null || room.Corruption < 0) return "Corrupt Restricted requires captured selected-room corruption.";
-            allowed = room.Corruption >= amount;
+            // Native eligibility credits one for the presence of Corrupt,
+            // independently of the mutable amount added by its callback.
+            int bonus = CardExhaustModel.RefreshTraits(card).CombinedTraits?.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true ? 1 : 0;
+            allowed = unchecked(room.Corruption.Value + bonus) >= amount;
             return null;
         }
 

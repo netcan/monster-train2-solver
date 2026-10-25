@@ -9,6 +9,19 @@ if (args.Length == 3 && args[0] == "--random-refined-campaign-pair-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--corrupt-restricted-state-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CorruptRestrictedStateChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--corrupt-restricted-state-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    CorruptRestrictedStateChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--attachment-reinstall-native-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5120,6 +5133,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-friendly-relic-piercing-replay-calibration.mt2f"));
     FriendlyRelicPiercingChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-corrupt-restricted-state-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-corrupt-restricted-state-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corrupt-restricted-state-replay-calibration.mt2f"));
+    CorruptRestrictedStateChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-attachment-reinstall-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-attachment-reinstall-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

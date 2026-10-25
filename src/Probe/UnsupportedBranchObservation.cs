@@ -61,7 +61,8 @@ namespace MonsterTrain2Poju.Probe
             using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "NativeUnsupportedBranchObservation",
                 GameModuleMvid = typeof(CardState).Module.ModuleVersionId.ToString(),
                 Request = Read<JObject>(request), NativeCompleted = true, Rows = rows,
-                PlayerAdvisor = PlayerAdvisorProbe.Evidence });
+                PlayerAdvisor = PlayerAdvisorProbe.Evidence,
+                CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence });
             using var stream = new FileStream(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
                 "unsupported-branch-native.mt2f"), FileMode.CreateNew, FileAccess.Write);
             document.Write(stream);
@@ -82,6 +83,7 @@ namespace MonsterTrain2Poju.Probe
             PlayCardAction? action = Read<PlayCardAction?>(value.GetProperty("Action"));
             bool end = value.TryGetProperty("IsEndTurn", out FixtureValue endValue) && endValue.GetBoolean();
             Require(end == (action == null), "Invalid branch input.");
+            if (boundary) CorruptRestrictedStateCalibration.Capture(action);
             BattleTurnState? predicted;
             string? reason;
             RoomOutcome outcome;
