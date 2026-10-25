@@ -28,7 +28,11 @@ namespace MonsterTrain2Poju.Model
                 traits[2].RuntimeType == Trait && Ordinary(traits[2], 2) &&
                 card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] {
                     "83a6c9ec-0e40-48e6-8a4c-695a68b7e990", "fb416958-813a-435b-b7ea-e428127ece20", Upgrade });
-            if ((!fracture && !justCause && card.DataId is not ("3020f56f-71a5-4155-8bed-48ada7e7e0de" or "f9f20326-dccb-44af-894b-467534afab4a")) ||
+            bool magicJuice = card.DataId == "9ea70171-8afd-4fab-ad54-7ff5c8b478b8" && traits.Count == 2 &&
+                traits[0].RuntimeType == "CardTraitExhaustState" && Ordinary(traits[0], 0) &&
+                traits[1].RuntimeType == Trait && Ordinary(traits[1], 2) &&
+                card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { Upgrade });
+            if ((!fracture && !justCause && !magicJuice && card.DataId is not ("3020f56f-71a5-4155-8bed-48ada7e7e0de" or "f9f20326-dccb-44af-894b-467534afab4a")) ||
                 card.StatusScalingTraits?.Count > 0 ||
                 traits.Count(trait => trait.RuntimeType == Trait) != 1)
                 return "Juice with this card or ordered scaling traits requires native calibration.";

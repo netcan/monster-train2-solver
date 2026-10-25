@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 4 && args[0] == "--juice-magic-pair-only")
+{
+    using var refused = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    using var source = ModelJson.ReadFixture(args[3]);
+    JuiceMagicChecks.Pair(refused.RootElement, source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--corrupt-diadem-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
