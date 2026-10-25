@@ -1,5 +1,25 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--hand-highlight-rng-counterexample-only")
+{
+    HandHighlightRngChecks.Counterexample(args[1], args[2]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--hand-highlight-rng-native-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    HandHighlightRngChecks.Native(source.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--hand-highlight-rng-pair-only")
+{
+    if (string.Equals(Path.GetFullPath(args[1]), Path.GetFullPath(args[2]), StringComparison.OrdinalIgnoreCase))
+        throw new InvalidOperationException("Hand highlight calibration requires two distinct native archives.");
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    HandHighlightRngChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--unit-ability-duality-counterexample-only")
 {
     UnitAbilityDualityChecks.Counterexample(args[1]);
@@ -5808,6 +5828,10 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
     using var source = ModelJson.ReadFixture(path);
     RandomCampaignChecks.Source(source.RootElement, 424242, 3, 6, "Banished", "Pyreborne", 10000);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) is
+    "player-hand-highlight-test-rng-counterexample.mt2f" or "player-hand-highlight-test-rng-observed.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-hand-highlight-test-rng-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+    HandHighlightRngChecks.Counterexample(path, ModelJson.RelatedFixture(path, "player-hand-highlight-test-rng-observed.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unit-ability-duality-counterexample.mt2f"))
     UnitAbilityDualityChecks.Counterexample(path);
 foreach (string path in args.Where(path => Path.GetFileName(path) is

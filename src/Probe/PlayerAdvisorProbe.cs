@@ -90,6 +90,8 @@ namespace MonsterTrain2Poju.Probe
         {
             Assembly = type?.Assembly.GetName().Name,
             Version = type?.Assembly.GetName().Version?.ToString(),
+            UiTestRngGuard = type == null ? null : AccessTools.Property(
+                type.Assembly.GetType("MonsterTrain2Poju.Probe.UiRngIsolation", true), "PlayerEvidence")?.GetValue(null),
             InteractionsPassed,
             IdlePassed, PlanPreviewPassed,
             PendingPublicationWaits = pendingPublicationWaits,

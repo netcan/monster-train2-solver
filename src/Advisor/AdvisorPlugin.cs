@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Advisor
     public sealed class AdvisorPlugin : BaseUnityPlugin
     {
         public const string PluginId = "netcan.monstertrain2.advisor";
-        public const string Version = "0.2.89";
+        public const string Version = "0.2.111";
         private Harmony? harmony;
         private BattleAdvisorOverlay? overlay;
         private bool updateLogged;
@@ -49,7 +49,7 @@ namespace MonsterTrain2Poju.Advisor
                 };
                 AdvisorRuntime.PlayerSession = true;
                 harmony = new Harmony(PluginId);
-                // Deliberately select observation/invalidating hooks. PatchAll(assembly)
+                // Select capture hooks and preserve UI-only test RNG. PatchAll(assembly)
                 // would activate development instrumentation and is not a player entry point.
                 FullBattleTrace.InstallAdvisorPatches(harmony);
                 BattleSpawnPointProbe.InstallAdvisorPatches(harmony);
@@ -57,6 +57,7 @@ namespace MonsterTrain2Poju.Advisor
                 TypedDrawProbe.InstallAdvisorPatches(harmony);
                 TriggerIdentityProbe.InstallAdvisorPatches(harmony);
                 BattleAdvisorOverlay.InstallAdvisorPatches(harmony);
+                UiRngIsolation.InstallAdvisorPatches(harmony);
                 overlay = new BattleAdvisorOverlay(Logger, settings);
                 Logger.LogInfo("POJU-READY version=" + Version + " platform=" + Application.platform +
                     " game=" + Application.version + " module=" + typeof(CardState).Assembly.ManifestModule.ModuleVersionId +

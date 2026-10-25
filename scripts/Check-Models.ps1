@@ -119,6 +119,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-relic-damage-tower-calibration.mt2f',
     'player-terminal-companion-roster-counterexample.mt2f',
     'player-unit-ability-duality-counterexample.mt2f',
+    'player-hand-highlight-test-rng-counterexample.mt2f',
+    'player-hand-highlight-test-rng-observed.mt2f',
     'player-unit-ability-duality-calibration.mt2f',
     'player-unit-ability-duality-replay-calibration.mt2f',
     'player-relic-damage-tower-replay-calibration.mt2f',
@@ -1568,6 +1570,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-refined-campaign-pair-only (Get-TestFixturePath 'full-battle-random-campaign-11-ring7-refined-search.mt2f') (Get-TestFixturePath 'full-battle-random-campaign-11-ring7-refined-replay.mt2f') 73751504 0 6 Stygian Awoken 36
     if ($LASTEXITCODE -ne 0) { throw 'Random campaign Ring7 refined-pair check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
+    $_ -notin @('player-hand-highlight-test-rng-counterexample.mt2f', 'player-hand-highlight-test-rng-observed.mt2f')
+}).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Hand highlight RNG checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --hand-highlight-rng-counterexample-only (Get-TestFixturePath 'player-hand-highlight-test-rng-counterexample.mt2f') (Get-TestFixturePath 'player-hand-highlight-test-rng-observed.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Hand highlight RNG counterexample check failed.' }
     return
 }
 if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-unit-ability-duality-counterexample.mt2f') {
