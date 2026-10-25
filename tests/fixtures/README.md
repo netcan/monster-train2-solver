@@ -1,10 +1,13 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-26): 1699 archives,
+Current manifest inventory (2026-10-26): 1701 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 ## Directory layout
+
+The original merchant corruption-attack upgrade's unit-card birth is paired
+in [corruption attack inheritance](notes/cards/corruption-attack-upgrade.md).
 
 The30-input Small Box/expensive-card relic pair preserves copied permanent and
 temporary upgrades before relic application; see [unboxing relic ordering](notes/combat/unbox-relic.md).
