@@ -103,8 +103,11 @@ nodes changes a38-step model defeat into a34-step model win at Pyre40.
 Both plans independently replay their complete state/RNG. A separate offline
 43-step/Pyre6 route now has two independent complete native victories with
 full state/forecasts/RNG identity and zero failures; both are bound to its
-frozen prediction. The corrected actual-default full battle is separately
-pending. Neither model result is counted as an actual-default native win.
+frozen prediction. The corrected actual-default full battle now passes its own
+independent native pair:43 inputs,34 plays,9 EndTurns and Pyre40,with18 matched
+train stages and all four failure counters zero. Its input10 chooses empty
+floor3. This is separate from the frozen43-step/Pyre6 pair; the original
+default defeat stays.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --friendly-room-damage-policy-only tests/fixtures/campaign/random/full-battle-random-campaign-09-ring5-budget10000-loss.mt2f
