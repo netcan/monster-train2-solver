@@ -22,6 +22,12 @@ internal static class RandomCampaignChecks
             }
             return;
         }
+        if (path.EndsWith("full-battle-random-campaign-08-ring3-refined-search.mt2f", StringComparison.Ordinal))
+        {
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(source.RootElement, replay.RootElement, 1347120220, 0, 2, "Umbra", "Stygian", 61);
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-04-ring5-refined-search.mt2f", StringComparison.Ordinal))
         {
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
