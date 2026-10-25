@@ -1,23 +1,28 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.84, committed source`944bfbf9173f3261ad4b5f424d1141c101f25f42`.
-The tenth random Banished/Wurmkin sample's second battle passes actual10000ms,
-two-worker advice and independent native replay:33 inputs,26 plays,7 EndTurns,
-Pyre80 and13 train stages per process. Every root,successor,forecast and RNG
-matches; all four failure counters are zero. The payload adds native-calibrated
-merchant Corrupt/Consume/Juice support for JustCause,with11 independent paired
-component inputs. Unknown upgrade/trait signatures retain their guards.
-The ninth sample has five continuous default victories and a sixth offline
-refined native paired victory; its seventh37-input refined pair now also wins
-at Pyre55. The seventh default battle remains a verified defeat. Default and
-refined evidence remain separate; no full random campaign is claimed.
+Current Windows installation:0.2.94, committed source`fd856bef372525f8147150b408c7eac3857abdb7`.
+The exact release payload passes the tenth random Banished/Wurmkin sample's
+first battle with actual10000ms/two-worker advice and independent native
+replay:22 inputs,17 plays,5 EndTurns,Pyre80 and9 train stages per process.
+Every root,successor,forecast and RNG matches; all four failure counters are
+zero. Source`20261026-021318-16cdb21c` and replay`20261026-021533-4399519a`
+bind the three installed DLL hashes to the committed build.
+
+Since0.2.84 the payload includes native-calibrated equipment Etch, returned
+Permafrost draw callbacks, preview-born aura cleanup/mode and direct boss
+Pyre-entry attachment ordering. The last correction passes52 unchanged
+native inputs in independent processes. The tenth sample's first five actual
+default battles and the ninth sample's mixed first seven battles have passed
+their continuous chains. Their remaining battles still need strategy work;
+no full random campaign is claimed. A further remote companion-roster stage
+snapshot difference is being checked in an isolated build.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.84. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261026-000845/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.84-Windows-20261026-000845.zip`,SHA256
-`0d0bec934e8c7ce2ed5c650da4707b2b4fb3291297bc265fd3ad9134fc54ba61`.
+its next launch loads0.2.94. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261026-021827/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.94-Windows-20261026-021827.zip`,SHA256
+`22536a71f46b6073225f80a51dec8c3748b2d13313edaccf155d3f7bb6ec738b`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
