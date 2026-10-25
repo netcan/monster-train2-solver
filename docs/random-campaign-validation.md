@@ -1108,6 +1108,14 @@ F10／10000ms／双线程设置保留，无Mac构建，无全量回归。
 第六战源局第12输入出现`Enchantment.State.PreviewTargets.IsEnchanted`偏差，
 原始不完整档案保留，尚未计成策略败局或通关。
 
+第九组第八战的11输入现场已定位为楼层移动遗物伤害未按穿刺处理：
+两个Titanskin5敌人从楼层0升至1时，原生生命250→247和5→2，旧模型保持
+250和5。0.2.86依据原生Balance/runtime穿刺判定修正；相同输入在独立
+原生进程完整匹配状态、预测及RNG，普通伤害仍受Titanskin阻挡。
+原始错误预测与修正重放分别保留，详见
+[移动遗物穿刺校准](../tests/fixtures/notes/combat/floor-transition-piercing.md)。
+这只是机制校准，第八战尚无胜局，继续离线筛选完整路线。
+
 定向检查入口：
 
 ```powershell

@@ -1,6 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length is 2 or 3 && args[0] == "--floor-transition-piercing-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) FloorTransitionPiercingChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); FloorTransitionPiercingChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
+
 if (args.Length is 2 or 3 && args[0] == "--corrupt-equipment-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5675,6 +5683,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-replay-calibration.mt2f"));
     using var observation = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-observation-calibration.mt2f"));
     ConsumeKillCopyChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-floor-transition-piercing-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-floor-transition-piercing-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-floor-transition-piercing-replay-calibration.mt2f"));
+    FloorTransitionPiercingChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-corrupt-equipment-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-corrupt-equipment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

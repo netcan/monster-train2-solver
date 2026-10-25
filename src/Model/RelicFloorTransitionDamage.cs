@@ -70,8 +70,9 @@ namespace MonsterTrain2Poju.Model
             }
 
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            // Native BalanceData lists both transition effect classes as piercing.
             RoomCombatResult damaged = RoomCombatModel.ApplyRelicDamage(state, actor.Id,
-                Math.Abs(matching[0].DamageAmount), callbacks.Add);
+                Math.Abs(matching[0].DamageAmount), callbacks.Add, piercing: true);
             if (!damaged.Supported)
             {
                 result = damaged;

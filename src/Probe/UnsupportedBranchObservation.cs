@@ -83,6 +83,7 @@ namespace MonsterTrain2Poju.Probe
                 PlayerAdvisor = PlayerAdvisorProbe.Evidence,
                 EquipmentOwnerRecoveries = FullBattleTrace.Active!.EquipmentOwnerRecoveries.ToArray(),
                 EquipmentPreviewClear = equipmentPreviewClear,
+                FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
                 BattleTestRng = BattleTestRngProbe.Records.ToArray(),
@@ -91,6 +92,22 @@ namespace MonsterTrain2Poju.Probe
                 "unsupported-branch-native.mt2f"), FileMode.CreateNew, FileAccess.Write);
             document.Write(stream);
             Completed = true;
+        }
+
+        private static object? CaptureFloorTransitionPiercing()
+        {
+            if (request.GetProperty("Reason").GetString() != "Native floor-transition relic damage bypasses Titanskin.") return null;
+            AllGameManagers managers = AllGameManagers.Instance!;
+            var relics = new List<RelicState>();
+            AccessTools.Method(typeof(RelicManager), "GetCurrentRelics").Invoke(managers.GetRelicManager(), new object[] { relics });
+            return new {
+                BalanceEffects = managers.GetAllGameData().GetBalanceData().GetRelicEffectStateNamesThatDoPiercingDamage().ToArray(),
+                Ordinary = DamageHelper.IsPiercingDamage(null, null, managers.GetCoreManagers()),
+                Owners = relics.Where(relic => relic.GetEffects().Any(effect => effect is RelicEffectDamageEnemyOnAscend || effect is RelicEffectDamageEnemyOnDescend))
+                    .Select(relic => new { DataId = relic.GetRelicDataID(), AssetKey = relic.GetAssetName(),
+                        Effects = relic.GetEffects().Select(effect => effect.GetType().Name).ToArray(),
+                        Piercing = DamageHelper.IsPiercingDamage(null, relic, managers.GetCoreManagers()) }).ToArray()
+            };
         }
 
         internal static PlayCardAction? Choose(BattleTurnState root, ManualLogSource log)
