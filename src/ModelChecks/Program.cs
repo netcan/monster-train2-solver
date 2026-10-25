@@ -1,6 +1,20 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--sentry-only")
+{
+    SentryChecks.Run();
+    using var source = ModelJson.ReadFixture(args[1]);
+    SentryChecks.Native(source.RootElement);
+    return;
+}
+if (args.Length is 2 or 3 && args[0] == "--retained-sentry-target-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) RetainedSentryTargetChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); RetainedSentryTargetChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length == 2 && args[0] == "--card-corruption-attack-queries-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

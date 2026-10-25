@@ -2351,7 +2351,15 @@ namespace MonsterTrain2Poju.Model
                     }
                     WorkingUnit? overridden = queued.OverrideTarget == null ? null : units.FirstOrDefault(unit => unit.Source.Id == queued.OverrideTarget.Id);
                     if (overridden == null && queued.OverrideTarget != null)
-                    { overridden = NewUnit(queued.OverrideTarget, false); units.Add(overridden); }
+                    {
+                        // Native callbacks retain a mutable character reference.
+                        // A prior removal can finish before a queued Sentry uses
+                        // it; keep that completed state instead of the old queue
+                        // snapshot when the actor has left the live room.
+                        CombatUnit current = context?.Enchantments?.RetainedUnits.FirstOrDefault(unit =>
+                            unit.Unit.Id == queued.OverrideTarget.Id)?.Unit ?? queued.OverrideTarget;
+                        overridden = NewUnit(current, false); units.Add(overridden);
+                    }
                     WorkingUnit? dying = queued.DyingCharacter == null ? null : units.FirstOrDefault(unit => unit.Source.Id == queued.DyingCharacter.Id);
                     if (dying == null && queued.DyingCharacter != null)
                     { dying = NewUnit(queued.DyingCharacter, false); units.Add(dying); }
