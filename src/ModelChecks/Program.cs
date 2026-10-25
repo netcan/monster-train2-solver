@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 4 && args[0] == "--juice-ritual-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    using var observation = ModelJson.ReadFixture(args[3]);
+    JuiceRitualChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--infusion-trigger-merge-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5335,6 +5343,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-boss-preview-test-rng-replay-calibration.mt2f"));
     BossPreviewTestRngChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-juice-ritual-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-juice-ritual-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-juice-ritual-replay-calibration.mt2f"));
+    using var observation = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-juice-ritual-observation-calibration.mt2f"));
+    JuiceRitualChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-infusion-trigger-merge-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-infusion-trigger-merge-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
