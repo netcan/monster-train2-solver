@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--terminal-companion-roster-only")
+{
+    TerminalCompanionRosterChecks.Native(args[1]);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--relic-damage-tower-roster-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5777,6 +5782,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-spell-harvest-tower-replay-calibration.mt2f"));
     SpellHarvestTowerChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-terminal-companion-roster-counterexample.mt2f"))
+    TerminalCompanionRosterChecks.Native(path);
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-relic-damage-tower-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-relic-damage-tower-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

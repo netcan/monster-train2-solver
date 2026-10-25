@@ -13,6 +13,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-01-ring1-replay.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-replay.mt2f',
+    'full-battle-random-campaign-11-ring1-release107-budget10000-search.mt2f',
+    'full-battle-random-campaign-11-ring1-release107-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring2-budget10000-search.mt2f',
     'full-battle-random-campaign-11-ring2-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring3-budget10000-search.mt2f',
@@ -103,6 +105,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-spell-harvest-tower-calibration.mt2f',
     'player-spell-harvest-tower-replay-calibration.mt2f',
     'player-relic-damage-tower-calibration.mt2f',
+    'player-terminal-companion-roster-counterexample.mt2f',
     'player-relic-damage-tower-replay-calibration.mt2f',
     'player-last-attack-statistic-refresh-calibration.mt2f',
     'player-last-attack-statistic-refresh-replay-calibration.mt2f',
@@ -1519,6 +1522,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'f
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --terminal-enemy-slot-stages-only $fixtures[0]
     if ($LASTEXITCODE -ne 0) { throw 'Terminal room/train stage acceptance failed.' }
+    return
+}
+if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-terminal-companion-roster-counterexample.mt2f') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Terminal companion checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --terminal-companion-roster-only (Get-TestFixturePath $selectedFixtureNames[0])
+    if ($LASTEXITCODE -ne 0) { throw 'Terminal companion counterexample check failed.' }
     return
 }
 $branchPairGates = @{

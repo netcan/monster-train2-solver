@@ -1,11 +1,11 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.105, committed source`f283af3478db72e7f2ed79543c0d6448bf7d7912`.
+Current Windows installation:0.2.107, committed source`4e888b1afc805d5946634a335b8a44520d05d804`.
 The exact release payload passes the eleventh random Stygian/Awoken sample's
-sixth battle with actual10000ms/two-worker advice and independent native
-replay:79 inputs,68 plays,11 EndTurns,Pyre34 and22 train stages per process.
+first battle with actual10000ms/two-worker advice and independent native
+replay:26 inputs,21 plays,five EndTurns,Pyre80 and nine train stages per process.
 Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-052839-8bedd3fb` and replay`20261026-053555-73880dc0`
+zero. Source`20261026-061736-355ecabc` and replay`20261026-061859-3679aa95`
 bind the three installed DLL hashes to the committed build.
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
@@ -63,14 +63,19 @@ pairs pass. The full fifth battle also contains an actual upgraded cast.
 The eleventh sample's six-battle default-budget continuous chain passes.
 Version0.2.105's recipient-based room-debuff ordering passes focused native,
 filter/immunity and existing target controls; its full default sixth-battle
-qualification passes. Ring7 remains blocked by merchant Juice on UnnamedTome.
+qualification passes. Version0.2.106 calibrates merchant Juice on UnnamedTome
+in15 paired native inputs. Version0.2.107 closes Consume-relic Tower callback
+targeting and preview statistic-query storage in22/35 paired native inputs.
+Ring7's actual10000ms/two-worker36-input defeat now passes complete native
+state,forecast,RNG and all four zero failure counters. This is a strategy
+counterexample rather than a blocked model or seventh-battle victory.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.105. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261026-054300/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.105-Windows-20261026-054300.zip`,SHA256
-`8939a86d415fe4ccb6beb481fd04b585329f5df3cfb2d41924e4e7414221dd9c`.
+its next launch loads0.2.107. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261026-062310/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.107-Windows-20261026-062310.zip`,SHA256
+`c60a52c5d021875799d70a9554dce127f138eea959ff70b6be444a1a2bd7b493`.
 No Mac package or full regression was run. A full random clear at the default
 search budget is still unaccepted; historical sections describe earlier installations.
 

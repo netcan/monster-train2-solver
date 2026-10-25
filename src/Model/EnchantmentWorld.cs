@@ -103,6 +103,14 @@ namespace MonsterTrain2Poju.Model
                 retained = retained.Where(actor => referenced.Contains(actor.Unit.Id)).Select(actor =>
                     new EnchantmentRetainedUnit(actor.Unit, actor.Unit.DeathState?.IsDestroyed == true ? -1 : actor.RoomIndex, actor.Preview)).ToList();
             }
+            if (source.ActiveCompanionBossIds is IReadOnlyList<int> companions)
+            {
+                // Native snapshots resolve pairing against living companions even
+                // for retained dead actors. Both can die in the same Pyre phase.
+                var active = companions.ToHashSet();
+                retained = retained.Select(actor => new EnchantmentRetainedUnit(
+                    actor.Unit.WithoutRemovedCompanion(active), actor.RoomIndex, actor.Preview)).ToList();
+            }
             world = new EnchantmentWorld(rooms,
                 world.Movement.Where(rule => liveIds.Contains(rule.UnitId) || activeRetainedIds.Contains(rule.UnitId)).ToArray(), world.EnemySlotsPerRoom, retained, world.EnchanterIds, world.AllowUpdates, world.Updating,
                 world.Preview, world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds);
