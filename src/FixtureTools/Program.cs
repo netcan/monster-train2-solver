@@ -71,6 +71,11 @@ else if (args.Length == 7 && args[0] == "improve-order")
     OfflineBattleSearch.Improve(args[1], args[3], int.Parse(args[4]), int.Parse(args[5]), args[2],
         int.Parse(args[6]), exploreCardOrder: true);
 }
+else if (args.Length == 7 && args[0] == "improve-suffix")
+{
+    OfflineBattleSearch.Improve(args[1], args[3], int.Parse(args[4]), int.Parse(args[5]), args[2],
+        int.Parse(args[6]), exploreCardOrder: true, retainSuffix: true);
+}
 else if (args.Length is >= 4 and <= 6 && args[0] == "refine-policy")
 {
     OfflineBattleSearch.Refine(args[1], args[2], int.Parse(args[3]), args.Length >= 5 ? int.Parse(args[4]) : 0,
@@ -153,6 +158,7 @@ else
     Console.Error.WriteLine("Iterated counterexample: improve-policy <native.mt2f> <new-output.mt2f> <milliseconds> [passes] [start-decision]; retain complete improvements between sweeps; exported outcome may still be a defeat and needs native validation.");
     Console.Error.WriteLine("Resume improvement: improve-prediction <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> [passes] [start-decision]; independently verifies the full baseline and binds its source hash and complete native deployment root.");
     Console.Error.WriteLine("Card order investigation: improve-order <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision>; also tries other cards and unit abilities at each decision; model prediction only.");
+    Console.Error.WriteLine("Retained route investigation: improve-suffix <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision>; reapplies legal recorded suffix inputs by turn before tactical fallback; model prediction only.");
     Console.Error.WriteLine("Predicted counterexample: refine-prediction <native.mt2f> <verified-prediction.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; validates native input hash/root and independently replays the baseline before exploring.");
     Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");
     Console.Error.WriteLine("Usage: FixtureTools plan-once <request.mt2f> <output.mt2f> | plan-battle <native.mt2f> <output.mt2f> <horizon> <milliseconds-per-decision> <deployment-room> [--tactical] [--player-continuation] | policy-battle <native.mt2f> <output.mt2f> <deployment-room> [--strength] | freeze-actions <native.mt2f> <actions.json or -> <output.mt2f> | verify-offline-plan <prediction.mt2f> | verify-offline-native <prediction.mt2f> <fresh-native.mt2f> | card-inventory <workspace> [--check] | pack <legacy.json[.gz]> <output.mt2f> | bundle-native <baseline.mt2f> <owned.mt2f> <output.mt2f> | verify <legacy> <archive> | compare-values <diagnostic.json> <native.mt2f> | benchmark-capture <fixture.mt2f> <output-directory> | pack-directory <source-dir> <output-dir> | compare-speeds <normal.mt2f> <accelerated.mt2f>");

@@ -349,6 +349,32 @@ legal complete continuations,immutable parents,independent replay,and exact
 native source/hash binding; an exported loss remains explicitly a loss.
 This does not change the production planner or a player's saved settings.
 
+`improve-suffix <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f>
+<milliseconds> <passes> <start-decision>` also reapplies the recorded suffix
+after each alternative. Inputs are aligned by turn and revalidated against
+the new model-owned state; recorded snapshots are never spliced. An early
+EndTurn skips the old turn's remaining inputs. A deferred EndTurn first uses
+the tactical continuation to complete that turn. The existing18-play/256-input
+bounds remain. Invalidated targets, recursion selections or consumed cards
+are skipped and counted separately from missing legal model branches.
+
+This diagnostic mode can retain useful changes on both sides of a new edit,
+instead of replacing the entire later route with a fixed policy. On random09
+Ring8, six improvements among142 complete candidates reduce the boss from1344
+to925HP in a40-input verified defeat. The final implementation then finds two
+more improvements among113 complete candidates, leaving831HP. Both exports
+pass independent complete state/forecast/RNG replay and remain explicitly
+model losses. A separate60-second control completes50 of51 candidates,
+reapplies1056 suffix inputs, skips432 stale inputs and has zero unsupported
+legal branches. Different native input hashes and existing output/observation
+paths are rejected without overwriting their files.
+
+The first reproducible rejection from a generated legal alternative or tactical
+continuation is exported as`<output>.unsupported.mt2f` after independently
+replaying its prefix from the native deployment root. Stale recorded selections
+are never exported as model coverage gaps. Native execution remains required
+before any predicted win counts toward campaign acceptance.
+
 On continuous random09 Ring7,the36-input late baseline left Rax179HP.
 The narrow decision6..end sweep completed147 candidates without improvement;
 a30000ms/4096-node root search at decision24 also predicted defeat.

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
+using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -10,11 +11,13 @@ internal static partial class OfflineBattleSearch
     // two useful changes can compose instead of restarting every trial at the
     // original loss. A result is still a model prediction requiring native replay.
     internal static void Improve(string input, string output, int milliseconds, int maxPasses = 4,
-        string? prediction = null, int startDecision = 0, bool exploreCardOrder = false)
+        string? prediction = null, int startDecision = 0, bool exploreCardOrder = false, bool retainSuffix = false)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxPasses is >= 1 and <= 16,
             "Expected100..600000ms and1..16 improvement passes.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
+        string unsupportedOutput = output + ".unsupported.mt2f";
+        if (retainSuffix && File.Exists(unsupportedOutput)) throw new IOException("Output already exists: " + unsupportedOutput);
         using var document = FixtureDocument.Read(input);
         FixtureValue trace = document.RootElement;
         RequireNativeInput(trace);
@@ -43,6 +46,35 @@ internal static partial class OfflineBattleSearch
         var watch = Stopwatch.StartNew();
         var tried = new HashSet<string>(StringComparer.Ordinal);
         int candidates = 0, completed = 0, unsupported = 0, improvements = 0;
+        int retainedSteps = 0, skippedSuffixInputs = 0;
+        var reasons = new HashSet<string>(StringComparer.Ordinal);
+        void Unsupported(string reason, PlayCardAction? action, BattleTurnState failedRoot, IReadOnlyList<Step> failedPrefix)
+        {
+            unsupported++;
+            if (!retainSuffix) return;
+            if (reasons.Add(reason)) Console.WriteLine($"IMPROVE-UNSUPPORTED action={JsonSerializer.Serialize(action)} reason={reason}");
+            if (File.Exists(unsupportedOutput)) return;
+            string? reproduced = action == null ? BattleTurnModel.EndTurn(failedRoot).UnsupportedReason :
+                BattleActionModel.PlayCard(failedRoot, action).Reason;
+            if (reproduced != reason) return;
+            BattleTurnState replay = root;
+            RoomOutcome replayOutcome = RoomOutcome.Exchanged;
+            foreach (Step step in failedPrefix)
+            {
+                Require(!Terminal(replayOutcome), "Failure prefix follows a terminal input.");
+                replay = Apply(replay, step.Action, step.IsEndTurn, out replayOutcome);
+            }
+            Require(keys.Key(replay) == keys.Key(failedRoot) && keys.Key(root) == immutable,
+                "Failure prefix changed its native root or failed to reach the rejected action.");
+            using var failure = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
+                SourceArchive = Path.GetFileName(input),
+                SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+                Root = root, Prefix = failedPrefix, FailedRoot = failedRoot, Action = action, IsEndTurn = action == null,
+                Reason = reason, NativeValidationRequired = true });
+            using var stream = new FileStream(unsupportedOutput, FileMode.CreateNew, FileAccess.Write);
+            failure.Write(stream);
+            Console.WriteLine($"IMPROVE-BRANCH prefix={failedPrefix.Count} output={unsupportedOutput}; native observation required.");
+        }
         bool Expired() => watch.ElapsedMilliseconds >= milliseconds;
         for (int pass = 0; pass < maxPasses && outcome != RoomOutcome.BattleWon && !Expired(); pass++)
         {
@@ -64,7 +96,8 @@ internal static partial class OfflineBattleSearch
                 Step recorded = route[index];
                 var legal = BattleActionModel.EnumerateActions(entry.State, exploreCardOrder ? null : recorded.Action?.CardInstanceId,
                     includeAbilities: exploreCardOrder || recorded.Action == null || recorded.Action.ActivatorUnitId != 0);
-                unsupported += legal.UnsupportedAttempts.Count;
+                foreach (var attempt in legal.UnsupportedAttempts)
+                    Unsupported(attempt.Reason ?? "Unsupported alternative.", attempt.Action, entry.State, entry.Steps);
                 string recordedAction = JsonSerializer.Serialize(recorded.Action);
                 var alternatives = legal.SupportedCandidates.Where(candidate =>
                     JsonSerializer.Serialize(candidate.Action) != recordedAction &&
@@ -75,7 +108,7 @@ internal static partial class OfflineBattleSearch
                 {
                     BattleTurnResult ended = BattleTurnModel.EndTurn(entry.State);
                     if (ended.Supported) alternatives.Add((new Step { IsEndTurn = true }, ended.State!, ended.Outcome));
-                    else unsupported++;
+                    else Unsupported(ended.UnsupportedReason ?? "Unsupported EndTurn.", null, entry.State, entry.Steps);
                 }
                 foreach (var alternative in alternatives)
                 {
@@ -86,15 +119,54 @@ internal static partial class OfflineBattleSearch
                     BattleTurnState branch = alternative.State;
                     RoomOutcome result = alternative.Outcome;
                     int actions = alternative.Step.IsEndTurn ? 0 : entry.Steps.Reverse().TakeWhile(step => !step.IsEndTurn).Count() + 1;
+                    int suffix = index + 1;
                     while (!Terminal(result) && steps.Count < 256 && !Expired())
                     {
+                        // Preserve earlier useful refinements when their inputs
+                        // remain legal in the same turn. A changed EndTurn skips
+                        // the old turn's remainder; a deferred EndTurn completes
+                        // the current turn before resuming later recorded inputs.
+                        // Reapply every action, never splice recorded snapshots.
+                        bool replayed = false;
+                        while (retainSuffix && suffix < route.Length &&
+                            prefixes[suffix].State.Spawn.Turn <= branch.Spawn.Turn && !Expired())
+                        {
+                            int originalTurn = prefixes[suffix].State.Spawn.Turn;
+                            Step next = route[suffix++];
+                            if (originalTurn < branch.Spawn.Turn || !next.IsEndTurn && actions >= 18)
+                            { skippedSuffixInputs++; continue; }
+                            if (next.IsEndTurn)
+                            {
+                                BattleTurnResult ended = BattleTurnModel.EndTurn(branch);
+                                if (!ended.Supported)
+                                { Unsupported(ended.UnsupportedReason ?? "Unsupported EndTurn.", null, branch, steps); skippedSuffixInputs++; continue; }
+                                branch = ended.State!; result = ended.Outcome; actions = 0;
+                            }
+                            else
+                            {
+                                BattleActionResult played = BattleActionModel.PlayCard(branch, next.Action!);
+                                if (!played.Supported)
+                                {
+                                    // Earlier changes may consume a selected
+                                    // recursion target or move its host. A stale
+                                    // recorded input is skipped, not exported as
+                                    // evidence of a missing legal model branch.
+                                    skippedSuffixInputs++;
+                                    continue;
+                                }
+                                branch = played.State!; result = played.Outcome; actions++;
+                            }
+                            steps.Add(next); retainedSteps++; replayed = true; break;
+                        }
+                        if (replayed) continue;
                         int floor = branch.Spawn.Train.Rooms.FirstOrDefault(room => room.Units.Any(unit =>
                             unit.Team == CombatTeam.Player && unit.Health > 0 && unit.Modifiers?.IsChampion == true))?.RoomIndex ?? 2;
                         SupportedActionCandidate? chosen = null;
                         if (actions < 18)
                         {
                             chosen = BattleTacticalPolicy.Choose(branch, out var omitted, floor);
-                            unsupported += omitted.Count;
+                            foreach (var attempt in omitted)
+                                Unsupported(attempt.Reason ?? "Unsupported tactical continuation.", attempt.Action, branch, steps);
                         }
                         if (chosen != null)
                         {
@@ -104,7 +176,8 @@ internal static partial class OfflineBattleSearch
                         else
                         {
                             BattleTurnResult ended = BattleTurnModel.EndTurn(branch);
-                            if (!ended.Supported) { unsupported++; break; }
+                            if (!ended.Supported)
+                            { Unsupported(ended.UnsupportedReason ?? "Unsupported EndTurn.", null, branch, steps); break; }
                             branch = ended.State!; result = ended.Outcome;
                             steps.Add(new Step { IsEndTurn = true }); actions = 0;
                         }
@@ -120,6 +193,7 @@ internal static partial class OfflineBattleSearch
                         $"inputs={route.Length} candidates={candidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1}");
                     break;
                 }
+                if (retainSuffix) Console.WriteLine($"IMPROVE-PROGRESS decision={index} candidates={candidates} completed={completed} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} elapsedMs={watch.Elapsed.TotalMilliseconds:F1}");
                 if (improved) break;
             }
             if (!improved) break;
@@ -135,7 +209,7 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"IMPROVE-POLICY foundWin={outcome == RoomOutcome.BattleWon} improvements={improvements} " +
             $"startDecision={startDecision} exploreCardOrder={exploreCardOrder} candidates={candidates} completed={completed} unsupported={unsupported} " +
-            $"timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
+            $"retainSuffix={retainSuffix} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
 
         BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal)
         {
