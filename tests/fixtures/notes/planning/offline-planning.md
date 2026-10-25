@@ -293,6 +293,25 @@ input, and then replays its recorded outcomes/RNG. Prediction baselines do not
 become native evidence. Winning candidates are frozen from the original native
 input, so the existing fresh-game replay requirement stays intact.
 
+`improve-policy <native.mt2f> <new-output.mt2f> <milliseconds> [passes]`
+retains the first strictly better complete route between sweeps, allowing
+several useful changes to compose. The default is four sweeps (1..16 allowed)
+under a100..600000ms soft search budget. Each branch preserves its prefix,
+parent and RNG; a separate full replay verifies the exported route. Existing
+outputs are rejected. Complete losing improvements are explicitly exported as
+`PlayerDefeated`; their diagnostic boss-health ordering does not change the
+production win/Pyre objective or prove optimality. Export/verification can
+extend the soft budget.
+
+On the preserved random Umbra/Stygian Ring3 defeat, three improvements among
+eight complete candidates found a61-input model win (Pyre24) in22.68s of
+search. The retained-metagame Banished/Pyreborne Ring3 defeat produced a
+41-input model win (Pyre37), with two improvements among28 complete candidates
+in24.94s. Both pass independent full-state/RNG replay. Native validation exposed
+an unboxed-card Conduit mismatch in the first route and a terminal spell-kill
+statistics mismatch in the second. Neither result is accepted as a native
+victory until these boundaries and independent native replays pass.
+
 The repaired random Pyreborne/Banished Ring5 input produced72 early local
 alternatives (decisions0..18), all terminal model defeats with zero unsupported
 attempts. Decisions19..47 used240000ms:183 attempts,182 terminal defeats,
