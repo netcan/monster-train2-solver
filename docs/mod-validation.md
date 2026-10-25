@@ -1,11 +1,11 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.108, committed source`a77a4362783c35995469e7223c7f4eb035dc5f1a`.
+Current Windows installation:0.2.110, committed source`1a087498f6a3d3fc5ec1a7954c3c9073b160b868`.
 The exact release payload passes the eleventh random Stygian/Awoken sample's
 first battle with actual10000ms/two-worker advice and independent native
 replay:26 inputs,21 plays,five EndTurns,Pyre80 and nine train stages per process.
 Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-063654-74a99a09` and replay`20261026-063836-e83c28a2`
+zero. Source`20261026-071851-a448c4c7` and replay`campaign-ring2-20261026-072022-90e3ecd3`
 bind the three installed DLL hashes to the committed build.
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
@@ -70,12 +70,22 @@ Ring7's actual10000ms/two-worker36-input defeat now passes complete native
 state,forecast,RNG and all four zero failure counters. This is a strategy
 counterexample rather than a blocked model or seventh-battle victory.
 
+Version0.2.109 recovers equipment ownership from the native primary list during
+intermediate dying-owner snapshots, while preserving settled capture rules.
+The eleventh sample's refined seventh-battle route passes two native processes:
+36 inputs,Pyre3,complete state/forecast/RNG and zero failure counters. Its
+actual default final battle still loses after15 inputs with zero failures.
+Version0.2.110 calibrates unit-ability caster Duality and IgnoreDualism against
+independent31-input native observations. The natural Covenant3 seventh battle
+then completes55 actual default inputs with zero failures,but loses. These
+results separate strategy limitations from the corrected capture/model gaps.
+
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.108. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261026-064546/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.108-Windows-20261026-064546.zip`,SHA256
-`d072a10303fc88d34b13b5789a2a318d4f03a98508f2525da4e19896b5f11bfb`.
+its next launch loads0.2.110. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261026-072345/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.110-Windows-20261026-072345.zip`,SHA256
+`1e27201deb5c93903d9885a65b2fde4443b0700748c996aa09162ff75d121b13`.
 No Mac package or full regression was run. A full random clear at the default
 search budget is still unaccepted; historical sections describe earlier installations.
 

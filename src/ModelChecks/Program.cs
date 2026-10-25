@@ -5803,6 +5803,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("fu
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-native-covenant-03-ring6-refined-replay.mt2f"));
     RandomCampaignChecks.RefinedPair(source.RootElement, replay.RootElement, 424242, 3, 5, "Banished", "Pyreborne", 35);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-native-covenant-03-ring7-release110-budget10000-loss.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    RandomCampaignChecks.Source(source.RootElement, 424242, 3, 6, "Banished", "Pyreborne", 10000);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unit-ability-duality-counterexample.mt2f"))
     UnitAbilityDualityChecks.Counterexample(path);
 foreach (string path in args.Where(path => Path.GetFileName(path) is

@@ -21,6 +21,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-11-ring1-release110-budget10000-replay.mt2f',
     'full-battle-native-covenant-03-ring6-refined-search.mt2f',
     'full-battle-native-covenant-03-ring6-refined-replay.mt2f',
+    'full-battle-native-covenant-03-ring7-release110-budget10000-loss.mt2f',
     'full-battle-random-campaign-11-ring2-budget10000-search.mt2f',
     'full-battle-random-campaign-11-ring2-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring3-budget10000-search.mt2f',
@@ -1534,6 +1535,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'f
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --terminal-enemy-slot-stages-only $fixtures[0]
     if ($LASTEXITCODE -ne 0) { throw 'Terminal room/train stage acceptance failed.' }
+    return
+}
+if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'full-battle-native-covenant-03-ring7-release110-budget10000-loss.mt2f') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Natural Covenant default-loss checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-campaign-source-only $fixtures[0] 424242 3 6 Banished Pyreborne 10000
+    if ($LASTEXITCODE -ne 0) { throw 'Natural Covenant default-loss check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
