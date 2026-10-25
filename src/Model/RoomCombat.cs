@@ -3089,7 +3089,29 @@ namespace MonsterTrain2Poju.Model
                 if (target.Source.DeathState?.StatisticsListenerOnce == true)
                     target.Apply(target.Freeze().WithDeathState(new UnitDeathState(false, target.Source.DeathState.IsBeingRemoved,
                         false, isSacrifice: target.Source.DeathState.IsSacrifice, statisticsListenerOnce: false)));
+                // ReviveFromUndyingStatus invokes the same death signal as a
+                // final death, including Unstable's persistent explosion listener.
+                ExplodeUnstable(target);
+                if (unsupportedReason != null) return;
                 Emit("Revive", actor, target, 1);
+            }
+
+            private void ExplodeUnstable(WorkingUnit target)
+            {
+                int stacks = target.Count("unstable");
+                if (stacks <= 0) return;
+                CombatUnit unstableSource = target.Freeze();
+                CombatUnit[] roomUnits = units.Where(unit => unit.InRoom).Select(unit => unit.Freeze()).ToArray();
+                int additionalDamage = RelicUnstableRebalanceModel.GetAdditionalExplosionDamagePerStack(
+                    context, unstableSource, roomUnits);
+                int explosion = unchecked(stacks + unchecked(additionalDamage * stacks));
+                foreach (WorkingUnit enemy in units.Where(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy &&
+                    unit.Source.Id != target.Source.Id && !unit.Destroyed && !unit.Source.IsPyre &&
+                    !unit.Has("blastresistant")).ToArray())
+                {
+                    Damage(null, enemy, explosion, "Poison");
+                    if (unsupportedReason != null) return;
+                }
             }
 
             private readonly List<(WorkingUnit Unit, bool Return, bool RelicDamage)> deferredDamageDeaths = new List<(WorkingUnit, bool, bool)>();
@@ -3134,22 +3156,8 @@ namespace MonsterTrain2Poju.Model
                 // ordinary unit death accounting/removal; its point stays occupied.
                 if (target.Source.IsPyre) return;
                 DispatchDeathStatistics(actor, target, sourceCardId, sacrifice);
-                if (target.Count("unstable") > 0)
-                {
-                    int stacks = target.Count("unstable");
-                    CombatUnit unstableSource = target.Freeze();
-                    CombatUnit[] roomUnits = units.Where(unit => unit.InRoom).Select(unit => unit.Freeze()).ToArray();
-                    int additionalDamage = RelicUnstableRebalanceModel.GetAdditionalExplosionDamagePerStack(
-                        context, unstableSource, roomUnits);
-                    int explosion = unchecked(stacks + unchecked(additionalDamage * stacks));
-                    foreach (WorkingUnit enemy in units.Where(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy &&
-                        unit.Source.Id != target.Source.Id && !unit.Destroyed && !unit.Source.IsPyre &&
-                        !unit.Has("blastresistant")).ToArray())
-                    {
-                        Damage(null, enemy, explosion, "Poison");
-                        if (unsupportedReason != null) return;
-                    }
-                }
+                ExplodeUnstable(target);
+                if (unsupportedReason != null) return;
                 if (target.Source.DeathState != null)
                     target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true,
                         target.Source.DeathState.IsBeingRemoved || !deferRemoval || sacrifice,
