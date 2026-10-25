@@ -22,7 +22,9 @@ a fresh native deployment is required. Production has no old-snapshot bypass.
 
 Fixtures are `campaign/progression/player-draft-upgrade-combat[-replay]-calibration.mt2f`.
 This is a component calibration; the complete Ring6 default battle is separate
-and remains in progress. Windows currently contains accepted0.2.81.
+and remains a strategy gap. Windows now contains accepted0.2.82 from the new
+continuous Ring5 actual-default pair (43inputs/Pyre49); the deployment fix does
+not establish a default Ring6 victory.
 
 ```powershell
 ./scripts/Check-Models.ps1 -Fixture player-draft-upgrade-combat-calibration.mt2f -SkipBuild

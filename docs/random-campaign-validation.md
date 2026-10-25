@@ -1013,6 +1013,13 @@ F10／10000ms／双线程配置保留，没有构建Mac包。
 第六战保存SHA256`976e4492f37aa5bad9985d54bc5430a85378302eb80c26e2c1840901772e7803`，
 继续同一默认路线。三份整场件登记后目录1643份。
 
+23:07已将新第五战实际默认双胜的0.2.82安装到当前Windows游戏，编译源`412b38da`。
+三份DLL与接受的源局／独立复放一致，67个受保护文件不变。包
+`results/mod-dist/PojuAdvisor-0.2.82-Windows-20261025-230702.zip`，SHA256
+`7e62f1d3a0007e4deaa1bdbbd874bb72300dbe29e397f3d315dd5573baa769b5`；
+收据`BepInEx/PojuBackups/RandomCampaign-20261025-230702/installation.json`。
+F10／10000ms／双线程设置保留，无Mac构建，无全量回归。
+
 定向检查入口：
 
 ```powershell
