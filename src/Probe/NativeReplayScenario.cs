@@ -58,6 +58,7 @@ namespace MonsterTrain2Poju.Probe
         private float lastMapAttempt;
         private float restartStarted;
         private float replayStarted;
+        private float lastRoomSelectionRetry;
         private int quitCode;
         private int initialTurn;
         private int recordedTurn = -1;
@@ -769,8 +770,24 @@ namespace MonsterTrain2Poju.Probe
             }
             if (stage == Stage.SelectingRoom)
             {
-                if (Ready(managers, save, combat, cards) && managers.GetRoomManager()?.GetSelectedRoom() == (pendingPlay?.RoomIndex ?? 0))
+                if (Ready(managers, save, combat, cards))
                 {
+                    int wanted = pendingPlay?.RoomIndex ?? 0;
+                    RoomManager rooms = managers.GetRoomManager();
+                    if (rooms.GetSelectedRoom() != wanted)
+                    {
+                        // Preview/UI coroutines can restore the previous focus
+                        // after the initial request. Retry the normal room UI
+                        // API only at a settled native boundary, within the
+                        // existing timeout; card legality/state checks stay binding.
+                        if (Time.realtimeSinceStartup - lastRoomSelectionRetry >= .25f)
+                        {
+                            lastRoomSelectionRetry = Time.realtimeSinceStartup;
+                            log.LogInfo("DEPTH-ROOM-SELECTION-RETRY current=" + rooms.GetSelectedRoom() + " target=" + wanted);
+                            save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(wanted));
+                        }
+                        return;
+                    }
                     PreviewSchedulingProbe.Observe("RoomSelectionReady");
                     if (pendingPlay != null) PlayPendingPolicyCard(managers, cards!);
                     else PlayConfiguredCard(cards!);
