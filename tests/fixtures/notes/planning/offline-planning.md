@@ -424,6 +424,17 @@ archive/restore pass. This is the first complete random campaign acceptance,
 not an all-default-budget result. The natural Covenant3 Ring6 counterexample
 improved from61 to49 inputs across two suffix batches but still predicts
 defeat; no additional native games were spent on those losing routes.
+
+Refinement now retains model-owned immutable prefix states between accepted
+changes. Candidate tails replace only the changed suffix; no captured native
+snapshots are spliced into a branch. Initial source/root binding, parent
+immutability, independent full-route replay and native-validation requirements
+remain unchanged. In a fixed three-pass Ring8 control, both binaries complete
+the same235 alternatives and three improvements, producing identical48-input
+winning actions, complete states/forecasts and RNG. Search time changes from
+127375.5ms to113957.9ms (10.5% less); including export/verification,145439.2ms
+becomes132086.1ms (9.2% less). This is one offline-tool measurement alongside
+native campaign work, not an in-game performance claim.
 Three fixed-floor baselines and the10000ms default root search also predict
 defeat. The subsequent actual0.2.28 native59-input defeat confirms the root
 can run without a model mismatch, not that no winning policy exists.

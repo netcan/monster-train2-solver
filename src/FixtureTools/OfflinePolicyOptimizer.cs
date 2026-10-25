@@ -41,7 +41,12 @@ internal static partial class OfflineBattleSearch
         string immutable = keys.Key(root);
         Require(predicted == null || keys.Key(predicted.RootElement.GetProperty("Root").Deserialize<BattleTurnState>()!) == immutable,
             "Prediction changed the native deployment root.");
-        BattleTurnState final = Replay(route, out RoomOutcome outcome);
+        // These states come exclusively from this model-owned replay. Keep the
+        // unchanged prefix after a local improvement instead of simulating the
+        // whole incumbent again on every sweep. Final export still requires an
+        // independent replay from the original deployment root.
+        var prefixes = new List<BattleTurnState>();
+        BattleTurnState final = Replay(route, out RoomOutcome outcome, prefixes);
         double best = ImprovementMerit(final, outcome), initial = best;
         var watch = Stopwatch.StartNew();
         var tried = new HashSet<string>(StringComparer.Ordinal);
@@ -79,25 +84,16 @@ internal static partial class OfflineBattleSearch
         for (int pass = 0; pass < maxPasses && outcome != RoomOutcome.BattleWon && !Expired(); pass++)
         {
             bool improved = false;
-            BattleTurnState current = root;
-            var prefix = new List<Step>();
-            // Rebuild prefixes after each accepted improvement. Never splice
-            // captures with native preview allocations into model-owned states.
-            var prefixes = new List<(BattleTurnState State, Step[] Steps)>();
-            foreach (Step step in route)
-            {
-                prefixes.Add((current, prefix.ToArray()));
-                current = Apply(current, step.Action, step.IsEndTurn, out _); prefix.Add(step);
-            }
             for (int index = startDecision; index < prefixes.Count && !Expired(); index++)
             {
-                var entry = prefixes[index];
-                string parent = keys.Key(entry.State);
+                BattleTurnState entry = prefixes[index];
+                Step[] prefix = route.Take(index).ToArray();
+                string parent = keys.Key(entry);
                 Step recorded = route[index];
-                var legal = BattleActionModel.EnumerateActions(entry.State, exploreCardOrder ? null : recorded.Action?.CardInstanceId,
+                var legal = BattleActionModel.EnumerateActions(entry, exploreCardOrder ? null : recorded.Action?.CardInstanceId,
                     includeAbilities: exploreCardOrder || recorded.Action == null || recorded.Action.ActivatorUnitId != 0);
                 foreach (var attempt in legal.UnsupportedAttempts)
-                    Unsupported(attempt.Reason ?? "Unsupported alternative.", attempt.Action, entry.State, entry.Steps);
+                    Unsupported(attempt.Reason ?? "Unsupported alternative.", attempt.Action, entry, prefix);
                 string recordedAction = JsonSerializer.Serialize(recorded.Action);
                 var alternatives = legal.SupportedCandidates.Where(candidate =>
                     JsonSerializer.Serialize(candidate.Action) != recordedAction &&
@@ -106,19 +102,20 @@ internal static partial class OfflineBattleSearch
                         State: candidate.Result.State!, Outcome: candidate.Result.Outcome)).ToList();
                 if (!recorded.IsEndTurn)
                 {
-                    BattleTurnResult ended = BattleTurnModel.EndTurn(entry.State);
+                    BattleTurnResult ended = BattleTurnModel.EndTurn(entry);
                     if (ended.Supported) alternatives.Add((new Step { IsEndTurn = true }, ended.State!, ended.Outcome));
-                    else Unsupported(ended.UnsupportedReason ?? "Unsupported EndTurn.", null, entry.State, entry.Steps);
+                    else Unsupported(ended.UnsupportedReason ?? "Unsupported EndTurn.", null, entry, prefix);
                 }
                 foreach (var alternative in alternatives)
                 {
                     if (Expired()) break;
-                    var steps = new List<Step>(entry.Steps) { alternative.Step };
+                    var steps = new List<Step>(prefix) { alternative.Step };
                     if (!tried.Add(JsonSerializer.Serialize(steps))) continue;
                     candidates++;
                     BattleTurnState branch = alternative.State;
+                    var tailStates = new List<BattleTurnState> { branch };
                     RoomOutcome result = alternative.Outcome;
-                    int actions = alternative.Step.IsEndTurn ? 0 : entry.Steps.Reverse().TakeWhile(step => !step.IsEndTurn).Count() + 1;
+                    int actions = alternative.Step.IsEndTurn ? 0 : prefix.Reverse().TakeWhile(step => !step.IsEndTurn).Count() + 1;
                     int suffix = index + 1;
                     while (!Terminal(result) && steps.Count < 256 && !Expired())
                     {
@@ -129,9 +126,9 @@ internal static partial class OfflineBattleSearch
                         // Reapply every action, never splice recorded snapshots.
                         bool replayed = false;
                         while (retainSuffix && suffix < route.Length &&
-                            prefixes[suffix].State.Spawn.Turn <= branch.Spawn.Turn && !Expired())
+                            prefixes[suffix].Spawn.Turn <= branch.Spawn.Turn && !Expired())
                         {
-                            int originalTurn = prefixes[suffix].State.Spawn.Turn;
+                            int originalTurn = prefixes[suffix].Spawn.Turn;
                             Step next = route[suffix++];
                             if (originalTurn < branch.Spawn.Turn || !next.IsEndTurn && actions >= 18)
                             { skippedSuffixInputs++; continue; }
@@ -156,7 +153,7 @@ internal static partial class OfflineBattleSearch
                                 }
                                 branch = played.State!; result = played.Outcome; actions++;
                             }
-                            steps.Add(next); retainedSteps++; replayed = true; break;
+                            steps.Add(next); tailStates.Add(branch); retainedSteps++; replayed = true; break;
                         }
                         if (replayed) continue;
                         int floor = branch.Spawn.Train.Rooms.FirstOrDefault(room => room.Units.Any(unit =>
@@ -171,7 +168,7 @@ internal static partial class OfflineBattleSearch
                         if (chosen != null)
                         {
                             branch = chosen.Result.State!; result = chosen.Result.Outcome;
-                            steps.Add(new Step { Action = chosen.Action }); actions++;
+                            steps.Add(new Step { Action = chosen.Action }); tailStates.Add(branch); actions++;
                         }
                         else
                         {
@@ -179,15 +176,17 @@ internal static partial class OfflineBattleSearch
                             if (!ended.Supported)
                             { Unsupported(ended.UnsupportedReason ?? "Unsupported EndTurn.", null, branch, steps); break; }
                             branch = ended.State!; result = ended.Outcome;
-                            steps.Add(new Step { IsEndTurn = true }); actions = 0;
+                            steps.Add(new Step { IsEndTurn = true }); tailStates.Add(branch); actions = 0;
                         }
                     }
-                    Require(keys.Key(entry.State) == parent && keys.Key(root) == immutable, "Improvement mutated its parent.");
+                    Require(keys.Key(entry) == parent && keys.Key(root) == immutable, "Improvement mutated its parent.");
                     if (!Terminal(result)) continue;
                     completed++;
                     double score = ImprovementMerit(branch, result);
                     if (score >= best) continue;
                     best = score; final = branch; outcome = result; route = steps.ToArray();
+                    prefixes = prefixes.Take(index + 1).Concat(tailStates.Take(tailStates.Count - 1)).ToList();
+                    Require(prefixes.Count == route.Length, "Improved prefix cache lost a model-owned successor.");
                     improvements++; improved = true;
                     Console.WriteLine($"IMPROVE-POLICY pass={pass} decision={index} outcome={outcome} merit={best:F3} " +
                         $"inputs={route.Length} candidates={candidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1}");
@@ -211,12 +210,13 @@ internal static partial class OfflineBattleSearch
             $"startDecision={startDecision} exploreCardOrder={exploreCardOrder} candidates={candidates} completed={completed} unsupported={unsupported} " +
             $"retainSuffix={retainSuffix} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
 
-        BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal)
+        BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal, List<BattleTurnState>? collect = null)
         {
             BattleTurnState state = root; terminal = RoomOutcome.Exchanged;
             foreach (Step step in steps)
             {
                 Require(!Terminal(terminal) && step.IsEndTurn == (step.Action == null), "Invalid improvement input sequence.");
+                collect?.Add(state);
                 state = Apply(state, step.Action, step.IsEndTurn, out terminal);
             }
             Require(Terminal(terminal), "Incomplete improvement route.");
