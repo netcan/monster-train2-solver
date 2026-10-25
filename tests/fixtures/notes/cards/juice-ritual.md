@@ -25,6 +25,12 @@ Additional ordered status-scaling traits, unknown owners and multiple
 effective Juice traits remain guarded. The checker explicitly rejects an
 unknown owner and an additional Gold-based scaling callback.
 
+The historical `full-battle-random-campaign-01-ring7-loss.mt2f` source also
+passes the current focused campaign checker:37 native inputs/full forecasts/
+RNG, and all6 original signed/overflow Juice callback boundaries. That old
+route never played its upgraded Lifesteal/Scorch card; its unchanged terminal
+defeat is a regression control, not additional Juice casting evidence.
+
 ```powershell
 ./scripts/Check-Models.ps1 -Fixture player-juice-ritual-calibration.mt2f -SkipBuild
 ```
