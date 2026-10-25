@@ -38,6 +38,7 @@ namespace MonsterTrain2Poju.Probe
         private bool runReturned;
         private readonly HashSet<string> declinedUpgrades = new HashSet<string>();
         private readonly HashSet<string> auditedMerchantOffers = new HashSet<string>();
+        private readonly HashSet<string> auditedStoryOffers = new HashSet<string>();
         private readonly HashSet<string> unselectableMerchantOffers = new HashSet<string>();
         private string? pendingMerchantOffer;
 
@@ -213,18 +214,24 @@ namespace MonsterTrain2Poju.Probe
             }
             if (screen is DeckScreen deck)
             {
+                var mode = Field<DeckScreen.Mode>(deck, "mode");
+                string source = Field<GrantableRewardData.Source>(deck, "rewardSource").ToString();
                 if (deck.GetSelectedCardIndex() >= 0)
                 {
-                    if (Click(deck.GetConfirmButton(), "confirm-deck-choice")) pendingMerchantOffer = null;
+                    if (Click(deck.GetConfirmButton(), "confirm-deck-choice", new { mode = mode.ToString(),
+                        source })) pendingMerchantOffer = null;
                     return;
                 }
                 var infos = Field<IEnumerable>(deck, "cardInfos").Cast<object>();
-                bool purge = Field<DeckScreen.Mode>(deck, "mode") == DeckScreen.Mode.Purge;
+                bool purge = mode == DeckScreen.Mode.Purge;
                 var candidates = infos.Select(x => Field<CardUI>(x, "cardUI"))
                     .Where(x => x.gameObject.activeInHierarchy && x.IsCardInteractable())
                     .OrderByDescending(x => (purge ? -1 : 1) * CardValue(x.GetCardState()));
                 foreach (CardUI card in candidates)
-                    if (Click(card.SelectableUI as GameUISelectableButton, "deck-choice", CardDescription(card.GetCardState()))) return;
+                    if (Click(card.SelectableUI as GameUISelectableButton, "deck-choice", new {
+                        card = CardDescription(card.GetCardState()), mode = mode.ToString(),
+                        source, allowChampion = Field<bool>(deck, "allowSelectChampion"),
+                        eligible = candidates.Select(x => CardDescription(x.GetCardState())).ToList() })) return;
                 if (Click(deck.GetCloseButton(), "close-deck") && pendingMerchantOffer != null)
                 {
                     unselectableMerchantOffers.Add(pendingMerchantOffer);
@@ -236,11 +243,20 @@ namespace MonsterTrain2Poju.Probe
             if (screen is StoryEventScreen story)
             {
                 if (Click(story.GetContinueButton(), "event-continue")) return;
+                var available = Enumerable.Range(0, 8).Select(i => story.FindChoiceItemButton(i)).OfType<StoryChoiceItem>()
+                    .Where(x => x.gameObject.activeInHierarchy).ToList();
+                string storyKey = save.GetCurrentDistance() + ":" + string.Join(";", available.Select(x => x.choiceIndex + ":" + x.choiceText));
+                if (auditedStoryOffers.Add(storyKey)) Record("event-offers", new {
+                    choices = available.Select(x => new { index = x.choiceIndex, text = x.choiceText, allowed = x.conditionsPassed,
+                        sacrificesChampion = SacrificesChampion(x, save),
+                        rewards = x.GetRewardsInfo()?.Select(r => new { type = r.previewType.ToString(), r.dataKey, r.sourceString }).ToList() }).ToList() });
+                bool safeAlternative = available.Any(x => x.conditionsPassed && !SacrificesChampion(x, save));
                 bool lastChoice = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER") == "Last";
                 for (int choice = 0; choice < 8; choice++)
                 {
                     int i = lastChoice ? 7 - choice : choice;
                     if (story.FindChoiceItemButton(i) is StoryChoiceItem item && item.conditionsPassed &&
+                        (!safeAlternative || !SacrificesChampion(item, save)) &&
                         Click(item.button, "event-choice", new { index = i, text = item.choiceText,
                             order = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER") ?? "First" })) return;
                 }
@@ -513,6 +529,11 @@ namespace MonsterTrain2Poju.Probe
         }
         private static T Field<T>(object instance, string name) => (T)AccessTools.Field(instance.GetType(), name).GetValue(instance);
         private static MethodInfo Command(string name, params Type[] args) => AccessTools.Method(typeof(CheatManager), name, args);
+        private static bool SacrificesChampion(StoryChoiceItem item, SaveManager save) =>
+            item.GetRewardsInfo()?.Any(info => info.dataKey == "PurgeChampionPurgeReward" &&
+                save.GetAllGameData().FindRewardDataByName(info.dataKey) is PurgeRewardData purge &&
+                Field<bool>(purge, "allowPurgeChampion")) == true;
+
         private static double CardValue(CardState card) => card == null ? -10000 :
             card.GetCardType() == CardType.Monster ? (card.IsChampionCard() ? 500 : 0) + card.GetTotalAttackDamage() * 2 + card.GetHealth() +
                 (card.GetAssetName().Contains("Steward") ? -100 : 0) : 10 - card.GetCostWithoutAnyModifications();
