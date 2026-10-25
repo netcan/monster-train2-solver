@@ -388,7 +388,16 @@ whose death callback targets its companion across the train. The first
 Instant observation instead fails equipment ownership capture at input46.
 After the read-only equipment-owner fallback,two independent seven-input
 preview-clear controls pass,and this54-input observation reaches the exact
-Tower-trigger rejection. That actual mechanism is being calibrated separately.
+Tower-trigger rejection. Version0.2.77 supplies the full train roster to native
+spell-damage and deferred death callbacks,merging retained remote units back
+into their original rooms. Two independent54-input observations now replay
+with full state/RNG and immutable parents. On input54,the room-damage spell28
+kills Savage6 at3health; Entropic9 receives Multistrike1 and finishes at1122HP
+with Titanskin10 after the dead companion's aura is removed. Both Angels are
+on room2 in this observed branch; it does not establish every cross-floor
+combination. The public room-only damage API still explicitly rejects Tower
+callbacks without complete-train snapshots. Original refusal and fixed replay
+are retained as `player-spell-angel-death[-replay]-calibration.mt2f`.
 None of these model defeats is a new native victory or a proof of impossibility.
 
 The continuous default driver stops before replay/rewards on defeat. Future
