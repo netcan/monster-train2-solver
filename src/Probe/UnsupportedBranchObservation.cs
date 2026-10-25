@@ -79,8 +79,12 @@ namespace MonsterTrain2Poju.Probe
             Require(rows.Count <= prefix.Length, "Branch input overflow.");
             Require(Comparable(root) == Comparable(expected), "Native branch prefix root differs at " + rows.Count + ": " +
                 UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(expected), BattleTurnProbe.Comparable(root), "$"));
-            if (boundary) Require(Comparable(root) == Comparable(Read<BattleTurnState>(request.GetProperty("FailedRoot"))),
-                "Native branch did not reach the recorded failure root.");
+            if (boundary)
+            {
+                var failedRoot = Read<BattleTurnState>(request.GetProperty("FailedRoot"));
+                Require(Comparable(root) == Comparable(failedRoot), "Native branch did not reach the recorded failure root: " +
+                    UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(failedRoot), BattleTurnProbe.Comparable(root), "$"));
+            }
             FixtureValue value = boundary ? request : prefix[rows.Count];
             PlayCardAction? action = Read<PlayCardAction?>(value.GetProperty("Action"));
             bool end = value.TryGetProperty("IsEndTurn", out FixtureValue endValue) && endValue.GetBoolean();
