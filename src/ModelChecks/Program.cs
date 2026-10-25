@@ -1,6 +1,20 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--corrupt-before-play-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CorruptBeforePlayChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--corrupt-before-play-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    CorruptBeforePlayChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--destroyed-feeder-native-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4965,6 +4979,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-friendly-relic-piercing-replay-calibration.mt2f"));
     FriendlyRelicPiercingChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-corrupt-before-play-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-corrupt-before-play-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corrupt-before-play-replay-calibration.mt2f"));
+    CorruptBeforePlayChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-corrupt-copyability-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-corrupt-copyability-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

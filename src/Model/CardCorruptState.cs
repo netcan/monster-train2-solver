@@ -7,29 +7,24 @@ namespace MonsterTrain2Poju.Model
     {
         public const string Trait = "CardTraitCorruptState";
 
-        internal static RoomCorruptionResult BeforePlay(TrainCombatState source, CardInstanceState? card,
-            CardPlayRule rule, int roomIndex)
+        internal static TrainSpellResult BeforePlay(TrainCombatState source, CardInstanceState? card,
+            CardPlayRule rule, int roomIndex, BattlePlayRules definitions)
         {
-            if (card?.MaskDescriptor == null) return new RoomCorruptionResult(source.Context);
+            if (card?.MaskDescriptor == null) return new TrainSpellResult(source, RoomOutcome.Exchanged, Array.Empty<CombatEvent>());
             CardTraitValue[] traits = (CardExhaustModel.RefreshTraits(card).CombinedTraits ?? Array.Empty<CardTraitValue>())
                 .Where(trait => trait.RuntimeType == Trait).ToArray();
-            if (traits.Length == 0) return new RoomCorruptionResult(source.Context);
+            if (traits.Length == 0) return new TrainSpellResult(source, RoomOutcome.Exchanged, Array.Empty<CombatEvent>());
             if (rule.CardType is not ("Spell" or "Monster") || rule.IsAnyAbility == true || traits.Any(trait => trait.DeclaredName != Trait))
-                return new RoomCorruptionResult(null, "Corrupt State requires an ordinary spell or Monster with captured trait provenance.");
+                return new TrainSpellResult(null, RoomOutcome.Unsupported, Array.Empty<CombatEvent>(),
+                    "Corrupt State requires an ordinary spell or Monster with captured trait provenance.");
             if (source.Context?.Resources?.CorruptionPerCorruptTrait is not int amount || amount < 0)
-                return new RoomCorruptionResult(null, "Corrupt State requires the captured native mutable corruption rule.");
-            CombatContext context = source.Context;
-            // Native iterates live combined trait objects, before all Corrupt Restricted callbacks.
-            foreach (CardTraitValue trait in traits)
-            {
-                var train = CardSpellModel.WithContext(source, context);
-                RoomCorruptionResult added = RoomCorruptionModel.Apply(train, roomIndex,
-                    new CardActionEffect("AdjustCorruption", "Room", amount, false, false,
-                        Array.Empty<CombatStatus>(), corruptionAdd: true));
-                if (!added.Supported) return added;
-                context = added.Context!;
-            }
-            return new RoomCorruptionResult(context);
+                return new TrainSpellResult(null, RoomOutcome.Unsupported, Array.Empty<CombatEvent>(),
+                    "Corrupt State requires the captured native mutable corruption rule.");
+            // Each trait queues unit/relic callbacks before committing corruption,
+            // before the card's summon/effects and Corrupt Restricted callbacks.
+            return CardSpellModel.ApplyBeforePlayCorruption(source, roomIndex, traits.Select(_ =>
+                new CardActionEffect("AdjustCorruption", "Room", amount, false, false,
+                    Array.Empty<CombatStatus>(), corruptionAdd: true)).ToArray(), card.InstanceId, definitions);
         }
     }
 }

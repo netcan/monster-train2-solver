@@ -575,12 +575,19 @@ namespace MonsterTrain2Poju.Model
                     train = drained.State!; context = train.Context!;
                     if (drained.Outcome != RoomOutcome.Exchanged) outcome = drained.Outcome;
                 }
-                RoomCorruptionResult corrupt = CardCorruptStateModel.BeforePlay(CardSpellModel.WithContext(train, context),
-                    context.FindCard(card.InstanceId), rule, action.RoomIndex);
+                TrainSpellResult corrupt = CardCorruptStateModel.BeforePlay(CardSpellModel.WithContext(train, context),
+                    context.FindCard(card.InstanceId), rule, action.RoomIndex, outputPlayRules);
                 if (!corrupt.Supported) return corrupt.UnsupportedReason;
-                context = corrupt.Context!;
-                train = CardSpellModel.WithContext(train, context);
+                train = corrupt.State!; context = train.Context!;
+                piles = corrupt.OtherPiles?.ToArray() ?? piles;
+                outputPlayRules = corrupt.PlayRules ?? outputPlayRules;
+                nextUnitId = context.NextUnitId ?? nextUnitId;
+                retainedSpellUnits = retainedSpellUnits.Concat(corrupt.RetainedUnits)
+                    .GroupBy(unit => unit.Id).Select(group => group.Last()).ToArray();
+                if (corrupt.Outcome != RoomOutcome.Exchanged) outcome = corrupt.Outcome;
                 target = train.Rooms.First(room => room.RoomIndex == action.RoomIndex);
+                players = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
+                position = action.PlayerPosition == -1 ? players.Length : action.PlayerPosition;
                 return null;
             }
             if (rule.Effect == "SpawnMonster")
@@ -807,7 +814,8 @@ namespace MonsterTrain2Poju.Model
                 outputPlayRules = result.PlayRules ?? outputPlayRules;
                 discardDrawUpgrades = result.DiscardDrawUpgrades;
                 pendingSpellCallbacks = result.PendingCallbacks;
-                retainedSpellUnits = result.RetainedUnits;
+                retainedSpellUnits = retainedSpellUnits.Concat(result.RetainedUnits)
+                    .GroupBy(unit => unit.Id).Select(group => group.Last()).ToArray();
                 foreach (SpellTargetCollection collection in result.TargetCollections)
                     if (collection.EffectIndex == 0 || rule.Effects[collection.EffectIndex].Target == "DropTargetCharacter")
                         lastMainTargets = collection.UnitIds;

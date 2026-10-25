@@ -147,6 +147,11 @@ namespace MonsterTrain2Poju.Model
             ApplyCore(source, roomIndex, effects, 0, sourceCardId, null, null, definitions, true,
                 selfUnitId: selfUnitId, resolveLiveEffects: false);
 
+        internal static TrainSpellResult ApplyBeforePlayCorruption(TrainCombatState source, int roomIndex,
+            IReadOnlyList<CardActionEffect> effects, int sourceCardId, BattlePlayRules definitions) =>
+            ApplyCore(source, roomIndex, effects, 0, sourceCardId, null, null, definitions, fullTrain: true,
+                playerActionPhase: true, resolveLiveEffects: false);
+
         internal static TrainSpellResult ApplyAfterSpawn(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int sourceCardId, int selfUnitId, BattlePlayRules definitions) =>
             ApplyCore(source, roomIndex, effects, 0, sourceCardId, null, null, definitions, true,

@@ -49,6 +49,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-03-ring4-budget10000-replay.mt2f',
     'full-battle-random-campaign-03-ring5-budget10000-search.mt2f',
     'full-battle-random-campaign-03-ring5-budget10000-replay.mt2f',
+    'full-battle-random-campaign-03-ring6-budget10000-loss.mt2f',
     'full-battle-random-campaign-04-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-04-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-04-ring2-budget10000-search.mt2f',
@@ -87,6 +88,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-friendly-relic-piercing-replay-calibration.mt2f',
     'player-corrupt-copyability-calibration.mt2f',
     'player-corrupt-copyability-replay-calibration.mt2f',
+    'player-corrupt-before-play-calibration.mt2f',
+    'player-corrupt-before-play-replay-calibration.mt2f',
     'player-destroyed-feeder-calibration.mt2f',
     'player-destroyed-feeder-replay-calibration.mt2f',
     'player-destroyed-feeder-observation-calibration.mt2f',
@@ -1236,6 +1239,7 @@ $branchPairGates = @{
     'player-recursion-target-text-calibration.mt2f' = '--recursion-target-text-pair-only'
     'player-friendly-relic-piercing-calibration.mt2f' = '--friendly-relic-piercing-pair-only'
     'player-corrupt-copyability-calibration.mt2f' = '--corrupt-copyability-pair-only'
+    'player-corrupt-before-play-calibration.mt2f' = '--corrupt-before-play-pair-only'
     'player-destroyed-feeder-calibration.mt2f' = '--destroyed-feeder-pair-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
