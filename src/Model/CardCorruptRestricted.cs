@@ -25,10 +25,14 @@ namespace MonsterTrain2Poju.Model
                 descriptor.PermanentReplacements.Any(rule => rule.OldName == Trait || rule.NewRuntimeType == Trait) ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true))
                 return "Positive Corrupt Restricted requires one unchanged base trait.";
-            int index = descriptor.BaseTraits.ToList().FindIndex(trait => trait.RuntimeType == Trait);
-            if (index < 0 || descriptor.SourceTraits == null || descriptor.SourceTraits.Count != descriptor.BaseTraits.Count)
+            // Native base-state lists can also contain an installed Holdover
+            // trait. Source parameters describe authored card data, so match
+            // the single Corrupt Restricted definition by type, not list size.
+            CardSourceTrait[] sources = descriptor.SourceTraits?.Where(source => source.Type == Trait).ToArray() ??
+                Array.Empty<CardSourceTrait>();
+            if (descriptor.BaseTraits.Count(trait => trait.RuntimeType == Trait) != 1 || sources.Length != 1)
                 return "Positive Corrupt Restricted requires captured base source parameters.";
-            CardSourceTrait source = descriptor.SourceTraits[index];
+            CardSourceTrait source = sources[0];
             if (source.Type != Trait || source.Int != active[0].ParamInt || source.Int != active[0].DefinitionParamInt ||
                 source.Int2 != 0 || source.Int3 != 0 || source.Bool && !allowSourceRoom || source.Str != "" || source.Float != 0 || source.Scaling ||
                 source.TrackedValue != "SubtypeInDeck" || source.EntryDuration != "ThisTurn")
