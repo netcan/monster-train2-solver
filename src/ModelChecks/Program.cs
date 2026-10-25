@@ -5570,7 +5570,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-har
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
-foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-random-campaign-", StringComparison.Ordinal) &&
+foreach (string path in args.Where(path => (Path.GetFileName(path).StartsWith("full-battle-random-campaign-", StringComparison.Ordinal) ||
+    Path.GetFileName(path).StartsWith("full-battle-metagame-campaign-", StringComparison.Ordinal)) &&
     (path.EndsWith("-search.mt2f", StringComparison.Ordinal) || path.EndsWith("-loss.mt2f", StringComparison.Ordinal))))
     RandomCampaignChecks.Curated(path);
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f" or

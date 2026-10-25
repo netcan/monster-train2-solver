@@ -52,6 +52,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-07-ring4-budget10000-search.mt2f',
     'full-battle-random-campaign-07-ring4-budget10000-replay.mt2f',
     'full-battle-random-campaign-07-ring5-budget10000-loss.mt2f',
+    'full-battle-metagame-campaign-ring1-budget10000-search.mt2f',
+    'full-battle-metagame-campaign-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-03-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-03-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-03-ring2-budget10000-search.mt2f',
@@ -1420,6 +1422,7 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notlike 'full-battle-random-campaign-*' -and
+    $_ -notlike 'full-battle-metagame-campaign-*' -and
     $_ -ne 'player-random-campaign-02-ring2-permafrost-unavailable.mt2f' -and
     $_ -ne 'player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f' -and
     $_ -ne 'player-random-campaign-02-ring3-relentless-preview-observed.mt2f' -and

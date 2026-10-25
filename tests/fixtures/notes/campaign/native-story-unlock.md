@@ -74,3 +74,28 @@ pwsh -NoProfile -File scripts/Check-NativeMetagameContinuation.ps1 `
   -CompletedArchive tests/fixtures/saves/campaign/campaign-completed-fragile.zip `
   -OpeningArchive tests/fixtures/saves/campaign/campaign-metagame-new-run.zip
 ```
+
+### First natural battle after the retained-profile opening · 0.2.68
+
+After fixing the lost card-type sequence reset, seed424245 Banished/Pyreborne
+won Ring1 using the actual10000ms/two-worker player advice and an independent
+frozen native replay:21 inputs,16 card plays,5 EndTurns, Pyre80. Both processes
+match all state/forecast/RNG and9 train stages, with four failure counters zero.
+The source used64.33s,23 publications,3 search metric samples,754 independent
+card-mask contexts and181 pure captures. This is the retained-profile campaign,
+not sample8 of the randomized clan sequence and not a whole-campaign clear.
+
+Normal native rewards advance to Ring2, saveSHA256
+`edf23a1fe8d61e2a8cef0ddc73c72d523718c0a92dbb397f21c6fe4cf3399188`.
+`saves/campaign/campaign-metagame-ring2.zip` contains48 hash-verified files,
+SHA256 `3521b609d5d49deb9322d639c0c5951fdfa16e61340fdb2fd415dc47d489c8d9`.
+The native cumulative values survive and9 increase; UnitsMoved155→162,
+StewardDamage1100→1174 and CoinsSpent1410→1465. Additional hearts remain0/9.
+
+Append `-ProgressArchive <ordered checkpoint zip array>` to the command above
+to verify each adjacent battle's input save/metagame hashes, unchanged seed,
+clans, rank, complete native victory history and independent replay receipt.
+The same check compares cumulative counters, hearts, features and dialogues
+without battle simulations. Skipped/repeated boundaries are rejected. Actual
+battle states remain covered by the separate two curated `.mt2f` archives in
+`campaign/progression/full-battle-metagame-campaign-ring1-budget10000-*`.
