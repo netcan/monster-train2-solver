@@ -104,7 +104,14 @@ namespace MonsterTrain2Poju.Model
         {
             var frame = new EnchantmentCombatState(source.Train, source.RetainedUnits, Array.Empty<int>(),
                 true, source.Updating, source.Preview, source.TestRng, source.TemporaryPreviewUnitIds);
-            return new Engine(frame).All();
+            EnchantmentCombatResult result = new Engine(frame).All();
+            if (!result.Supported) return result;
+            EnchantmentCombatState updated = result.State!;
+            // Suppress aura callbacks only for this Deathwish update. The native
+            // room manager retains its enchanter registry and global update gate.
+            return new EnchantmentCombatResult(new EnchantmentCombatState(updated.Train, updated.RetainedUnits,
+                source.EnchanterIds, source.AllowUpdates, updated.Updating, updated.Preview, updated.TestRng,
+                updated.TemporaryPreviewUnitIds), result.Requests, result.PendingCallbacks);
         }
         public static EnchantmentCombatResult UpdateEffect(EnchantmentCombatState source, int sourceId, int triggerIndex, int effectIndex)
             => new Engine(source).One(sourceId, triggerIndex, effectIndex);

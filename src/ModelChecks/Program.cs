@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length is 2 or 3 && args[0] == "--enchantment-preview-death-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    EnchantmentPreviewDeathChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--floor-transition-piercing-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5683,6 +5690,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-replay-calibration.mt2f"));
     using var observation = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-observation-calibration.mt2f"));
     ConsumeKillCopyChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-deathwish-enchantment-registry-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-deathwish-enchantment-registry-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-deathwish-enchantment-registry-replay-calibration.mt2f"));
+    EnchantmentPreviewDeathChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-floor-transition-piercing-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-floor-transition-piercing-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

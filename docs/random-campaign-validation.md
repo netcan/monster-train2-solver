@@ -1116,6 +1116,13 @@ F10／10000ms／双线程设置保留，无Mac构建，无全量回归。
 [移动遗物穿刺校准](../tests/fixtures/notes/combat/floor-transition-piercing.md)。
 这只是机制校准，第八战尚无胜局，继续离线筛选完整路线。
 
+第十组第六战的12输入现场已在0.2.87完成独立原生双进程校准：召唤升级
+TrainSteward后，Deathwish专用更新只应临时跳过光环调用，旧模型却永久清空
+光环施放者登记表。修正后登记表及更新开关保留，敌方施放者在战斗预览死亡时
+撤销三个预览标记，实际附魔及Titanskin5保留。完整状态、预测和RNG匹配，
+详见[Deathwish与光环登记](../tests/fixtures/notes/combat/deathwish-enchantment-registry.md)。
+机制校准不计为第六战胜利，继续相同检查点的实际默认预算建议。
+
 定向检查入口：
 
 ```powershell
