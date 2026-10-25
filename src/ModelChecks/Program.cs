@@ -1,6 +1,36 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--dead-caster-status-native-only")
+{
+    using var native = ModelJson.ReadFixture(args[1]);
+    DeadCasterStatusChecks.Native(native.RootElement);
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--dead-caster-status-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    DeadCasterStatusChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--authored-consume-copy-native-only")
+{
+    using var native = ModelJson.ReadFixture(args[1]);
+    AuthoredConsumeCopyChecks.Native(native.RootElement);
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--authored-consume-copy-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    AuthoredConsumeCopyChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--feeding-spell-routing-native-only")
 {
     using var native = ModelJson.ReadFixture(args[1]);
@@ -4749,6 +4779,21 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
 {
     using var observation = ModelJson.ReadFixture(path);
     FeedingSpellRoutingChecks.Native(observation.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is
+    "player-authored-consume-copy-calibration.mt2f" or "player-ephemeral-copy-full-hand-calibration.mt2f" or
+    "player-ephemeral-copy-hand-space-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
+        Path.GetFileName(path).Replace("-calibration.mt2f", "-replay-calibration.mt2f", StringComparison.Ordinal)));
+    AuthoredConsumeCopyChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-dead-caster-status-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-dead-caster-status-replay-calibration.mt2f"));
+    DeadCasterStatusChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-harvester-birth-calibration.mt2f"))
 {

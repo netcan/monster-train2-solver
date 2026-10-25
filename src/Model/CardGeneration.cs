@@ -269,7 +269,7 @@ namespace MonsterTrain2Poju.Model
                     creation.ExternalInteractions, creation.EffectCounters, creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits, creation.CapacityScalingTraits, creation.EquippedUnitId,
                     context.CardRegistry?.Any(card => card.PlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null,
                     context.CardRegistry?.Any(card => card.RawPlayedRoomUnitIds != null) == true ? Array.Empty<int>() : null, creation.MaskDescriptor,
-                    forgeCountScalingTraits: creation.ForgeCountScalingTraits,
+                    forgeCountScalingTraits: creation.ForgeCountScalingTraits, canBeCopied: creation.CanBeCopied,
                     trainHealScalingTraits: creation.TrainHealScalingTraits);
                 void RefreshUpgrades()
                 {

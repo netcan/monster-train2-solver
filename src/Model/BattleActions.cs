@@ -1113,6 +1113,12 @@ namespace MonsterTrain2Poju.Model
                 CardGenerationResult copied = CardCopyOnPlayModel.Discarded(context, context.FindCard(card.InstanceId)!);
                 if (!copied.Supported) return Unsupported(copied.UnsupportedReason!);
                 context = copied.Context!;
+                // This calibrated box keeps CopyOnPlay before Ephemeral in its
+                // discard callbacks. The later purge refreshes deck trait queries
+                // after the new copy has entered the native owned-card set.
+                if (ephemeralPurgeCallbacks && copied.AddedCards.Count > 0 && context.CardInstances != null)
+                    context = context.WithStatistics(context.Statistics?.RefreshOwnedCards(
+                        context.CardInstances.Select(instance => instance.InstanceId)));
             }
             if (consumedOnPlay)
             {

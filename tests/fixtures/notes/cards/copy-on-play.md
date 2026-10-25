@@ -1,5 +1,37 @@
 # Original copy-on-play upgrade
 
+## Authored Consume and recursive box copies (2026-10-25)
+
+The unchanged random Pyreborne/Banished campaign (seed1862997127, rank0,
+Ring5) naturally bought the same merchant upgrade on SmallBox
+`f0ff6411-5c58-4b69-b025-0f6e4a52fca7`, whose original CardData already has
+ordinary Consume. Three independent native observation/replay pairs now cover:
+
+| Curated pair prefix | Native inputs | Observed boundary |
+| --- | --- | --- |
+| `player-authored-consume-copy-*calibration.mt2f` | 12 | Unbox three templates, create the on-cast Ephemeral self-copy, then a distinct on-discard copy; both preserve authored Consume and boxed contents. |
+| `player-ephemeral-copy-full-hand-*calibration.mt2f` | 14 | Eight cards before play; unboxing fills all ten slots, both additional copies are suppressed and the original is purged twice. |
+| `player-ephemeral-copy-hand-space-*calibration.mt2f` | 18 | Seven cards before play; after three unboxed cards, the discard callback fills the last slot, retaining both temporary upgrades in their native order. |
+
+All six archives live in `cards/draw/`. The catalog records their exact source
+profiles and hashes. Each original rejection keeps its null historical
+prediction; its independent replay captures the repaired prediction. Focused
+checkers replay every native input, compare full comparable state/RNG, verify
+immutable parents and check the original player projection's purity.
+
+The add-card pipeline now sets captured copyability before refreshing installed
+upgrades, and reconstructs authored Consume before copied upgrade traits. The
+recursive box's exact original AddEphemeral signature is separately allowed;
+other combined callbacks stay guarded. When its copy callback precedes the
+second purge, the later native deck-trait query includes the new identity in
+stored statistics. Full-hand suppression occurs before copy allocation.
+Existing SmallBox and merchant-copy complete native battle controls pass.
+These are component observations, not a Ring5 win or campaign clear.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --authored-consume-copy-pair-only <source.mt2f> <replay.mt2f>
+```
+
 Native MVID: `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`.
 Source: `.probe-runs/full-battle-units-spells-and-junk-20261022-085557-d2942e14`.
 

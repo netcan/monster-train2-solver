@@ -1685,7 +1685,9 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState? damageActorRoom = damageAttackerId > 0
                         ? state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == damageAttackerId)) : null;
                     CombatUnit? damageActor = damageActorRoom?.Units.FirstOrDefault(unit => unit.Id == damageAttackerId);
-                    if (damageAttackerId > 0 && damageActor == null)
+                    // A self-targeted ability may kill its caster before later
+                    // non-damage effects (such as room-wide Pyregel) resolve.
+                    if (scaledDamage.HasValue && damageAttackerId > 0 && damageActor == null)
                         return UnsupportedTrain("Spell damage source left the captured train before damage resolution.");
                     CombatUnit? externalDamageActor = scaledDamage.HasValue && damageActorRoom?.RoomIndex != targetRoom!.RoomIndex ? damageActor : null;
                     var priorDeaths = nativeDamagePhase ? callbacks.ToArray() : Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();

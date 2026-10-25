@@ -161,7 +161,10 @@ namespace MonsterTrain2Poju.Model
             if (!roomAbility) train = Resolving(train, actorId, false);
             context = train.Context!;
             context = context.WithStatistics(context.Statistics?.WithPlayedCost(cache.Card.InstanceId, null));
-            context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
+            // Ability cards do not go through CardManager.OnCardPlayed's global
+            // standby pass. CharacterRemoved already returns the dying actor's
+            // current equipment; detached historical entries wait for a later
+            // ordinary card or turn boundary.
             if (Terminal(outcome)) context = context.WithQueryFrame(context.QueryFrame?.With(runningCombat: false));
             train = CardSpellModel.WithContext(train, context);
             if (source.BattlePreviewEnabled && !Terminal(outcome))

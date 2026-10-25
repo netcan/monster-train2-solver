@@ -15,9 +15,11 @@ internal static partial class OfflineBattleSearch
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         Require(!string.IsNullOrWhiteSpace(reason), "An exact rejection reason is required.");
         using var source = FixtureDocument.Read(input);
-        FixtureValue[] rows = source.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
-        Require(rows.Length is > 0 and <= 256, "Expected bounded recorded decisions.");
-        BattleTurnState root = rows[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        bool deployment = IsDeploymentObservation(source.RootElement);
+        FixtureValue[] rows = source.RootElement.TryGetProperty("RollingDecisions", out FixtureValue recorded)
+            ? recorded.EnumerateArray().ToArray() : Array.Empty<FixtureValue>();
+        Require(rows.Length <= 256 && (deployment || rows.Length > 0), "Expected a pure deployment observation or bounded recorded decisions.");
+        BattleTurnState root = deployment ? DeploymentRoot(source.RootElement) : rows[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
         using var keys = new BattleStateKeys();
         string immutable = keys.Key(root);
         var visited = new HashSet<string>(StringComparer.Ordinal);
@@ -79,6 +81,20 @@ internal static partial class OfflineBattleSearch
                 IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() });
             if (row.TryGetProperty("Actual", out FixtureValue actual) && actual.ValueKind == FixtureKind.Object &&
                 Extract(actual.Deserialize<BattleTurnState>()!, new List<Step>(prefix))) return;
+        }
+        if (deployment)
+        {
+            BattleTurnState current = root;
+            RoomOutcome outcome = RoomOutcome.Exchanged;
+            int played = 0;
+            while (!Terminal(outcome) && prefix.Count < 256)
+            {
+                if (Extract(current, prefix)) return;
+                SupportedActionCandidate? choice = played >= 18 ? null : BattleTacticalPolicy.Choose(current, out _);
+                var step = new Step { Action = choice?.Action, IsEndTurn = choice == null };
+                current = Apply(current, step.Action, step.IsEndTurn, out outcome);
+                prefix.Add(step); played = step.IsEndTurn ? 0 : played + 1;
+            }
         }
         throw new InvalidDataException($"No matching unsupported action in {visited.Count} recorded forecast roots: {reason}");
     }
