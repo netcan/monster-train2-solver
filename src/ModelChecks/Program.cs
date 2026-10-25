@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--natural-hydra-catalog-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NaturalHydraCatalogChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--natural-angel-pair-cache-only")
 {
     NaturalAngelPairCacheChecks.Pair(args[1], args[2]);
@@ -5314,6 +5321,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-boss-preview-test-rng-replay-calibration.mt2f"));
     BossPreviewTestRngChecks.Pair(source.RootElement, replay.RootElement);
+}
+// Equipment catalogs are required independently of triggered unit summoning.
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-natural-hydra-catalog-deployment-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-natural-hydra-catalog-deployment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-natural-hydra-catalog-deployment-replay-calibration.mt2f"));
+    NaturalHydraCatalogChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string stem in new[] { "player-undying-copy", "player-undying-permafrost-copy" })
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith(stem + "-deployment-", StringComparison.OrdinalIgnoreCase))

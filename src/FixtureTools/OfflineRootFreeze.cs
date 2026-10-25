@@ -33,8 +33,9 @@ internal static partial class OfflineBattleSearch
         }
         Require(Terminal(outcome), "Root plan did not reach its terminal outcome.");
         using (var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelPrediction",
-            NativeValidationRequired = true, SourceArchive = Path.GetFileName(input),
-            SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            NativeValidationRequired = true, SourceArchive = fixture.GetProperty("SourceArchive").GetString(),
+            SourceSHA256 = fixture.GetProperty("SourceSHA256").GetString(), RootPlanArchive = Path.GetFileName(input),
+            RootPlanSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
             Strategy = "verified-root-plan", Root = root, Final = current, Outcome = outcome, RollingDecisions = decisions }))
         using (var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) document.Write(stream);
         Verify(output);

@@ -37,6 +37,9 @@ successor/forecast records, then independently verifies the resulting archive.
 Partial horizons, malformed Action/EndTurn pairs and existing outputs are
 rejected. The file retains its source hash, ModelPrediction kind and
 NativeValidationRequired flag; export does not establish native acceptance.
+The exported SourceArchive/SourceSHA256 retain the native input binding for
+`refine-prediction`; RootPlanArchive/RootPlanSHA256 separately bind the verified
+root-search result. Existing prediction files are never rewritten.
 After actual native execution and independent replay, use `verify-offline-native`
 to bind the prediction to each observed trace, and ModelChecks
 `--random-refined-campaign-pair-only <source> <replay> <seed> <rank> <distance>

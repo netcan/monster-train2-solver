@@ -355,6 +355,10 @@ predicts a57-input/11-EndTurn defeat at Pyre0 (250 nodes,30.12s soft budget).
 Independent complete-state/RNG replay passes. This additional offline budget
 does not establish a winning candidate or justify repeating the native defeat.
 
+A subsequent local refinement of decisions13..16 completes18 continuations in
+47.42s with zero unsupported branches and no win. Combined changes and later
+decisions remain unexplored; the result is not an impossibility proof.
+
 Four further bounded refinement batches cover single-input alternatives at
 recorded decisions0 through12, followed by the ordinary tactical policy.
 There are87 attempted continuations,84 complete defeats and three interrupted

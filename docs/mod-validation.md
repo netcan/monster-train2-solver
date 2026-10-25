@@ -1435,3 +1435,19 @@ Package:`results/mod-dist/PojuAdvisor-0.2.31-Windows-20261025-095641.zip`, SHA25
 All67 protected files remain unchanged; the next real-game launch loads0.2.31.
 Subsequent0.2.32 component work refines raw vanishing-listener timing; it has
 not replaced this installed payload or claimed a complete random campaign clear.
+
+## Current Windows delivery · 0.2.58 · 2026-10-25
+
+The current installation contains committed `4d67d918` Advisor/Model/FixtureArchive
+DLLs, identical to the Stygian/LazarusLeague natural sixth-battle native win and
+independent frozen replay (50 inputs, Pyre59, four zero failure counters).
+The route came from offline root search; BUILD.json explicitly marks
+OfflineRootPlan and DefaultSearchBudgetAccepted=false. No random campaign
+eight-battle clear is claimed. The later0.2.59 catalog calibration is not installed.
+
+Package:`results/mod-dist/PojuAdvisor-0.2.58-Windows-20261025-161647.zip`, SHA256
+`4e0066f672a3d8232920cab9918e1a761890beaef7f4a480fec10ec70b55344c`.
+Backup/receipt:`BepInEx/PojuBackups/RandomCampaign-20261025-161647/installation.json`.
+All67 protected save/config/other-mod files are unchanged; F10,10000ms and two
+workers are preserved. The real game was stopped; its next launch loads0.2.58.
+No Mac package or full regression was run.

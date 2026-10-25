@@ -39,7 +39,7 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 | 2 | Pyreborne / Banished | 1862997127 | 提升至10000ms后前四战双胜；第五战59输入原生败局，预测／状态／RNG和失败计数均通过 |
 | 3 | Remnant / Awoken | 295400568 | 从开局10000ms，前五战双胜；第六战56输入原生败局，预测／状态／RNG和失败计数均通过 |
 | 4 | Hellhorned / Wurmkin | 770862752 | 前四战10000ms双胜；第五战50输入局部优化冻结路线原生双胜；第六战0.2.46完整44输入实际败北 |
-| 5 | Stygian / LazarusLeague | 972508374 | 旧构筑前五战10000ms双胜、第六战46输入实际败北；保留冠军的新第三、四、五战58、37、43输入双胜；第六战默认路线56输入仍败，机制已校准，30秒根搜索50输入原生双胜、薪火59，正常推进第七战。两种构筑分别保留；第六战改进路线不计作实际默认搜索胜局。 |
+| 5 | Stygian / LazarusLeague | 972508374 | 旧构筑前五战10000ms双胜、第六战46输入实际败北；保留冠军的新第三至六战均有双胜，其中第六战30秒根搜索50输入、薪火59，非实际默认搜索验收；第七战默认10000ms实际43输入败局已校准，继续补齐Hydra及生成装备分支，第八战未进入。 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
@@ -443,7 +443,7 @@ Mix及跨楼层法术后完整状态／RNG精确匹配原前缀，但浏览记�
 `b276dd9d31896cca0ef594e99e6a6f6ede75de318ad0ee2999bc4a833e2e992e`。
 八战通关仍未验收完成。
 
-Windows当前安装0.2.55，已提交源修订`156121e4`，三份DLL与该第四战源局及
+此前Windows安装0.2.55，已提交源修订`156121e4`，三份DLL与该第四战源局及
 独立重放逐字节一致。包为`results/mod-dist/PojuAdvisor-0.2.55-Windows-20261025-151549.zip`，
 SHA256为`9f7f909cc5b1b0b29d565ae22f2cdf03811543076df9dbd44884a8b78602cb27`。
 备份／收据在游戏`BepInEx/PojuBackups/RandomCampaign-20261025-151549/`。
@@ -491,6 +491,23 @@ SHA256为`9f7f909cc5b1b0b29d565ae22f2cdf03811543076df9dbd44884a8b78602cb27`。
 独立10000ms根搜索也复现相同50输入与最终完整状态，仍不能冒充实际默认玩家搜索。
 该改进路线不计作默认10000ms胜局或整局通关；第七、八战继续执行实际默认建议。
 见[第五组第六战根搜索](../tests/fixtures/notes/campaign/random05-ring6-root-search.md)。
+
+第七战默认10000ms实际建议43输入后败北：36次出牌、7次结束回合、45次面板发布、
+7次搜索记录、1314份独立牌掩码上下文、357次纯采集及14个列车阶段通过，
+完整预测／后继／RNG与四项失败计数全零。程序保留第七战原输入，不进入第八战。
+0.2.59修复普通玩家Hydra缺少装备目录，原始单输入拒绝及独立修复后原生部署
+对照通过，唯一变化为重复上下文中的SummonCatalog；原生装备转换对照仍通过。
+局部筛选又发现TwistedAssistantsBack生成装备目录缺口，31输入原生观察已完成，
+继续校准；没有把它或模型候选记作第七战胜利。
+见[自然Hydra装备目录](../tests/fixtures/notes/cards/natural-hydra-equipment-catalog.md)。
+
+Windows当前安装已验收的0.2.58，源修订`4d67d918`，三份DLL与第六战冻结候选
+源局和独立原生复放完全一致。包：
+`results/mod-dist/PojuAdvisor-0.2.58-Windows-20261025-161647.zip`，SHA256
+`4e0066f672a3d8232920cab9918e1a761890beaef7f4a480fec10ec70b55344c`。
+备份／收据`BepInEx/PojuBackups/RandomCampaign-20261025-161647/installation.json`，
+67个受保护文件保持原哈希，F10、10000ms和双线程设置保留。构建元数据明确标记
+OfflineRootPlan，未冒称第六战是实际默认搜索胜局。0.2.59尚未替换安装。
 
 定向检查入口：
 

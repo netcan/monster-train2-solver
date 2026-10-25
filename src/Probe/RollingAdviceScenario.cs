@@ -55,9 +55,9 @@ namespace MonsterTrain2Poju.Probe
         private static bool terminalObserved;
 #if DEVELOPMENT_PROBE
         private static bool deploymentExportAttempted;
-        private static void ExportPlayerDeployment()
+        private static void ExportPlayerDeployment(bool frozenObservation = false)
         {
-            if (Replay || deploymentExportAttempted || Records.Count != 0) return;
+            if (Replay && !frozenObservation || deploymentExportAttempted || Records.Count != 0) return;
             deploymentExportAttempted = true;
             BattleTurnState root = PlayerAdvisorProbe.Capture();
             if (root.Spawn.Turn != 0) return;
@@ -83,6 +83,7 @@ namespace MonsterTrain2Poju.Probe
                 if (UnsupportedBranchObservation.Enabled)
                 {
                     PlayerAdvisorProbe.PauseForFrozenPlan();
+                    ExportPlayerDeployment(frozenObservation: true);
                     if (UnsupportedBranchObservation.AwaitingSettlement()) return true;
                     UnsupportedBranchObservation.Observe(PlayerAdvisorProbe.Capture());
                     return false;

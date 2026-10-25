@@ -134,15 +134,20 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static TriggeredSummonCatalog? Catalog()
         {
-            if (!Enabled) return null;
             if (catalog != null) return catalog;
             AllGameManagers managers = AllGameManagers.Instance!;
             AllGameData all = managers.GetSaveManager().GetAllGameData();
+            var sources = managers.GetCardManager()!.GetAllCards(new List<CardState>())
+                .Select(card => all.FindCardData(card.GetCardDataID())!).ToList();
+            // The catalog also carries equipment definitions. Native Hydra's
+            // OnEquipmentAdded consumes its equipment without summoning a unit;
+            // ordinary player captures must retain that catalog as well.
+            if (!Enabled && !sources.Any(card => card.GetSpawnCharacterData()?.GetTriggers()
+                .SelectMany(trigger => trigger.GetEffects())
+                .Any(effect => effect.GetEffectStateName() == "CardEffectRemoveEquipment") == true)) return null;
             // Collect referenced units before building values. Capturing their triggers may
             // discover further references, without nesting a definition inside itself.
             var units = new List<SummonUnitDefinition>();
-            var sources = managers.GetCardManager()!.GetAllCards(new List<CardState>())
-                .Select(card => all.FindCardData(card.GetCardDataID())!).ToList();
             var seen = new HashSet<string>(StringComparer.Ordinal);
             while (characters.Keys.Any(id => !seen.Contains(id)))
             {
