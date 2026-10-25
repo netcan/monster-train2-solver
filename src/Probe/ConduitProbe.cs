@@ -11,7 +11,11 @@ namespace MonsterTrain2Poju.Probe
     // comparisons and card upgrades continue to use their original GUIDs.
     internal static class ConduitProbe
     {
-        internal static bool Enabled => AdvisorRuntime.PlayerSession || ConduitMovementCalibration.Enabled || EclipseChamberScenario.EnemyConduit || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
+        // The isolated observer and the player are separate assemblies. Mirror
+        // player Conduit capture during acceptance without changing session state.
+        internal static bool Enabled => AdvisorRuntime.PlayerSession ||
+            Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1" ||
+            ConduitMovementCalibration.Enabled || EclipseChamberScenario.EnemyConduit || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
             PlanetariumScenario.Enabled || OriginalStrongMagicCardsScenario.Enabled || OriginalScaledMoonPhaseScenario.Enabled || OriginalMoonCardUpgradesScenario.Lunacy ||
             OriginalSupportSpellsScenario.Enabled && (OriginalSupportSpellsScenario.IsolatedIds == null || !BattleSpawnPointProbe.Enabled) ||
             OriginalXLunaSpikeScenario.Enabled || OriginalMoonRitualScenario.Prepared ||
