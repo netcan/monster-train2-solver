@@ -89,6 +89,48 @@ internal static class CombatRemovalTimingChecks
         Console.WriteLine("HEAL-COMBAT-REMOVAL-PAIR PASS:19 independent native inputs/full state/RNG; raw room vacancy preserved, original compaction counterexample retained.");
     }
 
+    internal static void DespawnFramePair(FixtureValue original, FixtureValue replay, FixtureValue observation)
+    {
+        var rows = NativeBranchObservationChecks.Replay(observation,
+            "Native room-stage26 despawn listeners remain until frame destruction");
+        Require(rows.Length == 27 && rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing the27-input vanishing prefix.");
+        ComparePrefix(original.GetProperty("RollingDecisions").EnumerateArray().ToArray(), rows);
+        FixtureValue Stage(FixtureValue trace) => trace.GetProperty("Stages").EnumerateArray()
+            .Single(stage => stage.GetProperty("Index").GetInt32() == 26);
+        var first = Stage(original); var second = Stage(replay);
+        Require(first.GetProperty("Kind").GetString() == "Room" && first.GetProperty("Turn").GetInt32() == 3 &&
+            first.GetProperty("Before").GetProperty("RoomIndex").GetInt32() == 2 &&
+            first.GetProperty("Difference").ValueKind == FixtureKind.String && second.GetProperty("Difference").ValueKind == FixtureKind.Null,
+            "Missing the premature room-stage26 listener cleanup counterexample.");
+        foreach (string field in new[] { "Before", "Actual" })
+            Require(Key(first.GetProperty(field).Deserialize<RoomCombatState>()!) == Key(second.GetProperty(field).Deserialize<RoomCombatState>()!),
+                "Independent vanishing room changed " + field);
+        var before = first.GetProperty("Before").Deserialize<RoomCombatState>()!;
+        var actual = first.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+        string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
+        var result = RoomCombatModel.Resolve(before);
+        Require(result.Supported && Key(result.State!) == Key(actual), "Raw vanishing room differs.");
+        Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "Raw vanishing room mutated its parent.");
+        JsonNode historical = JsonNode.Parse(Key(first.GetProperty("Predicted").GetProperty("State").Deserialize<RoomCombatState>()!))!;
+        JsonNode observed = JsonNode.Parse(Key(actual))!;
+        JsonNode Death(JsonNode value) => value["Context"]!["Enchantments"]!["RetainedUnits"]!.AsArray()
+            .Single(actor => actor!["Unit"]!["Id"]!.GetValue<int>() == 15)!["Unit"]!["DeathState"]!;
+        JsonNode death = Death(historical), native = Death(observed);
+        foreach (string field in new[] { "HasStatisticsListener", "StatisticsListenerOnce" })
+        {
+            Require(!death[field]!.GetValue<bool>() && native[field]!.GetValue<bool>(), "Preserve the premature room listener cleanup.");
+            death[field] = true;
+        }
+        Require(JsonNode.DeepEquals(historical, observed), "Raw vanishing mismatch extends beyond statistics listeners.");
+        var settled = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!
+            .Spawn.Train.Context!.Enchantments!.RetainedUnits.Single(actor => actor.Unit.Id == 15).Unit.DeathState!;
+        Require(!settled.HasStatisticsListener && settled.StatisticsListenerOnce == false &&
+            settled.IsDespawned == true && settled.IsDestroyed == true, "Settled destruction must clear both listeners.");
+        foreach (string count in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(replay.GetProperty(count).GetInt32() == 0, "Raw vanishing component has a nonzero " + count);
+        Console.WriteLine("DESPAWN-FRAME-REMOVAL-PAIR PASS:27 independent native inputs/full state/RNG; raw room listeners retained, settled frame listeners cleared; original timing counterexample preserved.");
+    }
+
     private static string Key(RoomCombatState state) => JsonSerializer.Serialize(new
         { state.RoomIndex, state.Deployment, state.Units, Context = BattleTurnChecks.ComparableContext(state.Context), state.Preview,
             state.ActiveCompanionBossIds }, ModelJson.Options);

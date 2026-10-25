@@ -1407,3 +1407,15 @@ Package:`results/mod-dist/PojuAdvisor-0.2.30-Windows-20261025-093404.zip`, SHA25
 `af002c65b8d24e4ae4e0313cee52a01873bf2ad312dfec82cb96dba5f17437b4`.
 All67 protected files remained unchanged; the next real-game launch loads0.2.30.
 Source revision:`103452c850fa92aacd4ec160ac48e00fe35df2bf`.
+
+## Native fifth-battle pair · Windows 0.2.31 · 2026-10-25
+
+The installed0.2.31 payload is identical to the accepted Remnant/Awoken fifth
+battle source/replay (54 inputs, two native wins, Pyre98). Source revision:
+`12dc7b9dd086f6928b176d4626919c4fdf9234cf`.
+Backup/receipt:`BepInEx/PojuBackups/RandomCampaign-20261025-095641/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.31-Windows-20261025-095641.zip`, SHA256
+`4eb090d7601d7ff8ad8bcb16c94ab3cb90824fc8a26a0f2c54917f45ce54b514`.
+All67 protected files remain unchanged; the next real-game launch loads0.2.31.
+Subsequent0.2.32 component work refines raw vanishing-listener timing; it has
+not replaced this installed payload or claimed a complete random campaign clear.

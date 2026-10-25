@@ -78,6 +78,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-heal-combat-removal-observation-calibration.mt2f',
     'player-despawn-listeners-calibration.mt2f',
     'player-despawn-listeners-replay-calibration.mt2f',
+    'player-despawn-frame-removal-calibration.mt2f',
+    'player-despawn-frame-removal-replay-calibration.mt2f',
+    'player-despawn-frame-removal-observation-calibration.mt2f',
     'player-random-campaign-02-ring2-permafrost-unavailable.mt2f',
     'room-moon-spell-threshold-relic-calibration.mt2f',
     'full-battle-original-moon-card-upgrades-threshold-relic.mt2f',
@@ -1220,6 +1223,7 @@ $branchPairGates = @{
     'player-overcharge-cleanup-calibration.mt2f' = '--overcharge-cleanup-pair-only'
     'player-heal-combat-removal-calibration.mt2f' = '--heal-combat-removal-pair-only'
     'player-despawn-listeners-calibration.mt2f' = '--despawn-listeners-pair-only'
+    'player-despawn-frame-removal-calibration.mt2f' = '--despawn-frame-removal-pair-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
     -not $branchPairGates.ContainsKey(($_ -replace '-(?:replay|observation)-calibration\.mt2f$', '-calibration.mt2f'))
@@ -1235,8 +1239,8 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
         $sourcePath = Get-TestFixturePath $sourceName
         $replayPath = Get-TestFixturePath ($sourceName -replace '-calibration\.mt2f$', '-replay-calibration.mt2f')
         $pairArguments = @($branchPairGates[$sourceName], $sourcePath, $replayPath)
-        if ($sourceName -eq 'player-heal-combat-removal-calibration.mt2f') {
-            $pairArguments += Get-TestFixturePath 'player-heal-combat-removal-observation-calibration.mt2f'
+        if ($sourceName -in @('player-heal-combat-removal-calibration.mt2f', 'player-despawn-frame-removal-calibration.mt2f')) {
+            $pairArguments += Get-TestFixturePath ($sourceName -replace '-calibration\.mt2f$', '-observation-calibration.mt2f')
         }
         dotnet $checker @pairArguments
         if ($LASTEXITCODE -ne 0) { throw 'Focused native branch pair failed.' }

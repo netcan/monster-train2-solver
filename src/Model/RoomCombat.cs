@@ -3867,13 +3867,6 @@ namespace MonsterTrain2Poju.Model
                                 if (remaining <= 0 && unit.Alive)
                                 {
                                     unit.Despawned = true; RemovePhysicalPoint(unit); Emit("Despawn", unit, unit, 0);
-                                    // Vanishing skips death, but native destruction still clears
-                                    // both statistics listeners on the retained primary state.
-                                    if (!source.Preview && unit.Destroyed && unit.Freeze().DeathState is UnitDeathState death)
-                                        unit.Apply(unit.Freeze().WithDeathState(new UnitDeathState(death.HasFinishedDying,
-                                            death.IsBeingRemoved, false, death.PendingStatisticsCardId, death.IsSacrifice,
-                                            death.StatisticsListenerOnce.HasValue ? false : (bool?)null,
-                                            death.IsDespawned, death.IsDestroyed)));
                                     if (!source.Preview && context?.Statistics != null && unit.Source.Team == CombatTeam.Player && !DeferSpawner(unit))
                                         context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
                                             requireTrackedCard: context.CardInstances?.Count == 0));

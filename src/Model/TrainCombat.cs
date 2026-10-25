@@ -114,7 +114,15 @@ namespace MonsterTrain2Poju.Model
         private static CombatUnit AfterDestruction(CombatUnit unit)
         {
             if (unit.DeathState?.IsDestroyed != true) return unit;
-            return unit.AfterDestruction();
+            unit = unit.AfterDestruction();
+            // A living unit can vanish without a death signal. Its statistics
+            // listeners persist through the raw room result, then OnDestroy
+            // clears them together with the other frame-completed references.
+            if (unit.DeathState is { IsDespawned: true } death)
+                unit = unit.WithDeathState(new UnitDeathState(death.HasFinishedDying, death.IsBeingRemoved,
+                    false, null, death.IsSacrifice, death.StatisticsListenerOnce.HasValue ? false : (bool?)null,
+                    death.IsDespawned, death.IsDestroyed));
+            return unit;
         }
 
         private static TrainCombatState ClearRemovedReferences(TrainCombatState source, HashSet<int> activeIds)

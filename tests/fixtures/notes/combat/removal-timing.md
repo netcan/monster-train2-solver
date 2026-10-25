@@ -24,6 +24,17 @@ retain a destroyed enchanter binding and are rejected. The observer also allows
 two ready frames for Unity's deferred destruction callbacks; it changes no
 gameplay values or RNG. These are component validations, not campaign wins.
 
+A later complete39-input native run exposed a finer boundary: clearing the
+vanishing bag's listeners inside the room was premature. Raw room-stage26
+retains both listeners; the settled decision after the native removal flush
+clears them. Cleanup now belongs to the existing frame-destruction transition.
+The original premature raw forecast and an independent27-input component are
+retained as `player-despawn-frame-removal-*`. The checker compares every native
+input/root/successor/RNG, replays the raw room without mutating its parent,
+and requires the two different listener states at the two observed times.
+All four counters in the repaired raw component are zero. The original full
+defeat has nonzero historical raw counters and remains a diagnostic archive.
+
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -SkipBuild -Fixture player-heal-combat-removal-calibration.mt2f,player-despawn-listeners-calibration.mt2f
 ```

@@ -1,6 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 4 && args[0] == "--despawn-frame-removal-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    using var observation = ModelJson.ReadFixture(args[3]);
+    CombatRemovalTimingChecks.DespawnFramePair(source.RootElement, replay.RootElement, observation.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--despawn-listeners-native-only")
 {
     using var native = ModelJson.ReadFixture(args[1]);
@@ -4885,6 +4894,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is "player-hea
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-heal-growth-record-replay-calibration.mt2f"));
     HealGrowthRecordChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-despawn-frame-removal-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-despawn-frame-removal-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-despawn-frame-removal-replay-calibration.mt2f"));
+    using var observation = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-despawn-frame-removal-observation-calibration.mt2f"));
+    CombatRemovalTimingChecks.DespawnFramePair(source.RootElement, replay.RootElement, observation.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-despawn-listeners-calibration.mt2f" or
     "player-despawn-listeners-replay-calibration.mt2f").Select(path => ModelJson.RelatedFixture(path,
