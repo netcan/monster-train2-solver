@@ -8,6 +8,18 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.EndsWith("full-battle-random-campaign-11-ring7-pyre-refined-search.mt2f", StringComparison.Ordinal))
+        {
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(source.RootElement, replay.RootElement, 73751504, 0, 6, "Stygian", "Awoken", 38);
+            foreach (var fixture in new[] { source.RootElement, replay.RootElement })
+            {
+                var final = fixture.GetProperty("RollingDecisions").EnumerateArray().Last().GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 21,
+                    "Changed winning-route improvement: expected Pyre21.");
+            }
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-11-ring7-refined-search.mt2f", StringComparison.Ordinal))
         {
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
