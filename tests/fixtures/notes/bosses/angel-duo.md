@@ -380,8 +380,16 @@ verified inputs in206.82s including export. Another180000ms continuation
 completes49 of50 candidates without an improvement or unsupported branch.
 Those repeated early alternatives are no longer restarted; a separate
 `refine-prediction` batch investigates decisions13..30 of the verified61-input
-baseline. None of these model defeats is a new native attempt or a proof of
-impossibility.
+baseline. That13..30 batch completes69 of70 continuations before its180s
+soft limit,stopping at decision21 without a win. A21..35 continuation finishes
+65 continuations in139.46s,with two unsupported alternatives and no win.
+One rejected branch reaches input54,a room damage spell killing an Angel
+whose death callback targets its companion across the train. The first
+Instant observation instead fails equipment ownership capture at input46.
+After the read-only equipment-owner fallback,two independent seven-input
+preview-clear controls pass,and this54-input observation reaches the exact
+Tower-trigger rejection. That actual mechanism is being calibrated separately.
+None of these model defeats is a new native victory or a proof of impossibility.
 
 The continuous default driver stops before replay/rewards on defeat. Future
 runs additionally emit `player-default-loss.json` with the checked input and

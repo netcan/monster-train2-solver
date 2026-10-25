@@ -258,9 +258,26 @@ namespace MonsterTrain2Poju.Probe
         internal bool TryGetCardId(CardState card, out int id) => projection.TryGetCardId(card, out id);
         internal bool KnowsNativeObject(object value) => value is CardState card ? projection.Knows(card) :
             value is CharacterState unit && identities.ContainsKey(unit);
+#if DEVELOPMENT_PROBE
+        private readonly HashSet<CardState> recoveredEquipmentOwners = new HashSet<CardState>();
+        internal readonly List<object> EquipmentOwnerRecoveries = new List<object>();
+#endif
         internal int EquippedUnitId(CardState card)
         {
             CharacterState? unit = card.EquippedCharacter;
+            // ClearCardPlayPreview clears the card's back-reference even when
+            // the real unit still owns that equipment. Read its primary list;
+            // never write back into native state or use preview equipment.
+            if (unit == null && card.IsEquipmentCard())
+            {
+                unit = identities.Keys.FirstOrDefault(owner => owner != null && !owner.IsDestroyed && !owner.PreviewMode &&
+                    (!normalizeDestroyedAttacker || owner.IsAlive) && owner.GetNonPreviewEquipment().Contains(card));
+#if DEVELOPMENT_PROBE
+                if (unit != null && projection.TryGetCardId(card, out int cardId) && recoveredEquipmentOwners.Add(card))
+                    EquipmentOwnerRecoveries.Add(new { CardInstanceId = cardId, RawOwnerId = 0,
+                        EquipmentOwnerId = UnitId(unit), Preview = unit.PreviewMode });
+#endif
+            }
             return unit == null || normalizeDestroyedAttacker && (unit.IsDestroyed || !unit.IsAlive) ? 0 : UnitId(unit);
         }
         private readonly Dictionary<string, string> roomAttachmentTriggerKeys = new Dictionary<string, string>();

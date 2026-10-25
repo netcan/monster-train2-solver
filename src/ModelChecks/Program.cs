@@ -1837,6 +1837,18 @@ if (args.Length == 2 && args[0] == "--mixalot-only")
     MixalotChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length is 3 or 4 && args[0] == "--equipment-preview-owner-only")
+{
+    using var failure = ModelJson.ReadFixture(args[1]);
+    using var source = ModelJson.ReadFixture(args[2]);
+    if (args.Length == 4)
+    {
+        using var replay = ModelJson.ReadFixture(args[3]);
+        EquipmentPreviewOwnerChecks.Native(failure.RootElement, source.RootElement, replay.RootElement);
+    }
+    else EquipmentPreviewOwnerChecks.Native(failure.RootElement, source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--pre-discard-spell-rng-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5467,6 +5479,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyre-payment-world-replay-calibration.mt2f"));
     PyrePaymentWorldChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-equipment-preview-owner-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-equipment-preview-owner-failure.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var failure = ModelJson.ReadFixture(path);
+    using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-equipment-preview-owner-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-equipment-preview-owner-replay-calibration.mt2f"));
+    EquipmentPreviewOwnerChecks.Native(failure.RootElement, source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-stronger-corruption-copy-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-stronger-corruption-copy-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

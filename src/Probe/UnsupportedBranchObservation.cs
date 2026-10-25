@@ -59,10 +59,28 @@ namespace MonsterTrain2Poju.Probe
                 Require(Comparable(expected) == Comparable(actual), "Native branch prefix successor differs at " + rows.Count);
                 return;
             }
+            object? equipmentPreviewClear = null;
+            if (request.GetProperty("Reason").GetString() == "Native equipment preview clears the card-side owner while unit membership persists.")
+            {
+                FullBattleTrace trace = FullBattleTrace.Active!;
+                CardState card = trace.KnownCards.Single(item => trace.CardId(item) == row.Action!.CardInstanceId);
+                CharacterState owner = trace.KnownUnits.Single(item => item.GetNonPreviewEquipment().Contains(card));
+                int rawBefore = card.EquippedCharacter == null ? 0 : trace.UnitId(card.EquippedCharacter);
+                // Reproduce the original UI cleanup through the game's API,
+                // after the complete natural action prefix has settled.
+                AllGameManagers.Instance.GetCombatManager().PreviewCardPlay(false, card, owner.GetCurrentRoom(), null, null, null, null);
+                BattleTurnState after = PlayerAdvisorProbe.Capture();
+                equipmentPreviewClear = new { Before = actual, After = after, RawOwnerBefore = rawBefore,
+                    RawOwnerAfter = card.EquippedCharacter == null ? 0 : trace.UnitId(card.EquippedCharacter),
+                    EquipmentOwnerId = trace.UnitId(owner), StillAttached = owner.GetNonPreviewEquipment().Contains(card) };
+                Require(Comparable(actual) == Comparable(after), "Original equipment preview cleanup changed the captured decision.");
+            }
             using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "NativeUnsupportedBranchObservation",
                 GameModuleMvid = typeof(CardState).Module.ModuleVersionId.ToString(),
                 Request = Read<JObject>(request), NativeCompleted = true, Rows = rows,
                 PlayerAdvisor = PlayerAdvisorProbe.Evidence,
+                EquipmentOwnerRecoveries = FullBattleTrace.Active!.EquipmentOwnerRecoveries.ToArray(),
+                EquipmentPreviewClear = equipmentPreviewClear,
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
                 BattleTestRng = BattleTestRngProbe.Records.ToArray(),
                 TerminalSpawnPoints = BattleSpawnPointProbe.Decisions.Where(sample => sample.Terminal).ToArray() });
