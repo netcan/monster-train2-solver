@@ -2,7 +2,8 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string[]] $Journal,
-    [ValidateRange(1, 8)][int] $ThroughRing = 8
+    [ValidateRange(1, 8)][int] $ThroughRing = 8,
+    [switch] $AllowRefinedRoutes
 )
 $ErrorActionPreference = 'Stop'
 # Reuse completed per-battle checks. This verifies unchanged evidence and
@@ -18,7 +19,10 @@ foreach ($path in $Journal) {
     $key = @($run.Seed, $run.Rank, $run.PrimaryClan, $run.SecondaryClan, $run.TimeLimitMs) -join '|'
     if ($null -eq $settings) { $settings = $key; $firstRun = $run }
     if ($key -cne $settings) { throw 'Campaign journals have different seed, clans, Covenant or budget.' }
-    foreach ($pair in $entries | Where-Object Kind -EQ 'pair-accepted') {
+    foreach ($pair in $entries | Where-Object { $_.Kind -in @('pair-accepted', 'refined-pair-accepted') }) {
+        if ($pair.Kind -eq 'refined-pair-accepted' -and -not $AllowRefinedRoutes) {
+            throw 'Offline refined routes require -AllowRefinedRoutes and cannot count as default-budget wins.'
+        }
         $ring = [int]$pair.Ring
         if ($ring -lt 1 -or $ring -gt 8 -or $records.ContainsKey($ring)) {
             throw "Invalid or duplicate accepted ring: $ring"
@@ -36,6 +40,25 @@ $rows = @()
 foreach ($ring in 1..$ThroughRing) {
     if (-not $records.ContainsKey($ring)) { throw "Missing independent native pair for ring $ring." }
     $pair = $records[$ring]
+    $refined = $pair.Kind -eq 'refined-pair-accepted'
+    if ($refined) {
+        Assert-Hash $pair.Prediction $pair.PredictionSHA256
+        Assert-Hash $pair.PairCheckLog $pair.PairCheckLogSHA256
+        if (-not (Select-String -LiteralPath $pair.PairCheckLog -SimpleMatch 'RANDOM-CAMPAIGN-REFINED-PAIR PASS:')) {
+            throw "Missing independent frozen-pair acceptance at ring $ring."
+        }
+        if (@($pair.NativeBindings).Count -ne 2 -or
+            (@($pair.NativeBindings.ArchiveSHA256 | Sort-Object) -join '|') -ine
+                (@($pair.SourceSha256, $pair.ReplaySha256 | Sort-Object) -join '|')) {
+            throw "Refined route must bind both native archives at ring $ring."
+        }
+        foreach ($binding in $pair.NativeBindings) {
+            Assert-Hash $binding.Log $binding.LogSHA256
+            if (-not (Select-String -LiteralPath $binding.Log -SimpleMatch 'OFFLINE-NATIVE PASS:')) {
+                throw "Missing complete frozen-prediction/native binding at ring $ring."
+            }
+        }
+    }
     Assert-Hash (Join-Path $pair.SourceProfile 'full-battle.mt2f') $pair.SourceSha256
     Assert-Hash (Join-Path $pair.ReplayProfile 'full-battle.mt2f') $pair.ReplaySha256
     Assert-Hash (Join-Path $pair.InputProfile 'saves/save-singlePlayer.json') $pair.InputSaveSHA256
@@ -86,10 +109,12 @@ foreach ($ring in 1..$ThroughRing) {
         }
     }
     $rows += [ordered]@{ Ring = $ring; SourceSHA256 = $pair.SourceSha256; ReplaySHA256 = $pair.ReplaySha256
+        PlanningEvidence = $(if ($refined) { 'OfflineRefined' } else { 'ActualDefaultBudget' })
         Version = [Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $pair.SourceProfile 'player-plugin/MonsterTrain2Poju.Advisor.dll')).ProductVersion }
     $previous = $pair
 }
 [ordered]@{ Evidence = 'UnchangedIndependentPairReceiptsAndNativeCheckpointChain'; Simulations = 0
     Seed = $firstRun.Seed; Rank = $firstRun.Rank; PrimaryClan = $firstRun.PrimaryClan; SecondaryClan = $firstRun.SecondaryClan
     TimeLimitMs = $firstRun.TimeLimitMs; ThroughRing = $ThroughRing; CompleteStandardCampaign = $ThroughRing -eq 8
+    AllRingsUseDefaultBudget = @($rows | Where-Object PlanningEvidence -NE 'ActualDefaultBudget').Count -eq 0
     Rings = $rows } | ConvertTo-Json -Depth 5
