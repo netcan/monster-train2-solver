@@ -2350,7 +2350,9 @@ if ($Planner) {
 if ($RollingAdvice -and (@($trace.RollingDecisions).Count -eq 0 -or
     @($trace.RollingDecisions | Where-Object { $null -eq $_.Actual -or $null -ne $_.Difference }).Count -ne 0 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ROLLING-REPLAY-PASS' -Quiet))) {
-    throw 'Rolling advisor did not complete every native decision through terminal combat.'
+    $nativeFailure = Select-String -LiteralPath $unityLog -Pattern 'DEPTH-FAIL' | Select-Object -First 1
+    $reason = if ($nativeFailure) { ' ' + $nativeFailure.Line.Trim() } else { '' }
+    throw "Rolling advisor did not complete every native decision through terminal combat.$reason Inspect $unityLog"
 }
 if ($Advisor -and ($trace.Advisor.Captures -lt 1 -or $trace.Advisor.PurityFailures -ne 0 -or $trace.Advisor.Failures -gt 0 -or
     $trace.Advisor.Published -lt 2 -or $trace.Advisor.Invalidations -lt 1 -or $trace.Advisor.PlanningFrames -lt 2 -or
