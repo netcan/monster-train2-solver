@@ -397,7 +397,11 @@ Tethys的100%冻伤预览仍推进测试随机流，旧模型只保留真实Batt
 RNG与不可变父状态通过；真实Battle流保持原值。见
 [必定状态预览的测试随机流](../tests/fixtures/notes/combat/guaranteed-status-test-rng.md)。
 
-定向检查入口：
+0.2.51进一步补齐第二回合真实攻击前的Boss击杀预览：临时角色状态恢复后，
+保留原生实际推进的BattleTest；真实Battle流另有一次独立推进。
+13输入双进程完整后继／预测／RNG与不可变父状态通过，开发探针保留8次
+预览随机调用的前后状态和调用栈。六输入普通预览对照通过。
+见[Boss攻击预览测试流](../tests/fixtures/notes/combat/boss-preview-test-rng.md)。
 
 0.2.52关闭第四组第六战另一条离线分支的留存标记缺口：从弃牌区返回已有留存
 的牌时，原生不会执行消耗／吞食区恢复所用的特性重置。44输入双进程完整后继、
@@ -405,11 +409,14 @@ RNG与不可变父状态通过；真实Battle流保持原值。见
 该返回动作之后的腐化限制施法仍单独保留保护，未据此宣布第六战胜利。
 见[弃牌区留存牌返回](../tests/fixtures/notes/cards/discard-holdover-return.md)。
 
-0.2.51进一步补齐第二回合真实攻击前的Boss击杀预览：临时角色状态恢复后，
-保留原生实际推进的BattleTest；真实Battle流另有一次独立推进。
-13输入双进程完整后继／预测／RNG与不可变父状态通过，开发探针保留8次
-预览随机调用的前后状态和调用栈。六输入普通预览对照通过，整场验收继续。
-见[Boss攻击预览测试流](../tests/fixtures/notes/combat/boss-preview-test-rng.md)。
+保留冠军的新第三战现已整场原生双胜：58输入、49次出牌、9次结束回合，
+薪火80保持80。源局和独立冻结重放的完整后继、预测、RNG与四项失败计数通过，
+60次面板发布、22次搜索记录及3245份独立牌掩码视图通过。
+正常奖励／地图推进到新第四战检查点，保存SHA256
+`d7550859bba09851f91d13d78b5b52b59225e579caff0f4bab72dcac99b68e44`。
+档案名用`keep-champion`与旧构筑分开；新第四战正在执行，尚无八战通关。
+
+定向检查入口：
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll `
