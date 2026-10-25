@@ -1,18 +1,18 @@
 # Player Mod validation · 2026-10-25
 
-Current Windows installation:0.2.69, committed source`9bb08bd1`. Umbra/Stygian
-Ring2 passes actual10000ms advice and independent frozen native replay:
-34 inputs,29 plays,5 EndTurns,Pyre71,36 publications,3 searches and1296
+Current Windows installation:0.2.70, committed source`5e83829a`. Banished/Pyreborne
+Ring1 passes actual10000ms advice and independent frozen native replay:
+21 inputs,16 plays,5 EndTurns,Pyre80,23 publications,3 searches and751
 independent card-mask contexts. Every root,successor,forecast and RNG matches;
-all four failure counters are zero. This includes the Pyre-health payment /
-enchantment-world repair and complete Conduit capture in the separate observer.
+all four failure counters are zero. This includes the removed ability caster
+Self-status repair, plus the earlier Pyre-payment and Conduit-capture fixes.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.69. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261025-194633/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.69-Windows-20261025-194633.zip`,SHA256
-`cb209fdc882e7ea7c8a72b3bd452c21ee9ab100b87599fd5db00e322cae6e886`.
+its next launch loads0.2.70. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261025-201103/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.70-Windows-20261025-201103.zip`,SHA256
+`9283081d882ea5fc69c0952ad77adf069a098876b86c26223600fba010c2d1a6`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
