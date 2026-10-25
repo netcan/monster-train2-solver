@@ -26,14 +26,29 @@ Hydra conversion/removal. This natural deployment pair alone does not claim
 that a generated equipment was consumed or that Ring7 can be won.
 
 Further local refinement after the deployment fix finds one missing generated
-equipment definition (TwistedAssistantsBack). Its31-input native observation
-is retained separately for the next calibration; it is not marked supported
-by this change. Before the catalog fix,14 local candidates all lose; after it,
-21 local candidates all lose with this one remaining unsupported signature.
+equipment definition (TwistedAssistantsBack). Before the catalog fix,14 local
+candidates all lose; after it,21 local candidates all lose with this one
+unsupported signature. These batches do not prove no winning policy exists.
+
+0.2.60 follows the native authored CharacterData.GetGraftedEquipment reference
+when constructing the cached catalog, before that equipment becomes a live
+card. TwistedAssistant's graft is a unit modifier, not a card-generation
+trigger/pool. The original31-input refusal and independent repaired31-input
+replay preserve every input and native successor/RNG after excluding only the
+catalog. At input31, Hydra consumes card28, gains Multistrike1->2, loses the
+equipment's attack/trample/trigger contribution, and leaves the detached card
+in Standby. Removing its definition still rejects the boundary. The full
+immutable replay and initial authored-graft presence check pass.
+
+The repaired30000ms/two-worker root search still predicts a40-input defeat,
+finishing at256 nodes in14.18s. Higher node limits are the next offline
+experiment, not a claimed native victory or a player-default acceptance.
 
 ```powershell
 ./scripts/Check-Models.ps1 -SkipBuild -Fixture @(
   'player-natural-hydra-catalog-deployment-calibration.mt2f')
+./scripts/Check-Models.ps1 -SkipBuild -Fixture @(
+  'player-natural-hydra-graft-equipment-calibration.mt2f')
 ```
 
 The diagnostic environment's Overlay.Seed label is424242. The actual campaign

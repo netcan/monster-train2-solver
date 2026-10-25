@@ -169,6 +169,15 @@ namespace MonsterTrain2Poju.Probe
                     fallback == null ? null : CardGenerationProbe.Creation(fallback), interactions));
                 if (fallback != null) sources.Add(fallback);
             }
+            // Native grafting creates equipment on death that is absent from
+            // the initial live deck. Include those authored definitions before
+            // caching the catalog used by equipment removal callbacks.
+            var sourceIds = new HashSet<string>(sources.Select(card => card.GetID()), StringComparer.Ordinal);
+            for (int index = 0; index < sources.Count; index++)
+            {
+                CardData? graft = sources[index].GetSpawnCharacterData()?.GetGraftedEquipment();
+                if (graft != null && sourceIds.Add(graft.GetID())) sources.Add(graft);
+            }
             var rooms = Enumerable.Range(0, managers.GetRoomManager()!.GetNumRooms()).Select(index =>
             {
                 RoomState room = managers.GetRoomManager()!.GetRoom(index);

@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--natural-hydra-graft-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    NaturalHydraCatalogChecks.GeneratedPair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--natural-hydra-catalog-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5323,6 +5330,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     BossPreviewTestRngChecks.Pair(source.RootElement, replay.RootElement);
 }
 // Equipment catalogs are required independently of triggered unit summoning.
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-natural-hydra-graft-equipment-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-natural-hydra-graft-equipment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-natural-hydra-graft-equipment-replay-calibration.mt2f"));
+    NaturalHydraCatalogChecks.GeneratedPair(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-natural-hydra-catalog-deployment-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-natural-hydra-catalog-deployment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

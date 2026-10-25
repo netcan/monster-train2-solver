@@ -1443,7 +1443,7 @@ DLLs, identical to the Stygian/LazarusLeague natural sixth-battle native win and
 independent frozen replay (50 inputs, Pyre59, four zero failure counters).
 The route came from offline root search; BUILD.json explicitly marks
 OfflineRootPlan and DefaultSearchBudgetAccepted=false. No random campaign
-eight-battle clear is claimed. The later0.2.59 catalog calibration is not installed.
+eight-battle clear is claimed. The later0.2.59/60 catalog calibrations are not installed.
 
 Package:`results/mod-dist/PojuAdvisor-0.2.58-Windows-20261025-161647.zip`, SHA256
 `4e0066f672a3d8232920cab9918e1a761890beaef7f4a480fec10ec70b55344c`.

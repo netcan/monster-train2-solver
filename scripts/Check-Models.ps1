@@ -74,6 +74,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-05-ring7-budget10000-keep-champion-loss.mt2f',
     'player-natural-hydra-catalog-deployment-calibration.mt2f',
     'player-natural-hydra-catalog-deployment-replay-calibration.mt2f',
+    'player-natural-hydra-graft-equipment-calibration.mt2f',
+    'player-natural-hydra-graft-equipment-replay-calibration.mt2f',
     'full-battle-random-campaign-05-ring3-budget10000-replay.mt2f',
     'full-battle-random-campaign-05-ring4-budget10000-search.mt2f',
     'full-battle-random-campaign-05-ring4-budget10000-replay.mt2f',
@@ -1336,6 +1338,7 @@ $branchPairGates = @{
     'player-slay-corruption-callback-calibration.mt2f' = '--slay-corruption-callback-pair-only'
     'full-battle-natural-angel-pair-cache-calibration.mt2f' = '--natural-angel-pair-cache-only'
     'player-natural-hydra-catalog-deployment-calibration.mt2f' = '--natural-hydra-catalog-pair-only'
+    'player-natural-hydra-graft-equipment-calibration.mt2f' = '--natural-hydra-graft-pair-only'
     'player-generated-discard-guard-calibration.mt2f' = '--generated-discard-guard-pair-only'
     'player-ephemeral-consume-order-calibration.mt2f' = '--ephemeral-consume-order-pair-only'
     'player-status-callback-room-sync-calibration.mt2f' = '--status-callback-room-sync-pair-only'
