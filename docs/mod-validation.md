@@ -1466,3 +1466,20 @@ Package:`results/mod-dist/PojuAdvisor-0.2.61-Windows-20261025-170843.zip`, SHA25
 Backup/receipt:`BepInEx/PojuBackups/RandomCampaign-20261025-170843/installation.json`.
 All67 protected save/config/other-mod hashes are unchanged; the real game was
 stopped and its next launch loads0.2.61. No Mac package or full regression ran.
+
+## Current Windows delivery · 0.2.63 · 2026-10-25
+
+Committed`ded28633` includes repeated Infusion trigger merging, the no-OnCast
+query shortcut and the calibrated Ritual of Battle Juice owner. Installed
+DLLs exactly match random06 Ring4 actual10000ms/two-worker native victory and
+independent replay:32 inputs, Pyre100->94, full forecasts/state/RNG and four
+zero failure counters. The default route did not cast Ritual11; its positive
+Juice boundary has a separate19-input independent native pair. Random06 has
+four accepted victories so far; no eight-battle clear is claimed.
+
+Package:`results/mod-dist/PojuAdvisor-0.2.63-Windows-20261025-174603.zip`, SHA256
+`efaf210fde56f5679c0cc6d75047fcc8cadb865e537966b605a8c4985139f440`.
+Backup/receipt:`BepInEx/PojuBackups/RandomCampaign-20261025-174603/installation.json`.
+All67 protected save/config/other-mod hashes remain unchanged; F10,10000ms and
+two workers are retained. The real game was stopped; its next launch loads
+0.2.63. This supersedes0.2.61. No Mac package or full regression ran.
