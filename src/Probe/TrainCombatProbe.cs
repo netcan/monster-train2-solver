@@ -94,7 +94,7 @@ namespace MonsterTrain2Poju.Probe
             if (record.Actual != null) return;
             try
             {
-                record.Actual = Capture();
+                record.Actual = trace.ObserveStoppingStage(() => Capture());
                 if (record.Predicted.Supported)
                 {
                     JToken expected = Comparable(record.Predicted.State!, record.Kind);

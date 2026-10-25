@@ -39,7 +39,7 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 | 2 | Pyreborne / Banished | 1862997127 | 提升至10000ms后前四战双胜；第五战59输入原生败局，预测／状态／RNG和失败计数均通过 |
 | 3 | Remnant / Awoken | 295400568 | 从开局10000ms，前五战双胜；第六战56输入原生败局，预测／状态／RNG和失败计数均通过 |
 | 4 | Hellhorned / Wurmkin | 770862752 | 前四战10000ms双胜；第五战50输入局部优化冻结路线原生双胜；第六战0.2.46完整44输入实际败北 |
-| 5 | Stygian / LazarusLeague | 972508374 | 从开局10000ms，前五战源局和独立复放双胜，第五战51输入／42次出牌／9次结束回合；继续第六战 |
+| 5 | Stygian / LazarusLeague | 972508374 | 从开局10000ms，前五战源局和独立复放双胜；第六战46输入实际败北，薪火26至0，四项失败计数为零 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
@@ -362,6 +362,14 @@ Windows当前已安装0.2.45，源修订 `ab989012`，载荷与上述第五组�
 两次原生观察均执行完整20输入前缀和最终法术；修复后完整状态、RNG、三个已吞食
 载体、装备去向和消耗统计匹配。见 [进食法术路由](../tests/fixtures/notes/combat/feeding-spell-routing.md)。
 该机制缺口已关闭，未据此宣布第一组第七战或整局获胜。
+
+0.2.48关闭第五组第一战另一条37输入路线的终局槽位缺口：原生Boss死亡后，
+剩余12号Cleric已退出战场，视觉槽位仍暂留引用。现仅在已胜利的停止阶段／终局
+逻辑视图清除已退出敌人的槽位，完整保留原始主／预览／临时平面。
+双进程37输入完整后继／预测／RNG通过，40个房间阶段、9个整列车阶段及203份
+原始／逻辑位置映射通过，四项失败计数均为零。
+未将该组件路线冒称默认搜索整局通关。见
+[终局剩余敌人槽位](../tests/fixtures/notes/combat/terminal-enemy-slot.md)。
 
 定向检查入口：
 

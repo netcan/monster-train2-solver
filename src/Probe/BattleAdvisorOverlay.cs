@@ -558,6 +558,9 @@ namespace MonsterTrain2Poju.Probe
             else SetPending(!ReferenceEquals(displayed, session.Current) || captureNeeded || selectionPending || preparation != null);
         }
 
+        private BattleTurnState CaptureTerminalReadOnly(AllGameManagers managers, bool won) =>
+            FullBattleTrace.Active!.ObserveTerminal(won, () => CaptureReadOnly(managers));
+
         private BattleTurnState CaptureReadOnly(AllGameManagers managers)
         {
             string Stamp() => TwoTurnScenario.CaptureSnapshot("advisor", managers, managers.GetSaveManager(),

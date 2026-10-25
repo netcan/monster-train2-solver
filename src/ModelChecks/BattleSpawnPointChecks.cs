@@ -13,7 +13,16 @@ internal static class BattleSpawnPointChecks
             var raw = sample.GetProperty("Raw").Deserialize<BattleSpawnPoints>()!;
             var canonical = sample.GetProperty("Canonical").Deserialize<BattleSpawnPoints>()!;
             var living = sample.GetProperty("LivingUnitIds").Deserialize<int[]>()!.ToHashSet();
-            var expected = new BattleSpawnPoints(raw.Groups.Where(group => group.PreviewCopyId == null).ToArray(), raw.Units.Select(unit => living.Contains(unit.UnitId) ? unit :
+            bool terminal = sample.TryGetProperty("Terminal", out var terminalValue) && terminalValue.GetBoolean();
+            var retiring = sample.TryGetProperty("RetiringEnemyIds", out var retiringValue) ?
+                retiringValue.Deserialize<int[]>()!.ToHashSet() : new HashSet<int>();
+            Require(retiring.Count == 0 || terminal && sample.GetProperty("Won").GetBoolean(), "Only a won terminal decision can retire enemy slots.");
+            Require(!retiring.Overlaps(living) && retiring.All(id => raw.Groups.Any(group =>
+                group.Team == CombatTeam.Enemy && group.PreviewCopyId == null && group.Occupants.Contains(id))), "A living or non-enemy slot was retired.");
+            var groupsForDecision = raw.Groups.Where(group => group.PreviewCopyId == null).Select(group => retiring.Count > 0 ?
+                new SpawnPointGroupState(group.RoomIndex, group.Team, group.InnerCount, group.GroupCount,
+                    group.Occupants.Select(id => retiring.Contains(id) ? 0 : id).ToArray(), group.Outside, group.PreviewCopyId) : group).ToArray();
+            var expected = new BattleSpawnPoints(groupsForDecision, raw.Units.Select(unit => living.Contains(unit.UnitId) ? unit :
                 new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, unit.SpawnedInPreview)).ToArray(), raw.NextPreviewCopyId);
             Require(JsonSerializer.Serialize(canonical) == JsonSerializer.Serialize(expected),
                 "Decision normalization changed live positions, group order or retained identity metadata.");

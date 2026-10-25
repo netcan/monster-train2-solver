@@ -68,6 +68,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-05-ring4-budget10000-replay.mt2f',
     'full-battle-random-campaign-05-ring5-budget10000-search.mt2f',
     'full-battle-random-campaign-05-ring5-budget10000-replay.mt2f',
+    'full-battle-random-campaign-05-ring6-budget10000-loss.mt2f',
     'full-battle-random-campaign-04-ring5-refined-search.mt2f',
     'full-battle-random-campaign-04-ring5-refined-replay.mt2f',
     'full-battle-random-campaign-04-ring6-budget10000-loss.mt2f',
@@ -123,6 +124,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-attachment-reinstall-replay-calibration.mt2f',
     'player-corrupt-restricted-state-calibration.mt2f',
     'player-corrupt-restricted-state-replay-calibration.mt2f',
+    'player-terminal-enemy-slot-calibration.mt2f',
+    'player-terminal-enemy-slot-replay-calibration.mt2f',
+    'full-battle-terminal-enemy-slot-calibration.mt2f',
     'player-destroyed-feeder-calibration.mt2f',
     'player-destroyed-feeder-replay-calibration.mt2f',
     'player-destroyed-feeder-observation-calibration.mt2f',
@@ -1258,6 +1262,15 @@ if ($Fixture.Count -gt 0) {
 }
 # Explicit selections for this composition have complete dedicated gates.
 # Avoid starting all unrelated pure checks before a component-only request.
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'full-battle-terminal-enemy-slot-calibration.mt2f' }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Terminal stage checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --terminal-enemy-slot-stages-only $fixtures[0]
+    if ($LASTEXITCODE -ne 0) { throw 'Terminal room/train stage acceptance failed.' }
+    return
+}
 $branchPairGates = @{
     'player-authored-consume-copy-calibration.mt2f' = '--authored-consume-copy-pair-only'
     'player-ephemeral-copy-full-hand-calibration.mt2f' = '--authored-consume-copy-pair-only'
@@ -1283,6 +1296,7 @@ $branchPairGates = @{
     'player-unstable-revival-calibration.mt2f' = '--unstable-revival-pair-only'
     'player-attachment-reinstall-calibration.mt2f' = '--attachment-reinstall-pair-only'
     'player-corrupt-restricted-state-calibration.mt2f' = '--corrupt-restricted-state-pair-only'
+    'player-terminal-enemy-slot-calibration.mt2f' = '--terminal-enemy-slot-pair-only'
     'player-destroyed-feeder-calibration.mt2f' = '--destroyed-feeder-pair-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {

@@ -156,7 +156,9 @@ namespace MonsterTrain2Poju.Probe
         {
             if (!Enabled) return;
             Require(expectedMixChoices.Count == 0, "native battle ended before its published draft choices completed");
-            terminal = Capture();
+            Resolve();
+            terminal = (BattleTurnState)Call("CaptureTerminalReadOnly", AllGameManagers.Instance,
+                FullBattleTrace.Active!.NativeWon!.Value)!;
         }
         internal static void CheckInputRecorded()
         {

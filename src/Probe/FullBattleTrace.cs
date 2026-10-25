@@ -39,6 +39,15 @@ namespace MonsterTrain2Poju.Probe
         private bool copyCardlessStatusRequired;
         private bool normalizeDestroyedAttacker;
         internal bool CanonicalDecisionCapture => normalizeDestroyedAttacker;
+        private bool? terminalObservationOutcome;
+        internal bool? TerminalObservationOutcome => terminalObservationOutcome ?? NativeWon;
+        internal T ObserveTerminal<T>(bool won, Func<T> capture)
+        {
+            bool? previous = terminalObservationOutcome;
+            terminalObservationOutcome = won;
+            try { return capture(); }
+            finally { terminalObservationOutcome = previous; }
+        }
         internal T CaptureDecision<T>(Func<T> capture)
         {
             bool previous = normalizeDestroyedAttacker;
@@ -108,6 +117,8 @@ namespace MonsterTrain2Poju.Probe
         internal void Detach() { if (Active == this) Active = null; }
         internal bool? NativeWon { get; private set; }
         private bool? stoppingOutcome;
+        internal T ObserveStoppingStage<T>(Func<T> capture) => stoppingOutcome is bool won
+            ? ObserveTerminal(won, capture) : capture();
         internal bool? TerminalEffectsSettled { get; private set; }
         internal BattleTurnState? TerminalDecision { get; private set; }
         private int captureFailures;
@@ -722,7 +733,9 @@ namespace MonsterTrain2Poju.Probe
             if (stage.Actual != null) return;
             try
             {
-                stage.Actual = Capture(stage.Room);
+                // Native unwinds these stages during StopCombat. Preserve its
+                // running-combat query frame and canonicalize only retired slots.
+                stage.Actual = ObserveStoppingStage(() => Capture(stage.Room));
                 if (stage.ExternalPyre != null)
                     stage.ActualExternalPyre = Capture(AllGameManagers.Instance!.GetRoomManager()!
                         .GetRoom(stage.ExternalPyreRoomIndex), captureContext: false).Units

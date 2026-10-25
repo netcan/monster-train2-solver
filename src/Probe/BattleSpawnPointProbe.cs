@@ -25,6 +25,9 @@ namespace MonsterTrain2Poju.Probe
             public BattleSpawnPoints Raw { get; set; } = null!;
             public BattleSpawnPoints Canonical { get; set; } = null!;
             public int[] LivingUnitIds { get; set; } = Array.Empty<int>();
+            public bool Terminal { get; set; }
+            public bool? Won { get; set; }
+            public int[] RetiringEnemyIds { get; set; } = Array.Empty<int>();
             public PlaneSnapshot Planes { get; set; } = null!;
         }
         internal sealed class UnitPlanes
@@ -168,17 +171,27 @@ namespace MonsterTrain2Poju.Probe
                 .Where(point => point?.PreviewCopyId != null).Select(point => point!.PreviewCopyId!.Value).Distinct().OrderBy(id => id).ToArray();
             var raw = new BattleSpawnPoints(groups.Concat(CopyIds(references).Select(id => CopyGroup(trace, id))).ToArray(), references,
                 copies.Count + 1);
-            if (!trace.CanonicalDecisionCapture) return raw;
+            if (!trace.CanonicalDecisionCapture && trace.TerminalObservationOutcome != true) return raw;
             // Coroutine effects retain raw points above. Stable decisions use logical
             // removal, independent of when the corpse dissolve destroys its Unity object.
             int[] living = trace.KnownUnits.Where(unit => unit != null && unit.IsAlive && !unit.IsDestroyed)
                 .Select(trace.UnitId).OrderBy(id => id).ToArray();
             var active = new HashSet<int>(living);
-            var canonical = new BattleSpawnPoints(groups, references.Select(point => active.Contains(point.UnitId) ? point :
+            bool terminal = trace.TerminalObservationOutcome.HasValue;
+            int[] retiringEnemyIds = trace.TerminalObservationOutcome == true ? groups.Where(group => group.Team == CombatTeam.Enemy)
+                .SelectMany(group => group.Occupants).Where(id => id != 0 && !active.Contains(id)).Distinct().ToArray() : Array.Empty<int>();
+            var retiring = new HashSet<int>(retiringEnemyIds);
+            var decisionGroups = retiring.Count > 0 ? groups.Select(group => new SpawnPointGroupState(group.RoomIndex, group.Team,
+                group.InnerCount, group.GroupCount, group.Occupants.Select(id => retiring.Contains(id) ? 0 : id).ToArray(),
+                group.Outside, group.PreviewCopyId)).ToArray() : groups.ToArray();
+            // Victory cleanup can retire a remaining enemy before its visual
+            // coroutine clears the slot. Keep the raw plane below and apply
+            // its already observed logical removal to the terminal enemy slot.
+            var canonical = new BattleSpawnPoints(decisionGroups, references.Select(point => active.Contains(point.UnitId) ? point :
                 new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview)).ToArray(), copies.Count + 1);
             int[] allCopies = CopyIds(planes.SelectMany(unit => new[] { unit.Primary, unit.Preview, unit.Temporary })
                 .Where(state => state != null).Cast<UnitSpawnPointState>()).Concat(currentCopies).Distinct().OrderBy(id => id).ToArray();
-            if (!AdvisorRuntime.PlayerSession) Decisions.Add(new DecisionRecord { Raw = raw, Canonical = canonical, LivingUnitIds = living,
+            if (!AdvisorRuntime.PlayerSession) Decisions.Add(new DecisionRecord { Raw = raw, Canonical = canonical, LivingUnitIds = living, Terminal = terminal, Won = trace.TerminalObservationOutcome, RetiringEnemyIds = retiringEnemyIds,
                 Planes = new PlaneSnapshot { Groups = groups.Concat(allCopies.Select(id => CopyGroup(trace, id))).ToArray(),
                     Units = planes.ToArray(), CurrentCopyIds = currentCopies.ToArray() } });
             return canonical;
