@@ -87,6 +87,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-friendly-relic-piercing-replay-calibration.mt2f',
     'player-corrupt-copyability-calibration.mt2f',
     'player-corrupt-copyability-replay-calibration.mt2f',
+    'player-destroyed-feeder-calibration.mt2f',
+    'player-destroyed-feeder-replay-calibration.mt2f',
+    'player-destroyed-feeder-observation-calibration.mt2f',
     'player-random-campaign-02-ring2-permafrost-unavailable.mt2f',
     'room-moon-spell-threshold-relic-calibration.mt2f',
     'full-battle-original-moon-card-upgrades-threshold-relic.mt2f',
@@ -1233,6 +1236,7 @@ $branchPairGates = @{
     'player-recursion-target-text-calibration.mt2f' = '--recursion-target-text-pair-only'
     'player-friendly-relic-piercing-calibration.mt2f' = '--friendly-relic-piercing-pair-only'
     'player-corrupt-copyability-calibration.mt2f' = '--corrupt-copyability-pair-only'
+    'player-destroyed-feeder-calibration.mt2f' = '--destroyed-feeder-pair-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
     -not $branchPairGates.ContainsKey(($_ -replace '-(?:replay|observation)-calibration\.mt2f$', '-calibration.mt2f'))
@@ -1248,7 +1252,8 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
         $sourcePath = Get-TestFixturePath $sourceName
         $replayPath = Get-TestFixturePath ($sourceName -replace '-calibration\.mt2f$', '-replay-calibration.mt2f')
         $pairArguments = @($branchPairGates[$sourceName], $sourcePath, $replayPath)
-        if ($sourceName -in @('player-heal-combat-removal-calibration.mt2f', 'player-despawn-frame-removal-calibration.mt2f')) {
+        if ($sourceName -in @('player-heal-combat-removal-calibration.mt2f', 'player-despawn-frame-removal-calibration.mt2f',
+            'player-destroyed-feeder-calibration.mt2f')) {
             $pairArguments += Get-TestFixturePath ($sourceName -replace '-calibration\.mt2f$', '-observation-calibration.mt2f')
         }
         dotnet $checker @pairArguments

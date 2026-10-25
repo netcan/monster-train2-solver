@@ -1,6 +1,21 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--destroyed-feeder-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    DestroyedFeederChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 4 && args[0] == "--destroyed-feeder-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    using var raw = ModelJson.ReadFixture(args[3]);
+    DestroyedFeederChecks.Pair(source.RootElement, replay.RootElement, raw.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--corrupt-copyability-native-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -4957,6 +4972,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corrupt-copyability-replay-calibration.mt2f"));
     CorruptCopyabilityChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-destroyed-feeder-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-destroyed-feeder-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-destroyed-feeder-replay-calibration.mt2f"));
+    using var raw = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-destroyed-feeder-observation-calibration.mt2f"));
+    DestroyedFeederChecks.Pair(source.RootElement, replay.RootElement, raw.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-despawn-frame-removal-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-despawn-frame-removal-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

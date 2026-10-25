@@ -82,6 +82,14 @@ namespace MonsterTrain2Poju.Model
             BattleSpawnPoints? points = source.Context?.SpawnPoints;
             if (points == null) return source;
             var active = source.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+            // LastFeeder is a Unity object reference. It becomes null after its
+            // removed owner's frame destruction, even when the food survives.
+            // Keep explicitly retained objects whose destruction has not finished.
+            var destroyedFeeders = points.Units.Where(unit => source.Context!.QueryFrame?.RunningCombat != false &&
+                !active.Contains(unit.UnitId) &&
+                (completedDestructionIds == null || completedDestructionIds.Contains(unit.UnitId)) &&
+                source.Context!.Enchantments?.RetainedUnits.Any(actor => actor.Unit.Id == unit.UnitId &&
+                    actor.Unit.DeathState?.IsDestroyed != true) != true).Select(unit => unit.UnitId).ToHashSet();
             // Canonical decisions retire both owner pointers, matching the capture's
             // logical-removal boundary independently of Unity's dissolve timing.
             // Slot occupants are separate: terminal Pyres and DoNotFullyRemove deaths
@@ -98,16 +106,23 @@ namespace MonsterTrain2Poju.Model
                 EnchantmentWorld world = context.Enchantments;
                 // The removal signal still uses the bound source. Unity invalidates
                 // that reference when destruction completes at the frame boundary.
-                context = context.WithEnchantments(new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom,
+                context = context.WithEnchantments(new EnchantmentWorld(world.Rooms.Select(room => room.WithUnits(
+                        room.Units.Select(unit => unit.WithoutDestroyedFeeder(destroyedFeeders)).ToArray())).ToArray(),
+                    world.Movement, world.EnemySlotsPerRoom,
                     world.RetainedUnits.Select(actor => new EnchantmentRetainedUnit(
-                        completedDestructionIds != null && !completedDestructionIds.Contains(actor.Unit.Id) ? actor.Unit :
+                        (completedDestructionIds != null && !completedDestructionIds.Contains(actor.Unit.Id) ? actor.Unit :
                         AfterDestruction(actor.Unit).WithoutRemovedAttacker(new HashSet<int>()).WithTriggers(actor.Unit.Triggers.Select(trigger =>
                             trigger.WithEffects(trigger.Effects.Select(effect => actor.Unit.DeathState?.IsDestroyed == true && effect.Enchantment != null
                                 ? effect.WithEnchantment(new EnchantmentRule(effect.Enchantment.Targeting, effect.Enchantment.StatusPool,
-                                    effect.Enchantment.State, false, effect.Enchantment.HasParentCard)) : effect).ToArray())).ToArray()),
+                                    effect.Enchantment.State, false, effect.Enchantment.HasParentCard)) : effect).ToArray())).ToArray()))
+                            .WithoutDestroyedFeeder(destroyedFeeders),
                         actor.RoomIndex, actor.Preview)).ToArray(), world.EnchanterIds, world.AllowUpdates, world.Updating,
                     world.Preview, world.TestRng, true, world.TemporaryPreviewUnitIds));
             }
+            if (destroyedFeeders.Count > 0)
+                source = new TrainCombatState(source.Rooms.Select(room => room.WithUnits(room.Units.Select(unit =>
+                    unit.WithoutDestroyedFeeder(destroyedFeeders)).ToArray())).ToArray(), source.Movement,
+                    source.EnemySlotsPerRoom, source.Context);
             return CardSpellModel.WithContext(source, context);
         }
 

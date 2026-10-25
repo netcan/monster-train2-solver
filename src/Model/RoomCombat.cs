@@ -325,6 +325,11 @@ namespace MonsterTrain2Poju.Model
         internal CombatUnit WithoutRemovedAttacker(ISet<int> activeIds) => !LastAttackerId.HasValue || LastAttackerId == 0 || activeIds.Contains(LastAttackerId.Value)
             ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
                 Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+        internal CombatUnit WithoutDestroyedFeeder(ISet<int> destroyedIds) => !LastFeederId.HasValue || !destroyedIds.Contains(LastFeederId.Value)
+            ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
+                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, LastAttackerId, StatusRegistry,
+                EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning,
+                SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: 0, moonPhaseMask: MoonPhaseMask);
     }
 
     public sealed class RoomCombatState
