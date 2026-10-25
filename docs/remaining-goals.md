@@ -53,6 +53,12 @@ RNG与四项失败计数零偏差通过；两份原生档案分别保留。54输
 定向检查通过。见[哨兵保留目标](../tests/fixtures/notes/combat/retained-sentry-target.md)。
 继续同一第八战入口实际默认建议；未将组件校准记成终战胜利。
 
+0.2.98终战继续到第31输入时，提前移除死亡沉默光环，导致Firebrand额外
+触发一次武器Slay成长。0.2.99按原生顺序先执行角色Slay／受击回调，再更新
+死亡光环；31输入独立原生双进程完整状态／RNG、八个不变父分支及光环世界／
+战斗组件定向回归通过。见[Slay与光环顺序](../tests/fixtures/notes/combat/slay-enchantment-order.md)。
+继续同一终战入口的0.2.99实际建议，尚未计通关。
+
 旧`full-battle-persistent-enchantment-summons.mt2f`第4次出牌的
 `Enchantment.Bound`偏差已在0.2.91修复；旧整场15次出牌／5次结束回合通过。
 新原生双进程逐一确认六处绑定偏差消失，所有15次出牌／5次结束回合的完整后继

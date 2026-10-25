@@ -1,10 +1,13 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-26): 1707 archives,
+Current manifest inventory (2026-10-26): 1709 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 ## Directory layout
+
+The31-input Silence/Slay pair preserves native aura-update ordering;
+see [character Slay before dying-aura updates](notes/combat/slay-enchantment-order.md).
 
 The11-input lethal-shift/Sentry pair preserves the current removed target;
 see [queued Sentry target state](notes/combat/retained-sentry-target.md).

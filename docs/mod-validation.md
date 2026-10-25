@@ -30,6 +30,12 @@ first-seven mixed checkpoint chain and normal progression to Ring8.
 The0.2.98 code additionally fixes a removed character's stale queued Sentry
 target:11-input independent native component pair and focused Sentry/binding
 checks pass; the same Ring8 checkpoint's full default run is in progress.
+Version0.2.99 also corrects dying-enchanter updates after character Slay/hit
+callbacks. The31-input independent native pair preserves the original extra
+sword-growth counterexample; complete state/RNG,parallel parents and focused
+Sentry,binding,enchantment-world/combat regressions pass. The original Ring8
+checkpoint is continuing actual0.2.99 advice; the installed build remains0.2.97
+until the exact0.2.99 payload completes its release qualification.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
