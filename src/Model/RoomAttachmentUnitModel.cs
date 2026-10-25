@@ -222,7 +222,10 @@ namespace MonsterTrain2Poju.Model
             RoomCapacityAttachmentState? a = left?.Attachments?.SingleOrDefault();
             RoomCapacityAttachmentState? b = right?.Attachments?.SingleOrDefault();
             if (a == null || b == null) return a == null && b == null;
-            return a.DataId == b.DataId && a.AssetKey == b.AssetKey && a.AttachmentType == b.AttachmentType &&
+            // A freshly attached copy has a new native upgrade object even if
+            // its payload is identical. Remove/reinstall it in native list order.
+            return left!.AttachmentsAddedFromCards == right!.AttachmentsAddedFromCards &&
+                a.DataId == b.DataId && a.AssetKey == b.AssetKey && a.AttachmentType == b.AttachmentType &&
                 a.CapacityDelta == b.CapacityDelta && a.AffectsHeroes == b.AffectsHeroes &&
                 a.AffectsMonsters == b.AffectsMonsters && a.IgnoreBosses == b.IgnoreBosses &&
                 a.AttachmentId == b.AttachmentId &&

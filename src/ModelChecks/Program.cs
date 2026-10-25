@@ -9,6 +9,20 @@ if (args.Length == 3 && args[0] == "--random-refined-campaign-pair-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--attachment-reinstall-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AttachmentReinstallChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--attachment-reinstall-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    AttachmentReinstallChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--unstable-revival-native-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5106,6 +5120,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-friendly-relic-piercing-replay-calibration.mt2f"));
     FriendlyRelicPiercingChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-attachment-reinstall-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-attachment-reinstall-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-attachment-reinstall-replay-calibration.mt2f"));
+    AttachmentReinstallChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-unstable-revival-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-unstable-revival-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
