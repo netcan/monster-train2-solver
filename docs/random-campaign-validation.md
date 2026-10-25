@@ -391,6 +391,12 @@ NativePassed和OriginalFilesUnchanged为true，新增战斗数均为0。
 两次独立原生观察的62输入完整状态／预测／RNG及四个恢复式资格查询通过，
 保留原始拒绝记录。见[返回牌腐化去重](../tests/fixtures/notes/cards/corrupt-restricted-return.md)。
 
+保留冠军的新第三战分支在首次结束回合暴露完整附魔世界中的BattleTest缺口：
+Tethys的100%冻伤预览仍推进测试随机流，旧模型只保留真实Battle流。
+0.2.50补齐该测试流的一次推进和预览恢复后的保留，六输入双进程完整后继／预测／
+RNG与不可变父状态通过；真实Battle流保持原值。见
+[必定状态预览的测试随机流](../tests/fixtures/notes/combat/guaranteed-status-test-rng.md)。
+
 定向检查入口：
 
 ```powershell

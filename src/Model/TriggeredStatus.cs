@@ -160,9 +160,12 @@ namespace MonsterTrain2Poju.Model
             foreach (int id in targetIds.Reverse())
             {
                 // Guaranteed chances still consume the native preview's test
-                // stream, but never the live Battle stream. Its history cannot
-                // change this fixed, single-status result. Isolated previews
-                // explicitly model the mirrored stream and retain that draw.
+                // stream, but never the live Battle stream. A captured native
+                // enchantment world retains that stream even for a fixed result.
+                // Isolated previews model their mirrored stream separately.
+                if (chance >= 100 && source.Preview && source.Context.IsolatedBattlePreview != true &&
+                    state.Context!.Enchantments is { AutomaticLifecycle: true } world)
+                    state = WithContext(state, state.Context.WithEnchantments(world.WithTestRng(world.TestRng.Range(0, 100).State)));
                 if (chance != 0 && !(source.Preview && source.Context.IsolatedBattlePreview != true && chance >= 100))
                 {
                     RngDraw draw = state.Context!.BattleRng.Range(0, 100);

@@ -42,6 +42,9 @@ namespace MonsterTrain2Poju.Model
         internal static EnchantmentWorld From(EnchantmentCombatState frame, bool automaticLifecycle = false) => new EnchantmentWorld(frame.Train.Rooms,
             frame.Train.Movement, frame.Train.EnemySlotsPerRoom, frame.RetainedUnits, frame.EnchanterIds,
             frame.AllowUpdates, frame.Updating, frame.Preview, frame.TestRng, automaticLifecycle, frame.TemporaryPreviewUnitIds);
+        internal EnchantmentWorld WithTestRng(UnityRng rng) => new EnchantmentWorld(Rooms, Movement,
+            EnemySlotsPerRoom, RetainedUnits, EnchanterIds, AllowUpdates, Updating, Preview, rng,
+            AutomaticLifecycle, TemporaryPreviewUnitIds);
         internal EnchantmentWorld WithTemporaryPreviewUnits(IReadOnlyList<int> ids) => new EnchantmentWorld(Rooms, Movement,
             EnemySlotsPerRoom, RetainedUnits, EnchanterIds, AllowUpdates, Updating, Preview, TestRng, AutomaticLifecycle, ids);
     }

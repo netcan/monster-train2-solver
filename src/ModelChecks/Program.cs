@@ -1,6 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--guaranteed-status-test-rng-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    GuaranteedStatusTestRngChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--guaranteed-status-test-rng-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    GuaranteedStatusTestRngChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--random-refined-campaign-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5209,6 +5222,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-generated-discard-guard-replay-calibration.mt2f"));
     GeneratedDiscardGuardChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-guaranteed-status-test-rng-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-guaranteed-status-test-rng-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-guaranteed-status-test-rng-replay-calibration.mt2f"));
+    GuaranteedStatusTestRngChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-guaranteed-status-preview-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-guaranteed-status-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

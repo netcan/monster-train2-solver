@@ -240,7 +240,8 @@ namespace MonsterTrain2Poju.Model
                             RestoreEnchantments(actor.Unit), actor.RoomIndex, actor.Preview))
                         .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removed, previewBossIds)).ToArray(),
                     originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
-                    originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
+                    originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview,
+                    context.IsolatedBattlePreview == true ? originalWorld.TestRng : observed.TestRng, true));
             }
             // Ordinary preview births have temporary simulation IDs: native identity
             // capture skips them. Only the observed enchantment lifecycle above keeps
