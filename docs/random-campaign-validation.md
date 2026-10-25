@@ -399,6 +399,12 @@ RNG与不可变父状态通过；真实Battle流保持原值。见
 
 定向检查入口：
 
+0.2.51进一步补齐第二回合真实攻击前的Boss击杀预览：临时角色状态恢复后，
+保留原生实际推进的BattleTest；真实Battle流另有一次独立推进。
+13输入双进程完整后继／预测／RNG与不可变父状态通过，开发探针保留8次
+预览随机调用的前后状态和调用栈。六输入普通预览对照通过，整场验收继续。
+见[Boss攻击预览测试流](../tests/fixtures/notes/combat/boss-preview-test-rng.md)。
+
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll `
   --random-campaign-pair-only <search.mt2f> <replay.mt2f> <seed> <rank> <distance> <primary> <secondary>

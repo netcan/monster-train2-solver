@@ -2690,7 +2690,8 @@ namespace MonsterTrain2Poju.Model
                         originalWorld.Movement, originalWorld.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(Retained)
                             .Concat(births).ToArray(),
                         originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
-                        originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview, originalWorld.TestRng, true));
+                        originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview,
+                        context.IsolatedBattlePreview == true ? originalWorld.TestRng : observed.TestRng, true));
                     // Remote Tower targets share effect objects with this
                     // preview too, while their numeric primary state survives.
                     foreach (WorkingUnit remote in units.Where(unit => externalTurnActorIds.Contains(unit.Source.Id)))

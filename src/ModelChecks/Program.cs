@@ -1,5 +1,18 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--boss-preview-test-rng-native-only")
+{
+    using var native = ModelJson.ReadFixture(args[1]);
+    BossPreviewTestRngChecks.Native(native.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--boss-preview-test-rng-pair-only")
+{
+    using var native = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    BossPreviewTestRngChecks.Pair(native.RootElement, replay.RootElement);
+    return;
+}
 
 if (args.Length == 2 && args[0] == "--guaranteed-status-test-rng-native-only")
 {
@@ -5222,6 +5235,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-generated-discard-guard-replay-calibration.mt2f"));
     GeneratedDiscardGuardChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-boss-preview-test-rng-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-boss-preview-test-rng-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-boss-preview-test-rng-replay-calibration.mt2f"));
+    BossPreviewTestRngChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-guaranteed-status-test-rng-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-guaranteed-status-test-rng-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

@@ -114,6 +114,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-guaranteed-status-preview-replay-calibration.mt2f',
     'player-guaranteed-status-test-rng-calibration.mt2f',
     'player-guaranteed-status-test-rng-replay-calibration.mt2f',
+    'player-boss-preview-test-rng-calibration.mt2f',
+    'player-boss-preview-test-rng-replay-calibration.mt2f',
     'player-generated-discard-guard-calibration.mt2f',
     'player-generated-discard-guard-replay-calibration.mt2f',
     'player-ephemeral-consume-order-calibration.mt2f',
@@ -1295,6 +1297,7 @@ $branchPairGates = @{
     'player-corrupt-source-alignment-calibration.mt2f' = '--corrupt-source-alignment-pair-only'
     'player-guaranteed-status-preview-calibration.mt2f' = '--guaranteed-status-preview-pair-only'
     'player-guaranteed-status-test-rng-calibration.mt2f' = '--guaranteed-status-test-rng-pair-only'
+    'player-boss-preview-test-rng-calibration.mt2f' = '--boss-preview-test-rng-pair-only'
     'player-generated-discard-guard-calibration.mt2f' = '--generated-discard-guard-pair-only'
     'player-ephemeral-consume-order-calibration.mt2f' = '--ephemeral-consume-order-pair-only'
     'player-status-callback-room-sync-calibration.mt2f' = '--status-callback-room-sync-pair-only'

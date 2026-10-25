@@ -63,6 +63,7 @@ namespace MonsterTrain2Poju.Probe
                 Request = Read<JObject>(request), NativeCompleted = true, Rows = rows,
                 PlayerAdvisor = PlayerAdvisorProbe.Evidence,
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
+                BattleTestRng = BattleTestRngProbe.Records.ToArray(),
                 TerminalSpawnPoints = BattleSpawnPointProbe.Decisions.Where(sample => sample.Terminal).ToArray() });
             using var stream = new FileStream(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
                 "unsupported-branch-native.mt2f"), FileMode.CreateNew, FileAccess.Write);
