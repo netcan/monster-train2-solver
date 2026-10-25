@@ -120,6 +120,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-boss-preview-test-rng-replay-calibration.mt2f',
     'player-discard-holdover-return-calibration.mt2f',
     'player-discard-holdover-return-replay-calibration.mt2f',
+    'player-undying-copy-deployment-calibration.mt2f',
+    'player-undying-copy-deployment-replay-calibration.mt2f',
+    'player-undying-copy-effects-calibration.mt2f',
+    'player-undying-copy-effects-replay-calibration.mt2f',
     'player-generated-discard-guard-calibration.mt2f',
     'player-generated-discard-guard-replay-calibration.mt2f',
     'player-ephemeral-consume-order-calibration.mt2f',
@@ -1305,6 +1309,8 @@ $branchPairGates = @{
     'player-guaranteed-status-test-rng-calibration.mt2f' = '--guaranteed-status-test-rng-pair-only'
     'player-boss-preview-test-rng-calibration.mt2f' = '--boss-preview-test-rng-pair-only'
     'player-discard-holdover-return-calibration.mt2f' = '--discard-holdover-return-pair-only'
+    'player-undying-copy-deployment-calibration.mt2f' = '--undying-copy-deployment-pair-only'
+    'player-undying-copy-effects-calibration.mt2f' = '--undying-copy-effects-pair-only'
     'player-generated-discard-guard-calibration.mt2f' = '--generated-discard-guard-pair-only'
     'player-ephemeral-consume-order-calibration.mt2f' = '--ephemeral-consume-order-pair-only'
     'player-status-callback-room-sync-calibration.mt2f' = '--status-callback-room-sync-pair-only'

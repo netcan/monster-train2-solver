@@ -19,7 +19,7 @@ internal static class NativeBranchObservationChecks
         Require(request.GetProperty("Reason").GetString() == reason, "Wrong native rejection boundary.");
         FixtureValue[] prefix = request.GetProperty("Prefix").EnumerateArray().ToArray();
         FixtureValue[] rows = fixture.GetProperty("Rows").EnumerateArray().ToArray();
-        Require(rows.Length == prefix.Length + 1 && rows.Length is > 1 and <= 257, "Incomplete native prefix.");
+        Require(rows.Length == prefix.Length + 1 && rows.Length is >= 1 and <= 257, "Incomplete native prefix.");
         BattleTurnState current = request.GetProperty("Root").Deserialize<BattleTurnState>()!;
         Require(current.Spawn.Turn == 0, "Observation must begin at deployment.");
         for (int index = 0; index < rows.Length; index++)

@@ -7,6 +7,7 @@ namespace MonsterTrain2Poju.Model
     {
         public const string Trait = "CardTraitCopyOnPlay";
         public const string UpgradeId = "a75fc092-ca72-476b-b518-01e9ecb8d6a3";
+        public const string UndyingSpellId = "7168ed36-de03-41db-a36f-79b54b121341";
         public static bool Present(CardInstanceState card) => card.MaskDescriptor != null &&
             (card.MaskDescriptor.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait => trait.RuntimeType == Trait) ||
              card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true) ||
@@ -16,6 +17,7 @@ namespace MonsterTrain2Poju.Model
         {
             if (descriptor.SourceTraits == null) return false;
             if (descriptor.SourceTraits.Count == 0) return true;
+            if (SupportedUndyingSource(descriptor)) return true;
             if (descriptor.SourceTraits.Count != 1 || descriptor.BaseTraits.Count == 0) return false;
             CardSourceTrait authored = descriptor.SourceTraits[0];
             CardTraitValue runtime = descriptor.BaseTraits[0];
@@ -27,6 +29,29 @@ namespace MonsterTrain2Poju.Model
                 authored.MoonPhaseUpgrade == null && authored.KillTargetTeam == null && authored.KillTargetSubtype == null && authored.QueryCardType == null &&
                 runtime.RuntimeType == authored.Type && runtime.DeclaredName == authored.Type && runtime.DefinitionParamInt == 0 &&
                 runtime.ParamInt == 0 && runtime.StackMode == 0 && runtime.Removable && runtime.DefinitionRemovable == true && !runtime.TemporaryReplacement;
+        }
+
+        private static bool SupportedUndyingSource(CardMaskDescriptor descriptor)
+        {
+            if (descriptor.Definition.DataId != UndyingSpellId || !descriptor.Definition.XCost ||
+                descriptor.SourceTraits?.Count != 2 || descriptor.BaseTraits.Count < 2) return false;
+            for (int index = 0; index < 2; index++)
+            {
+                CardSourceTrait authored = descriptor.SourceTraits[index];
+                CardTraitValue runtime = descriptor.BaseTraits[index];
+                string type = index == 0 ? "CardTraitExhaustState" : "CardTraitScalingAddStatusEffect";
+                if (authored.Type != type || authored.Int != 1 || authored.Int2 != 0 || authored.Int3 != 0 ||
+                    authored.Bool || authored.Str != "" || authored.Float != 0 || authored.Scaling ||
+                    authored.TrackedValue != "PlayedCost" || authored.EntryDuration != "ThisTurn" ||
+                    authored.StatusQueryTeam != null || authored.StatusQueryStatuses != null || authored.HandCostTargetType != null ||
+                    authored.DeploymentDrawFlag != null || authored.SpecificCardDataId != null || authored.MoonPhaseUpgrade != null ||
+                    authored.KillTargetTeam != null || authored.KillTargetSubtype != null || authored.QueryCardType != null ||
+                    (index == 0 ? authored.StatusEffectIds != null : authored.StatusEffectIds?.SequenceEqual(new[] { "undying" }) != true) ||
+                    runtime.RuntimeType != type || runtime.DeclaredName != type || runtime.ParamInt != 1 || runtime.DefinitionParamInt != 1 ||
+                    runtime.StackMode != 0 || !runtime.Removable || runtime.DefinitionRemovable != true || runtime.TemporaryReplacement)
+                    return false;
+            }
+            return true;
         }
 
         private static bool BoxSelfCopy(CardInstanceState card) => card.DataId == "f0ff6411-5c58-4b69-b025-0f6e4a52fca7" &&
@@ -70,7 +95,8 @@ namespace MonsterTrain2Poju.Model
             var traits = active.Where(trait => trait.RuntimeType == Trait).ToArray();
             if (traits.Length == 0) return null;
             if (!SupportedSourceTraits(card.MaskDescriptor!) ||
-                card.MaskDescriptor.BaseTraits.Any(trait => trait.RuntimeType is not (Trait or "CardTraitExhaustState")) ||
+                card.MaskDescriptor.BaseTraits.Any(trait => trait.RuntimeType is not (Trait or "CardTraitExhaustState") &&
+                    !(SupportedUndyingSource(card.MaskDescriptor) && trait.RuntimeType == "CardTraitScalingAddStatusEffect")) ||
                 card.MaskDescriptor.TemporaryTraits.Count > 1 || card.MaskDescriptor.TemporaryTraits.Any(trait =>
                     trait.RuntimeType != "CardTraitFreeze" || trait.DeclaredName != "CardTraitFreeze" || trait.ParamInt != 0 ||
                     trait.DefinitionParamInt != 0 || trait.StackMode != 0 || !trait.Removable || trait.DefinitionRemovable != true ||
@@ -110,8 +136,7 @@ namespace MonsterTrain2Poju.Model
                 card.CapacityScalingTraits, card.EquippedUnitId,
                 // AddNewCardCopy starts from CardData's authored traits. Traits
                 // installed by copied upgrades are rebuilt by the add pipeline.
-                card.MaskDescriptor!.WithBaseTraits(card.MaskDescriptor.SourceTraits!.Count == 0 ? Array.Empty<CardTraitValue>() :
-                    new[] { card.MaskDescriptor.BaseTraits[0] }), card.ForgeCountScalingTraits,
+                card.MaskDescriptor!.WithBaseTraits(card.MaskDescriptor.BaseTraits.Take(card.MaskDescriptor.SourceTraits!.Count).ToArray()), card.ForgeCountScalingTraits,
                 card.CanBeCopied, card.TrainHealScalingTraits);
             return CardGenerationModel.Apply(source, new CardGenerationRule("HandPile", 1, new[] { creation },
                 copyModifiers: true, upgrade: trait.CopyOnPlayUpgrade, deterministicPoolSelection: true,
