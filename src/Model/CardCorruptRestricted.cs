@@ -49,16 +49,24 @@ namespace MonsterTrain2Poju.Model
                     .SequenceEqual(new[] { CardCorruptStateModel.Trait, "CardTraitExhaustState" }) &&
                 temporaryCorrupt[0].Lifecycle!.AddedTraits.All(trait => trait.DeclaredName == trait.RuntimeType &&
                     trait.ParamInt == 0 && trait.DefinitionParamInt == 0);
-            if (corrupt.Length > 0 && !(card.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463" &&
+            bool merchantCorrupt = card.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463" &&
+                descriptor.BaseTraits.Count(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == 1 &&
+                corruptUpgrades.Length == 1 && corruptUpgrades[0].DataId == "bdb7a38c-18de-4461-beb8-c27fdbdc5f62" &&
+                corruptUpgrades[0].AssetKey == "TraitCorruptwIcon" && corruptUpgrades[0].Lifecycle!.AddedTraits.Count == 1 &&
+                calibratedReturn;
+            bool returnedHoldover = card.DataId == "096def92-500b-4b1f-89f7-43e96aa1e54a" &&
+                temporaryCorrupt.Length == 1 && calibratedReturn && corruptUpgrades.Length == 0 &&
+                descriptor.BaseTraits.Select(trait => trait.RuntimeType).SequenceEqual(new[] { Trait, CardRetainModel.Trait }) &&
+                card.Permanent.Upgrades.Any(upgrade => upgrade.DataId == "f43e7cdb-fa8d-4760-88bf-c6f34f72d918" &&
+                    upgrade.AssetKey == "TraitRetain" && upgrade.Lifecycle?.AddedTraits.Count == 1 &&
+                    upgrade.Lifecycle.AddedTraits[0].RuntimeType == CardRetainModel.Trait);
+            if (corrupt.Length > 0 && !(
                 descriptor.Definition.CardType == "Spell" && active[0].ParamInt == 1 &&
                 corrupt.Length == 1 && corrupt[0].DeclaredName == CardCorruptStateModel.Trait &&
                 corrupt[0].DefinitionParamInt == 0 && corrupt[0].ParamInt == 0 &&
-                descriptor.BaseTraits.Count(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == 1 &&
                 !descriptor.TemporaryTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) &&
                 !descriptor.PermanentReplacements.Any(rule => rule.OldName == CardCorruptStateModel.Trait || rule.NewRuntimeType == CardCorruptStateModel.Trait) &&
-                corruptUpgrades.Length == 1 && corruptUpgrades[0].DataId == "bdb7a38c-18de-4461-beb8-c27fdbdc5f62" &&
-                corruptUpgrades[0].AssetKey == "TraitCorruptwIcon" && corruptUpgrades[0].Lifecycle!.AddedTraits.Count == 1 &&
-                calibratedReturn))
+                (merchantCorrupt || returnedHoldover)))
                 return "Corrupt State's additional eligibility and pre-play ordering require native calibration.";
             amount = active[0].ParamInt;
             return null;

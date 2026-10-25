@@ -418,6 +418,12 @@ RNG与不可变父状态通过；真实Battle流保持原值。见
 
 定向检查入口：
 
+0.2.53补齐该留存返回牌的下一次施法：原卡仅有限制1与留存，由返回升级临时
+获得腐化和消耗，不要求已有商店腐化。45输入双进程完整状态／预测／RNG与
+四组恢复式原生资格查询通过，包含零腐化加一资格和int.MaxValue溢出拒绝。
+62输入商店腐化叠加返回对照通过。见
+[返回留存牌腐化门槛](../tests/fixtures/notes/cards/corrupt-restricted-holdover.md)。
+
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll `
   --random-campaign-pair-only <search.mt2f> <replay.mt2f> <seed> <rank> <distance> <primary> <secondary>

@@ -17,7 +17,8 @@ namespace MonsterTrain2Poju.Probe
             if (action == null || Evidence != null) return;
             FullBattleTrace trace = FullBattleTrace.Active!;
             CardState? card = trace.KnownCards.SingleOrDefault(value => trace.CardId(value) == action.CardInstanceId);
-            if (card?.GetCardDataID() != "ae114dc4-d08f-4909-a2ad-d99215661463" ||
+            if ((card?.GetCardDataID() != "ae114dc4-d08f-4909-a2ad-d99215661463" &&
+                card?.GetCardDataID() != "096def92-500b-4b1f-89f7-43e96aa1e54a") ||
                 !card.GetTraitStates().Any(trait => trait is CardTraitCorruptState)) return;
             AllGameManagers managers = AllGameManagers.Instance!;
             RoomManager rooms = managers.GetRoomManager()!;

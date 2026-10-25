@@ -10,8 +10,24 @@ internal static class CorruptRestrictedStateChecks
         var last = rows[^1];
         var before = last.GetProperty("Before").Deserialize<BattleTurnState>()!;
         var after = last.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-        CardInstanceState card = before.Spawn.Train.Context!.FindCard(10)!;
-        Require(card.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463" &&
+        int cardId = last.GetProperty("Action").Deserialize<PlayCardAction>()!.CardInstanceId;
+        CardInstanceState card = before.Spawn.Train.Context!.FindCard(cardId)!;
+        if (rows.Length == 45)
+        {
+            Require(cardId == 30 && card.DataId == "096def92-500b-4b1f-89f7-43e96aa1e54a" &&
+                card.MaskDescriptor!.BaseTraits.Select(trait => trait.RuntimeType).SequenceEqual([
+                    CardCorruptRestrictedModel.Trait, CardRetainModel.Trait]) &&
+                card.MaskDescriptor.BaseTraits[1].HoldoverPending == true &&
+                card.Temporary.Upgrades.Single().AssetKey == "WurmReturnEnhanceCorrupt" &&
+                CardExhaustModel.RefreshTraits(card).CombinedTraits!.Count(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == 1 &&
+                before.Spawn.Train.Context.RoomCapacities!.Single(room => room.RoomIndex == 2).Corruption ==
+                    after.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 2).Corruption &&
+                after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == cardId),
+                "Missing the returned installed-Holdover card's single Corrupt, net-zero restriction and Consume routing.");
+        }
+        else
+        {
+        Require(cardId == 10 && card.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463" &&
             card.MaskDescriptor!.BaseTraits.Select(trait => trait.RuntimeType).SequenceEqual([
                 CardCorruptRestrictedModel.Trait, CardCorruptStateModel.Trait]), "Wrong original merchant Corrupt card.");
         if (rows.Length == 11) Require(
@@ -35,6 +51,7 @@ internal static class CorruptRestrictedStateChecks
                 after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == 10),
                 "Returned Corrupt must deduplicate its trait, keep Consume, match damage and exhaust ownership.");
         }
+        }
         bool queriesPresent = fixture.TryGetProperty("CorruptRestrictedState", out FixtureValue evidence) && evidence.ValueKind != FixtureKind.Null;
         Require(queriesPresent || last.GetProperty("Expected").ValueKind == FixtureKind.Null,
             "Repaired native run must include independently restored eligibility queries.");
@@ -47,7 +64,7 @@ internal static class CorruptRestrictedStateChecks
             foreach (var query in queries)
             {
                 BattleTurnState state = query.GetProperty("Before").Deserialize<BattleTurnState>()!;
-                CardInstanceState queried = state.Spawn.Train.Context!.FindCard(10)!;
+                CardInstanceState queried = state.Spawn.Train.Context!.FindCard(cardId)!;
                 string? error = CardCorruptRestrictedModel.Test(state.Spawn.Train.Context, queried,
                     query.GetProperty("RoomIndex").GetInt32(), out bool allowed, query.GetProperty("SourceRoomIndex").GetInt32());
                 bool expected = query.GetProperty("Corruption").GetInt32() != int.MaxValue;

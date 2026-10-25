@@ -134,6 +134,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-corrupt-restricted-state-replay-calibration.mt2f',
     'player-corrupt-restricted-return-calibration.mt2f',
     'player-corrupt-restricted-return-replay-calibration.mt2f',
+    'player-corrupt-restricted-holdover-calibration.mt2f',
+    'player-corrupt-restricted-holdover-replay-calibration.mt2f',
     'player-terminal-enemy-slot-calibration.mt2f',
     'player-terminal-enemy-slot-replay-calibration.mt2f',
     'full-battle-terminal-enemy-slot-calibration.mt2f',
@@ -1310,6 +1312,7 @@ $branchPairGates = @{
     'player-attachment-reinstall-calibration.mt2f' = '--attachment-reinstall-pair-only'
     'player-corrupt-restricted-state-calibration.mt2f' = '--corrupt-restricted-state-pair-only'
     'player-corrupt-restricted-return-calibration.mt2f' = '--corrupt-restricted-state-pair-only'
+    'player-corrupt-restricted-holdover-calibration.mt2f' = '--corrupt-restricted-state-pair-only'
     'player-terminal-enemy-slot-calibration.mt2f' = '--terminal-enemy-slot-pair-only'
     'player-destroyed-feeder-calibration.mt2f' = '--destroyed-feeder-pair-only'
 }
