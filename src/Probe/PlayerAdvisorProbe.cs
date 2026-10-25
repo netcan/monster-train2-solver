@@ -28,6 +28,7 @@ namespace MonsterTrain2Poju.Probe
         private static BattleTurnState? terminal;
         private static bool frozenObservation;
         private static readonly List<int> expectedChoiceCards = new List<int>();
+        private static readonly List<object> replayAttachmentBindings = new List<object>();
         private static long frozenSearches;
         private static bool BrowseEnabled => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_FLOOR_BROWSE") == "1";
         private static int browseSwitches;
@@ -98,6 +99,7 @@ namespace MonsterTrain2Poju.Probe
             FrozenObservation = !frozenObservation ? null : new { Paused = Field<bool>("paused"),
                 SearchesAtPause = frozenSearches, SearchesAfterPause = Get<long>("Searches") - frozenSearches,
                 FinalAdviceAbsent = CurrentIsNull() },
+            ReplayAttachmentBindings = replayAttachmentBindings.ToArray(),
             EnchantmentBindings = advisor == null ? null : Bindings(),
             Overlay = advisor == null ? null : Property("Evidence")
         };
@@ -207,6 +209,46 @@ namespace MonsterTrain2Poju.Probe
         // active; only identities from the published action may be selected.
         private static bool ChoiceActive => Enabled && expectedChoiceCards.Count > 0 &&
             AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false;
+
+        // Guid.NewGuid() in the original start-of-battle relic is an object
+        // identity, independent of every gameplay RNG stream. A frozen replay
+        // binds that identity at native construction; subsequent root, effect,
+        // removal-key and RNG comparisons remain exact. No battle values change.
+        [HarmonyPatch]
+        private static class ReplayStartAttachmentIdentityPatch
+        {
+            private static MethodBase TargetMethod() => AccessTools.Method(typeof(RoomState), nameof(RoomState.AddTrainRoomAttachment),
+                new[] { typeof(string), typeof(CardState), typeof(CardUpgradeData), typeof(AdditionalTooltipData[]),
+                    typeof(Team.Type), typeof(TrainRoomAttachmentType), typeof(ICoreGameManagers), typeof(bool), typeof(bool) });
+
+            [HarmonyPrefix]
+            private static void Prefix(RoomState __instance, ref string guid, CardState? cardState, CardUpgradeData upgradeData,
+                Team.Type trainSide, TrainRoomAttachmentType attachType, bool skipTargeting, bool ignoreBosses)
+            {
+                string? input = Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT");
+                if (!Enabled || string.IsNullOrEmpty(input) || cardState != null ||
+                    upgradeData.GetID() != "f93ac9f7-45d2-47a4-a159-a1b326bd047f" ||
+                    AllGameManagers.Instance.GetSaveManager().PreviewMode) return;
+                using var document = FixtureDocument.Read(input);
+                BattleTurnState initial = PlannerReplayScenario.ReadWithoutNativeObservation<BattleTurnState>(
+                    document.RootElement.GetProperty("RollingDecisions")[0].GetProperty("Root"));
+                RoomCapacityAttachmentState expected = initial.Spawn.Train.Context!.RoomCapacities!
+                    .Single(room => room.RoomIndex == __instance.GetRoomIndex()).Attachments!
+                    .Single(attachment => attachment.DataId == upgradeData.GetID());
+                Require(skipTargeting && expected.AttachmentType == (int)attachType && expected.IgnoreBosses == ignoreBosses &&
+                    expected.AffectsMonsters == trainSide.HasFlag(Team.Type.Monsters) &&
+                    expected.AffectsHeroes == trainSide.HasFlag(Team.Type.Heroes) &&
+                    Guid.TryParse(guid, out Guid fresh) && fresh != Guid.Empty &&
+                    Guid.TryParse(expected.AttachmentId, out Guid original) && original != Guid.Empty &&
+                    replayAttachmentBindings.Count == 0,
+                    "start attachment replay identity does not match its original native constructor");
+                replayAttachmentBindings.Add(new { Room = __instance.GetRoomIndex(), DataId = upgradeData.GetID(),
+                    NativeGuid = guid, ReplayGuid = expected.AttachmentId });
+                guid = expected.AttachmentId;
+                BepInEx.Logging.Logger.CreateLogSource("PlayerAdvisorAcceptance").LogInfo(
+                    "PLAYER-ADVISOR-ATTACHMENT-IDENTITY bound original FightClub identity; native values and RNG remain checked");
+            }
+        }
 
         [HarmonyPatch(typeof(CardManager), nameof(CardManager.SelectCardFromHand))]
         private static class HandChoicePatch
