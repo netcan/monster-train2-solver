@@ -30,6 +30,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-11-ring6-budget10000-search.mt2f',
     'full-battle-random-campaign-11-ring6-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring7-release107-budget10000-loss.mt2f',
+    'full-battle-random-campaign-11-ring7-refined-search.mt2f',
+    'full-battle-random-campaign-11-ring7-refined-replay.mt2f',
     'full-battle-random-campaign-09-ring8-refined-suffix-search.mt2f',
     'full-battle-random-campaign-09-ring8-refined-suffix-replay.mt2f',
     'full-battle-random-campaign-01-ring1-release026-search.mt2f',
@@ -1538,6 +1540,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-refined-campaign-pair-only (Get-TestFixturePath 'full-battle-native-covenant-03-ring6-refined-search.mt2f') (Get-TestFixturePath 'full-battle-native-covenant-03-ring6-refined-replay.mt2f') 424242 3 5 Banished Pyreborne 35
     if ($LASTEXITCODE -ne 0) { throw 'Natural Covenant refined-pair check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
+    $_ -notin @('full-battle-random-campaign-11-ring7-refined-search.mt2f', 'full-battle-random-campaign-11-ring7-refined-replay.mt2f')
+}).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Random campaign Ring7 refined-pair checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-refined-campaign-pair-only (Get-TestFixturePath 'full-battle-random-campaign-11-ring7-refined-search.mt2f') (Get-TestFixturePath 'full-battle-random-campaign-11-ring7-refined-replay.mt2f') 73751504 0 6 Stygian Awoken 36
+    if ($LASTEXITCODE -ne 0) { throw 'Random campaign Ring7 refined-pair check failed.' }
     return
 }
 if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-unit-ability-duality-counterexample.mt2f') {
