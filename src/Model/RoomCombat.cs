@@ -559,7 +559,8 @@ namespace MonsterTrain2Poju.Model
 
         public static RoomCombatResult ApplyUnitTurn(RoomCombatState state, int unitId,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-            bool ignoreAttackPrevention = false, CombatUnit? externalActor = null, IReadOnlyList<int>? overrideTargets = null)
+            bool ignoreAttackPrevention = false, CombatUnit? externalActor = null, IReadOnlyList<int>? overrideTargets = null,
+            CombatTeam? targetTeam = null)
         {
             // A single attack turn does not dispatch the deferred PostCombat
             // boss effects; health and attack statuses still run normally.
@@ -580,7 +581,7 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre, externalActor: externalActor,
                 externalActorRoomIndex: externalActor == null ? -1 : state.Context?.Enchantments?.Rooms
                     .FirstOrDefault(room => room.Units.Any(unit => unit.Id == externalActor.Id))?.RoomIndex ?? -1)
-                .UnitTurn(unitId, ignoreAttackPrevention, overrideTargets);
+                .UnitTurn(unitId, ignoreAttackPrevention, overrideTargets, targetTeam);
         }
 
         public static RoomCombatResult ApplyTeamTurnBegin(RoomCombatState state, CombatTeam team, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
@@ -2266,7 +2267,8 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            internal RoomCombatResult UnitTurn(int unitId, bool ignoreAttackPrevention = false, IReadOnlyList<int>? overrideTargets = null)
+            internal RoomCombatResult UnitTurn(int unitId, bool ignoreAttackPrevention = false,
+                IReadOnlyList<int>? overrideTargets = null, CombatTeam? targetTeam = null)
             {
                 runningRoomCombat = true;
                 WorkingUnit actor = units.Single(unit => unit.Source.Id == unitId);
@@ -2276,7 +2278,7 @@ namespace MonsterTrain2Poju.Model
                     TrueFinalBossCombatModel.SupportsAlly(actor.Source, context);
                 stopAfterBossRemoval = true;
                 round = 1;
-                Turn(units.Single(unit => unit.Source.Id == unitId), ignoreAttackPrevention, overrideTargets);
+                Turn(units.Single(unit => unit.Source.Id == unitId), ignoreAttackPrevention, overrideTargets, targetTeam);
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -2475,7 +2477,8 @@ namespace MonsterTrain2Poju.Model
             private bool CombatPreviewStopped() => source.Preview && units.Any(unit => !unit.Alive &&
                 (IsTerminalBossDeath(unit) || unit.Source.IsPyre));
 
-            private void Turn(WorkingUnit actor, bool ignoreAttackPrevention = false, IReadOnlyList<int>? overrideTargets = null)
+            private void Turn(WorkingUnit actor, bool ignoreAttackPrevention = false,
+                IReadOnlyList<int>? overrideTargets = null, CombatTeam? targetTeam = null)
             {
                 if (!actor.Alive || !actor.InRoom) return;
                 bool dazed = actor.Has("dazed") && Active(actor.Statuses["dazed"]);
@@ -2520,7 +2523,10 @@ namespace MonsterTrain2Poju.Model
                     {
                         // Native prunes dead overrides before each strike, then
                         // falls back to normal targeting when none remain.
-                        targets = units.Where(unit => unit.Alive && unit.InRoom && unit.Source.Team != actor.Source.Team &&
+                        // AttackWithUnit always supplies the native HeroManager as
+                        // target manager, including an enemy commanded to attack.
+                        targets = units.Where(unit => unit.Alive && unit.InRoom &&
+                            (targetTeam.HasValue ? unit.Source.Team == targetTeam : unit.Source.Team != actor.Source.Team) &&
                             !unit.Has("stealth") && !unit.Has("untouchable") && PyreBaneModel.Targetable(unit.Freeze(), inCombat: true)).ToArray();
                         if (targets.Length == 0) continue;
                         if (!sweep) targets = new[] { actor.Has("sniper") ? targets.Last() : targets.First() };

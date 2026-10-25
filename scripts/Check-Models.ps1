@@ -90,6 +90,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-corrupt-copyability-replay-calibration.mt2f',
     'player-corrupt-before-play-calibration.mt2f',
     'player-corrupt-before-play-replay-calibration.mt2f',
+    'player-enemy-command-attack-calibration.mt2f',
+    'player-enemy-command-attack-replay-calibration.mt2f',
     'player-destroyed-feeder-calibration.mt2f',
     'player-destroyed-feeder-replay-calibration.mt2f',
     'player-destroyed-feeder-observation-calibration.mt2f',
@@ -1240,6 +1242,7 @@ $branchPairGates = @{
     'player-friendly-relic-piercing-calibration.mt2f' = '--friendly-relic-piercing-pair-only'
     'player-corrupt-copyability-calibration.mt2f' = '--corrupt-copyability-pair-only'
     'player-corrupt-before-play-calibration.mt2f' = '--corrupt-before-play-pair-only'
+    'player-enemy-command-attack-calibration.mt2f' = '--enemy-command-attack-pair-only'
     'player-destroyed-feeder-calibration.mt2f' = '--destroyed-feeder-pair-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {

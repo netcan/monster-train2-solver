@@ -1341,8 +1341,6 @@ namespace MonsterTrain2Poju.Model
                     {
                         CombatUnit? actor = state.Rooms.SelectMany(item => item.Units).FirstOrDefault(unit => unit.Id == actorId);
                         if (actor == null) continue;
-                        if (!selfAttack && actor.Team == CombatTeam.Enemy)
-                            return UnsupportedTrain("Enemy-selected unit attack requires native manager-order calibration.");
                         if (effect.RequireEquipment)
                         {
                             if (actor.EquipmentCards == null)
@@ -1350,7 +1348,8 @@ namespace MonsterTrain2Poju.Model
                             if (actor.EquipmentCards.Count == 0) continue;
                         }
                         TrainSpellResult turn = ApplyUnitAttackTurn(state, attackRoom, actorId, Refresh,
-                            ignoreAttackPrevention: !selfAttack, overrideTargets: selfAttack && actor.Status("sweep") == null ? targets.UnitIds : null);
+                            ignoreAttackPrevention: !selfAttack, overrideTargets: selfAttack && actor.Status("sweep") == null ? targets.UnitIds : null,
+                            targetTeam: selfAttack ? null : CombatTeam.Enemy);
                         if (!turn.Supported) return UnsupportedTrain(turn.UnsupportedReason!);
                         state = turn.State!;
                         events.AddRange(turn.Events);
@@ -2127,7 +2126,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static TrainSpellResult ApplyUnitAttackTurn(TrainCombatState source, int roomIndex, int actorId,
-            Func<CombatContext, bool, RelicPyreAttackRefreshResult> refreshPyre, bool ignoreAttackPrevention = true, IReadOnlyList<int>? overrideTargets = null)
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult> refreshPyre, bool ignoreAttackPrevention = true,
+            IReadOnlyList<int>? overrideTargets = null, CombatTeam? targetTeam = null)
         {
             RoomCombatState? attackRoom = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
             RoomCombatState? actorRoom = source.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == actorId));
@@ -2136,7 +2136,8 @@ namespace MonsterTrain2Poju.Model
                 return UnsupportedTrain("Unit attack requires a live actor and attack room.");
             bool external = actorRoom.RoomIndex != attackRoom.RoomIndex;
             RoomCombatResult turn = RoomCombatModel.ApplyUnitTurn(attackRoom, actorId, refreshPyre,
-                ignoreAttackPrevention: ignoreAttackPrevention, externalActor: external ? actor : null, overrideTargets: overrideTargets);
+                ignoreAttackPrevention: ignoreAttackPrevention, externalActor: external ? actor : null,
+                overrideTargets: overrideTargets, targetTeam: targetTeam);
             if (!turn.Supported) return UnsupportedTrain(turn.UnsupportedReason!);
 
             TrainCombatState changed;
