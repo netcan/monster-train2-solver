@@ -146,6 +146,14 @@ namespace MonsterTrain2Poju.Probe
                     deck = save.GetDeckState().Select(CardDescription).ToList() });
             }
             IScreen screen = screens.GetScreen(screens.GetTopScreen());
+            if (screen is CharacterDialogueScreen characterDialogue)
+            {
+                // Follow the normal skip-confirmation flow: its coroutine owns
+                // dialogue completion and any native story reward.
+                characterDialogue.ApplyScreenInput(null!, null!, InputManager.Controls.SkipDialogue);
+                Record("skip-character-dialogue", new { input = "SkipDialogue" });
+                return;
+            }
             if (screen is DialogScreen dialog) { Click(dialog.GetButton1(), "dialog"); return; }
             if (screen is UnlockScreen unlock)
             { Click(unlock.GetDefaultGameUISelectable() as GameUISelectableButton, "collect-unlock"); return; }

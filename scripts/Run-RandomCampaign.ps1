@@ -7,12 +7,14 @@ param(
     [ValidateRange(0, 10)][int] $Rank = 0,
     [ValidateRange(100, 30000)][int] $TimeLimitMs = 3000,
     [string] $InputProfile = '',
+    [string] $NewRunFromProfile = '',
     [ValidateRange(1, 2)][int] $NativeWorker = 2,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 1200,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
 if ($PrimaryClan -ieq $SecondaryClan) { throw 'Starting clans must differ.' }
+if ($InputProfile -and $NewRunFromProfile) { throw 'Choose either an unfinished InputProfile or an idle NewRunFromProfile.' }
 $workspace = Split-Path $PSScriptRoot -Parent
 $profilesRoot = [IO.Path]::GetFullPath((Join-Path $workspace '.probe-runs')).TrimEnd('\')
 if (-not $SkipBuild) {
@@ -68,14 +70,16 @@ function Record([object] $Entry) {
 }
 $receipt = [ordered]@{ Schema=1; PrimaryClan=$PrimaryClan; SecondaryClan=$SecondaryClan; Seed=$Seed; Rank=$Rank
     WholeBattle=$true; SearchWorkers=2; TimeLimitMs=$TimeLimitMs; Journal=$journal; InputProfile=$InputProfile
-    StartingRing=$resumeDistance+1; LastAcceptedRing=$resumeDistance; NativeCampaignWon=$false; NativeVictoryType=$null
+    NewRunFromProfile=$NewRunFromProfile; StartingRing=$resumeDistance+1; LastAcceptedRing=$resumeDistance; NativeCampaignWon=$false; NativeVictoryType=$null
     Outcome='Running'; FailureRing=$null; Failure=$null; SourceProfile=$null; NextInputProfile=$InputProfile }
 Record ([pscustomobject]$receipt)
 Write-Host "RANDOM-CAMPAIGN-START $PrimaryClan/$SecondaryClan seed=$Seed rank=$Rank budgetMs=$TimeLimitMs journal=$journal"
 try {
     if (-not $InputProfile) {
-        $opening = Invoke-Native 'Run-CampaignProgress.ps1' @{ StopBeforeRing=1; Seed=$Seed; PrimaryClan=$PrimaryClan
+        $openingParameters = @{ StopBeforeRing=1; Seed=$Seed; PrimaryClan=$PrimaryClan
             SecondaryClan=$SecondaryClan; StartingCovenantLevel=$Rank; NativeWorker=$NativeWorker; TimeoutSeconds=$TimeoutSeconds; SkipBuild=$true }
+        if ($NewRunFromProfile) { $openingParameters.NewRunFromProfile = $NewRunFromProfile }
+        $opening = Invoke-Native 'Run-CampaignProgress.ps1' $openingParameters
         if (-not $opening.NativePassed -or -not $opening.OriginalFilesUnchanged) { throw 'Native campaign opening failed.' }
         $InputProfile = $opening.Profile
         $initial = Read-Checkpoint $InputProfile 0

@@ -7,6 +7,7 @@ param(
     [string] $SecondaryClan = '',
     [ValidateRange(0, 10)] [int] $StartingCovenantLevel = 0,
     [string] $InputProfile = '',
+    [string] $NewRunFromProfile = '',
     [string] $BattleReplay = '',
     [string[]] $ExcludeUpgradeTrait = @(),
     [switch] $SkipMerchantPurchases,
@@ -20,6 +21,9 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+if ($NewRunFromProfile -and ($InputProfile -or $BattleReplay -or $StoryProgressionOnly -or $StopBeforeRing -ne 1)) {
+    throw 'NewRunFromProfile opens Ring1 from an idle native profile; omit InputProfile, BattleReplay and StoryProgressionOnly.'
+}
 if (($PrimaryClan -or $SecondaryClan -or $PSBoundParameters.ContainsKey('StartingCovenantLevel')) -and $InputProfile) {
     throw 'Clan and Covenant selection require a fresh native campaign.'
 }
@@ -36,10 +40,18 @@ if (Get-CimInstance Win32_Process -Filter "Name='MonsterTrain2.exe'" | Where-Obj
     throw "Worker $NativeWorker is already running."
 }
 $source = Join-Path $workspace '.probe-baseline'
-if ($InputProfile) {
-    $source = (Resolve-Path -LiteralPath $InputProfile).Path.TrimEnd('\')
-    if ((Split-Path $source -Parent) -ine $profilesRoot) { throw 'InputProfile must be a direct child of .probe-runs.' }
-    if (-not (Test-Path -LiteralPath (Join-Path $source 'saves/save-singlePlayer.json'))) { throw 'InputProfile has no native save.' }
+$profileSource = if ($NewRunFromProfile) { $NewRunFromProfile } else { $InputProfile }
+if ($profileSource) {
+    $source = (Resolve-Path -LiteralPath $profileSource).Path.TrimEnd('\')
+    if ((Split-Path $source -Parent) -ine $profilesRoot) { throw 'Source profile must be a direct child of .probe-runs.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $source 'saves/save-singlePlayer.json'))) { throw 'Source profile has no native save.' }
+}
+if ($NewRunFromProfile) {
+    $idle = Get-Content -LiteralPath (Join-Path $source 'saves/save-singlePlayer.json') -Raw | ConvertFrom-Json
+    if ($idle.gameSequence -ne 0 -or $idle.runState.distance -ne -1 -or $idle.completedBattles.Count -ne 0 -or $idle.wasDevCheatUsed -or
+        -not (Test-Path -LiteralPath (Join-Path $source 'metagameSave.json'))) {
+        throw 'NewRunFromProfile requires an idle native profile after EndGame, with no active campaign.'
+    }
 }
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/Probe/Probe.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
@@ -101,7 +113,7 @@ $profilePrefix = if ($StoryProgressionOnly) { 'campaign-story' } else { 'campaig
 $profile = Join-Path $profilesRoot ($profilePrefix + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
 $null = New-Item -ItemType Directory -Path $profile
 foreach ($item in Get-ChildItem -LiteralPath $source) {
-    if (-not $InputProfile) { Copy-Item -LiteralPath $item.FullName -Destination $profile -Recurse; continue }
+    if (-not $profileSource) { Copy-Item -LiteralPath $item.FullName -Destination $profile -Recurse; continue }
     if ($item.Name -in @('saves', 'metagameSave.json', 'preferences.json', 'preferences-local.json', 'prefs.json') -or
         ($item.PSIsContainer -and $item.Name -in @('metagame', 'preferences'))) {
         Copy-Item -LiteralPath $item.FullName -Destination $profile -Recurse
@@ -112,7 +124,10 @@ if (Test-Path -LiteralPath (Join-Path $source 'campaign-audit.jsonl')) {
     Copy-Item -LiteralPath (Join-Path $source 'campaign-audit.jsonl') -Destination (Join-Path $profile 'campaign-parent-audit.jsonl')
 }
 $savePath = Join-Path $profile 'saves/save-singlePlayer.json'
-[pscustomobject]@{ InputProfile = $source; InputSaveSHA256 = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash;
+$inputSaveHash = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash
+$inputMetagameHash = (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave.json') -Algorithm SHA256).Hash
+[pscustomobject]@{ InputProfile = $source; InputSaveSHA256 = $inputSaveHash; InputMetagameSHA256 = $inputMetagameHash;
+    NewRunFromProfile = [bool]$NewRunFromProfile;
     StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker; ExcludeUpgradeTrait = $ExcludeUpgradeTrait;
     PrimaryClan = $PrimaryClan; SecondaryClan = $SecondaryClan; StartingCovenantLevel = $StartingCovenantLevel;
     SkipMerchantPurchases = [bool]$SkipMerchantPurchases;
@@ -234,10 +249,13 @@ if ($BattleReplay -and (Test-Path -LiteralPath (Join-Path $profile 'full-battle.
             $player['Overlay']['Published'] -eq 0
     }
 }
-$passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $replayPassed
+$inputUnchanged = (Get-FileHash -LiteralPath (Join-Path $source 'saves/save-singlePlayer.json')).Hash -ceq $inputSaveHash -and
+    (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave.json')).Hash -ceq $inputMetagameHash
+$passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $inputUnchanged -and $replayPassed
 $runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
 $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCode = $process.ExitCode;
     StoryProgressionOnly = [bool]$StoryProgressionOnly;
+    NewRunFromProfile = [bool]$NewRunFromProfile; InputProfileUnchanged = $inputUnchanged;
     BattleReplayPassed = $replayPassed; PlayerReplay = $playerReplay;
     NativeCampaignWon = $runOutcome.Count -eq 1 -and $runOutcome[0].data.won -eq $true;
     NativeVictoryType = $(if ($runOutcome.Count -eq 1) { $runOutcome[0].data.victoryType } else { $null });

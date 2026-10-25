@@ -60,11 +60,11 @@ if ($CompletedRun) {
 }
 $save = Get-Content -LiteralPath $savePath -Raw | ConvertFrom-Json
 $distance = [int]$save.runState.distance
-if ($save.wasDevCheatUsed -or $distance -lt 1 -or ($CompletedRun -and $distance -ne 8) -or
+if ($save.wasDevCheatUsed -or $distance -lt 0 -or ($CompletedRun -and $distance -ne 8) -or
     (-not $CompletedRun -and $save.gameSequence -ne 6)) { throw 'Expected an unmodified progressed native save at the requested boundary.' }
 $completed = @($save.completedBattles | Sort-Object battleIndex)
 if ($completed.Count -ne $distance -or @($completed | Where-Object bossHPRemaining -GT 0).Count -gt 0 -or
-    (($completed.battleIndex -join ',') -ne ((0..($distance - 1)) -join ','))) { throw 'The native save does not contain every preceding battle victory.' }
+    (($completed.battleIndex -join ',') -ne ((@(for ($i=0; $i -lt $distance; $i++) { $i })) -join ','))) { throw 'The native save does not contain every preceding battle victory.' }
 $members = [ordered]@{}
 foreach ($name in @('saves/save-singlePlayer.json', 'metagameSave.json', 'preferences.json', 'preferences-local.json')) {
     $members[$name] = [IO.File]::ReadAllBytes((Join-Path $Profile $name))
