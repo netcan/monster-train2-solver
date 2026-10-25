@@ -71,6 +71,11 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-heal-growth-record-replay-calibration.mt2f',
     'player-overcharge-cleanup-calibration.mt2f',
     'player-overcharge-cleanup-replay-calibration.mt2f',
+    'player-heal-combat-removal-calibration.mt2f',
+    'player-heal-combat-removal-replay-calibration.mt2f',
+    'player-heal-combat-removal-observation-calibration.mt2f',
+    'player-despawn-listeners-calibration.mt2f',
+    'player-despawn-listeners-replay-calibration.mt2f',
     'player-random-campaign-02-ring2-permafrost-unavailable.mt2f',
     'room-moon-spell-threshold-relic-calibration.mt2f',
     'full-battle-original-moon-card-upgrades-threshold-relic.mt2f',
@@ -1211,9 +1216,11 @@ $branchPairGates = @{
     'player-ability-attack-compaction-calibration.mt2f' = '--ability-attack-compaction-pair-only'
     'player-heal-growth-record-calibration.mt2f' = '--heal-growth-record-pair-only'
     'player-overcharge-cleanup-calibration.mt2f' = '--overcharge-cleanup-pair-only'
+    'player-heal-combat-removal-calibration.mt2f' = '--heal-combat-removal-pair-only'
+    'player-despawn-listeners-calibration.mt2f' = '--despawn-listeners-pair-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
-    -not $branchPairGates.ContainsKey(($_ -replace '-replay-calibration\.mt2f$', '-calibration.mt2f'))
+    -not $branchPairGates.ContainsKey(($_ -replace '-(?:replay|observation)-calibration\.mt2f$', '-calibration.mt2f'))
 }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
@@ -1221,11 +1228,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
     }
     $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
     foreach ($sourceName in @($selectedFixtureNames | ForEach-Object {
-        $_ -replace '-replay-calibration\.mt2f$', '-calibration.mt2f'
+        $_ -replace '-(?:replay|observation)-calibration\.mt2f$', '-calibration.mt2f'
     } | Select-Object -Unique)) {
         $sourcePath = Get-TestFixturePath $sourceName
         $replayPath = Get-TestFixturePath ($sourceName -replace '-calibration\.mt2f$', '-replay-calibration.mt2f')
-        dotnet $checker $branchPairGates[$sourceName] $sourcePath $replayPath
+        $pairArguments = @($branchPairGates[$sourceName], $sourcePath, $replayPath)
+        if ($sourceName -eq 'player-heal-combat-removal-calibration.mt2f') {
+            $pairArguments += Get-TestFixturePath 'player-heal-combat-removal-observation-calibration.mt2f'
+        }
+        dotnet $checker @pairArguments
         if ($LASTEXITCODE -ne 0) { throw 'Focused native branch pair failed.' }
         if ($sourceName -eq 'player-dead-caster-status-calibration.mt2f') {
             dotnet $checker --tactical-ability-target-only $sourcePath

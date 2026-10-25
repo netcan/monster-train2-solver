@@ -1397,3 +1397,13 @@ b383a1f48d463787712b8efd23db77604ebb1703a9c7d6e41d9ef94e27941ccc
 ```
 
 No Mac package or full regression was run.
+
+## Room cleanup and current-battle growth · Windows 0.2.30 · 2026-10-25
+
+Windows0.2.30 was installed from the accepted Hellhorned/Wurmkin fourth-battle
+pair (27 inputs, two native wins, Pyre32). Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261025-093404/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.30-Windows-20261025-093404.zip`, SHA256
+`af002c65b8d24e4ae4e0313cee52a01873bf2ad312dfec82cb96dba5f17437b4`.
+All67 protected files remained unchanged; the next real-game launch loads0.2.30.
+Source revision:`103452c850fa92aacd4ec160ac48e00fe35df2bf`.

@@ -752,8 +752,10 @@ namespace MonsterTrain2Poju.Probe
                         if (!JToken.DeepEquals(JToken.FromObject(expectedUnit), JToken.FromObject(actualUnit)))
                         { stage.Difference = "External Tower target state differs for unit " + target.Unit.Id; break; }
                     }
-                    if (!JToken.DeepEquals(JToken.FromObject(BattleTurnProbe.ComparableContext(stage.Predicted.State.Context)!),
-                        JToken.FromObject(BattleTurnProbe.ComparableContext(stage.Actual.Context)!))) stage.Difference = "Card piles, RNG or gold differ";
+                    string? contextDifference = UnitPlayModelProbe.FirstDifference(
+                        JToken.FromObject(BattleTurnProbe.ComparableContext(stage.Predicted.State.Context)!),
+                        JToken.FromObject(BattleTurnProbe.ComparableContext(stage.Actual.Context)!), "$.Context");
+                    if (contextDifference != null) stage.Difference = "Room context differs: " + contextDifference;
                     log.LogInfo("BATTLE-MODEL-" + (stage.Difference == null ? "MATCH" : "MISMATCH") +
                         " index=" + stage.Index + " kind=" + stage.Kind + " turn=" + stage.Turn +
                         " room=" + stage.Before.RoomIndex + " rounds=" + stage.Predicted.Rounds);

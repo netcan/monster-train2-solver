@@ -345,6 +345,11 @@ terminal outcome and complete state/RNG. These are model diagnostics; no
 extra native attempts are spent on them. More time or a fixed floor has not
 established a solution for this deck.
 
+A further opening search with the current whole-battle model,10000ms and two
+workers produces a57-input/11-turn defeat (204 nodes). A separate process
+reproduces every frozen successor,full forecast and RNG. This is another
+bounded offline diagnostic, not a native win or proof that no winning line exists.
+
 The continuous default driver stops before replay/rewards on defeat. Future
 runs additionally emit `player-default-loss.json` with the checked input and
 trace hashes,then append a `default-loss` journal entry retaining the next

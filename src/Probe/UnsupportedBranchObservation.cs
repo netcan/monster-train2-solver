@@ -22,6 +22,15 @@ namespace MonsterTrain2Poju.Probe
         private static BattleTurnState expected = null!;
         private static readonly List<Row> rows = new List<Row>();
         private static bool waiting;
+        private static int readyFrame = -1;
+        internal static bool AwaitingSettlement()
+        {
+            if (!waiting) return false;
+            // Unity defers OnDestroy and enchantment unbinding beyond the first
+            // ready combat frame. Observe the settled state, as the player does.
+            if (readyFrame < 0) readyFrame = UnityEngine.Time.frameCount;
+            return UnityEngine.Time.frameCount <= readyFrame + 1;
+        }
         private static string Comparable(BattleTurnState state) => BattleTurnProbe.Comparable(state).ToString(Newtonsoft.Json.Formatting.None);
         private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 
@@ -65,7 +74,8 @@ namespace MonsterTrain2Poju.Probe
             Require(!waiting && !Completed, "Branch observation consumed an unsettled input.");
             bool boundary = rows.Count == prefix!.Length;
             Require(rows.Count <= prefix.Length, "Branch input overflow.");
-            Require(Comparable(root) == Comparable(expected), "Native branch prefix root differs at " + rows.Count);
+            Require(Comparable(root) == Comparable(expected), "Native branch prefix root differs at " + rows.Count + ": " +
+                UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(expected), BattleTurnProbe.Comparable(root), "$"));
             if (boundary) Require(Comparable(root) == Comparable(Read<BattleTurnState>(request.GetProperty("FailedRoot"))),
                 "Native branch did not reach the recorded failure root.");
             FixtureValue value = boundary ? request : prefix[rows.Count];
@@ -91,7 +101,7 @@ namespace MonsterTrain2Poju.Probe
             rows.Add(new Row { Before = root, Action = action, IsEndTurn = end, Boundary = boundary,
                 Expected = predicted, UnsupportedReason = reason, Outcome = outcome });
             if (predicted != null) expected = predicted;
-            waiting = true;
+            waiting = true; readyFrame = -1;
             log.LogInfo("UNSUPPORTED-BRANCH-INPUT index=" + rows.Count + " boundary=" + boundary + " reason=" + reason);
             return PlayerAdvisorProbe.NativeAction(action);
         }

@@ -83,6 +83,7 @@ namespace MonsterTrain2Poju.Probe
                 if (UnsupportedBranchObservation.Enabled)
                 {
                     PlayerAdvisorProbe.PauseForFrozenPlan();
+                    if (UnsupportedBranchObservation.AwaitingSettlement()) return true;
                     UnsupportedBranchObservation.Observe(PlayerAdvisorProbe.Capture());
                     return false;
                 }

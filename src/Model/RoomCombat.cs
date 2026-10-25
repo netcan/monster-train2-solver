@@ -1728,6 +1728,7 @@ namespace MonsterTrain2Poju.Model
             private bool stoppedByRemotePyreDamage;
             private bool localFeedingQueue;
             private bool stopAfterBossRemoval;
+            private bool runningRoomCombat;
             private bool killCamActivated;
             // Older captures omitted the identity store. Retain observed source cards while
             // this operation finishes, without inventing unobserved references in its output.
@@ -1837,6 +1838,7 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult Run(bool entireRoom, bool updateSelectedRoom)
             {
+                runningRoomCombat = true;
                 ordinaryPyreAttack = source.RoomIndex == 3 && source.Units.Any(unit => unit.IsPyre);
                 stopAfterBossRemoval = true;
                 if (updateSelectedRoom && !source.Preview && context?.QueryFrame?.SelectedRoomIndex != null &&
@@ -2258,6 +2260,7 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult UnitTurn(int unitId, bool ignoreAttackPrevention = false, IReadOnlyList<int>? overrideTargets = null)
             {
+                runningRoomCombat = true;
                 WorkingUnit actor = units.Single(unit => unit.Source.Id == unitId);
                 ordinaryPyreAttack = actor.Source.IsPyre && source.RoomIndex == 3 && !externalTurnActorIds.Contains(unitId);
                 triggeredCommand = actor.Source.IsPyre && externalTurnActorIds.Contains(unitId) ||
@@ -3670,9 +3673,10 @@ namespace MonsterTrain2Poju.Model
                     dead.Unit.Removed = true;
                     RemovePhysicalPoint(dead.Unit);
                     // Centering also observes the next, zero-HP victim before CheckForDeath.
-                    // Relic damage can enter this local queue from a heal. Native
-                    // RemoveDeadCharacters centers after its complete removal batch.
-                    if ((nativeCardDamage || removing.Any(item => item.RelicDamage)) && ownedPoint &&
+                    // Heal relic damage also enters this queue during room combat.
+                    // The selection UI only compacts when it owns the room visuals;
+                    // during combat the vacancy persists until the room has finished.
+                    if ((nativeCardDamage || (source.Preview || !runningRoomCombat) && removing.Any(item => item.RelicDamage)) && ownedPoint &&
                         dead.Equals(removing[removing.Length - 1])) CenterAfterSummon();
                     // HeroManager removal starts GameScreen.EndCombat, which cancels
                     // the combat coroutine after this boss's death callbacks. Later
@@ -3863,6 +3867,13 @@ namespace MonsterTrain2Poju.Model
                                 if (remaining <= 0 && unit.Alive)
                                 {
                                     unit.Despawned = true; RemovePhysicalPoint(unit); Emit("Despawn", unit, unit, 0);
+                                    // Vanishing skips death, but native destruction still clears
+                                    // both statistics listeners on the retained primary state.
+                                    if (!source.Preview && unit.Destroyed && unit.Freeze().DeathState is UnitDeathState death)
+                                        unit.Apply(unit.Freeze().WithDeathState(new UnitDeathState(death.HasFinishedDying,
+                                            death.IsBeingRemoved, false, death.PendingStatisticsCardId, death.IsSacrifice,
+                                            death.StatisticsListenerOnce.HasValue ? false : (bool?)null,
+                                            death.IsDespawned, death.IsDestroyed)));
                                     if (!source.Preview && context?.Statistics != null && unit.Source.Team == CombatTeam.Player && !DeferSpawner(unit))
                                         context = context.WithStatistics(context.LiveStatistics!.Increment(unit.Source.SpawnerCardId, "TimesExhausted",
                                             requireTrackedCard: context.CardInstances?.Count == 0));
