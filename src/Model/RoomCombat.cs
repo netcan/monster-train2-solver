@@ -3584,7 +3584,7 @@ namespace MonsterTrain2Poju.Model
                     { unsupportedReason = "Corrupt Poison requires the captured battle turn."; return; }
                     if (turn != 0)
                     {
-                        if (source.Corruption is not int corruption)
+                        if (context.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == source.RoomIndex)?.Corruption is not int corruption)
                         { unsupportedReason = "Corrupt Poison requires captured room corruption."; return; }
                         StatusScalingResult modifier = RelicStatusMagnitudeModel.GetModifier(context, "corrupt_poison",
                             unit.Source.Team == CombatTeam.Player ? 2 : 1);
