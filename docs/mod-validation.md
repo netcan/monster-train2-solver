@@ -1,11 +1,11 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.102, committed source`7120123631ec589c49ef46364f5ec025d3392b45`.
-The exact release payload passes the tenth random Banished/Wurmkin sample's
+Current Windows installation:0.2.103, committed source`d94735b4627a63ce7816ce4503ab51500a4ceccc`.
+The exact release payload passes the eleventh random Stygian/Awoken sample's
 first battle with actual10000ms/two-worker advice and independent native
-replay:22 inputs,17 plays,5 EndTurns,Pyre80 and9 train stages per process.
+replay:26 inputs,21 plays,5 EndTurns,Pyre80 and9 train stages per process.
 Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-043206-01f5e2dd` and replay`20261026-043537-f92e4522`
+zero. Source`20261026-044657-40c89db0` and replay`20261026-044809-2802125f`
 bind the three installed DLL hashes to the committed build.
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
@@ -48,13 +48,17 @@ CopyOnPlay installation and new spell damage-query ownership. All25 inputs
 match independent native processes; eight immutable branches, missing-source
 guards and focused box/Conduit/copy/relic/shield-target regressions pass.
 See[boxed copy traits](../tests/fixtures/notes/combat/boxed-copy-trait.md).
+Version0.2.103 calibrates Corrupt Exile's Diadem before equipment replacement:
+32 identical inputs in independent native processes,corruption5->6,max4,
+energy4->3 and size3->1. Complete state/RNG,eight immutable branches,eight
+signature guards and prior Corrupt equipment/room-attachment pairs pass.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.102. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261026-043744/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.102-Windows-20261026-043744.zip`,SHA256
-`13209f68b03a0ee566b54f4cf221744c33532b33e243e399bd69e943dfea4a0b`.
+its next launch loads0.2.103. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261026-045420/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.103-Windows-20261026-045420.zip`,SHA256
+`8fba2af3871b852d9ef9860c60dd2fcd5433d56961c8f1c06fbffa3802d9c6cf`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 

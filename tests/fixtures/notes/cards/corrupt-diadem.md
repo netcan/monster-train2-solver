@@ -23,4 +23,6 @@ scripts/Check-Models.ps1 -Fixture player-corrupt-diadem-calibration.mt2f,player-
 ```
 
 This is a calibrated model branch, not an eight-battle campaign victory.
-The installed Windows build remains the independently qualified0.2.102.
+Windows0.2.103 is separately qualified by random11's26-input actual/default
+first-battle win and independent normal-reward replay. No full regression or
+Mac package is required for this focused correction.
