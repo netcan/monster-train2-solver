@@ -1837,6 +1837,17 @@ if (args.Length == 2 && args[0] == "--mixalot-only")
     MixalotChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--stronger-corruption-copy-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 3)
+    {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        StrongerCorruptionCopyChecks.Native(source.RootElement, replay.RootElement);
+    }
+    else StrongerCorruptionCopyChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--corrupt-poison-combat-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

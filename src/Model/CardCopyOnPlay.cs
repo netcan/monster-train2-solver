@@ -8,6 +8,7 @@ namespace MonsterTrain2Poju.Model
         public const string Trait = "CardTraitCopyOnPlay";
         public const string UpgradeId = "a75fc092-ca72-476b-b518-01e9ecb8d6a3";
         public const string UndyingSpellId = "7168ed36-de03-41db-a36f-79b54b121341";
+        public const string StrongerCorruptionSpellId = "4de04eeb-76d9-4ad0-b5cd-8c2b997395f5";
         public const string PermafrostUpgradeId = "e0af4fe5-75c0-4017-ae5e-5a87099aa6c5";
         public static bool Present(CardInstanceState card) => card.MaskDescriptor != null &&
             (card.MaskDescriptor.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait => trait.RuntimeType == Trait) ||
@@ -18,7 +19,7 @@ namespace MonsterTrain2Poju.Model
         {
             if (descriptor.SourceTraits == null) return false;
             if (descriptor.SourceTraits.Count == 0) return true;
-            if (SupportedUndyingSource(descriptor)) return true;
+            if (SupportedUndyingSource(descriptor) || SupportedStrongerCorruptionSource(descriptor)) return true;
             if (descriptor.SourceTraits.Count != 1 || descriptor.BaseTraits.Count == 0) return false;
             CardSourceTrait authored = descriptor.SourceTraits[0];
             CardTraitValue runtime = descriptor.BaseTraits[0];
@@ -50,6 +51,30 @@ namespace MonsterTrain2Poju.Model
                     (index == 0 ? authored.StatusEffectIds != null : authored.StatusEffectIds?.SequenceEqual(new[] { "undying" }) != true) ||
                     runtime.RuntimeType != type || runtime.DeclaredName != type || runtime.ParamInt != 1 || runtime.DefinitionParamInt != 1 ||
                     runtime.StackMode != 0 || !runtime.Removable || runtime.DefinitionRemovable != true || runtime.TemporaryReplacement)
+                    return false;
+            }
+            return true;
+        }
+
+        private static bool SupportedStrongerCorruptionSource(CardMaskDescriptor descriptor)
+        {
+            if (descriptor.Definition.DataId != StrongerCorruptionSpellId || descriptor.Definition.CardType != "Spell" ||
+                descriptor.Definition.XCost || descriptor.SourceTraits?.Count != 2 || descriptor.BaseTraits.Count < 2) return false;
+            for (int index = 0; index < 2; index++)
+            {
+                CardSourceTrait authored = descriptor.SourceTraits[index];
+                CardTraitValue runtime = descriptor.BaseTraits[index];
+                string type = index == 0 ? "CardTraitStrongerMagicPower" : "CardTraitCorruptRestricted";
+                int value = index == 0 ? 5 : 2;
+                if (authored.Type != type || authored.Int != value || authored.Int2 != 0 || authored.Int3 != 0 ||
+                    authored.Bool || authored.Str != "" || authored.Float != 0 || authored.Scaling ||
+                    authored.TrackedValue != "SubtypeInDeck" || authored.EntryDuration != "ThisTurn" ||
+                    authored.StatusQueryTeam != null || authored.StatusQueryStatuses != null || authored.HandCostTargetType != null ||
+                    authored.DeploymentDrawFlag != null || authored.SpecificCardDataId != null || authored.StatusEffectIds != null ||
+                    authored.MoonPhaseUpgrade != null || authored.KillTargetTeam != null || authored.KillTargetSubtype != null ||
+                    authored.QueryCardType != null || runtime.RuntimeType != type || runtime.DeclaredName != type ||
+                    runtime.ParamInt != value || runtime.DefinitionParamInt != value || runtime.StackMode != 0 ||
+                    !runtime.Removable || runtime.DefinitionRemovable != true || runtime.TemporaryReplacement)
                     return false;
             }
             return true;
@@ -121,6 +146,7 @@ namespace MonsterTrain2Poju.Model
             if (!SupportedSourceTraits(card.MaskDescriptor!) ||
                 card.MaskDescriptor.BaseTraits.Any(trait => trait.RuntimeType is not (Trait or "CardTraitExhaustState") &&
                     !(SupportedUndyingSource(card.MaskDescriptor) && trait.RuntimeType == "CardTraitScalingAddStatusEffect") &&
+                    !(SupportedStrongerCorruptionSource(card.MaskDescriptor) && trait.RuntimeType is "CardTraitStrongerMagicPower" or "CardTraitCorruptRestricted") &&
                     !(trait.RuntimeType == "CardTraitPermafrost" && SupportedPermafrost(card))) ||
                 card.MaskDescriptor.TemporaryTraits.Count > 1 || card.MaskDescriptor.TemporaryTraits.Any(trait =>
                     trait.RuntimeType != "CardTraitFreeze" || trait.DeclaredName != "CardTraitFreeze" || trait.ParamInt != 0 ||
