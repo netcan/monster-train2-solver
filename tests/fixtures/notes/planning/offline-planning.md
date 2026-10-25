@@ -303,14 +303,29 @@ outputs are rejected. Complete losing improvements are explicitly exported as
 production win/Pyre objective or prove optimality. Export/verification can
 extend the soft budget.
 
+`improve-prediction <native.mt2f> <verified-prediction.mt2f>
+<new-output.mt2f> <milliseconds> [passes]` resumes these sweeps from an
+independently verified frozen improvement. It requires the exact original
+native input SHA256 and complete deployment root, including RNG, before using
+any predicted input. The new export stays bound to that original native
+source. This avoids discarding useful losing improvements between bounded
+search runs; neither the baseline nor its continuation becomes native evidence.
+Focused controls reject a different native source, a separately replayable
+prediction whose source hash was rebound while its root stayed different, and
+an existing output without overwriting it. The natural Covenant3 AngelDuo
+counterexample exercises valid continuation from a59-input verified defeat.
+
 On the preserved random Umbra/Stygian Ring3 defeat, three improvements among
 eight complete candidates found a61-input model win (Pyre24) in22.68s of
 search. The retained-metagame Banished/Pyreborne Ring3 defeat produced a
 41-input model win (Pyre37), with two improvements among28 complete candidates
 in24.94s. Both pass independent full-state/RNG replay. Native validation exposed
 an unboxed-card Conduit mismatch in the first route and a terminal spell-kill
-statistics mismatch in the second. Neither result is accepted as a native
-victory until these boundaries and independent native replays pass.
+statistics mismatch in the second. Both boundaries are now repaired and both
+complete routes pass independent native winning pairs, at Pyre24 and37
+respectively. The original default-budget defeats stay separate; see
+[random campaign validation](../../../../docs/random-campaign-validation.md)
+and [retained metagame continuation](../campaign/native-story-unlock.md).
 
 The repaired random Pyreborne/Banished Ring5 input produced72 early local
 alternatives (decisions0..18), all terminal model defeats with zero unsupported

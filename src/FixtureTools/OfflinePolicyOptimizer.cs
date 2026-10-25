@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text.Json;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
@@ -8,7 +9,8 @@ internal static partial class OfflineBattleSearch
     // Counterexample investigation only. Keep improvements between sweeps so
     // two useful changes can compose instead of restarting every trial at the
     // original loss. A result is still a model prediction requiring native replay.
-    internal static void Improve(string input, string output, int milliseconds, int maxPasses = 4)
+    internal static void Improve(string input, string output, int milliseconds, int maxPasses = 4,
+        string? prediction = null)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxPasses is >= 1 and <= 16,
             "Expected100..600000ms and1..16 improvement passes.");
@@ -16,14 +18,25 @@ internal static partial class OfflineBattleSearch
         using var document = FixtureDocument.Read(input);
         FixtureValue trace = document.RootElement;
         RequireNativeInput(trace);
+        using var predicted = prediction == null ? null : FixtureDocument.Read(prediction);
+        if (predicted != null)
+        {
+            Verify(prediction!);
+            Require(predicted.RootElement.GetProperty("EvidenceKind").GetString() == "ModelPrediction" &&
+                predicted.RootElement.GetProperty("SourceSHA256").GetString() ==
+                    Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+                "Prediction must be independently verified and reference this exact native input.");
+        }
         BattleTurnState root = DeploymentRoot(trace);
         Require(root.Spawn.Turn == 0, "Improvement requires a native deployment root.");
-        var route = trace.GetProperty("RollingDecisions").EnumerateArray().Select(row => new Step {
+        var route = (predicted?.RootElement ?? trace).GetProperty("RollingDecisions").EnumerateArray().Select(row => new Step {
             Action = row.GetProperty("Action").Deserialize<PlayCardAction>(),
             IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() }).ToArray();
         Require(route.Length is > 0 and <= 256, "Expected a bounded complete native battle.");
         using var keys = new BattleStateKeys();
         string immutable = keys.Key(root);
+        Require(predicted == null || keys.Key(predicted.RootElement.GetProperty("Root").Deserialize<BattleTurnState>()!) == immutable,
+            "Prediction changed the native deployment root.");
         BattleTurnState final = Replay(route, out RoomOutcome outcome);
         double best = Merit(final, outcome), initial = best;
         var watch = Stopwatch.StartNew();
