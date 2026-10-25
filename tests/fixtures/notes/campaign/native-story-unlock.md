@@ -144,3 +144,13 @@ counters, hearts, features and dialogues, with no battle simulations. Latest
 UnitsMoved183,StewardDamage1408,CoinsSpent1660,Debuffs127,MagicPower410,
 PyreDamage163. This profile resumes actual10000ms/two-worker advice at Ring4;
 no natural true-final victory is claimed.
+
+Ring4 actual10000ms advice produces a51-input native defeat (42 plays,
+9 EndTurns): all complete states/forecasts/RNG,18 train stages and four zero
+failure counters pass. Native runtime218.24s,53 publications,4 search metric
+samples,1705 independent mask contexts and421 pure captures. The unchanged
+pre-battle checkpoint starts at Pyre87 after normal recovery/rewards; the
+loss is archived separately as `full-battle-metagame-campaign-ring4-budget10000-loss`.
+Offline improvement needs only3 complete candidates and5.86s of search to
+find a53-input model win at Pyre17; full independent export/replay completes
+in16.52s. Native validation is required before advancing the campaign.
