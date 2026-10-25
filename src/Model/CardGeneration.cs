@@ -481,7 +481,8 @@ namespace MonsterTrain2Poju.Model
             // callback does not invalidate the captured copyability query.
             bool NeutralType(string type) => type is "CardTraitFreeze" or "CardTraitEphemeral" or CardRetainModel.Trait or "CardTraitIgnoreArmor" or "CardTraitExhaustState" or "CardTraitCorruptState";
             bool Neutral(CardTraitValue trait) => (NeutralType(trait.RuntimeType) || trait.RuntimeType == CardCopyOnPlayModel.Trait &&
-                CardCopyOnPlayModel.Validate(card) == null) && trait.DeclaredName == trait.RuntimeType;
+                CardCopyOnPlayModel.Validate(card) == null || trait.RuntimeType == "CardTraitPermafrost" &&
+                CardCopyOnPlayModel.SupportedPermafrost(card)) && trait.DeclaredName == trait.RuntimeType;
             if (card.MaskDescriptor.TemporaryTraits.Any(trait => !Neutral(trait)) ||
                 card.MaskDescriptor.PermanentReplacements.Any(rule => !NeutralType(rule.OldName) || !NeutralType(rule.NewRuntimeType)) ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>

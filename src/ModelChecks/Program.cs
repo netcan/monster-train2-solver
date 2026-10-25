@@ -5302,18 +5302,20 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-boss-preview-test-rng-replay-calibration.mt2f"));
     BossPreviewTestRngChecks.Pair(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-undying-copy-deployment-", StringComparison.OrdinalIgnoreCase))
-    .Select(path => ModelJson.RelatedFixture(path, "player-undying-copy-deployment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+foreach (string stem in new[] { "player-undying-copy", "player-undying-permafrost-copy" })
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith(stem + "-deployment-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, stem + "-deployment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-undying-copy-deployment-replay-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, stem + "-deployment-replay-calibration.mt2f"));
     UndyingCopyOnPlayChecks.Pair(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-undying-copy-effects-", StringComparison.OrdinalIgnoreCase))
-    .Select(path => ModelJson.RelatedFixture(path, "player-undying-copy-effects-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+foreach (string stem in new[] { "player-undying-copy-effects", "player-undying-permafrost-copy-effects", "player-undying-permafrost-copy-discard" })
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith(stem + "-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, stem + "-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-undying-copy-effects-replay-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, stem + "-replay-calibration.mt2f"));
     UndyingCopyOnPlayChecks.EffectsPair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-slay-corruption-callback-", StringComparison.OrdinalIgnoreCase))

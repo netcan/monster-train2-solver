@@ -8,6 +8,7 @@ namespace MonsterTrain2Poju.Model
         public const string Trait = "CardTraitCopyOnPlay";
         public const string UpgradeId = "a75fc092-ca72-476b-b518-01e9ecb8d6a3";
         public const string UndyingSpellId = "7168ed36-de03-41db-a36f-79b54b121341";
+        public const string PermafrostUpgradeId = "e0af4fe5-75c0-4017-ae5e-5a87099aa6c5";
         public static bool Present(CardInstanceState card) => card.MaskDescriptor != null &&
             (card.MaskDescriptor.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait => trait.RuntimeType == Trait) ||
              card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true) ||
@@ -54,6 +55,29 @@ namespace MonsterTrain2Poju.Model
             return true;
         }
 
+        internal static bool SupportedPermafrost(CardInstanceState card)
+        {
+            if (card.MaskDescriptor is not { } descriptor || !SupportedUndyingSource(descriptor)) return false;
+            bool Ordinary(CardTraitValue trait) => trait.RuntimeType == "CardTraitPermafrost" &&
+                trait.DeclaredName == trait.RuntimeType && trait.ParamInt == 0 && trait.DefinitionParamInt == 0 &&
+                trait.StackMode == 0 && trait.Removable && trait.DefinitionRemovable == true && !trait.TemporaryReplacement;
+            var installed = descriptor.BaseTraits.Where(trait => trait.RuntimeType == "CardTraitPermafrost").ToArray();
+            var upgrades = card.Permanent.Upgrades.Where(upgrade => upgrade.DataId == PermafrostUpgradeId).ToArray();
+            if (installed.Length != 1 || !Ordinary(installed[0]) || upgrades.Length != 1) return false;
+            var upgrade = upgrades[0];
+            return upgrade.AssetKey == "TraitPermafrost" && !upgrade.RemoveOnDiscard && !upgrade.Unique &&
+                !upgrade.ExcludeFromClones && upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 &&
+                !upgrade.RestrictSizeToRoomCapacity && !upgrade.MagicPowerTraitScalingOnly && upgrade.AbilityUpgrade == null &&
+                (upgrade.TriggerUpgrades?.Count ?? 0) == 0 && upgrade.Statuses.Count == 0 &&
+                !CardModifierModel.UpgradeInteractions(upgrade).Any() &&
+                upgrade.Stats.Cost == -1 && upgrade.Stats.XCost == 1 &&
+                new[] { "Damage", "Health", "Heal", "Size", "EquipmentLimit", "UpgradeSlotCount" }
+                    .All(stat => upgrade.Stats.Value(stat) == 0) &&
+                upgrade.Lifecycle is { } lifecycle && lifecycle.AddedTraits.Count == 1 && Ordinary(lifecycle.AddedTraits[0]) &&
+                lifecycle.RemovedRuntimeTypes.Count == 0 && lifecycle.ReplacedAssets.Count == 0 &&
+                lifecycle.Triggers.Count == 0 && !lifecycle.AvoidClobbering && lifecycle.TraitsModified.Count == 0;
+        }
+
         private static bool BoxSelfCopy(CardInstanceState card) => card.DataId == "f0ff6411-5c58-4b69-b025-0f6e4a52fca7" &&
             card.Temporary.Upgrades.Count(upgrade => upgrade.DataId == "80a5edf4-6dc8-41a7-ab4e-9d0e914e0848" &&
                 upgrade.AssetKey == "AddEphemeral" && !upgrade.RemoveOnDiscard && upgrade.ExternalInteractions.Count == 0 &&
@@ -96,7 +120,8 @@ namespace MonsterTrain2Poju.Model
             if (traits.Length == 0) return null;
             if (!SupportedSourceTraits(card.MaskDescriptor!) ||
                 card.MaskDescriptor.BaseTraits.Any(trait => trait.RuntimeType is not (Trait or "CardTraitExhaustState") &&
-                    !(SupportedUndyingSource(card.MaskDescriptor) && trait.RuntimeType == "CardTraitScalingAddStatusEffect")) ||
+                    !(SupportedUndyingSource(card.MaskDescriptor) && trait.RuntimeType == "CardTraitScalingAddStatusEffect") &&
+                    !(trait.RuntimeType == "CardTraitPermafrost" && SupportedPermafrost(card))) ||
                 card.MaskDescriptor.TemporaryTraits.Count > 1 || card.MaskDescriptor.TemporaryTraits.Any(trait =>
                     trait.RuntimeType != "CardTraitFreeze" || trait.DeclaredName != "CardTraitFreeze" || trait.ParamInt != 0 ||
                     trait.DefinitionParamInt != 0 || trait.StackMode != 0 || !trait.Removable || trait.DefinitionRemovable != true ||
