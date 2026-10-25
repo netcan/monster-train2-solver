@@ -1,10 +1,13 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-26): 1693 archives,
+Current manifest inventory (2026-10-26): 1695 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 ## Directory layout
+
+The30-input Small Box/expensive-card relic pair preserves copied permanent and
+temporary upgrades before relic application; see [unboxing relic ordering](notes/combat/unbox-relic.md).
 
 The52-input native direct tower movement pair and preserved early-removal
 counterexample are documented in [Pyre attachment ordering](notes/bosses/pyre-attachment.md).

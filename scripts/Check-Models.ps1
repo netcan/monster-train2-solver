@@ -60,6 +60,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-metagame-campaign-ring1-release070-search.mt2f',
     'full-battle-metagame-campaign-ring1-release070-replay.mt2f',
     'player-unbox-conduit-calibration.mt2f',
+    'player-unbox-relic-calibration.mt2f',
+    'player-unbox-relic-replay-calibration.mt2f',
     'player-corrupt-poison-combat-calibration.mt2f',
     'player-corrupt-poison-combat-replay-calibration.mt2f',
     'player-stronger-corruption-copy-calibration.mt2f',
@@ -1519,6 +1521,7 @@ $branchPairGates = @{
     'player-preview-birth-stage-calibration.mt2f' = '--preview-birth-stage-only'
     'player-pyre-attachment-calibration.mt2f' = '--outer-boss-pyre-attachment-only'
     'player-companion-world-roster-calibration.mt2f' = '--companion-world-roster-only'
+    'player-unbox-relic-calibration.mt2f' = '--unbox-relic-only'
     'player-recursion-permafrost-calibration.mt2f' = '--recursion-draw-callbacks-only'
     'player-triggered-corruption-calibration.mt2f' = '--triggered-corruption-only'
     'player-triggered-corruption-relic-calibration.mt2f' = '--triggered-corruption-relic-only'

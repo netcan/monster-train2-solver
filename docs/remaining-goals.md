@@ -31,6 +31,12 @@ Boss直接进入薪火层时不提前更新附属物，完整后继／预测／R
 四项失败计数为零；原档案已归档为`full-battle-random-campaign-10-ring6-budget10000-loss.mt2f`。
 Windows已交付0.2.95。继续策略改进，未计第六战胜利。
 
+0.2.96补齐第十组第六战Small Box与原生高费Permafrost遗物的组合：先复制
+永久／临时升级，再保留临时修改应用遗物。30输入独立双进程完整后继／RNG
+及小盒子、Conduit、高费遗物定向回归通过；其他遗物修改族仍保护。
+见[开盒遗物顺序](../tests/fixtures/notes/combat/unbox-relic.md)。底层部署66输入
+已模型获胜，原生整场和默认建议正在验收，暂不计第六战胜利。
+
 旧`full-battle-persistent-enchantment-summons.mt2f`第4次出牌的
 `Enchantment.Bound`偏差已在0.2.91修复；旧整场15次出牌／5次结束回合通过。
 新原生双进程逐一确认六处绑定偏差消失，所有15次出牌／5次结束回合的完整后继

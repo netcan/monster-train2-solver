@@ -284,7 +284,7 @@ namespace MonsterTrain2Poju.Model
                     RelicCardGenerationModel.IsPartFactoryGraftedCard(candidate))) return Unsupported(error);
                 // AddCardImpl applies the manager's current relics before optional,
                 // copied, discard-conditional and pending temporary upgrades.
-                if (context.Relics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0 ||
+                if (cachedCopy == null && context.Relics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0 ||
                     relic.CardAttackModifiers?.Count > 0 ||
                     relic.MagicPowerModifiers?.Count > 0 || relic.CardTypeCosts?.Count > 0) == true)
                 {
@@ -388,6 +388,18 @@ namespace MonsterTrain2Poju.Model
                     RefreshUpgrades();
                     if (context.FindCard(copying.InstanceId) != null)
                         context = context.WithCard(CardRetainModel.RefreshUpgradeTrait(copying));
+                }
+                // Unboxing uses a cached CardState: native copies both upgrade
+                // sets before applying relics with resetTempCardModifiers:false.
+                if (cachedCopy != null)
+                {
+                    var relicModifiers = RelicCardModifierModel.Apply(candidate.WithModifiers(permanent, temporary),
+                        context.Relics ?? Array.Empty<CombatRelicState>(), resetTemporary: false, context: context);
+                    if (!relicModifiers.Supported) return Unsupported(relicModifiers.UnsupportedReason!);
+                    candidate = relicModifiers.Card!;
+                    permanent = candidate.Permanent;
+                    temporary = candidate.Temporary;
+                    context = relicModifiers.Context ?? context;
                 }
                 foreach (CardUpgradeModifier upgrade in context.NextAddedTemporaryUpgrades ?? Array.Empty<CardUpgradeModifier>())
                 {
