@@ -1150,7 +1150,11 @@ TrainSteward后，Deathwish专用更新只应临时跳过光环调用，旧模�
 全部逐步状态、预测、RNG和面板检查通过，四项失败计数全零。该档案保留为
 `full-battle-random-campaign-09-ring8-budget10000-loss.mt2f`。离线出牌顺序改进
 已找到较低损失的模型候选，仍未找到并验证终战胜路，前七战不算整局通关。
-第十组第六战0.2.90已推进至46输入，返回Benediction的临时Freeze缺失待修。
+第十组第六战0.2.90推进至46输入后发现返回Benediction的临时Freeze缺失，
+0.2.92已补齐返回牌进入手牌时的原生抽牌回调。原46输入及独立进程完整复验，
+保留旧缺失预测；Permafrost、高费遗物、返回手牌／溢出／弃牌堆／原始牌堆
+相关检查通过。详见[返回牌抽牌回调](../tests/fixtures/notes/cards/recursion-permafrost.md)。
+继续从同一连续存档验收实际默认建议；尚未计第六战胜利。
 0.2.91另修复预览出生玩家光环源的绑定清理：六处出牌偏差已双进程匹配，
 另四处相同战斗内部差异保持公开待办，见[原生组件边界](../tests/fixtures/notes/combat/preview-birth-binding.md)。
 

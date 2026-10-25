@@ -18,8 +18,9 @@
 也不阻塞上述 Windows 开发。
 
 第九组终战0.2.90实际默认36输入已完整验收，29次出牌、7次结束回合后败北，
-四项失败计数全零；继续找胜路。第十组第六战已推进到第46输入，ReturnedSoul
-返回Benediction时漏加临时Freeze，保留45输入前缀与独立原生观察，待修。
+四项失败计数全零；继续找胜路。第十组第六战第46输入ReturnedSoul返回
+Benediction时漏加临时Freeze，已在0.2.92完成46输入独立原生双进程校准，
+所有后继／预测／RNG匹配；继续实际默认整场验收，仍未计第六战胜利。
 
 旧`full-battle-persistent-enchantment-summons.mt2f`第4次出牌的
 `Enchantment.Bound`偏差已在0.2.91修复；旧整场15次出牌／5次结束回合通过。

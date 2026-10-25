@@ -718,6 +718,14 @@ namespace MonsterTrain2Poju.Model
                         if (effect.Target is "Exhaust" or "Eaten" && restoredCard != null &&
                             (restoredCard.ExhaustState != null || CardRetainModel.Present(restoredCard)))
                             changed = changed.WithCard(CardExhaustModel.ResetTraits(restoredCard));
+                        if (recursion.Cards!.Hand.Any(card => card.InstanceId == restoredCardId))
+                        {
+                            // Recursion to hand uses native DrawSpecificCard after
+                            // restore/upgrade, including Permafrost's draw callback.
+                            changed = RelicExpensiveCardUpgradeModel.Drawn(changed, new[] { restoredCardId },
+                                out string? restoredDrawError, definitions);
+                            if (restoredDrawError != null) return UnsupportedTrain(restoredDrawError);
+                        }
                     }
                     state = WithContext(state, changed);
                     if (recursion.OtherPiles != null) piles = recursion.OtherPiles.ToArray();
