@@ -49,6 +49,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-07-ring2-budget10000-replay.mt2f',
     'full-battle-random-campaign-07-ring3-budget10000-search.mt2f',
     'full-battle-random-campaign-07-ring3-budget10000-replay.mt2f',
+    'full-battle-random-campaign-07-ring4-budget10000-search.mt2f',
+    'full-battle-random-campaign-07-ring4-budget10000-replay.mt2f',
+    'full-battle-random-campaign-07-ring5-budget10000-loss.mt2f',
     'full-battle-random-campaign-03-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-03-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-03-ring2-budget10000-search.mt2f',
@@ -95,6 +98,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-sacrifice-preview-replay-calibration.mt2f',
     'player-pyre-max-health-calibration.mt2f',
     'player-pyre-max-health-replay-calibration.mt2f',
+    'player-card-type-sequence-reset-calibration.mt2f',
+    'player-card-type-sequence-reset-replay-calibration.mt2f',
     'player-consume-kill-copy-observation-calibration.mt2f',
     'player-consume-kill-copy-replay-calibration.mt2f',
     'player-juice-ritual-calibration.mt2f',
@@ -1374,6 +1379,7 @@ $branchPairGates = @{
     'player-consume-kill-copy-calibration.mt2f' = '--consume-kill-copy-pair-only'
     'player-sacrifice-preview-calibration.mt2f' = '--sacrifice-preview-pair-only'
     'player-pyre-max-health-calibration.mt2f' = '--pyre-max-health-pair-only'
+    'player-card-type-sequence-reset-calibration.mt2f' = '--card-type-sequence-reset-pair-only'
     'player-generated-discard-guard-calibration.mt2f' = '--generated-discard-guard-pair-only'
     'player-ephemeral-consume-order-calibration.mt2f' = '--ephemeral-consume-order-pair-only'
     'player-status-callback-room-sync-calibration.mt2f' = '--status-callback-room-sync-pair-only'

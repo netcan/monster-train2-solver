@@ -555,6 +555,9 @@ namespace MonsterTrain2Poju.Model
                 source.PlayRules);
             if (!firstCardCostBeforeDraw.Supported) return Unsupported(firstCardCostBeforeDraw.UnsupportedReason!);
             context = firstCardCostBeforeDraw.Context;
+            // Boss handling resumes from train.Context even without a boss action.
+            // Keep the start-turn relic resets before resuming that context.
+            train = WithContext(train, context, false);
             if (train.Movement.Any(rule => rule.CompanionBoss))
             {
                 train = WithContext(train, EnergyModel.SetPhase(context, "BossActionPreCombat"), false);

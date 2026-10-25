@@ -688,10 +688,14 @@ param(
     [switch] $BonusDrawLethal,
     [switch] $BinaryCapture = $true,
     [switch] $CaptureJson,
+    [string] $NativeBuildRoot = '',
     [switch] $SkipBuild
 )
 
 $ErrorActionPreference = 'Stop'
+if ($NativeBuildRoot -and (-not $UnsupportedBranchInput -or -not $SkipBuild)) {
+    throw 'NativeBuildRoot requires a prebuilt UnsupportedBranchInput component observation with SkipBuild.'
+}
 if ($ProfileCapture -and -not $PlayerAdvisor) { throw 'ProfileCapture requires the separately loaded PlayerAdvisor.' }
 if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
     throw 'AdvisorFloorBrowse requires the real PlayerAdvisor and RollingAdvice driver.'
@@ -918,7 +922,7 @@ if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
 if ($UnsupportedBranchInput) {
     $allowed = @('UnsupportedBranchInput', 'InputProfile', 'BattleDistance', 'OuterBossTurns', 'PhysicalSpawnPoints',
-        'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'GameSpeed', 'TimeoutSeconds', 'NativeWorker', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
+        'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'GameSpeed', 'TimeoutSeconds', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'UnsupportedBranchInput observes an original checkpoint without scenario controls.' }
     if ($RollingInput -or $Planner -or -not $InputProfile) { throw 'UnsupportedBranchInput requires an immutable native InputProfile and its own observation mode.' }
     $UnsupportedBranchInput = (Resolve-Path -LiteralPath $UnsupportedBranchInput).Path
@@ -1464,6 +1468,7 @@ if ($AbilityTeleport) { $Policy = 'units-and-junk'; $PhysicalSpawnPoints = $true
 if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
 if ($DamagePerHpAbility) { $Policy = 'units-spells-and-junk' }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$nativeBuildWorkspace = if ($NativeBuildRoot) { (Resolve-Path -LiteralPath $NativeBuildRoot).Path } else { $workspace }
 $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-worker$NativeWorker" } else { '.sandbox-game' })
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
@@ -1524,10 +1529,10 @@ if ($PlayerAdvisor) {
     # The player payload owns the loaded shared assemblies. Reject stale outputs
     # before launch instead of discovering a MissingMethodException mid-battle.
     foreach ($dependency in @('Model', 'FixtureArchive')) {
-        $expectedDependency = Join-Path $workspace "src/$dependency/bin/Release/netstandard2.1/$dependency.dll"
+        $expectedDependency = Join-Path $nativeBuildWorkspace "src/$dependency/bin/Release/netstandard2.1/$dependency.dll"
         $expectedHash = (Get-FileHash -LiteralPath $expectedDependency -Algorithm SHA256).Hash
         foreach ($consumer in @('Advisor', 'Probe')) {
-            $consumerDependency = Join-Path $workspace "src/$consumer/bin/Release/netstandard2.1/$dependency.dll"
+            $consumerDependency = Join-Path $nativeBuildWorkspace "src/$consumer/bin/Release/netstandard2.1/$dependency.dll"
             if ((Get-FileHash -LiteralPath $consumerDependency -Algorithm SHA256).Hash -ne $expectedHash) {
                 throw "Stale $consumer dependency: $dependency.dll; rebuild Advisor and Probe or omit -SkipBuild."
             }
@@ -1535,12 +1540,12 @@ if ($PlayerAdvisor) {
     }
 }
 $pluginDir = Join-Path $gameRoot 'BepInEx\plugins'
-Copy-Item -LiteralPath (Join-Path $workspace 'src\Probe\bin\Release\netstandard2.1\Probe.dll') -Destination $pluginDir -Force
+Copy-Item -LiteralPath (Join-Path $nativeBuildWorkspace 'src\Probe\bin\Release\netstandard2.1\Probe.dll') -Destination $pluginDir -Force
 foreach ($dependency in @('Model', 'FixtureArchive')) {
     # Player acceptance must use the same complete payload as packaging, even
     # if a later checker build refreshed another project's dependency outputs.
     $dependencyRoot = if ($PlayerAdvisor) { 'Advisor' } else { $dependency }
-    Copy-Item -LiteralPath (Join-Path $workspace "src/$dependencyRoot/bin/Release/netstandard2.1/$dependency.dll") -Destination $pluginDir -Force
+    Copy-Item -LiteralPath (Join-Path $nativeBuildWorkspace "src/$dependencyRoot/bin/Release/netstandard2.1/$dependency.dll") -Destination $pluginDir -Force
 }
 if ($InputProfile) {
     $checkpoint = (Resolve-Path -LiteralPath $InputProfile).Path.TrimEnd('\')
@@ -2214,7 +2219,7 @@ if ($PlayerAdvisor) {
     if ($existingPlayer.Count -ne 0) { throw 'Remove the existing player advisor from this isolated worker before running PlayerAdvisor.' }
     $playerCheckPlugin = Join-Path $pluginDir ('PojuPlayerCheck-' + [Guid]::NewGuid().ToString('N'))
     $null = New-Item -ItemType Directory -Path $playerCheckPlugin
-    Copy-Item -LiteralPath (Join-Path $workspace 'src/Advisor/bin/Release/netstandard2.1/MonsterTrain2Poju.Advisor.dll') -Destination $playerCheckPlugin
+    Copy-Item -LiteralPath (Join-Path $nativeBuildWorkspace 'src/Advisor/bin/Release/netstandard2.1/MonsterTrain2Poju.Advisor.dll') -Destination $playerCheckPlugin
     $playerConfigPath = Join-Path $gameRoot 'BepInEx/config/netcan.monstertrain2.advisor.cfg'
     $playerConfigBackup = Join-Path $profile 'original-player-advisor.cfg'
     if (Test-Path -LiteralPath $playerConfigPath) { Move-Item -LiteralPath $playerConfigPath -Destination $playerConfigBackup }
