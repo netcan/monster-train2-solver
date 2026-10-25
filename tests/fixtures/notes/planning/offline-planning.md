@@ -200,3 +200,35 @@ checkpoint and stops after observing the rejected candidate. It rejects
 scenario controls and pauses background search. This short observation mode
 closed the [Endless spell routing gap](../cards/endless-spell-routing.md) with two native
 processes in 140.08/123.97 seconds; it does not claim terminal battle acceptance.
+
+`refine-policy <native.mt2f> <new-winning-output.mt2f> <milliseconds>
+[start-decision] [last-decision]` compares local alternatives to an accepted
+native battle without launching a new game for every candidate. The inclusive
+decision interval permits separate opening and late-battle batches. It changes
+the recorded card's target/position or ends the turn instead; at a recorded
+EndTurn it tries any remaining legal input. Later choices use the tactical
+policy on the living champion's floor. Each attempt retains the full legal
+prefix, RNG and immutable parent; an independent replay verifies a complete
+model win before creating the requested output. No win means no winning file,
+and does not prove the encounter is unwinnable.100..600000ms is a soft search
+budget; atomic transitions and successful export/verification take extra time.
+Search and export/verification times are reported separately for a win.
+
+The first rejected alternative is independently reproduced and exported as
+`<output>.unsupported.mt2f`, using the existing `ModelUnsupportedBranch` format
+and original native deployment root. `-UnsupportedBranchInput` can then observe
+that exact prefix/candidate in a fresh isolated game. The tool reports unique
+rejection reasons and never invents a successor for an unsupported action.
+Run the separate native source checker before interpreting these predictions;
+raw UI preview allocator values are not model-prefix equality evidence.
+
+The Banished/Umbra Ring7 counterexample produced69 opening/early alternatives
+and88 later alternatives, all terminal model defeats. Four omitted choices in
+the early batch share `Missing dead unit spawner card routing.`; a20-input
+prefix now isolates its first occurrence for native investigation. A separate
+Pyreborne/Banished control produces a47-input model win and passes independent
+full-state/RNG replay. These are diagnostic results, not new native victories.
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll refine-policy tests/fixtures/campaign/random/full-battle-random-campaign-01-ring7-budget10000-loss.mt2f .probe-runs/ring7-local-candidate.mt2f 180000 0 16
+```

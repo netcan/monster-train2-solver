@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Model;
 
 // Generates candidates cheaply from one native deployment snapshot. These are
 // model predictions; only a fresh game process can establish native acceptance.
-internal static class OfflineBattleSearch
+internal static partial class OfflineBattleSearch
 {
     // Reuse recorded forecasts before spending another search/native battle.
     // This exports a replayable failure boundary, never a native successor.
