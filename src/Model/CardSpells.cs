@@ -1960,10 +1960,18 @@ namespace MonsterTrain2Poju.Model
                 bool drained = RoomCombatModel.DrainCharacterQueue(callbacks, queued =>
                 {
                     RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
-                    RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, callbacks.Add, refreshPyre: Refresh);
+                    var borrowed = fullTrain ? state.Rooms.Where(other => other.RoomIndex != room.RoomIndex)
+                        .SelectMany(other => other.Units.Select(unit => (other.RoomIndex, Unit: unit))).ToArray() : null;
+                    RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, callbacks.Add, refreshPyre: Refresh,
+                        externalTargets: borrowed);
                     if (!fired.Supported) { callbackError = fired.UnsupportedReason; return false; }
-                    foreach (CombatUnit unit in fired.RetainedUnits) retained[unit.Id] = unit;
+                    foreach (CombatUnit unit in fired.RetainedUnits)
+                        if (borrowed?.Any(target => target.Unit.Id == unit.Id) != true || !ActorIsLive(unit)) retained[unit.Id] = unit;
                     state = ReplaceRoom(state, fired.State!); events.AddRange(fired.Events);
+                    if (borrowed != null)
+                        foreach (var target in borrowed)
+                            state = ReplaceExternalActor(state, target.RoomIndex,
+                                fired.RetainedUnits.Single(unit => unit.Id == target.Unit.Id));
                     if (fired.Outcome == RoomOutcome.BattleWon || fired.Outcome == RoomOutcome.PlayerDefeated) outcome = fired.Outcome;
                     return true;
                 }, queued =>

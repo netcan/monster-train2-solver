@@ -1845,6 +1845,17 @@ if (args.Length == 2 && args[0] == "--mixalot-only")
     MixalotChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--spell-harvest-tower-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 3)
+    {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        SpellHarvestTowerChecks.Native(source.RootElement, replay.RootElement);
+    }
+    else SpellHarvestTowerChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--spell-angel-death-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
