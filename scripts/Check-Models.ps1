@@ -38,6 +38,11 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-02-ring3-budget10000-replay.mt2f',
     'full-battle-random-campaign-02-ring4-budget10000-search.mt2f',
     'full-battle-random-campaign-02-ring4-budget10000-replay.mt2f',
+    'full-battle-random-campaign-02-ring5-budget10000-loss.mt2f',
+    'full-battle-random-campaign-03-ring1-budget10000-search.mt2f',
+    'full-battle-random-campaign-03-ring1-budget10000-replay.mt2f',
+    'full-battle-random-campaign-03-ring2-budget10000-search.mt2f',
+    'full-battle-random-campaign-03-ring2-budget10000-replay.mt2f',
     'player-feeding-spell-routing-calibration.mt2f',
     'player-feeding-spell-routing-replay-calibration.mt2f',
     'player-authored-consume-copy-calibration.mt2f',
@@ -1180,6 +1185,34 @@ if ($Fixture.Count -gt 0) {
 }
 # Explicit selections for this composition have complete dedicated gates.
 # Avoid starting all unrelated pure checks before a component-only request.
+$branchPairGates = @{
+    'player-authored-consume-copy-calibration.mt2f' = '--authored-consume-copy-pair-only'
+    'player-ephemeral-copy-full-hand-calibration.mt2f' = '--authored-consume-copy-pair-only'
+    'player-ephemeral-copy-hand-space-calibration.mt2f' = '--authored-consume-copy-pair-only'
+    'player-dead-caster-status-calibration.mt2f' = '--dead-caster-status-pair-only'
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
+    -not $branchPairGates.ContainsKey(($_ -replace '-replay-calibration\.mt2f$', '-calibration.mt2f'))
+}).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Native branch checker build failed.' }
+    }
+    $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+    foreach ($sourceName in @($selectedFixtureNames | ForEach-Object {
+        $_ -replace '-replay-calibration\.mt2f$', '-calibration.mt2f'
+    } | Select-Object -Unique)) {
+        $sourcePath = Get-TestFixturePath $sourceName
+        $replayPath = Get-TestFixturePath ($sourceName -replace '-calibration\.mt2f$', '-replay-calibration.mt2f')
+        dotnet $checker $branchPairGates[$sourceName] $sourcePath $replayPath
+        if ($LASTEXITCODE -ne 0) { throw 'Focused native branch pair failed.' }
+        if ($sourceName -eq 'player-dead-caster-status-calibration.mt2f') {
+            dotnet $checker --tactical-ability-target-only $sourcePath
+            if ($LASTEXITCODE -ne 0) { throw 'Focused tactical ability target check failed.' }
+        }
+    }
+    return
+}
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notlike 'full-battle-random-campaign-*' -and
     $_ -ne 'player-random-campaign-02-ring2-permafrost-unavailable.mt2f' -and
     $_ -ne 'player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f' -and

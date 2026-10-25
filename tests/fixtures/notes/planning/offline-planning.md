@@ -225,8 +225,9 @@ raw UI preview allocator values are not model-prefix equality evidence.
 
 The Banished/Umbra Ring7 counterexample produced69 opening/early alternatives
 and88 later alternatives, all terminal model defeats. Four omitted choices in
-the early batch share `Missing dead unit spawner card routing.`; a20-input
-prefix now isolates its first occurrence for native investigation. A separate
+the early batch share `Missing dead unit spawner card routing.`; two independent
+native21-input observations now calibrate the feeding spell's already-eaten
+carrier routing, with full-state/RNG agreement. A separate
 Pyreborne/Banished control produces a47-input model win and passes independent
 full-state/RNG replay. These are diagnostic results, not new native victories.
 
@@ -245,6 +246,13 @@ input, so the existing fresh-game replay requirement stays intact.
 
 The repaired random Pyreborne/Banished Ring5 input produced72 early local
 alternatives (decisions0..18), all terminal model defeats with zero unsupported
-attempts. This is an efficiency/diagnostic result, not an impossibility proof.
+attempts. Decisions19..47 used240000ms:183 attempts,182 terminal defeats,
+one incomplete at the soft limit. The follow-up48..65 batch completed70
+terminal defeats with no timeout, and a separate47..47 batch completed all4
+alternatives as defeats. All batches had zero unsupported attempts. Counts
+include repeated alternatives at the resumed decision and are not a unique
+or exhaustive search-space total. This is a diagnostic result, not an
+impossibility proof.
 Three fixed-floor baselines and the10000ms default root search also predict
-defeat; no new native victory is claimed by these files.
+defeat. The subsequent actual0.2.28 native59-input defeat confirms the root
+can run without a model mismatch, not that no winning policy exists.

@@ -4787,16 +4787,19 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
     using var observation = ModelJson.ReadFixture(path);
     FeedingSpellRoutingChecks.Native(observation.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) is
+foreach (string path in args.Where(path => Path.GetFileName(path).Replace("-replay-calibration.mt2f", "-calibration.mt2f", StringComparison.Ordinal) is
     "player-authored-consume-copy-calibration.mt2f" or "player-ephemeral-copy-full-hand-calibration.mt2f" or
-    "player-ephemeral-copy-hand-space-calibration.mt2f"))
+    "player-ephemeral-copy-hand-space-calibration.mt2f").Select(path => ModelJson.RelatedFixture(path,
+        Path.GetFileName(path).Replace("-replay-calibration.mt2f", "-calibration.mt2f", StringComparison.Ordinal))).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         Path.GetFileName(path).Replace("-calibration.mt2f", "-replay-calibration.mt2f", StringComparison.Ordinal)));
     AuthoredConsumeCopyChecks.Pair(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-dead-caster-status-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-dead-caster-status-calibration.mt2f" or
+    "player-dead-caster-status-replay-calibration.mt2f").Select(path => ModelJson.RelatedFixture(path,
+        "player-dead-caster-status-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-dead-caster-status-replay-calibration.mt2f"));
