@@ -1,11 +1,11 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.100, committed source`558742cb6cb7e7d59be3ebb01d6858a5cb048225`.
+Current Windows installation:0.2.101, committed source`c6c114628b40277c5164fbec4befb768778ba3c9`.
 The exact release payload passes the tenth random Banished/Wurmkin sample's
 first battle with actual10000ms/two-worker advice and independent native
 replay:22 inputs,17 plays,5 EndTurns,Pyre80 and9 train stages per process.
 Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-040239-a33931a9` and replay`20261026-040413-6999a842`
+zero. Source`20261026-041814-175b73c2` and replay`20261026-041954-7a9536df`
 bind the three installed DLL hashes to the committed build.
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
@@ -37,16 +37,19 @@ checkpoint's actual0.2.99 advice finishes in a41-input defeat with all four
 failure counters zero. Version0.2.100 requires the champion to survive both
 the shift ability and its tank-restoring follow-up card in the tactical seed.
 The native45/15/dead counterexample,three deployment preferences,legal branch
-retention and safe54-input Fragile victory controls pass. Actual Ring8 advice
-is continuing from the same original entry; release qualification does not
-claim a complete campaign.
+retention and safe54-input Fragile victory controls pass. Version0.2.101 also
+prefers effective damage to a cast entirely blocked by shields. Its eight-input
+native pair and all-shielded/mixed-effect controls pass. The same Ring8 entry
+still loses with actual default advice:40 inputs on0.2.100 and31 inputs on
+0.2.101,with zero capture/mismatch/unsupported/pending counters. These local
+decisions do not establish better campaign results or a complete victory.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.100. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261026-040648/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.100-Windows-20261026-040648.zip`,SHA256
-`582a372b1ea459e4b9b7eab165569daf51aa96f322183e4ca6c353fe92b7e27d`.
+its next launch loads0.2.101. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261026-042252/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.101-Windows-20261026-042252.zip`,SHA256
+`5a5d3c2c1d2c4addc7afe215c1648a1cb51ad903e57cb693918ea8ab2f223edc`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
