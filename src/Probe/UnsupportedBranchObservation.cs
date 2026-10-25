@@ -1,5 +1,6 @@
 #if DEVELOPMENT_PROBE
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace MonsterTrain2Poju.Probe
             "Battle preview floor 2: CorruptionAdded unit callbacks are not modeled.";
         private static BattleTurnState expected = null!;
         private static readonly List<Row> rows = new List<Row>();
+        private static readonly List<object> roomAttachmentMovement = new List<object>();
         private static bool waiting;
         private static int readyFrame = -1;
         internal static bool AwaitingSettlement()
@@ -56,6 +58,7 @@ namespace MonsterTrain2Poju.Probe
             if (!waiting) return;
             Row row = rows.Last();
             row.Actual = actual; waiting = false;
+            if (row.Boundary) row.RoomAttachmentsAfter = CaptureRoomAttachments();
             if (!row.Boundary)
             {
                 Require(Comparable(expected) == Comparable(actual), "Native branch prefix successor differs at " + rows.Count);
@@ -84,6 +87,7 @@ namespace MonsterTrain2Poju.Probe
                 EquipmentOwnerRecoveries = FullBattleTrace.Active!.EquipmentOwnerRecoveries.ToArray(),
                 EquipmentPreviewClear = equipmentPreviewClear,
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
+                RoomAttachmentMovement = roomAttachmentMovement.ToArray(),
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
                 BattleTestRng = BattleTestRngProbe.Records.ToArray(),
@@ -108,6 +112,34 @@ namespace MonsterTrain2Poju.Probe
                         Effects = relic.GetEffects().Select(effect => effect.GetType().Name).ToArray(),
                         Piercing = DamageHelper.IsPiercingDamage(null, relic, managers.GetCoreManagers()) }).ToArray()
             };
+        }
+
+        private static object? CaptureRoomAttachments()
+        {
+            if (request.GetProperty("Reason").GetString() != "Native Pyre trigger registry differs after rolling input52") return null;
+            RoomManager rooms = AllGameManagers.Instance!.GetRoomManager()!;
+            FullBattleTrace trace = FullBattleTrace.Active!;
+            return Enumerable.Range(0, rooms.GetNumRooms()).Select(index => {
+                RoomState room = rooms.GetRoom(index);
+                return new { RoomIndex = index, room.PreviewMode,
+                    Updating = AccessTools.Field(typeof(RoomState), "isUpdatingTrainRoomAttachments").GetValue(room),
+                    Heroes = ((List<SpawnPoint>)AccessTools.Property(typeof(SpawnPointGroup), "SpawnPoints").GetValue(
+                        AccessTools.Field(typeof(RoomState), "heroSpawnPointGroup").GetValue(room)))
+                        .Select(point => point.GetCharacterState()).Where(unit => unit != null).Select(unit => new { Id = trace.UnitId(unit),
+                        unit.PreviewMode, RoomIndex = unit.GetCurrentRoomIndex(), unit.IsAlive }).ToArray(),
+                    Attachments = room.Attachments.Select(attachment => new { attachment.Guid,
+                        Impacted = ((List<CharacterState>)AccessTools.Field(typeof(TrainRoomAttachmentState), "_charactersImpacted")
+                            .GetValue(attachment)).Select(unit => trace.UnitId(unit)).ToArray() }).ToArray() };
+            }).ToArray();
+        }
+
+        internal static IEnumerator TraceRoomAttachmentMovement(RoomState room, IEnumerator operation)
+        {
+            bool enabled = waiting && rows.Count > 0 && rows.Last().Boundary &&
+                request.GetProperty("Reason").GetString() == "Native Pyre trigger registry differs after rolling input52";
+            if (enabled) roomAttachmentMovement.Add(new { Phase = "Before", Room = room.GetRoomIndex(), State = CaptureRoomAttachments() });
+            while (operation.MoveNext()) yield return operation.Current;
+            if (enabled) roomAttachmentMovement.Add(new { Phase = "After", Room = room.GetRoomIndex(), State = CaptureRoomAttachments() });
         }
 
         internal static PlayCardAction? Choose(BattleTurnState root, ManualLogSource log)
@@ -157,7 +189,8 @@ namespace MonsterTrain2Poju.Probe
                     .Select(callback => callback.Method.DeclaringType!.Name + "." + callback.Method.Name).ToArray();
             }
             rows.Add(new Row { Before = root, Action = action, IsEndTurn = end, Boundary = boundary,
-                Expected = predicted, UnsupportedReason = reason, Outcome = outcome, TargetDeathOnceCallbacks = targetDeathOnceCallbacks });
+                Expected = predicted, UnsupportedReason = reason, Outcome = outcome, TargetDeathOnceCallbacks = targetDeathOnceCallbacks,
+                RoomAttachmentsBefore = boundary ? CaptureRoomAttachments() : null });
             if (predicted != null) expected = predicted;
             waiting = true; readyFrame = -1;
             log.LogInfo("UNSUPPORTED-BRANCH-INPUT index=" + rows.Count + " boundary=" + boundary + " reason=" + reason);
@@ -176,7 +209,16 @@ namespace MonsterTrain2Poju.Probe
             public string? UnsupportedReason { get; set; }
             public RoomOutcome Outcome { get; set; }
             public BattleTurnState? Actual { get; set; }
+            public object? RoomAttachmentsBefore { get; set; }
+            public object? RoomAttachmentsAfter { get; set; }
         }
+    }
+
+    [HarmonyPatch(typeof(RoomState), nameof(RoomState.UpdateTrainRoomAttachments))]
+    internal static class RoomAttachmentMovementObservation
+    {
+        private static void Postfix(RoomState __instance, ref IEnumerator __result)
+            => __result = UnsupportedBranchObservation.TraceRoomAttachmentMovement(__instance, __result);
     }
 }
 #endif

@@ -52,7 +52,8 @@ namespace MonsterTrain2Poju.Model
         internal static BumpResult Apply(TrainCombatState source, IReadOnlyList<int> targets, int amount,
             IReadOnlyList<RoomPlayRule> roomRules, int sourceCardId,
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pending, SpawnPointReference? teleportGoal = null,
-            bool outerBossActionMovement = false, bool deferCharacterCallbacks = false)
+            bool outerBossActionMovement = false, bool deferCharacterCallbacks = false,
+            bool synchronizeRoomAttachments = true)
         {
             string? error = TrainCombatModel.Validate(source);
             var events = new List<CombatEvent>(); var retained = new Dictionary<int, CombatUnit>();
@@ -210,9 +211,12 @@ namespace MonsterTrain2Poju.Model
                     Order();
                 }
             }
-            RoomAttachmentUnitSyncResult attachments = RoomAttachmentUnitModel.SynchronizeMovement(source, state);
-            if (!attachments.Supported) return Fail(attachments.UnsupportedReason!);
-            state = attachments.State!;
+            if (synchronizeRoomAttachments)
+            {
+                RoomAttachmentUnitSyncResult attachments = RoomAttachmentUnitModel.SynchronizeMovement(source, state);
+                if (!attachments.Supported) return Fail(attachments.UnsupportedReason!);
+                state = attachments.State!;
+            }
             foreach (var move in moved)
             {
                 if (move.ForcedBossMove) continue;

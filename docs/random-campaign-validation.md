@@ -1156,7 +1156,13 @@ TrainSteward后，Deathwish专用更新只应临时跳过光环调用，旧模�
 相关检查通过。详见[返回牌抽牌回调](../tests/fixtures/notes/cards/recursion-permafrost.md)。
 继续从同一连续存档验收实际默认建议；尚未计第六战胜利。
 0.2.91另修复预览出生玩家光环源的绑定清理：六处出牌偏差已双进程匹配，
-另四处相同战斗内部差异保持公开待办，见[原生组件边界](../tests/fixtures/notes/combat/preview-birth-binding.md)。
+另四处战斗内部差异已在0.2.93完成独立原生整场零偏差复验，见[原生组件边界](../tests/fixtures/notes/combat/preview-birth-binding.md)。
+
+第十组第六战第52输入进入薪火层时，原生Boss仍保留BoilerRoom附属物升级
+和死亡回调。0.2.94将直接塔楼移动与普通升层的附属物更新时间分开，52输入
+独立原生双进程的完整后继／预测／RNG通过，并保留旧缺失预测为反例。
+该路线原生败北，仍不计第六战胜利；实际默认整场继续复验。
+见[直接入薪火与附属物](../tests/fixtures/notes/bosses/pyre-attachment.md)。
 
 定向检查入口：
 

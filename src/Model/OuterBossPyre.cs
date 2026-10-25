@@ -32,7 +32,11 @@ namespace MonsterTrain2Poju.Model
                 return Fail("Outer-boss Pyre entry requires the calibrated unpaired relentless boss above three destroyed floors.");
             if (train.Context.QueryFrame?.SelectedRoomIndex != null)
                 train = CardSpellModel.WithContext(train, train.Context.WithQueryFrame(train.Context.QueryFrame.With(selectedRoomIndex: pyre)));
-            BumpResult moved = BumpModel.Apply(train, new[] { boss.UnitId }, 1, battle.PlayRules.Rooms);
+            // HeroManager.DoBossTowerAttack moves the boss directly, without
+            // HandleRoomUnitOrderPossiblyChanged. Its departure-room attachment
+            // upgrades remain registered through terminal tower combat.
+            BumpResult moved = BumpModel.Apply(train, new[] { boss.UnitId }, 1, battle.PlayRules.Rooms,
+                0, null, synchronizeRoomAttachments: false);
             if (!moved.Supported) return Fail(moved.UnsupportedReason!);
             if (moved.Outcome != RoomOutcome.Exchanged) return Fail("Terminal outer-boss Pyre-entry movement requires separate calibration.");
             train = moved.State!;

@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length is 2 or 3 && args[0] == "--outer-boss-pyre-attachment-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) OuterBossPyreAttachmentChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); OuterBossPyreAttachmentChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length == 3 && args[0] == "--preview-birth-stage-only")
 {
     PreviewBirthStageChecks.Native(args[1], args[2]);
@@ -5737,6 +5744,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-recursion-permafrost-replay-calibration.mt2f"));
     RecursionDrawCallbacksChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-pyre-attachment-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-pyre-attachment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyre-attachment-replay-calibration.mt2f"));
+    OuterBossPyreAttachmentChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-preview-birth-stage-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-preview-birth-stage-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
