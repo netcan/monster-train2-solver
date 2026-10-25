@@ -1436,7 +1436,7 @@ All67 protected files remain unchanged; the next real-game launch loads0.2.31.
 Subsequent0.2.32 component work refines raw vanishing-listener timing; it has
 not replaced this installed payload or claimed a complete random campaign clear.
 
-## Current Windows delivery · 0.2.58 · 2026-10-25
+## Windows delivery · 0.2.58 · 2026-10-25 · superseded
 
 The current installation contains committed `4d67d918` Advisor/Model/FixtureArchive
 DLLs, identical to the Stygian/LazarusLeague natural sixth-battle native win and
@@ -1451,3 +1451,18 @@ Backup/receipt:`BepInEx/PojuBackups/RandomCampaign-20261025-161647/installation.
 All67 protected save/config/other-mod files are unchanged; F10,10000ms and two
 workers are preserved. The real game was stopped; its next launch loads0.2.58.
 No Mac package or full regression was run.
+
+## Current Windows delivery · 0.2.61 · 2026-10-25
+
+Committed`58dd14a0` fixes ordinary Hydra/graft equipment catalogs and front-damage
+spell placement. The installed three DLLs exactly match random06 Hellhorned/
+LazarusLeague Ring1 actual10000ms/two-worker native win and independent replay:
+24 inputs, Pyre80, complete forecasts/state/RNG, four zero failure counters.
+The generated-graft branch has its separate31-input native calibration pair;
+this single opening win does not establish an eight-battle campaign clear.
+
+Package:`results/mod-dist/PojuAdvisor-0.2.61-Windows-20261025-170843.zip`, SHA256
+`d914b398c07d808083be5a5ee2308d533bb88123295c93459abf900a3d71945f`.
+Backup/receipt:`BepInEx/PojuBackups/RandomCampaign-20261025-170843/installation.json`.
+All67 protected save/config/other-mod hashes are unchanged; the real game was
+stopped and its next launch loads0.2.61. No Mac package or full regression ran.

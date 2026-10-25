@@ -510,13 +510,13 @@ SHA256为`9f7f909cc5b1b0b29d565ae22f2cdf03811543076df9dbd44884a8b78602cb27`。
 站位及切换药剂候选的六条40／43输入路线也已完整模型复演，仍败。
 见[自然Hydra装备目录](../tests/fixtures/notes/cards/natural-hydra-equipment-catalog.md)。
 
-Windows当前安装已验收的0.2.58，源修订`4d67d918`，三份DLL与第六战冻结候选
+此前Windows安装的0.2.58，源修订`4d67d918`，三份DLL与第六战冻结候选
 源局和独立原生复放完全一致。包：
 `results/mod-dist/PojuAdvisor-0.2.58-Windows-20261025-161647.zip`，SHA256
 `4e0066f672a3d8232920cab9918e1a761890beaef7f4a480fec10ec70b55344c`。
 备份／收据`BepInEx/PojuBackups/RandomCampaign-20261025-161647/installation.json`，
 67个受保护文件保持原哈希，F10、10000ms和双线程设置保留。构建元数据明确标记
-OfflineRootPlan，未冒称第六战是实际默认搜索胜局。0.2.59／60尚未替换安装。
+OfflineRootPlan，未冒称第六战是实际默认搜索胜局。现已由下述0.2.61交付替换。
 
 ## 第六组：Hellhorned / LazarusLeague · 0.2.61
 
@@ -531,6 +531,12 @@ Covenant0，10000ms／双线程／整场搜索。第一战Level1BattleHealers实
 `2b5354ae41968d06038eb1f1313c81f563672c2c0ec54c1de77168bbbf6eff0d`。
 记录位于`.probe-runs/random-campaign-20261025-170302-73c5765c/accepted-rings.jsonl`。
 当前只接受第一战，后续仍在运行，不计为八战通关。
+
+Windows已安装同一套原生双胜通过的0.2.61 DLL（修订`58dd14a0`）。
+包`results/mod-dist/PojuAdvisor-0.2.61-Windows-20261025-170843.zip`，SHA256
+`d914b398c07d808083be5a5ee2308d533bb88123295c93459abf900a3d71945f`。
+备份／收据`BepInEx/PojuBackups/RandomCampaign-20261025-170843/installation.json`。
+67个受保护文件哈希不变，真实游戏未运行，下次启动加载新版本。未构建Mac包。
 
 定向检查入口：
 
