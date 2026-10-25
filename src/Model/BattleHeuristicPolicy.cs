@@ -98,6 +98,7 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
                 if (target == null) return RoomDamageValue(source, action, rule) ??
                     room.Units.Count(unit => unit.Team == CombatTeam.Enemy) * 25 + action.RoomIndex;
+                if (SacrificeTargetValue(rule, target) is double sacrifice) return sacrifice;
                 bool harmful = rule.Effects.Any(effect => effect.Type is "Damage" or "Kill" ||
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
                 if (harmful != (target.Team == CombatTeam.Enemy)) return -1e6;
@@ -105,6 +106,20 @@ namespace MonsterTrain2Poju.Model
                     return target.Health + Math.Max(0, target.Status("armor")?.Stacks ?? 0);
                 return harmful ? 400 - target.Health : 150 + target.Attack + (target.Modifiers?.IsChampion == true ? 500 : 0);
             }
+        }
+
+        internal static double? SacrificeTargetValue(CardPlayRule rule, CombatUnit target)
+        {
+            if (!rule.Effects.Concat(rule.OnCastEffects).Any(effect =>
+                effect.Type is "Sacrifice" or "SacrificeOrFeed" &&
+                effect.Target is "DropTargetCharacter" or "LastTargetedCharacters")) return null;
+            // A resource/draw sacrifice is not a buff. Preserve the champion in
+            // this cheap seed and spend the least board strength when possible.
+            // Full action enumeration still includes every legal sacrifice.
+            if (target.IsPyre || target.Modifiers?.IsChampion == true) return double.NegativeInfinity;
+            if (target.Team == CombatTeam.Enemy) return 1000 + target.Attack;
+            return -Math.Min(10000d, Math.Max(0d, target.Attack) * target.Attacks +
+                Math.Max(0d, target.Health) + Math.Max(0d, target.Status("armor")?.Stacks ?? 0));
         }
 
         internal static double? RoomDamageValue(BattleTurnState source, PlayCardAction action, CardPlayRule rule)
