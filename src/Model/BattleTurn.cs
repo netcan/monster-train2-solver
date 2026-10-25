@@ -727,6 +727,19 @@ namespace MonsterTrain2Poju.Model
                 if (source.CanonicalDecisionReferences)
                     spawn = WithTrain(spawn, TrainCombatModel.CompleteFrameRemovals(spawn.Train), spawn.Turn, spawn.Rng);
                 CombatContext finalContext = spawn.Train.Context!;
+                // HandUI refreshes target-count text at the end of the native frame.
+                // Recursion's target count queries CardStatistics even at zero; that
+                // query materializes entries for cards generated after the turn draw.
+                if (source.CanonicalDecisionReferences && !Terminal(outcome) &&
+                    finalContext.Statistics?.StoredCards != null && finalContext.CardInstances != null &&
+                    finalContext.Cards.Hand.Any(card =>
+                    {
+                        CardMaskDescriptor? descriptor = finalContext.FindCard(card.InstanceId)?.MaskDescriptor;
+                        return descriptor?.BaseTraits.Any(trait => trait.RuntimeType == "CardTraitShowCardTargets") == true &&
+                            descriptor.Definition.MainEffectNames.Contains("CardEffectRecursion");
+                    }))
+                    finalContext = finalContext.WithStatistics(finalContext.Statistics.RefreshOwnedCards(
+                        finalContext.CardInstances.Select(card => card.InstanceId)));
                 // Native decision captures refresh room rules after all turn callbacks,
                 // including PreCombat capacity changes and terminal transitions.
                 if (finalContext.RoomCapacities != null)
