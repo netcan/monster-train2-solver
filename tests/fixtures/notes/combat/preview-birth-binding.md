@@ -18,7 +18,7 @@ every paid/EndTurn successor. Controls verify immutable/idempotent preview
 destruction, real-death deferral, a living retained actor and explicit removal.
 
 This is a component pair, not a clean full-battle calibration. Both captures
-also preserve the same four preexisting intra-combat differences:
+also preserve the same four intra-combat differences, subsequently closed in0.2.93:
 
 | Collection/index | Recorded difference |
 | --- | --- |
@@ -31,6 +31,25 @@ The original mismatch count is10; the corrected count is4. The focused checker
 requires those four open records to remain unchanged, checks every input and
 EndTurn against both processes, and reports the remaining stage gaps explicitly.
 It does not treat the new captures as zero-mismatch full battles.
+
+Version0.2.93 closes all four boundaries. Actors born during a temporary
+Boss kill preview inherit the room's preview mode, although they were absent
+from the roster collected before preview began. Their aura status changes now
+run in the correct plane, preserving the native shared card cache as well.
+Destroyed preview births release their copied spawn-point owner references;
+living retained births keep theirs. Real combat deaths retain their timing.
+
+An independent native process wins with zero capture failures, mismatches,
+unsupported stages or pending records. Both processes have identical native
+before/actual states throughout41 room stages,9 train phases,15 paid actions
+and5 EndTurns. The focused checker recomputes all stages and paid successors,
+checks parent immutability and four parallel preview branches, and retains the
+old four incorrect forecasts as regression witnesses. This is controlled
+mechanism coverage; it does not establish a natural random campaign clear.
+
+```powershell
+./scripts/Check-Models.ps1 -Fixture player-preview-birth-stage-calibration.mt2f -SkipBuild
+```
 
 ```powershell
 ./scripts/Check-Models.ps1 -Fixture player-preview-birth-binding-calibration.mt2f -SkipBuild

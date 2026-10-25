@@ -61,6 +61,19 @@ namespace MonsterTrain2Poju.Model
             { ActiveCopies = Array.AsReadOnly(copies.Select(group => group.PreviewCopyId!.Value).ToArray()), BirthPrimaries = BirthPrimaries };
         }
 
+        internal BattleSpawnPoints ClearDestroyedPreviewBirths(IReadOnlyCollection<int> destroyedIds)
+        {
+            // Native destroys removed temporary player objects before the next
+            // exchange capture. Living preview births keep their copied points.
+            if (!Units.Any(unit => unit.SpawnedInPreview && destroyedIds.Contains(unit.UnitId) &&
+                (unit.Current != null || unit.LastKnown != null))) return this;
+            UnitSpawnPointState[] units = Units.Select(unit => unit.SpawnedInPreview && destroyedIds.Contains(unit.UnitId)
+                ? new UnitSpawnPointState(unit.UnitId, null, null, unit.OuterBoss, true) : unit).ToArray();
+            var used = units.SelectMany(unit => new[] { unit.Current, unit.LastKnown })
+                .Where(point => point?.PreviewCopyId != null).Select(point => point!.PreviewCopyId!.Value).ToHashSet();
+            return WithState(Groups.Where(group => !group.PreviewCopyId.HasValue || used.Contains(group.PreviewCopyId.Value)).ToArray(), units);
+        }
+
         internal static BattleSpawnPoints EndPreview(BattleSpawnPoints primary, BattleSpawnPoints selected, bool clearBirths,
             IReadOnlyCollection<int>? clearBirthUnitIds = null)
         {

@@ -5785,6 +5785,13 @@ namespace MonsterTrain2Poju.Model
                     externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                 state = state.WithCompanionBosses(CompanionBossSnapshot());
                 context = state.Context;
+                if (!source.Preview && context?.SpawnPoints is BattleSpawnPoints points && context.Enchantments != null)
+                {
+                    int[] destroyedBirths = context.Enchantments.RetainedUnits.Where(actor =>
+                        actor.Unit.DeathState?.IsDestroyed == true).Select(actor => actor.Unit.Id).ToArray();
+                    state = state.WithContext(context.WithSpawnPoints(points.ClearDestroyedPreviewBirths(destroyedBirths)));
+                    context = state.Context;
+                }
                 return unsupportedReason != null
                 ? new RoomCombatResult(null, RoomOutcome.Unsupported, round, events, unsupportedReason) : new RoomCombatResult(
                 state,

@@ -182,9 +182,11 @@ namespace MonsterTrain2Poju.Model
             internal EnchantmentCombatResult One(int id, int trigger, int effect) { Update(id, trigger, effect); return Finish(); }
             private EnchantmentCombatResult Finish() => new EnchantmentCombatResult(error == null ? state : null, requests, callbacks, error);
 
+            // New actors inherit the preview room even though the temporary
+            // restore roster was collected before those actors were born.
             private IEnumerable<EnchantmentRetainedUnit> Actors => state.Train.Rooms.SelectMany(room => room.Units.Select(unit =>
                 new EnchantmentRetainedUnit(unit, room.RoomIndex, state.TemporaryPreviewUnitIds == null ? room.Preview :
-                    state.TemporaryPreviewUnitIds.Contains(unit.Id))))
+                    room.Preview || state.TemporaryPreviewUnitIds.Contains(unit.Id))))
                 // SetTemporaryStateEnabled changes PreviewMode only for its
                 // collected actors. Earlier retained preview births keep their
                 // existing mode even when absent from that temporary list.

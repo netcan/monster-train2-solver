@@ -1,6 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--preview-birth-stage-only")
+{
+    PreviewBirthStageChecks.Native(args[1], args[2]);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--recursion-draw-callbacks-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5733,6 +5738,9 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-recursion-permafrost-replay-calibration.mt2f"));
     RecursionDrawCallbacksChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-preview-birth-stage-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-preview-birth-stage-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+    PreviewBirthStageChecks.Native(path, ModelJson.RelatedFixture(path, "player-preview-birth-stage-replay-calibration.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-preview-birth-binding-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-preview-birth-binding-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
