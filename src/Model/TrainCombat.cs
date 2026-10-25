@@ -493,7 +493,11 @@ namespace MonsterTrain2Poju.Model
                     destroyedRoomIndexes: destroyedRooms);
                 moving = fired.State!;
             }
-            foreach (var group in shifted.GroupBy(item => item.Destination).OrderByDescending(group => group.Key))
+            // HeroManager reserves every destination first, then drains each
+            // destination's movement queue from the top down. Pyre combat can
+            // stop the coroutine before lower-floor PostAscension callbacks.
+            foreach (var group in shifted.GroupBy(item => item.Destination)
+                .Where(group => !enteredPyre || group.Key == pyre).OrderByDescending(group => group.Key))
             {
                 TrainCombatResult fired = ApplyMovementTriggers(moving, group.SelectMany(item =>
                     new[] { (item.UnitId, "PostAscension"), (item.UnitId, "OnShift") }).ToArray());
@@ -535,7 +539,8 @@ namespace MonsterTrain2Poju.Model
                     movementContext?.QueryFrame?.SelectedRoomIndex is int laterSelection && moving.Context?.QueryFrame != null)
                     moving = Freeze(moving, moving.Rooms.ToArray(), moving.Context.WithQueryFrame(
                         moving.Context.QueryFrame.With(selectedRoomIndex: laterSelection)));
-                if (moving.Context?.Enchantments?.AutomaticLifecycle != true)
+                if (moving.Context?.Enchantments?.AutomaticLifecycle != true &&
+                    !shifted.Any(item => item.Destination != pyre))
                     return new TrainCombatResult(moving, result.Outcome, movementResults,
                         destroyedRoomIndexes: destroyedRooms);
                 if (Terminal(result.Outcome)) return new TrainCombatResult(moving, result.Outcome, movementResults,
@@ -543,6 +548,17 @@ namespace MonsterTrain2Poju.Model
                 TrainCombatResult disabled = EnchantmentWorldModel.SetAllowUpdates(moving, false);
                 if (!disabled.Supported) return disabled;
                 moving = disabled.State!;
+            }
+            foreach (var group in shifted.GroupBy(item => item.Destination)
+                .Where(group => enteredPyre && group.Key != pyre).OrderByDescending(group => group.Key))
+            {
+                TrainCombatResult fired = ApplyMovementTriggers(moving, group.SelectMany(item =>
+                    new[] { (item.UnitId, "PostAscension"), (item.UnitId, "OnShift") }).ToArray());
+                if (!fired.Supported) return fired;
+                movementResults.AddRange(fired.RoomResults);
+                if (Terminal(fired.Outcome)) return new TrainCombatResult(fired.State, fired.Outcome, movementResults,
+                    destroyedRoomIndexes: destroyedRooms);
+                moving = fired.State!;
             }
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Team == CombatTeam.Enemy))
             {

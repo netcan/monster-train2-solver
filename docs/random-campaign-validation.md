@@ -1123,6 +1123,15 @@ TrainSteward后，Deathwish专用更新只应临时跳过光环调用，旧模�
 详见[Deathwish与光环登记](../tests/fixtures/notes/combat/deathwish-enchantment-registry.md)。
 机制校准不计为第六战胜利，继续相同检查点的实际默认预算建议。
 
+第九组第八战继续实际默认建议后，在第29输入结束回合出现两名敌人生命
+各差3的终局偏差。0.2.88按照原生HeroManager顺序，先保留全部移动目的地，
+再从上往下执行回调和薪火战斗；薪火死亡后不执行下层PostAscension伤害。
+原始错误预测与独立修正进程的29输入完整状态、预测及RNG均已校准，
+终局为PlayerDefeated，不计为通关。正常穿刺升层11输入、旧22操作控制及
+前一战37输入冻结双胜均通过，详见
+[薪火终局与升层队列](../tests/fixtures/notes/combat/pyre-ascension-queue.md)。
+继续筛选最后一战胜路，并校准该档案中尚未支持的RageRoom起始腐化签名。
+
 定向检查入口：
 
 ```powershell
