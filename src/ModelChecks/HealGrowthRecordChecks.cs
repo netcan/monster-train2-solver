@@ -25,24 +25,28 @@ internal static class HealGrowthRecordChecks
     }
     private static void HistoricalMismatch(BattleTurnState old, BattleTurnState actual)
     {
+        Require(old.Spawn.Train.Context!.CardInstances!.Single(card => card.InstanceId == 7).Permanent.Upgrades
+            .Where(upgrade => upgrade.DataId == Upgrade).Select(upgrade => upgrade.Stats.Damage).SequenceEqual([21, 3]),
+            "Preserve the original21/3 forecast on card7.");
         JsonNode projected = JsonNode.Parse(NativeBranchObservationChecks.Key(old))!;
         JsonNode observed = JsonNode.Parse(NativeBranchObservationChecks.Key(actual))!;
         int changes = 0;
-        void Project(JsonNode? node, JsonNode? native)
+        void Project(JsonNode? node, JsonNode? native, int? ownerCard = null)
         {
             if (node is JsonObject row && native is JsonObject other)
             {
-                if (row["DataId"]?.GetValue<string>() == Upgrade && row["Stats"] is JsonObject stats && other["Stats"] is JsonObject nativeStats &&
+                if (row["Permanent"] != null && row["InstanceId"] is JsonValue identity) ownerCard = identity.GetValue<int>();
+                if (ownerCard == 7 && row["DataId"]?.GetValue<string>() == Upgrade && row["Stats"] is JsonObject stats && other["Stats"] is JsonObject nativeStats &&
                     stats["Damage"]!.GetValue<int>() != nativeStats["Damage"]!.GetValue<int>())
                 {
                     int from = stats["Damage"]!.GetValue<int>(), to = nativeStats["Damage"]!.GetValue<int>();
                     Require(from == 21 && to == 18 || from == 3 && to == 6, "Unrelated historical growth change.");
                     stats["Damage"] = to; changes++;
                 }
-                foreach (var child in row.ToArray()) Project(child.Value, other[child.Key]);
+                foreach (var child in row.ToArray()) Project(child.Value, other[child.Key], ownerCard);
             }
             else if (node is JsonArray array && native is JsonArray otherArray && array.Count == otherArray.Count)
-                for (int index = 0; index < array.Count; index++) Project(array[index], otherArray[index]);
+                for (int index = 0; index < array.Count; index++) Project(array[index], otherArray[index], ownerCard);
         }
         Project(projected, observed);
         Require(changes > 0 && JsonNode.DeepEquals(projected, observed), "Historical mismatch extends beyond the two growth records.");
