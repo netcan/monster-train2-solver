@@ -24,6 +24,8 @@ internal static class RandomCampaignChecks
         }
         if (path.EndsWith("full-battle-random-campaign-06-ring5-budget10000-loss.mt2f", StringComparison.Ordinal))
             SacrificePolicyChecks.Native(source.RootElement);
+        if (path.EndsWith("full-battle-random-campaign-09-ring5-budget10000-loss.mt2f", StringComparison.Ordinal))
+            FriendlyRoomDamagePolicyChecks.Native(source.RootElement);
         if (path.EndsWith("full-battle-random-campaign-05-ring6-root30000-keep-champion-search.mt2f", StringComparison.Ordinal))
         {
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
