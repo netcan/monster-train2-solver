@@ -1,6 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--card-corruption-attack-queries-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    CardCorruptionAttackUpgradeChecks.NaturalQueries(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--card-corruption-attack-upgrade-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

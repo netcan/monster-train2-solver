@@ -8,6 +8,15 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.Contains("full-battle-random-campaign-10-ring7-", StringComparison.Ordinal))
+            CardCorruptionAttackUpgradeChecks.NaturalQueries(source.RootElement);
+        if (path.EndsWith("full-battle-random-campaign-10-ring7-refined-order-search.mt2f", StringComparison.Ordinal))
+        {
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            CardCorruptionAttackUpgradeChecks.NaturalQueries(replay.RootElement);
+            RefinedPair(source.RootElement, replay.RootElement, 1895012796, 0, 6, "Banished", "Wurmkin", 54);
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-10-ring6-unbox-refined-search.mt2f", StringComparison.Ordinal))
         {
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));

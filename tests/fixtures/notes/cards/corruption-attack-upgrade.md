@@ -26,10 +26,19 @@ upgrade/removal APIs retain their protection. This calibration opens only
 the original unit-card birth path. Both continuous Ring7 checkpoints now
 complete actual10000ms/two-worker default advice:66 inputs,56 plays and10
 EndTurns each. All states,forecasts,RNG and four failure counters match;
-both are terminal defeats and archived separately. An offline54-input
-candidate wins in a fresh native process with Pyre34; independent replay
-and normal campaign progression are still required. No complete random
-campaign is claimed.
+both are terminal defeats and archived separately. The two natural traces
+also match1253/1240 independent native attack getters on the upgraded host,
+1243/1230 at positive corruption. These extend the zero-corruption birth
+calibration with actual dynamic attack-query evidence.
+
+An offline54-input candidate wins in two fresh native processes with
+Pyre34,46 plays/8 EndTurns. All frozen successors and forecasts match; each
+process also matches262 native attack getters,259 at positive corruption.
+Normal rewards and map progression produce the Ring8 checkpoint with save
+SHA256`6e1a44d82a6c2c9977ed95a68ee9b0a844fc17878d5f189da7c39c81465a35f8`.
+The first six default wins plus this refined seventh win pass their continuous
+mixed checkpoint chain. Ring8 default advice is in progress; no complete
+random campaign is claimed.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --card-corruption-attack-upgrade-only `
