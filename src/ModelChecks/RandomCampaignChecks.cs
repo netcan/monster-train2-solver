@@ -28,6 +28,14 @@ internal static class RandomCampaignChecks
             RefinedPair(source.RootElement, replay.RootElement, 424245, 0, 2, "Banished", "Pyreborne", 41);
             return;
         }
+        if (path.EndsWith("full-battle-metagame-campaign-ring4-refined-search.mt2f", StringComparison.Ordinal) ||
+            path.EndsWith("full-battle-metagame-campaign-ring5-refined-search.mt2f", StringComparison.Ordinal))
+        {
+            bool ring4 = path.EndsWith("full-battle-metagame-campaign-ring4-refined-search.mt2f", StringComparison.Ordinal);
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(source.RootElement, replay.RootElement, 424245, 0, ring4 ? 3 : 4, "Banished", "Pyreborne", ring4 ? 53 : 48);
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-08-ring3-refined-search.mt2f", StringComparison.Ordinal))
         {
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));

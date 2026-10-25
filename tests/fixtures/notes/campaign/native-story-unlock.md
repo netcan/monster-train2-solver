@@ -173,4 +173,17 @@ pass. Runtime233.35s,60 publications,4 search metric samples,1532 independent
 masks and477 pure captures. The curated default defeat remains separate.
 The iterative tool finds a48-input model win at Pyre8 after three improvements
 among9 complete candidates,zero unsupported:13.06s search,19.60s including
-independent export/replay. Its full native validation is in progress.
+independent export/replay. The complete source and independent native replay
+now both win:40 plays,8 EndTurns,Pyre8,15 train stages,all roots/successors/
+forecasts/RNG and four zero failure counters. Source118.84s,183 independent
+masks,97 pure captures,zero new searches/publications. The48-input prediction
+is separately bound to both native traces; the58-input default loss stays.
+
+Normal reward/merchant/map continuation enters Ring6 at save SHA256
+`b90d38a7460c6a999a5c9f8c6cd3432450261942cd57e257689f97fa6a43ae2e`.
+`campaign-metagame-ring6.zip` contains64 verified files,SHA256
+`f63265c35364d9f1b461cacc43ea76fb7fd7a1a32c760d81851db5b52dc64a76`.
+The ordered Ring2..6 checkpoint check preserves all16 earlier counters,hearts,
+features and dialogues with zero battle simulations. Extra hearts remain0/9;
+actual10000ms/two-worker advice resumes at Ring6. Curated Ring4 and5 refined
+pairs use their frozen-policy gates,not actual-default search gates.
