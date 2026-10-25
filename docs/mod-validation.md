@@ -1,13 +1,12 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.97, committed source`e6860f667b28be910579b9a0aa1969790d35220c`.
+Current Windows installation:0.2.99, committed source`ac713d25663923ddb061566ad0149254238327b4`.
 The exact release payload passes the tenth random Banished/Wurmkin sample's
-Ring7 offline-refined route in independent native processes:54 inputs,
-46 plays,8 EndTurns,Pyre34 and15 train stages per process. Every root,
-successor,forecast and RNG matches; all four failure counters are zero.
-Source`20261026-031736-1ab7977e` and replay`20261026-032228-4e287604`
-bind the three installed DLL hashes to the committed build. This is a frozen
-refined route,not a default-budget search victory.
+first battle with actual10000ms/two-worker advice and independent native
+replay:22 inputs,17 plays,5 EndTurns,Pyre80 and9 train stages per process.
+Every root,successor,forecast and RNG matches; all four failure counters are
+zero. Source`20261026-034830-49d864c7` and replay`20261026-035048-cce51c9b`
+bind the three installed DLL hashes to the committed build.
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
 Permafrost draw callbacks, preview-born aura cleanup/mode and direct boss
@@ -34,15 +33,15 @@ Version0.2.99 also corrects dying-enchanter updates after character Slay/hit
 callbacks. The31-input independent native pair preserves the original extra
 sword-growth counterexample; complete state/RNG,parallel parents and focused
 Sentry,binding,enchantment-world/combat regressions pass. The original Ring8
-checkpoint is continuing actual0.2.99 advice; the installed build remains0.2.97
-until the exact0.2.99 payload completes its release qualification.
+checkpoint is continuing actual0.2.99 advice; the installed build includes
+both corrections. Release qualification does not claim a complete campaign.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.97. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261026-033110/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.97-Windows-20261026-033110.zip`,SHA256
-`aea00c09792a5d792b0f665405f3f966f7949dcc06be275c60eb4f236da1047a`.
+its next launch loads0.2.99. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261026-035226/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.99-Windows-20261026-035226.zip`,SHA256
+`0b04db8afbcf6e0efc4524faf0b2820072354d57832e6a27b0c50a55e6826c96`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
